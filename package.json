@@ -13,7 +13,8 @@
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "check": "npm run format && npm run lint && npm run compile",
+    "test": "vitest --run",
+    "check": "npm run format && npm run lint && npm run compile && npm run test -- run",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -34,6 +35,8 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "prettier": "^3.6.2",
     "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4",
     "wxt": "^0.20.6"
   }
 }
