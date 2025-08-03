@@ -1,4 +1,4 @@
-import { addCard, getAllCards } from '@/services/cards';
+import { addCard, getAllCards, removeCard } from '@/services/cards';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/services/messages';
 
@@ -10,6 +10,9 @@ export default defineBackground(() => {
 
       case MessageType.GET_ALL_CARDS:
         return await getAllCards();
+
+      case MessageType.REMOVE_CARD:
+        return await removeCard(request.slug);
 
       default: {
         // This should never happen with proper typing - exhaustive check

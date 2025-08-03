@@ -46,6 +46,18 @@ export function DebugPanel() {
     }
   };
 
+  const handleRemoveCard = async (slug: string) => {
+    try {
+      await sendMessage({
+        type: MessageType.REMOVE_CARD,
+        slug: slug,
+      });
+      await loadCards(); // Reload cards after removing
+    } catch (error) {
+      console.error('Failed to remove card:', error);
+    }
+  };
+
   return (
     <div className="debug-panel">
       <h2 className="debug-panel-title">🔧 DEBUG PANEL</h2>
@@ -85,6 +97,13 @@ export function DebugPanel() {
                   <strong>Created:</strong>{' '}
                   <span className="debug-panel-card-value">{new Date(card.createdAt).toLocaleString()}</span>
                 </div>
+                <button
+                  onClick={() => handleRemoveCard(card.slug)}
+                  className="debug-panel-button"
+                  style={{ marginTop: '8px', width: '100%' }}
+                >
+                  Remove
+                </button>
               </div>
             ))}
           </div>
