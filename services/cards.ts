@@ -43,14 +43,15 @@ export function serializeCard(card: Card): StoredCard {
 }
 
 export function deserializeCard(stored: StoredCard): Card {
+  const { due, last_review, ...rest } = stored.fsrs;
   return {
     ...stored,
     createdAt: new Date(stored.createdAt),
     fsrs: {
-      ...stored.fsrs,
-      due: new Date(stored.fsrs.due),
-      last_review: stored.fsrs.last_review ? new Date(stored.fsrs.last_review) : undefined,
-    } as FsrsCard,
+      ...rest,
+      due: new Date(due),
+      last_review: last_review ? new Date(last_review) : undefined,
+    },
   };
 }
 
