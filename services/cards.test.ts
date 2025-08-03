@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
-import { addCard, serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
+import {
+  addCard,
+  getAllCards,
+  serializeCard,
+  deserializeCard,
+  type Card,
+  type StoredCard,
+} from './cards';
 import { STORAGE_KEYS } from './storage-keys';
 
 describe('Card serialization', () => {
@@ -163,5 +170,73 @@ describe('addCard', () => {
     expect(storedCard.id).toBe(card.id);
     expect(storedCard.slug).toBe(card.slug);
     expect(storedCard.name).toBe(card.name);
+  });
+});
+
+describe('getAllCards', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
+
+  it('should return empty array when no cards exist', async () => {
+    const cards = await getAllCards();
+    expect(cards).toEqual([]);
+  });
+
+  it('should return all cards from storage', async () => {
+    // Add multiple cards
+    const card1 = await addCard('two-sum', 'Two Sum');
+    const card2 = await addCard('valid-parentheses', 'Valid Parentheses');
+    const card3 = await addCard('merge-intervals', 'Merge Intervals');
+
+    // Get all cards
+    const allCards = await getAllCards();
+
+    expect(allCards).toHaveLength(3);
+
+    // Check that all cards are present
+    const cardIds = allCards.map((c) => c.id);
+    expect(cardIds).toContain(card1.id);
+    expect(cardIds).toContain(card2.id);
+    expect(cardIds).toContain(card3.id);
+
+    // Check that cards have correct data
+    const foundCard1 = allCards.find((c) => c.id === card1.id);
+    expect(foundCard1?.slug).toBe('two-sum');
+    expect(foundCard1?.name).toBe('Two Sum');
+
+    const foundCard2 = allCards.find((c) => c.id === card2.id);
+    expect(foundCard2?.slug).toBe('valid-parentheses');
+    expect(foundCard2?.name).toBe('Valid Parentheses');
+
+    const foundCard3 = allCards.find((c) => c.id === card3.id);
+    expect(foundCard3?.slug).toBe('merge-intervals');
+    expect(foundCard3?.name).toBe('Merge Intervals');
+  });
+
+  it('should properly deserialize stored cards', async () => {
+    const testDate = new Date('2024-01-15T10:30:00Z');
+
+    // Manually add a serialized card to storage
+    const storedCard: StoredCard = {
+      id: 'test-id-123',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      createdAt: testDate.getTime(),
+    };
+
+    await browser.storage.local.set({
+      [STORAGE_KEYS.cards]: { 'test-id-123': storedCard },
+    });
+
+    // Get all cards
+    const allCards = await getAllCards();
+
+    expect(allCards).toHaveLength(1);
+    expect(allCards[0].id).toBe('test-id-123');
+    expect(allCards[0].slug).toBe('test-problem');
+    expect(allCards[0].name).toBe('Test Problem');
+    expect(allCards[0].createdAt).toBeInstanceOf(Date);
+    expect(allCards[0].createdAt.getTime()).toBe(testDate.getTime());
   });
 });

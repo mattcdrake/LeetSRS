@@ -46,42 +46,11 @@ export async function addCard(slug: string, name: string): Promise<Card> {
   return card;
 }
 
-// export async function getCard(slug: string): Promise<Card | null> {
-//   const result = await browser.storage.local.get([STORAGE_KEYS.cardIndex, STORAGE_KEYS.cards]);
-//   const slugToCardId: Record<string, string> = result[STORAGE_KEYS.cardIndex] || {};
-//   const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
-
-//   const cardId = slugToCardId[slug];
-//   if (!cardId) return null;
-
-//   const storedCard = cards[cardId];
-//   if (!storedCard) return null;
-
-//   return deserializeCard(storedCard);
-// }
-
-// export async function getAllCards(): Promise<Card[]> {
-//   const result = await browser.storage.local.get(STORAGE_KEYS.cards);
-//   const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
-//   return Object.values(cards).map(deserializeCard);
-// }
-
-// export async function removeCard(slug: string): Promise<void> {
-//   const result = await browser.storage.local.get([STORAGE_KEYS.cardIndex, STORAGE_KEYS.cards]);
-//   const slugToCardId: Record<string, string> = result[STORAGE_KEYS.cardIndex] || {};
-//   const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
-
-//   const cardId = slugToCardId[slug];
-//   if (!cardId) return;
-
-//   delete cards[cardId];
-//   delete slugToCardId[slug];
-
-//   await browser.storage.local.set({
-//     [STORAGE_KEYS.cards]: cards,
-//     [STORAGE_KEYS.cardIndex]: slugToCardId,
-//   });
-// }
+export async function getAllCards(): Promise<Card[]> {
+  const result = await browser.storage.local.get(STORAGE_KEYS.cards);
+  const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
+  return Object.values(cards).map(deserializeCard);
+}
 
 export function serializeCard(card: Card): StoredCard {
   return {
