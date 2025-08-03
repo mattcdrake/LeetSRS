@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from './storage-keys';
+import { storage } from '#imports';
 
 export interface Card {
   id: string;
@@ -13,11 +14,9 @@ export interface StoredCard extends Omit<Card, 'createdAt'> {
 
 export async function addCard(slug: string, name: string): Promise<Card> {
   // If the card already exists, return it
-  const slugToCardIdResult = await browser.storage.local.get(STORAGE_KEYS.slugToCardId);
-  const slugToCardId: Record<string, string> = slugToCardIdResult[STORAGE_KEYS.slugToCardId] || {};
+  const slugToCardId = (await storage.getItem<Record<string, string>>(`local:${STORAGE_KEYS.slugToCardId}`)) ?? {};
   if (slugToCardId[slug]) {
-    const cardsResult = await browser.storage.local.get(STORAGE_KEYS.cards);
-    const cards: Record<string, StoredCard> = cardsResult[STORAGE_KEYS.cards] || {};
+    const cards = (await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`)) ?? {};
     const storedCard = cards[slugToCardId[slug]];
     if (storedCard) {
       return deserializeCard(storedCard);
@@ -33,22 +32,20 @@ export async function addCard(slug: string, name: string): Promise<Card> {
   };
 
   // Save card and update slug to ID mapping
-  const cardsResult = await browser.storage.local.get(STORAGE_KEYS.cards);
-  const cards: Record<string, StoredCard> = cardsResult[STORAGE_KEYS.cards] || {};
+  const cards = (await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`)) ?? {};
   cards[card.id] = serializeCard(card);
   slugToCardId[slug] = card.id;
 
-  await browser.storage.local.set({
-    [STORAGE_KEYS.cards]: cards,
-    [STORAGE_KEYS.slugToCardId]: slugToCardId,
-  });
+  await storage.setItems([
+    { key: `local:${STORAGE_KEYS.cards}`, value: cards },
+    { key: `local:${STORAGE_KEYS.slugToCardId}`, value: slugToCardId },
+  ]);
 
   return card;
 }
 
 export async function getAllCards(): Promise<Card[]> {
-  const result = await browser.storage.local.get(STORAGE_KEYS.cards);
-  const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
+  const cards = (await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`)) ?? {};
   return Object.values(cards).map(deserializeCard);
 }
 
