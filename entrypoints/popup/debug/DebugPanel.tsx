@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Card } from '@/services/cards';
 import { sendMessage, MessageType } from '@/services/messages';
+import { DebugCard } from './DebugCard';
 import './DebugPanel.css';
 
 export function DebugPanel() {
@@ -83,28 +84,7 @@ export function DebugPanel() {
         ) : (
           <div className="debug-panel-cards-container">
             {cards.map((card) => (
-              <div key={card.id} className="debug-panel-card">
-                <div className="debug-panel-card-label">
-                  <strong>ID:</strong> <span className="debug-panel-card-value">{card.id}</span>
-                </div>
-                <div className="debug-panel-card-label">
-                  <strong>Slug:</strong> <span className="debug-panel-card-value">{card.slug}</span>
-                </div>
-                <div className="debug-panel-card-label">
-                  <strong>Name:</strong> <span className="debug-panel-card-value">{card.name}</span>
-                </div>
-                <div className="debug-panel-card-label">
-                  <strong>Created:</strong>{' '}
-                  <span className="debug-panel-card-value">{new Date(card.createdAt).toLocaleString()}</span>
-                </div>
-                <button
-                  onClick={() => handleRemoveCard(card.slug)}
-                  className="debug-panel-button"
-                  style={{ marginTop: '8px', width: '100%' }}
-                >
-                  Remove
-                </button>
-              </div>
+              <DebugCard key={card.id} card={card} onRemove={handleRemoveCard} />
             ))}
           </div>
         )}

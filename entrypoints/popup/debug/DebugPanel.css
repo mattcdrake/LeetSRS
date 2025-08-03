@@ -71,3 +71,24 @@
 .debug-panel-card-value {
   color: #00ff00;
 }
+
+.debug-panel-fsrs-header {
+  display: flex;
+  align-items: center;
+  user-select: none;
+}
+
+.debug-panel-fsrs-header:hover {
+  opacity: 0.8;
+}
+
+.debug-panel-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 10px;
+  color: #ff9800;
+}
+
+.debug-panel-arrow.expanded {
+  transform: rotate(90deg);
+}

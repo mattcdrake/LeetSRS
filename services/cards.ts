@@ -1,3 +1,4 @@
+import { type Card as FsrsCard, createEmptyCard } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 
@@ -6,10 +7,15 @@ export interface Card {
   slug: string;
   name: string;
   createdAt: Date;
+  fsrs: FsrsCard;
 }
 
-export interface StoredCard extends Omit<Card, 'createdAt'> {
+export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs'> {
   createdAt: number;
+  fsrs: Omit<FsrsCard, 'due' | 'last_review'> & {
+    due: number;
+    last_review?: number;
+  };
 }
 
 async function getStorageData() {
@@ -28,13 +34,24 @@ export function serializeCard(card: Card): StoredCard {
   return {
     ...card,
     createdAt: card.createdAt.getTime(),
+    fsrs: {
+      ...card.fsrs,
+      due: card.fsrs.due.getTime(),
+      last_review: card.fsrs.last_review?.getTime(),
+    },
   };
 }
 
 export function deserializeCard(stored: StoredCard): Card {
+  const { due, last_review, ...rest } = stored.fsrs;
   return {
     ...stored,
     createdAt: new Date(stored.createdAt),
+    fsrs: {
+      ...rest,
+      due: new Date(due),
+      last_review: last_review ? new Date(last_review) : undefined,
+    },
   };
 }
 
@@ -56,6 +73,7 @@ export async function addCard(slug: string, name: string): Promise<Card> {
     slug,
     name,
     createdAt: new Date(),
+    fsrs: createEmptyCard(),
   };
 
   cards[card.id] = serializeCard(card);
