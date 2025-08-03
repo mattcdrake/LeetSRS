@@ -1,0 +1,73 @@
+.debug-panel {
+  padding: 20px;
+  border: 2px dashed red;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: left;
+}
+
+.debug-panel-title {
+  color: red;
+  margin-top: 0;
+}
+
+.debug-panel-input-container {
+  margin-bottom: 20px;
+}
+
+.debug-panel-input {
+  padding: 8px;
+  margin-right: 10px;
+  width: 250px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.debug-panel-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.debug-panel-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.debug-panel-cards-header {
+  margin-bottom: 10px;
+}
+
+.debug-panel-empty-state {
+  color: #666;
+}
+
+.debug-panel-cards-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.debug-panel-card {
+  margin-bottom: 10px;
+  padding: 12px;
+  background: #1a1a1a;
+  color: #00ff00;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 11px;
+  border: 1px solid #333;
+}
+
+.debug-panel-card-label {
+  color: #ffff00;
+}
+
+.debug-panel-card-value {
+  color: #00ff00;
+}
