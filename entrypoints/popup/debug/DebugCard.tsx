@@ -1,14 +1,37 @@
 import { useState } from 'react';
 import type { Card } from '@/services/cards';
+import { sendMessage, MessageType } from '@/services/messages';
+import { Rating } from 'ts-fsrs';
 import './DebugPanel.css';
 
 interface DebugCardProps {
   card: Card;
   onRemove: (slug: string) => void;
+  onUpdate: (card: Card) => void;
 }
 
-export function DebugCard({ card, onRemove }: DebugCardProps) {
+export function DebugCard({ card, onRemove, onUpdate }: DebugCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isRating, setIsRating] = useState(false);
+
+  const handleRate = async (rating: Rating) => {
+    // Skip Rating.Manual as it's not a valid grade
+    if (rating === Rating.Manual) return;
+
+    setIsRating(true);
+    try {
+      const updatedCard = await sendMessage({
+        type: MessageType.RATE_CARD,
+        slug: card.slug,
+        rating: rating,
+      });
+      onUpdate(updatedCard);
+    } catch (error) {
+      console.error('Failed to rate card:', error);
+    } finally {
+      setIsRating(false);
+    }
+  };
 
   return (
     <div className="debug-panel-card">
@@ -77,10 +100,46 @@ export function DebugCard({ card, onRemove }: DebugCardProps) {
         )}
       </div>
 
+      {/* Rating Buttons */}
+      <div style={{ marginTop: '8px', display: 'flex', gap: '4px' }}>
+        <button
+          onClick={() => handleRate(Rating.Again)}
+          className="debug-panel-button"
+          style={{ flex: 1, fontSize: '11px', padding: '4px', backgroundColor: '#d32f2f' }}
+          disabled={isRating}
+        >
+          Again
+        </button>
+        <button
+          onClick={() => handleRate(Rating.Hard)}
+          className="debug-panel-button"
+          style={{ flex: 1, fontSize: '11px', padding: '4px', backgroundColor: '#f57c00' }}
+          disabled={isRating}
+        >
+          Hard
+        </button>
+        <button
+          onClick={() => handleRate(Rating.Good)}
+          className="debug-panel-button"
+          style={{ flex: 1, fontSize: '11px', padding: '4px', backgroundColor: '#388e3c' }}
+          disabled={isRating}
+        >
+          Good
+        </button>
+        <button
+          onClick={() => handleRate(Rating.Easy)}
+          className="debug-panel-button"
+          style={{ flex: 1, fontSize: '11px', padding: '4px', backgroundColor: '#1976d2' }}
+          disabled={isRating}
+        >
+          Easy
+        </button>
+      </div>
+
       <button
         onClick={() => onRemove(card.slug)}
         className="debug-panel-button"
-        style={{ marginTop: '8px', width: '100%' }}
+        style={{ marginTop: '4px', width: '100%' }}
       >
         Remove
       </button>

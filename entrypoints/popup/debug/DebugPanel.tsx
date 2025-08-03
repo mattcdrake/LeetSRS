@@ -59,6 +59,10 @@ export function DebugPanel() {
     }
   };
 
+  const handleUpdateCard = (updatedCard: Card) => {
+    setCards((prevCards) => prevCards.map((card) => (card.slug === updatedCard.slug ? updatedCard : card)));
+  };
+
   return (
     <div className="debug-panel">
       <h2 className="debug-panel-title">🔧 DEBUG PANEL</h2>
@@ -84,7 +88,7 @@ export function DebugPanel() {
         ) : (
           <div className="debug-panel-cards-container">
             {cards.map((card) => (
-              <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} />
+              <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} onUpdate={handleUpdateCard} />
             ))}
           </div>
         )}

@@ -1,9 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import { storage } from 'wxt/utils/storage';
-import { addCard, getAllCards, removeCard, serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
+import {
+  addCard,
+  getAllCards,
+  removeCard,
+  serializeCard,
+  deserializeCard,
+  rateCard,
+  type Card,
+  type StoredCard,
+} from './cards';
 import { STORAGE_KEYS } from './storage-keys';
-import { createEmptyCard } from 'ts-fsrs';
+import { createEmptyCard, Rating } from 'ts-fsrs';
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -324,5 +333,103 @@ describe('removeCard', () => {
     expect(allCards.some((c) => c.slug === 'valid-parentheses')).toBe(false);
     expect(allCards.some((c) => c.slug === 'two-sum')).toBe(true);
     expect(allCards.some((c) => c.slug === 'merge-intervals')).toBe(true);
+  });
+});
+
+describe('rateCard', () => {
+  beforeEach(() => {
+    // Reset the fake browser state before each test
+    fakeBrowser.reset();
+  });
+
+  it('should create a new card if it does not exist', async () => {
+    const card = await rateCard('new-problem', Rating.Good);
+
+    expect(card.slug).toBe('new-problem');
+    expect(card.name).toBe('new-problem');
+    expect(card.createdAt).toBeInstanceOf(Date);
+    expect(card.fsrs).toBeDefined();
+
+    // Verify the card was stored
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    expect(cards!['new-problem']).toBeDefined();
+  });
+
+  it('should update existing card when rating', async () => {
+    // First create a card
+    const initialCard = await addCard('two-sum', 'Two Sum');
+    const initialReps = initialCard.fsrs.reps;
+    const initialStability = initialCard.fsrs.stability;
+
+    // Rate the card as Good
+    const ratedCard = await rateCard('two-sum', Rating.Good);
+
+    expect(ratedCard.slug).toBe('two-sum');
+    expect(ratedCard.name).toBe('Two Sum');
+
+    // FSRS should update the card
+    expect(ratedCard.fsrs.reps).toBeGreaterThan(initialReps);
+    expect(ratedCard.fsrs.stability).not.toBe(initialStability);
+    expect(ratedCard.fsrs.last_review).toBeInstanceOf(Date);
+  });
+
+  it('should handle different grades correctly', async () => {
+    // Create a card
+    await addCard('test-problem', 'Test Problem');
+
+    // Rate as Again (fail)
+    const failedCard = await rateCard('test-problem', Rating.Again);
+    expect(failedCard.fsrs.reps).toBe(1);
+    expect(failedCard.fsrs.lapses).toBe(0);
+
+    // Rate as Easy
+    const easyCard = await rateCard('test-problem', Rating.Easy);
+    expect(easyCard.fsrs.reps).toBeGreaterThan(0);
+  });
+
+  it('should update the due date after rating', async () => {
+    const card = await addCard('merge-sort', 'Merge Sort');
+    const initialDue = card.fsrs.due;
+
+    const ratedCard = await rateCard('merge-sort', Rating.Good);
+
+    expect(ratedCard.fsrs.due).toBeInstanceOf(Date);
+    expect(ratedCard.fsrs.due.getTime()).toBeGreaterThan(initialDue.getTime());
+  });
+
+  it('should persist card updates to storage', async () => {
+    await addCard('binary-search', 'Binary Search');
+
+    // Rate the card
+    await rateCard('binary-search', Rating.Hard);
+
+    // Verify the updated card is in storage
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const storedCard = cards!['binary-search'];
+
+    expect(storedCard).toBeDefined();
+    expect(typeof storedCard.fsrs.last_review).toBe('number');
+  });
+
+  it('should handle multiple ratings on the same card', async () => {
+    const slug = 'dynamic-programming';
+
+    // First rating (creates card)
+    const card1 = await rateCard(slug, Rating.Again);
+    expect(card1.fsrs.reps).toBe(1);
+    expect(card1.fsrs.lapses).toBe(0);
+
+    // Second rating
+    const card2 = await rateCard(slug, Rating.Hard);
+    expect(card2.fsrs.reps).toBeGreaterThan(0);
+
+    // Third rating
+    const card3 = await rateCard(slug, Rating.Good);
+    expect(card3.fsrs.reps).toBeGreaterThan(card2.fsrs.reps);
+
+    // Verify only one card exists in storage
+    const allCards = await getAllCards();
+    const dpCards = allCards.filter((c) => c.slug === slug);
+    expect(dpCards).toHaveLength(1);
   });
 });

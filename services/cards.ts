@@ -1,6 +1,9 @@
-import { type Card as FsrsCard, createEmptyCard } from 'ts-fsrs';
+import { type Card as FsrsCard, createEmptyCard, FSRS, type Grade, generatorParameters } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
+
+const params = generatorParameters({ maximum_interval: 1000 });
+const fsrs = new FSRS(params);
 
 export interface Card {
   slug: string;
@@ -47,19 +50,22 @@ export function deserializeCard(stored: StoredCard): Card {
   };
 }
 
+function createCard(slug: string, name: string): Card {
+  return {
+    slug,
+    name,
+    createdAt: new Date(),
+    fsrs: createEmptyCard(),
+  };
+}
+
 export async function addCard(slug: string, name: string): Promise<Card> {
   const cards = await getCards();
   if (slug in cards) {
     return deserializeCard(cards[slug]);
   }
 
-  const card: Card = {
-    slug,
-    name,
-    createdAt: new Date(),
-    fsrs: createEmptyCard(),
-  };
-
+  const card = createCard(slug, name);
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
   return card;
@@ -74,4 +80,22 @@ export async function removeCard(slug: string): Promise<void> {
   const cards = await getCards();
   delete cards[slug];
   await storage.setItem(STORAGE_KEYS.cards, cards);
+}
+
+export async function rateCard(slug: string, rating: Grade): Promise<Card> {
+  const cards = await getCards();
+
+  let card: Card;
+  if (slug in cards) {
+    card = deserializeCard(cards[slug]);
+  } else {
+    card = createCard(slug, slug);
+  }
+
+  const now = new Date();
+  const schedulingResult = fsrs.next(card.fsrs, now, rating);
+  card.fsrs = schedulingResult.card;
+  cards[slug] = serializeCard(card);
+  await storage.setItem(STORAGE_KEYS.cards, cards);
+  return card;
 }
