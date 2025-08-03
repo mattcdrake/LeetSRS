@@ -9,7 +9,7 @@ import {
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { interleaveArrays } from './utils';
-import { updateStats } from './stats';
+import { updateStats, getTodayStats } from './stats';
 
 export const MAX_NEW_CARDS_PER_DAY = 3;
 const params = generatorParameters({ maximum_interval: 1000 });
@@ -120,6 +120,12 @@ export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
   const now = new Date();
   const reviewCards = allCards.filter((card) => card.fsrs.state !== FsrsState.New && card.fsrs.due <= now);
-  const newCards = allCards.filter((card) => card.fsrs.state === FsrsState.New).slice(0, MAX_NEW_CARDS_PER_DAY);
+
+  // Get today's stats to determine how many new cards have already been done
+  const todayStats = await getTodayStats();
+  const newCardsCompletedToday = todayStats?.newCards ?? 0;
+  const remainingNewCards = Math.max(0, MAX_NEW_CARDS_PER_DAY - newCardsCompletedToday);
+
+  const newCards = allCards.filter((card) => card.fsrs.state === FsrsState.New).slice(0, remainingNewCards);
   return interleaveArrays(reviewCards, newCards);
 }
