@@ -13,9 +13,6 @@ export function DebugCard({ card, onRemove }: DebugCardProps) {
   return (
     <div className="debug-panel-card">
       <div className="debug-panel-card-label">
-        <strong>ID:</strong> <span className="debug-panel-card-value">{card.id}</span>
-      </div>
-      <div className="debug-panel-card-label">
         <strong>Slug:</strong> <span className="debug-panel-card-value">{card.slug}</span>
       </div>
       <div className="debug-panel-card-label">

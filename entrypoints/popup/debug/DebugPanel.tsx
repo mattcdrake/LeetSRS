@@ -84,7 +84,7 @@ export function DebugPanel() {
         ) : (
           <div className="debug-panel-cards-container">
             {cards.map((card) => (
-              <DebugCard key={card.id} card={card} onRemove={handleRemoveCard} />
+              <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} />
             ))}
           </div>
         )}
