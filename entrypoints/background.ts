@@ -1,28 +1,33 @@
 import { addCard, getAllCards } from '@/services/cards';
 import { browser } from 'wxt/browser';
+import { MessageType, type MessageRequest } from '@/services/messages';
 
 export default defineBackground(() => {
   // Message handler for popup communication
-  browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
     // Handle async operations
     (async () => {
       try {
         switch (request.type) {
-          case 'ADD_CARD': {
+          case MessageType.ADD_CARD: {
             const card = await addCard(request.slug, request.name);
-            sendResponse({ success: true, card });
+            sendResponse(card);
             break;
           }
-          case 'GET_ALL_CARDS': {
+          case MessageType.GET_ALL_CARDS: {
             const cards = await getAllCards();
-            sendResponse({ success: true, cards });
+            sendResponse(cards);
             break;
           }
-          default:
-            sendResponse({ success: false, error: 'Unknown message type' });
+          default: {
+            // This should never happen with proper typing - exhaustive check
+            const _: never = request;
+            throw new Error('Unknown message type');
+          }
         }
       } catch (error) {
-        sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+        console.error('Background script error:', error);
+        sendResponse(null);
       }
     })();
 

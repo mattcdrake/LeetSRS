@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { browser } from 'wxt/browser';
 import type { Card } from '@/services/cards';
+import { sendMessage, MessageType } from '@/services/messages';
 
 export function DebugPanel() {
   const [slug, setSlug] = useState('');
@@ -10,9 +10,9 @@ export function DebugPanel() {
   // Load all cards on mount and after adding
   const loadCards = async () => {
     try {
-      const response = await browser.runtime.sendMessage({ type: 'GET_ALL_CARDS' });
-      if (response.success) {
-        setCards(response.cards);
+      const cards = await sendMessage({ type: MessageType.GET_ALL_CARDS });
+      if (cards) {
+        setCards(cards);
       }
     } catch (error) {
       console.error('Failed to load cards:', error);
@@ -28,13 +28,13 @@ export function DebugPanel() {
 
     setLoading(true);
     try {
-      const response = await browser.runtime.sendMessage({
-        type: 'ADD_CARD',
+      const card = await sendMessage({
+        type: MessageType.ADD_CARD,
         slug: slug.trim(),
         name: slug.trim(), // Using slug as name for debug purposes
       });
 
-      if (response.success) {
+      if (card) {
         setSlug('');
         await loadCards(); // Reload cards after adding
       }
