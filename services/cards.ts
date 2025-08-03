@@ -7,104 +7,92 @@ export interface Card {
   createdAt: Date;
 }
 
-interface StoredCard extends Omit<Card, 'createdAt'> {
+export interface StoredCard extends Omit<Card, 'createdAt'> {
   createdAt: number;
 }
 
-interface CardsStorage {
-  cards: Record<string, StoredCard>;
-  slugToCardId: Record<string, string>;
-}
-
-// Public API
 export async function addCard(slug: string, name: string): Promise<Card> {
-  const storage = await getCardsStorage();
-
-  // Check if card already exists
-  const existingId = storage.slugToCardId[slug];
-  if (existingId && storage.cards[existingId]) {
-    return deserializeCard(storage.cards[existingId]);
+  // If the card already exists, return it
+  const slugToCardIdResult = await browser.storage.local.get(STORAGE_KEYS.slugToCardId);
+  const slugToCardId: Record<string, string> = slugToCardIdResult[STORAGE_KEYS.slugToCardId] || {};
+  if (slugToCardId[slug]) {
+    const cardsResult = await browser.storage.local.get(STORAGE_KEYS.cards);
+    const cards: Record<string, StoredCard> = cardsResult[STORAGE_KEYS.cards] || {};
+    const storedCard = cards[slugToCardId[slug]];
+    if (storedCard) {
+      return deserializeCard(storedCard);
+    }
   }
 
   // Create new card
-  const card = createCard(slug, name);
-  const storedCard = serializeCard(card);
-
-  // Update storage
-  storage.cards[card.id] = storedCard;
-  storage.slugToCardId[slug] = card.id;
-
-  await setCardsStorage(storage);
-  return card;
-}
-
-export async function getCard(slug: string): Promise<Card | null> {
-  const storage = await getCardsStorage();
-  const cardId = storage.slugToCardId[slug];
-
-  if (!cardId || !storage.cards[cardId]) {
-    return null;
-  }
-
-  return deserializeCard(storage.cards[cardId]);
-}
-
-export async function getAllCards(): Promise<Card[]> {
-  const storage = await getCardsStorage();
-  return Object.values(storage.cards).map(deserializeCard);
-}
-
-export async function removeCard(slug: string): Promise<void> {
-  const storage = await getCardsStorage();
-  const cardId = storage.slugToCardId[slug];
-
-  if (!cardId || !storage.cards[cardId]) {
-    return;
-  }
-
-  delete storage.cards[cardId];
-  delete storage.slugToCardId[slug];
-
-  await setCardsStorage(storage);
-}
-
-// Pure functions for business logic
-export function createCard(slug: string, name: string): Card {
-  return {
+  const card: Card = {
     id: crypto.randomUUID(),
     slug,
     name,
     createdAt: new Date(),
   };
+
+  // Save card and update slug to ID mapping
+  const cardsResult = await browser.storage.local.get(STORAGE_KEYS.cards);
+  const cards: Record<string, StoredCard> = cardsResult[STORAGE_KEYS.cards] || {};
+  cards[card.id] = serializeCard(card);
+  slugToCardId[slug] = card.id;
+
+  await browser.storage.local.set({
+    [STORAGE_KEYS.cards]: cards,
+    [STORAGE_KEYS.slugToCardId]: slugToCardId,
+  });
+
+  return card;
 }
 
-// Private functions for storage management
-async function getCardsStorage(): Promise<CardsStorage> {
-  const result = await browser.storage.local.get(STORAGE_KEYS.cards);
-  return result[STORAGE_KEYS.cards] || getDefaultStorage();
-}
+// export async function getCard(slug: string): Promise<Card | null> {
+//   const result = await browser.storage.local.get([STORAGE_KEYS.cardIndex, STORAGE_KEYS.cards]);
+//   const slugToCardId: Record<string, string> = result[STORAGE_KEYS.cardIndex] || {};
+//   const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
 
-async function setCardsStorage(storage: CardsStorage): Promise<void> {
-  await browser.storage.local.set({ [STORAGE_KEYS.cards]: storage });
-}
+//   const cardId = slugToCardId[slug];
+//   if (!cardId) return null;
 
-function serializeCard(card: Card): StoredCard {
+//   const storedCard = cards[cardId];
+//   if (!storedCard) return null;
+
+//   return deserializeCard(storedCard);
+// }
+
+// export async function getAllCards(): Promise<Card[]> {
+//   const result = await browser.storage.local.get(STORAGE_KEYS.cards);
+//   const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
+//   return Object.values(cards).map(deserializeCard);
+// }
+
+// export async function removeCard(slug: string): Promise<void> {
+//   const result = await browser.storage.local.get([STORAGE_KEYS.cardIndex, STORAGE_KEYS.cards]);
+//   const slugToCardId: Record<string, string> = result[STORAGE_KEYS.cardIndex] || {};
+//   const cards: Record<string, StoredCard> = result[STORAGE_KEYS.cards] || {};
+
+//   const cardId = slugToCardId[slug];
+//   if (!cardId) return;
+
+//   delete cards[cardId];
+//   delete slugToCardId[slug];
+
+//   await browser.storage.local.set({
+//     [STORAGE_KEYS.cards]: cards,
+//     [STORAGE_KEYS.cardIndex]: slugToCardId,
+//   });
+// }
+
+export function serializeCard(card: Card): StoredCard {
   return {
     ...card,
     createdAt: card.createdAt.getTime(),
   };
 }
 
-function deserializeCard(stored: StoredCard): Card {
+export function deserializeCard(stored: StoredCard): Card {
   return {
     ...stored,
     createdAt: new Date(stored.createdAt),
-  };
-}
-
-function getDefaultStorage(): CardsStorage {
-  return {
-    cards: {},
-    slugToCardId: {},
   };
 }
