@@ -3,6 +3,7 @@ import { fakeBrowser } from 'wxt/testing';
 import { storage } from 'wxt/utils/storage';
 import { addCard, getAllCards, removeCard, serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
 import { STORAGE_KEYS } from './storage-keys';
+import { createEmptyCard } from 'ts-fsrs';
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -13,6 +14,7 @@ describe('Card serialization', () => {
         slug: 'two-sum',
         name: 'Two Sum',
         createdAt: testDate,
+        fsrs: createEmptyCard(),
       };
 
       const serialized = serializeCard(card);
@@ -23,16 +25,45 @@ describe('Card serialization', () => {
       expect(serialized.createdAt).toBe(testDate.getTime());
       expect(typeof serialized.createdAt).toBe('number');
     });
+
+    it('should serialize FSRS card dates', () => {
+      const testDate = new Date('2024-01-15T10:30:00Z');
+      const fsrsCard = createEmptyCard();
+      fsrsCard.last_review = new Date('2024-01-14T09:00:00Z');
+
+      const card: Card = {
+        id: 'test-id-123',
+        slug: 'two-sum',
+        name: 'Two Sum',
+        createdAt: testDate,
+        fsrs: fsrsCard,
+      };
+
+      const serialized = serializeCard(card);
+
+      expect(typeof serialized.fsrs.due).toBe('number');
+      expect(serialized.fsrs.due).toBe(fsrsCard.due.getTime());
+      expect(typeof serialized.fsrs.last_review).toBe('number');
+      expect(serialized.fsrs.last_review).toBe(fsrsCard.last_review.getTime());
+      expect(serialized.fsrs.stability).toBe(fsrsCard.stability);
+      expect(serialized.fsrs.difficulty).toBe(fsrsCard.difficulty);
+    });
   });
 
   describe('deserializeCard', () => {
     it('should convert timestamp back to Date object', () => {
       const timestamp = new Date('2024-01-15T10:30:00Z').getTime();
+      const emptyFsrs = createEmptyCard();
       const storedCard: StoredCard = {
         id: 'test-id-456',
         slug: 'merge-intervals',
         name: 'Merge Intervals',
         createdAt: timestamp,
+        fsrs: {
+          ...emptyFsrs,
+          due: emptyFsrs.due.getTime(),
+          last_review: emptyFsrs.last_review?.getTime(),
+        },
       };
 
       const deserialized = deserializeCard(storedCard);
@@ -52,6 +83,7 @@ describe('Card serialization', () => {
         slug: 'two-pointers',
         name: 'Two Pointers',
         createdAt: new Date(),
+        fsrs: createEmptyCard(),
       };
 
       const serialized = serializeCard(originalCard);
@@ -79,6 +111,14 @@ describe('addCard', () => {
     expect(card.id).toBeDefined();
     expect(card.createdAt).toBeInstanceOf(Date);
 
+    // Verify FSRS card is created
+    expect(card.fsrs).toBeDefined();
+    expect(card.fsrs.due).toBeInstanceOf(Date);
+    expect(card.fsrs.stability).toBeDefined();
+    expect(card.fsrs.difficulty).toBeDefined();
+    expect(card.fsrs.reps).toBe(0);
+    expect(card.fsrs.lapses).toBe(0);
+
     // Verify the card was actually stored using WXT storage
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
@@ -88,6 +128,10 @@ describe('addCard', () => {
     expect(slugToCardId!['two-sum']).toBe(card.id);
     expect(cards![card.id].slug).toBe('two-sum');
     expect(cards![card.id].name).toBe('Two Sum');
+
+    // Verify FSRS data is stored properly
+    expect(cards![card.id].fsrs).toBeDefined();
+    expect(typeof cards![card.id].fsrs.due).toBe('number');
   });
 
   it('should return existing card when adding same slug (idempotent)', async () => {
@@ -201,11 +245,17 @@ describe('getAllCards', () => {
     const testDate = new Date('2024-01-15T10:30:00Z');
 
     // Manually add a serialized card to storage
+    const emptyFsrs = createEmptyCard();
     const storedCard: StoredCard = {
       id: 'test-id-123',
       slug: 'test-problem',
       name: 'Test Problem',
       createdAt: testDate.getTime(),
+      fsrs: {
+        ...emptyFsrs,
+        due: emptyFsrs.due.getTime(),
+        last_review: emptyFsrs.last_review?.getTime(),
+      },
     };
 
     await storage.setItem(STORAGE_KEYS.cards, { 'test-id-123': storedCard });
