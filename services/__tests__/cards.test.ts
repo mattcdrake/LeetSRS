@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import { storage } from 'wxt/utils/storage';
 import {
@@ -8,11 +8,13 @@ import {
   serializeCard,
   deserializeCard,
   rateCard,
+  getReviewQueue,
+  MAX_NEW_CARDS_PER_DAY,
   type Card,
   type StoredCard,
-} from './cards';
-import { STORAGE_KEYS } from './storage-keys';
-import { createEmptyCard, Rating } from 'ts-fsrs';
+} from '../cards';
+import { STORAGE_KEYS } from '../storage-keys';
+import { createEmptyCard, Rating, State as FsrsState } from 'ts-fsrs';
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -431,5 +433,183 @@ describe('rateCard', () => {
     const allCards = await getAllCards();
     const dpCards = allCards.filter((c) => c.slug === slug);
     expect(dpCards).toHaveLength(1);
+  });
+});
+
+describe('getReviewQueue', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-15T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should return empty array when no cards exist', async () => {
+    const queue = await getReviewQueue();
+    expect(queue).toEqual([]);
+  });
+
+  it('should return only new cards when no reviews are due', async () => {
+    // Create cards - all new
+    await addCard('problem1', 'Problem 1');
+    await addCard('problem2', 'Problem 2');
+    await addCard('problem3', 'Problem 3');
+    await addCard('problem4', 'Problem 4');
+    await addCard('problem5', 'Problem 5');
+
+    const queue = await getReviewQueue();
+
+    // Should only get MAX_NEW_CARDS_PER_DAY
+    expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY);
+    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
+  });
+
+  it('should return only review cards when they are due', async () => {
+    // Create and rate cards to make them review cards
+    await addCard('problem1', 'Problem 1');
+    await addCard('problem2', 'Problem 2');
+
+    // Rate them to move out of New state
+    await rateCard('problem1', Rating.Good);
+    await rateCard('problem2', Rating.Good);
+
+    // Manually update their due dates to be in the past
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
+    cards!['problem1'].fsrs.due = pastTime;
+    cards!['problem2'].fsrs.due = pastTime;
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    expect(queue).toHaveLength(2);
+    expect(queue.every((card) => card.fsrs.state !== FsrsState.New)).toBe(true);
+  });
+
+  it('should interleave review and new cards', async () => {
+    // Create some new cards
+    await addCard('new1', 'New 1');
+    await addCard('new2', 'New 2');
+    await addCard('new3', 'New 3');
+    await addCard('new4', 'New 4'); // This won't be included (exceeds limit)
+
+    // Create some review cards
+    await addCard('review1', 'Review 1');
+    await addCard('review2', 'Review 2');
+
+    // Rate review cards to move them out of New state
+    await rateCard('review1', Rating.Good);
+    await rateCard('review2', Rating.Good);
+
+    // Set their due dates to the past
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
+    cards!['review1'].fsrs.due = pastTime;
+    cards!['review2'].fsrs.due = pastTime;
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should have 2 review + MAX_NEW_CARDS_PER_DAY new = 5 total
+    expect(queue).toHaveLength(2 + MAX_NEW_CARDS_PER_DAY);
+
+    const newCards = queue.filter((card) => card.fsrs.state === FsrsState.New);
+    const reviewCards = queue.filter((card) => card.fsrs.state !== FsrsState.New);
+
+    expect(newCards).toHaveLength(MAX_NEW_CARDS_PER_DAY);
+    expect(reviewCards).toHaveLength(2);
+
+    // Check interleaving - new cards should be distributed
+    const newIndices = queue.map((card, i) => (card.fsrs.state === FsrsState.New ? i : -1)).filter((i) => i >= 0);
+    // New cards should not all be at the beginning or end
+    expect(newIndices[0]).toBeLessThan(2); // First new card early
+    expect(newIndices[2]).toBeGreaterThan(2); // Last new card later
+  });
+
+  it('should not include future due cards', async () => {
+    await addCard('future1', 'Future 1');
+    await rateCard('future1', Rating.Good);
+
+    // Set due date to future
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
+    cards!['future1'].fsrs.due = futureTime;
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    expect(queue).toHaveLength(0);
+  });
+
+  it('should handle mix of new, due, and future cards', async () => {
+    // Create new cards
+    await addCard('new1', 'New 1');
+    await addCard('new2', 'New 2');
+
+    // Create due review cards
+    await addCard('due1', 'Due 1');
+    await rateCard('due1', Rating.Good);
+
+    // Create future review cards
+    await addCard('future1', 'Future 1');
+    await rateCard('future1', Rating.Easy);
+
+    // Manually set due dates
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
+    const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
+    cards!['due1'].fsrs.due = pastTime;
+    cards!['future1'].fsrs.due = futureTime;
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should have 1 due review + 2 new = 3 total (future1 excluded)
+    // Note: only 2 new cards created, so less than MAX_NEW_CARDS_PER_DAY
+    expect(queue).toHaveLength(3);
+
+    const slugs = queue.map((card) => card.slug);
+    expect(slugs).toContain('new1');
+    expect(slugs).toContain('new2');
+    expect(slugs).toContain('due1');
+    expect(slugs).not.toContain('future1');
+  });
+
+  it('should respect MAX_NEW_CARDS_PER_DAY limit', async () => {
+    // Create many new cards
+    for (let i = 1; i <= 10; i++) {
+      await addCard(`new${i}`, `New ${i}`);
+    }
+
+    const queue = await getReviewQueue();
+
+    // Should only include MAX_NEW_CARDS_PER_DAY new cards
+    expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY);
+    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
+  });
+
+  it('should include all due review cards regardless of limit', async () => {
+    // Create many review cards
+    for (let i = 1; i <= 10; i++) {
+      await addCard(`review${i}`, `Review ${i}`);
+      await rateCard(`review${i}`, Rating.Good);
+    }
+
+    // Set all to be due
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
+    for (let i = 1; i <= 10; i++) {
+      cards![`review${i}`].fsrs.due = pastTime;
+    }
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should include all 10 review cards (no limit on reviews)
+    expect(queue).toHaveLength(10);
+    expect(queue.every((card) => card.fsrs.state !== FsrsState.New)).toBe(true);
   });
 });

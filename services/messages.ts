@@ -8,6 +8,7 @@ export const MessageType = {
   GET_ALL_CARDS: 'GET_ALL_CARDS',
   REMOVE_CARD: 'REMOVE_CARD',
   RATE_CARD: 'RATE_CARD',
+  GET_REVIEW_QUEUE: 'GET_REVIEW_QUEUE',
 } as const;
 
 // Message request types as discriminated union
@@ -15,7 +16,8 @@ export type MessageRequest =
   | { type: typeof MessageType.ADD_CARD; slug: string; name: string }
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
-  | { type: typeof MessageType.RATE_CARD; slug: string; rating: Grade };
+  | { type: typeof MessageType.RATE_CARD; slug: string; rating: Grade }
+  | { type: typeof MessageType.GET_REVIEW_QUEUE };
 
 // Type mapping for request to response
 export type MessageResponseMap = {
@@ -23,6 +25,7 @@ export type MessageResponseMap = {
   [MessageType.GET_ALL_CARDS]: Card[];
   [MessageType.REMOVE_CARD]: void;
   [MessageType.RATE_CARD]: Card;
+  [MessageType.GET_REVIEW_QUEUE]: Card[];
 };
 
 /**

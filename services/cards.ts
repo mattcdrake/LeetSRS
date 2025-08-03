@@ -1,7 +1,16 @@
-import { type Card as FsrsCard, createEmptyCard, FSRS, type Grade, generatorParameters } from 'ts-fsrs';
+import {
+  FSRS,
+  State as FsrsState,
+  createEmptyCard,
+  generatorParameters,
+  type Card as FsrsCard,
+  type Grade,
+} from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
+import { interleaveArrays } from './utils';
 
+export const MAX_NEW_CARDS_PER_DAY = 3;
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
@@ -98,4 +107,12 @@ export async function rateCard(slug: string, rating: Grade): Promise<Card> {
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
   return card;
+}
+
+export async function getReviewQueue(): Promise<Card[]> {
+  const allCards = await getAllCards();
+  const now = new Date();
+  const reviewCards = allCards.filter((card) => card.fsrs.state !== FsrsState.New && card.fsrs.due <= now);
+  const newCards = allCards.filter((card) => card.fsrs.state === FsrsState.New).slice(0, MAX_NEW_CARDS_PER_DAY);
+  return interleaveArrays(reviewCards, newCards);
 }

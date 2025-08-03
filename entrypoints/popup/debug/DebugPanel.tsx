@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import type { Card } from '@/services/cards';
 import { sendMessage, MessageType } from '@/services/messages';
 import { DebugCard } from './DebugCard';
+import { ReviewQueue } from './ReviewQueue';
 import './DebugPanel.css';
 
 export function DebugPanel() {
   const [slug, setSlug] = useState('');
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isCardsCollapsed, setIsCardsCollapsed] = useState(false);
 
   // Load all cards on mount and after adding
   const loadCards = async () => {
@@ -82,17 +84,27 @@ export function DebugPanel() {
       </div>
 
       <div>
-        <h3 className="debug-panel-cards-header">Cards in Storage ({cards.length})</h3>
-        {cards.length === 0 ? (
-          <p className="debug-panel-empty-state">No cards in storage</p>
-        ) : (
-          <div className="debug-panel-cards-container">
-            {cards.map((card) => (
-              <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} onUpdate={handleUpdateCard} />
-            ))}
-          </div>
-        )}
+        <h3
+          className="debug-panel-cards-header"
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+          onClick={() => setIsCardsCollapsed(!isCardsCollapsed)}
+        >
+          <span style={{ marginRight: '8px' }}>{isCardsCollapsed ? '▶' : '▼'}</span>
+          Cards in Storage ({cards.length})
+        </h3>
+        {!isCardsCollapsed &&
+          (cards.length === 0 ? (
+            <p className="debug-panel-empty-state">No cards in storage</p>
+          ) : (
+            <div className="debug-panel-cards-container">
+              {cards.map((card) => (
+                <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} onUpdate={handleUpdateCard} />
+              ))}
+            </div>
+          ))}
       </div>
+
+      <ReviewQueue style={{ marginTop: '20px', borderTop: '1px solid #333', paddingTop: '20px' }} />
     </div>
   );
 }

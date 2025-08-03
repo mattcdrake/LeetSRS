@@ -1,4 +1,4 @@
-import { addCard, getAllCards, removeCard, rateCard } from '@/services/cards';
+import { addCard, getAllCards, removeCard, rateCard, getReviewQueue } from '@/services/cards';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/services/messages';
 
@@ -16,6 +16,9 @@ export default defineBackground(() => {
 
       case MessageType.RATE_CARD:
         return await rateCard(request.slug, request.rating);
+
+      case MessageType.GET_REVIEW_QUEUE:
+        return await getReviewQueue();
 
       default: {
         // This should never happen with proper typing - exhaustive check
