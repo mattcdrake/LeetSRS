@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import { storage } from 'wxt/utils/storage';
-import { addCard, getAllCards, serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
+import { addCard, getAllCards, removeCard, serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
 import { STORAGE_KEYS } from './storage-keys';
 
 describe('Card serialization', () => {
@@ -219,5 +219,105 @@ describe('getAllCards', () => {
     expect(allCards[0].name).toBe('Test Problem');
     expect(allCards[0].createdAt).toBeInstanceOf(Date);
     expect(allCards[0].createdAt.getTime()).toBe(testDate.getTime());
+  });
+});
+
+describe('removeCard', () => {
+  beforeEach(() => {
+    // Reset the fake browser state before each test
+    fakeBrowser.reset();
+  });
+
+  it('should remove an existing card and its slug mapping', async () => {
+    // Add a card first
+    const card = await addCard('two-sum', 'Two Sum');
+    
+    // Verify it exists
+    let cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    let slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
+    expect(cards![card.id]).toBeDefined();
+    expect(slugToCardId!['two-sum']).toBe(card.id);
+
+    // Remove the card
+    await removeCard('two-sum');
+
+    // Verify it's removed
+    cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
+    expect(cards![card.id]).toBeUndefined();
+    expect(slugToCardId!['two-sum']).toBeUndefined();
+  });
+
+  it('should handle removing non-existent card gracefully', async () => {
+    // Try to remove a card that doesn't exist
+    await expect(removeCard('non-existent-slug')).resolves.toBeUndefined();
+
+    // Verify storage is still empty/unchanged
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
+    expect(cards || {}).toEqual({});
+    expect(slugToCardId || {}).toEqual({});
+  });
+
+  it('should only remove the specified card when multiple cards exist', async () => {
+    // Add multiple cards
+    const card1 = await addCard('two-sum', 'Two Sum');
+    const card2 = await addCard('valid-parentheses', 'Valid Parentheses');
+    const card3 = await addCard('merge-intervals', 'Merge Intervals');
+
+    // Remove the middle card
+    await removeCard('valid-parentheses');
+
+    // Verify only the specified card is removed
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
+
+    expect(Object.keys(cards || {}).length).toBe(2);
+    expect(Object.keys(slugToCardId || {}).length).toBe(2);
+    
+    // Card 1 should still exist
+    expect(cards![card1.id]).toBeDefined();
+    expect(slugToCardId!['two-sum']).toBe(card1.id);
+    
+    // Card 2 should be removed
+    expect(cards![card2.id]).toBeUndefined();
+    expect(slugToCardId!['valid-parentheses']).toBeUndefined();
+    
+    // Card 3 should still exist
+    expect(cards![card3.id]).toBeDefined();
+    expect(slugToCardId!['merge-intervals']).toBe(card3.id);
+  });
+
+  it('should handle orphaned slug mapping (slug exists but card does not)', async () => {
+    // Manually create an orphaned slug mapping
+    await storage.setItem(STORAGE_KEYS.slugToCardId, { 'orphaned-slug': 'non-existent-id' });
+    await storage.setItem(STORAGE_KEYS.cards, {});
+
+    // Remove should clean up the orphaned mapping
+    await removeCard('orphaned-slug');
+
+    const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
+    expect(slugToCardId!['orphaned-slug']).toBeUndefined();
+  });
+
+  it('should verify card is actually removed from getAllCards', async () => {
+    // Add multiple cards
+    await addCard('two-sum', 'Two Sum');
+    await addCard('valid-parentheses', 'Valid Parentheses');
+    await addCard('merge-intervals', 'Merge Intervals');
+
+    // Get initial count
+    let allCards = await getAllCards();
+    expect(allCards).toHaveLength(3);
+
+    // Remove one card
+    await removeCard('valid-parentheses');
+
+    // Verify it's not in getAllCards
+    allCards = await getAllCards();
+    expect(allCards).toHaveLength(2);
+    expect(allCards.some(c => c.slug === 'valid-parentheses')).toBe(false);
+    expect(allCards.some(c => c.slug === 'two-sum')).toBe(true);
+    expect(allCards.some(c => c.slug === 'merge-intervals')).toBe(true);
   });
 });
