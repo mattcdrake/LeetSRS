@@ -80,8 +80,8 @@ describe('addCard', () => {
     expect(card.createdAt).toBeInstanceOf(Date);
 
     // Verify the card was actually stored using WXT storage
-    const cards = await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`);
-    const slugToCardId = await storage.getItem<Record<string, string>>(`local:${STORAGE_KEYS.slugToCardId}`);
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
 
     expect(cards).toBeDefined();
     expect(cards![card.id]).toBeDefined();
@@ -106,8 +106,8 @@ describe('addCard', () => {
     expect(secondCard.name).toBe('Valid Parentheses');
 
     // Verify only one card exists in storage
-    const cards = await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`);
-    const slugToCardId = await storage.getItem<Record<string, string>>(`local:${STORAGE_KEYS.slugToCardId}`);
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
 
     expect(Object.keys(cards || {}).length).toBe(1);
     expect(Object.keys(slugToCardId || {}).length).toBe(1);
@@ -120,8 +120,8 @@ describe('addCard', () => {
     const card3 = await addCard('merge-two-sorted-lists', 'Merge Two Sorted Lists');
 
     // Verify all cards are stored
-    const cards = await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`);
-    const slugToCardId = await storage.getItem<Record<string, string>>(`local:${STORAGE_KEYS.slugToCardId}`);
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
 
     expect(Object.keys(cards || {}).length).toBe(3);
     expect(Object.keys(slugToCardId || {}).length).toBe(3);
@@ -145,7 +145,7 @@ describe('addCard', () => {
   it('should properly serialize card when storing', async () => {
     const card = await addCard('serialize-test', 'Serialize Test');
 
-    const cards = await storage.getItem<Record<string, StoredCard>>(`local:${STORAGE_KEYS.cards}`);
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const storedCard = cards![card.id];
 
     expect(typeof storedCard.createdAt).toBe('number');
@@ -208,7 +208,7 @@ describe('getAllCards', () => {
       createdAt: testDate.getTime(),
     };
 
-    await storage.setItem(`local:${STORAGE_KEYS.cards}`, { 'test-id-123': storedCard });
+    await storage.setItem(STORAGE_KEYS.cards, { 'test-id-123': storedCard });
 
     // Get all cards
     const allCards = await getAllCards();
