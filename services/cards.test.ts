@@ -97,7 +97,7 @@ describe('addCard', () => {
     const firstCreatedAt = firstCard.createdAt;
 
     // Add same card again
-    const secondCard = await addCard('valid-parentheses', 'Valid Parentheses');
+    const secondCard = await addCard('valid-parentheses', 'A different name');
 
     // Should return the same card
     expect(secondCard.id).toBe(firstId);
