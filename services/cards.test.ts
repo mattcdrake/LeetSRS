@@ -231,7 +231,7 @@ describe('removeCard', () => {
   it('should remove an existing card and its slug mapping', async () => {
     // Add a card first
     const card = await addCard('two-sum', 'Two Sum');
-    
+
     // Verify it exists
     let cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     let slugToCardId = await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId);
@@ -274,15 +274,15 @@ describe('removeCard', () => {
 
     expect(Object.keys(cards || {}).length).toBe(2);
     expect(Object.keys(slugToCardId || {}).length).toBe(2);
-    
+
     // Card 1 should still exist
     expect(cards![card1.id]).toBeDefined();
     expect(slugToCardId!['two-sum']).toBe(card1.id);
-    
+
     // Card 2 should be removed
     expect(cards![card2.id]).toBeUndefined();
     expect(slugToCardId!['valid-parentheses']).toBeUndefined();
-    
+
     // Card 3 should still exist
     expect(cards![card3.id]).toBeDefined();
     expect(slugToCardId!['merge-intervals']).toBe(card3.id);
@@ -316,8 +316,8 @@ describe('removeCard', () => {
     // Verify it's not in getAllCards
     allCards = await getAllCards();
     expect(allCards).toHaveLength(2);
-    expect(allCards.some(c => c.slug === 'valid-parentheses')).toBe(false);
-    expect(allCards.some(c => c.slug === 'two-sum')).toBe(true);
-    expect(allCards.some(c => c.slug === 'merge-intervals')).toBe(true);
+    expect(allCards.some((c) => c.slug === 'valid-parentheses')).toBe(false);
+    expect(allCards.some((c) => c.slug === 'two-sum')).toBe(true);
+    expect(allCards.some((c) => c.slug === 'merge-intervals')).toBe(true);
   });
 });
