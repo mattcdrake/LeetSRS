@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import type { Card } from '@/services/cards';
-import { sendMessage, MessageType } from '@/services/messages';
+import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import { State as FsrsState } from 'ts-fsrs';
 
 interface ReviewQueueProps {
@@ -8,32 +7,33 @@ interface ReviewQueueProps {
 }
 
 export function ReviewQueue({ style }: ReviewQueueProps) {
-  const [reviewQueue, setReviewQueue] = useState<Card[]>([]);
+  const { data: reviewQueue, isLoading, isFetching, error, refetch } = useReviewQueueQuery(true);
 
-  const loadReviewQueue = async () => {
-    try {
-      const queue = await sendMessage({ type: MessageType.GET_REVIEW_QUEUE });
-      if (queue) {
-        setReviewQueue(queue);
-      }
-    } catch (error) {
-      console.error('Failed to load review queue:', error);
-    }
-  };
+  const queueList = reviewQueue ?? [];
 
   return (
     <div style={style}>
       <h3 className="debug-panel-cards-header" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        Review Queue ({reviewQueue.length})
-        <button onClick={loadReviewQueue} className="debug-panel-button" style={{ marginLeft: 'auto' }}>
-          Load Queue
+        Review Queue ({queueList.length})
+        {isFetching && !isLoading && <span style={{ fontSize: '0.8em', color: '#888' }}>Updating...</span>}
+        <button
+          onClick={() => refetch()}
+          className="debug-panel-button"
+          style={{ marginLeft: 'auto' }}
+          disabled={isFetching}
+        >
+          {isFetching ? 'Refreshing...' : '🔄 Refresh'}
         </button>
       </h3>
-      {reviewQueue.length === 0 ? (
+      {isLoading ? (
+        <p className="debug-panel-empty-state">Loading review queue...</p>
+      ) : error ? (
+        <p className="debug-panel-empty-state">Error loading queue: {error.message}</p>
+      ) : queueList.length === 0 ? (
         <p className="debug-panel-empty-state">No cards in review queue</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {reviewQueue.map((card, index) => (
+          {queueList.map((card, index) => (
             <ReviewQueueCard key={`${card.slug}-${index}`} card={card} position={index + 1} />
           ))}
         </div>
@@ -57,6 +57,7 @@ function ReviewQueueCard({ card, position }: ReviewQueueCardProps) {
         backgroundColor: '#2a2a2a',
         borderRadius: '4px',
         border: '1px solid #444',
+        transition: 'all 0.3s ease',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

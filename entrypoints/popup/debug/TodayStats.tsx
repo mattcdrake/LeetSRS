@@ -1,46 +1,23 @@
-import { useState, useEffect } from 'react';
-import { sendMessage, MessageType } from '@/services/messages';
-import type { DailyStats } from '@/services/stats';
+import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 
 export function TodayStats({ style }: { style?: React.CSSProperties }) {
-  const [stats, setStats] = useState<DailyStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: stats, isLoading, error, refetch } = useTodayStatsQuery();
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      const todayStats = await sendMessage({ type: MessageType.GET_TODAY_STATS });
-      setStats(todayStats);
-    } catch (error) {
-      console.error('Failed to load today stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true);
-      const todayStats = await sendMessage({ type: MessageType.GET_TODAY_STATS });
-      setStats(todayStats);
-    } catch (error) {
-      console.error('Failed to refresh stats:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={style}>
         <h3>Today&apos;s Stats</h3>
         <p style={{ color: '#666' }}>Loading...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={style}>
+        <h3>Today&apos;s Stats</h3>
+        <p style={{ color: '#f44336' }}>Error loading stats: {error.message}</p>
       </div>
     );
   }
@@ -51,11 +28,8 @@ export function TodayStats({ style }: { style?: React.CSSProperties }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h3 style={{ margin: 0 }}>Today&apos;s Stats</h3>
           <button
-            onClick={() => {
-              console.log('Button clicked!');
-              handleRefresh();
-            }}
-            disabled={refreshing}
+            onClick={() => refetch()}
+            disabled={isLoading}
             style={{
               padding: '4px 8px',
               fontSize: '12px',
@@ -63,11 +37,11 @@ export function TodayStats({ style }: { style?: React.CSSProperties }) {
               color: '#fff',
               border: '1px solid #555',
               borderRadius: '4px',
-              cursor: refreshing ? 'not-allowed' : 'pointer',
-              opacity: refreshing ? 0.6 : 1,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.6 : 1,
             }}
           >
-            {refreshing ? 'Refreshing...' : '🔄 Refresh'}
+            {isLoading ? 'Refreshing...' : '🔄 Refresh'}
           </button>
         </div>
         <p style={{ color: '#666' }}>No reviews today</p>
@@ -110,8 +84,8 @@ export function TodayStats({ style }: { style?: React.CSSProperties }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <h3 style={{ margin: 0 }}>Today&apos;s Stats ({stats.date})</h3>
         <button
-          onClick={handleRefresh}
-          disabled={refreshing}
+          onClick={() => refetch()}
+          disabled={isLoading}
           style={{
             padding: '4px 8px',
             fontSize: '12px',
@@ -119,11 +93,11 @@ export function TodayStats({ style }: { style?: React.CSSProperties }) {
             color: '#fff',
             border: '1px solid #555',
             borderRadius: '4px',
-            cursor: refreshing ? 'not-allowed' : 'pointer',
-            opacity: refreshing ? 0.6 : 1,
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            opacity: isLoading ? 0.6 : 1,
           }}
         >
-          {refreshing ? 'Refreshing...' : '🔄 Refresh'}
+          {isLoading ? 'Refreshing...' : '🔄 Refresh'}
         </button>
       </div>
 

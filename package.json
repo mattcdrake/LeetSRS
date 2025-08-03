@@ -19,6 +19,8 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.84.1",
+    "@tanstack/react-query-devtools": "^5.84.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "ts-fsrs": "^5.2.1"

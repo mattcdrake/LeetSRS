@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
-import type { Card } from '@/services/cards';
-import { sendMessage, MessageType } from '@/services/messages';
+import { useState } from 'react';
+import { useCardsQuery, useAddCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
 import { DebugCard } from './DebugCard';
 import { ReviewQueue } from './ReviewQueue';
 import { TodayStats } from './TodayStats';
@@ -8,62 +7,34 @@ import './DebugPanel.css';
 
 export function DebugPanel() {
   const [slug, setSlug] = useState('');
-  const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isCardsCollapsed, setIsCardsCollapsed] = useState(false);
 
-  // Load all cards on mount and after adding
-  const loadCards = async () => {
-    try {
-      const cards = await sendMessage({ type: MessageType.GET_ALL_CARDS });
-      if (cards) {
-        setCards(cards);
-      }
-    } catch (error) {
-      console.error('Failed to load cards:', error);
-    }
-  };
+  const { data: cards, isLoading: isLoadingCards, error: cardsError } = useCardsQuery();
+  const addCardMutation = useAddCardMutation();
+  const removeCardMutation = useRemoveCardMutation();
 
-  useEffect(() => {
-    loadCards();
-  }, []);
+  const cardsList = cards ?? [];
 
   const handleAddCard = async () => {
     if (!slug.trim()) return;
 
-    setLoading(true);
     try {
-      const card = await sendMessage({
-        type: MessageType.ADD_CARD,
+      await addCardMutation.mutateAsync({
         slug: slug.trim(),
         name: slug.trim(), // Using slug as name for debug purposes
       });
-
-      if (card) {
-        setSlug('');
-        await loadCards(); // Reload cards after adding
-      }
+      setSlug('');
     } catch (error) {
       console.error('Failed to add card:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleRemoveCard = async (slug: string) => {
     try {
-      await sendMessage({
-        type: MessageType.REMOVE_CARD,
-        slug: slug,
-      });
-      await loadCards(); // Reload cards after removing
+      await removeCardMutation.mutateAsync(slug);
     } catch (error) {
       console.error('Failed to remove card:', error);
     }
-  };
-
-  const handleUpdateCard = (updatedCard: Card) => {
-    setCards((prevCards) => prevCards.map((card) => (card.slug === updatedCard.slug ? updatedCard : card)));
   };
 
   return (
@@ -79,8 +50,12 @@ export function DebugPanel() {
           placeholder="Enter card slug (e.g., two-sum)"
           className="debug-panel-input"
         />
-        <button onClick={handleAddCard} disabled={loading || !slug.trim()} className="debug-panel-button">
-          {loading ? 'Adding...' : 'Add Card'}
+        <button
+          onClick={handleAddCard}
+          disabled={addCardMutation.isPending || !slug.trim()}
+          className="debug-panel-button"
+        >
+          {addCardMutation.isPending ? 'Adding...' : 'Add Card'}
         </button>
       </div>
 
@@ -91,15 +66,19 @@ export function DebugPanel() {
           onClick={() => setIsCardsCollapsed(!isCardsCollapsed)}
         >
           <span style={{ marginRight: '8px' }}>{isCardsCollapsed ? '▶' : '▼'}</span>
-          Cards in Storage ({cards.length})
+          Cards in Storage ({cardsList.length})
         </h3>
         {!isCardsCollapsed &&
-          (cards.length === 0 ? (
+          (isLoadingCards ? (
+            <p className="debug-panel-empty-state">Loading cards...</p>
+          ) : cardsError ? (
+            <p className="debug-panel-empty-state">Error loading cards: {cardsError.message}</p>
+          ) : cardsList.length === 0 ? (
             <p className="debug-panel-empty-state">No cards in storage</p>
           ) : (
             <div className="debug-panel-cards-container">
-              {cards.map((card) => (
-                <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} onUpdate={handleUpdateCard} />
+              {cardsList.map((card) => (
+                <DebugCard key={card.slug} card={card} onRemove={handleRemoveCard} />
               ))}
             </div>
           ))}
