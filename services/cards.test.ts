@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing';
+import { addCard, serializeCard, deserializeCard, type Card, type StoredCard } from './cards';
+import { STORAGE_KEYS } from './storage-keys';
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -62,114 +64,104 @@ describe('Card serialization', () => {
   });
 });
 
-// describe('createCard', () => {
-//   beforeEach(() => {
-//     vi.clearAllMocks();
-//   });
+describe('addCard', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
 
-//   it('should generate a unique ID using crypto.randomUUID', () => {
-//     const card1 = createCard('two-sum', 'Two Sum');
-//     const card2 = createCard('two-sum', 'Two Sum');
+  it('should create and store a new card', async () => {
+    const card = await addCard('two-sum', 'Two Sum');
 
-//     expect(card1.id).toBeTruthy();
-//     expect(card2.id).toBeTruthy();
-//     expect(card1.id).not.toBe(card2.id);
-//     expect(card1.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-//   });
+    expect(card.slug).toBe('two-sum');
+    expect(card.name).toBe('Two Sum');
+    expect(card.id).toBeDefined();
+    expect(card.createdAt).toBeInstanceOf(Date);
 
-//   it('should set createdAt to current date', () => {
-//     const beforeTime = new Date();
-//     const card = createCard('two-sum', 'Two Sum');
-//     const afterTime = new Date();
+    // Verify the card was actually stored
+    const storage = await browser.storage.local.get([
+      STORAGE_KEYS.cards,
+      STORAGE_KEYS.slugToCardId,
+    ]);
+    const cards: Record<string, StoredCard> = storage[STORAGE_KEYS.cards] || {};
+    const slugToCardId: Record<string, string> = storage[STORAGE_KEYS.slugToCardId] || {};
 
-//     expect(card.createdAt).toBeInstanceOf(Date);
-//     expect(card.createdAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
-//     expect(card.createdAt.getTime()).toBeLessThanOrEqual(afterTime.getTime());
-//   });
+    expect(cards).toBeDefined();
+    expect(cards[card.id]).toBeDefined();
+    expect(slugToCardId['two-sum']).toBe(card.id);
+    expect(cards[card.id].slug).toBe('two-sum');
+    expect(cards[card.id].name).toBe('Two Sum');
+  });
 
-//   it('should return a complete Card object with all required properties', () => {
-//     const card = createCard('two-sum', 'Two Sum');
+  it('should return existing card when adding same slug (idempotent)', async () => {
+    // Add card first time
+    const firstCard = await addCard('valid-parentheses', 'Valid Parentheses');
+    const firstId = firstCard.id;
+    const firstCreatedAt = firstCard.createdAt;
 
-//     expect(card).toHaveProperty('id');
-//     expect(card).toHaveProperty('slug');
-//     expect(card).toHaveProperty('name');
-//     expect(card).toHaveProperty('createdAt');
-//     expect(typeof card.id).toBe('string');
-//     expect(typeof card.slug).toBe('string');
-//     expect(typeof card.name).toBe('string');
-//     expect(card.createdAt).toBeInstanceOf(Date);
-//   });
-// });
+    // Add same card again
+    const secondCard = await addCard('valid-parentheses', 'Valid Parentheses');
 
-// describe('addCard', () => {
-//   beforeEach(() => {
-//     // Reset the fake browser state before each test
-//     fakeBrowser.reset();
-//   });
+    // Should return the same card
+    expect(secondCard.id).toBe(firstId);
+    expect(secondCard.createdAt.getTime()).toBe(firstCreatedAt.getTime());
+    expect(secondCard.slug).toBe('valid-parentheses');
+    expect(secondCard.name).toBe('Valid Parentheses');
 
-//   it('should create and store a new card', async () => {
-//     const card = await addCard('two-sum', 'Two Sum');
+    // Verify only one card exists in storage
+    const storage = await browser.storage.local.get([
+      STORAGE_KEYS.cards,
+      STORAGE_KEYS.slugToCardId,
+    ]);
+    const cards: Record<string, StoredCard> = storage[STORAGE_KEYS.cards] || {};
+    const slugToCardId: Record<string, string> = storage[STORAGE_KEYS.slugToCardId] || {};
 
-//     expect(card.slug).toBe('two-sum');
-//     expect(card.name).toBe('Two Sum');
-//     expect(card.id).toBeDefined();
-//     expect(card.createdAt).toBeInstanceOf(Date);
+    expect(Object.keys(cards).length).toBe(1);
+    expect(Object.keys(slugToCardId).length).toBe(1);
+  });
 
-//     // Verify the card was actually stored
-//     const storage = await browser.storage.local.get(STORAGE_KEYS.cards);
-//     const cardsStorage = storage[STORAGE_KEYS.cards];
+  it('should store multiple different cards correctly', async () => {
+    // Add multiple cards
+    const card1 = await addCard('two-sum', 'Two Sum');
+    const card2 = await addCard('valid-parentheses', 'Valid Parentheses');
+    const card3 = await addCard('merge-two-sorted-lists', 'Merge Two Sorted Lists');
 
-//     expect(cardsStorage).toBeDefined();
-//     expect(cardsStorage.cards[card.id]).toBeDefined();
-//     expect(cardsStorage.slugToCardId['two-sum']).toBe(card.id);
-//     expect(cardsStorage.cards[card.id].slug).toBe('two-sum');
-//     expect(cardsStorage.cards[card.id].name).toBe('Two Sum');
-//   });
+    // Verify all cards are stored
+    const storage = await browser.storage.local.get([
+      STORAGE_KEYS.cards,
+      STORAGE_KEYS.slugToCardId,
+    ]);
+    const cards: Record<string, StoredCard> = storage[STORAGE_KEYS.cards] || {};
+    const slugToCardId: Record<string, string> = storage[STORAGE_KEYS.slugToCardId] || {};
 
-//   it('should return existing card when adding same slug (idempotent)', async () => {
-//     // Add card first time
-//     const firstCard = await addCard('valid-parentheses', 'Valid Parentheses');
-//     const firstId = firstCard.id;
-//     const firstCreatedAt = firstCard.createdAt;
+    expect(Object.keys(cards).length).toBe(3);
+    expect(Object.keys(slugToCardId).length).toBe(3);
 
-//     // Add same card again
-//     const secondCard = await addCard('valid-parentheses', 'Valid Parentheses');
+    // Verify slug mappings
+    expect(slugToCardId['two-sum']).toBe(card1.id);
+    expect(slugToCardId['valid-parentheses']).toBe(card2.id);
+    expect(slugToCardId['merge-two-sorted-lists']).toBe(card3.id);
+  });
 
-//     // Should return the same card
-//     expect(secondCard.id).toBe(firstId);
-//     expect(secondCard.createdAt.getTime()).toBe(firstCreatedAt.getTime());
-//     expect(secondCard.slug).toBe('valid-parentheses');
-//     expect(secondCard.name).toBe('Valid Parentheses');
+  it('should set createdAt to current date', async () => {
+    const beforeTime = new Date();
+    const card = await addCard('test-problem', 'Test Problem');
+    const afterTime = new Date();
 
-//     // Verify only one card exists in storage
-//     const storage = await browser.storage.local.get(STORAGE_KEYS.cards);
-//     const cardsStorage = storage[STORAGE_KEYS.cards];
+    expect(card.createdAt).toBeInstanceOf(Date);
+    expect(card.createdAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
+    expect(card.createdAt.getTime()).toBeLessThanOrEqual(afterTime.getTime());
+  });
 
-//     expect(Object.keys(cardsStorage.cards).length).toBe(1);
-//     expect(Object.keys(cardsStorage.slugToCardId).length).toBe(1);
-//   });
+  it('should properly serialize card when storing', async () => {
+    const card = await addCard('serialize-test', 'Serialize Test');
 
-//   it('should store multiple different cards correctly', async () => {
-//     // Add multiple cards
-//     const card1 = await addCard('two-sum', 'Two Sum');
-//     const card2 = await addCard('valid-parentheses', 'Valid Parentheses');
-//     const card3 = await addCard('merge-two-sorted-lists', 'Merge Two Sorted Lists');
+    const storage = await browser.storage.local.get(STORAGE_KEYS.cards);
+    const cards: Record<string, StoredCard> = storage[STORAGE_KEYS.cards] || {};
+    const storedCard = cards[card.id];
 
-//     // All cards should have different IDs
-//     expect(card1.id).not.toBe(card2.id);
-//     expect(card2.id).not.toBe(card3.id);
-//     expect(card1.id).not.toBe(card3.id);
-
-//     // Verify all cards are stored
-//     const storage = await browser.storage.local.get(STORAGE_KEYS.cards);
-//     const cardsStorage = storage[STORAGE_KEYS.cards];
-
-//     expect(Object.keys(cardsStorage.cards).length).toBe(3);
-//     expect(Object.keys(cardsStorage.slugToCardId).length).toBe(3);
-
-//     // Verify slug mappings
-//     expect(cardsStorage.slugToCardId['two-sum']).toBe(card1.id);
-//     expect(cardsStorage.slugToCardId['valid-parentheses']).toBe(card2.id);
-//     expect(cardsStorage.slugToCardId['merge-two-sorted-lists']).toBe(card3.id);
-//   });
-// });
+    expect(typeof storedCard.createdAt).toBe('number');
+    expect(storedCard.id).toBe(card.id);
+    expect(storedCard.slug).toBe(card.slug);
+    expect(storedCard.name).toBe(card.name);
+  });
+});
