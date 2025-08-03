@@ -13,11 +13,18 @@ export interface StoredCard extends Omit<Card, 'createdAt'> {
 }
 
 export async function addCard(slug: string, name: string): Promise<Card> {
+  let [slugToCardId, cards] = await Promise.all([
+    storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId),
+    storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards),
+  ]);
+
+  slugToCardId = slugToCardId ?? {};
+  cards = cards ?? {};
+
   // If the card already exists, return it
-  const slugToCardId = (await storage.getItem<Record<string, string>>(STORAGE_KEYS.slugToCardId)) ?? {};
-  if (slugToCardId[slug]) {
-    const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
-    const storedCard = cards[slugToCardId[slug]];
+  const existingId = slugToCardId[slug];
+  if (existingId) {
+    const storedCard = cards[existingId];
     if (storedCard) {
       return deserializeCard(storedCard);
     }
@@ -31,8 +38,6 @@ export async function addCard(slug: string, name: string): Promise<Card> {
     createdAt: new Date(),
   };
 
-  // Save card and update slug to ID mapping
-  const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
   cards[card.id] = serializeCard(card);
   slugToCardId[slug] = card.id;
 

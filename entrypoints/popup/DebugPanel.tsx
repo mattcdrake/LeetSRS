@@ -59,11 +59,7 @@ export function DebugPanel() {
           placeholder="Enter card slug (e.g., two-sum)"
           className="debug-panel-input"
         />
-        <button
-          onClick={handleAddCard}
-          disabled={loading || !slug.trim()}
-          className="debug-panel-button"
-        >
+        <button onClick={handleAddCard} disabled={loading || !slug.trim()} className="debug-panel-button">
           {loading ? 'Adding...' : 'Add Card'}
         </button>
       </div>
