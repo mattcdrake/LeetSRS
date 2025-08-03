@@ -1,43 +1,88 @@
+@import 'tailwindcss';
+
 #root {
-  max-width: 1280px;
-  min-width: 500px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 370px;
+  height: 550px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #54bc4ae0);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* CSS variables that switch based on theme */
+:root {
+  /* Light theme (default) */
+  --current-bg-primary: #ffffff;
+  --current-bg-secondary: #f5f5f5;
+  --current-bg-tertiary: #e8e8e8;
+  --current-text-primary: #1a1a1a;
+  --current-text-secondary: #4a4a4a;
+  --current-text-tertiary: #999999;
+  --current-border: #d4d4d4;
+  --current-accent: #40a635;
+  --current-danger: #dc2626;
+  --current-info: #2563eb;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+/* Dark theme overrides */
+.dark {
+  --current-bg-primary: #1a1a1a;
+  --current-bg-secondary: #242424;
+  --current-bg-tertiary: #2a2a2a;
+  --current-text-primary: #ffffff;
+  --current-text-secondary: #a0a0a0;
+  --current-text-tertiary: #666666;
+  --current-border: #333333;
+  --current-accent: #54bc4a;
+  --current-danger: #bc4a4a;
+  --current-info: #4a9fbc;
+}
+
+/* Theme-aware utility classes */
+@layer utilities {
+  /* Background colors */
+  .bg-primary {
+    background-color: var(--current-bg-primary);
   }
-  to {
-    transform: rotate(360deg);
+  .bg-secondary {
+    background-color: var(--current-bg-secondary);
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  .bg-tertiary {
+    background-color: var(--current-bg-tertiary);
   }
-}
 
-.card {
-  padding: 2em;
-}
+  /* Text colors */
+  .text-primary {
+    color: var(--current-text-primary);
+  }
+  .text-secondary {
+    color: var(--current-text-secondary);
+  }
+  .text-tertiary {
+    color: var(--current-text-tertiary);
+  }
 
-.read-the-docs {
-  color: #888;
+  /* Accent colors */
+  .text-accent {
+    color: var(--current-accent);
+  }
+  .text-danger {
+    color: var(--current-danger);
+  }
+  .text-info {
+    color: var(--current-info);
+  }
+  .bg-accent {
+    background-color: var(--current-accent);
+  }
+  .bg-danger {
+    background-color: var(--current-danger);
+  }
+  .bg-info {
+    background-color: var(--current-info);
+  }
+
+  /* Border colors */
+  .border-current {
+    border-color: var(--current-border);
+  }
 }
