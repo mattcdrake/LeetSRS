@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Card } from '@/services/cards';
 import { sendMessage, MessageType } from '@/services/messages';
+import './DebugPanel.css';
 
 export function DebugPanel() {
   const [slug, setSlug] = useState('');
@@ -46,88 +47,47 @@ export function DebugPanel() {
   };
 
   return (
-    <div
-      style={{
-        padding: '20px',
-        border: '2px dashed red',
-        borderRadius: '8px',
-        marginTop: '20px',
-        textAlign: 'left',
-      }}
-    >
-      <h2 style={{ color: 'red', marginTop: 0 }}>🔧 DEBUG PANEL</h2>
+    <div className="debug-panel">
+      <h2 className="debug-panel-title">🔧 DEBUG PANEL</h2>
 
-      <div style={{ marginBottom: '20px' }}>
+      <div className="debug-panel-input-container">
         <input
           type="text"
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddCard()}
           placeholder="Enter card slug (e.g., two-sum)"
-          style={{
-            padding: '8px',
-            marginRight: '10px',
-            width: '250px',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-          }}
+          className="debug-panel-input"
         />
         <button
           onClick={handleAddCard}
           disabled={loading || !slug.trim()}
-          style={{
-            padding: '8px 16px',
-            borderRadius: '4px',
-            background: loading ? '#ccc' : '#4CAF50',
-            color: 'white',
-            border: 'none',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
+          className="debug-panel-button"
         >
           {loading ? 'Adding...' : 'Add Card'}
         </button>
       </div>
 
       <div>
-        <h3>Cards in Storage ({cards.length})</h3>
+        <h3 className="debug-panel-cards-header">Cards in Storage ({cards.length})</h3>
         {cards.length === 0 ? (
-          <p style={{ color: '#666' }}>No cards in storage</p>
+          <p className="debug-panel-empty-state">No cards in storage</p>
         ) : (
-          <div
-            style={{
-              maxHeight: '300px',
-              overflowY: 'auto',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '10px',
-            }}
-          >
+          <div className="debug-panel-cards-container">
             {cards.map((card) => (
-              <div
-                key={card.id}
-                style={{
-                  marginBottom: '10px',
-                  padding: '12px',
-                  background: '#1a1a1a',
-                  color: '#00ff00',
-                  borderRadius: '6px',
-                  fontFamily: 'monospace',
-                  fontSize: '11px',
-                  border: '1px solid #333',
-                }}
-              >
-                <div style={{ color: '#ffff00' }}>
-                  <strong>ID:</strong> <span style={{ color: '#00ff00' }}>{card.id}</span>
+              <div key={card.id} className="debug-panel-card">
+                <div className="debug-panel-card-label">
+                  <strong>ID:</strong> <span className="debug-panel-card-value">{card.id}</span>
                 </div>
-                <div style={{ color: '#ffff00' }}>
-                  <strong>Slug:</strong> <span style={{ color: '#00ff00' }}>{card.slug}</span>
+                <div className="debug-panel-card-label">
+                  <strong>Slug:</strong> <span className="debug-panel-card-value">{card.slug}</span>
                 </div>
-                <div style={{ color: '#ffff00' }}>
-                  <strong>Name:</strong> <span style={{ color: '#00ff00' }}>{card.name}</span>
+                <div className="debug-panel-card-label">
+                  <strong>Name:</strong> <span className="debug-panel-card-value">{card.name}</span>
                 </div>
-                <div style={{ color: '#ffff00' }}>
+                <div className="debug-panel-card-label">
                   <strong>Created:</strong>{' '}
-                  <span style={{ color: '#00ff00' }}>{new Date(card.createdAt).toLocaleString()}</span>
+                  <span className="debug-panel-card-value">{new Date(card.createdAt).toLocaleString()}</span>
                 </div>
               </div>
             ))}
