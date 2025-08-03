@@ -24,11 +24,7 @@ export default defineBackground(() => {
 
   // Message handler for popup communication
   browser.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
-    handleMessage(request)
-      .then(sendResponse)
-      .catch((error) => {
-        sendResponse({ error: error.message });
-      });
+    handleMessage(request).then(sendResponse);
 
     // Return true to indicate we'll send a response asynchronously
     return true;
