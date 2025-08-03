@@ -9,6 +9,7 @@ import {
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { interleaveArrays } from './utils';
+import { updateStats } from './stats';
 
 export const MAX_NEW_CARDS_PER_DAY = 3;
 const params = generatorParameters({ maximum_interval: 1000 });
@@ -95,8 +96,10 @@ export async function rateCard(slug: string, rating: Grade): Promise<Card> {
   const cards = await getCards();
 
   let card: Card;
+  let isNewCard = true;
   if (slug in cards) {
     card = deserializeCard(cards[slug]);
+    isNewCard = card.fsrs.state === FsrsState.New;
   } else {
     card = createCard(slug, slug);
   }
@@ -106,6 +109,10 @@ export async function rateCard(slug: string, rating: Grade): Promise<Card> {
   card.fsrs = schedulingResult.card;
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
+
+  // Update stats tracking
+  await updateStats(rating, isNewCard);
+
   return card;
 }
 

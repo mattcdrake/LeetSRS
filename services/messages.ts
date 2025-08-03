@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { Card } from './cards';
 import type { Grade } from 'ts-fsrs';
+import type { DailyStats } from './stats';
 
 // Message type constants
 export const MessageType = {
@@ -9,6 +10,7 @@ export const MessageType = {
   REMOVE_CARD: 'REMOVE_CARD',
   RATE_CARD: 'RATE_CARD',
   GET_REVIEW_QUEUE: 'GET_REVIEW_QUEUE',
+  GET_TODAY_STATS: 'GET_TODAY_STATS',
 } as const;
 
 // Message request types as discriminated union
@@ -17,7 +19,8 @@ export type MessageRequest =
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
   | { type: typeof MessageType.RATE_CARD; slug: string; rating: Grade }
-  | { type: typeof MessageType.GET_REVIEW_QUEUE };
+  | { type: typeof MessageType.GET_REVIEW_QUEUE }
+  | { type: typeof MessageType.GET_TODAY_STATS };
 
 // Type mapping for request to response
 export type MessageResponseMap = {
@@ -26,6 +29,7 @@ export type MessageResponseMap = {
   [MessageType.REMOVE_CARD]: void;
   [MessageType.RATE_CARD]: Card;
   [MessageType.GET_REVIEW_QUEUE]: Card[];
+  [MessageType.GET_TODAY_STATS]: DailyStats | null;
 };
 
 /**

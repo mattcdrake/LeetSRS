@@ -3,6 +3,7 @@ import type { Card } from '@/services/cards';
 import { sendMessage, MessageType } from '@/services/messages';
 import { DebugCard } from './DebugCard';
 import { ReviewQueue } from './ReviewQueue';
+import { TodayStats } from './TodayStats';
 import './DebugPanel.css';
 
 export function DebugPanel() {
@@ -105,6 +106,8 @@ export function DebugPanel() {
       </div>
 
       <ReviewQueue style={{ marginTop: '20px', borderTop: '1px solid #333', paddingTop: '20px' }} />
+
+      <TodayStats style={{ marginTop: '20px', borderTop: '1px solid #333', paddingTop: '20px' }} />
     </div>
   );
 }

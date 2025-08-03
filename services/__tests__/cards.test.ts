@@ -15,6 +15,7 @@ import {
 } from '../cards';
 import { STORAGE_KEYS } from '../storage-keys';
 import { createEmptyCard, Rating, State as FsrsState } from 'ts-fsrs';
+import type { DailyStats } from '../stats';
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -342,6 +343,12 @@ describe('rateCard', () => {
   beforeEach(() => {
     // Reset the fake browser state before each test
     fakeBrowser.reset();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should create a new card if it does not exist', async () => {
@@ -433,6 +440,48 @@ describe('rateCard', () => {
     const allCards = await getAllCards();
     const dpCards = allCards.filter((c) => c.slug === slug);
     expect(dpCards).toHaveLength(1);
+  });
+
+  it('should update stats when rating a new card', async () => {
+    // Rate a new card (doesn't exist yet)
+    await rateCard('new-problem', Rating.Good);
+
+    // Check that stats were created
+    const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
+    const todayStats = stats?.['2024-03-15'];
+
+    expect(todayStats).toBeDefined();
+    expect(todayStats?.totalReviews).toBe(1);
+    expect(todayStats?.newCards).toBe(1);
+    expect(todayStats?.reviewedCards).toBe(0);
+    expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
+  });
+
+  it('should update stats correctly for review cards vs new cards', async () => {
+    // Create a card
+    await addCard('test-card', 'Test Card');
+
+    // First rating (card is new)
+    await rateCard('test-card', Rating.Good);
+
+    let stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
+    let todayStats = stats?.['2024-03-15'];
+
+    expect(todayStats?.totalReviews).toBe(1);
+    expect(todayStats?.newCards).toBe(1);
+    expect(todayStats?.reviewedCards).toBe(0);
+
+    // Second rating (card is now a review card)
+    await rateCard('test-card', Rating.Hard);
+
+    stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
+    todayStats = stats?.['2024-03-15'];
+
+    expect(todayStats?.totalReviews).toBe(2);
+    expect(todayStats?.newCards).toBe(1); // Still 1, not incremented
+    expect(todayStats?.reviewedCards).toBe(1); // Now 1
+    expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
+    expect(todayStats?.gradeBreakdown[Rating.Hard]).toBe(1);
   });
 });
 
