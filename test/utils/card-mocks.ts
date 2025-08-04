@@ -1,5 +1,5 @@
 import { State } from 'ts-fsrs';
-import type { Card } from '@/types';
+import type { Card } from '@/shared/cards';
 
 /**
  * Creates a mock Card object for testing

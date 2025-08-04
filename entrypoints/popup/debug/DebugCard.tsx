@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Card } from '@/types';
+import type { Card } from '@/shared/cards';
 import { useRateCardMutation } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 import './DebugPanel.css';

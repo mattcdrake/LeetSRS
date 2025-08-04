@@ -1,7 +1,8 @@
 import { browser } from 'wxt/browser';
-import type { Card, Difficulty } from '@/types';
+import type { Card, Difficulty } from '@/shared/cards';
 import type { Grade } from 'ts-fsrs';
 import type { DailyStats } from './stats';
+import type { Note } from '@/shared/notes';
 
 // Message type constants
 export const MessageType = {
@@ -11,6 +12,9 @@ export const MessageType = {
   RATE_CARD: 'RATE_CARD',
   GET_REVIEW_QUEUE: 'GET_REVIEW_QUEUE',
   GET_TODAY_STATS: 'GET_TODAY_STATS',
+  GET_NOTE: 'GET_NOTE',
+  SAVE_NOTE: 'SAVE_NOTE',
+  DELETE_NOTE: 'DELETE_NOTE',
 } as const;
 
 // Message request types as discriminated union
@@ -27,7 +31,10 @@ export type MessageRequest =
       difficulty: Difficulty;
     }
   | { type: typeof MessageType.GET_REVIEW_QUEUE }
-  | { type: typeof MessageType.GET_TODAY_STATS };
+  | { type: typeof MessageType.GET_TODAY_STATS }
+  | { type: typeof MessageType.GET_NOTE; cardId: string }
+  | { type: typeof MessageType.SAVE_NOTE; cardId: string; text: string }
+  | { type: typeof MessageType.DELETE_NOTE; cardId: string };
 
 // Type mapping for request to response
 export type MessageResponseMap = {
@@ -37,6 +44,9 @@ export type MessageResponseMap = {
   [MessageType.RATE_CARD]: Card;
   [MessageType.GET_REVIEW_QUEUE]: Card[];
   [MessageType.GET_TODAY_STATS]: DailyStats | null;
+  [MessageType.GET_NOTE]: Note | null;
+  [MessageType.SAVE_NOTE]: void;
+  [MessageType.DELETE_NOTE]: void;
 };
 
 /**

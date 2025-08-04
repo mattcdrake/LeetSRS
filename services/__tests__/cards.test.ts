@@ -12,10 +12,16 @@ import {
   MAX_NEW_CARDS_PER_DAY,
   type StoredCard,
 } from '../cards';
-import { type Card } from '@/types';
+import { type Card } from '@/shared/cards';
 import { STORAGE_KEYS } from '../storage-keys';
 import { createEmptyCard, Rating, State as FsrsState } from 'ts-fsrs';
 import type { DailyStats } from '../stats';
+import * as notesModule from '../notes';
+
+// Mock the notes module
+vi.mock('../notes', () => ({
+  deleteNote: vi.fn(),
+}));
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -357,6 +363,37 @@ describe('removeCard', () => {
     expect(allCards.some((c) => c.slug === 'valid-parentheses')).toBe(false);
     expect(allCards.some((c) => c.slug === 'two-sum')).toBe(true);
     expect(allCards.some((c) => c.slug === 'merge-intervals')).toBe(true);
+  });
+
+  it('should delete associated note when removing a card', async () => {
+    // Clear any previous mock calls
+    vi.clearAllMocks();
+
+    // Add a card
+    const card = await addCard('test-with-note', 'Test With Note', '123', 'Medium');
+    const cardId = card.id;
+
+    // Remove the card
+    await removeCard('test-with-note');
+
+    // Verify deleteNote was called with the correct card ID
+    expect(notesModule.deleteNote).toHaveBeenCalledTimes(1);
+    expect(notesModule.deleteNote).toHaveBeenCalledWith(cardId);
+
+    // Verify the card is actually removed
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    expect(cards!['test-with-note']).toBeUndefined();
+  });
+
+  it('should not call deleteNote when removing non-existent card', async () => {
+    // Clear any previous mock calls
+    vi.clearAllMocks();
+
+    // Try to remove a card that doesn't exist
+    await removeCard('non-existent-card');
+
+    // Verify deleteNote was NOT called
+    expect(notesModule.deleteNote).not.toHaveBeenCalled();
   });
 });
 

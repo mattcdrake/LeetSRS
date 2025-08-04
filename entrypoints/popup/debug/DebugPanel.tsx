@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCardsQuery, useAddCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
-import { type Difficulty } from '@/types';
+import { type Difficulty } from '@/shared/cards';
 import { DebugCard } from './DebugCard';
 import { ReviewQueue } from './ReviewQueue';
 import { TodayStats } from './TodayStats';

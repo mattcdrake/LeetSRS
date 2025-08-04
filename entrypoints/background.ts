@@ -1,5 +1,6 @@
 import { addCard, getAllCards, removeCard, rateCard, getReviewQueue } from '@/services/cards';
 import { getTodayStats } from '@/services/stats';
+import { getNote, saveNote, deleteNote } from '@/services/notes';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/services/messages';
 
@@ -23,6 +24,15 @@ export default defineBackground(() => {
 
       case MessageType.GET_TODAY_STATS:
         return await getTodayStats();
+
+      case MessageType.GET_NOTE:
+        return await getNote(request.cardId);
+
+      case MessageType.SAVE_NOTE:
+        return await saveNote(request.cardId, request.text);
+
+      case MessageType.DELETE_NOTE:
+        return await deleteNote(request.cardId);
 
       default: {
         // This should never happen with proper typing - exhaustive check

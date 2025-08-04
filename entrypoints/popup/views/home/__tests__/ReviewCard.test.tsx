@@ -6,7 +6,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ReviewCard } from '../ReviewCard';
 import { useRateCardMutation } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
-import type { Card } from '@/types';
+import type { Card } from '@/shared/cards';
 import { createMutationMock } from '@/test/utils/query-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 

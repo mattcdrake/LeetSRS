@@ -10,7 +10,8 @@ import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { interleaveArrays } from './utils';
 import { updateStats, getTodayStats } from './stats';
-import { type Card, type Difficulty } from '@/types';
+import { deleteNote } from './notes';
+import { type Card, type Difficulty } from '@/shared/cards';
 
 export const MAX_NEW_CARDS_PER_DAY = 3;
 const params = generatorParameters({ maximum_interval: 1000 });
@@ -85,6 +86,13 @@ export async function getAllCards(): Promise<Card[]> {
 
 export async function removeCard(slug: string): Promise<void> {
   const cards = await getCards();
+
+  // Delete the associated note if the card exists
+  const card = cards[slug];
+  if (card) {
+    await deleteNote(card.id);
+  }
+
   delete cards[slug];
   await storage.setItem(STORAGE_KEYS.cards, cards);
 }

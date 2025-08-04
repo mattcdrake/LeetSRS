@@ -1,9 +1,10 @@
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
-import { Difficulty, type Card } from '@/types';
+import { Difficulty, type Card } from '@/shared/cards';
 import { useRateCardMutation } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
+import { bounceButton } from '@/shared/styles';
 
 type ReviewCardProps = {
   card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'>;
@@ -67,7 +68,7 @@ export function ReviewCard({ card }: ReviewCardProps) {
           <Button
             key={label}
             onPress={() => handleRating(rating)}
-            className={`w-16 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 transition-all cursor-pointer shadow-sm hover:shadow-md active:shadow-none active:translate-y-[1px]`}
+            className={`w-16 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton}`}
           >
             {label}
           </Button>

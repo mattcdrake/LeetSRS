@@ -2,7 +2,7 @@ import { Header } from '../../components/Header';
 import { StatsBar } from './StatsBar';
 import { ReviewCard } from './ReviewCard';
 import { NotesSection } from './NotesSection';
-import { Difficulty } from '@/types';
+import { Difficulty } from '@/shared/cards';
 
 export function HomeView() {
   const card = {
@@ -21,7 +21,7 @@ export function HomeView() {
 
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
         <ReviewCard card={card} />
-        <NotesSection />
+        <NotesSection cardId={card.id} />
       </div>
     </div>
   );

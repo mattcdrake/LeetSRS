@@ -20,6 +20,7 @@
   --current-border: #d4d4d4;
   --current-accent: #40a635;
   --current-danger: #dc2626;
+  --current-ultra-danger: #991b1b;
   --current-info: #2563eb;
   --current-difficulty-easy: #22c55e;
   --current-difficulty-medium: #f59e0b;
@@ -41,6 +42,7 @@
   --current-border: #333333;
   --current-accent: #54bc4a;
   --current-danger: #bc4a4a;
+  --current-ultra-danger: #8b2222;
   --current-info: #4a9fbc;
   --current-difficulty-easy: #22c55e;
   --current-difficulty-medium: #f59e0b;
@@ -90,6 +92,9 @@
   }
   .bg-danger {
     background-color: var(--current-danger);
+  }
+  .bg-ultra-danger {
+    background-color: var(--current-ultra-danger);
   }
   .bg-info {
     background-color: var(--current-info);
