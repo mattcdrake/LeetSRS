@@ -10,17 +10,11 @@ import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { interleaveArrays } from './utils';
 import { updateStats, getTodayStats } from './stats';
+import { type Card, type Difficulty } from '@/types';
 
 export const MAX_NEW_CARDS_PER_DAY = 3;
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
-
-export interface Card {
-  slug: string;
-  name: string;
-  createdAt: Date;
-  fsrs: FsrsCard;
-}
 
 export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs'> {
   createdAt: number;
@@ -60,22 +54,25 @@ export function deserializeCard(stored: StoredCard): Card {
   };
 }
 
-function createCard(slug: string, name: string): Card {
+function createCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty): Card {
   return {
+    id: crypto.randomUUID(),
     slug,
     name,
+    leetcodeId,
+    difficulty,
     createdAt: new Date(),
     fsrs: createEmptyCard(),
   };
 }
 
-export async function addCard(slug: string, name: string): Promise<Card> {
+export async function addCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty): Promise<Card> {
   const cards = await getCards();
   if (slug in cards) {
     return deserializeCard(cards[slug]);
   }
 
-  const card = createCard(slug, name);
+  const card = createCard(slug, name, leetcodeId, difficulty);
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
   return card;
@@ -92,7 +89,13 @@ export async function removeCard(slug: string): Promise<void> {
   await storage.setItem(STORAGE_KEYS.cards, cards);
 }
 
-export async function rateCard(slug: string, rating: Grade): Promise<Card> {
+export async function rateCard(
+  slug: string,
+  name: string,
+  rating: Grade,
+  leetcodeId: string,
+  difficulty: Difficulty
+): Promise<Card> {
   const cards = await getCards();
 
   let card: Card;
@@ -101,7 +104,7 @@ export async function rateCard(slug: string, rating: Grade): Promise<Card> {
     card = deserializeCard(cards[slug]);
     isNewCard = card.fsrs.state === FsrsState.New;
   } else {
-    card = createCard(slug, slug);
+    card = createCard(slug, name, leetcodeId, difficulty);
   }
 
   const now = new Date();

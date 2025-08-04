@@ -2,7 +2,7 @@ import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 
 export function TodayStats({ style }: { style?: React.CSSProperties }) {
-  const { data: stats, isLoading, error, refetch } = useTodayStatsQuery();
+  const { data: stats, isLoading, error } = useTodayStatsQuery();
 
   if (isLoading) {
     return (
@@ -25,25 +25,7 @@ export function TodayStats({ style }: { style?: React.CSSProperties }) {
   if (!stats) {
     return (
       <div style={style}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ margin: 0 }}>Today&apos;s Stats</h3>
-          <button
-            onClick={() => refetch()}
-            disabled={isLoading}
-            style={{
-              padding: '4px 8px',
-              fontSize: '12px',
-              backgroundColor: '#444',
-              color: '#fff',
-              border: '1px solid #555',
-              borderRadius: '4px',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              opacity: isLoading ? 0.6 : 1,
-            }}
-          >
-            {isLoading ? 'Refreshing...' : '🔄 Refresh'}
-          </button>
-        </div>
+        <h3>Today&apos;s Stats</h3>
         <p style={{ color: '#666' }}>No reviews today</p>
       </div>
     );
@@ -81,25 +63,7 @@ export function TodayStats({ style }: { style?: React.CSSProperties }) {
 
   return (
     <div style={style}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{ margin: 0 }}>Today&apos;s Stats ({stats.date})</h3>
-        <button
-          onClick={() => refetch()}
-          disabled={isLoading}
-          style={{
-            padding: '4px 8px',
-            fontSize: '12px',
-            backgroundColor: '#444',
-            color: '#fff',
-            border: '1px solid #555',
-            borderRadius: '4px',
-            cursor: isLoading ? 'not-allowed' : 'pointer',
-            opacity: isLoading ? 0.6 : 1,
-          }}
-        >
-          {isLoading ? 'Refreshing...' : '🔄 Refresh'}
-        </button>
-      </div>
+      <h3 style={{ marginBottom: '12px' }}>Today&apos;s Stats ({stats.date})</h3>
 
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>

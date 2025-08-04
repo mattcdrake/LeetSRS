@@ -7,7 +7,7 @@ export default defineBackground(() => {
   async function handleMessage(request: MessageRequest) {
     switch (request.type) {
       case MessageType.ADD_CARD:
-        return await addCard(request.slug, request.name);
+        return await addCard(request.slug, request.name, request.leetcodeId, request.difficulty);
 
       case MessageType.GET_ALL_CARDS:
         return await getAllCards();
@@ -16,7 +16,7 @@ export default defineBackground(() => {
         return await removeCard(request.slug);
 
       case MessageType.RATE_CARD:
-        return await rateCard(request.slug, request.rating);
+        return await rateCard(request.slug, request.name, request.rating, request.leetcodeId, request.difficulty);
 
       case MessageType.GET_REVIEW_QUEUE:
         return await getReviewQueue();

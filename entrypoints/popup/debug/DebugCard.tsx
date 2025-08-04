@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Card } from '@/services/cards';
+import type { Card } from '@/types';
 import { useRateCardMutation } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 import './DebugPanel.css';
@@ -20,7 +20,10 @@ export function DebugCard({ card, onRemove }: DebugCardProps) {
     try {
       await rateCardMutation.mutateAsync({
         slug: card.slug,
+        name: card.name,
         rating: rating,
+        leetcodeId: card.leetcodeId,
+        difficulty: card.difficulty,
       });
     } catch (error) {
       console.error('Failed to rate card:', error);
@@ -34,6 +37,9 @@ export function DebugCard({ card, onRemove }: DebugCardProps) {
       </div>
       <div className="debug-panel-card-label">
         <strong>Name:</strong> <span className="debug-panel-card-value">{card.name}</span>
+      </div>
+      <div className="debug-panel-card-label">
+        <strong>Difficulty:</strong> <span className="debug-panel-card-value">{card.difficulty}</span>
       </div>
       <div className="debug-panel-card-label">
         <strong>Created:</strong>{' '}
@@ -61,7 +67,7 @@ export function DebugCard({ card, onRemove }: DebugCardProps) {
               <span className="debug-panel-card-value">{card.fsrs.stability.toFixed(2)}</span>
             </div>
             <div className="debug-panel-card-label" style={{ fontSize: '10px' }}>
-              <strong>Difficulty:</strong>{' '}
+              <strong>FSRS Difficulty:</strong>{' '}
               <span className="debug-panel-card-value">{card.fsrs.difficulty.toFixed(2)}</span>
             </div>
             <div className="debug-panel-card-label" style={{ fontSize: '10px' }}>

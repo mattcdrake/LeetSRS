@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { Card } from './cards';
+import type { Card, Difficulty } from '@/types';
 import type { Grade } from 'ts-fsrs';
 import type { DailyStats } from './stats';
 
@@ -15,10 +15,17 @@ export const MessageType = {
 
 // Message request types as discriminated union
 export type MessageRequest =
-  | { type: typeof MessageType.ADD_CARD; slug: string; name: string }
+  | { type: typeof MessageType.ADD_CARD; slug: string; name: string; leetcodeId: string; difficulty: Difficulty }
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
-  | { type: typeof MessageType.RATE_CARD; slug: string; rating: Grade }
+  | {
+      type: typeof MessageType.RATE_CARD;
+      slug: string;
+      name: string;
+      rating: Grade;
+      leetcodeId: string;
+      difficulty: Difficulty;
+    }
   | { type: typeof MessageType.GET_REVIEW_QUEUE }
   | { type: typeof MessageType.GET_TODAY_STATS };
 
