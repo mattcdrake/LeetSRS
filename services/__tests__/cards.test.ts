@@ -9,6 +9,7 @@ import {
   deserializeCard,
   rateCard,
   getReviewQueue,
+  shouldReview,
   MAX_NEW_CARDS_PER_DAY,
   type StoredCard,
 } from '../cards';
@@ -410,12 +411,12 @@ describe('rateCard', () => {
   });
 
   it('should create a new card if it does not exist', async () => {
-    const card = await rateCard('new-problem', 'New Problem', Rating.Good, '9999', 'Medium');
+    const result = await rateCard('new-problem', 'New Problem', Rating.Good, '9999', 'Medium');
 
-    expect(card.slug).toBe('new-problem');
-    expect(card.name).toBe('New Problem');
-    expect(card.createdAt).toBeInstanceOf(Date);
-    expect(card.fsrs).toBeDefined();
+    expect(result.card.slug).toBe('new-problem');
+    expect(result.card.name).toBe('New Problem');
+    expect(result.card.createdAt).toBeInstanceOf(Date);
+    expect(result.card.fsrs).toBeDefined();
 
     // Verify the card was stored
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -429,15 +430,15 @@ describe('rateCard', () => {
     const initialStability = initialCard.fsrs.stability;
 
     // Rate the card as Good
-    const ratedCard = await rateCard('two-sum', 'Two Sum', Rating.Good, '1', 'Easy');
+    const result = await rateCard('two-sum', 'Two Sum', Rating.Good, '1', 'Easy');
 
-    expect(ratedCard.slug).toBe('two-sum');
-    expect(ratedCard.name).toBe('Two Sum');
+    expect(result.card.slug).toBe('two-sum');
+    expect(result.card.name).toBe('Two Sum');
 
     // FSRS should update the card
-    expect(ratedCard.fsrs.reps).toBeGreaterThan(initialReps);
-    expect(ratedCard.fsrs.stability).not.toBe(initialStability);
-    expect(ratedCard.fsrs.last_review).toBeInstanceOf(Date);
+    expect(result.card.fsrs.reps).toBeGreaterThan(initialReps);
+    expect(result.card.fsrs.stability).not.toBe(initialStability);
+    expect(result.card.fsrs.last_review).toBeInstanceOf(Date);
   });
 
   it('should handle different grades correctly', async () => {
@@ -445,23 +446,23 @@ describe('rateCard', () => {
     await addCard('test-problem', 'Test Problem', '999', 'Medium');
 
     // Rate as Again (fail)
-    const failedCard = await rateCard('test-problem', 'Test Problem', Rating.Again, '999', 'Medium');
-    expect(failedCard.fsrs.reps).toBe(1);
-    expect(failedCard.fsrs.lapses).toBe(0);
+    const failedResult = await rateCard('test-problem', 'Test Problem', Rating.Again, '999', 'Medium');
+    expect(failedResult.card.fsrs.reps).toBe(1);
+    expect(failedResult.card.fsrs.lapses).toBe(0);
 
     // Rate as Easy
-    const easyCard = await rateCard('test-problem', 'Test Problem', Rating.Easy, '999', 'Medium');
-    expect(easyCard.fsrs.reps).toBeGreaterThan(0);
+    const easyResult = await rateCard('test-problem', 'Test Problem', Rating.Easy, '999', 'Medium');
+    expect(easyResult.card.fsrs.reps).toBeGreaterThan(0);
   });
 
   it('should update the due date after rating', async () => {
     const card = await addCard('merge-sort', 'Merge Sort', '88', 'Hard');
     const initialDue = card.fsrs.due;
 
-    const ratedCard = await rateCard('merge-sort', 'Merge Sort', Rating.Good, '88', 'Hard');
+    const result = await rateCard('merge-sort', 'Merge Sort', Rating.Good, '88', 'Hard');
 
-    expect(ratedCard.fsrs.due).toBeInstanceOf(Date);
-    expect(ratedCard.fsrs.due.getTime()).toBeGreaterThan(initialDue.getTime());
+    expect(result.card.fsrs.due).toBeInstanceOf(Date);
+    expect(result.card.fsrs.due.getTime()).toBeGreaterThan(initialDue.getTime());
   });
 
   it('should persist card updates to storage', async () => {
@@ -482,17 +483,17 @@ describe('rateCard', () => {
     const slug = 'dynamic-programming';
 
     // First rating (creates card)
-    const card1 = await rateCard(slug, 'Multi Rate', Rating.Again, '9998', 'Hard');
-    expect(card1.fsrs.reps).toBe(1);
-    expect(card1.fsrs.lapses).toBe(0);
+    const result1 = await rateCard(slug, 'Multi Rate', Rating.Again, '9998', 'Hard');
+    expect(result1.card.fsrs.reps).toBe(1);
+    expect(result1.card.fsrs.lapses).toBe(0);
 
     // Second rating
-    const card2 = await rateCard(slug, 'Multi Rate', Rating.Hard, '9998', 'Hard');
-    expect(card2.fsrs.reps).toBeGreaterThan(0);
+    const result2 = await rateCard(slug, 'Multi Rate', Rating.Hard, '9998', 'Hard');
+    expect(result2.card.fsrs.reps).toBeGreaterThan(0);
 
     // Third rating
-    const card3 = await rateCard(slug, 'Multi Rate', Rating.Good, '9998', 'Hard');
-    expect(card3.fsrs.reps).toBeGreaterThan(card2.fsrs.reps);
+    const result3 = await rateCard(slug, 'Multi Rate', Rating.Good, '9998', 'Hard');
+    expect(result3.card.fsrs.reps).toBeGreaterThan(result2.card.fsrs.reps);
 
     // Verify only one card exists in storage
     const allCards = await getAllCards();
@@ -513,6 +514,22 @@ describe('rateCard', () => {
     expect(todayStats?.newCards).toBe(1);
     expect(todayStats?.reviewedCards).toBe(0);
     expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
+  });
+
+  it('should return shouldRequeue based on whether card is still due today', async () => {
+    // Test with Rating.Again - card should still be due today
+    const againResult = await rateCard('test-again', 'Test Again', Rating.Again, '2001', 'Easy');
+    expect(againResult.shouldRequeue).toBe(true); // Again typically schedules for same day
+
+    // Test with Rating.Good on a new card - might schedule for tomorrow
+    const goodResult = await rateCard('test-good', 'Test Good', Rating.Good, '2002', 'Medium');
+    // New cards rated Good typically get scheduled for the next day or later
+    // The exact value depends on FSRS algorithm, but we can verify the field exists
+    expect(typeof goodResult.shouldRequeue).toBe('boolean');
+
+    // Test with Rating.Hard - often keeps cards due today
+    const hardResult = await rateCard('test-hard', 'Test Hard', Rating.Hard, '2003', 'Hard');
+    expect(typeof hardResult.shouldRequeue).toBe('boolean');
   });
 
   it('should update stats correctly for review cards vs new cards', async () => {
@@ -540,6 +557,246 @@ describe('rateCard', () => {
     expect(todayStats?.reviewedCards).toBe(1); // Now 1
     expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
     expect(todayStats?.gradeBreakdown[Rating.Hard]).toBe(1);
+  });
+});
+
+describe('shouldReview', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Set a specific local time for testing
+    vi.setSystemTime(new Date('2024-01-15T14:30:00')); // 2:30 PM local time
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should return false for new cards', () => {
+    const newCard: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date(),
+      fsrs: createEmptyCard(),
+    };
+
+    expect(shouldReview(newCard)).toBe(false);
+  });
+
+  it('should return true for cards due today (earlier time)', () => {
+    const now = new Date();
+    const dueToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0); // 8 AM today
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Learning,
+        due: dueToday,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(true);
+  });
+
+  it('should return true for cards due today (later time)', () => {
+    const now = new Date();
+    const dueToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59); // 11:59 PM today
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Review,
+        due: dueToday,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(true);
+  });
+
+  it('should return true for cards due in the past', () => {
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 10, 0, 0);
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Review,
+        due: yesterday,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(true);
+  });
+
+  it('should return false for cards due tomorrow', () => {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1); // 12:00:01 AM tomorrow
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Review,
+        due: tomorrow,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(false);
+  });
+
+  it('should return false for cards due in the future', () => {
+    const now = new Date();
+    const futureDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5, 10, 0, 0); // 5 days from now
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Review,
+        due: futureDate,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(false);
+  });
+
+  it('should handle cards due at exactly midnight today', () => {
+    const now = new Date();
+    const midnightToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Learning,
+        due: midnightToday,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(true);
+  });
+
+  it('should handle cards due at 23:59:59 today', () => {
+    const now = new Date();
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const card: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Review,
+        due: endOfToday,
+      },
+    };
+
+    expect(shouldReview(card)).toBe(true);
+  });
+
+  it('should correctly handle date comparison in local timezone', () => {
+    // Test at different times of day to ensure date comparison works
+    const testTimes = [
+      new Date('2024-01-15T00:00:00'), // Midnight local
+      new Date('2024-01-15T06:00:00'), // 6 AM local
+      new Date('2024-01-15T12:00:00'), // Noon local
+      new Date('2024-01-15T18:00:00'), // 6 PM local
+      new Date('2024-01-15T23:59:59'), // End of day local
+    ];
+
+    testTimes.forEach((time) => {
+      vi.setSystemTime(time);
+
+      // Create a card due at any time today
+      const cardDueToday: Card = {
+        id: 'test-id',
+        slug: 'test-problem',
+        name: 'Test Problem',
+        leetcodeId: '1',
+        difficulty: 'Easy',
+        createdAt: new Date('2024-01-10'),
+        fsrs: {
+          ...createEmptyCard(),
+          state: FsrsState.Review,
+          due: new Date('2024-01-15T10:00:00'), // 10 AM on the same day
+        },
+      };
+
+      expect(shouldReview(cardDueToday)).toBe(true);
+    });
+  });
+
+  it('should handle timezone edge cases correctly', () => {
+    // Test that a card due today in local timezone is included
+    // even if it might be tomorrow in UTC
+    vi.setSystemTime(new Date('2024-01-15T23:00:00')); // 11 PM local time
+
+    const now = new Date();
+    const cardDueToday: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date('2024-01-10'),
+      fsrs: {
+        ...createEmptyCard(),
+        state: FsrsState.Review,
+        // Due at noon today local time
+        due: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
+      },
+    };
+
+    expect(shouldReview(cardDueToday)).toBe(true);
+
+    // Card due tomorrow should not be included
+    const cardDueTomorrow: Card = {
+      ...cardDueToday,
+      fsrs: {
+        ...cardDueToday.fsrs,
+        due: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1),
+      },
+    };
+
+    expect(shouldReview(cardDueTomorrow)).toBe(false);
   });
 });
 
@@ -674,6 +931,53 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
+    expect(queue).toHaveLength(0);
+  });
+
+  it('should include cards due today regardless of time', async () => {
+    // Test that cards due at any time today are included
+    await addCard('morning', 'Morning Card', '5001', 'Easy');
+    await addCard('evening', 'Evening Card', '5002', 'Medium');
+    await addCard('midnight', 'Midnight Card', '5003', 'Hard');
+
+    // Rate them to move out of New state
+    await rateCard('morning', 'Morning Card', Rating.Good, '5001', 'Easy');
+    await rateCard('evening', 'Evening Card', Rating.Good, '5002', 'Medium');
+    await rateCard('midnight', 'Midnight Card', Rating.Good, '5003', 'Hard');
+
+    // Set due times to various times today
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    cards!['morning'].fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
+    cards!['evening'].fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
+    cards!['midnight'].fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // All three should be included even though they're due at different times today
+    const reviewCards = queue.filter((card) => card.fsrs.state !== FsrsState.New);
+    expect(reviewCards).toHaveLength(3);
+
+    const slugs = reviewCards.map((card) => card.slug);
+    expect(slugs).toContain('morning');
+    expect(slugs).toContain('evening');
+    expect(slugs).toContain('midnight');
+  });
+
+  it('should exclude cards due tomorrow even if due at 00:00:01', async () => {
+    await addCard('tomorrow', 'Tomorrow Card', '5004', 'Medium');
+    await rateCard('tomorrow', 'Tomorrow Card', Rating.Good, '5004', 'Medium');
+
+    // Set due to one second after midnight tomorrow in local timezone
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    cards!['tomorrow'].fsrs.due = tomorrow.getTime();
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should not include the card due tomorrow
     expect(queue).toHaveLength(0);
   });
 

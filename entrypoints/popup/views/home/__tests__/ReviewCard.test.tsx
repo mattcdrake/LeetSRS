@@ -4,19 +4,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ReviewCard } from '../ReviewCard';
-import { useRateCardMutation } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 import type { Card } from '@/shared/cards';
-import { createMutationMock } from '@/test/utils/query-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 
-// Mock the useRateCardMutation hook
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useRateCardMutation: vi.fn(),
-}));
+// No longer need to mock useRateCardMutation since we're using onRate prop
 
 describe('ReviewCard', () => {
-  const mockMutate = vi.fn();
+  const mockOnRate = vi.fn();
   const mockCard: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'> = {
     slug: 'two-sum',
     leetcodeId: '1',
@@ -26,18 +21,12 @@ describe('ReviewCard', () => {
 
   const { wrapper: TestWrapper } = createTestWrapper();
 
-  const renderWithProviders = (card = mockCard) => {
-    return render(<ReviewCard card={card} />, { wrapper: TestWrapper });
+  const renderWithProviders = (card = mockCard, onRate = mockOnRate) => {
+    return render(<ReviewCard card={card} onRate={onRate} />, { wrapper: TestWrapper });
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Use the factory function with just the properties we care about
-    vi.mocked(useRateCardMutation).mockReturnValue(
-      createMutationMock({
-        mutate: mockMutate,
-      }) as ReturnType<typeof useRateCardMutation>
-    );
   });
 
   describe('Rendering', () => {
@@ -68,11 +57,11 @@ describe('ReviewCard', () => {
       expect(easyElements[0]).toHaveClass('bg-difficulty-easy');
 
       // Test Medium
-      rerender(<ReviewCard card={{ ...mockCard, difficulty: 'Medium' }} />);
+      rerender(<ReviewCard card={{ ...mockCard, difficulty: 'Medium' }} onRate={mockOnRate} />);
       expect(screen.getByText('Medium')).toHaveClass('bg-difficulty-medium');
 
       // Test Hard
-      rerender(<ReviewCard card={{ ...mockCard, difficulty: 'Hard' }} />);
+      rerender(<ReviewCard card={{ ...mockCard, difficulty: 'Hard' }} onRate={mockOnRate} />);
       // Also need to handle Hard button collision
       const hardElements = screen.getAllByText('Hard');
       expect(hardElements[0]).toHaveClass('bg-difficulty-hard');
@@ -104,82 +93,58 @@ describe('ReviewCard', () => {
   });
 
   describe('Interactions', () => {
-    it('should call mutate with correct data when Again button is clicked', async () => {
+    it('should call onRate with correct rating when Again button is clicked', async () => {
       renderWithProviders();
       const againButton = screen.getByRole('button', { name: 'Again' });
 
       fireEvent.click(againButton);
 
       await waitFor(() => {
-        expect(mockMutate).toHaveBeenCalledWith({
-          slug: 'two-sum',
-          name: 'Two Sum',
-          rating: Rating.Again,
-          leetcodeId: '1',
-          difficulty: 'Easy',
-        });
+        expect(mockOnRate).toHaveBeenCalledWith(Rating.Again);
       });
     });
 
-    it('should call mutate with correct data when Hard button is clicked', async () => {
+    it('should call onRate with correct rating when Hard button is clicked', async () => {
       renderWithProviders();
       const hardButton = screen.getByRole('button', { name: 'Hard' });
 
       fireEvent.click(hardButton);
 
       await waitFor(() => {
-        expect(mockMutate).toHaveBeenCalledWith({
-          slug: 'two-sum',
-          name: 'Two Sum',
-          rating: Rating.Hard,
-          leetcodeId: '1',
-          difficulty: 'Easy',
-        });
+        expect(mockOnRate).toHaveBeenCalledWith(Rating.Hard);
       });
     });
 
-    it('should call mutate with correct data when Good button is clicked', async () => {
+    it('should call onRate with correct rating when Good button is clicked', async () => {
       renderWithProviders();
       const goodButton = screen.getByRole('button', { name: 'Good' });
 
       fireEvent.click(goodButton);
 
       await waitFor(() => {
-        expect(mockMutate).toHaveBeenCalledWith({
-          slug: 'two-sum',
-          name: 'Two Sum',
-          rating: Rating.Good,
-          leetcodeId: '1',
-          difficulty: 'Easy',
-        });
+        expect(mockOnRate).toHaveBeenCalledWith(Rating.Good);
       });
     });
 
-    it('should call mutate with correct data when Easy button is clicked', async () => {
+    it('should call onRate with correct rating when Easy button is clicked', async () => {
       renderWithProviders();
       const easyButton = screen.getByRole('button', { name: 'Easy' });
 
       fireEvent.click(easyButton);
 
       await waitFor(() => {
-        expect(mockMutate).toHaveBeenCalledWith({
-          slug: 'two-sum',
-          name: 'Two Sum',
-          rating: Rating.Easy,
-          leetcodeId: '1',
-          difficulty: 'Easy',
-        });
+        expect(mockOnRate).toHaveBeenCalledWith(Rating.Easy);
       });
     });
 
-    it('should only call mutate once per button click', async () => {
+    it('should only call onRate once per button click', async () => {
       renderWithProviders();
       const goodButton = screen.getByRole('button', { name: 'Good' });
 
       fireEvent.click(goodButton);
 
       await waitFor(() => {
-        expect(mockMutate).toHaveBeenCalledTimes(1);
+        expect(mockOnRate).toHaveBeenCalledTimes(1);
       });
     });
   });

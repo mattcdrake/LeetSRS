@@ -1,6 +1,5 @@
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import { Difficulty, type Card } from '@/shared/cards';
-import { useRateCardMutation } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
 import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
@@ -8,6 +7,8 @@ import { bounceButton } from '@/shared/styles';
 
 type ReviewCardProps = {
   card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'>;
+  onRate: (rating: Grade) => void;
+  isProcessing?: boolean;
 };
 
 type RatingButtonConfig = {
@@ -29,19 +30,11 @@ const ratingButtons: RatingButtonConfig[] = [
   { rating: Rating.Easy, label: 'Easy', colorClass: 'bg-rating-easy' },
 ];
 
-export function ReviewCard({ card }: ReviewCardProps) {
-  const rateCardMutation = useRateCardMutation();
-
+export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardProps) {
   const difficultyColor = difficultyColorMap[card.difficulty] || 'bg-difficulty-medium';
 
   const handleRating = (rating: Grade) => {
-    rateCardMutation.mutate({
-      slug: card.slug,
-      name: card.name,
-      rating,
-      leetcodeId: card.leetcodeId,
-      difficulty: card.difficulty,
-    });
+    onRate(rating);
   };
 
   return (
@@ -68,7 +61,8 @@ export function ReviewCard({ card }: ReviewCardProps) {
           <Button
             key={label}
             onPress={() => handleRating(rating)}
-            className={`w-16 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton}`}
+            isDisabled={isProcessing}
+            className={`w-16 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {label}
           </Button>

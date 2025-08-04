@@ -41,7 +41,7 @@ export type MessageResponseMap = {
   [MessageType.ADD_CARD]: Card;
   [MessageType.GET_ALL_CARDS]: Card[];
   [MessageType.REMOVE_CARD]: void;
-  [MessageType.RATE_CARD]: Card;
+  [MessageType.RATE_CARD]: { card: Card; shouldRequeue: boolean };
   [MessageType.GET_REVIEW_QUEUE]: Card[];
   [MessageType.GET_TODAY_STATS]: DailyStats | null;
   [MessageType.GET_NOTE]: Note | null;

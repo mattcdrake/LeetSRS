@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendMessage, MessageType } from '@/services/messages';
 import type { Grade } from 'ts-fsrs';
-import type { Difficulty } from '@/shared/cards';
+import type { Difficulty, Card } from '@/shared/cards';
 
 // Query Keys
 export const queryKeys = {
@@ -82,20 +82,19 @@ export function useRemoveCardMutation() {
 export function useRateCardMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: ({
-      slug,
-      name,
-      rating,
-      leetcodeId,
-      difficulty,
-    }: {
+  return useMutation<
+    { card: Card; shouldRequeue: boolean },
+    Error,
+    {
       slug: string;
       name: string;
       rating: Grade;
       leetcodeId: string;
       difficulty: Difficulty;
-    }) => sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty }),
+    }
+  >({
+    mutationFn: ({ slug, name, rating, leetcodeId, difficulty }) =>
+      sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards });
       queryClient.invalidateQueries({ queryKey: queryKeys.reviewQueue });
