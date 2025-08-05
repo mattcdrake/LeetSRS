@@ -180,7 +180,7 @@ describe('useSaveNoteMutation', () => {
 
     // Verify that invalidateQueries was called with the correct query key
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.note(cardId),
+      queryKey: queryKeys.notes.detail(cardId),
     });
 
     // Clean up the spy
@@ -235,7 +235,7 @@ describe('useDeleteNoteMutation', () => {
 
     // Verify that invalidateQueries was called with the correct query key
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.note(cardId),
+      queryKey: queryKeys.notes.detail(cardId),
     });
 
     // Clean up the spy
@@ -333,12 +333,9 @@ describe('usePauseCardMutation', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    // Verify that both cards and review queue queries were invalidated
+    // Verify that all card queries were invalidated
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.cards,
-    });
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.reviewQueue,
+      queryKey: ['cards'],
     });
 
     invalidateQueriesSpy.mockRestore();

@@ -6,8 +6,8 @@ import { describe, it, expect } from 'vitest';
 import { Header } from '../Header';
 
 describe('Header', () => {
-  it('renders the LeetSRS title', () => {
-    render(<Header />);
+  it('renders the provided title', () => {
+    render(<Header title="LeetSRS" />);
 
     const title = screen.getByRole('heading', { name: 'LeetSRS', level: 1 });
     expect(title).toBeInTheDocument();
@@ -16,7 +16,7 @@ describe('Header', () => {
 
   it('renders children when provided', () => {
     render(
-      <Header>
+      <Header title="Test Title">
         <button>Test Button</button>
       </Header>
     );

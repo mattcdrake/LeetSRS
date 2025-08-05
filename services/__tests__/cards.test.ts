@@ -11,7 +11,7 @@ import {
   deserializeCard,
   rateCard,
   getReviewQueue,
-  isDueToday,
+  isDueByDate,
   type StoredCard,
 } from '../cards';
 import { type Card } from '@/shared/cards';
@@ -831,7 +831,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(newCard)).toBe(true);
+    expect(isDueByDate(newCard)).toBe(true);
   });
 
   it('should return true for cards due today (earlier time)', () => {
@@ -853,7 +853,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(true);
+    expect(isDueByDate(card)).toBe(true);
   });
 
   it('should return true for cards due today (later time)', () => {
@@ -875,7 +875,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(true);
+    expect(isDueByDate(card)).toBe(true);
   });
 
   it('should return true for cards due in the past', () => {
@@ -897,7 +897,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(true);
+    expect(isDueByDate(card)).toBe(true);
   });
 
   it('should return false for cards due tomorrow', () => {
@@ -919,7 +919,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(false);
+    expect(isDueByDate(card)).toBe(false);
   });
 
   it('should return false for cards due in the future', () => {
@@ -941,7 +941,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(false);
+    expect(isDueByDate(card)).toBe(false);
   });
 
   it('should handle cards due at exactly midnight today', () => {
@@ -963,7 +963,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(true);
+    expect(isDueByDate(card)).toBe(true);
   });
 
   it('should handle cards due at 23:59:59 today', () => {
@@ -985,7 +985,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(card)).toBe(true);
+    expect(isDueByDate(card)).toBe(true);
   });
 
   it('should correctly handle date comparison in local timezone', () => {
@@ -1017,7 +1017,7 @@ describe('isDueToday', () => {
         paused: false,
       };
 
-      expect(isDueToday(cardDueToday)).toBe(true);
+      expect(isDueByDate(cardDueToday)).toBe(true);
     });
   });
 
@@ -1043,7 +1043,7 @@ describe('isDueToday', () => {
       paused: false,
     };
 
-    expect(isDueToday(cardDueToday)).toBe(true);
+    expect(isDueByDate(cardDueToday)).toBe(true);
 
     // Card due tomorrow should not be included
     const cardDueTomorrow: Card = {
@@ -1054,7 +1054,7 @@ describe('isDueToday', () => {
       },
     };
 
-    expect(isDueToday(cardDueTomorrow)).toBe(false);
+    expect(isDueByDate(cardDueTomorrow)).toBe(false);
   });
 });
 

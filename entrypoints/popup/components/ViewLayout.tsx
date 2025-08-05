@@ -1,15 +1,16 @@
 import { Header } from './Header';
 
 interface ViewLayoutProps {
+  title?: string;
   headerContent?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export function ViewLayout({ headerContent, children }: ViewLayoutProps) {
+export function ViewLayout({ title = 'LeetSRS', headerContent, children }: ViewLayoutProps) {
   return (
     <div className="flex flex-col h-full">
       <div className="sticky top-0 z-10">
-        <Header>{headerContent}</Header>
+        <Header title={title}>{headerContent}</Header>
       </div>
 
       <div

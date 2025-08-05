@@ -7,7 +7,7 @@ import {
   rateCard,
   getReviewQueue,
 } from '@/services/cards';
-import { getTodayStats } from '@/services/stats';
+import { getTodayStats, getCardStateStats, getAllStats, getLastNDaysStats, getNextNDaysStats } from '@/services/stats';
 import { getNote, saveNote, deleteNote } from '@/services/notes';
 import {
   getMaxNewCardsPerDay,
@@ -79,6 +79,18 @@ export default defineBackground(async () => {
 
       case MessageType.SET_THEME:
         return await setTheme(request.value);
+
+      case MessageType.GET_CARD_STATE_STATS:
+        return await getCardStateStats();
+
+      case MessageType.GET_ALL_STATS:
+        return await getAllStats();
+
+      case MessageType.GET_LAST_N_DAYS_STATS:
+        return await getLastNDaysStats(request.days);
+
+      case MessageType.GET_NEXT_N_DAYS_STATS:
+        return await getNextNDaysStats(request.days);
 
       default: {
         // This should never happen with proper typing - exhaustive check

@@ -33,13 +33,10 @@ export async function runMigrations(migrations: Migration[]): Promise<void> {
 
   for (const migration of sortedMigrations) {
     if (migration.version > currentVersion) {
-      console.log(`Running migration ${migration.version}: ${migration.description}`);
       try {
         await migration.migrate();
         await setSchemaVersion(migration.version);
-        console.log(`Migration ${migration.version} completed successfully`);
       } catch (error) {
-        console.error(`Migration ${migration.version} failed:`, error);
         throw new Error(`Failed to run migration ${migration.version}: ${error}`);
       }
     }

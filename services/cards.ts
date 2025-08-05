@@ -17,7 +17,7 @@ const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
 // Format date as YYYY-MM-DD in local timezone for comparison
-function formatLocalDate(date: Date): string {
+export function formatLocalDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -169,25 +169,24 @@ export async function rateCard(
   // Update stats tracking
   await updateStats(rating, isNewCard);
 
-  const shouldRequeue = isDueToday(card);
+  const shouldRequeue = isDueByDate(card);
 
   return { card, shouldRequeue };
 }
 
-export function isDueToday(card: Card): boolean {
-  const now = new Date();
+export function isDueByDate(card: Card, referenceDate: Date = new Date()): boolean {
   const dueDate = new Date(card.fsrs.due);
 
   // Compare dates in user's local timezone
-  const todayStr = formatLocalDate(now);
+  const referenceDateStr = formatLocalDate(referenceDate);
   const dueStr = formatLocalDate(dueDate);
-  return dueStr <= todayStr;
+  return dueStr <= referenceDateStr;
 }
 
 export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
   // Filter out paused cards and cards not due yet
-  const dueCards = allCards.filter((card) => !card.paused && isDueToday(card));
+  const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card));
 
   // Separate into review cards and new cards
   const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);

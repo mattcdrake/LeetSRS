@@ -177,17 +177,11 @@ function VersionInfo() {
 
 export function SettingsView() {
   return (
-    <ViewLayout>
-      <div>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-primary">Settings</h1>
-        </div>
-
-        <AppearanceSection />
-        <ReviewSettingsSection />
-        <DataSection />
-        <VersionInfo />
-      </div>
+    <ViewLayout title="Settings">
+      <AppearanceSection />
+      <ReviewSettingsSection />
+      <DataSection />
+      <VersionInfo />
     </ViewLayout>
   );
 }
