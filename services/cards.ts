@@ -17,6 +17,14 @@ export const MAX_NEW_CARDS_PER_DAY = 3;
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
+// Format date as YYYY-MM-DD in local timezone for comparison
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs'> {
   createdAt: number;
   fsrs: Omit<FsrsCard, 'due' | 'last_review'> & {
@@ -64,6 +72,7 @@ function createCard(slug: string, name: string, leetcodeId: string, difficulty: 
     difficulty,
     createdAt: new Date(),
     fsrs: createEmptyCard(),
+    paused: false,
   };
 }
 
@@ -119,6 +128,21 @@ export async function delayCard(slug: string, days: number): Promise<Card> {
   return card;
 }
 
+export async function setPauseStatus(slug: string, paused: boolean): Promise<Card> {
+  const cards = await getCards();
+
+  if (!(slug in cards)) {
+    throw new Error(`Card with slug "${slug}" not found`);
+  }
+
+  const card = deserializeCard(cards[slug]);
+  card.paused = paused;
+  cards[slug] = serializeCard(card);
+  await storage.setItem(STORAGE_KEYS.cards, cards);
+
+  return card;
+}
+
 export async function rateCard(
   slug: string,
   name: string,
@@ -146,42 +170,37 @@ export async function rateCard(
   // Update stats tracking
   await updateStats(rating, isNewCard);
 
-  const shouldRequeue = shouldReview(card);
+  const shouldRequeue = isDueToday(card);
 
   return { card, shouldRequeue };
 }
 
-export function shouldReview(card: Card): boolean {
-  if (card.fsrs.state === FsrsState.New) {
-    return false;
-  }
-
+export function isDueToday(card: Card): boolean {
   const now = new Date();
   const dueDate = new Date(card.fsrs.due);
 
   // Compare dates in user's local timezone
-  const formatLocalDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const todayStr = formatLocalDate(now);
   const dueStr = formatLocalDate(dueDate);
-
   return dueStr <= todayStr;
 }
 
 export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
-  const reviewCards = allCards.filter(shouldReview);
+  // Filter out paused cards and cards not due yet
+  const dueCards = allCards.filter((card) => !card.paused && isDueToday(card));
+
+  // Separate into review cards and new cards
+  const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);
+  const newCards = dueCards.filter((card) => card.fsrs.state === FsrsState.New);
 
   // Get today's stats to determine how many new cards have already been done
   const todayStats = await getTodayStats();
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
   const remainingNewCards = Math.max(0, MAX_NEW_CARDS_PER_DAY - newCardsCompletedToday);
 
-  const newCards = allCards.filter((card) => card.fsrs.state === FsrsState.New).slice(0, remainingNewCards);
-  return interleaveArrays(reviewCards, newCards);
+  // Limit new cards to the remaining daily allowance
+  const limitedNewCards = newCards.slice(0, remainingNewCards);
+
+  return interleaveArrays(reviewCards, limitedNewCards);
 }

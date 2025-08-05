@@ -143,3 +143,22 @@ export function useDelayCardMutation() {
     },
   });
 }
+
+export function usePauseCardMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Card,
+    Error,
+    {
+      slug: string;
+      paused: boolean;
+    }
+  >({
+    mutationFn: ({ slug, paused }) => sendMessage({ type: MessageType.SET_PAUSE_STATUS, slug, paused }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviewQueue });
+    },
+  });
+}

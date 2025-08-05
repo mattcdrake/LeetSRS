@@ -10,6 +10,7 @@ export const MessageType = {
   GET_ALL_CARDS: 'GET_ALL_CARDS',
   REMOVE_CARD: 'REMOVE_CARD',
   DELAY_CARD: 'DELAY_CARD',
+  SET_PAUSE_STATUS: 'SET_PAUSE_STATUS',
   RATE_CARD: 'RATE_CARD',
   GET_REVIEW_QUEUE: 'GET_REVIEW_QUEUE',
   GET_TODAY_STATS: 'GET_TODAY_STATS',
@@ -24,6 +25,7 @@ export type MessageRequest =
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
   | { type: typeof MessageType.DELAY_CARD; slug: string; days: number }
+  | { type: typeof MessageType.SET_PAUSE_STATUS; slug: string; paused: boolean }
   | {
       type: typeof MessageType.RATE_CARD;
       slug: string;
@@ -44,6 +46,7 @@ export type MessageResponseMap = {
   [MessageType.GET_ALL_CARDS]: Card[];
   [MessageType.REMOVE_CARD]: void;
   [MessageType.DELAY_CARD]: Card;
+  [MessageType.SET_PAUSE_STATUS]: Card;
   [MessageType.RATE_CARD]: { card: Card; shouldRequeue: boolean };
   [MessageType.GET_REVIEW_QUEUE]: Card[];
   [MessageType.GET_TODAY_STATS]: DailyStats | null;

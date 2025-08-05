@@ -29,6 +29,7 @@ export const createMockCard = (state: State, overrides: Partial<Card> = {}): Car
       last_review: now,
       learning_steps: 0,
     },
+    paused: false,
     ...overrides,
   };
 };

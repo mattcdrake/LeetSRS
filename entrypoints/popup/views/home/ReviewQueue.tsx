@@ -7,6 +7,7 @@ import {
   useRateCardMutation,
   useRemoveCardMutation,
   useDelayCardMutation,
+  usePauseCardMutation,
 } from '@/hooks/useBackgroundQueries';
 import type { Card } from '@/shared/cards';
 import type { Grade } from 'ts-fsrs';
@@ -20,6 +21,7 @@ export function ReviewQueue({ disableAnimations = false }: ReviewQueueProps) {
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();
+  const pauseCardMutation = usePauseCardMutation();
   const [queue, setQueue] = useState<Card[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -106,6 +108,15 @@ export function ReviewQueue({ disableAnimations = false }: ReviewQueueProps) {
     });
   };
 
+  const handlePause = async () => {
+    const currentCard = queue[0];
+    await handleCardAction(() => pauseCardMutation.mutateAsync({ slug: currentCard.slug, paused: true }), {
+      getSlideDirection: () => 'right',
+      updateQueue: (_, restOfQueue) => restOfQueue,
+      errorMessage: 'Failed to pause card:',
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -153,7 +164,7 @@ export function ReviewQueue({ disableAnimations = false }: ReviewQueueProps) {
         <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       </div>
       <NotesSection cardId={currentCard.id} />
-      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} />
+      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   useRateCardMutation,
   useRemoveCardMutation,
   useDelayCardMutation,
+  usePauseCardMutation,
 } from '@/hooks/useBackgroundQueries';
 import { createQueryMock, createMutationMock } from '@/test/utils/query-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -21,6 +22,7 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
   useRateCardMutation: vi.fn(),
   useRemoveCardMutation: vi.fn(),
   useDelayCardMutation: vi.fn(),
+  usePauseCardMutation: vi.fn(),
   queryKeys: {
     reviewQueue: ['reviewQueue'],
     cards: ['cards'],
@@ -72,7 +74,15 @@ vi.mock('../NotesSection', () => ({
 }));
 
 vi.mock('../ActionsSection', () => ({
-  ActionsSection: ({ onDelete, onDelay }: { onDelete: () => void; onDelay: (days: number) => void }) => (
+  ActionsSection: ({
+    onDelete,
+    onDelay,
+    onPause,
+  }: {
+    onDelete: () => void;
+    onDelay: (days: number) => void;
+    onPause: () => void;
+  }) => (
     <div data-testid="actions-section">
       <button onClick={onDelete} data-testid="delete-button">
         Delete
@@ -82,6 +92,9 @@ vi.mock('../ActionsSection', () => ({
       </button>
       <button onClick={() => onDelay(5)} data-testid="delay-5-button">
         Delay 5 days
+      </button>
+      <button onClick={onPause} data-testid="pause-button">
+        Pause
       </button>
     </div>
   ),
@@ -149,6 +162,14 @@ describe('ReviewQueue', () => {
         mutateAsync: vi.fn(),
         isPending: false,
       }) as ReturnType<typeof useDelayCardMutation>
+    );
+
+    // Default mock for pause mutation
+    vi.mocked(usePauseCardMutation).mockReturnValue(
+      createMutationMock({
+        mutateAsync: vi.fn(),
+        isPending: false,
+      }) as ReturnType<typeof usePauseCardMutation>
     );
   });
 

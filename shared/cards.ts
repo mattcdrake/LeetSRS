@@ -10,4 +10,5 @@ export interface Card {
   difficulty: Difficulty;
   createdAt: Date;
   fsrs: FsrsCard;
+  paused: boolean;
 }

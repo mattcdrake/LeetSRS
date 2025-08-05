@@ -6,11 +6,12 @@ import {
   getAllCards,
   removeCard,
   delayCard,
+  setPauseStatus,
   serializeCard,
   deserializeCard,
   rateCard,
   getReviewQueue,
-  shouldReview,
+  isDueToday,
   MAX_NEW_CARDS_PER_DAY,
   type StoredCard,
 } from '../cards';
@@ -37,6 +38,7 @@ describe('Card serialization', () => {
         difficulty: 'Easy',
         createdAt: testDate,
         fsrs: createEmptyCard(),
+        paused: false,
       };
 
       const serialized = serializeCard(card);
@@ -60,6 +62,7 @@ describe('Card serialization', () => {
         difficulty: 'Medium',
         createdAt: testDate,
         fsrs: fsrsCard,
+        paused: false,
       };
 
       const serialized = serializeCard(card);
@@ -89,6 +92,7 @@ describe('Card serialization', () => {
           due: emptyFsrs.due.getTime(),
           last_review: emptyFsrs.last_review?.getTime(),
         },
+        paused: false,
       };
 
       const deserialized = deserializeCard(storedCard);
@@ -110,6 +114,7 @@ describe('Card serialization', () => {
         difficulty: 'Medium',
         createdAt: new Date(),
         fsrs: createEmptyCard(),
+        paused: false,
       };
 
       const serialized = serializeCard(originalCard);
@@ -276,6 +281,7 @@ describe('getAllCards', () => {
         due: emptyFsrs.due.getTime(),
         last_review: emptyFsrs.last_review?.getTime(),
       },
+      paused: false,
     };
 
     await storage.setItem(STORAGE_KEYS.cards, { 'test-problem': storedCard });
@@ -526,6 +532,114 @@ describe('delayCard', () => {
   });
 });
 
+describe('setPauseStatus', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
+
+  it('should set pause status to true', async () => {
+    await addCard('set-pause-true', 'Set Pause True', '4500', 'Easy');
+
+    const pausedCard = await setPauseStatus('set-pause-true', true);
+
+    expect(pausedCard.paused).toBe(true);
+
+    // Verify persistence
+    const allCards = await getAllCards();
+    const card = allCards.find((c) => c.slug === 'set-pause-true');
+    expect(card?.paused).toBe(true);
+  });
+
+  it('should set pause status to false', async () => {
+    await addCard('set-pause-false', 'Set Pause False', '4501', 'Medium');
+    // First pause it
+    await setPauseStatus('set-pause-false', true);
+
+    // Then unpause it
+    const unpausedCard = await setPauseStatus('set-pause-false', false);
+
+    expect(unpausedCard.paused).toBe(false);
+
+    // Verify persistence
+    const allCards = await getAllCards();
+    const card = allCards.find((c) => c.slug === 'set-pause-false');
+    expect(card?.paused).toBe(false);
+  });
+
+  it('should throw error for non-existent card', async () => {
+    await expect(setPauseStatus('non-existent', true)).rejects.toThrow('Card with slug "non-existent" not found');
+    await expect(setPauseStatus('non-existent', false)).rejects.toThrow('Card with slug "non-existent" not found');
+  });
+});
+
+describe('setPauseStatus - pausing', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
+
+  it('should pause an existing card', async () => {
+    await addCard('pause-test', 'Pause Test', '5000', 'Easy');
+
+    const pausedCard = await setPauseStatus('pause-test', true);
+
+    expect(pausedCard.paused).toBe(true);
+    expect(pausedCard.slug).toBe('pause-test');
+
+    // Verify it's persisted
+    const allCards = await getAllCards();
+    const card = allCards.find((c) => c.slug === 'pause-test');
+    expect(card?.paused).toBe(true);
+  });
+
+  it('should throw error when pausing non-existent card', async () => {
+    await expect(setPauseStatus('non-existent', true)).rejects.toThrow('Card with slug "non-existent" not found');
+  });
+
+  it('should handle pausing already paused card', async () => {
+    await addCard('already-paused', 'Already Paused', '5001', 'Medium');
+
+    // Pause once
+    await setPauseStatus('already-paused', true);
+
+    // Pause again
+    const stillPausedCard = await setPauseStatus('already-paused', true);
+    expect(stillPausedCard.paused).toBe(true);
+  });
+});
+
+describe('setPauseStatus - unpausing', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
+
+  it('should unpause a paused card', async () => {
+    await addCard('unpause-test', 'Unpause Test', '5002', 'Hard');
+    await setPauseStatus('unpause-test', true);
+
+    const unpausedCard = await setPauseStatus('unpause-test', false);
+
+    expect(unpausedCard.paused).toBe(false);
+    expect(unpausedCard.slug).toBe('unpause-test');
+
+    // Verify it's persisted
+    const allCards = await getAllCards();
+    const card = allCards.find((c) => c.slug === 'unpause-test');
+    expect(card?.paused).toBe(false);
+  });
+
+  it('should throw error when unpausing non-existent card', async () => {
+    await expect(setPauseStatus('non-existent', false)).rejects.toThrow('Card with slug "non-existent" not found');
+  });
+
+  it('should handle unpausing already unpaused card', async () => {
+    await addCard('already-unpaused', 'Already Unpaused', '5003', 'Easy');
+
+    // Card starts unpaused, unpause it anyway
+    const unpausedCard = await setPauseStatus('already-unpaused', false);
+    expect(unpausedCard.paused).toBe(false);
+  });
+});
+
 describe('rateCard', () => {
   beforeEach(() => {
     // Reset the fake browser state before each test
@@ -688,7 +802,7 @@ describe('rateCard', () => {
   });
 });
 
-describe('shouldReview', () => {
+describe('isDueToday', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     // Set a specific local time for testing
@@ -699,7 +813,7 @@ describe('shouldReview', () => {
     vi.useRealTimers();
   });
 
-  it('should return false for new cards', () => {
+  it('should return true for new cards with due date today', () => {
     const newCard: Card = {
       id: 'test-id',
       slug: 'test-problem',
@@ -707,10 +821,11 @@ describe('shouldReview', () => {
       leetcodeId: '1',
       difficulty: 'Easy',
       createdAt: new Date(),
-      fsrs: createEmptyCard(),
+      fsrs: createEmptyCard(), // createEmptyCard sets due date to now
+      paused: false,
     };
 
-    expect(shouldReview(newCard)).toBe(false);
+    expect(isDueToday(newCard)).toBe(true);
   });
 
   it('should return true for cards due today (earlier time)', () => {
@@ -729,9 +844,10 @@ describe('shouldReview', () => {
         state: FsrsState.Learning,
         due: dueToday,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(true);
+    expect(isDueToday(card)).toBe(true);
   });
 
   it('should return true for cards due today (later time)', () => {
@@ -750,9 +866,10 @@ describe('shouldReview', () => {
         state: FsrsState.Review,
         due: dueToday,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(true);
+    expect(isDueToday(card)).toBe(true);
   });
 
   it('should return true for cards due in the past', () => {
@@ -771,9 +888,10 @@ describe('shouldReview', () => {
         state: FsrsState.Review,
         due: yesterday,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(true);
+    expect(isDueToday(card)).toBe(true);
   });
 
   it('should return false for cards due tomorrow', () => {
@@ -792,9 +910,10 @@ describe('shouldReview', () => {
         state: FsrsState.Review,
         due: tomorrow,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(false);
+    expect(isDueToday(card)).toBe(false);
   });
 
   it('should return false for cards due in the future', () => {
@@ -813,9 +932,10 @@ describe('shouldReview', () => {
         state: FsrsState.Review,
         due: futureDate,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(false);
+    expect(isDueToday(card)).toBe(false);
   });
 
   it('should handle cards due at exactly midnight today', () => {
@@ -834,9 +954,10 @@ describe('shouldReview', () => {
         state: FsrsState.Learning,
         due: midnightToday,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(true);
+    expect(isDueToday(card)).toBe(true);
   });
 
   it('should handle cards due at 23:59:59 today', () => {
@@ -855,9 +976,10 @@ describe('shouldReview', () => {
         state: FsrsState.Review,
         due: endOfToday,
       },
+      paused: false,
     };
 
-    expect(shouldReview(card)).toBe(true);
+    expect(isDueToday(card)).toBe(true);
   });
 
   it('should correctly handle date comparison in local timezone', () => {
@@ -886,9 +1008,10 @@ describe('shouldReview', () => {
           state: FsrsState.Review,
           due: new Date('2024-01-15T10:00:00'), // 10 AM on the same day
         },
+        paused: false,
       };
 
-      expect(shouldReview(cardDueToday)).toBe(true);
+      expect(isDueToday(cardDueToday)).toBe(true);
     });
   });
 
@@ -911,9 +1034,10 @@ describe('shouldReview', () => {
         // Due at noon today local time
         due: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
       },
+      paused: false,
     };
 
-    expect(shouldReview(cardDueToday)).toBe(true);
+    expect(isDueToday(cardDueToday)).toBe(true);
 
     // Card due tomorrow should not be included
     const cardDueTomorrow: Card = {
@@ -924,7 +1048,7 @@ describe('shouldReview', () => {
       },
     };
 
-    expect(shouldReview(cardDueTomorrow)).toBe(false);
+    expect(isDueToday(cardDueTomorrow)).toBe(false);
   });
 });
 
@@ -1316,5 +1440,55 @@ describe('getReviewQueue', () => {
     // Should get full MAX_NEW_CARDS_PER_DAY when no stats exist
     expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
+  });
+
+  it('should exclude paused cards from review queue', async () => {
+    // Set up time
+    const today = new Date('2024-01-15T10:00:00');
+    vi.setSystemTime(today);
+
+    // Create new cards
+    await addCard('new1', 'New 1', '1001', 'Easy');
+    await addCard('new2', 'New 2', '1002', 'Medium');
+    await addCard('new3', 'New 3', '1003', 'Hard');
+    await addCard('new4', 'New 4', '1004', 'Easy');
+
+    // Create review cards (rate them to make them due)
+    await rateCard('review1', 'Review 1', Rating.Again, '2001', 'Easy');
+    await rateCard('review2', 'Review 2', Rating.Hard, '2002', 'Medium');
+
+    // Pause some cards
+    await setPauseStatus('new2', true); // Pause a new card
+    await setPauseStatus('new4', true); // Pause another new card
+    await setPauseStatus('review1', true); // Pause a review card
+
+    const queue = await getReviewQueue();
+
+    // Should exclude all paused cards
+    expect(queue).not.toContainEqual(expect.objectContaining({ slug: 'new2' }));
+    expect(queue).not.toContainEqual(expect.objectContaining({ slug: 'new4' }));
+    expect(queue).not.toContainEqual(expect.objectContaining({ slug: 'review1' }));
+
+    // Should include non-paused cards
+    expect(queue).toContainEqual(expect.objectContaining({ slug: 'new1' }));
+    expect(queue).toContainEqual(expect.objectContaining({ slug: 'review2' }));
+
+    // With 2 new cards already rated (review1 and review2), we have 1 slot left for new cards
+    // But new2 and new4 are paused, so only new1 and new3 are available
+    // So we should get: new1 (or new3) + review2 = 2 total
+    expect(queue).toHaveLength(2);
+  });
+
+  it('should handle all cards being paused', async () => {
+    // Create and pause all cards
+    await addCard('paused1', 'Paused 1', '3001', 'Easy');
+    await addCard('paused2', 'Paused 2', '3002', 'Medium');
+    await setPauseStatus('paused1', true);
+    await setPauseStatus('paused2', true);
+
+    const queue = await getReviewQueue();
+
+    // Should return empty queue when all cards are paused
+    expect(queue).toEqual([]);
   });
 });

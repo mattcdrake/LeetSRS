@@ -3,7 +3,13 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useRateCardMutation, useSaveNoteMutation, useDeleteNoteMutation, queryKeys } from '../useBackgroundQueries';
+import {
+  useRateCardMutation,
+  useSaveNoteMutation,
+  useDeleteNoteMutation,
+  usePauseCardMutation,
+  queryKeys,
+} from '../useBackgroundQueries';
 import { sendMessage } from '@/services/messages';
 import { MessageType } from '@/services/messages';
 import { Rating, type Grade, createEmptyCard } from 'ts-fsrs';
@@ -17,6 +23,7 @@ vi.mock('@/services/messages', () => ({
     RATE_CARD: 'RATE_CARD',
     SAVE_NOTE: 'SAVE_NOTE',
     DELETE_NOTE: 'DELETE_NOTE',
+    SET_PAUSE_STATUS: 'SET_PAUSE_STATUS',
   },
 }));
 
@@ -42,6 +49,7 @@ describe('useRateCardMutation', () => {
       difficulty: mockCard.difficulty,
       createdAt: new Date(),
       fsrs: createEmptyCard(),
+      paused: false,
     };
 
     vi.mocked(sendMessage).mockResolvedValue(mockResponse);
@@ -217,5 +225,123 @@ describe('useDeleteNoteMutation', () => {
 
     // Clean up the spy
     invalidateQueriesSpy.mockRestore();
+  });
+});
+
+describe('usePauseCardMutation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should call sendMessage with correct parameters when pausing a card', async () => {
+    const mockCard: Card = {
+      id: 'test-id',
+      slug: 'two-sum',
+      name: 'Two Sum',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      createdAt: new Date(),
+      fsrs: createEmptyCard(),
+      paused: true,
+    };
+
+    vi.mocked(sendMessage).mockResolvedValue(mockCard);
+
+    const { result } = renderHook(() => usePauseCardMutation(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ slug: 'two-sum', paused: true });
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith({
+        type: MessageType.SET_PAUSE_STATUS,
+        slug: 'two-sum',
+        paused: true,
+      });
+    });
+  });
+
+  it('should call sendMessage with correct parameters when unpausing a card', async () => {
+    const mockCard: Card = {
+      id: 'test-id',
+      slug: 'three-sum',
+      name: 'Three Sum',
+      leetcodeId: '15',
+      difficulty: 'Medium',
+      createdAt: new Date(),
+      fsrs: createEmptyCard(),
+      paused: false,
+    };
+
+    vi.mocked(sendMessage).mockResolvedValue(mockCard);
+
+    const { result } = renderHook(() => usePauseCardMutation(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ slug: 'three-sum', paused: false });
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith({
+        type: MessageType.SET_PAUSE_STATUS,
+        slug: 'three-sum',
+        paused: false,
+      });
+    });
+  });
+
+  it('should invalidate cards and review queue queries on successful pause', async () => {
+    const mockCard: Card = {
+      id: 'test-id',
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '999',
+      difficulty: 'Hard',
+      createdAt: new Date(),
+      fsrs: createEmptyCard(),
+      paused: true,
+    };
+
+    const { wrapper, queryClient } = createTestWrapper();
+    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    vi.mocked(sendMessage).mockResolvedValue(mockCard);
+
+    const { result } = renderHook(() => usePauseCardMutation(), {
+      wrapper,
+    });
+
+    result.current.mutate({ slug: 'test-problem', paused: true });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    // Verify that both cards and review queue queries were invalidated
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.cards,
+    });
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: queryKeys.reviewQueue,
+    });
+
+    invalidateQueriesSpy.mockRestore();
+  });
+
+  it('should handle mutation error properly', async () => {
+    const errorMessage = 'Card not found';
+    vi.mocked(sendMessage).mockRejectedValue(new Error(errorMessage));
+
+    const { result } = renderHook(() => usePauseCardMutation(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ slug: 'non-existent', paused: true });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+      expect(result.current.error?.message).toBe(errorMessage);
+    });
   });
 });
