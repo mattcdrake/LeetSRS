@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendMessage, MessageType } from '@/services/messages';
 import type { Grade } from 'ts-fsrs';
 import type { Difficulty, Card } from '@/shared/cards';
+import type { Theme } from '@/shared/settings';
 
 // Query Keys
 export const queryKeys = {
@@ -9,6 +10,9 @@ export const queryKeys = {
   reviewQueue: ['reviewQueue'] as const,
   todayStats: ['todayStats'] as const,
   note: (cardId: string) => ['note', cardId] as const,
+  maxNewCardsPerDay: ['maxNewCardsPerDay'] as const,
+  animationsEnabled: ['animationsEnabled'] as const,
+  theme: ['theme'] as const,
 } as const;
 
 // Queries
@@ -159,6 +163,61 @@ export function usePauseCardMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards });
       queryClient.invalidateQueries({ queryKey: queryKeys.reviewQueue });
+    },
+  });
+}
+
+export function useMaxNewCardsPerDayQuery() {
+  return useQuery({
+    queryKey: queryKeys.maxNewCardsPerDay,
+    queryFn: () => sendMessage({ type: MessageType.GET_MAX_NEW_CARDS_PER_DAY }),
+  });
+}
+
+export function useSetMaxNewCardsPerDayMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: number) => sendMessage({ type: MessageType.SET_MAX_NEW_CARDS_PER_DAY, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.maxNewCardsPerDay });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviewQueue });
+    },
+  });
+}
+
+export function useAnimationsEnabledQuery() {
+  return useQuery({
+    queryKey: queryKeys.animationsEnabled,
+    queryFn: () => sendMessage({ type: MessageType.GET_ANIMATIONS_ENABLED }),
+  });
+}
+
+export function useSetAnimationsEnabledMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_ANIMATIONS_ENABLED, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.animationsEnabled });
+    },
+  });
+}
+
+export function useThemeQuery() {
+  return useQuery({
+    queryKey: queryKeys.theme,
+    queryFn: () => sendMessage({ type: MessageType.GET_THEME }),
+  });
+}
+
+export function useSetThemeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: Theme) => sendMessage({ type: MessageType.SET_THEME, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.theme });
     },
   });
 }

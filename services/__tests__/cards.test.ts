@@ -12,7 +12,6 @@ import {
   rateCard,
   getReviewQueue,
   isDueToday,
-  MAX_NEW_CARDS_PER_DAY,
   type StoredCard,
 } from '../cards';
 import { type Card } from '@/shared/cards';
@@ -20,10 +19,17 @@ import { STORAGE_KEYS } from '../storage-keys';
 import { createEmptyCard, Rating, State as FsrsState } from 'ts-fsrs';
 import type { DailyStats } from '../stats';
 import * as notesModule from '../notes';
+import { DEFAULT_MAX_NEW_CARDS_PER_DAY } from '@/shared/settings';
 
 // Mock the notes module
 vi.mock('../notes', () => ({
   deleteNote: vi.fn(),
+}));
+
+// Mock the settings module
+vi.mock('../settings', () => ({
+  getMaxNewCardsPerDay: vi.fn(() => Promise.resolve(3)),
+  setMaxNewCardsPerDay: vi.fn(),
 }));
 
 describe('Card serialization', () => {
@@ -1104,8 +1110,8 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should only get MAX_NEW_CARDS_PER_DAY
-    expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY);
+    // Should only get DEFAULT_MAX_NEW_CARDS_PER_DAY
+    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
@@ -1160,7 +1166,7 @@ describe('getReviewQueue', () => {
 
     // Rating the cards created stats entries, so we need to account for that
     // We rated 2 cards as new (review1 and review2 were new when first rated)
-    // So remaining new cards = MAX_NEW_CARDS_PER_DAY - 2 = 1
+    // So remaining new cards = DEFAULT_MAX_NEW_CARDS_PER_DAY - 2 = 1
     // Total = 2 review cards + 1 new card = 3
     expect(queue).toHaveLength(3);
 
@@ -1271,7 +1277,7 @@ describe('getReviewQueue', () => {
     expect(slugs).toHaveLength(2);
   });
 
-  it('should respect MAX_NEW_CARDS_PER_DAY limit', async () => {
+  it('should respect max new cards per day limit from settings', async () => {
     // Create many new cards
     for (let i = 1; i <= 10; i++) {
       await addCard(`new${i}`, `New ${i}`, `${6000 + i}`, 'Medium');
@@ -1279,8 +1285,8 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should only include MAX_NEW_CARDS_PER_DAY new cards
-    expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY);
+    // Should only include DEFAULT_MAX_NEW_CARDS_PER_DAY new cards
+    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
@@ -1328,8 +1334,8 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should only get (MAX_NEW_CARDS_PER_DAY - 1) since 1 was already done
-    expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY - 1);
+    // Should only get (DEFAULT_MAX_NEW_CARDS_PER_DAY - 1) since 1 was already done
+    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY - 1);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
@@ -1338,11 +1344,11 @@ describe('getReviewQueue', () => {
     await storage.setItem(
       STORAGE_KEYS.stats,
       createTestStats({
-        newCards: MAX_NEW_CARDS_PER_DAY,
+        newCards: DEFAULT_MAX_NEW_CARDS_PER_DAY,
         gradeBreakdown: {
           [Rating.Again]: 0,
           [Rating.Hard]: 0,
-          [Rating.Good]: MAX_NEW_CARDS_PER_DAY,
+          [Rating.Good]: DEFAULT_MAX_NEW_CARDS_PER_DAY,
           [Rating.Easy]: 0,
         },
       })
@@ -1364,13 +1370,13 @@ describe('getReviewQueue', () => {
     await storage.setItem(
       STORAGE_KEYS.stats,
       createTestStats({
-        newCards: MAX_NEW_CARDS_PER_DAY,
+        newCards: DEFAULT_MAX_NEW_CARDS_PER_DAY,
         reviewedCards: 2,
-        totalReviews: MAX_NEW_CARDS_PER_DAY + 2,
+        totalReviews: DEFAULT_MAX_NEW_CARDS_PER_DAY + 2,
         gradeBreakdown: {
           [Rating.Again]: 0,
           [Rating.Hard]: 2,
-          [Rating.Good]: MAX_NEW_CARDS_PER_DAY,
+          [Rating.Good]: DEFAULT_MAX_NEW_CARDS_PER_DAY,
           [Rating.Easy]: 0,
         },
       })
@@ -1401,7 +1407,7 @@ describe('getReviewQueue', () => {
   });
 
   it('should handle partial new card limit correctly', async () => {
-    // Set MAX_NEW_CARDS_PER_DAY = 3, already did 2
+    // Set DEFAULT_MAX_NEW_CARDS_PER_DAY = 3, already did 2
     await storage.setItem(
       STORAGE_KEYS.stats,
       createTestStats({
@@ -1437,8 +1443,25 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should get full MAX_NEW_CARDS_PER_DAY when no stats exist
-    expect(queue).toHaveLength(MAX_NEW_CARDS_PER_DAY);
+    // Should get full DEFAULT_MAX_NEW_CARDS_PER_DAY when no stats exist
+    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY);
+    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
+  });
+
+  it('should respect custom max new cards per day setting', async () => {
+    // Set custom max new cards per day
+    const { getMaxNewCardsPerDay } = await import('../settings');
+    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(5);
+
+    // Create new cards
+    for (let i = 1; i <= 10; i++) {
+      await addCard(`new${i}`, `New ${i}`, `${9000 + i}`, 'Easy');
+    }
+
+    const queue = await getReviewQueue();
+
+    // Should get 5 new cards based on custom setting
+    expect(queue).toHaveLength(5);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 

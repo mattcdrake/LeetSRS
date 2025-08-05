@@ -14,6 +14,10 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
   useNoteQuery: vi.fn(),
   useSaveNoteMutation: vi.fn(),
   useDeleteNoteMutation: vi.fn(),
+  useAnimationsEnabledQuery: vi.fn(() => ({ data: false })),
+  useSetAnimationsEnabledMutation: vi.fn(() => ({ mutate: vi.fn() })),
+  useThemeQuery: vi.fn(() => ({ data: 'dark' })),
+  useSetThemeMutation: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
 describe('NotesSection', () => {

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ReviewQueue } from '../ReviewQueue';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
@@ -16,6 +16,20 @@ import { createQueryMock, createMutationMock } from '@/test/utils/query-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { Rating, State } from 'ts-fsrs';
 
+// Mock localStorage to disable animations in tests
+const originalLocalStorage = window.localStorage;
+const mockLocalStorage = {
+  getItem: (key: string) => {
+    if (key === 'animationsEnabled') return 'false';
+    return null;
+  },
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  length: 0,
+  key: () => null,
+};
+
 // Mock the hooks
 vi.mock('@/hooks/useBackgroundQueries', () => ({
   useReviewQueueQuery: vi.fn(),
@@ -23,6 +37,10 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
   useRemoveCardMutation: vi.fn(),
   useDelayCardMutation: vi.fn(),
   usePauseCardMutation: vi.fn(),
+  useAnimationsEnabledQuery: vi.fn(() => ({ data: false })),
+  useSetAnimationsEnabledMutation: vi.fn(() => ({ mutate: vi.fn() })),
+  useThemeQuery: vi.fn(() => ({ data: 'dark' })),
+  useSetThemeMutation: vi.fn(() => ({ mutate: vi.fn() })),
   queryKeys: {
     reviewQueue: ['reviewQueue'],
     cards: ['cards'],
@@ -129,6 +147,13 @@ describe('ReviewQueue', () => {
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
 
   beforeEach(() => {
+    // Set up localStorage mock
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true,
+      configurable: true,
+    });
+
     vi.clearAllMocks();
     mockInvalidateQueries.mockClear();
 
@@ -173,11 +198,24 @@ describe('ReviewQueue', () => {
     );
   });
 
+  afterEach(() => {
+    Object.defineProperty(window, 'localStorage', {
+      value: originalLocalStorage,
+      writable: true,
+      configurable: true,
+    });
+  });
+
   describe('Empty Queue', () => {
+    it('should have animations disabled in tests', () => {
+      // Verify that localStorage mock returns false for animationsEnabled
+      expect(window.localStorage.getItem('animationsEnabled')).toBe('false');
+    });
+
     it('should show empty state when no cards to review', async () => {
       vi.mocked(useReviewQueueQuery).mockReturnValue(createQueryMock([]) as ReturnType<typeof useReviewQueueQuery>);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for state to initialize
       await waitFor(() => {
@@ -189,7 +227,7 @@ describe('ReviewQueue', () => {
 
   describe('Queue Display', () => {
     it('should display the first card in the queue', async () => {
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for state to initialize
       await waitFor(() => {
@@ -200,7 +238,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should only display one card at a time', async () => {
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for state to initialize
       await waitFor(() => {
@@ -220,7 +258,7 @@ describe('ReviewQueue', () => {
         shouldRequeue: false,
       });
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -251,7 +289,7 @@ describe('ReviewQueue', () => {
         shouldRequeue: false,
       });
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -284,7 +322,7 @@ describe('ReviewQueue', () => {
         fsrs: { ...mockCards[0].fsrs, due: new Date() },
       };
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -341,7 +379,7 @@ describe('ReviewQueue', () => {
         shouldRequeue: true,
       });
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -382,7 +420,7 @@ describe('ReviewQueue', () => {
           shouldRequeue: false,
         });
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -432,7 +470,7 @@ describe('ReviewQueue', () => {
       // Make mutateAsync never resolve
       mockMutateAsync.mockImplementation(() => new Promise(() => {}));
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -468,7 +506,7 @@ describe('ReviewQueue', () => {
         () => new Promise((resolve) => setTimeout(() => resolve({ card: mockCards[0], shouldRequeue: false }), 100))
       );
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -501,7 +539,7 @@ describe('ReviewQueue', () => {
       mockMutateAsync.mockRejectedValue(new Error('Failed to rate card'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -527,7 +565,7 @@ describe('ReviewQueue', () => {
     it('should not crash when queue is empty and handleRating is called', async () => {
       vi.mocked(useReviewQueueQuery).mockReturnValue(createQueryMock([]) as ReturnType<typeof useReviewQueueQuery>);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for empty state
       await waitFor(() => {
@@ -542,7 +580,7 @@ describe('ReviewQueue', () => {
 
   describe('State Initialization', () => {
     it('should initialize queue only once when data loads', async () => {
-      const { rerender } = render(<ReviewQueue disableAnimations />, { wrapper });
+      const { rerender } = render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -555,7 +593,7 @@ describe('ReviewQueue', () => {
       );
 
       // Re-render the component
-      rerender(<ReviewQueue disableAnimations />);
+      rerender(<ReviewQueue />);
 
       // Should still show the original first card, not the new data
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
@@ -568,7 +606,7 @@ describe('ReviewQueue', () => {
         shouldRequeue: false,
       });
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -609,7 +647,7 @@ describe('ReviewQueue', () => {
     it('should remove card from queue when delete button is clicked', async () => {
       mockRemoveMutateAsync.mockResolvedValue(undefined);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -638,7 +676,7 @@ describe('ReviewQueue', () => {
 
       mockRemoveMutateAsync.mockResolvedValue(undefined);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -662,7 +700,7 @@ describe('ReviewQueue', () => {
       mockRemoveMutateAsync.mockRejectedValue(new Error('Failed to delete card'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -690,7 +728,7 @@ describe('ReviewQueue', () => {
       // Make deletion never resolve
       mockRemoveMutateAsync.mockImplementation(() => new Promise(() => {}));
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -724,7 +762,7 @@ describe('ReviewQueue', () => {
     it('should not crash when queue is empty and handleDelete is called', async () => {
       vi.mocked(useReviewQueueQuery).mockReturnValue(createQueryMock([]) as ReturnType<typeof useReviewQueueQuery>);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for empty state
       await waitFor(() => {
@@ -742,7 +780,7 @@ describe('ReviewQueue', () => {
       mockRemoveMutateAsync.mockRejectedValue(new Error('Network error'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -782,7 +820,7 @@ describe('ReviewQueue', () => {
         () => new Promise((resolve) => setTimeout(() => resolve(undefined), 100))
       );
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -832,7 +870,7 @@ describe('ReviewQueue', () => {
       };
       mockDelayMutateAsync.mockResolvedValue(delayedCard);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -866,7 +904,7 @@ describe('ReviewQueue', () => {
       };
       mockDelayMutateAsync.mockResolvedValue(delayedCard);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -905,7 +943,7 @@ describe('ReviewQueue', () => {
       };
       mockDelayMutateAsync.mockResolvedValue(delayedCard);
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -932,7 +970,7 @@ describe('ReviewQueue', () => {
       mockDelayMutateAsync.mockRejectedValue(new Error('Failed to delay card'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -960,7 +998,7 @@ describe('ReviewQueue', () => {
       // Make delay never resolve
       mockDelayMutateAsync.mockImplementation(() => new Promise(() => {}));
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -997,7 +1035,7 @@ describe('ReviewQueue', () => {
         () => new Promise((resolve) => setTimeout(() => resolve(mockCards[0]), 100))
       );
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -1028,7 +1066,7 @@ describe('ReviewQueue', () => {
       mockDelayMutateAsync.mockRejectedValue(new Error('Network error'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -1065,7 +1103,7 @@ describe('ReviewQueue', () => {
 
   describe('Component Integration', () => {
     it('should pass correct props to ReviewCard', async () => {
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -1076,7 +1114,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should pass correct callbacks to ActionsSection', async () => {
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -1088,7 +1126,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should pass correct cardId to NotesSection', async () => {
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {
@@ -1109,7 +1147,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should update key prop when card changes', async () => {
-      render(<ReviewQueue disableAnimations />, { wrapper });
+      render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
       await waitFor(() => {

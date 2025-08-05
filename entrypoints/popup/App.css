@@ -210,6 +210,12 @@
   scrollbar-color: var(--current-text-tertiary) transparent;
 }
 
+/* Disable animations when preference is set */
+.animations-disabled * {
+  animation: none !important;
+  transition: none !important;
+}
+
 /* Hide scrollbar until hovering over scrollable area */
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background: transparent;

@@ -8,15 +8,13 @@ import {
   useRemoveCardMutation,
   useDelayCardMutation,
   usePauseCardMutation,
+  useAnimationsEnabledQuery,
 } from '@/hooks/useBackgroundQueries';
 import type { Card } from '@/shared/cards';
 import type { Grade } from 'ts-fsrs';
 
-interface ReviewQueueProps {
-  disableAnimations?: boolean;
-}
-
-export function ReviewQueue({ disableAnimations = false }: ReviewQueueProps) {
+export function ReviewQueue() {
+  const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
   const { data: initialQueue, isLoading, error } = useReviewQueueQuery();
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
@@ -51,12 +49,12 @@ export function ReviewQueue({ disableAnimations = false }: ReviewQueueProps) {
     try {
       const result = await action();
 
-      if (!disableAnimations && options.getSlideDirection) {
+      if (animationsEnabled && options.getSlideDirection) {
         const direction = options.getSlideDirection(result);
         if (direction) setSlideDirection(direction);
       }
 
-      const animationDelay = disableAnimations ? 0 : 400;
+      const animationDelay = animationsEnabled ? 400 : 0;
       setTimeout(() => {
         setQueue(options.updateQueue(result, restOfQueue));
         setSlideDirection(null);
@@ -145,7 +143,7 @@ export function ReviewQueue({ disableAnimations = false }: ReviewQueueProps) {
   const currentCard = queue[0];
 
   const getAnimationClass = () => {
-    if (disableAnimations) return '';
+    if (!animationsEnabled) return '';
 
     const baseClasses = 'transition-all duration-300 ease-out';
 

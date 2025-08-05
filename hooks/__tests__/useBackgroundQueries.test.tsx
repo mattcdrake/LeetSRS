@@ -18,18 +18,33 @@ import type { Card } from '@/shared/cards';
 
 // Mock the sendMessage function
 vi.mock('@/services/messages', () => ({
-  sendMessage: vi.fn(),
+  sendMessage: vi.fn((message) => {
+    // Return appropriate default values for animations queries
+    if (message.type === 'GET_ANIMATIONS_ENABLED') {
+      return Promise.resolve(false);
+    }
+    return Promise.resolve();
+  }),
   MessageType: {
     RATE_CARD: 'RATE_CARD',
     SAVE_NOTE: 'SAVE_NOTE',
     DELETE_NOTE: 'DELETE_NOTE',
     SET_PAUSE_STATUS: 'SET_PAUSE_STATUS',
+    GET_ANIMATIONS_ENABLED: 'GET_ANIMATIONS_ENABLED',
+    SET_ANIMATIONS_ENABLED: 'SET_ANIMATIONS_ENABLED',
   },
 }));
 
 describe('useRateCardMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Ensure sendMessage returns appropriate values after clearing
+    vi.mocked(sendMessage).mockImplementation((message) => {
+      if (message.type === 'GET_ANIMATIONS_ENABLED') {
+        return Promise.resolve(false);
+      }
+      return Promise.resolve();
+    });
   });
 
   it('should call sendMessage with correct parameters when mutate is called', async () => {

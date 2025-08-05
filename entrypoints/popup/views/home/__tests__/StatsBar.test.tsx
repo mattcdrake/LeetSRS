@@ -14,6 +14,10 @@ import { createQueryMock } from '@/test/utils/query-mocks';
 // Mock the useReviewQueueQuery hook
 vi.mock('@/hooks/useBackgroundQueries', () => ({
   useReviewQueueQuery: vi.fn(),
+  useAnimationsEnabledQuery: vi.fn(() => ({ data: false })),
+  useSetAnimationsEnabledMutation: vi.fn(() => ({ mutate: vi.fn() })),
+  useThemeQuery: vi.fn(() => ({ data: 'dark' })),
+  useSetThemeMutation: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
 describe('StatsBar', () => {

@@ -12,8 +12,7 @@ import { interleaveArrays } from './utils';
 import { updateStats, getTodayStats } from './stats';
 import { deleteNote } from './notes';
 import { type Card, type Difficulty } from '@/shared/cards';
-
-export const MAX_NEW_CARDS_PER_DAY = 3;
+import { getMaxNewCardsPerDay } from './settings';
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
@@ -197,7 +196,8 @@ export async function getReviewQueue(): Promise<Card[]> {
   // Get today's stats to determine how many new cards have already been done
   const todayStats = await getTodayStats();
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
-  const remainingNewCards = Math.max(0, MAX_NEW_CARDS_PER_DAY - newCardsCompletedToday);
+  const maxNewCardsPerDay = await getMaxNewCardsPerDay();
+  const remainingNewCards = Math.max(0, maxNewCardsPerDay - newCardsCompletedToday);
 
   // Limit new cards to the remaining daily allowance
   const limitedNewCards = newCards.slice(0, remainingNewCards);
