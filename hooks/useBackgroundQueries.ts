@@ -193,7 +193,7 @@ export function useDelayCardMutation() {
     mutationFn: ({ slug, days }) => sendMessage({ type: MessageType.DELAY_CARD, slug, days }),
     onSuccess: () => {
       // Invalidate all card queries
-      queryClient.invalidateQueries({ queryKey: ['cards'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
     },
   });
 }
@@ -212,7 +212,7 @@ export function usePauseCardMutation() {
     mutationFn: ({ slug, paused }) => sendMessage({ type: MessageType.SET_PAUSE_STATUS, slug, paused }),
     onSuccess: () => {
       // Invalidate all card queries
-      queryClient.invalidateQueries({ queryKey: ['cards'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
     },
   });
 }

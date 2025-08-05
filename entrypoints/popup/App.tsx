@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { HomeView } from './views/home/HomeView';
+import { CardView } from './views/card/CardView';
 import { StatsView } from './views/stats/StatsView';
 import { SettingsView } from './views/settings/SettingsView';
 import { DebugView } from './views/debug/DebugView';
@@ -34,6 +35,7 @@ function App() {
 
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,
+    card: <CardView />,
     stats: <StatsView />,
     settings: <SettingsView />,
     debug: <DebugView />,

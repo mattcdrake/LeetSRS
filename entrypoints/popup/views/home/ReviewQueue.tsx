@@ -24,6 +24,7 @@ export function ReviewQueue() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [isFirstCard, setIsFirstCard] = useState(true);
 
   // Initialize queue only once when data first loads
   useEffect(() => {
@@ -59,6 +60,7 @@ export function ReviewQueue() {
         setQueue(options.updateQueue(result, restOfQueue));
         setSlideDirection(null);
         setIsProcessing(false);
+        setIsFirstCard(false);
       }, animationDelay);
     } catch (error) {
       console.error(options.errorMessage, error);
@@ -152,6 +154,10 @@ export function ReviewQueue() {
     }
     if (slideDirection === 'right') {
       return `${baseClasses} animate-slide-right`;
+    }
+    // Skip pop-in animation for the first card
+    if (isFirstCard) {
+      return '';
     }
     return `${baseClasses} animate-slide-in`;
   };

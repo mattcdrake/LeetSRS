@@ -39,7 +39,6 @@ function AppearanceSection() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span>Dark mode</span>
-            <span className="text-xs text-secondary">Easier on the eyes at night</span>
           </div>
           <Switch
             isSelected={theme === 'dark'}
@@ -72,7 +71,6 @@ function AppearanceSection() {
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span>Enable animations</span>
-            <span className="text-xs text-secondary">Smooth transitions and effects</span>
           </div>
           <Switch
             isSelected={animationsEnabled}
