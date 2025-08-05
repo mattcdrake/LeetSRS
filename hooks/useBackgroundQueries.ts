@@ -124,3 +124,22 @@ export function useDeleteNoteMutation(cardId: string) {
     },
   });
 }
+
+export function useDelayCardMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    Card,
+    Error,
+    {
+      slug: string;
+      days: number;
+    }
+  >({
+    mutationFn: ({ slug, days }) => sendMessage({ type: MessageType.DELAY_CARD, slug, days }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviewQueue });
+    },
+  });
+}

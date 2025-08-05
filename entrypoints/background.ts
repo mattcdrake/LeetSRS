@@ -1,4 +1,4 @@
-import { addCard, getAllCards, removeCard, rateCard, getReviewQueue } from '@/services/cards';
+import { addCard, getAllCards, removeCard, delayCard, rateCard, getReviewQueue } from '@/services/cards';
 import { getTodayStats } from '@/services/stats';
 import { getNote, saveNote, deleteNote } from '@/services/notes';
 import { browser } from 'wxt/browser';
@@ -15,6 +15,9 @@ export default defineBackground(() => {
 
       case MessageType.REMOVE_CARD:
         return await removeCard(request.slug);
+
+      case MessageType.DELAY_CARD:
+        return await delayCard(request.slug, request.days);
 
       case MessageType.RATE_CARD:
         return await rateCard(request.slug, request.name, request.rating, request.leetcodeId, request.difficulty);

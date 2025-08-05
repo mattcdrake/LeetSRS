@@ -97,6 +97,28 @@ export async function removeCard(slug: string): Promise<void> {
   await storage.setItem(STORAGE_KEYS.cards, cards);
 }
 
+export async function delayCard(slug: string, days: number): Promise<Card> {
+  const cards = await getCards();
+
+  if (!(slug in cards)) {
+    throw new Error(`Card with slug "${slug}" not found`);
+  }
+
+  const card = deserializeCard(cards[slug]);
+
+  // Add the specified number of days to the current due date
+  const currentDueDate = new Date(card.fsrs.due);
+  const newDueDate = new Date(currentDueDate);
+  newDueDate.setDate(newDueDate.getDate() + days);
+
+  // Update and save
+  card.fsrs.due = newDueDate;
+  cards[slug] = serializeCard(card);
+  await storage.setItem(STORAGE_KEYS.cards, cards);
+
+  return card;
+}
+
 export async function rateCard(
   slug: string,
   name: string,

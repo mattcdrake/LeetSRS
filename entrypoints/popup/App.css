@@ -176,3 +176,40 @@
 .animate-slide-in {
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Custom scrollbar styling */
+/* For Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--current-text-tertiary);
+  border-radius: 3px;
+  opacity: 0.3;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--current-text-secondary);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--current-text-tertiary) transparent;
+}
+
+/* Hide scrollbar until hovering over scrollable area */
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.overflow-y-auto:hover::-webkit-scrollbar-thumb {
+  background: var(--current-text-tertiary);
+}

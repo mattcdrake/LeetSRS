@@ -18,7 +18,7 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      <div className="flex-1 overflow-y-auto pb-[60px]">{views[activeView]}</div>
+      <div className="flex-1 overflow-hidden pb-[60px]">{views[activeView]}</div>
 
       <BottomNav activeView={activeView} onNavigate={setActiveView} />
     </div>

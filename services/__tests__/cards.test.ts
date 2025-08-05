@@ -5,6 +5,7 @@ import {
   addCard,
   getAllCards,
   removeCard,
+  delayCard,
   serializeCard,
   deserializeCard,
   rateCard,
@@ -395,6 +396,133 @@ describe('removeCard', () => {
 
     // Verify deleteNote was NOT called
     expect(notesModule.deleteNote).not.toHaveBeenCalled();
+  });
+});
+
+describe('delayCard', () => {
+  beforeEach(() => {
+    // Reset the fake browser state before each test
+    fakeBrowser.reset();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should delay card due date by specified number of days', async () => {
+    // Create a card first
+    const card = await addCard('two-sum', 'Two Sum', '1', 'Easy');
+    const originalDueDate = new Date(card.fsrs.due);
+
+    // Delay the card by 5 days
+    const delayedCard = await delayCard('two-sum', 5);
+
+    // Check that the due date was updated
+    const expectedDueDate = new Date(originalDueDate);
+    expectedDueDate.setDate(expectedDueDate.getDate() + 5);
+
+    expect(delayedCard.fsrs.due).toBeInstanceOf(Date);
+    expect(delayedCard.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+
+    // Verify it was persisted to storage
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const storedCard = cards!['two-sum'];
+    expect(storedCard.fsrs.due).toBe(expectedDueDate.getTime());
+  });
+
+  it('should handle delaying by 1 day', async () => {
+    const card = await addCard('test-problem', 'Test Problem', '999', 'Medium');
+    const originalDueDate = new Date(card.fsrs.due);
+
+    const delayedCard = await delayCard('test-problem', 1);
+
+    const expectedDueDate = new Date(originalDueDate);
+    expectedDueDate.setDate(expectedDueDate.getDate() + 1);
+
+    expect(delayedCard.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+  });
+
+  it('should handle delaying by large number of days', async () => {
+    const card = await addCard('large-delay', 'Large Delay', '1000', 'Hard');
+    const originalDueDate = new Date(card.fsrs.due);
+
+    const delayedCard = await delayCard('large-delay', 30);
+
+    const expectedDueDate = new Date(originalDueDate);
+    expectedDueDate.setDate(expectedDueDate.getDate() + 30);
+
+    expect(delayedCard.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+  });
+
+  it('should throw error when card does not exist', async () => {
+    await expect(delayCard('non-existent-card', 5)).rejects.toThrow('Card with slug "non-existent-card" not found');
+  });
+
+  it('should preserve all other card properties when delaying', async () => {
+    await addCard('preserve-props', 'Preserve Props', '2000', 'Medium');
+
+    // Rate the card first to change some FSRS properties
+    await rateCard('preserve-props', 'Preserve Props', Rating.Good, '2000', 'Medium');
+
+    // Get the updated card
+    const ratedCards = await getAllCards();
+    const ratedCard = ratedCards.find((c) => c.slug === 'preserve-props')!;
+
+    // Delay the card
+    const delayedCard = await delayCard('preserve-props', 7);
+
+    // Check that all properties except due date are preserved
+    expect(delayedCard.id).toBe(ratedCard.id);
+    expect(delayedCard.slug).toBe(ratedCard.slug);
+    expect(delayedCard.name).toBe(ratedCard.name);
+    expect(delayedCard.leetcodeId).toBe(ratedCard.leetcodeId);
+    expect(delayedCard.difficulty).toBe(ratedCard.difficulty);
+    expect(delayedCard.createdAt.getTime()).toBe(ratedCard.createdAt.getTime());
+
+    // FSRS properties except due should be preserved
+    expect(delayedCard.fsrs.state).toBe(ratedCard.fsrs.state);
+    expect(delayedCard.fsrs.reps).toBe(ratedCard.fsrs.reps);
+    expect(delayedCard.fsrs.lapses).toBe(ratedCard.fsrs.lapses);
+    expect(delayedCard.fsrs.stability).toBe(ratedCard.fsrs.stability);
+    expect(delayedCard.fsrs.difficulty).toBe(ratedCard.fsrs.difficulty);
+    expect(delayedCard.fsrs.last_review?.getTime()).toBe(ratedCard.fsrs.last_review?.getTime());
+
+    // Only due date should be different
+    expect(delayedCard.fsrs.due.getTime()).not.toBe(ratedCard.fsrs.due.getTime());
+  });
+
+  it('should handle multiple delays on the same card', async () => {
+    await addCard('multi-delay', 'Multi Delay', '3000', 'Easy');
+
+    // First delay by 2 days
+    const firstDelay = await delayCard('multi-delay', 2);
+    const firstDueDate = new Date(firstDelay.fsrs.due);
+
+    // Second delay by 3 more days
+    const secondDelay = await delayCard('multi-delay', 3);
+
+    // Should be 3 days after the first delayed date, not 5 days from original
+    const expectedDueDate = new Date(firstDueDate);
+    expectedDueDate.setDate(expectedDueDate.getDate() + 3);
+
+    expect(secondDelay.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+  });
+
+  it('should work with cards in different states', async () => {
+    // Test with a new card
+    await addCard('new-card', 'New Card', '4000', 'Medium');
+    const delayedNew = await delayCard('new-card', 10);
+    expect(delayedNew.fsrs.state).toBe(FsrsState.New);
+
+    // Test with a learning card
+    await rateCard('new-card', 'New Card', Rating.Again, '4000', 'Medium');
+    const learningCards = await getAllCards();
+    const learningCard = learningCards.find((c) => c.slug === 'new-card')!;
+
+    const delayedLearning = await delayCard('new-card', 5);
+    expect(delayedLearning.fsrs.state).toBe(learningCard.fsrs.state);
   });
 });
 

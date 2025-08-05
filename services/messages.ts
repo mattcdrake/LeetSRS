@@ -9,6 +9,7 @@ export const MessageType = {
   ADD_CARD: 'ADD_CARD',
   GET_ALL_CARDS: 'GET_ALL_CARDS',
   REMOVE_CARD: 'REMOVE_CARD',
+  DELAY_CARD: 'DELAY_CARD',
   RATE_CARD: 'RATE_CARD',
   GET_REVIEW_QUEUE: 'GET_REVIEW_QUEUE',
   GET_TODAY_STATS: 'GET_TODAY_STATS',
@@ -22,6 +23,7 @@ export type MessageRequest =
   | { type: typeof MessageType.ADD_CARD; slug: string; name: string; leetcodeId: string; difficulty: Difficulty }
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
+  | { type: typeof MessageType.DELAY_CARD; slug: string; days: number }
   | {
       type: typeof MessageType.RATE_CARD;
       slug: string;
@@ -41,6 +43,7 @@ export type MessageResponseMap = {
   [MessageType.ADD_CARD]: Card;
   [MessageType.GET_ALL_CARDS]: Card[];
   [MessageType.REMOVE_CARD]: void;
+  [MessageType.DELAY_CARD]: Card;
   [MessageType.RATE_CARD]: { card: Card; shouldRequeue: boolean };
   [MessageType.GET_REVIEW_QUEUE]: Card[];
   [MessageType.GET_TODAY_STATS]: DailyStats | null;
