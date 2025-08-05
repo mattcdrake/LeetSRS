@@ -6,10 +6,10 @@ import { describe, it, expect } from 'vitest';
 import { Header } from '../Header';
 
 describe('Header', () => {
-  it('renders the LeetReps title', () => {
+  it('renders the LeetSRS title', () => {
     render(<Header />);
 
-    const title = screen.getByRole('heading', { name: 'LeetReps', level: 1 });
+    const title = screen.getByRole('heading', { name: 'LeetSRS', level: 1 });
     expect(title).toBeInTheDocument();
     expect(title).toHaveClass('text-xl', 'font-bold', 'text-primary');
   });

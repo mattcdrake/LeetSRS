@@ -24,8 +24,8 @@ describe('Storage Keys', () => {
       const longId = 'a'.repeat(100);
       const key = getNoteStorageKey(longId);
 
-      expect(key).toBe(`local:leetreps:notes:${longId}`);
-      expect(key.length).toBe('local:leetreps:notes:'.length + 100);
+      expect(key).toBe(`local:leetsrs:notes:${longId}`);
+      expect(key.length).toBe('local:leetsrs:notes:'.length + 100);
     });
   });
 });

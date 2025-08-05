@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     // Check localStorage or system preference
-    const stored = localStorage.getItem('leetreps-theme');
+    const stored = localStorage.getItem('leetsrs-theme');
     if (stored === 'light' || stored === 'dark') return stored;
 
     // Check system preference
@@ -34,7 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     body.classList.add(theme);
 
     // Save to localStorage
-    localStorage.setItem('leetreps-theme', theme);
+    localStorage.setItem('leetsrs-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
