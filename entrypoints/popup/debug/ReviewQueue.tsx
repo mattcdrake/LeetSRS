@@ -7,7 +7,7 @@ interface ReviewQueueProps {
 }
 
 export function ReviewQueue({ style }: ReviewQueueProps) {
-  const { data: reviewQueue, isLoading, error } = useReviewQueueQuery(true);
+  const { data: reviewQueue, isLoading, error } = useReviewQueueQuery({ enabled: true });
 
   const queueList = reviewQueue ?? [];
 

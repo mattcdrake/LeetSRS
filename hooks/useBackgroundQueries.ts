@@ -42,13 +42,15 @@ export function useCardsQuery() {
   });
 }
 
-export function useReviewQueueQuery(enabled = true) {
+export function useReviewQueueQuery(options?: { enabled?: boolean; refetchOnWindowFocus?: boolean }) {
+  const { enabled = true, refetchOnWindowFocus = false } = options || {};
   return useQuery({
     queryKey: queryKeys.cards.reviewQueue,
     queryFn: () => sendMessage({ type: MessageType.GET_REVIEW_QUEUE }),
     enabled,
     staleTime: 1000 * 30,
     refetchOnMount: 'always',
+    refetchOnWindowFocus,
   });
 }
 
@@ -231,7 +233,6 @@ export function useSetMaxNewCardsPerDayMutation() {
     mutationFn: (value: number) => sendMessage({ type: MessageType.SET_MAX_NEW_CARDS_PER_DAY, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.maxNewCardsPerDay });
-      // Also invalidate review queue as it depends on this setting
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
     },
   });

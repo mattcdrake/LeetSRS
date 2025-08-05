@@ -15,24 +15,25 @@ import type { Grade } from 'ts-fsrs';
 
 export function ReviewQueue() {
   const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
-  const { data: initialQueue, isLoading, error } = useReviewQueueQuery();
+  const { data: initialQueue, isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();
   const pauseCardMutation = usePauseCardMutation();
   const [queue, setQueue] = useState<Card[]>([]);
-  const [hasInitialized, setHasInitialized] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isFirstCard, setIsFirstCard] = useState(true);
 
-  // Initialize queue only once when data first loads
+  // Effect to populate the local queue from the server-fetched queue.
+  // This runs initially and whenever the local queue becomes empty,
+  // but only if the server actually has cards to offer. This approach is
+  // declarative and works seamlessly with the data-fetching library's cache.
   useEffect(() => {
-    if (initialQueue && !hasInitialized) {
+    if (initialQueue && queue.length === 0 && initialQueue.length > 0) {
       setQueue([...initialQueue]);
-      setHasInitialized(true);
     }
-  }, [initialQueue, hasInitialized]);
+  }, [initialQueue, queue.length]);
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
@@ -133,6 +134,8 @@ export function ReviewQueue() {
     );
   }
 
+  // If the local queue is empty (and we're not loading), it means the user
+  // has finished their session or there were no cards to begin with.
   if (queue.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-32 gap-2">
@@ -155,7 +158,7 @@ export function ReviewQueue() {
     if (slideDirection === 'right') {
       return `${baseClasses} animate-slide-right`;
     }
-    // Skip pop-in animation for the first card
+    // Skip pop-in animation for the first card of a new batch
     if (isFirstCard) {
       return '';
     }
@@ -165,6 +168,7 @@ export function ReviewQueue() {
   return (
     <div className="flex flex-col gap-4">
       <div className={getAnimationClass()}>
+        {/* The key is important to ensure React re-mounts the component for a new card */}
         <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       </div>
       <NotesSection cardId={currentCard.id} />

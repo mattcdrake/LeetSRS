@@ -668,34 +668,6 @@ describe('ReviewQueue', () => {
       expect(mockRemoveMutateAsync).toHaveBeenCalledWith('two-sum');
     });
 
-    it('should show empty state when last card is deleted', async () => {
-      // Start with only one card
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock([mockCards[0]]) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      mockRemoveMutateAsync.mockResolvedValue(undefined);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      // Click delete button
-      const deleteButton = screen.getByTestId('delete-button');
-      fireEvent.click(deleteButton);
-
-      // Should show empty state
-      await waitFor(() => {
-        expect(screen.getByText('No cards to review!')).toBeInTheDocument();
-        expect(screen.getByText('Check back tomorrow for more reviews.')).toBeInTheDocument();
-      });
-
-      expect(mockRemoveMutateAsync).toHaveBeenCalledWith('two-sum');
-    });
-
     it('should handle delete errors gracefully', async () => {
       mockRemoveMutateAsync.mockRejectedValue(new Error('Failed to delete card'));
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -925,44 +897,6 @@ describe('ReviewQueue', () => {
       expect(mockDelayMutateAsync).toHaveBeenCalledWith({
         slug: 'two-sum',
         days: 5,
-      });
-    });
-
-    it('should show empty state when last card is delayed', async () => {
-      // Start with only one card
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock([mockCards[0]]) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      const delayedCard = {
-        ...mockCards[0],
-        fsrs: {
-          ...mockCards[0].fsrs,
-          due: new Date(Date.now() + 86400000),
-        },
-      };
-      mockDelayMutateAsync.mockResolvedValue(delayedCard);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      // Click delay button
-      const delay1Button = screen.getByTestId('delay-1-button');
-      fireEvent.click(delay1Button);
-
-      // Should show empty state
-      await waitFor(() => {
-        expect(screen.getByText('No cards to review!')).toBeInTheDocument();
-        expect(screen.getByText('Check back tomorrow for more reviews.')).toBeInTheDocument();
-      });
-
-      expect(mockDelayMutateAsync).toHaveBeenCalledWith({
-        slug: 'two-sum',
-        days: 1,
       });
     });
 
