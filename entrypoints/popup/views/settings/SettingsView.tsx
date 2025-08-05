@@ -9,6 +9,9 @@ import {
   useSetAnimationsEnabledMutation,
   useThemeQuery,
   useSetThemeMutation,
+  useExportDataMutation,
+  useImportDataMutation,
+  useResetAllDataMutation,
 } from '@/hooks/useBackgroundQueries';
 import {
   DEFAULT_MAX_NEW_CARDS_PER_DAY,
@@ -16,7 +19,8 @@ import {
   MAX_NEW_CARDS_PER_DAY,
   DEFAULT_THEME,
 } from '@/shared/settings';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { APP_VERSION } from '@/shared/config';
 
 function AppearanceSection() {
   const { data: theme = DEFAULT_THEME } = useThemeQuery();
@@ -141,24 +145,126 @@ function ReviewSettingsSection() {
 }
 
 function DataSection() {
+  const exportDataMutation = useExportDataMutation();
+  const importDataMutation = useImportDataMutation();
+  const resetAllDataMutation = useResetAllDataMutation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [resetConfirmation, setResetConfirmation] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      const jsonData = await exportDataMutation.mutateAsync();
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leetreps-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export data');
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to import this data?\n\n' +
+        'This will replace ALL your current data including cards, review history, and notes.'
+    );
+
+    if (!confirmed) {
+      // Reset the input so the same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      await importDataMutation.mutateAsync(text);
+      alert('Data imported successfully!');
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert(`Failed to import data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleReset = async () => {
+    if (!resetConfirmation) {
+      setResetConfirmation(true);
+      setTimeout(() => setResetConfirmation(false), 3000);
+      return;
+    }
+
+    // Browser confirmation dialog
+    const confirmed = window.confirm(
+      'Are you absolutely sure you want to delete all data? This action cannot be undone.\n\n' +
+        'All your cards, review history, statistics, and notes will be permanently deleted.'
+    );
+
+    if (!confirmed) {
+      setResetConfirmation(false);
+      return;
+    }
+
+    try {
+      await resetAllDataMutation.mutateAsync();
+      alert('All data has been reset');
+      setResetConfirmation(false);
+    } catch (error) {
+      console.error('Reset failed:', error);
+      alert('Failed to reset data');
+    }
+  };
+
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
       <h3 className="text-lg font-semibold mb-4">Data</h3>
       <div className="space-y-2">
         <Button
+          onPress={handleExport}
+          isDisabled={exportDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
         >
-          Export Data
+          {exportDataMutation.isPending ? 'Exporting...' : 'Export Data'}
         </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          className="hidden"
+          id="import-file-input"
+        />
         <Button
+          onPress={() => fileInputRef.current?.click()}
+          isDisabled={importDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
         >
-          Import Data
+          {importDataMutation.isPending ? 'Importing...' : 'Import Data'}
         </Button>
         <Button
+          onPress={handleReset}
+          isDisabled={resetAllDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 text-white bg-danger ${bounceButton}`}
         >
-          Reset All Data
+          {resetAllDataMutation.isPending
+            ? 'Resetting...'
+            : resetConfirmation
+              ? 'Click again to confirm'
+              : 'Reset All Data'}
         </Button>
       </div>
     </div>
@@ -168,7 +274,7 @@ function DataSection() {
 function VersionInfo() {
   return (
     <div className="text-center text-sm text-tertiary">
-      <p>Version 0.1.0</p>
+      <p>Version {APP_VERSION}</p>
     </div>
   );
 }

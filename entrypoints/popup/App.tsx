@@ -5,7 +5,6 @@ import { HomeView } from './views/home/HomeView';
 import { CardView } from './views/card/CardView';
 import { StatsView } from './views/stats/StatsView';
 import { SettingsView } from './views/settings/SettingsView';
-import { DebugView } from './views/debug/DebugView';
 import { useAnimationsEnabledQuery, useThemeQuery } from '@/hooks/useBackgroundQueries';
 import { DEFAULT_THEME } from '@/shared/settings';
 
@@ -38,7 +37,6 @@ function App() {
     card: <CardView />,
     stats: <StatsView />,
     settings: <SettingsView />,
-    debug: <DebugView />,
   };
 
   return (

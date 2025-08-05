@@ -20,6 +20,7 @@ import {
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/services/messages';
 import { runMigrations, migrations } from '@/services/migrations';
+import { exportData, importData, resetAllData } from '@/services/import-export';
 
 export default defineBackground(async () => {
   // Run migrations on startup
@@ -91,6 +92,15 @@ export default defineBackground(async () => {
 
       case MessageType.GET_NEXT_N_DAYS_STATS:
         return await getNextNDaysStats(request.days);
+
+      case MessageType.EXPORT_DATA:
+        return await exportData();
+
+      case MessageType.IMPORT_DATA:
+        return await importData(request.jsonData);
+
+      case MessageType.RESET_ALL_DATA:
+        return await resetAllData();
 
       default: {
         // This should never happen with proper typing - exhaustive check

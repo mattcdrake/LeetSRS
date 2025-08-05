@@ -28,6 +28,9 @@ export const MessageType = {
   GET_ALL_STATS: 'GET_ALL_STATS',
   GET_LAST_N_DAYS_STATS: 'GET_LAST_N_DAYS_STATS',
   GET_NEXT_N_DAYS_STATS: 'GET_NEXT_N_DAYS_STATS',
+  EXPORT_DATA: 'EXPORT_DATA',
+  IMPORT_DATA: 'IMPORT_DATA',
+  RESET_ALL_DATA: 'RESET_ALL_DATA',
 } as const;
 
 // Message request types as discriminated union
@@ -59,7 +62,10 @@ export type MessageRequest =
   | { type: typeof MessageType.GET_CARD_STATE_STATS }
   | { type: typeof MessageType.GET_ALL_STATS }
   | { type: typeof MessageType.GET_LAST_N_DAYS_STATS; days: number }
-  | { type: typeof MessageType.GET_NEXT_N_DAYS_STATS; days: number };
+  | { type: typeof MessageType.GET_NEXT_N_DAYS_STATS; days: number }
+  | { type: typeof MessageType.EXPORT_DATA }
+  | { type: typeof MessageType.IMPORT_DATA; jsonData: string }
+  | { type: typeof MessageType.RESET_ALL_DATA };
 
 // Type mapping for request to response
 export type MessageResponseMap = {
@@ -84,6 +90,9 @@ export type MessageResponseMap = {
   [MessageType.GET_ALL_STATS]: DailyStats[];
   [MessageType.GET_LAST_N_DAYS_STATS]: DailyStats[];
   [MessageType.GET_NEXT_N_DAYS_STATS]: UpcomingReviewStats[];
+  [MessageType.EXPORT_DATA]: string;
+  [MessageType.IMPORT_DATA]: void;
+  [MessageType.RESET_ALL_DATA]: void;
 };
 
 /**
