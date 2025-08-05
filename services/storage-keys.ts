@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   maxNewCardsPerDay: 'sync:leetsrs:maxNewCardsPerDay',
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
+  schemaVersion: 'local:leetsrs:schemaVersion',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
