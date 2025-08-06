@@ -18,7 +18,7 @@ import {
   setTheme,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
-import { MessageType, type MessageRequest } from '@/services/messages';
+import { MessageType, type MessageRequest } from '@/shared/messages';
 import { runMigrations, migrations } from '@/services/migrations';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 

@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { Card, Difficulty } from '@/shared/cards';
 import type { Grade, State as FsrsState } from 'ts-fsrs';
-import type { DailyStats, UpcomingReviewStats } from './stats';
+import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Note } from '@/shared/notes';
 import type { Theme } from '@/shared/settings';
 

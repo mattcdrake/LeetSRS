@@ -10,14 +10,14 @@ import {
   usePauseCardMutation,
   queryKeys,
 } from '../useBackgroundQueries';
-import { sendMessage } from '@/services/messages';
-import { MessageType } from '@/services/messages';
+import { sendMessage } from '@/shared/messages';
+import { MessageType } from '@/shared/messages';
 import { Rating, type Grade, createEmptyCard } from 'ts-fsrs';
 import { createWrapper, createTestWrapper } from '@/test/utils/test-wrapper';
 import type { Card } from '@/shared/cards';
 
 // Mock the sendMessage function
-vi.mock('@/services/messages', () => ({
+vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn((message) => {
     // Return appropriate default values for animations queries
     if (message.type === 'GET_ANIMATIONS_ENABLED') {

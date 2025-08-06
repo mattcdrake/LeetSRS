@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { sendMessage, MessageType } from '@/services/messages';
+import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 import type { Difficulty, Card } from '@/shared/cards';
 import type { Theme } from '@/shared/settings';

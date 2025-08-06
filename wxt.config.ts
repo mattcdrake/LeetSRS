@@ -9,6 +9,7 @@ export default defineConfig({
       default_popup: 'popup.html',
     },
     permissions: ['storage'],
+    host_permissions: ['*://*.leetcode.com/*'],
   },
   vite: () => ({
     plugins: [tailwindcss()],
