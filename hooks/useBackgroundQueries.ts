@@ -31,6 +31,7 @@ export const queryKeys = {
     maxNewCardsPerDay: ['settings', 'maxNewCardsPerDay'] as const,
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
+    enableLeetCodeButton: ['settings', 'enableLeetCodeButton'] as const,
   },
 } as const;
 
@@ -274,6 +275,24 @@ export function useSetThemeMutation() {
   });
 }
 
+export function useEnableLeetCodeButtonQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.enableLeetCodeButton,
+    queryFn: () => sendMessage({ type: MessageType.GET_ENABLE_LEETCODE_BUTTON }),
+  });
+}
+
+export function useSetEnableLeetCodeButtonMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_ENABLE_LEETCODE_BUTTON, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.enableLeetCodeButton });
+    },
+  });
+}
+
 // Import/Export mutations
 export function useExportDataMutation() {
   return useMutation({
@@ -287,8 +306,8 @@ export function useImportDataMutation() {
   return useMutation({
     mutationFn: (jsonData: string) => sendMessage({ type: MessageType.IMPORT_DATA, jsonData }),
     onSuccess: () => {
-      // Clear all queries to refresh data after import
-      queryClient.clear();
+      // Invalidate all queries to refresh data after import
+      queryClient.invalidateQueries();
     },
   });
 }
@@ -299,8 +318,8 @@ export function useResetAllDataMutation() {
   return useMutation({
     mutationFn: () => sendMessage({ type: MessageType.RESET_ALL_DATA }),
     onSuccess: () => {
-      // Clear all queries to refresh data after reset
-      queryClient.clear();
+      // Invalidate all queries to refresh data after reset
+      queryClient.invalidateQueries();
     },
   });
 }

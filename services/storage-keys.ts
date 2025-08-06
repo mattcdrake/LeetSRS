@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
   schemaVersion: 'local:leetsrs:schemaVersion',
+  enableLeetCodeButton: 'sync:leetsrs:enableLeetCodeButton',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
