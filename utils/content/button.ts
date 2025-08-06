@@ -1,4 +1,4 @@
-import { LEETREPS_BUTTON_COLOR } from './constants';
+import { LEETSRS_BUTTON_COLOR } from './constants';
 
 export function createButton(options: {
   className?: string;
@@ -27,7 +27,7 @@ export function createButton(options: {
   return button;
 }
 
-export function createLeetRepsButton(onClick: () => void): HTMLDivElement {
+export function createLeetSrsButton(onClick: () => void): HTMLDivElement {
   const buttonWrapper = document.createElement('div');
   buttonWrapper.className = 'relative flex';
 
@@ -41,11 +41,11 @@ export function createLeetRepsButton(onClick: () => void): HTMLDivElement {
   const clickableDiv = document.createElement('div');
   clickableDiv.className = 'flex cursor-pointer p-2';
   clickableDiv.setAttribute('data-state', 'closed');
-  clickableDiv.setAttribute('title', 'LeetReps');
-  clickableDiv.setAttribute('aria-label', 'LeetReps');
+  clickableDiv.setAttribute('title', 'LeetSRS');
+  clickableDiv.setAttribute('aria-label', 'LeetSRS');
 
-  // Use inline style for the LeetReps button color
-  clickableDiv.style.color = LEETREPS_BUTTON_COLOR;
+  // Use inline style for the LeetSRS button color
+  clickableDiv.style.color = LEETSRS_BUTTON_COLOR;
 
   clickableDiv.innerHTML = `
     <div class="relative text-[16px] leading-[normal] before:block before:h-4 before:w-4">

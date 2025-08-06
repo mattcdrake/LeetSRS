@@ -74,4 +74,4 @@ export const RATING_BUTTONS = [
   { rating: 4, label: 'Easy', colorKey: 'easy' as const },
 ];
 
-export const LEETREPS_BUTTON_COLOR = '#28c244';
+export const LEETSRS_BUTTON_COLOR = '#28c244';

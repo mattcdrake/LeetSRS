@@ -1,11 +1,11 @@
-import { createLeetRepsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
+import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*'],
   main() {
-    setupLeetRepsButton();
+    setupLeetSrsButton();
   },
 });
 
@@ -26,7 +26,7 @@ async function withProblemData<T>(
   }
 }
 
-function setupLeetRepsButton() {
+function setupLeetSrsButton() {
   // Wait for the navbar container to be available
   const checkInterval = setInterval(() => {
     const navbarContainer = document.getElementById('navbar-container');
@@ -42,7 +42,7 @@ function setupLeetRepsButton() {
         const tooltip = new Tooltip();
         let ratingMenu: RatingMenu | null = null;
 
-        const buttonWrapper = createLeetRepsButton(() => {
+        const buttonWrapper = createLeetSrsButton(() => {
           if (ratingMenu) {
             ratingMenu.toggle();
           }
@@ -84,7 +84,7 @@ function setupLeetRepsButton() {
         const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
         if (clickableDiv) {
           clickableDiv.addEventListener('mouseenter', () => {
-            tooltip.show(clickableDiv, 'LeetReps');
+            tooltip.show(clickableDiv, 'LeetSRS');
           });
 
           clickableDiv.addEventListener('mouseleave', () => {
@@ -98,7 +98,7 @@ function setupLeetRepsButton() {
         try {
           buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
         } catch (error) {
-          console.error('Error adding LeetReps button:', error);
+          console.error('Error adding LeetSRS button:', error);
         }
       }
     }

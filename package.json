@@ -1,8 +1,10 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "leetsrs",
+  "description": "A spaced repetition extension for algorithm interview problems",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "Matt Drake",
   "type": "module",
   "scripts": {
     "dev": "wxt",
