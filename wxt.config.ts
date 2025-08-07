@@ -8,6 +8,7 @@ export default defineConfig({
     action: {
       default_popup: 'popup.html',
     },
+    name: 'LeetSRS',
     permissions: ['storage'],
     host_permissions: ['*://*.leetcode.com/*'],
   },
