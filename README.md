@@ -6,7 +6,7 @@
 
 <br/>
 
-LeetSRS is a Chrome extension that adds spaced repetition to LeetCode problem practice.
+LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb) that adds spaced repetition to LeetCode problem practice.
 
 ## Screenshots
 
