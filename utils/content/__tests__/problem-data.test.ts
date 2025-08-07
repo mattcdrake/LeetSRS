@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { extractProblemData, clearCache } from './problem-data';
+import { extractProblemData, clearCache } from '../problem-data';
 
 // @vitest-environment happy-dom
 

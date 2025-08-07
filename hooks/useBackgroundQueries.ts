@@ -49,8 +49,8 @@ export function useReviewQueueQuery(options?: { enabled?: boolean; refetchOnWind
     queryKey: queryKeys.cards.reviewQueue,
     queryFn: () => sendMessage({ type: MessageType.GET_REVIEW_QUEUE }),
     enabled,
-    staleTime: 1000 * 30,
-    refetchOnMount: 'always',
+    staleTime: 0,
+    gcTime: 0,
     refetchOnWindowFocus,
   });
 }
@@ -115,7 +115,6 @@ export function useAddCardMutation() {
       difficulty: Difficulty;
     }) => sendMessage({ type: MessageType.ADD_CARD, slug, name, leetcodeId, difficulty }),
     onSuccess: () => {
-      // Invalidate all card queries (includes reviewQueue)
       queryClient.invalidateQueries({ queryKey: ['cards'] });
     },
   });
@@ -127,9 +126,7 @@ export function useRemoveCardMutation() {
   return useMutation({
     mutationFn: (slug: string) => sendMessage({ type: MessageType.REMOVE_CARD, slug }),
     onSuccess: () => {
-      // Invalidate all card queries
-      queryClient.invalidateQueries({ queryKey: ['cards'] });
-      // Invalidate today's stats
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.today });
     },
   });
@@ -152,9 +149,6 @@ export function useRateCardMutation() {
     mutationFn: ({ slug, name, rating, leetcodeId, difficulty }) =>
       sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty }),
     onSuccess: () => {
-      // Invalidate all card queries
-      queryClient.invalidateQueries({ queryKey: ['cards'] });
-      // Invalidate all stats queries with one call
       queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
   });
@@ -195,7 +189,6 @@ export function useDelayCardMutation() {
   >({
     mutationFn: ({ slug, days }) => sendMessage({ type: MessageType.DELAY_CARD, slug, days }),
     onSuccess: () => {
-      // Invalidate all card queries
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
     },
   });
@@ -214,7 +207,6 @@ export function usePauseCardMutation() {
   >({
     mutationFn: ({ slug, paused }) => sendMessage({ type: MessageType.SET_PAUSE_STATUS, slug, paused }),
     onSuccess: () => {
-      // Invalidate all card queries
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
     },
   });
@@ -306,7 +298,6 @@ export function useImportDataMutation() {
   return useMutation({
     mutationFn: (jsonData: string) => sendMessage({ type: MessageType.IMPORT_DATA, jsonData }),
     onSuccess: () => {
-      // Invalidate all queries to refresh data after import
       queryClient.invalidateQueries();
     },
   });
@@ -318,7 +309,6 @@ export function useResetAllDataMutation() {
   return useMutation({
     mutationFn: () => sendMessage({ type: MessageType.RESET_ALL_DATA }),
     onSuccess: () => {
-      // Invalidate all queries to refresh data after reset
       queryClient.invalidateQueries();
     },
   });

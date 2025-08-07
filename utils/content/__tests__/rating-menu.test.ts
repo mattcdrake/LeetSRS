@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RatingMenu } from './rating-menu';
-import { RATING_BUTTONS } from './constants';
+import { RatingMenu } from '../rating-menu';
+import { RATING_BUTTONS } from '../constants';
 
 // @vitest-environment happy-dom
 

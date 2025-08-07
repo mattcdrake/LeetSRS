@@ -1465,6 +1465,238 @@ describe('getReviewQueue', () => {
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
+  it('should sort cards by due date then slug for stable ordering', async () => {
+    // Create cards with specific due dates
+    await addCard('card-c', 'Card C', '1001', 'Easy');
+    await addCard('card-a', 'Card A', '1002', 'Medium');
+    await addCard('card-b', 'Card B', '1003', 'Hard');
+
+    // Set same due date for all cards
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const sameTime = new Date('2024-01-15T10:00:00').getTime();
+    cards!['card-c'].fsrs.due = sameTime;
+    cards!['card-a'].fsrs.due = sameTime;
+    cards!['card-b'].fsrs.due = sameTime;
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should be sorted by slug when due dates are the same
+    expect(queue[0].slug).toBe('card-a');
+    expect(queue[1].slug).toBe('card-b');
+    expect(queue[2].slug).toBe('card-c');
+  });
+
+  it('should maintain stable order across multiple calls', async () => {
+    // Create multiple cards
+    for (let i = 1; i <= 5; i++) {
+      await addCard(`card-${i}`, `Card ${i}`, `${1000 + i}`, 'Medium');
+    }
+
+    // Get queue multiple times
+    const queue1 = await getReviewQueue();
+    const queue2 = await getReviewQueue();
+    const queue3 = await getReviewQueue();
+
+    // All queues should be identical
+    expect(queue1.map((c) => c.slug)).toEqual(queue2.map((c) => c.slug));
+    expect(queue2.map((c) => c.slug)).toEqual(queue3.map((c) => c.slug));
+    expect(queue1.length).toBe(3); // Limited by max new cards per day
+  });
+
+  it('should place cards rated "Again" at the back of the queue', async () => {
+    // Create cards
+    await addCard('first-card', 'First Card', '1001', 'Easy');
+    await addCard('second-card', 'Second Card', '1002', 'Medium');
+    await addCard('third-card', 'Third Card', '1003', 'Hard');
+
+    // Rate first card as "Again" - it should get a due date later today
+    await rateCard('first-card', 'First Card', Rating.Again, '1001', 'Easy');
+
+    const queue = await getReviewQueue();
+
+    // First card should now be at the end (due later today)
+    const slugs = queue.map((c) => c.slug);
+    expect(slugs[0]).toBe('second-card');
+    expect(slugs[1]).toBe('third-card');
+    expect(slugs[2]).toBe('first-card');
+  });
+
+  it('should select the same new cards consistently when limit applies', async () => {
+    // Create more new cards than the daily limit
+    const cardSlugs = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot'];
+    for (let i = 0; i < cardSlugs.length; i++) {
+      await addCard(cardSlugs[i], `Card ${cardSlugs[i]}`, `${2000 + i}`, 'Medium');
+    }
+
+    // Set all cards to have the same due date for predictable ordering
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const sameTime = new Date('2024-01-15T10:00:00').getTime();
+    for (const slug of cardSlugs) {
+      cards![slug].fsrs.due = sameTime;
+    }
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    // Get queue multiple times
+    const queue1 = await getReviewQueue();
+    const queue2 = await getReviewQueue();
+
+    // Should always select the same new cards (first 3 alphabetically)
+    expect(queue1.map((c) => c.slug)).toEqual(['alpha', 'bravo', 'charlie']);
+    expect(queue2.map((c) => c.slug)).toEqual(['alpha', 'bravo', 'charlie']);
+  });
+
+  it('should maintain order when mixing review and new cards', async () => {
+    // Create new cards with early due dates
+    await addCard('new-early', 'New Early', '1001', 'Easy');
+    await addCard('new-late', 'New Late', '1002', 'Medium');
+
+    // Create review cards
+    await addCard('review-middle', 'Review Middle', '2001', 'Hard');
+    await rateCard('review-middle', 'Review Middle', Rating.Good, '2001', 'Hard');
+
+    // Set specific due dates
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    cards!['new-early'].fsrs.due = new Date('2024-01-15T08:00:00').getTime();
+    cards!['review-middle'].fsrs.due = new Date('2024-01-15T10:00:00').getTime();
+    cards!['new-late'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should be ordered by due date regardless of card type
+    expect(queue[0].slug).toBe('new-early');
+    expect(queue[1].slug).toBe('review-middle');
+    expect(queue[2].slug).toBe('new-late');
+  });
+
+  it('should handle cards rated "Hard" moving to later in the day', async () => {
+    // Set time to morning
+    vi.setSystemTime(new Date('2024-01-15T09:00:00'));
+
+    // Create cards
+    await addCard('card-1', 'Card 1', '1001', 'Easy');
+    await addCard('card-2', 'Card 2', '1002', 'Medium');
+    await addCard('card-3', 'Card 3', '1003', 'Hard');
+
+    // Get initial queue
+    const initialQueue = await getReviewQueue();
+    expect(initialQueue[0].slug).toBe('card-1');
+
+    // Rate first card as "Hard" - should move to later today
+    await rateCard('card-1', 'Card 1', Rating.Hard, '1001', 'Easy');
+
+    // Get queue again
+    const updatedQueue = await getReviewQueue();
+
+    // Card-1 should now be at the end (due later)
+    const slugs = updatedQueue.map((c) => c.slug);
+    expect(slugs[0]).toBe('card-2');
+    expect(slugs[1]).toBe('card-3');
+    expect(slugs[2]).toBe('card-1'); // Moved to end
+  });
+
+  it('should handle dynamic changes to max new cards setting', async () => {
+    const { getMaxNewCardsPerDay } = await import('../settings');
+
+    // Create many new cards
+    for (let i = 1; i <= 10; i++) {
+      await addCard(`card-${i}`, `Card ${i}`, `${3000 + i}`, 'Medium');
+    }
+
+    // Start with default (3)
+    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(3);
+    let queue = await getReviewQueue();
+    expect(queue.length).toBe(3);
+
+    // Increase to 5
+    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(5);
+    queue = await getReviewQueue();
+    expect(queue.length).toBe(5);
+
+    // Decrease to 2
+    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(2);
+    queue = await getReviewQueue();
+    expect(queue.length).toBe(2);
+
+    // Cards selected should be consistent (first N alphabetically)
+    expect(queue[0].slug).toBe('card-1');
+    expect(queue[1].slug).toBe('card-10'); // '10' comes after '1' in string sort
+  });
+
+  it('should properly sort by due date timestamps', async () => {
+    // Create cards and rate them to get different due times
+    await addCard('early', 'Early', '1001', 'Easy');
+    await addCard('middle', 'Middle', '1002', 'Medium');
+    await addCard('late', 'Late', '1003', 'Hard');
+
+    // Set specific due times
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    cards!['early'].fsrs.due = new Date('2024-01-15T06:00:00').getTime();
+    cards!['middle'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
+    cards!['late'].fsrs.due = new Date('2024-01-15T18:00:00').getTime();
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should be in chronological order
+    expect(queue[0].slug).toBe('early');
+    expect(queue[1].slug).toBe('middle');
+    expect(queue[2].slug).toBe('late');
+  });
+
+  it('should handle cards with millisecond-precision due times', async () => {
+    await addCard('card-a', 'Card A', '1001', 'Easy');
+    await addCard('card-b', 'Card B', '1002', 'Medium');
+    await addCard('card-c', 'Card C', '1003', 'Hard');
+
+    // Set due times with millisecond differences
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const baseTime = new Date('2024-01-15T10:00:00').getTime();
+    cards!['card-a'].fsrs.due = baseTime + 100; // 100ms later
+    cards!['card-b'].fsrs.due = baseTime + 50; // 50ms later
+    cards!['card-c'].fsrs.due = baseTime + 150; // 150ms later
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+
+    // Should be sorted by exact millisecond times
+    expect(queue[0].slug).toBe('card-b'); // +50ms
+    expect(queue[1].slug).toBe('card-a'); // +100ms
+    expect(queue[2].slug).toBe('card-c'); // +150ms
+  });
+
+  it('should handle empty queue gracefully', async () => {
+    const queue = await getReviewQueue();
+    expect(queue).toEqual([]);
+  });
+
+  it('should handle queue with only paused cards', async () => {
+    await addCard('paused-1', 'Paused 1', '1001', 'Easy');
+    await addCard('paused-2', 'Paused 2', '1002', 'Medium');
+
+    await setPauseStatus('paused-1', true);
+    await setPauseStatus('paused-2', true);
+
+    const queue = await getReviewQueue();
+    expect(queue).toEqual([]);
+  });
+
+  it('should handle queue with only future cards', async () => {
+    await addCard('future-1', 'Future 1', '1001', 'Easy');
+    await addCard('future-2', 'Future 2', '1002', 'Medium');
+
+    // Set due dates to tomorrow
+    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const tomorrow = new Date('2024-01-16T10:00:00').getTime();
+    cards!['future-1'].fsrs.due = tomorrow;
+    cards!['future-2'].fsrs.due = tomorrow;
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+
+    const queue = await getReviewQueue();
+    expect(queue).toEqual([]);
+  });
+
   it('should exclude paused cards from review queue', async () => {
     // Set up time
     const today = new Date('2024-01-15T10:00:00');

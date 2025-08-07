@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createButton, createLeetSrsButton } from './button';
-import { LEETSRS_BUTTON_COLOR } from './constants';
+import { createButton, createLeetSrsButton } from '../button';
+import { LEETSRS_BUTTON_COLOR } from '../constants';
 
 // @vitest-environment happy-dom
 

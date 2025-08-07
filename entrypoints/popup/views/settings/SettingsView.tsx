@@ -22,7 +22,7 @@ import {
   DEFAULT_THEME,
 } from '@/shared/settings';
 import { useState, useEffect, useRef } from 'react';
-import { APP_VERSION } from '@/shared/config';
+import { APP_VERSION, FEEDBACK_FORM_URL } from '@/shared/config';
 
 function AppearanceSection() {
   const { data: theme = DEFAULT_THEME } = useThemeQuery();
@@ -323,6 +323,14 @@ function AboutSection() {
           </svg>
           GitHub
         </a>
+      </div>
+      <div className="mt-4 flex justify-center">
+        <Button
+          onPress={() => window.open(FEEDBACK_FORM_URL, '_blank')}
+          className={`px-4 py-2 rounded transition-opacity hover:opacity-80 bg-accent text-white ${bounceButton}`}
+        >
+          Send Feedback
+        </Button>
       </div>
     </div>
   );

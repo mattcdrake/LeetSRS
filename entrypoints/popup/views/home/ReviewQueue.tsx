@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ReviewCard } from './ReviewCard';
 import { NotesSection } from './NotesSection';
 import { ActionsSection } from './ActionsSection';
@@ -9,44 +10,32 @@ import {
   useDelayCardMutation,
   usePauseCardMutation,
   useAnimationsEnabledQuery,
+  queryKeys,
 } from '@/hooks/useBackgroundQueries';
-import type { Card } from '@/shared/cards';
 import type { Grade } from 'ts-fsrs';
 
 export function ReviewQueue() {
+  const queryClient = useQueryClient();
   const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
-  const { data: initialQueue, isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
+  const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();
   const pauseCardMutation = usePauseCardMutation();
-  const [queue, setQueue] = useState<Card[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
-  const [isFirstCard, setIsFirstCard] = useState(true);
-
-  // Effect to populate the local queue from the server-fetched queue.
-  // This runs initially and whenever the local queue becomes empty,
-  // but only if the server actually has cards to offer. This approach is
-  // declarative and works seamlessly with the data-fetching library's cache.
-  useEffect(() => {
-    if (initialQueue && queue.length === 0 && initialQueue.length > 0) {
-      setQueue([...initialQueue]);
-    }
-  }, [initialQueue, queue.length]);
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
     options: {
       getSlideDirection?: (result: T) => 'left' | 'right' | null;
-      updateQueue: (result: T, restOfQueue: Card[]) => Card[];
       errorMessage: string;
+      skipInvalidation?: boolean;
     }
   ) => {
     if (queue.length === 0 || isProcessing) return;
 
     setIsProcessing(true);
-    const restOfQueue = queue.slice(1);
 
     try {
       const result = await action();
@@ -58,10 +47,12 @@ export function ReviewQueue() {
 
       const animationDelay = animationsEnabled ? 400 : 0;
       setTimeout(() => {
-        setQueue(options.updateQueue(result, restOfQueue));
         setSlideDirection(null);
         setIsProcessing(false);
-        setIsFirstCard(false);
+        // Only invalidate after animation completes
+        if (!options.skipInvalidation) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
+        }
       }, animationDelay);
     } catch (error) {
       console.error(options.errorMessage, error);
@@ -83,9 +74,6 @@ export function ReviewQueue() {
         }),
       {
         getSlideDirection: (result) => (result.shouldRequeue ? 'left' : 'right'),
-        updateQueue: (result, restOfQueue) => {
-          return result.shouldRequeue ? [...restOfQueue, result.card] : restOfQueue;
-        },
         errorMessage: 'Failed to rate card:',
       }
     );
@@ -95,7 +83,6 @@ export function ReviewQueue() {
     const currentCard = queue[0];
     await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.slug), {
       getSlideDirection: () => 'left',
-      updateQueue: (_, restOfQueue) => restOfQueue,
       errorMessage: 'Failed to delete card:',
     });
   };
@@ -104,7 +91,6 @@ export function ReviewQueue() {
     const currentCard = queue[0];
     await handleCardAction(() => delayCardMutation.mutateAsync({ slug: currentCard.slug, days }), {
       getSlideDirection: () => 'right',
-      updateQueue: (_, restOfQueue) => restOfQueue,
       errorMessage: 'Failed to delay card:',
     });
   };
@@ -113,7 +99,6 @@ export function ReviewQueue() {
     const currentCard = queue[0];
     await handleCardAction(() => pauseCardMutation.mutateAsync({ slug: currentCard.slug, paused: true }), {
       getSlideDirection: () => 'right',
-      updateQueue: (_, restOfQueue) => restOfQueue,
       errorMessage: 'Failed to pause card:',
     });
   };
@@ -134,8 +119,6 @@ export function ReviewQueue() {
     );
   }
 
-  // If the local queue is empty (and we're not loading), it means the user
-  // has finished their session or there were no cards to begin with.
   if (queue.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-32 gap-3 px-4">
@@ -179,10 +162,6 @@ export function ReviewQueue() {
     }
     if (slideDirection === 'right') {
       return `${baseClasses} animate-slide-right`;
-    }
-    // Skip pop-in animation for the first card of a new batch
-    if (isFirstCard) {
-      return '';
     }
     return `${baseClasses} animate-slide-in`;
   };

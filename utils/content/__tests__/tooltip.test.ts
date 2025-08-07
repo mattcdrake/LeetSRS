@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Tooltip } from './tooltip';
+import { Tooltip } from '../tooltip';
 
 // @vitest-environment happy-dom
 

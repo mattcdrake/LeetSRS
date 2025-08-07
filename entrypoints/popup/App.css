@@ -1,4 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap');
 @import 'tailwindcss';
+
+body {
+  font-family:
+    'Geist',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
 
 #root {
   width: 370px;
@@ -128,6 +140,14 @@
   }
   .bg-rating-easy {
     background-color: var(--current-rating-easy);
+  }
+  .text-rating-easy {
+    color: var(--current-rating-easy);
+  }
+
+  /* Font utilities */
+  .font-geist-mono {
+    font-family: 'Geist Mono', monospace;
   }
 
   /* Border colors */

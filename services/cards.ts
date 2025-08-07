@@ -8,7 +8,6 @@ import {
 } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
-import { interleaveArrays } from './utils';
 import { updateStats, getTodayStats } from './stats';
 import { deleteNote } from './notes';
 import { type Card, type Difficulty } from '@/shared/cards';
@@ -183,6 +182,12 @@ export function isDueByDate(card: Card, referenceDate: Date = new Date()): boole
   return dueStr <= referenceDateStr;
 }
 
+const sortByDueDateThenSlug = (a: Card, b: Card): number => {
+  const dueDiff = a.fsrs.due.getTime() - b.fsrs.due.getTime();
+  if (dueDiff !== 0) return dueDiff;
+  return a.slug.localeCompare(b.slug);
+};
+
 export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
   // Filter out paused cards and cards not due yet
@@ -192,14 +197,21 @@ export async function getReviewQueue(): Promise<Card[]> {
   const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);
   const newCards = dueCards.filter((card) => card.fsrs.state === FsrsState.New);
 
+  // Sort new cards by due date first (for stable selection), then by slug
+  newCards.sort(sortByDueDateThenSlug);
+
   // Get today's stats to determine how many new cards have already been done
   const todayStats = await getTodayStats();
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
   const maxNewCardsPerDay = await getMaxNewCardsPerDay();
   const remainingNewCards = Math.max(0, maxNewCardsPerDay - newCardsCompletedToday);
 
-  // Limit new cards to the remaining daily allowance
+  // Limit new cards to the remaining daily allowance (after sorting for stability)
   const limitedNewCards = newCards.slice(0, remainingNewCards);
 
-  return interleaveArrays(reviewCards, limitedNewCards);
+  // Combine review and limited new cards, then sort everything by due date
+  const allQueueCards = [...reviewCards, ...limitedNewCards];
+  allQueueCards.sort(sortByDueDateThenSlug);
+
+  return allQueueCards;
 }
