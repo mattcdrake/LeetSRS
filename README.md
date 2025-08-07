@@ -56,7 +56,7 @@ LeetSRS is open source and accepts contributions.
 
 ## Installation
 
-1. Download the latest release from the Chrome Web Store (coming soon)
+1. Download the latest release from the [Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb)
 2. Or build from source and load as an unpacked extension
 
 ## License
