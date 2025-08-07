@@ -10,12 +10,20 @@ LeetSRS is a Chrome extension that adds spaced repetition to LeetCode problem pr
 
 ## Screenshots
 
+### In Extension
+
 <div align="center">
 <img src="assets/mainScreen.png" width="30%" alt="Main Screen" />
 &nbsp;&nbsp;
 <img src="assets/cardsScreen.png" width="30%" alt="Cards Screen" />
 &nbsp;&nbsp;
 <img src="assets/statsScreen.png" width="30%" alt="Stats Screen" />
+</div>
+
+### Works directly on leetcode.com
+
+<div align="center">
+<img src="assets/leetcodeScreencap.png" width="90%" alt="LeetCode Integration" />
 </div>
 
 ## Features
