@@ -1,6 +1,10 @@
 # LeetSRS
 
-![LeetSRS Logo](assets/LeetSRS_card%20large.png)
+<div align="center">
+<img src="assets/LeetSRS_card%20large.png" alt="LeetSRS Logo" />
+</div>
+
+<br/>
 
 LeetSRS is a Chrome extension that adds spaced repetition to LeetCode problem practice.
 
@@ -8,7 +12,9 @@ LeetSRS is a Chrome extension that adds spaced repetition to LeetCode problem pr
 
 <div align="center">
 <img src="assets/mainScreen.png" width="30%" alt="Main Screen" />
+&nbsp;&nbsp;
 <img src="assets/cardsScreen.png" width="30%" alt="Cards Screen" />
+&nbsp;&nbsp;
 <img src="assets/statsScreen.png" width="30%" alt="Stats Screen" />
 </div>
 
