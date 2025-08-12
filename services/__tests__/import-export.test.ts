@@ -61,7 +61,6 @@ describe('import-export', () => {
         maxNewCardsPerDay: 5,
         animationsEnabled: true,
         theme: 'dark' as const,
-        enableLeetCodeButton: false,
       };
 
       // Set up storage with mock data
@@ -71,7 +70,6 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
-      await storage.setItem(STORAGE_KEYS.enableLeetCodeButton, mockSettings.enableLeetCodeButton);
 
       const result = await exportData();
       const parsed = JSON.parse(result);
@@ -155,7 +153,6 @@ describe('import-export', () => {
           maxNewCardsPerDay: 5,
           animationsEnabled: false,
           theme: 'light' as const,
-          enableLeetCodeButton: true,
         },
       },
     };
@@ -173,7 +170,6 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toEqual(5);
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
-      expect(await storage.getItem(STORAGE_KEYS.enableLeetCodeButton)).toEqual(true);
     });
 
     it('should clear existing data before importing', async () => {
@@ -247,7 +243,6 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
-      await storage.setItem(STORAGE_KEYS.enableLeetCodeButton, false);
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, { text: 'note 1' });
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-2` as const, { text: 'note 2' });
 
@@ -259,7 +254,6 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.enableLeetCodeButton)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-1` as const)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-2` as const)).toBeNull();
     });

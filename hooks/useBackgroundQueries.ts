@@ -31,7 +31,6 @@ export const queryKeys = {
     maxNewCardsPerDay: ['settings', 'maxNewCardsPerDay'] as const,
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
-    enableLeetCodeButton: ['settings', 'enableLeetCodeButton'] as const,
   },
 } as const;
 
@@ -263,24 +262,6 @@ export function useSetThemeMutation() {
     mutationFn: (value: Theme) => sendMessage({ type: MessageType.SET_THEME, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.theme });
-    },
-  });
-}
-
-export function useEnableLeetCodeButtonQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.enableLeetCodeButton,
-    queryFn: () => sendMessage({ type: MessageType.GET_ENABLE_LEETCODE_BUTTON }),
-  });
-}
-
-export function useSetEnableLeetCodeButtonMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_ENABLE_LEETCODE_BUTTON, value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.enableLeetCodeButton });
     },
   });
 }

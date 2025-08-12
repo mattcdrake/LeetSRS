@@ -16,8 +16,6 @@ import {
   setAnimationsEnabled,
   getTheme,
   setTheme,
-  getEnableLeetCodeButton,
-  setEnableLeetCodeButton,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
@@ -82,12 +80,6 @@ export default defineBackground(async () => {
 
       case MessageType.SET_THEME:
         return await setTheme(request.value);
-
-      case MessageType.GET_ENABLE_LEETCODE_BUTTON:
-        return await getEnableLeetCodeButton();
-
-      case MessageType.SET_ENABLE_LEETCODE_BUTTON:
-        return await setEnableLeetCodeButton(request.value);
 
       case MessageType.GET_CARD_STATE_STATS:
         return await getCardStateStats();

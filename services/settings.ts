@@ -43,12 +43,3 @@ export async function setTheme(value: Theme): Promise<void> {
   }
   await storage.setItem(STORAGE_KEYS.theme, value);
 }
-
-export async function getEnableLeetCodeButton(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.enableLeetCodeButton);
-  return value ?? true;
-}
-
-export async function setEnableLeetCodeButton(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.enableLeetCodeButton, value);
-}

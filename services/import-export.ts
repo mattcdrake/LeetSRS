@@ -17,7 +17,6 @@ export interface ExportData {
       maxNewCardsPerDay?: number;
       animationsEnabled?: boolean;
       theme?: Theme;
-      enableLeetCodeButton?: boolean;
     };
   };
 }
@@ -43,7 +42,6 @@ export async function exportData(): Promise<string> {
   const maxNewCardsPerDay = await storage.getItem<number>(STORAGE_KEYS.maxNewCardsPerDay);
   const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
-  const enableLeetCodeButton = await storage.getItem<boolean>(STORAGE_KEYS.enableLeetCodeButton);
 
   const exportData: ExportData = {
     version: APP_VERSION,
@@ -56,7 +54,6 @@ export async function exportData(): Promise<string> {
         ...(maxNewCardsPerDay != null && { maxNewCardsPerDay }),
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
-        ...(enableLeetCodeButton != null && { enableLeetCodeButton }),
       },
     },
   };
@@ -121,9 +118,6 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.data.settings.theme != null) {
       await storage.setItem(STORAGE_KEYS.theme, data.data.settings.theme);
     }
-    if (data.data.settings.enableLeetCodeButton != null) {
-      await storage.setItem(STORAGE_KEYS.enableLeetCodeButton, data.data.settings.enableLeetCodeButton);
-    }
   }
 }
 
@@ -137,7 +131,6 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.maxNewCardsPerDay);
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
   await storage.removeItem(STORAGE_KEYS.theme);
-  await storage.removeItem(STORAGE_KEYS.enableLeetCodeButton);
 
   // Remove all notes
   if (cards) {
