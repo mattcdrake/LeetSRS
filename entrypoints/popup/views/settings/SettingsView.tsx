@@ -281,7 +281,7 @@ function AboutSection() {
         <span className="text-tertiary">© 2025 Matt Drake</span>
         <span className="text-tertiary">•</span>
         <a
-          href="https://github.com/mtdrake/leetsrs"
+          href="https://github.com/mattcdrake/leetsrs"
           target="_blank"
           rel="noopener noreferrer"
           className="text-accent hover:underline flex items-center gap-1"
