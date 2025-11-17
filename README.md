@@ -1,7 +1,7 @@
 # LeetSRS
 
 <div align="center">
-<img src="assets/LeetSRS_card%20large.png" alt="LeetSRS Logo" />
+<img src="assets/branding/LeetSRS_card%20large.png" alt="LeetSRS Logo" />
 </div>
 
 <br/>
@@ -13,17 +13,17 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 ### In Extension
 
 <div align="center">
-<img src="assets/mainScreen.png" width="30%" alt="Main Screen" />
+<img src="assets/screenshots/mainScreen.png" width="30%" alt="Main Screen" />
 &nbsp;&nbsp;
-<img src="assets/cardsScreen.png" width="30%" alt="Cards Screen" />
+<img src="assets/screenshots/cardsScreen.png" width="30%" alt="Cards Screen" />
 &nbsp;&nbsp;
-<img src="assets/statsScreen.png" width="30%" alt="Stats Screen" />
+<img src="assets/screenshots/statsScreen.png" width="30%" alt="Stats Screen" />
 </div>
 
 ### Works directly on leetcode.com
 
 <div align="center">
-<img src="assets/leetcodeScreencap.png" width="90%" alt="LeetCode Integration" />
+<img src="assets/screenshots/leetcodeScreencap.png" width="90%" alt="LeetCode Integration" />
 </div>
 
 ## Features
