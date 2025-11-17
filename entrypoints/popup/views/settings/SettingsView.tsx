@@ -280,7 +280,7 @@ function AboutSection() {
       </div>
       <div className="mt-2 mb-2 flex justify-center">
         <Button
-          onPress={() => window.open(CHROME_STORE_REVIEWS_URL, '_blank')}
+          onPress={() => window.open(CHROME_STORE_REVIEWS_URL, '_blank', 'noopener,noreferrer')}
           className={`px-4 py-2 rounded transition-opacity hover:opacity-80 bg-accent text-white ${bounceButton}`}
         >
           If LeetSRS helped you, leave a review? 🙏
