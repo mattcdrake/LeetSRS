@@ -20,7 +20,7 @@ import {
   DEFAULT_THEME,
 } from '@/shared/settings';
 import { useState, useEffect, useRef } from 'react';
-import { APP_VERSION, FEEDBACK_FORM_URL } from '@/shared/config';
+import { APP_VERSION, CHROME_STORE_REVIEWS_URL } from '@/shared/config';
 
 function AppearanceSection() {
   const { data: theme = DEFAULT_THEME } = useThemeQuery();
@@ -274,7 +274,18 @@ function DataSection() {
 function AboutSection() {
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">About</h3>
+      <h3 className="text-lg font-semibold mb-2">About</h3>
+      <div className="text-center text-sm text-tertiary">
+        <div>Feel free to open issues for feature requests, bug reports, and feedback on GitHub!</div>
+      </div>
+      <div className="mt-2 mb-2 flex justify-center">
+        <Button
+          onPress={() => window.open(CHROME_STORE_REVIEWS_URL, '_blank', 'noopener,noreferrer')}
+          className={`px-4 py-2 rounded transition-opacity hover:opacity-80 bg-accent text-white ${bounceButton}`}
+        >
+          If LeetSRS helped you, leave a review? 🙏
+        </Button>
+      </div>
       <div className="flex items-center justify-center gap-2 text-sm">
         <span className="text-tertiary">v{APP_VERSION}</span>
         <span className="text-tertiary">•</span>
@@ -291,14 +302,6 @@ function AboutSection() {
           </svg>
           GitHub
         </a>
-      </div>
-      <div className="mt-4 flex justify-center">
-        <Button
-          onPress={() => window.open(FEEDBACK_FORM_URL, '_blank')}
-          className={`px-4 py-2 rounded transition-opacity hover:opacity-80 bg-accent text-white ${bounceButton}`}
-        >
-          Send Feedback
-        </Button>
       </div>
     </div>
   );
