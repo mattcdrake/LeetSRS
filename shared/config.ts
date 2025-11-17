@@ -1,2 +1,3 @@
-export const APP_VERSION = '0.1.2';
-export const FEEDBACK_FORM_URL = 'https://forms.gle/Uhe5faNvk5oXrJARA';
+export const APP_VERSION = '0.1.3';
+export const CHROME_STORE_REVIEWS_URL =
+  'https://chromewebstore.google.com/detail/leetsrs/odgfcigkohoimpeeooifjdglncggkgko/reviews?utm_source=item-share-cb';
