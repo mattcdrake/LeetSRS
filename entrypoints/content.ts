@@ -27,79 +27,74 @@ async function withProblemData<T>(
 }
 
 function setupLeetSrsButton() {
-  // Wait for the navbar container to be available
+  // Wait for the buttons container to be available
   const checkInterval = setInterval(() => {
-    const navbarContainer = document.getElementById('navbar-container');
+    const buttonsContainer = document.querySelector('#ide-top-btns');
 
-    if (navbarContainer) {
+    if (buttonsContainer) {
       clearInterval(checkInterval);
 
-      // Find the buttons container
-      const buttonsContainer = document.querySelector('#ide-top-btns');
+      // Create the button and its functionality
+      const tooltip = new Tooltip();
+      let ratingMenu: RatingMenu | null = null;
 
-      if (buttonsContainer) {
-        // Create the button and its functionality
-        const tooltip = new Tooltip();
-        let ratingMenu: RatingMenu | null = null;
+      const buttonWrapper = createLeetSrsButton(() => {
+        if (ratingMenu) {
+          ratingMenu.toggle();
+        }
+      });
 
-        const buttonWrapper = createLeetSrsButton(() => {
-          if (ratingMenu) {
-            ratingMenu.toggle();
-          }
+      // Setup rating menu
+      ratingMenu = new RatingMenu(
+        buttonWrapper,
+        async (rating, label) => {
+          await withProblemData(async (problemData) => {
+            const result = await sendMessage({
+              type: MessageType.RATE_CARD,
+              slug: problemData.titleSlug,
+              name: problemData.title,
+              rating: rating as Grade,
+              leetcodeId: problemData.questionFrontendId,
+              difficulty: problemData.difficulty,
+            });
+            console.log(`${label} - Card rated:`, result);
+            return result;
+          });
+        },
+        async () => {
+          await withProblemData(async (problemData) => {
+            const result = await sendMessage({
+              type: MessageType.ADD_CARD,
+              slug: problemData.titleSlug,
+              name: problemData.title,
+              leetcodeId: problemData.questionFrontendId,
+              difficulty: problemData.difficulty,
+            });
+            console.log('Add without rating - Card added:', result);
+            return result;
+          });
+        }
+      );
+
+      // Setup tooltip
+      const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
+      if (clickableDiv) {
+        clickableDiv.addEventListener('mouseenter', () => {
+          tooltip.show(clickableDiv, 'LeetSRS');
         });
 
-        // Setup rating menu
-        ratingMenu = new RatingMenu(
-          buttonWrapper,
-          async (rating, label) => {
-            await withProblemData(async (problemData) => {
-              const result = await sendMessage({
-                type: MessageType.RATE_CARD,
-                slug: problemData.titleSlug,
-                name: problemData.title,
-                rating: rating as Grade,
-                leetcodeId: problemData.questionFrontendId,
-                difficulty: problemData.difficulty,
-              });
-              console.log(`${label} - Card rated:`, result);
-              return result;
-            });
-          },
-          async () => {
-            await withProblemData(async (problemData) => {
-              const result = await sendMessage({
-                type: MessageType.ADD_CARD,
-                slug: problemData.titleSlug,
-                name: problemData.title,
-                leetcodeId: problemData.questionFrontendId,
-                difficulty: problemData.difficulty,
-              });
-              console.log('Add without rating - Card added:', result);
-              return result;
-            });
-          }
-        );
+        clickableDiv.addEventListener('mouseleave', () => {
+          tooltip.hide();
+        });
+      }
 
-        // Setup tooltip
-        const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
-        if (clickableDiv) {
-          clickableDiv.addEventListener('mouseenter', () => {
-            tooltip.show(clickableDiv, 'LeetSRS');
-          });
+      // Insert before the last button group (the notes button)
+      const lastButtonGroup = buttonsContainer.lastElementChild;
 
-          clickableDiv.addEventListener('mouseleave', () => {
-            tooltip.hide();
-          });
-        }
-
-        // Insert before the last button group (the notes button)
-        const lastButtonGroup = buttonsContainer.lastElementChild;
-
-        try {
-          buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
-        } catch (error) {
-          console.error('Error adding LeetSRS button:', error);
-        }
+      try {
+        buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
+      } catch (error) {
+        console.error('Error adding LeetSRS button:', error);
       }
     }
   }, 100);
