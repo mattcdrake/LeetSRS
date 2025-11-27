@@ -1,10 +1,14 @@
 import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
+import { browser } from 'wxt/browser';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*'],
+  runAt: 'document_idle',
   async main() {
+    // Wake up service worker so it's ready when user interacts
+    browser.runtime.sendMessage({ type: 'PING' }).catch(() => {});
     setupLeetSrsButton();
   },
 });
