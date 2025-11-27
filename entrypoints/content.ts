@@ -99,19 +99,16 @@ function setupLeetSrsButton() {
     }
   }
 
-  // Use MutationObserver to handle SPA navigation and React re-renders
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      // Check added nodes for the container or if it's now in the DOM
-      if (mutation.type === 'childList') {
-        const buttonsContainer = document.querySelector('#ide-top-btns');
-        if (buttonsContainer) {
-          insertButton(buttonsContainer);
-        }
-      }
+  const tryInsertButton = () => {
+    const buttonsContainer = document.querySelector('#ide-top-btns');
+    if (buttonsContainer) {
+      insertButton(buttonsContainer);
     }
-  });
+  };
+  tryInsertButton();
 
+  // Use MutationObserver to handle SPA navigation and React re-renders.
+  const observer = new MutationObserver(tryInsertButton);
   observer.observe(document.body, {
     childList: true,
     subtree: true,
