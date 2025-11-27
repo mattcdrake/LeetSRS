@@ -7,20 +7,21 @@ import { State as FsrsState } from 'ts-fsrs';
 import type { Card } from '@/shared/cards';
 import { FaCirclePause, FaPlay, FaTrash, FaXmark, FaMagnifyingGlass } from 'react-icons/fa6';
 import { bounceButton } from '@/shared/styles';
+import { i18n } from '@/shared/i18n';
 
 // Utility functions
 const getStateLabel = (state: FsrsState) => {
   switch (state) {
     case FsrsState.New:
-      return 'New';
+      return i18n.states.new;
     case FsrsState.Learning:
-      return 'Learning';
+      return i18n.states.learning;
     case FsrsState.Review:
-      return 'Review';
+      return i18n.states.review;
     case FsrsState.Relearning:
-      return 'Relearning';
+      return i18n.states.relearning;
     default:
-      return 'Unknown';
+      return i18n.states.unknown;
   }
 };
 
@@ -55,8 +56,8 @@ function CardHeader({ card, isExpanded }: CardHeaderProps) {
   return (
     <>
       <div className="flex items-center gap-2">
-        {card.paused && <FaCirclePause className="text-warning text-base" title="Card is paused" />}
-        <span className="text-xs text-secondary">#{card.leetcodeId}</span>
+        {card.paused && <FaCirclePause className="text-warning text-base" title={i18n.cardsView.cardPausedTitle} />}
+        <span className="text-xs text-secondary">{i18n.format.leetcodeId(card.leetcodeId)}</span>
         <span className={`text-sm ${card.paused ? 'opacity-60' : ''}`}>{card.name}</span>
       </div>
       <div className="flex items-center gap-2">
@@ -107,14 +108,14 @@ function CardStats({ card, onPauseToggle, onDelete, isPauseProcessing, isDeleteP
   return (
     <div className="px-4 pb-3 border-t border-current">
       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-        <StatRow label="State" value={getStateLabel(card.fsrs.state)} />
-        <StatRow label="Reviews" value={card.fsrs.reps} />
-        <StatRow label="Stability" value={`${card.fsrs.stability.toFixed(1)}d`} />
-        <StatRow label="Lapses" value={card.fsrs.lapses} />
-        <StatRow label="Difficulty" value={card.fsrs.difficulty.toFixed(2)} />
-        <StatRow label="Due" value={formatDate(card.fsrs.due)} />
-        {card.fsrs.last_review && <StatRow label="Last" value={formatDate(card.fsrs.last_review)} />}
-        <StatRow label="Added" value={formatDate(card.createdAt)} />
+        <StatRow label={i18n.cardStats.state} value={getStateLabel(card.fsrs.state)} />
+        <StatRow label={i18n.cardStats.reviews} value={card.fsrs.reps} />
+        <StatRow label={i18n.cardStats.stability} value={i18n.format.stabilityDays(card.fsrs.stability.toFixed(1))} />
+        <StatRow label={i18n.cardStats.lapses} value={card.fsrs.lapses} />
+        <StatRow label={i18n.cardStats.difficulty} value={card.fsrs.difficulty.toFixed(2)} />
+        <StatRow label={i18n.cardStats.due} value={formatDate(card.fsrs.due)} />
+        {card.fsrs.last_review && <StatRow label={i18n.cardStats.last} value={formatDate(card.fsrs.last_review)} />}
+        <StatRow label={i18n.cardStats.added} value={formatDate(card.createdAt)} />
       </div>
 
       <div className="mt-3 pt-3 border-t border-current flex gap-2">
@@ -124,7 +125,7 @@ function CardStats({ card, onPauseToggle, onDelete, isPauseProcessing, isDeleteP
           isDisabled={isPauseProcessing}
         >
           {card.paused ? <FaPlay className="text-sm" /> : <FaCirclePause className="text-sm" />}
-          <span>{card.paused ? 'Resume' : 'Pause'}</span>
+          <span>{card.paused ? i18n.actions.resume : i18n.actions.pause}</span>
         </Button>
 
         <Button
@@ -135,7 +136,7 @@ function CardStats({ card, onPauseToggle, onDelete, isPauseProcessing, isDeleteP
           isDisabled={isDeleteProcessing}
         >
           <FaTrash className="text-sm" />
-          <span>{deleteConfirm ? 'Confirm?' : 'Delete'}</span>
+          <span>{deleteConfirm ? i18n.actions.confirm : i18n.actions.delete}</span>
         </Button>
       </div>
     </div>
@@ -252,22 +253,22 @@ export function CardView() {
   };
 
   return (
-    <ViewLayout title="Cards" headerContent={<StreakCounter />}>
+    <ViewLayout title={i18n.cardsView.title} headerContent={<StreakCounter />}>
       <div className="flex flex-col gap-4">
         {!isLoading && cards.length > 0 && (
           <TextField className="relative" value={filterText} onChange={setFilterText}>
-            <Label className="sr-only">Filter cards</Label>
+            <Label className="sr-only">{i18n.cardsView.filterAriaLabel}</Label>
             <div className="relative">
               <FaMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm" />
               <Input
                 className="w-full pl-9 pr-9 py-2 bg-secondary rounded-lg border border-current text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                placeholder="Filter by name or ID..."
+                placeholder={i18n.cardsView.filterPlaceholder}
               />
               {filterText && (
                 <Button
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-tertiary transition-colors"
                   onPress={() => setFilterText('')}
-                  aria-label="Clear filter"
+                  aria-label={i18n.cardsView.clearFilterAriaLabel}
                 >
                   <FaXmark className="text-secondary text-sm" />
                 </Button>
@@ -277,11 +278,11 @@ export function CardView() {
         )}
 
         {isLoading ? (
-          <p className="text-secondary">Loading cards...</p>
+          <p className="text-secondary">{i18n.cardsView.loadingCards}</p>
         ) : cards.length === 0 ? (
-          <p className="text-secondary">No cards added yet.</p>
+          <p className="text-secondary">{i18n.cardsView.noCardsAdded}</p>
         ) : sortedCards.length === 0 ? (
-          <p className="text-secondary">No cards match your filter.</p>
+          <p className="text-secondary">{i18n.cardsView.noCardsMatchFilter}</p>
         ) : (
           <div className="space-y-2">
             {sortedCards.map((card) => (

@@ -2,6 +2,7 @@ import { Bar } from 'react-chartjs-2';
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
 import { useLastNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
+import { i18n } from '@/shared/i18n';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -17,22 +18,22 @@ export function ReviewHistoryChart() {
       }) || [],
     datasets: [
       {
-        label: 'Again',
+        label: i18n.ratings.again,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Again]) || [],
         backgroundColor: '#ef4444',
       },
       {
-        label: 'Hard',
+        label: i18n.ratings.hard,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Hard]) || [],
         backgroundColor: '#f59e0b',
       },
       {
-        label: 'Good',
+        label: i18n.ratings.good,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Good]) || [],
         backgroundColor: '#10b981',
       },
       {
-        label: 'Easy',
+        label: i18n.ratings.easy,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Easy]) || [],
         backgroundColor: '#3b82f6',
       },
@@ -80,7 +81,7 @@ export function ReviewHistoryChart() {
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold">Last 30 Days Review History</h3>
+      <h3 className="text-lg font-semibold">{i18n.charts.reviewHistory}</h3>
       <div style={{ height: '250px' }}>
         <Bar data={chartData} options={chartOptions} />
       </div>

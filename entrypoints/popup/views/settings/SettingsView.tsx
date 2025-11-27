@@ -21,6 +21,7 @@ import {
 } from '@/shared/settings';
 import { useState, useEffect, useRef } from 'react';
 import { APP_VERSION, CHROME_STORE_REVIEWS_URL } from '@/shared/config';
+import { i18n } from '@/shared/i18n';
 
 function AppearanceSection() {
   const { data: theme = DEFAULT_THEME } = useThemeQuery();
@@ -38,11 +39,11 @@ function AppearanceSection() {
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">Appearance</h3>
+      <h3 className="text-lg font-semibold mb-4">{i18n.settings.appearance.title}</h3>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <span>Dark mode</span>
+            <span>{i18n.settings.appearance.darkMode}</span>
           </div>
           <Switch
             isSelected={theme === 'dark'}
@@ -74,7 +75,7 @@ function AppearanceSection() {
         </div>
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <span>Enable animations</span>
+            <span>{i18n.settings.appearance.enableAnimations}</span>
           </div>
           <Switch
             isSelected={animationsEnabled}
@@ -124,10 +125,10 @@ function ReviewSettingsSection() {
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">Review Settings</h3>
+      <h3 className="text-lg font-semibold mb-4">{i18n.settings.reviewSettings.title}</h3>
       <div className="space-y-3">
         <TextField className="flex items-center justify-between">
-          <Label>New Cards Per Day</Label>
+          <Label>{i18n.settings.reviewSettings.newCardsPerDay}</Label>
           <Input
             type="number"
             value={inputValue}
@@ -165,7 +166,7 @@ function DataSection() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Failed to export data');
+      alert(i18n.errors.failedToExportData);
     }
   };
 
@@ -173,10 +174,7 @@ function DataSection() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const confirmed = window.confirm(
-      'Are you sure you want to import this data?\n\n' +
-        'This will replace ALL your current data including cards, review history, and notes.'
-    );
+    const confirmed = window.confirm(i18n.settings.data.importConfirmMessage);
 
     if (!confirmed) {
       // Reset the input so the same file can be selected again
@@ -189,10 +187,10 @@ function DataSection() {
     try {
       const text = await file.text();
       await importDataMutation.mutateAsync(text);
-      alert('Data imported successfully!');
+      alert(i18n.settings.data.importSuccess);
     } catch (error) {
       console.error('Import failed:', error);
-      alert(`Failed to import data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`${i18n.settings.data.importFailed} ${error instanceof Error ? error.message : i18n.errors.unknownError}`);
     }
 
     // Reset the input so the same file can be selected again
@@ -209,10 +207,7 @@ function DataSection() {
     }
 
     // Browser confirmation dialog
-    const confirmed = window.confirm(
-      'Are you absolutely sure you want to delete all data? This action cannot be undone.\n\n' +
-        'All your cards, review history, statistics, and notes will be permanently deleted.'
-    );
+    const confirmed = window.confirm(i18n.settings.data.resetConfirmMessage);
 
     if (!confirmed) {
       setResetConfirmation(false);
@@ -221,24 +216,24 @@ function DataSection() {
 
     try {
       await resetAllDataMutation.mutateAsync();
-      alert('All data has been reset');
+      alert(i18n.settings.data.resetSuccess);
       setResetConfirmation(false);
     } catch (error) {
       console.error('Reset failed:', error);
-      alert('Failed to reset data');
+      alert(i18n.errors.failedToResetData);
     }
   };
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">Data</h3>
+      <h3 className="text-lg font-semibold mb-4">{i18n.settings.data.title}</h3>
       <div className="space-y-2">
         <Button
           onPress={handleExport}
           isDisabled={exportDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
         >
-          {exportDataMutation.isPending ? 'Exporting...' : 'Export Data'}
+          {exportDataMutation.isPending ? i18n.settings.data.exporting : i18n.settings.data.exportData}
         </Button>
         <input
           ref={fileInputRef}
@@ -253,7 +248,7 @@ function DataSection() {
           isDisabled={importDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
         >
-          {importDataMutation.isPending ? 'Importing...' : 'Import Data'}
+          {importDataMutation.isPending ? i18n.settings.data.importing : i18n.settings.data.importData}
         </Button>
         <Button
           onPress={handleReset}
@@ -261,10 +256,10 @@ function DataSection() {
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 text-white bg-danger ${bounceButton}`}
         >
           {resetAllDataMutation.isPending
-            ? 'Resetting...'
+            ? i18n.settings.data.resetting
             : resetConfirmation
-              ? 'Click again to confirm'
-              : 'Reset All Data'}
+              ? i18n.settings.data.clickToConfirm
+              : i18n.settings.data.resetAllData}
         </Button>
       </div>
     </div>
@@ -274,22 +269,22 @@ function DataSection() {
 function AboutSection() {
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-2">About</h3>
+      <h3 className="text-lg font-semibold mb-2">{i18n.settings.about.title}</h3>
       <div className="text-center text-sm text-tertiary">
-        <div>Feel free to open issues for feature requests, bug reports, and feedback on GitHub!</div>
+        <div>{i18n.settings.about.feedbackMessage}</div>
       </div>
       <div className="mt-2 mb-2 flex justify-center">
         <Button
           onPress={() => window.open(CHROME_STORE_REVIEWS_URL, '_blank', 'noopener,noreferrer')}
           className={`px-4 py-2 rounded transition-opacity hover:opacity-80 bg-accent text-white ${bounceButton}`}
         >
-          If LeetSRS helped you, leave a review? 🙏
+          {i18n.settings.about.reviewRequest}
         </Button>
       </div>
       <div className="flex items-center justify-center gap-2 text-sm">
-        <span className="text-tertiary">v{APP_VERSION}</span>
+        <span className="text-tertiary">{i18n.format.version(APP_VERSION)}</span>
         <span className="text-tertiary">•</span>
-        <span className="text-tertiary">© 2025 Matt Drake</span>
+        <span className="text-tertiary">{i18n.settings.about.copyright}</span>
         <span className="text-tertiary">•</span>
         <a
           href="https://github.com/mattcdrake/leetsrs"
@@ -300,7 +295,7 @@ function AboutSection() {
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
           </svg>
-          GitHub
+          {i18n.settings.about.github}
         </a>
       </div>
     </div>
@@ -309,7 +304,7 @@ function AboutSection() {
 
 export function SettingsView() {
   return (
-    <ViewLayout title="Settings">
+    <ViewLayout title={i18n.settings.title}>
       <AppearanceSection />
       <ReviewSettingsSection />
       <DataSection />

@@ -1,4 +1,5 @@
 import { LEETSRS_BUTTON_COLOR } from './constants';
+import { i18n } from '@/shared/i18n';
 
 export function createButton(options: {
   className?: string;
@@ -41,8 +42,8 @@ export function createLeetSrsButton(onClick: () => void): HTMLDivElement {
   const clickableDiv = document.createElement('div');
   clickableDiv.className = 'flex cursor-pointer p-2';
   clickableDiv.setAttribute('data-state', 'closed');
-  clickableDiv.setAttribute('title', 'LeetSRS');
-  clickableDiv.setAttribute('aria-label', 'LeetSRS');
+  clickableDiv.setAttribute('title', i18n.app.name);
+  clickableDiv.setAttribute('aria-label', i18n.app.name);
 
   // Use inline style for the LeetSRS button color
   clickableDiv.style.color = LEETSRS_BUTTON_COLOR;

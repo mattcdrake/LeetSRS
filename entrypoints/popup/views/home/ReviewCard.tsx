@@ -4,6 +4,7 @@ import { Rating } from 'ts-fsrs';
 import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
 import { bounceButton } from '@/shared/styles';
+import { i18n } from '@/shared/i18n';
 
 type ReviewCardProps = {
   card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'>;
@@ -24,10 +25,10 @@ const difficultyColorMap: Record<Difficulty, string> = {
 };
 
 const ratingButtons: RatingButtonConfig[] = [
-  { rating: Rating.Again, label: 'Again', colorClass: 'bg-rating-again' },
-  { rating: Rating.Hard, label: 'Hard', colorClass: 'bg-rating-hard' },
-  { rating: Rating.Good, label: 'Good', colorClass: 'bg-rating-good' },
-  { rating: Rating.Easy, label: 'Easy', colorClass: 'bg-rating-easy' },
+  { rating: Rating.Again, label: i18n.ratings.again, colorClass: 'bg-rating-again' },
+  { rating: Rating.Hard, label: i18n.ratings.hard, colorClass: 'bg-rating-hard' },
+  { rating: Rating.Good, label: i18n.ratings.good, colorClass: 'bg-rating-good' },
+  { rating: Rating.Easy, label: i18n.ratings.easy, colorClass: 'bg-rating-easy' },
 ];
 
 export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardProps) {

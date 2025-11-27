@@ -2,6 +2,7 @@ import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 import { browser } from 'wxt/browser';
+import { i18n } from '@/shared/i18n';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*'],
@@ -85,7 +86,7 @@ function setupLeetSrsButton() {
     const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
     if (clickableDiv) {
       clickableDiv.addEventListener('mouseenter', () => {
-        tooltip.show(clickableDiv, 'LeetSRS');
+        tooltip.show(clickableDiv, i18n.app.name);
       });
 
       clickableDiv.addEventListener('mouseleave', () => {

@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import { useNextNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
+import { i18n } from '@/shared/i18n';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -25,7 +26,7 @@ export function UpcomingReviewsChart() {
       }) || [],
     datasets: [
       {
-        label: 'Cards Due',
+        label: i18n.charts.cardsDue,
         data: next14DaysStats?.map((stat) => stat.count) || [],
         borderColor: '#3b82f6',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -58,7 +59,7 @@ export function UpcomingReviewsChart() {
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">Upcoming Reviews (Next 14 Days)</h3>
+      <h3 className="text-lg font-semibold mb-4">{i18n.charts.upcomingReviews}</h3>
       <div style={{ height: '250px' }}>
         <Line data={chartData} options={chartOptions} />
       </div>
