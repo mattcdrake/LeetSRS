@@ -1,10 +1,14 @@
 import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
+import { browser } from 'wxt/browser';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*'],
+  runAt: 'document_idle',
   async main() {
+    // Wake up service worker so it's ready when user interacts
+    browser.runtime.sendMessage({ type: 'PING' }).catch(() => {});
     setupLeetSrsButton();
   },
 });
@@ -27,75 +31,90 @@ async function withProblemData<T>(
 }
 
 function setupLeetSrsButton() {
-  // Wait for the buttons container to be available
-  const checkInterval = setInterval(() => {
-    const buttonsContainer = document.querySelector('#ide-top-btns');
+  const BUTTON_ID = 'leetsrs-button-wrapper';
+  const tooltip = new Tooltip();
 
-    if (buttonsContainer) {
-      clearInterval(checkInterval);
+  function insertButton(buttonsContainer: Element) {
+    // Don't insert if already present
+    if (buttonsContainer.querySelector(`#${BUTTON_ID}`)) {
+      return;
+    }
 
-      // Create the button and its functionality
-      const tooltip = new Tooltip();
-      let ratingMenu: RatingMenu | null = null;
+    let ratingMenu: RatingMenu | null = null;
 
-      const buttonWrapper = createLeetSrsButton(() => {
-        if (ratingMenu) {
-          ratingMenu.toggle();
-        }
+    const buttonWrapper = createLeetSrsButton(() => {
+      if (ratingMenu) {
+        ratingMenu.toggle();
+      }
+    });
+    buttonWrapper.id = BUTTON_ID;
+
+    // Setup rating menu
+    ratingMenu = new RatingMenu(
+      buttonWrapper,
+      async (rating, label) => {
+        await withProblemData(async (problemData) => {
+          const result = await sendMessage({
+            type: MessageType.RATE_CARD,
+            slug: problemData.titleSlug,
+            name: problemData.title,
+            rating: rating as Grade,
+            leetcodeId: problemData.questionFrontendId,
+            difficulty: problemData.difficulty,
+          });
+          console.log(`${label} - Card rated:`, result);
+          return result;
+        });
+      },
+      async () => {
+        await withProblemData(async (problemData) => {
+          const result = await sendMessage({
+            type: MessageType.ADD_CARD,
+            slug: problemData.titleSlug,
+            name: problemData.title,
+            leetcodeId: problemData.questionFrontendId,
+            difficulty: problemData.difficulty,
+          });
+          console.log('Add without rating - Card added:', result);
+          return result;
+        });
+      }
+    );
+
+    // Setup tooltip
+    const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
+    if (clickableDiv) {
+      clickableDiv.addEventListener('mouseenter', () => {
+        tooltip.show(clickableDiv, 'LeetSRS');
       });
 
-      // Setup rating menu
-      ratingMenu = new RatingMenu(
-        buttonWrapper,
-        async (rating, label) => {
-          await withProblemData(async (problemData) => {
-            const result = await sendMessage({
-              type: MessageType.RATE_CARD,
-              slug: problemData.titleSlug,
-              name: problemData.title,
-              rating: rating as Grade,
-              leetcodeId: problemData.questionFrontendId,
-              difficulty: problemData.difficulty,
-            });
-            console.log(`${label} - Card rated:`, result);
-            return result;
-          });
-        },
-        async () => {
-          await withProblemData(async (problemData) => {
-            const result = await sendMessage({
-              type: MessageType.ADD_CARD,
-              slug: problemData.titleSlug,
-              name: problemData.title,
-              leetcodeId: problemData.questionFrontendId,
-              difficulty: problemData.difficulty,
-            });
-            console.log('Add without rating - Card added:', result);
-            return result;
-          });
-        }
-      );
-
-      // Setup tooltip
-      const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
-      if (clickableDiv) {
-        clickableDiv.addEventListener('mouseenter', () => {
-          tooltip.show(clickableDiv, 'LeetSRS');
-        });
-
-        clickableDiv.addEventListener('mouseleave', () => {
-          tooltip.hide();
-        });
-      }
-
-      // Insert before the last button group (the notes button)
-      const lastButtonGroup = buttonsContainer.lastElementChild;
-
-      try {
-        buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
-      } catch (error) {
-        console.error('Error adding LeetSRS button:', error);
-      }
+      clickableDiv.addEventListener('mouseleave', () => {
+        tooltip.hide();
+      });
     }
-  }, 100);
+
+    // Insert before the last button group (the notes button)
+    const lastButtonGroup = buttonsContainer.lastElementChild;
+
+    try {
+      buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
+    } catch (error) {
+      console.error('Error adding LeetSRS button:', error);
+    }
+  }
+
+  const tryInsertButton = () => {
+    const buttonsContainer = document.querySelector('#ide-top-btns');
+    if (buttonsContainer) {
+      insertButton(buttonsContainer);
+    }
+  };
+  tryInsertButton();
+
+  // Use MutationObserver to handle SPA navigation and React re-renders.
+  const observer = new MutationObserver(tryInsertButton);
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 }
