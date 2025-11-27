@@ -1,5 +1,6 @@
 import { FaHouseChimney, FaChartSimple, FaGear, FaCode } from 'react-icons/fa6';
 import { Tabs, TabList, Tab } from 'react-aria-components';
+import { i18n } from '@/shared/i18n';
 
 export type ViewId = 'home' | 'card' | 'stats' | 'settings';
 
@@ -10,10 +11,10 @@ interface BottomNavProps {
 
 export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
   const navItems: Array<{ id: ViewId; label: string; Icon: typeof FaHouseChimney }> = [
-    { id: 'home', label: 'Home', Icon: FaHouseChimney },
-    { id: 'card', label: 'Cards', Icon: FaCode },
-    { id: 'stats', label: 'Stats', Icon: FaChartSimple },
-    { id: 'settings', label: 'Settings', Icon: FaGear },
+    { id: 'home', label: i18n.nav.home, Icon: FaHouseChimney },
+    { id: 'card', label: i18n.nav.cards, Icon: FaCode },
+    { id: 'stats', label: i18n.nav.stats, Icon: FaChartSimple },
+    { id: 'settings', label: i18n.nav.settings, Icon: FaGear },
   ];
 
   return (

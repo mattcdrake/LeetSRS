@@ -1,6 +1,7 @@
 import { RATING_BUTTONS, THEME_COLORS } from './constants';
 import { getRatingColor, isDarkMode } from './theme';
 import { createButton } from './button';
+import { i18n } from '@/shared/i18n';
 
 export type RatingCallback = (rating: number, label: string) => void;
 
@@ -137,7 +138,7 @@ export class RatingMenu {
       },
     });
 
-    button.innerHTML = `<span style="filter: grayscale(1) brightness(${isDark ? '2' : '0.3'});">➕</span> Add to SRS (no rating)`;
+    button.innerHTML = `<span style="filter: grayscale(1) brightness(${isDark ? '2' : '0.3'});">➕</span> ${i18n.contentScript.addToSrsNoRating}`;
 
     button.addEventListener('mouseenter', () => {
       button.style.backgroundColor = hoverBgColor;

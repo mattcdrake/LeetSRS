@@ -1,5 +1,6 @@
 import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import { State } from 'ts-fsrs';
+import { i18n } from '@/shared/i18n';
 
 interface StatItemProps {
   count: number;
@@ -47,11 +48,11 @@ export function StatsBar() {
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <StatItem count={stats.reviews} label="review" colorClass="text-info" testId="review" />
+      <StatItem count={stats.reviews} label={i18n.statsBar.review} colorClass="text-info" testId="review" />
       <span className="text-tertiary">•</span>
-      <StatItem count={stats.new} label="new" colorClass="text-accent" testId="new" />
+      <StatItem count={stats.new} label={i18n.statsBar.new} colorClass="text-accent" testId="new" />
       <span className="text-tertiary">•</span>
-      <StatItem count={stats.learn} label="learn" colorClass="text-danger" testId="learn" />
+      <StatItem count={stats.learn} label={i18n.statsBar.learn} colorClass="text-danger" testId="learn" />
     </div>
   );
 }

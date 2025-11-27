@@ -3,6 +3,7 @@ import { Button, TextArea, TextField, Label } from 'react-aria-components';
 import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
 import { NOTES_MAX_LENGTH } from '@/shared/notes';
 import { bounceButton } from '@/shared/styles';
+import { i18n } from '@/shared/i18n';
 
 interface NotesSectionProps {
   cardId: string;
@@ -69,7 +70,7 @@ export function NotesSection({ cardId }: NotesSectionProps) {
         onPress={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
       >
-        <span className="text-sm font-semibold text-primary">Notes</span>
+        <span className="text-sm font-semibold text-primary">{i18n.notes.title}</span>
         <span className={`text-xs text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
           ▶
         </span>
@@ -78,10 +79,10 @@ export function NotesSection({ cardId }: NotesSectionProps) {
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-current">
           <TextField className="w-full">
-            <Label className="sr-only">Note text</Label>
+            <Label className="sr-only">{i18n.notes.ariaLabel}</Label>
             <TextArea
               className="w-full mt-3 p-2 rounded border border-current bg-tertiary text-primary text-sm resize-none focus:outline-none focus:ring-1 focus:ring-accent"
-              placeholder={isLoading ? 'Loading...' : 'Add your notes here...'}
+              placeholder={isLoading ? i18n.notes.placeholderLoading : i18n.notes.placeholderEmpty}
               rows={4}
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
@@ -91,7 +92,7 @@ export function NotesSection({ cardId }: NotesSectionProps) {
           </TextField>
           <div className="mt-2 flex items-center justify-between">
             <span className={`text-xs ${isOverLimit ? 'text-danger' : 'text-secondary'}`}>
-              {characterCount}/{NOTES_MAX_LENGTH}
+              {i18n.format.characterCount(characterCount, NOTES_MAX_LENGTH)}
             </span>
             <div className="flex gap-2">
               {hasExistingNote && (
@@ -100,7 +101,11 @@ export function NotesSection({ cardId }: NotesSectionProps) {
                   onPress={handleDelete}
                   isDisabled={deleteNoteMutation.isPending}
                 >
-                  {deleteNoteMutation.isPending ? 'Deleting...' : deleteConfirm ? 'Confirm?' : 'Delete'}
+                  {deleteNoteMutation.isPending
+                    ? i18n.actions.deleting
+                    : deleteConfirm
+                      ? i18n.actions.confirm
+                      : i18n.actions.delete}
                 </Button>
               )}
               <Button
@@ -108,7 +113,7 @@ export function NotesSection({ cardId }: NotesSectionProps) {
                 onPress={handleSave}
                 isDisabled={!canSave || saveNoteMutation.isPending}
               >
-                {saveNoteMutation.isPending ? 'Saving...' : 'Save'}
+                {saveNoteMutation.isPending ? i18n.actions.saving : i18n.actions.save}
               </Button>
             </div>
           </div>
