@@ -42,14 +42,15 @@ jobs:
           
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-            
-            Be constructive and helpful in your feedback.
+            Review this PR. Be concise. Only mention things that actually matter:
+            - Bugs, logic errors, or edge cases that will break
+            - Security issues
+            - Significant performance problems (not micro-optimizations)
+            - Suggestions that meaningfully improve the code
+
+            Do NOT comment on: naming conventions, missing comments, test coverage suggestions, or vague "could be cleaner" feedback.
+
+            If the code is solid, just say "LGTM".
 
           # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
           # use_sticky_comment: true
