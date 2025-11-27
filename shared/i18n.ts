@@ -64,6 +64,7 @@ export const i18n = {
     failedToLoadReviewQueue: 'Failed to load review queue',
     failedToExportData: 'Failed to export data',
     failedToResetData: 'Failed to reset data',
+    unknownError: 'Unknown error',
   },
 
   // Home view - Review queue

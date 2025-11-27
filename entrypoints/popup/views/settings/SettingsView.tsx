@@ -190,7 +190,7 @@ function DataSection() {
       alert(i18n.settings.data.importSuccess);
     } catch (error) {
       console.error('Import failed:', error);
-      alert(`${i18n.settings.data.importFailed} ${error instanceof Error ? error.message : 'Unknown error'}`);
+      alert(`${i18n.settings.data.importFailed} ${error instanceof Error ? error.message : i18n.errors.unknownError}`);
     }
 
     // Reset the input so the same file can be selected again
