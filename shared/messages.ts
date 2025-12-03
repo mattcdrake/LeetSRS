@@ -7,6 +7,7 @@ import type { Theme } from '@/shared/settings';
 
 // Message type constants
 export const MessageType = {
+  PING: 'PING',
   ADD_CARD: 'ADD_CARD',
   GET_ALL_CARDS: 'GET_ALL_CARDS',
   REMOVE_CARD: 'REMOVE_CARD',
@@ -35,6 +36,7 @@ export const MessageType = {
 
 // Message request types as discriminated union
 export type MessageRequest =
+  | { type: typeof MessageType.PING }
   | { type: typeof MessageType.ADD_CARD; slug: string; name: string; leetcodeId: string; difficulty: Difficulty }
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
@@ -69,6 +71,7 @@ export type MessageRequest =
 
 // Type mapping for request to response
 export type MessageResponseMap = {
+  [MessageType.PING]: 'PONG';
   [MessageType.ADD_CARD]: Card;
   [MessageType.GET_ALL_CARDS]: Card[];
   [MessageType.REMOVE_CARD]: void;

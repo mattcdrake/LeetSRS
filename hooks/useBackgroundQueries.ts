@@ -114,7 +114,8 @@ export function useAddCardMutation() {
       difficulty: Difficulty;
     }) => sendMessage({ type: MessageType.ADD_CARD, slug, name, leetcodeId, difficulty }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cards'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     },
   });
 }
@@ -126,7 +127,7 @@ export function useRemoveCardMutation() {
     mutationFn: (slug: string) => sendMessage({ type: MessageType.REMOVE_CARD, slug }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.stats.today });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     },
   });
 }
@@ -148,7 +149,8 @@ export function useRateCardMutation() {
     mutationFn: ({ slug, name, rating, leetcodeId, difficulty }) =>
       sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     },
   });
 }
