@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { ReviewCard } from './ReviewCard';
 import { NotesSection } from './NotesSection';
 import { ActionsSection } from './ActionsSection';
@@ -10,13 +9,12 @@ import {
   useDelayCardMutation,
   usePauseCardMutation,
   useAnimationsEnabledQuery,
-  queryKeys,
 } from '@/hooks/useBackgroundQueries';
 import type { Grade } from 'ts-fsrs';
 import { i18n } from '@/shared/i18n';
+import type { Card } from '@/shared/cards';
 
 export function ReviewQueue() {
-  const queryClient = useQueryClient();
   const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
@@ -25,6 +23,7 @@ export function ReviewQueue() {
   const pauseCardMutation = usePauseCardMutation();
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
@@ -36,6 +35,7 @@ export function ReviewQueue() {
   ) => {
     if (queue.length === 0 || isProcessing) return;
 
+    setAnimatingCard(queue[0]);
     setIsProcessing(true);
 
     try {
@@ -50,15 +50,13 @@ export function ReviewQueue() {
       setTimeout(() => {
         setSlideDirection(null);
         setIsProcessing(false);
-        // Only invalidate after animation completes
-        if (!options.skipInvalidation) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
-        }
+        setAnimatingCard(null);
       }, animationDelay);
     } catch (error) {
       console.error(options.errorMessage, error);
       setSlideDirection(null);
       setIsProcessing(false);
+      setAnimatingCard(null);
     }
   };
 
@@ -120,7 +118,9 @@ export function ReviewQueue() {
     );
   }
 
-  if (queue.length === 0) {
+  const currentCard = animatingCard ?? queue[0];
+
+  if (!currentCard) {
     return (
       <div className="flex flex-col items-center justify-center h-32 gap-3 px-4">
         <div className="text-xl font-semibold text-primary">{i18n.home.noCardsToReview}</div>
@@ -150,8 +150,6 @@ export function ReviewQueue() {
       </div>
     );
   }
-
-  const currentCard = queue[0];
 
   const getAnimationClass = () => {
     if (!animationsEnabled) return '';
