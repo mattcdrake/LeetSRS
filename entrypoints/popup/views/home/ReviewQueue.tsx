@@ -30,7 +30,6 @@ export function ReviewQueue() {
     options: {
       getSlideDirection?: (result: T) => 'left' | 'right' | null;
       errorMessage: string;
-      skipInvalidation?: boolean;
     }
   ) => {
     if (queue.length === 0 || isProcessing) return;
