@@ -1,7 +1,6 @@
 import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
-import { browser } from 'wxt/browser';
 import { i18n } from '@/shared/i18n';
 
 export default defineContentScript({
@@ -9,7 +8,11 @@ export default defineContentScript({
   runAt: 'document_idle',
   async main() {
     // Wake up service worker so it's ready when user interacts
-    browser.runtime.sendMessage({ type: 'PING' }).catch(() => {});
+    try {
+      await sendMessage({ type: MessageType.PING });
+    } catch (error) {
+      console.error('Failed to ping service worker:', error);
+    }
     setupLeetSrsButton();
   },
 });

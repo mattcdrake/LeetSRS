@@ -30,6 +30,9 @@ export default defineBackground(async () => {
 
   async function handleMessage(request: MessageRequest) {
     switch (request.type) {
+      case MessageType.PING:
+        return 'PONG' as const;
+
       case MessageType.ADD_CARD:
         return await addCard(request.slug, request.name, request.leetcodeId, request.difficulty);
 
