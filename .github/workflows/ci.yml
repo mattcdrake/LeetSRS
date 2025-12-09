@@ -27,6 +27,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check version consistency
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          LOCK_VERSION=$(node -p "require('./package-lock.json').version")
+          CONFIG_VERSION=$(grep -oP "APP_VERSION = '\K[^']+" shared/config.ts)
+
+          echo "package.json version: $PKG_VERSION"
+          echo "package-lock.json version: $LOCK_VERSION"
+          echo "shared/config.ts version: $CONFIG_VERSION"
+
+          if [ "$PKG_VERSION" != "$LOCK_VERSION" ] || [ "$PKG_VERSION" != "$CONFIG_VERSION" ]; then
+            echo "::error::Version mismatch detected! All versions must match."
+            exit 1
+          fi
+          echo "All versions match: $PKG_VERSION"
+
       - name: Check formatting
         run: npm run format:check
 
