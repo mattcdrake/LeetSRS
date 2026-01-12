@@ -179,8 +179,7 @@ export default defineBackground(() => {
         return await getGistSyncConfig();
 
       case MessageType.SET_GIST_SYNC_CONFIG:
-        const result = await setGistSyncConfig(request.config);
-        return result;
+        return await setGistSyncConfig(request.config);
 
       case MessageType.GET_GIST_SYNC_STATUS:
         return await getGistSyncStatus();
