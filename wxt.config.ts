@@ -9,8 +9,8 @@ export default defineConfig({
       default_popup: 'popup.html',
     },
     name: 'LeetSRS',
-    permissions: ['storage'],
-    host_permissions: ['*://*.leetcode.com/*'],
+    permissions: ['storage', 'alarms'],
+    host_permissions: ['*://*.leetcode.com/*', '*://api.github.com/*'],
   },
   vite: () => ({
     plugins: [tailwindcss()],
