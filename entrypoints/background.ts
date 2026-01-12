@@ -30,6 +30,7 @@ import {
   validatePat,
   validateGistId,
 } from '@/services/github-sync';
+import { markDataUpdated } from '@/services/data-tracker';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -65,23 +66,44 @@ export default defineBackground(() => {
       case MessageType.PING:
         return 'PONG' as const;
 
-      case MessageType.ADD_CARD:
-        return await addCard(request.slug, request.name, request.leetcodeId, request.difficulty);
+      case MessageType.ADD_CARD: {
+        const result = await addCard(request.slug, request.name, request.leetcodeId, request.difficulty);
+        await markDataUpdated();
+        return result;
+      }
 
       case MessageType.GET_ALL_CARDS:
         return await getAllCards();
 
-      case MessageType.REMOVE_CARD:
-        return await removeCard(request.slug);
+      case MessageType.REMOVE_CARD: {
+        const result = await removeCard(request.slug);
+        await markDataUpdated();
+        return result;
+      }
 
-      case MessageType.DELAY_CARD:
-        return await delayCard(request.slug, request.days);
+      case MessageType.DELAY_CARD: {
+        const result = await delayCard(request.slug, request.days);
+        await markDataUpdated();
+        return result;
+      }
 
-      case MessageType.SET_PAUSE_STATUS:
-        return await setPauseStatus(request.slug, request.paused);
+      case MessageType.SET_PAUSE_STATUS: {
+        const result = await setPauseStatus(request.slug, request.paused);
+        await markDataUpdated();
+        return result;
+      }
 
-      case MessageType.RATE_CARD:
-        return await rateCard(request.slug, request.name, request.rating, request.leetcodeId, request.difficulty);
+      case MessageType.RATE_CARD: {
+        const result = await rateCard(
+          request.slug,
+          request.name,
+          request.rating,
+          request.leetcodeId,
+          request.difficulty
+        );
+        await markDataUpdated();
+        return result;
+      }
 
       case MessageType.GET_REVIEW_QUEUE:
         return await getReviewQueue();
@@ -92,29 +114,44 @@ export default defineBackground(() => {
       case MessageType.GET_NOTE:
         return await getNote(request.cardId);
 
-      case MessageType.SAVE_NOTE:
-        return await saveNote(request.cardId, request.text);
+      case MessageType.SAVE_NOTE: {
+        const result = await saveNote(request.cardId, request.text);
+        await markDataUpdated();
+        return result;
+      }
 
-      case MessageType.DELETE_NOTE:
-        return await deleteNote(request.cardId);
+      case MessageType.DELETE_NOTE: {
+        const result = await deleteNote(request.cardId);
+        await markDataUpdated();
+        return result;
+      }
 
       case MessageType.GET_MAX_NEW_CARDS_PER_DAY:
         return await getMaxNewCardsPerDay();
 
-      case MessageType.SET_MAX_NEW_CARDS_PER_DAY:
-        return await setMaxNewCardsPerDay(request.value);
+      case MessageType.SET_MAX_NEW_CARDS_PER_DAY: {
+        const result = await setMaxNewCardsPerDay(request.value);
+        await markDataUpdated();
+        return result;
+      }
 
       case MessageType.GET_ANIMATIONS_ENABLED:
         return await getAnimationsEnabled();
 
-      case MessageType.SET_ANIMATIONS_ENABLED:
-        return await setAnimationsEnabled(request.value);
+      case MessageType.SET_ANIMATIONS_ENABLED: {
+        const result = await setAnimationsEnabled(request.value);
+        await markDataUpdated();
+        return result;
+      }
 
       case MessageType.GET_THEME:
         return await getTheme();
 
-      case MessageType.SET_THEME:
-        return await setTheme(request.value);
+      case MessageType.SET_THEME: {
+        const result = await setTheme(request.value);
+        await markDataUpdated();
+        return result;
+      }
 
       case MessageType.GET_CARD_STATE_STATS:
         return await getCardStateStats();
@@ -142,7 +179,9 @@ export default defineBackground(() => {
         return await getGistSyncConfig();
 
       case MessageType.SET_GIST_SYNC_CONFIG:
-        return await setGistSyncConfig(request.config);
+        const result = await setGistSyncConfig(request.config);
+        await markDataUpdated();
+        return result;
 
       case MessageType.GET_GIST_SYNC_STATUS:
         return await getGistSyncStatus();

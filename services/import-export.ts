@@ -9,6 +9,7 @@ import { APP_VERSION } from '@/shared/config';
 export interface ExportData {
   version: string;
   exportDate: string;
+  dataUpdatedAt?: string;
   data: {
     cards: Record<string, StoredCard>;
     stats: Record<string, DailyStats>;
@@ -51,9 +52,13 @@ export async function exportData(): Promise<string> {
   const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
   const gistSyncEnabled = await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled);
 
+  // Get dataUpdatedAt for sync purposes
+  const dataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
+
   const exportData: ExportData = {
     version: APP_VERSION,
     exportDate: new Date().toISOString(),
+    dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
       cards,
       stats,
@@ -141,6 +146,9 @@ export async function importData(jsonData: string): Promise<void> {
       await storage.setItem(STORAGE_KEYS.gistSyncEnabled, data.data.gistSync.enabled);
     }
   }
+
+  // Import dataUpdatedAt if present, otherwise set to now
+  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, data.dataUpdatedAt ?? new Date().toISOString());
 }
 
 export async function resetAllData(): Promise<void> {
@@ -160,6 +168,7 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.gistSyncEnabled);
   await storage.removeItem(STORAGE_KEYS.lastSyncTime);
   await storage.removeItem(STORAGE_KEYS.lastSyncDirection);
+  await storage.removeItem(STORAGE_KEYS.dataUpdatedAt);
 
   // Remove all notes
   if (cards) {
