@@ -114,6 +114,11 @@ export function GistSyncSection() {
     // Update local state immediately for instant feedback
     setLocalEnabled(newValue);
     await setConfigMutation.mutateAsync({ enabled: newValue });
+
+    // Sync immediately when enabling
+    if (newValue) {
+      await triggerSyncMutation.mutateAsync();
+    }
   };
 
   const handleSyncNow = async () => {
