@@ -46,6 +46,32 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 - Keep your cards and progress in sync across multiple browsers
 - Your data stays private in your own GitHub account
 
+<div align="center">
+<img src="assets/screenshots/githubGistSyncScreen.png" width="90%" alt="LeetCode Integration" />
+</div>
+
+## Setup Requirements
+
+Under GitHub Gist Sync in Settings
+
+#### 1. Create a GitHub Personal Access Token
+
+- Generate a new token with the **`gist`** permission enabled
+- Save the token somewhere secure
+
+#### 2. Create a Gist
+
+- Create a new **Gist ID** and copy it
+
+#### 3. Enable Sync on Each Device
+
+On every browser or machine you want synced:
+
+- Paste your **GitHub token**
+- Paste the same **Gist ID**
+
+Once configured, your cards and progress will automatically stay in sync across all your devices.
+
 ### Interface
 
 - Dark/light theme support
