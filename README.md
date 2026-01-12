@@ -52,7 +52,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 
 ## Setup Requirements
 
-Under GitHub Gist Sync in Settings
+In the extension's settings, under the "GitHub Gist Sync" section
 
 #### 1. Create a GitHub Personal Access Token
 
