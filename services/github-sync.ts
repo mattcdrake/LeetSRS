@@ -162,10 +162,6 @@ export async function triggerGistSync(): Promise<SyncResult> {
   try {
     const config = await getGistSyncConfig();
 
-    if (!config.enabled) {
-      return { success: false, error: 'Sync is not enabled' };
-    }
-
     if (!config.pat) {
       return { success: false, error: 'PAT is not configured' };
     }
@@ -223,8 +219,10 @@ export async function triggerGistSync(): Promise<SyncResult> {
     // Compare data content (excluding metadata like version and exportDate)
     // Use sorted stringify to ensure key order doesn't affect comparison
     if (sortedStringify(localData.data) === sortedStringify(remoteData.data)) {
-      // No changes - don't push unnecessarily
-      return { success: true, action: 'no-change', timestamp: lastSyncTime ?? new Date().toISOString() };
+      // No changes - still update sync time since we did check
+      const now = new Date().toISOString();
+      await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
+      return { success: true, action: 'no-change', timestamp: now };
     }
 
     // Data differs - push
