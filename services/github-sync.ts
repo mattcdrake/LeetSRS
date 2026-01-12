@@ -14,6 +14,20 @@ import { i18n } from '@/shared/i18n';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
 
+// Deep comparison helper that sorts object keys to ensure consistent comparison
+function sortedStringify(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      const sorted: Record<string, unknown> = {};
+      for (const key of Object.keys(value).sort()) {
+        sorted[key] = (value as Record<string, unknown>)[key];
+      }
+      return sorted;
+    }
+    return value;
+  });
+}
+
 // In-memory state for sync status (not persisted)
 let syncInProgress = false;
 let lastError: string | null = null;
@@ -193,18 +207,28 @@ export async function triggerGistSync(): Promise<SyncResult> {
 
     // Compare remote's exportDate against our lastSyncTime
     // If remote is newer than our last sync, another device pushed - pull
-    // Otherwise, push our current state
     const lastSyncTime = (await storage.getItem<string>(STORAGE_KEYS.lastSyncTime)) ?? null;
     const remoteDate = new Date(remoteData.exportDate);
 
     if (lastSyncTime && remoteDate > new Date(lastSyncTime)) {
       // Remote was updated since our last sync - pull
       return await pullFromGist(remoteFileContent);
-    } else {
-      // Push our current state
-      const localExportJson = await exportData();
-      return await pushToGist(octokit, config.gistId, localExportJson);
     }
+
+    // Remote hasn't been updated by another device
+    // Only push if local data has actually changed
+    const localExportJson = await exportData();
+    const localData: ExportData = JSON.parse(localExportJson);
+
+    // Compare data content (excluding metadata like version and exportDate)
+    // Use sorted stringify to ensure key order doesn't affect comparison
+    if (sortedStringify(localData.data) === sortedStringify(remoteData.data)) {
+      // No changes - don't push unnecessarily
+      return { success: true, action: 'no-change', timestamp: lastSyncTime ?? new Date().toISOString() };
+    }
+
+    // Data differs - push
+    return await pushToGist(octokit, config.gistId, localExportJson);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
     lastError = errorMessage;
