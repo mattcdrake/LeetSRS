@@ -9,7 +9,7 @@ export default defineConfig({
       default_popup: 'popup.html',
     },
     name: 'LeetSRS',
-    permissions: ['storage'],
+    permissions: ['storage', 'alarms'],
     host_permissions: ['*://*.leetcode.com/*'],
   },
   vite: () => ({

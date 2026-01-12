@@ -4,6 +4,13 @@ import type { Grade, State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Note } from '@/shared/notes';
 import type { Theme } from '@/shared/settings';
+import type {
+  GistSyncConfig,
+  GistSyncStatus,
+  SyncResult,
+  PatValidationResult,
+  GistValidationResult,
+} from '@/shared/gist-sync';
 
 // Message type constants
 export const MessageType = {
@@ -32,6 +39,14 @@ export const MessageType = {
   EXPORT_DATA: 'EXPORT_DATA',
   IMPORT_DATA: 'IMPORT_DATA',
   RESET_ALL_DATA: 'RESET_ALL_DATA',
+  // GitHub Gist Sync
+  GET_GIST_SYNC_CONFIG: 'GET_GIST_SYNC_CONFIG',
+  SET_GIST_SYNC_CONFIG: 'SET_GIST_SYNC_CONFIG',
+  GET_GIST_SYNC_STATUS: 'GET_GIST_SYNC_STATUS',
+  TRIGGER_GIST_SYNC: 'TRIGGER_GIST_SYNC',
+  CREATE_NEW_GIST: 'CREATE_NEW_GIST',
+  VALIDATE_PAT: 'VALIDATE_PAT',
+  VALIDATE_GIST_ID: 'VALIDATE_GIST_ID',
 } as const;
 
 // Message request types as discriminated union
@@ -67,7 +82,15 @@ export type MessageRequest =
   | { type: typeof MessageType.GET_NEXT_N_DAYS_STATS; days: number }
   | { type: typeof MessageType.EXPORT_DATA }
   | { type: typeof MessageType.IMPORT_DATA; jsonData: string }
-  | { type: typeof MessageType.RESET_ALL_DATA };
+  | { type: typeof MessageType.RESET_ALL_DATA }
+  // GitHub Gist Sync
+  | { type: typeof MessageType.GET_GIST_SYNC_CONFIG }
+  | { type: typeof MessageType.SET_GIST_SYNC_CONFIG; config: Partial<GistSyncConfig> }
+  | { type: typeof MessageType.GET_GIST_SYNC_STATUS }
+  | { type: typeof MessageType.TRIGGER_GIST_SYNC }
+  | { type: typeof MessageType.CREATE_NEW_GIST }
+  | { type: typeof MessageType.VALIDATE_PAT; pat: string }
+  | { type: typeof MessageType.VALIDATE_GIST_ID; gistId: string; pat: string };
 
 // Type mapping for request to response
 export type MessageResponseMap = {
@@ -96,6 +119,14 @@ export type MessageResponseMap = {
   [MessageType.EXPORT_DATA]: string;
   [MessageType.IMPORT_DATA]: void;
   [MessageType.RESET_ALL_DATA]: void;
+  // GitHub Gist Sync
+  [MessageType.GET_GIST_SYNC_CONFIG]: GistSyncConfig;
+  [MessageType.SET_GIST_SYNC_CONFIG]: void;
+  [MessageType.GET_GIST_SYNC_STATUS]: GistSyncStatus;
+  [MessageType.TRIGGER_GIST_SYNC]: SyncResult;
+  [MessageType.CREATE_NEW_GIST]: { gistId: string };
+  [MessageType.VALIDATE_PAT]: PatValidationResult;
+  [MessageType.VALIDATE_GIST_ID]: GistValidationResult;
 };
 
 /**

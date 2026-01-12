@@ -21,14 +21,46 @@ import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
 import { runMigrations, migrations } from '@/services/migrations';
 import { exportData, importData, resetAllData } from '@/services/import-export';
+import {
+  getGistSyncConfig,
+  setGistSyncConfig,
+  getGistSyncStatus,
+  triggerGistSync,
+  createNewGist,
+  validatePat,
+  validateGistId,
+} from '@/services/github-sync';
 
-export default defineBackground(async () => {
-  // Run migrations on startup
-  await runMigrations(migrations).catch((error) => {
-    console.error('Failed to run migrations:', error);
-  });
+const SYNC_ALARM_NAME = 'gist-sync';
+const SYNC_INTERVAL_MINUTES = 1;
+
+export default defineBackground(() => {
+  // Initialize async and track completion so message handlers can wait
+  const readyPromise = (async () => {
+    await runMigrations(migrations).catch((error) => {
+      console.error('Failed to run migrations:', error);
+    });
+
+    // Set up periodic sync alarm
+    browser.alarms.create(SYNC_ALARM_NAME, {
+      periodInMinutes: SYNC_INTERVAL_MINUTES,
+    });
+
+    // Handle alarm for periodic sync
+    browser.alarms.onAlarm.addListener(async (alarm) => {
+      if (alarm.name !== SYNC_ALARM_NAME) return;
+
+      const config = await getGistSyncConfig();
+      if (config.enabled && config.pat && config.gistId) {
+        await triggerGistSync();
+      }
+    });
+  })();
 
   async function handleMessage(request: MessageRequest) {
+    // Wait for initialization before handling any messages
+    await readyPromise;
+
     switch (request.type) {
       case MessageType.PING:
         return 'PONG' as const;
@@ -105,10 +137,31 @@ export default defineBackground(async () => {
       case MessageType.RESET_ALL_DATA:
         return await resetAllData();
 
+      // GitHub Gist Sync
+      case MessageType.GET_GIST_SYNC_CONFIG:
+        return await getGistSyncConfig();
+
+      case MessageType.SET_GIST_SYNC_CONFIG:
+        return await setGistSyncConfig(request.config);
+
+      case MessageType.GET_GIST_SYNC_STATUS:
+        return await getGistSyncStatus();
+
+      case MessageType.TRIGGER_GIST_SYNC:
+        return await triggerGistSync();
+
+      case MessageType.CREATE_NEW_GIST:
+        return await createNewGist();
+
+      case MessageType.VALIDATE_PAT:
+        return await validatePat(request.pat);
+
+      case MessageType.VALIDATE_GIST_ID:
+        return await validateGistId(request.gistId, request.pat);
+
       default: {
-        // This should never happen with proper typing - exhaustive check
-        const _: never = request;
-        throw new Error('Unknown message type');
+        console.warn('Unknown message type:', (request as { type?: string }).type);
+        return undefined;
       }
     }
   }

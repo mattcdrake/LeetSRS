@@ -22,6 +22,7 @@ import {
 import { useState, useEffect, useRef } from 'react';
 import { APP_VERSION, CHROME_STORE_REVIEWS_URL } from '@/shared/config';
 import { i18n } from '@/shared/i18n';
+import { GistSyncSection } from './GistSyncSection';
 
 function AppearanceSection() {
   const { data: theme = DEFAULT_THEME } = useThemeQuery();
@@ -308,6 +309,7 @@ export function SettingsView() {
       <AppearanceSection />
       <ReviewSettingsSection />
       <DataSection />
+      <GistSyncSection />
       <AboutSection />
     </ViewLayout>
   );
