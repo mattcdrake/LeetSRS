@@ -180,7 +180,6 @@ export default defineBackground(() => {
 
       case MessageType.SET_GIST_SYNC_CONFIG:
         const result = await setGistSyncConfig(request.config);
-        await markDataUpdated();
         return result;
 
       case MessageType.GET_GIST_SYNC_STATUS:

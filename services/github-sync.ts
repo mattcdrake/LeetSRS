@@ -190,8 +190,13 @@ export async function triggerGistSync(): Promise<SyncResult> {
     // Get local and remote dataUpdatedAt timestamps
     const localDataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
 
-    // If either side lacks dataUpdatedAt (legacy data), push to establish it
-    if (!localDataUpdatedAt || !remoteData.dataUpdatedAt) {
+    // Handle missing dataUpdatedAt (legacy or fresh install)
+    if (!localDataUpdatedAt && remoteData.dataUpdatedAt) {
+      // Fresh install with existing remote data - pull
+      return await pullFromGist(remoteFileContent);
+    }
+    if (!remoteData.dataUpdatedAt) {
+      // Remote is legacy - push to establish dataUpdatedAt
       if (!localDataUpdatedAt) {
         await storage.setItem(STORAGE_KEYS.dataUpdatedAt, new Date().toISOString());
       }
@@ -200,7 +205,8 @@ export async function triggerGistSync(): Promise<SyncResult> {
     }
 
     // Compare dataUpdatedAt timestamps (LWW)
-    const localUpdated = new Date(localDataUpdatedAt);
+    // At this point both are guaranteed non-null by the checks above
+    const localUpdated = new Date(localDataUpdatedAt!);
     const remoteUpdated = new Date(remoteData.dataUpdatedAt);
 
     if (localUpdated < remoteUpdated) {
