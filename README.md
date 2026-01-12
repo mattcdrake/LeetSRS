@@ -32,19 +32,19 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 
 - Uses **[TS-FSRS](https://github.com/open-spaced-repetition/ts-fsrs)** for the spaced repetition algorithm
 
-### Progress Tracking
-
-- View statistics and streaks
-
-### LeetCode Integration
-
-- Works directly on leetcode.com
-- Easily rate after solving problems, or add to review later
-
 ### Review System
 
 - Daily review queue with optimized problem ordering
 - Customizable daily new card limits
+- View statistics and streaks
+- Works directly on leetcode.com
+- Easily rate after solving problems, or add to review later
+
+### Cross-Browser Sync
+
+- Optional sync via GitHub Gists
+- Keep your cards and progress in sync across multiple browsers
+- Your data stays private in your own GitHub account
 
 ### Interface
 
