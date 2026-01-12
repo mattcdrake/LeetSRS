@@ -48,6 +48,9 @@ export function GistSyncSection() {
   const [gistId, setGistId] = useState('');
   const [patValidation, setPatValidation] = useState<{ valid: boolean; username?: string } | null>(null);
   const [gistValidation, setGistValidation] = useState<{ valid: boolean } | null>(null);
+  // Track if user explicitly validated (don't show message on initial load)
+  const [showPatMessage, setShowPatMessage] = useState(false);
+  const [showGistMessage, setShowGistMessage] = useState(false);
 
   // Local state for immediate toggle feedback
   const [localEnabled, setLocalEnabled] = useState(false);
@@ -69,6 +72,7 @@ export function GistSyncSection() {
 
   const handleValidatePat = async () => {
     setPatValidation(null);
+    setShowPatMessage(true);
     const result = await validatePatMutation.mutateAsync(pat);
     setPatValidation(result);
     if (result.valid) {
@@ -78,6 +82,7 @@ export function GistSyncSection() {
 
   const handleValidateGist = async () => {
     setGistValidation(null);
+    setShowGistMessage(true);
     const result = await validateGistMutation.mutateAsync({ gistId, pat });
     setGistValidation(result);
     if (result.valid) {
@@ -90,6 +95,7 @@ export function GistSyncSection() {
       const result = await createGistMutation.mutateAsync();
       setGistId(result.gistId);
       setGistValidation({ valid: true });
+      setShowGistMessage(true);
     } catch (error) {
       console.error('Failed to create gist:', error);
       alert(i18n.settings.gistSync.createGistFailed);
@@ -150,6 +156,7 @@ export function GistSyncSection() {
               onChange={(e) => {
                 setPat(e.target.value);
                 setPatValidation(null);
+                setShowPatMessage(false);
               }}
               placeholder={i18n.settings.gistSync.patPlaceholder}
               className="flex-1 px-2 py-1 rounded border bg-tertiary text-primary border-current text-sm"
@@ -162,7 +169,7 @@ export function GistSyncSection() {
               {validatePatMutation.isPending ? i18n.settings.gistSync.validating : i18n.settings.gistSync.validatePat}
             </Button>
           </div>
-          {patValidation && (
+          {showPatMessage && patValidation && (
             <div
               className={`text-sm flex items-center gap-1 ${patValidation.valid ? 'text-green-500' : 'text-red-500'}`}
             >
@@ -196,6 +203,7 @@ export function GistSyncSection() {
                 onChange={(e) => {
                   setGistId(e.target.value);
                   setGistValidation(null);
+                  setShowGistMessage(false);
                 }}
                 placeholder={i18n.settings.gistSync.gistIdPlaceholder}
                 className="flex-1 px-2 py-1 rounded border bg-tertiary text-primary border-current text-sm"
@@ -217,7 +225,7 @@ export function GistSyncSection() {
                 {createGistMutation.isPending ? i18n.settings.gistSync.creating : i18n.settings.gistSync.createNewGist}
               </Button>
             </div>
-            {gistValidation && (
+            {showGistMessage && gistValidation && (
               <div
                 className={`text-sm flex items-center gap-1 ${gistValidation.valid ? 'text-green-500' : 'text-red-500'}`}
               >
