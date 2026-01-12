@@ -308,8 +308,8 @@ export function SettingsView() {
     <ViewLayout title={i18n.settings.title}>
       <AppearanceSection />
       <ReviewSettingsSection />
-      <DataSection />
       <GistSyncSection />
+      <DataSection />
       <AboutSection />
     </ViewLayout>
   );
