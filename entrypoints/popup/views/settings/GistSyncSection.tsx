@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, TextField, Label, Input, Switch } from 'react-aria-components';
+import { Button, TextField, Label, Input } from 'react-aria-components';
 import { FaGithub, FaCheck, FaXmark, FaArrowsRotate, FaCloudArrowUp, FaCloudArrowDown } from 'react-icons/fa6';
 import { bounceButton } from '@/shared/styles';
 import {
@@ -12,6 +12,27 @@ import {
   useValidateGistIdMutation,
 } from '@/hooks/useBackgroundQueries';
 import { i18n } from '@/shared/i18n';
+
+// Simple toggle component without React Aria's hidden input
+function SimpleToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      onClick={onToggle}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+        enabled ? 'bg-accent' : 'bg-tertiary border border-current'
+      }`}
+    >
+      <span
+        className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+          enabled ? 'translate-x-5' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  );
+}
 
 export function GistSyncSection() {
   const { data: config } = useGistSyncConfigQuery();
@@ -28,12 +49,15 @@ export function GistSyncSection() {
   const [patValidation, setPatValidation] = useState<{ valid: boolean; username?: string } | null>(null);
   const [gistValidation, setGistValidation] = useState<{ valid: boolean } | null>(null);
 
+  // Local state for immediate toggle feedback
+  const [localEnabled, setLocalEnabled] = useState(false);
+
   // Sync local state with stored config
   useEffect(() => {
     if (config) {
       setPat(config.pat || '');
       setGistId(config.gistId || '');
-      // If config has valid values, mark them as validated
+      setLocalEnabled(config.enabled ?? false);
       if (config.pat) {
         setPatValidation({ valid: true });
       }
@@ -73,7 +97,9 @@ export function GistSyncSection() {
   };
 
   const handleToggleSync = async () => {
-    if (!config?.enabled) {
+    const newValue = !localEnabled;
+
+    if (newValue) {
       // Enabling sync - validate requirements
       if (!pat || !patValidation?.valid) {
         alert(i18n.settings.gistSync.patRequired);
@@ -84,7 +110,10 @@ export function GistSyncSection() {
         return;
       }
     }
-    await setConfigMutation.mutateAsync({ enabled: !config?.enabled });
+
+    // Update local state immediately for instant feedback
+    setLocalEnabled(newValue);
+    await setConfigMutation.mutateAsync({ enabled: newValue });
   };
 
   const handleSyncNow = async () => {
@@ -198,30 +227,12 @@ export function GistSyncSection() {
         {patValidation?.valid && gistValidation?.valid && (
           <div className="flex items-center justify-between">
             <span>{i18n.settings.gistSync.enableSync}</span>
-            <Switch
-              isSelected={config?.enabled ?? false}
-              onChange={handleToggleSync}
-              className="group inline-flex touch-none items-center"
-            >
-              {({ isSelected }) => (
-                <span
-                  className={`relative flex items-center h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                    isSelected ? 'bg-accent' : 'bg-tertiary border border-current'
-                  } group-data-[focus-visible]:ring-2 ring-offset-2 ring-offset-primary`}
-                >
-                  <span
-                    className={`block h-5 w-5 mx-0.5 rounded-full bg-white shadow-sm transition-all ${
-                      isSelected ? 'translate-x-5' : ''
-                    } group-data-[pressed]:scale-95`}
-                  />
-                </span>
-              )}
-            </Switch>
+            <SimpleToggle enabled={localEnabled} onToggle={handleToggleSync} />
           </div>
         )}
 
         {/* Sync Status and Manual Sync - only show when sync is enabled */}
-        {config?.enabled && (
+        {localEnabled && (
           <div className="space-y-2 pt-2 border-t border-tertiary">
             <div className="flex items-center justify-between text-sm">
               <span className="text-tertiary">{i18n.settings.gistSync.lastSync}:</span>
