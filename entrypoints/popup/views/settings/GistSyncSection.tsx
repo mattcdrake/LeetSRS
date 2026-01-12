@@ -223,17 +223,16 @@ export function GistSyncSection() {
           </div>
         )}
 
-        {/* Enable Sync Toggle - only show after PAT and Gist are validated */}
+        {/* Sync controls - only show after PAT and Gist are validated */}
         {patValidation?.valid && gistValidation?.valid && (
-          <div className="flex items-center justify-between">
-            <span>{i18n.settings.gistSync.enableSync}</span>
-            <SimpleToggle enabled={localEnabled} onToggle={handleToggleSync} />
-          </div>
-        )}
+          <div className="space-y-4 pt-2 border-t border-tertiary">
+            {/* Enable Automatic Sync Toggle */}
+            <div className="flex items-center justify-between">
+              <span>{i18n.settings.gistSync.enableSync}</span>
+              <SimpleToggle enabled={localEnabled} onToggle={handleToggleSync} />
+            </div>
 
-        {/* Sync Status and Manual Sync - only show when sync is enabled */}
-        {localEnabled && (
-          <div className="space-y-2 pt-2 border-t border-tertiary">
+            {/* Sync Status */}
             <div className="flex items-center justify-between text-sm">
               <span className="text-tertiary">{i18n.settings.gistSync.lastSync}:</span>
               <span className="flex items-center gap-1">
@@ -242,6 +241,8 @@ export function GistSyncSection() {
                 {formatLastSync()}
               </span>
             </div>
+
+            {/* Manual Sync Button */}
             <Button
               onPress={handleSyncNow}
               isDisabled={triggerSyncMutation.isPending || status?.syncInProgress}
@@ -250,6 +251,7 @@ export function GistSyncSection() {
               <FaArrowsRotate className={triggerSyncMutation.isPending ? 'animate-spin' : ''} />
               {triggerSyncMutation.isPending ? i18n.settings.gistSync.syncing : i18n.settings.gistSync.syncNow}
             </Button>
+
             {status?.lastError && (
               <div className="text-sm text-red-500">
                 {i18n.settings.gistSync.syncFailed}: {status.lastError}
