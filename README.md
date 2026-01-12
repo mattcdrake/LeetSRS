@@ -61,7 +61,7 @@ Under GitHub Gist Sync in Settings
 
 #### 2. Create a Gist
 
-- Create a new **Gist ID** and copy it
+- Use the **Create New Gist** button in the extension to do this automatically. Alternatively, create a Gist on GitHub and copy its ID.
 
 #### 3. Enable Sync on Each Device
 
