@@ -109,8 +109,16 @@ export async function importData(jsonData: string): Promise<void> {
     throw new Error('Invalid notes data');
   }
 
+  // Preserve PAT before reset (it's not in export for security)
+  const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
+
   // Clear existing data for a clean import
   await resetAllData();
+
+  // Restore PAT if it existed
+  if (existingPat) {
+    await storage.setItem(STORAGE_KEYS.githubPat, existingPat);
+  }
 
   // Import cards
   await storage.setItem(STORAGE_KEYS.cards, data.data.cards);
