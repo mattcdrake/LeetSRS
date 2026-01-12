@@ -47,7 +47,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 - Your data stays private in your own GitHub account
 
 <div align="center">
-<img src="assets/screenshots/githubGistSyncScreen.png" width="90%" alt="LeetCode Integration" />
+<img src="assets/screenshots/githubGistSyncScreen.png" width="90%" alt="GitHub Gist Sync settings screen" />
 </div>
 
 ## Setup Requirements
