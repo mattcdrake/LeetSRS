@@ -197,8 +197,9 @@ export default defineBackground(() => {
         return await validateGistId(request.gistId, request.pat);
 
       default: {
-        console.warn('Unknown message type:', (request as { type?: string }).type);
-        return undefined;
+        // Exhaustive check - compile error if a message type is not handled
+        const _: never = request;
+        throw new Error(`Unknown message type: ${(request as { type?: string }).type}`);
       }
     }
   }
