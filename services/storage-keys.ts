@@ -6,6 +6,14 @@ export const STORAGE_KEYS = {
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
   schemaVersion: 'local:leetsrs:schemaVersion',
+  // Tracks when actual data was last modified (for sync)
+  dataUpdatedAt: 'local:leetsrs:dataUpdatedAt',
+  // GitHub Gist Sync
+  githubPat: 'sync:leetsrs:githubPat',
+  gistId: 'sync:leetsrs:gistId',
+  gistSyncEnabled: 'sync:leetsrs:gistSyncEnabled',
+  lastSyncTime: 'local:leetsrs:lastSyncTime',
+  lastSyncDirection: 'local:leetsrs:lastSyncDirection',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

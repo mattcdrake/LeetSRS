@@ -171,6 +171,44 @@ export const i18n = {
       resetSuccess: 'All data has been reset',
     },
 
+    // GitHub Gist Sync section
+    gistSync: {
+      title: 'GitHub Gist Sync',
+      gistDescription: 'LeetSRS Backup - Spaced Repetition Data',
+      description: 'Sync your data across browsers using GitHub Gists',
+      // PAT field
+      patLabel: 'Personal Access Token',
+      patPlaceholder: 'ghp_xxxxxxxxxxxx',
+      patHelpText: 'Create a token with "gist" scope at',
+      patHelpLink: 'GitHub Settings',
+      validatePat: 'Validate',
+      validating: 'Validating...',
+      patValid: 'Valid',
+      patInvalid: 'Invalid token',
+      // Gist selection
+      gistIdLabel: 'Gist ID',
+      gistIdPlaceholder: 'Enter existing Gist ID or create new',
+      createNewGist: 'Create New Gist',
+      creating: 'Creating...',
+      validateGist: 'Validate',
+      gistValid: 'Valid',
+      gistInvalid: 'Invalid gist',
+      // Sync controls
+      enableSync: 'Enable automatic sync',
+      syncNow: 'Sync Now',
+      syncing: 'Syncing...',
+      // Status
+      lastSync: 'Last sync',
+      lastSyncNever: 'Never',
+      lastSyncPushed: 'Pushed',
+      lastSyncPulled: 'Pulled',
+      // Errors
+      patRequired: 'PAT is required to enable sync',
+      gistRequired: 'Gist ID is required to enable sync',
+      syncFailed: 'Sync failed',
+      createGistFailed: 'Failed to create gist',
+    },
+
     // About section
     about: {
       title: 'About',

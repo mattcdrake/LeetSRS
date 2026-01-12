@@ -9,6 +9,7 @@ import { APP_VERSION } from '@/shared/config';
 export interface ExportData {
   version: string;
   exportDate: string;
+  dataUpdatedAt?: string;
   data: {
     cards: Record<string, StoredCard>;
     stats: Record<string, DailyStats>;
@@ -17,6 +18,10 @@ export interface ExportData {
       maxNewCardsPerDay?: number;
       animationsEnabled?: boolean;
       theme?: Theme;
+    };
+    gistSync?: {
+      gistId?: string;
+      enabled?: boolean;
     };
   };
 }
@@ -43,9 +48,17 @@ export async function exportData(): Promise<string> {
   const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
 
+  // Get gist sync settings
+  const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
+  const gistSyncEnabled = await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled);
+
+  // Get dataUpdatedAt for sync purposes
+  const dataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
+
   const exportData: ExportData = {
     version: APP_VERSION,
     exportDate: new Date().toISOString(),
+    dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
       cards,
       stats,
@@ -54,6 +67,10 @@ export async function exportData(): Promise<string> {
         ...(maxNewCardsPerDay != null && { maxNewCardsPerDay }),
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
+      },
+      gistSync: {
+        ...(gistId != null && { gistId }),
+        ...(gistSyncEnabled != null && { enabled: gistSyncEnabled }),
       },
     },
   };
@@ -92,8 +109,16 @@ export async function importData(jsonData: string): Promise<void> {
     throw new Error('Invalid notes data');
   }
 
+  // Preserve PAT before reset (it's not in export for security)
+  const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
+
   // Clear existing data for a clean import
   await resetAllData();
+
+  // Restore PAT if it existed
+  if (existingPat) {
+    await storage.setItem(STORAGE_KEYS.githubPat, existingPat);
+  }
 
   // Import cards
   await storage.setItem(STORAGE_KEYS.cards, data.data.cards);
@@ -119,6 +144,19 @@ export async function importData(jsonData: string): Promise<void> {
       await storage.setItem(STORAGE_KEYS.theme, data.data.settings.theme);
     }
   }
+
+  // Import gist sync settings
+  if (data.data.gistSync) {
+    if (data.data.gistSync.gistId != null) {
+      await storage.setItem(STORAGE_KEYS.gistId, data.data.gistSync.gistId);
+    }
+    if (data.data.gistSync.enabled != null) {
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, data.data.gistSync.enabled);
+    }
+  }
+
+  // Import dataUpdatedAt if present, otherwise set to now
+  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, data.dataUpdatedAt ?? new Date().toISOString());
 }
 
 export async function resetAllData(): Promise<void> {
@@ -131,6 +169,14 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.maxNewCardsPerDay);
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
   await storage.removeItem(STORAGE_KEYS.theme);
+
+  // Remove gist sync settings
+  await storage.removeItem(STORAGE_KEYS.githubPat);
+  await storage.removeItem(STORAGE_KEYS.gistId);
+  await storage.removeItem(STORAGE_KEYS.gistSyncEnabled);
+  await storage.removeItem(STORAGE_KEYS.lastSyncTime);
+  await storage.removeItem(STORAGE_KEYS.lastSyncDirection);
+  await storage.removeItem(STORAGE_KEYS.dataUpdatedAt);
 
   // Remove all notes
   if (cards) {

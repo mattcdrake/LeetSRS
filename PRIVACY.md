@@ -1,6 +1,6 @@
 # LeetSRS Privacy Policy
 
-**Last Updated: August 6, 2025**
+**Last Updated: January 11, 2026**
 
 LeetSRS is a Chrome extension that helps you with spaced repetition for
 LeetCode problems. Your privacy is important. This policy explains what
@@ -18,13 +18,34 @@ places:
 
 2.  **In Your Personal Cloud Storage (`chrome.storage.sync`):**
     - Your extension settings, such as theme and daily limits.
+    - Your GitHub Personal Access Token (if you enable GitHub Gist sync).
 
 This data is managed by your browser and is not accessible to us.
 
+## Optional GitHub Gist Sync
+
+LeetSRS offers an optional feature to sync your data across browsers using
+GitHub Gists. This feature is **disabled by default** and requires you to:
+
+1. Create a GitHub Personal Access Token (PAT) with the `gist` scope.
+2. Explicitly enable sync in the extension settings.
+
+When enabled:
+
+- Your extension data (cards, stats, notes, and settings) is uploaded to a
+  **private** GitHub Gist that you own.
+- Your PAT is stored locally in your browser and is sent only to GitHub's API
+  (`api.github.com`) to authenticate sync requests.
+- **We never receive or have access to your PAT or synced data.**
+
+You can disable this feature at any time, and your Gist will remain under your
+control on GitHub.
+
 ## Data Usage and Sharing
 
-Since we do not collect your data, we do not use or share it with any third
-parties.
+If you use GitHub Gist sync, your data is shared only with GitHub
+under their privacy policy. Aside from that, your data is not shared with
+any other party.
 
 ## Changes to This Policy
 

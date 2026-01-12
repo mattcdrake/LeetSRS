@@ -3,6 +3,7 @@ import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 import type { Difficulty, Card } from '@/shared/cards';
 import type { Theme } from '@/shared/settings';
+import type { GistSyncConfig } from '@/shared/gist-sync';
 
 // Query Keys with hierarchical structure
 export const queryKeys = {
@@ -31,6 +32,12 @@ export const queryKeys = {
     maxNewCardsPerDay: ['settings', 'maxNewCardsPerDay'] as const,
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
+  },
+  // Gist Sync related queries
+  gistSync: {
+    all: ['gistSync'] as const,
+    config: ['gistSync', 'config'] as const,
+    status: ['gistSync', 'status'] as const,
   },
 } as const;
 
@@ -294,5 +301,67 @@ export function useResetAllDataMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries();
     },
+  });
+}
+
+// Gist Sync queries and mutations
+export function useGistSyncConfigQuery() {
+  return useQuery({
+    queryKey: queryKeys.gistSync.config,
+    queryFn: () => sendMessage({ type: MessageType.GET_GIST_SYNC_CONFIG }),
+  });
+}
+
+export function useGistSyncStatusQuery() {
+  return useQuery({
+    queryKey: queryKeys.gistSync.status,
+    queryFn: () => sendMessage({ type: MessageType.GET_GIST_SYNC_STATUS }),
+    refetchInterval: 15000,
+  });
+}
+
+export function useSetGistSyncConfigMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (config: Partial<GistSyncConfig>) => sendMessage({ type: MessageType.SET_GIST_SYNC_CONFIG, config }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.gistSync.config });
+    },
+  });
+}
+
+export function useTriggerGistSyncMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => sendMessage({ type: MessageType.TRIGGER_GIST_SYNC }),
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useCreateNewGistMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => sendMessage({ type: MessageType.CREATE_NEW_GIST }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.gistSync.all });
+    },
+  });
+}
+
+export function useValidatePatMutation() {
+  return useMutation({
+    mutationFn: (pat: string) => sendMessage({ type: MessageType.VALIDATE_PAT, pat }),
+  });
+}
+
+export function useValidateGistIdMutation() {
+  return useMutation({
+    mutationFn: ({ gistId, pat }: { gistId: string; pat: string }) =>
+      sendMessage({ type: MessageType.VALIDATE_GIST_ID, gistId, pat }),
   });
 }
