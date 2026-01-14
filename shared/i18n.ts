@@ -214,7 +214,7 @@ export const i18n = {
       title: 'About',
       feedbackMessage: 'Feel free to open issues for feature requests, bug reports, and feedback on GitHub!',
       reviewRequest: 'If LeetSRS helped you, leave a review? 🙏',
-      copyright: '© 2025 Matt Drake',
+      copyright: '© 2026 Matt Drake',
       github: 'GitHub',
     },
   },
