@@ -42,21 +42,28 @@ export default defineBackground(() => {
       console.error('Failed to run migrations:', error);
     });
 
-    // Set up periodic sync alarm
-    browser.alarms.create(SYNC_ALARM_NAME, {
-      periodInMinutes: SYNC_INTERVAL_MINUTES,
-    });
-
-    // Handle alarm for periodic sync
-    browser.alarms.onAlarm.addListener(async (alarm) => {
-      if (alarm.name !== SYNC_ALARM_NAME) return;
-
-      const config = await getGistSyncConfig();
-      if (config.enabled && config.pat && config.gistId) {
-        await triggerGistSync();
-      }
-    });
+    // Set up periodic sync alarm if not already scheduled
+    const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
+    if (!existingAlarm) {
+      browser.alarms.create(SYNC_ALARM_NAME, {
+        periodInMinutes: SYNC_INTERVAL_MINUTES,
+      });
+    }
   })();
+
+  // Register alarm listener synchronously at top level (required for MV3 service workers)
+  // The listener awaits readyPromise internally before proceeding
+  browser.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name !== SYNC_ALARM_NAME) return;
+
+    // Wait for initialization before handling
+    await readyPromise;
+
+    const config = await getGistSyncConfig();
+    if (config.enabled && config.pat && config.gistId) {
+      await triggerGistSync();
+    }
+  });
 
   async function handleMessage(request: MessageRequest) {
     // Wait for initialization before handling any messages
