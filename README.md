@@ -43,34 +43,8 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 ### Cross-Browser Sync
 
 - Optional sync via GitHub Gists
-- Keep your cards and progress in sync across multiple browsers
+- Requires a GitHub token with `gist` scope—configure in Settings
 - Your data stays private in your own GitHub account
-
-<div align="center">
-<img src="assets/screenshots/githubGistSyncScreen.png" width="90%" alt="GitHub Gist Sync settings screen" />
-</div>
-
-## Setup Requirements
-
-In the extension's settings, under the "GitHub Gist Sync" section
-
-#### 1. Create a GitHub Personal Access Token
-
-- Generate a new token with the **`gist`** permission enabled
-- Save the token somewhere secure
-
-#### 2. Create a Gist
-
-- Use the **Create New Gist** button in the extension to do this automatically. Alternatively, create a Gist on GitHub and copy its ID.
-
-#### 3. Enable Sync on Each Device
-
-On every browser or machine you want synced:
-
-- Paste your **GitHub token**
-- Paste the same **Gist ID**
-
-Once configured, your cards and progress will automatically stay in sync across all your devices.
 
 ### Interface
 
@@ -84,6 +58,16 @@ LeetSRS is open source and accepts contributions.
 
 1. Download the latest release from the [Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb)
 2. Or build from source and load as an unpacked extension
+
+### Setting Up GitHub Gist Sync (Optional)
+
+<div align="center">
+<img src="assets/screenshots/githubGistSyncScreen.png" width="30%" alt="GitHub Gist Sync settings screen" />
+</div>
+
+1. **Create a GitHub Personal Access Token** with the `gist` scope
+2. **Create a Gist** using the "Create New Gist" button in Settings, or manually on GitHub
+3. Settings sync automatically via Chrome if signed in, otherwise enter the token and Gist ID on each device
 
 ## License
 
