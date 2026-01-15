@@ -7,7 +7,6 @@ import { type StoredCard } from '../cards';
 import { type DailyStats } from '../stats';
 import { type Note } from '@/shared/notes';
 import { Rating, createEmptyCard } from 'ts-fsrs';
-import { APP_VERSION } from '@/shared/config';
 
 describe('import-export', () => {
   beforeEach(() => {
@@ -74,7 +73,7 @@ describe('import-export', () => {
       const result = await exportData();
       const parsed = JSON.parse(result);
 
-      expect(parsed.version).toBe(APP_VERSION);
+      expect(parsed.schemaVersion).toBe(0);
       expect(parsed.exportDate).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(parsed.data.stats).toEqual(mockStats);
       expect(parsed.data.notes).toEqual(mockNotes);
@@ -99,7 +98,7 @@ describe('import-export', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed).toMatchObject({
-        version: APP_VERSION,
+        schemaVersion: 0,
         exportDate: expect.any(String),
         data: {
           cards: {},
@@ -113,7 +112,7 @@ describe('import-export', () => {
 
   describe('importData', () => {
     const validExportData = {
-      version: APP_VERSION,
+      schemaVersion: 0,
       exportDate: '2024-01-01T00:00:00.000Z',
       data: {
         cards: {
@@ -198,9 +197,27 @@ describe('import-export', () => {
       await expect(importData(JSON.stringify(invalidData))).rejects.toThrow('Invalid export data structure');
     });
 
-    it('should throw error for unsupported version', async () => {
-      const wrongVersion = { ...validExportData, version: '2.0.0' };
-      await expect(importData(JSON.stringify(wrongVersion))).rejects.toThrow('Unsupported export version: 2.0.0');
+    it('should throw error for newer schema version', async () => {
+      const newerSchema = { ...validExportData, schemaVersion: 999 };
+      await expect(importData(JSON.stringify(newerSchema))).rejects.toThrow(
+        'Export is from a newer version (schema 999). Please update the extension.'
+      );
+    });
+
+    it('should accept legacy exports without schemaVersion', async () => {
+      // Legacy exports have 'version' instead of 'schemaVersion'
+      const legacyExport = {
+        version: '0.2.0', // Old format
+        exportDate: '2024-01-01T00:00:00.000Z',
+        data: {
+          cards: {},
+          stats: {},
+          notes: {},
+          settings: {},
+        },
+      };
+      // Should not throw - legacy exports are treated as schema 0
+      await expect(importData(JSON.stringify(legacyExport))).resolves.not.toThrow();
     });
 
     it('should throw error for invalid data types', async () => {
