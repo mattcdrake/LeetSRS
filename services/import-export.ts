@@ -4,10 +4,10 @@ import { type StoredCard } from './cards';
 import { type DailyStats } from './stats';
 import { type Note } from '@/shared/notes';
 import { type Theme } from '@/shared/settings';
-import { APP_VERSION } from '@/shared/config';
+import { getCurrentSchemaVersion } from './migrations';
 
 export interface ExportData {
-  version: string;
+  schemaVersion: number;
   exportDate: string;
   dataUpdatedAt?: string;
   data: {
@@ -55,8 +55,10 @@ export async function exportData(): Promise<string> {
   // Get dataUpdatedAt for sync purposes
   const dataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
 
+  const schemaVersion = await getCurrentSchemaVersion();
+
   const exportData: ExportData = {
-    version: APP_VERSION,
+    schemaVersion,
     exportDate: new Date().toISOString(),
     dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
@@ -87,13 +89,17 @@ export async function importData(jsonData: string): Promise<void> {
     throw new Error('Invalid JSON format');
   }
 
-  // Validate structure
-  if (!data.version || !data.exportDate || !data.data) {
+  // Validate structure (schemaVersion is optional for backward compat with legacy exports)
+  if (!data.exportDate || !data.data) {
     throw new Error('Invalid export data structure');
   }
 
-  if (data.version !== APP_VERSION) {
-    throw new Error(`Unsupported export version: ${data.version}. Expected: ${APP_VERSION}`);
+  // Check schema version compatibility
+  const currentSchema = await getCurrentSchemaVersion();
+  const importedSchema = data.schemaVersion ?? 0; // Legacy exports without schemaVersion = 0
+
+  if (importedSchema > currentSchema) {
+    throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
   }
 
   // Validate data types
