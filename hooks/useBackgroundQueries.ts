@@ -30,6 +30,7 @@ export const queryKeys = {
   settings: {
     all: ['settings'] as const,
     maxNewCardsPerDay: ['settings', 'maxNewCardsPerDay'] as const,
+    dayStartHour: ['settings', 'dayStartHour'] as const,
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
   },
@@ -235,6 +236,26 @@ export function useSetMaxNewCardsPerDayMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.maxNewCardsPerDay });
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
+    },
+  });
+}
+
+export function useDayStartHourQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.dayStartHour,
+    queryFn: () => sendMessage({ type: MessageType.GET_DAY_START_HOUR }),
+  });
+}
+
+export function useSetDayStartHourMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: number) => sendMessage({ type: MessageType.SET_DAY_START_HOUR, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.dayStartHour });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
     },
   });
 }

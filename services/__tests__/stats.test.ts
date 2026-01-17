@@ -29,99 +29,98 @@ describe('Date key generation', () => {
   });
 
   describe('getTodayKey', () => {
-    it('should return date in YYYY-MM-DD format', () => {
+    it('should return date in YYYY-MM-DD format', async () => {
       vi.setSystemTime(new Date('2024-03-15T10:30:00'));
-      expect(getTodayKey()).toBe('2024-03-15');
+      await expect(getTodayKey()).resolves.toBe('2024-03-15');
     });
 
-    it('should pad single digit months and days', () => {
+    it('should pad single digit months and days', async () => {
       vi.setSystemTime(new Date('2024-01-05T10:30:00'));
-      expect(getTodayKey()).toBe('2024-01-05');
+      await expect(getTodayKey()).resolves.toBe('2024-01-05');
     });
 
-    it('should handle December correctly', () => {
+    it('should handle December correctly', async () => {
       vi.setSystemTime(new Date('2024-12-25T10:30:00'));
-      expect(getTodayKey()).toBe('2024-12-25');
+      await expect(getTodayKey()).resolves.toBe('2024-12-25');
     });
 
-    it('should handle end of month', () => {
+    it('should handle end of month', async () => {
       vi.setSystemTime(new Date('2024-01-31T23:59:59'));
-      expect(getTodayKey()).toBe('2024-01-31');
+      await expect(getTodayKey()).resolves.toBe('2024-01-31');
     });
 
-    it('should handle leap year date', () => {
+    it('should handle leap year date', async () => {
       vi.setSystemTime(new Date('2024-02-29T10:00:00'));
-      expect(getTodayKey()).toBe('2024-02-29');
+      await expect(getTodayKey()).resolves.toBe('2024-02-29');
     });
 
-    it('should use local timezone', () => {
+    it('should use local timezone', async () => {
       const date = new Date('2024-03-15T10:30:00');
       vi.setSystemTime(date);
-      const key = getTodayKey();
-      expect(key).toBe('2024-03-15');
+      await expect(getTodayKey()).resolves.toBe('2024-03-15');
     });
   });
 
   describe('getYesterdayKey', () => {
-    it('should return yesterday date in YYYY-MM-DD format', () => {
+    it('should return yesterday date in YYYY-MM-DD format', async () => {
       vi.setSystemTime(new Date('2024-03-15T10:30:00'));
-      expect(getYesterdayKey()).toBe('2024-03-14');
+      await expect(getYesterdayKey()).resolves.toBe('2024-03-14');
     });
 
-    it('should handle month boundary correctly', () => {
+    it('should handle month boundary correctly', async () => {
       vi.setSystemTime(new Date('2024-03-01T10:30:00'));
-      expect(getYesterdayKey()).toBe('2024-02-29'); // 2024 is leap year
+      await expect(getYesterdayKey()).resolves.toBe('2024-02-29'); // 2024 is leap year
     });
 
-    it('should handle month boundary in non-leap year', () => {
+    it('should handle month boundary in non-leap year', async () => {
       vi.setSystemTime(new Date('2023-03-01T10:30:00'));
-      expect(getYesterdayKey()).toBe('2023-02-28');
+      await expect(getYesterdayKey()).resolves.toBe('2023-02-28');
     });
 
-    it('should handle year boundary correctly', () => {
+    it('should handle year boundary correctly', async () => {
       vi.setSystemTime(new Date('2024-01-01T00:00:00'));
-      expect(getYesterdayKey()).toBe('2023-12-31');
+      await expect(getYesterdayKey()).resolves.toBe('2023-12-31');
     });
 
-    it('should handle different month lengths', () => {
+    it('should handle different month lengths', async () => {
       // May has 31 days
       vi.setSystemTime(new Date('2024-06-01T10:00:00'));
-      expect(getYesterdayKey()).toBe('2024-05-31');
+      await expect(getYesterdayKey()).resolves.toBe('2024-05-31');
 
       // April has 30 days
       vi.setSystemTime(new Date('2024-05-01T10:00:00'));
-      expect(getYesterdayKey()).toBe('2024-04-30');
+      await expect(getYesterdayKey()).resolves.toBe('2024-04-30');
     });
 
-    it('should pad single digit months and days', () => {
+    it('should pad single digit months and days', async () => {
       vi.setSystemTime(new Date('2024-10-01T10:30:00'));
-      expect(getYesterdayKey()).toBe('2024-09-30');
+      await expect(getYesterdayKey()).resolves.toBe('2024-09-30');
 
       vi.setSystemTime(new Date('2024-01-10T10:30:00'));
-      expect(getYesterdayKey()).toBe('2024-01-09');
+      await expect(getYesterdayKey()).resolves.toBe('2024-01-09');
     });
 
-    it('should handle leap year Feb 29 to Mar 1', () => {
+    it('should handle leap year Feb 29 to Mar 1', async () => {
       vi.setSystemTime(new Date('2024-02-29T10:00:00'));
-      expect(getYesterdayKey()).toBe('2024-02-28');
+      await expect(getYesterdayKey()).resolves.toBe('2024-02-28');
 
       vi.setSystemTime(new Date('2024-03-01T10:00:00'));
-      expect(getYesterdayKey()).toBe('2024-02-29');
+      await expect(getYesterdayKey()).resolves.toBe('2024-02-29');
     });
 
-    it('should handle DST transitions', () => {
+    it('should handle DST transitions', async () => {
       // Test spring forward (typically March)
       vi.setSystemTime(new Date('2024-03-11T10:00:00')); // Day after DST in US
-      expect(getYesterdayKey()).toBe('2024-03-10');
+      await expect(getYesterdayKey()).resolves.toBe('2024-03-10');
 
       // Test fall back (typically November)
       vi.setSystemTime(new Date('2024-11-04T10:00:00')); // Day after DST ends in US
-      expect(getYesterdayKey()).toBe('2024-11-03');
+      await expect(getYesterdayKey()).resolves.toBe('2024-11-03');
     });
   });
 
   describe('getTodayKey and getYesterdayKey consistency', () => {
-    it('should have yesterday be one day before today', () => {
+    it('should have yesterday be one day before today', async () => {
       const testDates = [
         '2024-03-15T10:30:00',
         '2024-01-01T00:00:00',
@@ -130,18 +129,18 @@ describe('Date key generation', () => {
         '2024-07-01T06:00:00',
       ];
 
-      testDates.forEach((dateStr) => {
+      for (const dateStr of testDates) {
         vi.setSystemTime(new Date(dateStr));
-        const today = getTodayKey();
+        const today = await getTodayKey();
 
         // Move to next day
         const tomorrow = new Date(dateStr);
         tomorrow.setDate(tomorrow.getDate() + 1);
         vi.setSystemTime(tomorrow);
 
-        const yesterday = getYesterdayKey();
+        const yesterday = await getYesterdayKey();
         expect(yesterday).toBe(today);
-      });
+      }
     });
   });
 });

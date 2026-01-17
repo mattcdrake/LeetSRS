@@ -58,6 +58,7 @@ describe('import-export', () => {
 
       const mockSettings = {
         maxNewCardsPerDay: 5,
+        dayStartHour: 4,
         animationsEnabled: true,
         theme: 'dark' as const,
       };
@@ -67,6 +68,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.stats, mockStats);
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, mockNotes['problem-1']);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
+      await storage.setItem(STORAGE_KEYS.dayStartHour, mockSettings.dayStartHour);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
 
@@ -150,6 +152,7 @@ describe('import-export', () => {
         },
         settings: {
           maxNewCardsPerDay: 5,
+          dayStartHour: 2,
           animationsEnabled: false,
           theme: 'light' as const,
         },
@@ -167,6 +170,7 @@ describe('import-export', () => {
         validExportData.data.notes['problem-1']
       );
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toEqual(5);
+      expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toEqual(2);
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
     });
@@ -258,6 +262,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
+      await storage.setItem(STORAGE_KEYS.dayStartHour, 3);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, { text: 'note 1' });
@@ -269,6 +274,7 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-1` as const)).toBeNull();
