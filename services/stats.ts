@@ -2,6 +2,7 @@ import { type Grade, Rating, State as FsrsState } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { getAllCards, isDueByDate, formatLocalDate } from './cards';
+import { getDayStartHour } from './settings';
 
 export interface DailyStats {
   date: string; // YYYY-MM-DD format
@@ -22,29 +23,25 @@ async function getStats(): Promise<Record<string, DailyStats>> {
   return stats ?? {};
 }
 
-export function getTodayKey(): string {
+export async function getTodayKey(): Promise<string> {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const dayStartHour = await getDayStartHour();
+  return formatLocalDate(now, dayStartHour);
 }
 
-export function getYesterdayKey(): string {
+export async function getYesterdayKey(): Promise<string> {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const year = yesterday.getFullYear();
-  const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-  const day = String(yesterday.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const dayStartHour = await getDayStartHour();
+  return formatLocalDate(yesterday, dayStartHour);
 }
 
 export async function updateStats(grade: Grade, isNewCard: boolean = false): Promise<void> {
   const stats = await getStats();
-  const todayKey = getTodayKey();
+  const todayKey = await getTodayKey();
 
   if (!stats[todayKey]) {
-    const yesterdayKey = getYesterdayKey();
+    const yesterdayKey = await getYesterdayKey();
     const yesterdayStats = stats[yesterdayKey];
     const streak = yesterdayStats ? yesterdayStats.streak + 1 : 1;
 
@@ -82,7 +79,7 @@ export async function getStatsForDate(date: string): Promise<DailyStats | null> 
 }
 
 export async function getTodayStats(): Promise<DailyStats | null> {
-  return getStatsForDate(getTodayKey());
+  return getStatsForDate(await getTodayKey());
 }
 
 export async function getAllStats(): Promise<DailyStats[]> {
@@ -112,14 +109,12 @@ export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
   const stats = await getStats();
   const result: DailyStats[] = [];
   const today = new Date();
+  const dayStartHour = await getDayStartHour();
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = formatLocalDate(date, dayStartHour);
 
     if (stats[dateKey]) {
       result.push(stats[dateKey]);
@@ -153,13 +148,14 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
   const cards = await getAllCards();
   const result: UpcomingReviewStats[] = [];
   const today = new Date();
+  const dayStartHour = await getDayStartHour();
 
   // Initialize result array with dates
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() + i);
     result.push({
-      date: formatLocalDate(date),
+      date: formatLocalDate(date, dayStartHour),
       count: 0,
     });
   }
@@ -172,7 +168,7 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() + i);
 
-      if (isDueByDate(card, checkDate)) {
+      if (isDueByDate(card, checkDate, dayStartHour)) {
         result[i].count++;
         break;
       }

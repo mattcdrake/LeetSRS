@@ -30,6 +30,8 @@ vi.mock('../notes', () => ({
 vi.mock('../settings', () => ({
   getMaxNewCardsPerDay: vi.fn(() => Promise.resolve(3)),
   setMaxNewCardsPerDay: vi.fn(),
+  getDayStartHour: vi.fn(() => Promise.resolve(0)),
+  setDayStartHour: vi.fn(),
 }));
 
 describe('Card serialization', () => {

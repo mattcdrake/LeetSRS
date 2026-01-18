@@ -16,6 +16,7 @@ export interface ExportData {
     notes: Record<string, Note>;
     settings: {
       maxNewCardsPerDay?: number;
+      dayStartHour?: number;
       animationsEnabled?: boolean;
       theme?: Theme;
     };
@@ -45,6 +46,7 @@ export async function exportData(): Promise<string> {
 
   // Get settings
   const maxNewCardsPerDay = await storage.getItem<number>(STORAGE_KEYS.maxNewCardsPerDay);
+  const dayStartHour = await storage.getItem<number>(STORAGE_KEYS.dayStartHour);
   const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
 
@@ -67,6 +69,7 @@ export async function exportData(): Promise<string> {
       notes,
       settings: {
         ...(maxNewCardsPerDay != null && { maxNewCardsPerDay }),
+        ...(dayStartHour != null && { dayStartHour }),
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
       },
@@ -143,6 +146,9 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.data.settings.maxNewCardsPerDay != null) {
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, data.data.settings.maxNewCardsPerDay);
     }
+    if (data.data.settings.dayStartHour != null) {
+      await storage.setItem(STORAGE_KEYS.dayStartHour, data.data.settings.dayStartHour);
+    }
     if (data.data.settings.animationsEnabled != null) {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, data.data.settings.animationsEnabled);
     }
@@ -173,6 +179,7 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.cards);
   await storage.removeItem(STORAGE_KEYS.stats);
   await storage.removeItem(STORAGE_KEYS.maxNewCardsPerDay);
+  await storage.removeItem(STORAGE_KEYS.dayStartHour);
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
   await storage.removeItem(STORAGE_KEYS.theme);
 

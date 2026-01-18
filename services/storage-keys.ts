@@ -3,6 +3,7 @@ export const STORAGE_KEYS = {
   stats: 'local:leetsrs:stats',
   notes: 'local:leetsrs:notes',
   maxNewCardsPerDay: 'sync:leetsrs:maxNewCardsPerDay',
+  dayStartHour: 'sync:leetsrs:dayStartHour',
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
   schemaVersion: 'local:leetsrs:schemaVersion',

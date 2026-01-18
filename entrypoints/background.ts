@@ -12,6 +12,8 @@ import { getNote, saveNote, deleteNote } from '@/services/notes';
 import {
   getMaxNewCardsPerDay,
   setMaxNewCardsPerDay,
+  getDayStartHour,
+  setDayStartHour,
   getAnimationsEnabled,
   setAnimationsEnabled,
   getTheme,
@@ -138,6 +140,15 @@ export default defineBackground(() => {
 
       case MessageType.SET_MAX_NEW_CARDS_PER_DAY: {
         const result = await setMaxNewCardsPerDay(request.value);
+        await markDataUpdated();
+        return result;
+      }
+
+      case MessageType.GET_DAY_START_HOUR:
+        return await getDayStartHour();
+
+      case MessageType.SET_DAY_START_HOUR: {
+        const result = await setDayStartHour(request.value);
         await markDataUpdated();
         return result;
       }
