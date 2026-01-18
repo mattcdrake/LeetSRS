@@ -35,11 +35,11 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 ### Review System
 
 - Daily review queue with optimized problem ordering
-- Customizable daily new card limits
-- Configure a day start offset (0-23 hours past midnight) for when a new review day begins
 - View statistics and streaks
 - Works directly on leetcode.com
 - Easily rate after solving problems, or add to review later
+- Customizable daily new card limits
+- Configure a day start offset (0-23 hours past midnight) for when a new review day begins
 
 ### Cross-Browser Sync
 
