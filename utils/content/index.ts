@@ -1,3 +1,4 @@
+export * from './auto-reset';
 export * from './button';
 export * from './constants';
 export * from './problem-data';

@@ -8,6 +8,8 @@ import {
   setAnimationsEnabled,
   getTheme,
   setTheme,
+  getAutoClearLeetcode,
+  setAutoClearLeetcode,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 import {
@@ -15,6 +17,7 @@ import {
   MIN_NEW_CARDS_PER_DAY,
   MAX_NEW_CARDS_PER_DAY,
   DEFAULT_THEME,
+  DEFAULT_AUTO_CLEAR_LEETCODE,
 } from '@/shared/settings';
 
 describe('Settings Service', () => {
@@ -228,6 +231,18 @@ describe('Settings Service', () => {
       const result = await getTheme();
       expect(result).toBe('dark');
     });
+  });
+
+  describe('auto clear settings', () => {
+    it('should return default values when not set', async () => {
+      expect(await getAutoClearLeetcode()).toBe(DEFAULT_AUTO_CLEAR_LEETCODE);
+    });
+
+    it('should store and retrieve LeetCode auto clear', async () => {
+      await setAutoClearLeetcode(true);
+      expect(await getAutoClearLeetcode()).toBe(true);
+    });
+
   });
 
   describe('setTheme', () => {

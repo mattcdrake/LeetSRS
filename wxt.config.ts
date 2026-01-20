@@ -11,6 +11,14 @@ export default defineConfig({
     name: 'LeetSRS',
     permissions: ['storage', 'alarms'],
     host_permissions: ['*://*.leetcode.com/*', '*://api.github.com/*'],
+    commands: {
+      'open-popup': {
+        suggested_key: {
+          default: 'Ctrl+Space',
+        },
+        description: 'Open LeetSRS',
+      },
+    },
   },
   vite: () => ({
     plugins: [tailwindcss()],

@@ -7,7 +7,6 @@ import { type StoredCard } from '../cards';
 import { type DailyStats } from '../stats';
 import { type Note } from '@/shared/notes';
 import { Rating, createEmptyCard } from 'ts-fsrs';
-import { APP_VERSION } from '@/shared/config';
 
 describe('import-export', () => {
   beforeEach(() => {
@@ -59,8 +58,10 @@ describe('import-export', () => {
 
       const mockSettings = {
         maxNewCardsPerDay: 5,
+        dayStartHour: 4,
         animationsEnabled: true,
         theme: 'dark' as const,
+        autoClearLeetcode: true,
       };
 
       // Set up storage with mock data
@@ -68,13 +69,15 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.stats, mockStats);
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, mockNotes['problem-1']);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
+      await storage.setItem(STORAGE_KEYS.dayStartHour, mockSettings.dayStartHour);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
+      await storage.setItem(STORAGE_KEYS.autoClearLeetcode, mockSettings.autoClearLeetcode);
 
       const result = await exportData();
       const parsed = JSON.parse(result);
 
-      expect(parsed.version).toBe(APP_VERSION);
+      expect(parsed.schemaVersion).toBe(0);
       expect(parsed.exportDate).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(parsed.data.stats).toEqual(mockStats);
       expect(parsed.data.notes).toEqual(mockNotes);
@@ -99,7 +102,7 @@ describe('import-export', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed).toMatchObject({
-        version: APP_VERSION,
+        schemaVersion: 0,
         exportDate: expect.any(String),
         data: {
           cards: {},
@@ -113,7 +116,7 @@ describe('import-export', () => {
 
   describe('importData', () => {
     const validExportData = {
-      version: APP_VERSION,
+      schemaVersion: 0,
       exportDate: '2024-01-01T00:00:00.000Z',
       data: {
         cards: {
@@ -151,8 +154,10 @@ describe('import-export', () => {
         },
         settings: {
           maxNewCardsPerDay: 5,
+          dayStartHour: 2,
           animationsEnabled: false,
           theme: 'light' as const,
+          autoClearLeetcode: true,
         },
       },
     };
@@ -168,8 +173,10 @@ describe('import-export', () => {
         validExportData.data.notes['problem-1']
       );
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toEqual(5);
+      expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toEqual(2);
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
+      expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toEqual(true);
     });
 
     it('should clear existing data before importing', async () => {
@@ -198,9 +205,27 @@ describe('import-export', () => {
       await expect(importData(JSON.stringify(invalidData))).rejects.toThrow('Invalid export data structure');
     });
 
-    it('should throw error for unsupported version', async () => {
-      const wrongVersion = { ...validExportData, version: '2.0.0' };
-      await expect(importData(JSON.stringify(wrongVersion))).rejects.toThrow('Unsupported export version: 2.0.0');
+    it('should throw error for newer schema version', async () => {
+      const newerSchema = { ...validExportData, schemaVersion: 999 };
+      await expect(importData(JSON.stringify(newerSchema))).rejects.toThrow(
+        'Export is from a newer version (schema 999). Please update the extension.'
+      );
+    });
+
+    it('should accept legacy exports without schemaVersion', async () => {
+      // Legacy exports have 'version' instead of 'schemaVersion'
+      const legacyExport = {
+        version: '0.2.0', // Old format
+        exportDate: '2024-01-01T00:00:00.000Z',
+        data: {
+          cards: {},
+          stats: {},
+          notes: {},
+          settings: {},
+        },
+      };
+      // Should not throw - legacy exports are treated as schema 0
+      await expect(importData(JSON.stringify(legacyExport))).resolves.not.toThrow();
     });
 
     it('should throw error for invalid data types', async () => {
@@ -241,8 +266,10 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
+      await storage.setItem(STORAGE_KEYS.dayStartHour, 3);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
+      await storage.setItem(STORAGE_KEYS.autoClearLeetcode, true);
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, { text: 'note 1' });
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-2` as const, { text: 'note 2' });
 
@@ -252,8 +279,10 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-1` as const)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-2` as const)).toBeNull();
     });

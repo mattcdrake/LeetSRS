@@ -1,4 +1,10 @@
-import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
+import {
+  createLeetSrsButton,
+  extractProblemData,
+  RatingMenu,
+  setupLeetcodeAutoReset,
+  Tooltip,
+} from '@/utils/content';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 import { i18n } from '@/shared/i18n';
@@ -14,6 +20,7 @@ export default defineContentScript({
       console.error('Failed to ping service worker:', error);
     }
     setupLeetSrsButton();
+    setupLeetcodeAutoReset();
   },
 });
 

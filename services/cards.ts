@@ -11,15 +11,19 @@ import { storage } from '#imports';
 import { updateStats, getTodayStats } from './stats';
 import { deleteNote } from './notes';
 import { type Card, type Difficulty } from '@/shared/cards';
-import { getMaxNewCardsPerDay } from './settings';
+import { getMaxNewCardsPerDay, getDayStartHour } from './settings';
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
 // Format date as YYYY-MM-DD in local timezone for comparison
-export function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+export function formatLocalDate(date: Date, dayStartHour: number = 0): string {
+  const adjustedDate = new Date(date);
+  if (dayStartHour) {
+    adjustedDate.setHours(adjustedDate.getHours() - dayStartHour);
+  }
+  const year = adjustedDate.getFullYear();
+  const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+  const day = String(adjustedDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -168,17 +172,18 @@ export async function rateCard(
   // Update stats tracking
   await updateStats(rating, isNewCard);
 
-  const shouldRequeue = isDueByDate(card);
+  const dayStartHour = await getDayStartHour();
+  const shouldRequeue = isDueByDate(card, now, dayStartHour);
 
   return { card, shouldRequeue };
 }
 
-export function isDueByDate(card: Card, referenceDate: Date = new Date()): boolean {
+export function isDueByDate(card: Card, referenceDate: Date = new Date(), dayStartHour: number = 0): boolean {
   const dueDate = new Date(card.fsrs.due);
 
   // Compare dates in user's local timezone
-  const referenceDateStr = formatLocalDate(referenceDate);
-  const dueStr = formatLocalDate(dueDate);
+  const referenceDateStr = formatLocalDate(referenceDate, dayStartHour);
+  const dueStr = formatLocalDate(dueDate, dayStartHour);
   return dueStr <= referenceDateStr;
 }
 
@@ -190,8 +195,9 @@ const sortByDueDateThenSlug = (a: Card, b: Card): number => {
 
 export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
+  const dayStartHour = await getDayStartHour();
   // Filter out paused cards and cards not due yet
-  const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card));
+  const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card, new Date(), dayStartHour));
 
   // Separate into review cards and new cards
   const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);

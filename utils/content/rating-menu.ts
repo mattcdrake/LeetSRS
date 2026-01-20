@@ -4,17 +4,23 @@ import { createButton } from './button';
 import { i18n } from '@/shared/i18n';
 
 export type RatingCallback = (rating: number, label: string) => void;
+type RatingMenuPosition = 'top' | 'bottom';
+type RatingMenuOptions = {
+  position?: RatingMenuPosition;
+};
 
 export class RatingMenu {
   private element: HTMLDivElement | null = null;
   private container: HTMLElement;
   private onRate: RatingCallback;
   private onAddWithoutRating: () => void;
+  private position: RatingMenuPosition;
 
-  constructor(container: HTMLElement, onRate: RatingCallback, onAddWithoutRating: () => void) {
+  constructor(container: HTMLElement, onRate: RatingCallback, onAddWithoutRating: () => void, options?: RatingMenuOptions) {
     this.container = container;
     this.onRate = onRate;
     this.onAddWithoutRating = onAddWithoutRating;
+    this.position = options?.position ?? 'bottom';
   }
 
   toggle(): void {
@@ -32,11 +38,15 @@ export class RatingMenu {
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
 
+    const positionStyles =
+      this.position === 'top'
+        ? 'bottom: 100%; margin-bottom: 8px;'
+        : 'top: 100%; margin-top: 8px;';
+
     this.element.style.cssText = `
       position: absolute;
-      top: 100%;
       right: 0;
-      margin-top: 8px;
+      ${positionStyles}
       min-width: 160px;
       background-color: ${colors.bgSecondary};
       border: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.15)'};

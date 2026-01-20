@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ReviewCard } from './ReviewCard';
 import { NotesSection } from './NotesSection';
 import { ActionsSection } from './ActionsSection';
@@ -10,7 +10,7 @@ import {
   usePauseCardMutation,
   useAnimationsEnabledQuery,
 } from '@/hooks/useBackgroundQueries';
-import type { Grade } from 'ts-fsrs';
+import { Rating, type Grade } from 'ts-fsrs';
 import { i18n } from '@/shared/i18n';
 import type { Card } from '@/shared/cards';
 
@@ -24,6 +24,13 @@ export function ReviewQueue() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
+
+  const isTypingTarget = (target: EventTarget | null) => {
+    const element = target as HTMLElement | null;
+    if (!element) return false;
+    const tagName = element.tagName?.toLowerCase();
+    return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || element.isContentEditable;
+  };
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
@@ -100,6 +107,38 @@ export function ReviewQueue() {
       errorMessage: 'Failed to pause card:',
     });
   };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isTypingTarget(event.target) || queue.length === 0 || isProcessing) {
+        return;
+      }
+
+      switch (event.key) {
+        case '1':
+          event.preventDefault();
+          handleRating(Rating.Again);
+          break;
+        case '2':
+          event.preventDefault();
+          handleRating(Rating.Hard);
+          break;
+        case '3':
+          event.preventDefault();
+          handleRating(Rating.Good);
+          break;
+        case '4':
+          event.preventDefault();
+          handleRating(Rating.Easy);
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [queue.length, isProcessing, handleRating]);
 
   if (isLoading) {
     return (

@@ -150,6 +150,23 @@ export const i18n = {
     reviewSettings: {
       title: 'Review Settings',
       newCardsPerDay: 'New Cards Per Day',
+      dayStartHour: 'Next Day Offset (hours past midnight)',
+    },
+
+    // Hotkeys section
+    hotkeys: {
+      title: 'Hotkeys',
+      description: 'Customize keyboard shortcuts for LeetSRS.',
+      openPopupLabel: 'Open popup',
+      currentShortcutLabel: 'Current shortcut',
+      notSet: 'Not set',
+      manageShortcuts: 'Manage shortcuts',
+    },
+
+    problemAutoClear: {
+      title: 'Problem Auto Reset',
+      description: 'Automatically reset code when you open a problem',
+      enableAutoReset: 'Enable auto reset',
     },
 
     // Data section
@@ -214,7 +231,7 @@ export const i18n = {
       title: 'About',
       feedbackMessage: 'Feel free to open issues for feature requests, bug reports, and feedback on GitHub!',
       reviewRequest: 'If LeetSRS helped you, leave a review? 🙏',
-      copyright: '© 2025 Matt Drake',
+      copyright: '© 2026 Matt Drake',
       github: 'GitHub',
     },
   },

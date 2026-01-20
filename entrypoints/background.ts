@@ -12,10 +12,14 @@ import { getNote, saveNote, deleteNote } from '@/services/notes';
 import {
   getMaxNewCardsPerDay,
   setMaxNewCardsPerDay,
+  getDayStartHour,
+  setDayStartHour,
   getAnimationsEnabled,
   setAnimationsEnabled,
   getTheme,
   setTheme,
+  getAutoClearLeetcode,
+  setAutoClearLeetcode,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
@@ -42,21 +46,28 @@ export default defineBackground(() => {
       console.error('Failed to run migrations:', error);
     });
 
-    // Set up periodic sync alarm
-    browser.alarms.create(SYNC_ALARM_NAME, {
-      periodInMinutes: SYNC_INTERVAL_MINUTES,
-    });
-
-    // Handle alarm for periodic sync
-    browser.alarms.onAlarm.addListener(async (alarm) => {
-      if (alarm.name !== SYNC_ALARM_NAME) return;
-
-      const config = await getGistSyncConfig();
-      if (config.enabled && config.pat && config.gistId) {
-        await triggerGistSync();
-      }
-    });
+    // Set up periodic sync alarm if not already scheduled
+    const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
+    if (!existingAlarm) {
+      browser.alarms.create(SYNC_ALARM_NAME, {
+        periodInMinutes: SYNC_INTERVAL_MINUTES,
+      });
+    }
   })();
+
+  // Register alarm listener synchronously at top level (required for MV3 service workers)
+  // The listener awaits readyPromise internally before proceeding
+  browser.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name !== SYNC_ALARM_NAME) return;
+
+    // Wait for initialization before handling
+    await readyPromise;
+
+    const config = await getGistSyncConfig();
+    if (config.enabled && config.pat && config.gistId) {
+      await triggerGistSync();
+    }
+  });
 
   async function handleMessage(request: MessageRequest) {
     // Wait for initialization before handling any messages
@@ -135,6 +146,15 @@ export default defineBackground(() => {
         return result;
       }
 
+      case MessageType.GET_DAY_START_HOUR:
+        return await getDayStartHour();
+
+      case MessageType.SET_DAY_START_HOUR: {
+        const result = await setDayStartHour(request.value);
+        await markDataUpdated();
+        return result;
+      }
+
       case MessageType.GET_ANIMATIONS_ENABLED:
         return await getAnimationsEnabled();
 
@@ -149,6 +169,15 @@ export default defineBackground(() => {
 
       case MessageType.SET_THEME: {
         const result = await setTheme(request.value);
+        await markDataUpdated();
+        return result;
+      }
+
+      case MessageType.GET_AUTO_CLEAR_LEETCODE:
+        return await getAutoClearLeetcode();
+
+      case MessageType.SET_AUTO_CLEAR_LEETCODE: {
+        const result = await setAutoClearLeetcode(request.value);
         await markDataUpdated();
         return result;
       }
@@ -210,5 +239,15 @@ export default defineBackground(() => {
 
     // Return true to indicate we'll send a response asynchronously
     return true;
+  });
+
+  browser.commands.onCommand.addListener(async (command) => {
+    if (command !== 'open-popup') return;
+
+    try {
+      await browser.action.openPopup();
+    } catch (error) {
+      console.error('Failed to open popup:', error);
+    }
   });
 });

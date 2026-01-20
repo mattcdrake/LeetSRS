@@ -1,3 +1,3 @@
-export const APP_VERSION = '0.2.0';
+export const APP_VERSION = '0.2.4';
 export const CHROME_STORE_REVIEWS_URL =
   'https://chromewebstore.google.com/detail/leetsrs/odgfcigkohoimpeeooifjdglncggkgko/reviews?utm_source=item-share-cb';
