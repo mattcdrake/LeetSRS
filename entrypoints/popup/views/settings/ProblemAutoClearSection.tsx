@@ -20,7 +20,7 @@ export function ProblemAutoClearSection() {
       <p className="text-sm text-tertiary mb-4">{i18n.settings.problemAutoClear.description}</p>
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <span>{i18n.settings.problemAutoClear.leetcodeLabel}</span>
+          <span>{i18n.settings.problemAutoClear.enableAutoReset}</span>
           <Switch
             isSelected={autoClearLeetcode}
             onChange={toggleLeetcode}

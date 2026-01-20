@@ -51,6 +51,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
           target="_blank"
           rel="noopener noreferrer"
           className="text-lg font-semibold text-primary group"
+          aria-label="LeetCode problem"
         >
           {card.name}
           <FaArrowUpRightFromSquare className="inline ml-1.5 text-xs opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -63,7 +64,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
             key={label}
             onPress={() => handleRating(rating)}
             isDisabled={isProcessing}
-            className={`w-16 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`w-20 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {label}
           </Button>
