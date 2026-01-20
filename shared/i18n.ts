@@ -165,7 +165,7 @@ export const i18n = {
 
     problemAutoClear: {
       title: 'Problem Auto Reset',
-      description: 'Automatically reset code when opening problems. Disable any cloud saves to avoid preventing resets.',
+      description: 'Automatically reset code when opening problems.',
       leetcodeLabel: 'LeetCode',
     },
 
