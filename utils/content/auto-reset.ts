@@ -1,7 +1,8 @@
 import { MessageType, sendMessage } from '@/shared/messages';
 
 const RESET_CONFIRM_TIMEOUT_MS = 2000;
-const RESET_CONFIRM_POLL_MS = 100;
+const RESET_CONFIRM_POLL_MS = 50;
+const RESET_TOAST_DURATION_MS = 2500;
 const SLUG_CHECK_INTERVAL_MS = 1000;
 
 export function setupLeetcodeAutoReset(): void {
@@ -54,7 +55,10 @@ export function setupLeetcodeAutoReset(): void {
       }
 
       resetButton.click();
-      await waitForConfirmClick();
+      const confirmed = await waitForConfirmClick();
+      if (confirmed) {
+        showToast('Code reset to default');
+      }
       lastResetSlug = slug;
     } catch (error) {
       console.error('Failed to auto reset LeetCode editor:', error);
@@ -85,12 +89,12 @@ function getCurrentTitleSlug(): string | null {
   return match ? match[1] : null;
 }
 
-function waitForConfirmClick(): Promise<void> {
+function waitForConfirmClick(): Promise<boolean> {
   return new Promise((resolve) => {
     const existing = findConfirmButton();
     if (existing) {
       existing.click();
-      resolve();
+      resolve(true);
       return;
     }
 
@@ -100,13 +104,13 @@ function waitForConfirmClick(): Promise<void> {
       if (button) {
         button.click();
         window.clearInterval(interval);
-        resolve();
+        resolve(true);
         return;
       }
 
       if (Date.now() - start >= RESET_CONFIRM_TIMEOUT_MS) {
         window.clearInterval(interval);
-        resolve();
+        resolve(false);
       }
     }, RESET_CONFIRM_POLL_MS);
   });
@@ -126,4 +130,34 @@ function findConfirmButton(): HTMLButtonElement | null {
     }
   }
   return null;
+}
+
+function showToast(message: string): void {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  Object.assign(toast.style, {
+    position: 'fixed',
+    bottom: '20px',
+    right: '20px',
+    background: '#323232',
+    color: '#fff',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    fontSize: '14px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    zIndex: '9999',
+    opacity: '0',
+    transition: 'opacity 0.3s ease-in-out',
+  } as Partial<CSSStyleDeclaration>);
+
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+  });
+
+  window.setTimeout(() => {
+    toast.style.opacity = '0';
+    window.setTimeout(() => toast.remove(), 300);
+  }, RESET_TOAST_DURATION_MS);
 }
