@@ -40,6 +40,9 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 - Easily rate after solving problems, or add to review later
 - Customizable daily new card limits
 - Configure a day start offset (0-23 hours past midnight) for when a new review day begins
+- Hotkey support
+  - Ctrl + Space to open/close by default
+  - 1, 2, 3, 4 for (Again/Hard/Good/Easy)
 
 ### Cross-Browser Sync
 
