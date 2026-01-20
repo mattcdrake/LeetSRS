@@ -10,7 +10,6 @@ import {
   Theme,
   DEFAULT_THEME,
   DEFAULT_AUTO_CLEAR_LEETCODE,
-  DEFAULT_AUTO_CLEAR_NEETCODE,
 } from '@/shared/settings';
 
 export async function getMaxNewCardsPerDay(): Promise<number> {
@@ -71,13 +70,4 @@ export async function getAutoClearLeetcode(): Promise<boolean> {
 
 export async function setAutoClearLeetcode(value: boolean): Promise<void> {
   await storage.setItem(STORAGE_KEYS.autoClearLeetcode, value);
-}
-
-export async function getAutoClearNeetcode(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.autoClearNeetcode);
-  return value ?? DEFAULT_AUTO_CLEAR_NEETCODE;
-}
-
-export async function setAutoClearNeetcode(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.autoClearNeetcode, value);
 }

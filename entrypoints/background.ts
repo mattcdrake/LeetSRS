@@ -20,8 +20,6 @@ import {
   setTheme,
   getAutoClearLeetcode,
   setAutoClearLeetcode,
-  getAutoClearNeetcode,
-  setAutoClearNeetcode,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
@@ -182,15 +180,6 @@ export default defineBackground(() => {
 
       case MessageType.SET_AUTO_CLEAR_LEETCODE: {
         const result = await setAutoClearLeetcode(request.value);
-        await markDataUpdated();
-        return result;
-      }
-
-      case MessageType.GET_AUTO_CLEAR_NEETCODE:
-        return await getAutoClearNeetcode();
-
-      case MessageType.SET_AUTO_CLEAR_NEETCODE: {
-        const result = await setAutoClearNeetcode(request.value);
         await markDataUpdated();
         return result;
       }

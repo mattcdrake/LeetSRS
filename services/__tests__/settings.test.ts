@@ -10,8 +10,6 @@ import {
   setTheme,
   getAutoClearLeetcode,
   setAutoClearLeetcode,
-  getAutoClearNeetcode,
-  setAutoClearNeetcode,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 import {
@@ -20,7 +18,6 @@ import {
   MAX_NEW_CARDS_PER_DAY,
   DEFAULT_THEME,
   DEFAULT_AUTO_CLEAR_LEETCODE,
-  DEFAULT_AUTO_CLEAR_NEETCODE,
 } from '@/shared/settings';
 
 describe('Settings Service', () => {
@@ -239,7 +236,6 @@ describe('Settings Service', () => {
   describe('auto clear settings', () => {
     it('should return default values when not set', async () => {
       expect(await getAutoClearLeetcode()).toBe(DEFAULT_AUTO_CLEAR_LEETCODE);
-      expect(await getAutoClearNeetcode()).toBe(DEFAULT_AUTO_CLEAR_NEETCODE);
     });
 
     it('should store and retrieve LeetCode auto clear', async () => {
@@ -247,10 +243,6 @@ describe('Settings Service', () => {
       expect(await getAutoClearLeetcode()).toBe(true);
     });
 
-    it('should store and retrieve NeetCode auto clear', async () => {
-      await setAutoClearNeetcode(true);
-      expect(await getAutoClearNeetcode()).toBe(true);
-    });
   });
 
   describe('setTheme', () => {

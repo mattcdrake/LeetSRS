@@ -71,7 +71,7 @@ export const i18n = {
   home: {
     loadingReviewQueue: 'Loading review queue...',
     noCardsToReview: 'No cards to review!',
-    addProblemsInstructions: 'Add problems on LeetCode or NeetCode using the',
+    addProblemsInstructions: 'Add problems on LeetCode using the',
     addProblemsButton: "button next to 'Submit'.",
   },
 
@@ -167,7 +167,6 @@ export const i18n = {
       title: 'Problem Auto Reset',
       description: 'Automatically reset code when opening problems. Disable any cloud saves to avoid preventing resets.',
       leetcodeLabel: 'LeetCode',
-      neetcodeLabel: 'NeetCode',
     },
 
     // Data section

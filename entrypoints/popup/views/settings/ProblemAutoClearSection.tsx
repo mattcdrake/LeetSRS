@@ -2,24 +2,16 @@ import { Switch } from 'react-aria-components';
 import {
   useAutoClearLeetcodeQuery,
   useSetAutoClearLeetcodeMutation,
-  useAutoClearNeetcodeQuery,
-  useSetAutoClearNeetcodeMutation,
 } from '@/hooks/useBackgroundQueries';
-import { DEFAULT_AUTO_CLEAR_LEETCODE, DEFAULT_AUTO_CLEAR_NEETCODE } from '@/shared/settings';
+import { DEFAULT_AUTO_CLEAR_LEETCODE } from '@/shared/settings';
 import { i18n } from '@/shared/i18n';
 
 export function ProblemAutoClearSection() {
   const { data: autoClearLeetcode = DEFAULT_AUTO_CLEAR_LEETCODE } = useAutoClearLeetcodeQuery();
-  const { data: autoClearNeetcode = DEFAULT_AUTO_CLEAR_NEETCODE } = useAutoClearNeetcodeQuery();
   const setAutoClearLeetcodeMutation = useSetAutoClearLeetcodeMutation();
-  const setAutoClearNeetcodeMutation = useSetAutoClearNeetcodeMutation();
 
   const toggleLeetcode = () => {
     setAutoClearLeetcodeMutation.mutate(!autoClearLeetcode);
-  };
-
-  const toggleNeetcode = () => {
-    setAutoClearNeetcodeMutation.mutate(!autoClearNeetcode);
   };
 
   return (
@@ -32,28 +24,6 @@ export function ProblemAutoClearSection() {
           <Switch
             isSelected={autoClearLeetcode}
             onChange={toggleLeetcode}
-            className="group inline-flex touch-none items-center"
-          >
-            {({ isSelected }) => (
-              <span
-                className={`relative flex items-center h-6 w-11 cursor-pointer rounded-full transition-colors ${
-                  isSelected ? 'bg-accent' : 'bg-tertiary border border-current'
-                } group-data-[focus-visible]:ring-2 ring-offset-2 ring-offset-primary`}
-              >
-                <span
-                  className={`block h-5 w-5 mx-0.5 rounded-full bg-white shadow-sm transition-all ${
-                    isSelected ? 'translate-x-5' : ''
-                  } group-data-[pressed]:scale-95`}
-                />
-              </span>
-            )}
-          </Switch>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>{i18n.settings.problemAutoClear.neetcodeLabel}</span>
-          <Switch
-            isSelected={autoClearNeetcode}
-            onChange={toggleNeetcode}
             className="group inline-flex touch-none items-center"
           >
             {({ isSelected }) => (

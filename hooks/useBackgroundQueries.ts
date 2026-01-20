@@ -34,7 +34,6 @@ export const queryKeys = {
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
     autoClearLeetcode: ['settings', 'autoClearLeetcode'] as const,
-    autoClearNeetcode: ['settings', 'autoClearNeetcode'] as const,
   },
   // Gist Sync related queries
   gistSync: {
@@ -312,24 +311,6 @@ export function useSetAutoClearLeetcodeMutation() {
     mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_AUTO_CLEAR_LEETCODE, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.autoClearLeetcode });
-    },
-  });
-}
-
-export function useAutoClearNeetcodeQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.autoClearNeetcode,
-    queryFn: () => sendMessage({ type: MessageType.GET_AUTO_CLEAR_NEETCODE }),
-  });
-}
-
-export function useSetAutoClearNeetcodeMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_AUTO_CLEAR_NEETCODE, value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.autoClearNeetcode });
     },
   });
 }

@@ -7,7 +7,6 @@ export const STORAGE_KEYS = {
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
   autoClearLeetcode: 'sync:leetsrs:autoClearLeetcode',
-  autoClearNeetcode: 'sync:leetsrs:autoClearNeetcode',
   schemaVersion: 'local:leetsrs:schemaVersion',
   // Tracks when actual data was last modified (for sync)
   dataUpdatedAt: 'local:leetsrs:dataUpdatedAt',

@@ -62,7 +62,6 @@ describe('import-export', () => {
         animationsEnabled: true,
         theme: 'dark' as const,
         autoClearLeetcode: true,
-        autoClearNeetcode: false,
       };
 
       // Set up storage with mock data
@@ -74,7 +73,6 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, mockSettings.autoClearLeetcode);
-      await storage.setItem(STORAGE_KEYS.autoClearNeetcode, mockSettings.autoClearNeetcode);
 
       const result = await exportData();
       const parsed = JSON.parse(result);
@@ -160,7 +158,6 @@ describe('import-export', () => {
           animationsEnabled: false,
           theme: 'light' as const,
           autoClearLeetcode: true,
-          autoClearNeetcode: true,
         },
       },
     };
@@ -180,7 +177,6 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
       expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toEqual(true);
-      expect(await storage.getItem(STORAGE_KEYS.autoClearNeetcode)).toEqual(true);
     });
 
     it('should clear existing data before importing', async () => {
@@ -274,7 +270,6 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, true);
-      await storage.setItem(STORAGE_KEYS.autoClearNeetcode, true);
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, { text: 'note 1' });
       await storage.setItem(`${STORAGE_KEYS.notes}:problem-2` as const, { text: 'note 2' });
 
@@ -288,7 +283,6 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.autoClearNeetcode)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-1` as const)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-2` as const)).toBeNull();
     });

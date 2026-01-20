@@ -1,7 +1,5 @@
 import type { ProblemData } from '@/shared/problem-data';
 import { sendMessage, MessageType } from '@/shared/messages';
-import { getLeetcodeSlugForNeetcodeSlug } from '@/shared/neetcode-mapping';
-
 // Cache to avoid redundant requests
 let cachedData: { slug: string; data: ProblemData } | null = null;
 
@@ -14,16 +12,11 @@ export async function extractProblemData(): Promise<ProblemData | null> {
   try {
     // Get the current slug from the URL or router
     const currentSlug = getCurrentTitleSlug();
-    const isNeetcode = isNeetcodeHost();
     if (!currentSlug) {
       console.log('Could not extract title slug');
       return null;
     }
-    const titleSlug = isNeetcode ? getLeetcodeSlugForNeetcodeSlug(currentSlug) : currentSlug;
-    if (!titleSlug) {
-      console.log('Could not map NeetCode slug to LeetCode slug');
-      return null;
-    }
+    const titleSlug = currentSlug;
 
     // Check cache first
     if (cachedData && cachedData.slug === titleSlug) {
@@ -31,7 +24,7 @@ export async function extractProblemData(): Promise<ProblemData | null> {
     }
 
     // Make async GraphQL request for fresh data
-    const problemData = await fetchProblemData(titleSlug, isNeetcode);
+    const problemData = await fetchProblemData(titleSlug, false);
     if (problemData) {
       // Update cache
       cachedData = { slug: titleSlug, data: problemData };
@@ -57,11 +50,6 @@ function getCurrentTitleSlug(): string | null {
   // Fallback to URL parsing
   const pathMatch = window.location.pathname.match(/\/problems\/([^/]+)/);
   return pathMatch ? pathMatch[1] : null;
-}
-
-function isNeetcodeHost(): boolean {
-  const hostname = window.location?.hostname ?? '';
-  return hostname.endsWith('neetcode.io');
 }
 
 async function fetchProblemData(titleSlug: string, preferBackground: boolean): Promise<ProblemData | null> {

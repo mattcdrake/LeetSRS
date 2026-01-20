@@ -75,14 +75,6 @@ describe('ReviewCard', () => {
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
 
-    it('should render the external link to NeetCode problem when available', () => {
-      renderWithProviders();
-      const link = screen.getByRole('link', { name: /NeetCode/i });
-      expect(link).toHaveAttribute('href', 'https://neetcode.io/problems/two-integer-sum/');
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-
     it('should render all four rating buttons', () => {
       renderWithProviders();
       expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument();

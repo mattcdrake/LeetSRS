@@ -37,8 +37,6 @@ export const MessageType = {
   SET_THEME: 'SET_THEME',
   GET_AUTO_CLEAR_LEETCODE: 'GET_AUTO_CLEAR_LEETCODE',
   SET_AUTO_CLEAR_LEETCODE: 'SET_AUTO_CLEAR_LEETCODE',
-  GET_AUTO_CLEAR_NEETCODE: 'GET_AUTO_CLEAR_NEETCODE',
-  SET_AUTO_CLEAR_NEETCODE: 'SET_AUTO_CLEAR_NEETCODE',
   GET_CARD_STATE_STATS: 'GET_CARD_STATE_STATS',
   GET_ALL_STATS: 'GET_ALL_STATS',
   GET_LAST_N_DAYS_STATS: 'GET_LAST_N_DAYS_STATS',
@@ -88,8 +86,6 @@ export type MessageRequest =
   | { type: typeof MessageType.SET_THEME; value: Theme }
   | { type: typeof MessageType.GET_AUTO_CLEAR_LEETCODE }
   | { type: typeof MessageType.SET_AUTO_CLEAR_LEETCODE; value: boolean }
-  | { type: typeof MessageType.GET_AUTO_CLEAR_NEETCODE }
-  | { type: typeof MessageType.SET_AUTO_CLEAR_NEETCODE; value: boolean }
   | { type: typeof MessageType.GET_CARD_STATE_STATS }
   | { type: typeof MessageType.GET_ALL_STATS }
   | { type: typeof MessageType.GET_LAST_N_DAYS_STATS; days: number }
@@ -131,8 +127,6 @@ export type MessageResponseMap = {
   [MessageType.SET_THEME]: void;
   [MessageType.GET_AUTO_CLEAR_LEETCODE]: boolean;
   [MessageType.SET_AUTO_CLEAR_LEETCODE]: void;
-  [MessageType.GET_AUTO_CLEAR_NEETCODE]: boolean;
-  [MessageType.SET_AUTO_CLEAR_NEETCODE]: void;
   [MessageType.GET_CARD_STATE_STATS]: Record<FsrsState, number>;
   [MessageType.GET_ALL_STATS]: DailyStats[];
   [MessageType.GET_LAST_N_DAYS_STATS]: DailyStats[];

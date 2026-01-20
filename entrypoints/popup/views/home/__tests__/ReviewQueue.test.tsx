@@ -224,7 +224,7 @@ describe('ReviewQueue', () => {
       // Wait for state to initialize
       await waitFor(() => {
         expect(screen.getByText('No cards to review!')).toBeInTheDocument();
-      expect(screen.getByText(/Add problems on LeetCode or NeetCode/)).toBeInTheDocument();
+      expect(screen.getByText(/Add problems on LeetCode/)).toBeInTheDocument();
       });
     });
   });

@@ -5,7 +5,6 @@ import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
 import { bounceButton } from '@/shared/styles';
 import { i18n } from '@/shared/i18n';
-import { getNeetcodeUrlForLeetcodeSlug } from '@/shared/neetcode-mapping';
 
 type ReviewCardProps = {
   card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'>;
@@ -35,7 +34,6 @@ const ratingButtons: RatingButtonConfig[] = [
 export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardProps) {
   const difficultyColor = difficultyColorMap[card.difficulty] || 'bg-difficulty-medium';
   const leetcodeUrl = `https://leetcode.com/problems/${card.slug}/description/`;
-  const neetcodeUrl = getNeetcodeUrlForLeetcodeSlug(card.slug);
 
   const handleRating = (rating: Grade) => {
     onRate(rating);
@@ -60,17 +58,6 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
             LeetCode
             <FaArrowUpRightFromSquare className="text-xs opacity-60 group-hover:opacity-100 transition-opacity" />
           </a>
-          {neetcodeUrl ? (
-            <a
-              href={neetcodeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-1 hover:text-primary"
-            >
-              NeetCode
-              <FaArrowUpRightFromSquare className="text-xs opacity-60 group-hover:opacity-100 transition-opacity" />
-            </a>
-          ) : null}
         </div>
       </div>
 
