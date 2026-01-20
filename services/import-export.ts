@@ -14,12 +14,14 @@ export interface ExportData {
     cards: Record<string, StoredCard>;
     stats: Record<string, DailyStats>;
     notes: Record<string, Note>;
-    settings: {
-      maxNewCardsPerDay?: number;
-      dayStartHour?: number;
-      animationsEnabled?: boolean;
-      theme?: Theme;
-    };
+      settings: {
+        maxNewCardsPerDay?: number;
+        dayStartHour?: number;
+        animationsEnabled?: boolean;
+        theme?: Theme;
+        autoClearLeetcode?: boolean;
+        autoClearNeetcode?: boolean;
+      };
     gistSync?: {
       gistId?: string;
       enabled?: boolean;
@@ -49,6 +51,8 @@ export async function exportData(): Promise<string> {
   const dayStartHour = await storage.getItem<number>(STORAGE_KEYS.dayStartHour);
   const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
+  const autoClearLeetcode = await storage.getItem<boolean>(STORAGE_KEYS.autoClearLeetcode);
+  const autoClearNeetcode = await storage.getItem<boolean>(STORAGE_KEYS.autoClearNeetcode);
 
   // Get gist sync settings
   const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
@@ -72,6 +76,8 @@ export async function exportData(): Promise<string> {
         ...(dayStartHour != null && { dayStartHour }),
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
+        ...(autoClearLeetcode != null && { autoClearLeetcode }),
+        ...(autoClearNeetcode != null && { autoClearNeetcode }),
       },
       gistSync: {
         ...(gistId != null && { gistId }),
@@ -155,6 +161,12 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.data.settings.theme != null) {
       await storage.setItem(STORAGE_KEYS.theme, data.data.settings.theme);
     }
+    if (data.data.settings.autoClearLeetcode != null) {
+      await storage.setItem(STORAGE_KEYS.autoClearLeetcode, data.data.settings.autoClearLeetcode);
+    }
+    if (data.data.settings.autoClearNeetcode != null) {
+      await storage.setItem(STORAGE_KEYS.autoClearNeetcode, data.data.settings.autoClearNeetcode);
+    }
   }
 
   // Import gist sync settings
@@ -182,6 +194,8 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.dayStartHour);
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
   await storage.removeItem(STORAGE_KEYS.theme);
+  await storage.removeItem(STORAGE_KEYS.autoClearLeetcode);
+  await storage.removeItem(STORAGE_KEYS.autoClearNeetcode);
 
   // Remove gist sync settings
   await storage.removeItem(STORAGE_KEYS.githubPat);

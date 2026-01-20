@@ -1,5 +1,6 @@
 import { createLeetSrsButton, extractProblemData, RatingMenu, Tooltip } from '@/utils/content';
 import { sendMessage, MessageType } from '@/shared/messages';
+import { browser } from 'wxt/browser';
 import type { Grade } from 'ts-fsrs';
 import { i18n } from '@/shared/i18n';
 
@@ -15,10 +16,12 @@ export default defineContentScript({
     }
     if (isNeetcodeHost()) {
       setupNeetcodeLeetSrsButton();
+      setupNeetcodeAutoClear();
       return;
     }
 
     setupLeetSrsButton();
+    setupLeetcodeAutoClear();
   },
 });
 
@@ -41,6 +44,156 @@ async function withProblemData<T>(
 
 function isNeetcodeHost(): boolean {
   return window.location.hostname.endsWith('neetcode.io');
+}
+
+function isLeetcodeHost(): boolean {
+  return window.location.hostname.endsWith('leetcode.com');
+}
+
+function getNeetcodeSlugFromPath(): string | null {
+  const match = window.location.pathname.match(/\/problems\/([^/]+)/);
+  return match ? match[1] : null;
+}
+
+function clickResetButton(buttonContainer: HTMLElement) {
+  const buttons = buttonContainer.getElementsByTagName('button');
+  const resetButton = buttons.length > 4 ? buttons[3] : null;
+
+  if (resetButton) {
+    resetButton.click();
+    observeConfirmButton(buttonContainer);
+  }
+}
+
+function observeConfirmButton(buttonContainer: HTMLElement) {
+  const editor = document.getElementById('editor');
+
+  if (!editor) {
+    return;
+  }
+
+  const observer = new MutationObserver((mutationsList) => {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'childList') {
+        const confirmButton = buttonContainer.querySelector('.text-label-r.bg-green-s');
+        if (confirmButton instanceof HTMLElement) {
+          confirmButton.click();
+          observer.disconnect();
+          break;
+        }
+      }
+    }
+  });
+
+  observer.observe(editor, { childList: true, subtree: true });
+}
+
+async function autoResetEnabled(): Promise<boolean> {
+  const data = await browser.storage.local.get('autoResetSetting');
+  return Boolean(data.autoResetSetting);
+}
+
+function observeEditor() {
+  const editor = document.getElementById('editor');
+
+  if (!editor) {
+    return;
+  }
+
+  const observer = new MutationObserver((mutationsList) => {
+    for (const mutation of mutationsList) {
+      if (mutation.type === 'childList') {
+        const sideButtonsContainer = editor.getElementsByClassName('flex items-center gap-1');
+        const buttonContainer = sideButtonsContainer.length
+          ? (sideButtonsContainer[0] as HTMLElement)
+          : null;
+        if (buttonContainer) {
+          clickResetButton(buttonContainer);
+          observer.disconnect();
+          break;
+        }
+      }
+    }
+  });
+
+  observer.observe(editor, { childList: true, subtree: true });
+}
+
+function clearNeetcodeLocalStorageForSlug(slug: string) {
+  const keysToRemove: string[] = [];
+  const prefix = `${slug}_`;
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key) {
+      continue;
+    }
+    if (key.startsWith(prefix) || key.includes(`${slug}_`)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => {
+    localStorage.removeItem(key);
+  });
+}
+
+function setupLeetcodeAutoClear() {
+  if (!isLeetcodeHost()) {
+    return;
+  }
+
+  window.onload = async () => {
+    if (await autoResetEnabled()) {
+      observeEditor();
+    }
+  };
+}
+
+function setupNeetcodeAutoClear() {
+  if (!isNeetcodeHost()) {
+    return;
+  }
+
+  let autoClearEnabled = false;
+  let lastClearedSlug: string | null = null;
+  let lastAttemptedSlug: string | null = null;
+
+  const loadSetting = async () => {
+    try {
+      autoClearEnabled = await sendMessage({ type: MessageType.GET_AUTO_CLEAR_NEETCODE });
+    } catch (error) {
+      console.error('Failed to load NeetCode auto-clear setting:', error);
+    }
+  };
+
+  const scheduleAutoClear = async () => {
+    if (!autoClearEnabled) {
+      return;
+    }
+
+    if (!window.location.pathname.includes('/problems/')) {
+      return;
+    }
+
+    const slug = getNeetcodeSlugFromPath();
+    if (!slug || slug === lastClearedSlug || slug === lastAttemptedSlug) {
+      return;
+    }
+
+    lastAttemptedSlug = slug;
+    clearNeetcodeLocalStorageForSlug(slug);
+    lastClearedSlug = slug;
+  };
+
+  void loadSetting().then(scheduleAutoClear);
+
+  const observer = new MutationObserver(() => {
+    void scheduleAutoClear();
+  });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 }
 
 function setupLeetSrsButton() {
@@ -138,7 +291,7 @@ function setupNeetcodeLeetSrsButton() {
 
   function createNeetcodeLeetSrsButton(
     onClick: () => void,
-    options: { fillColor?: string; backgroundColor?: string; borderColor?: string }
+    options: { fillColor?: string; backgroundColor?: string; borderColor?: string; textColor?: string }
   ): HTMLDivElement {
     const buttonWrapper = document.createElement('div');
     buttonWrapper.style.cssText = 'position: relative; display: inline-flex; align-items: center; margin-left: 10px;';
@@ -191,14 +344,25 @@ function setupNeetcodeLeetSrsButton() {
   }
 
   function insertButton(buttonsContainer: Element) {
-    if (buttonsContainer.querySelector(`#${BUTTON_ID}`)) {
+    const existingWrapper = buttonsContainer.querySelector(`#${BUTTON_ID}`) as HTMLDivElement | null;
+    if (existingWrapper) {
+      const submitButton = buttonsContainer.querySelector('button.is-success');
+      if (!submitButton) {
+        existingWrapper.style.display = 'none';
+        return;
+      }
+      const isSubmitting =
+        submitButton.classList.contains('is-loading') ||
+        submitButton.getAttribute('aria-busy') === 'true' ||
+        submitButton.hasAttribute('disabled');
+      existingWrapper.style.display = isSubmitting ? 'none' : 'inline-flex';
+      if (submitButton.nextElementSibling !== existingWrapper) {
+        submitButton.insertAdjacentElement('afterend', existingWrapper);
+      }
       return;
     }
 
     let ratingMenu: RatingMenu | null = null;
-
-    const runButton = buttonsContainer.querySelector('#run-button') as HTMLElement | null;
-    const runStyles = runButton ? getComputedStyle(runButton) : null;
 
     const buttonWrapper = createNeetcodeLeetSrsButton(
       () => {
@@ -263,6 +427,13 @@ function setupNeetcodeLeetSrsButton() {
     try {
       const submitButton = buttonsContainer.querySelector('button.is-success');
       if (submitButton) {
+        const isSubmitting =
+          submitButton.classList.contains('is-loading') ||
+          submitButton.getAttribute('aria-busy') === 'true' ||
+          submitButton.hasAttribute('disabled');
+        if (isSubmitting) {
+          buttonWrapper.style.display = 'none';
+        }
         submitButton.insertAdjacentElement('afterend', buttonWrapper);
       } else {
         buttonsContainer.appendChild(buttonWrapper);

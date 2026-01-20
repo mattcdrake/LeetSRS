@@ -163,6 +163,13 @@ export const i18n = {
       manageShortcuts: 'Manage shortcuts',
     },
 
+    problemAutoClear: {
+      title: 'Problem Auto Reset',
+      description: 'Automatically reset code when opening problems. Disable any cloud saves to avoid preventing resets.',
+      leetcodeLabel: 'LeetCode',
+      neetcodeLabel: 'NeetCode',
+    },
+
     // Data section
     data: {
       title: 'Data',
