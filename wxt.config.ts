@@ -15,6 +15,9 @@ export default defineConfig({
       'open-popup': {
         suggested_key: {
           default: 'Ctrl+Space',
+          mac: 'Alt+Space',
+          linux: 'Ctrl+Space',
+          windows: 'Ctrl+Space',
         },
         description: 'Open LeetSRS',
       },
