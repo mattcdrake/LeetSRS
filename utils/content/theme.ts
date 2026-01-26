@@ -1,7 +1,11 @@
 import { THEME_COLORS, RATING_COLORS } from './constants';
 
 export function isDarkMode(): boolean {
-  return document.documentElement.classList.contains('dark');
+  return (
+    document.documentElement.classList.contains('dark') ||
+    document.documentElement.classList.contains('dark-theme') ||
+    document.body.classList.contains('dark-theme')
+  );
 }
 
 export function getThemeColor(lightColor: string, darkColor: string): string {

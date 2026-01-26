@@ -153,6 +153,12 @@ export const i18n = {
       dayStartHour: 'Next Day Offset (hours past midnight)',
     },
 
+    problemAutoClear: {
+      title: 'Problem Auto Reset',
+      description: 'Automatically reset code when opening a LeetCode problem.',
+      enableAutoReset: 'Enable auto reset',
+    },
+
     // Data section
     data: {
       title: 'Data',
