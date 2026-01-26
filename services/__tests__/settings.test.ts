@@ -242,7 +242,6 @@ describe('Settings Service', () => {
       await setAutoClearLeetcode(true);
       expect(await getAutoClearLeetcode()).toBe(true);
     });
-
   });
 
   describe('setTheme', () => {

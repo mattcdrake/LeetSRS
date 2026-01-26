@@ -21,7 +21,7 @@ export async function extractProblemData(): Promise<ProblemData | null> {
     if (cachedData && cachedData.slug === titleSlug) {
       return cachedData.data;
     }
-    
+
     const problemData = await fetchProblemDataFromPage(titleSlug);
     if (problemData) {
       // Update cache

@@ -16,7 +16,12 @@ export class RatingMenu {
   private onAddWithoutRating: () => void;
   private position: RatingMenuPosition;
 
-  constructor(container: HTMLElement, onRate: RatingCallback, onAddWithoutRating: () => void, options?: RatingMenuOptions) {
+  constructor(
+    container: HTMLElement,
+    onRate: RatingCallback,
+    onAddWithoutRating: () => void,
+    options?: RatingMenuOptions
+  ) {
     this.container = container;
     this.onRate = onRate;
     this.onAddWithoutRating = onAddWithoutRating;
@@ -39,9 +44,7 @@ export class RatingMenu {
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
 
     const positionStyles =
-      this.position === 'top'
-        ? 'bottom: 100%; margin-bottom: 8px;'
-        : 'top: 100%; margin-top: 8px;';
+      this.position === 'top' ? 'bottom: 100%; margin-bottom: 8px;' : 'top: 100%; margin-top: 8px;';
 
     this.element.style.cssText = `
       position: absolute;

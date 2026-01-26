@@ -1,8 +1,5 @@
 import { Switch } from 'react-aria-components';
-import {
-  useAutoClearLeetcodeQuery,
-  useSetAutoClearLeetcodeMutation,
-} from '@/hooks/useBackgroundQueries';
+import { useAutoClearLeetcodeQuery, useSetAutoClearLeetcodeMutation } from '@/hooks/useBackgroundQueries';
 import { DEFAULT_AUTO_CLEAR_LEETCODE } from '@/shared/settings';
 import { i18n } from '@/shared/i18n';
 
