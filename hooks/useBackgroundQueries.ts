@@ -33,6 +33,7 @@ export const queryKeys = {
     dayStartHour: ['settings', 'dayStartHour'] as const,
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
+    autoClearLeetcode: ['settings', 'autoClearLeetcode'] as const,
   },
   // Gist Sync related queries
   gistSync: {
@@ -292,6 +293,24 @@ export function useSetThemeMutation() {
     mutationFn: (value: Theme) => sendMessage({ type: MessageType.SET_THEME, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.theme });
+    },
+  });
+}
+
+export function useAutoClearLeetcodeQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.autoClearLeetcode,
+    queryFn: () => sendMessage({ type: MessageType.GET_AUTO_CLEAR_LEETCODE }),
+  });
+}
+
+export function useSetAutoClearLeetcodeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_AUTO_CLEAR_LEETCODE, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.autoClearLeetcode });
     },
   });
 }
