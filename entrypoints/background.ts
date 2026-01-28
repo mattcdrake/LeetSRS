@@ -18,6 +18,8 @@ import {
   setAnimationsEnabled,
   getTheme,
   setTheme,
+  getAutoClearLeetcode,
+  setAutoClearLeetcode,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
@@ -167,6 +169,15 @@ export default defineBackground(() => {
 
       case MessageType.SET_THEME: {
         const result = await setTheme(request.value);
+        await markDataUpdated();
+        return result;
+      }
+
+      case MessageType.GET_AUTO_CLEAR_LEETCODE:
+        return await getAutoClearLeetcode();
+
+      case MessageType.SET_AUTO_CLEAR_LEETCODE: {
+        const result = await setAutoClearLeetcode(request.value);
         await markDataUpdated();
         return result;
       }

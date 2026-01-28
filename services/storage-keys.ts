@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   dayStartHour: 'sync:leetsrs:dayStartHour',
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
+  autoClearLeetcode: 'sync:leetsrs:autoClearLeetcode',
   schemaVersion: 'local:leetsrs:schemaVersion',
   // Tracks when actual data was last modified (for sync)
   dataUpdatedAt: 'local:leetsrs:dataUpdatedAt',
