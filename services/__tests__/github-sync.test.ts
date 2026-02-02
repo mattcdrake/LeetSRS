@@ -46,7 +46,7 @@ describe('github-sync', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('getGistSyncConfig', () => {
