@@ -10,6 +10,7 @@ import {
   Theme,
   DEFAULT_THEME,
   DEFAULT_AUTO_CLEAR_LEETCODE,
+  DEFAULT_BADGE_ENABLED,
 } from '@/shared/settings';
 
 export async function getMaxNewCardsPerDay(): Promise<number> {
@@ -70,4 +71,13 @@ export async function getAutoClearLeetcode(): Promise<boolean> {
 
 export async function setAutoClearLeetcode(value: boolean): Promise<void> {
   await storage.setItem(STORAGE_KEYS.autoClearLeetcode, value);
+}
+
+export async function getBadgeEnabled(): Promise<boolean> {
+  const value = await storage.getItem<boolean>(STORAGE_KEYS.badgeEnabled);
+  return value ?? DEFAULT_BADGE_ENABLED;
+}
+
+export async function setBadgeEnabled(value: boolean): Promise<void> {
+  await storage.setItem(STORAGE_KEYS.badgeEnabled, value);
 }
