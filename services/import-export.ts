@@ -35,13 +35,11 @@ export async function exportData(): Promise<string> {
 
   // Get all notes
   const notes: Record<string, Note> = {};
-  // Get all cards to find their notes
-  const cardIds = Object.keys(cards);
-  for (const cardId of cardIds) {
-    const noteKey = `${STORAGE_KEYS.notes}:${cardId}` as const;
+  for (const card of Object.values(cards)) {
+    const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
     const note = await storage.getItem<Note>(noteKey);
     if (note) {
-      notes[cardId] = note;
+      notes[card.id] = note;
     }
   }
 
@@ -200,8 +198,8 @@ export async function resetAllData(): Promise<void> {
 
   // Remove all notes
   if (cards) {
-    for (const cardId of Object.keys(cards)) {
-      const noteKey = `${STORAGE_KEYS.notes}:${cardId}` as const;
+    for (const card of Object.values(cards)) {
+      const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
       await storage.removeItem(noteKey);
     }
   }
