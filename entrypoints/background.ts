@@ -43,18 +43,15 @@ const SYNC_INTERVAL_MINUTES = 1;
 
 async function updateBadge() {
   const enabled = await getBadgeEnabled();
-  if (!enabled) {
-    await browser.action.setBadgeText({ text: '' });
-    return;
+  if (enabled) {
+    const queue = await getReviewQueue();
+    if (queue.length > 0) {
+      await browser.action.setBadgeText({ text: String(queue.length) });
+      await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
+      return;
+    }
   }
-
-  const queue = await getReviewQueue();
-  if (queue.length > 0) {
-    await browser.action.setBadgeText({ text: String(queue.length) });
-    await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
-  } else {
-    await browser.action.setBadgeText({ text: '' });
-  }
+  await browser.action.setBadgeText({ text: '' });
 }
 
 export default defineBackground(() => {
