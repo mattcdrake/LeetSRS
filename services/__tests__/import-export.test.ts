@@ -63,6 +63,7 @@ describe('import-export', () => {
         animationsEnabled: true,
         theme: 'dark' as const,
         autoClearLeetcode: true,
+        badgeEnabled: true,
       };
 
       // Set up storage with mock data
@@ -74,6 +75,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, mockSettings.autoClearLeetcode);
+      await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
 
       const result = await exportData();
       const parsed = JSON.parse(result);
@@ -160,6 +162,7 @@ describe('import-export', () => {
           animationsEnabled: false,
           theme: 'light' as const,
           autoClearLeetcode: true,
+          badgeEnabled: false,
         },
       },
     };
@@ -179,6 +182,7 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
       expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toEqual(true);
+      expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toEqual(false);
     });
 
     it('should clear existing data before importing', async () => {
@@ -275,6 +279,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, true);
+      await storage.setItem(STORAGE_KEYS.badgeEnabled, true);
       await storage.setItem(`${STORAGE_KEYS.notes}:${uuid1}` as const, { text: 'note 1' });
       await storage.setItem(`${STORAGE_KEYS.notes}:${uuid2}` as const, { text: 'note 2' });
 
@@ -288,6 +293,7 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid1}` as const)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid2}` as const)).toBeNull();
     });

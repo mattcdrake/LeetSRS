@@ -20,6 +20,8 @@ import {
   setTheme,
   getAutoClearLeetcode,
   setAutoClearLeetcode,
+  getBadgeEnabled,
+  setBadgeEnabled,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
@@ -39,6 +41,22 @@ import { markDataUpdated } from '@/services/data-tracker';
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 
+async function updateBadge() {
+  const enabled = await getBadgeEnabled();
+  if (!enabled) {
+    await browser.action.setBadgeText({ text: '' });
+    return;
+  }
+
+  const queue = await getReviewQueue();
+  if (queue.length > 0) {
+    await browser.action.setBadgeText({ text: String(queue.length) });
+    await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
+  } else {
+    await browser.action.setBadgeText({ text: '' });
+  }
+}
+
 export default defineBackground(() => {
   // Initialize async and track completion so message handlers can wait
   const readyPromise = (async () => {
@@ -53,6 +71,9 @@ export default defineBackground(() => {
         periodInMinutes: SYNC_INTERVAL_MINUTES,
       });
     }
+
+    // Update badge on startup
+    await updateBadge();
   })();
 
   // Register alarm listener synchronously at top level (required for MV3 service workers)
@@ -62,6 +83,9 @@ export default defineBackground(() => {
 
     // Wait for initialization before handling
     await readyPromise;
+
+    // Refresh badge on periodic alarm
+    await updateBadge();
 
     const config = await getGistSyncConfig();
     if (config.enabled && config.pat && config.gistId) {
@@ -76,6 +100,7 @@ export default defineBackground(() => {
     const handleDataUpdate = async <T>(handler: () => Promise<T>): Promise<T> => {
       const result = await handler();
       await markDataUpdated();
+      await updateBadge();
       return result;
     };
 
@@ -158,6 +183,13 @@ export default defineBackground(() => {
 
       case MessageType.SET_AUTO_CLEAR_LEETCODE: {
         return handleDataUpdate(() => setAutoClearLeetcode(request.value));
+      }
+
+      case MessageType.GET_BADGE_ENABLED:
+        return await getBadgeEnabled();
+
+      case MessageType.SET_BADGE_ENABLED: {
+        return handleDataUpdate(() => setBadgeEnabled(request.value));
       }
 
       case MessageType.GET_CARD_STATE_STATS:

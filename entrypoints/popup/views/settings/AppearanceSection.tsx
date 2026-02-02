@@ -5,8 +5,10 @@ import {
   useSetThemeMutation,
   useAnimationsEnabledQuery,
   useSetAnimationsEnabledMutation,
+  useBadgeEnabledQuery,
+  useSetBadgeEnabledMutation,
 } from '@/hooks/useBackgroundQueries';
-import { DEFAULT_THEME } from '@/shared/settings';
+import { DEFAULT_THEME, DEFAULT_BADGE_ENABLED } from '@/shared/settings';
 import { i18n } from '@/shared/i18n';
 
 export function AppearanceSection() {
@@ -14,6 +16,8 @@ export function AppearanceSection() {
   const setThemeMutation = useSetThemeMutation();
   const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
   const setAnimationsEnabledMutation = useSetAnimationsEnabledMutation();
+  const { data: badgeEnabled = DEFAULT_BADGE_ENABLED } = useBadgeEnabledQuery();
+  const setBadgeEnabledMutation = useSetBadgeEnabledMutation();
 
   const toggleTheme = () => {
     setThemeMutation.mutate(theme === 'light' ? 'dark' : 'light');
@@ -21,6 +25,10 @@ export function AppearanceSection() {
 
   const toggleAnimations = () => {
     setAnimationsEnabledMutation.mutate(!animationsEnabled);
+  };
+
+  const toggleBadge = () => {
+    setBadgeEnabledMutation.mutate(!badgeEnabled);
   };
 
   return (
@@ -66,6 +74,30 @@ export function AppearanceSection() {
           <Switch
             isSelected={animationsEnabled}
             onChange={toggleAnimations}
+            className="group inline-flex touch-none items-center"
+          >
+            {({ isSelected }) => (
+              <span
+                className={`relative flex items-center h-6 w-11 cursor-pointer rounded-full transition-colors ${
+                  isSelected ? 'bg-accent' : 'bg-tertiary border border-current'
+                } group-data-[focus-visible]:ring-2 ring-offset-2 ring-offset-primary`}
+              >
+                <span
+                  className={`block h-5 w-5 mx-0.5 rounded-full bg-white shadow-sm transition-all ${
+                    isSelected ? 'translate-x-5' : ''
+                  } group-data-[pressed]:scale-95`}
+                />
+              </span>
+            )}
+          </Switch>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span>{i18n.settings.appearance.showBadge}</span>
+          </div>
+          <Switch
+            isSelected={badgeEnabled}
+            onChange={toggleBadge}
             className="group inline-flex touch-none items-center"
           >
             {({ isSelected }) => (

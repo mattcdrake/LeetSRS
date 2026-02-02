@@ -144,6 +144,7 @@ export const i18n = {
       title: 'Appearance',
       darkMode: 'Dark mode',
       enableAnimations: 'Enable animations',
+      showBadge: 'Show due count on icon',
     },
 
     // Review settings section
