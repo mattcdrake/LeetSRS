@@ -34,6 +34,7 @@ export const queryKeys = {
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
     autoClearLeetcode: ['settings', 'autoClearLeetcode'] as const,
+    badgeEnabled: ['settings', 'badgeEnabled'] as const,
   },
   // Gist Sync related queries
   gistSync: {
@@ -311,6 +312,24 @@ export function useSetAutoClearLeetcodeMutation() {
     mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_AUTO_CLEAR_LEETCODE, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.autoClearLeetcode });
+    },
+  });
+}
+
+export function useBadgeEnabledQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.badgeEnabled,
+    queryFn: () => sendMessage({ type: MessageType.GET_BADGE_ENABLED }),
+  });
+}
+
+export function useSetBadgeEnabledMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_BADGE_ENABLED, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.badgeEnabled });
     },
   });
 }
