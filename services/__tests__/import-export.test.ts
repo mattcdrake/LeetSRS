@@ -20,10 +20,11 @@ describe('import-export', () => {
 
   describe('exportData', () => {
     it('should export all data with correct structure', async () => {
+      const cardUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
       const mockCards: Record<string, StoredCard> = {
-        'problem-1': {
-          id: 'problem-1',
-          slug: 'problem-1',
+        'two-sum': {
+          id: cardUuid,
+          slug: 'two-sum',
           name: 'Two Sum',
           leetcodeId: '1',
           difficulty: 'Easy',
@@ -53,7 +54,7 @@ describe('import-export', () => {
       };
 
       const mockNotes: Record<string, Note> = {
-        'problem-1': { text: 'Use hash map for O(n) solution' },
+        [cardUuid]: { text: 'Use hash map for O(n) solution' },
       };
 
       const mockSettings = {
@@ -67,7 +68,7 @@ describe('import-export', () => {
       // Set up storage with mock data
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, mockStats);
-      await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, mockNotes['problem-1']);
+      await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}` as const, mockNotes[cardUuid]);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
       await storage.setItem(STORAGE_KEYS.dayStartHour, mockSettings.dayStartHour);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
@@ -84,10 +85,10 @@ describe('import-export', () => {
       expect(parsed.data.settings).toEqual(mockSettings);
 
       // Check cards separately since FSRS properties might differ
-      expect(Object.keys(parsed.data.cards)).toEqual(['problem-1']);
-      const exportedCard = parsed.data.cards['problem-1'];
-      expect(exportedCard.id).toBe('problem-1');
-      expect(exportedCard.slug).toBe('problem-1');
+      expect(Object.keys(parsed.data.cards)).toEqual(['two-sum']);
+      const exportedCard = parsed.data.cards['two-sum'];
+      expect(exportedCard.id).toBe(cardUuid);
+      expect(exportedCard.slug).toBe('two-sum');
       expect(exportedCard.name).toBe('Two Sum');
       expect(exportedCard.leetcodeId).toBe('1');
       expect(exportedCard.difficulty).toBe('Easy');
@@ -115,14 +116,15 @@ describe('import-export', () => {
   });
 
   describe('importData', () => {
+    const cardUuid = 'b2c3d4e5-f6a7-8901-bcde-f23456789012';
     const validExportData = {
       schemaVersion: 0,
       exportDate: '2024-01-01T00:00:00.000Z',
       data: {
         cards: {
-          'problem-1': {
-            id: 'problem-1',
-            slug: 'problem-1',
+          'two-sum': {
+            id: cardUuid,
+            slug: 'two-sum',
             name: 'Two Sum',
             leetcodeId: '1',
             difficulty: 'Easy',
@@ -150,7 +152,7 @@ describe('import-export', () => {
           },
         },
         notes: {
-          'problem-1': { text: 'Use hash map' },
+          [cardUuid]: { text: 'Use hash map' },
         },
         settings: {
           maxNewCardsPerDay: 5,
@@ -169,8 +171,8 @@ describe('import-export', () => {
       // Verify data was imported correctly
       expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
       expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-1` as const)).toEqual(
-        validExportData.data.notes['problem-1']
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${cardUuid}` as const)).toEqual(
+        validExportData.data.notes[cardUuid]
       );
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toEqual(5);
       expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toEqual(2);
@@ -181,15 +183,16 @@ describe('import-export', () => {
 
     it('should clear existing data before importing', async () => {
       // Set up existing data
-      await storage.setItem(STORAGE_KEYS.cards, { 'old-card': { id: 'old-card' } });
+      const oldCardUuid = 'old-card-uuid-1234';
+      await storage.setItem(STORAGE_KEYS.cards, { 'old-slug': { id: oldCardUuid } });
       await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 10 } });
-      await storage.setItem(`${STORAGE_KEYS.notes}:old-card` as const, { text: 'old note' });
+      await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
 
       const jsonData = JSON.stringify(validExportData);
       await importData(jsonData);
 
       // Verify old data was cleared
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:old-card` as const)).toBeNull();
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const)).toBeNull();
 
       // Verify only new data exists
       expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
@@ -259,9 +262,11 @@ describe('import-export', () => {
   describe('resetAllData', () => {
     it('should remove all storage keys', async () => {
       // Set up some data first
+      const uuid1 = 'c3d4e5f6-a7b8-9012-cdef-345678901234';
+      const uuid2 = 'd4e5f6a7-b8c9-0123-defa-456789012345';
       const mockCards = {
-        'problem-1': { id: 'problem-1' },
-        'problem-2': { id: 'problem-2' },
+        'two-sum': { id: uuid1 },
+        'three-sum': { id: uuid2 },
       };
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });
@@ -270,8 +275,8 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, true);
-      await storage.setItem(`${STORAGE_KEYS.notes}:problem-1` as const, { text: 'note 1' });
-      await storage.setItem(`${STORAGE_KEYS.notes}:problem-2` as const, { text: 'note 2' });
+      await storage.setItem(`${STORAGE_KEYS.notes}:${uuid1}` as const, { text: 'note 1' });
+      await storage.setItem(`${STORAGE_KEYS.notes}:${uuid2}` as const, { text: 'note 2' });
 
       await resetAllData();
 
@@ -283,8 +288,8 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toBeNull();
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-1` as const)).toBeNull();
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:problem-2` as const)).toBeNull();
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid1}` as const)).toBeNull();
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid2}` as const)).toBeNull();
     });
   });
 });
