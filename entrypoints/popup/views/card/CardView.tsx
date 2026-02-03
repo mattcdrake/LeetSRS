@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ViewLayout } from '../../components/ViewLayout';
 import { StreakCounter } from '../../components/StreakCounter';
+import { CardNotes } from './components/CardNotes';
 import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
 import { Button, TextField, Input, Label } from 'react-aria-components';
 import { State as FsrsState } from 'ts-fsrs';
@@ -86,13 +87,14 @@ function StatRow({ label, value }: StatRowProps) {
 
 interface CardStatsProps {
   card: Card;
+  cardId: string;
   onPauseToggle: () => void;
   onDelete: () => void;
   isPauseProcessing: boolean;
   isDeleteProcessing: boolean;
 }
 
-function CardStats({ card, onPauseToggle, onDelete, isPauseProcessing, isDeleteProcessing }: CardStatsProps) {
+function CardStats({ card, cardId, onPauseToggle, onDelete, isPauseProcessing, isDeleteProcessing }: CardStatsProps) {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const handleDelete = () => {
@@ -139,6 +141,8 @@ function CardStats({ card, onPauseToggle, onDelete, isPauseProcessing, isDeleteP
           <span>{deleteConfirm ? i18n.actions.confirm : i18n.actions.delete}</span>
         </Button>
       </div>
+
+      <CardNotes cardId={cardId} />
     </div>
   );
 }
@@ -174,6 +178,7 @@ function CardItem({
       {isExpanded && (
         <CardStats
           card={card}
+          cardId={card.id}
           onPauseToggle={onPauseToggle}
           onDelete={onDelete}
           isPauseProcessing={isPauseProcessing}
