@@ -2,11 +2,12 @@ import { Bar } from 'react-chartjs-2';
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
 import { useLastNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
 import { Rating } from 'ts-fsrs';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export function ReviewHistoryChart() {
+  const t = useI18n();
   const { data: last30DaysStats } = useLastNDaysStatsQuery(30);
 
   const chartData = {
@@ -18,22 +19,22 @@ export function ReviewHistoryChart() {
       }) || [],
     datasets: [
       {
-        label: i18n.ratings.again,
+        label: t.ratings.again,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Again]) || [],
         backgroundColor: '#ef4444',
       },
       {
-        label: i18n.ratings.hard,
+        label: t.ratings.hard,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Hard]) || [],
         backgroundColor: '#f59e0b',
       },
       {
-        label: i18n.ratings.good,
+        label: t.ratings.good,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Good]) || [],
         backgroundColor: '#10b981',
       },
       {
-        label: i18n.ratings.easy,
+        label: t.ratings.easy,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Easy]) || [],
         backgroundColor: '#3b82f6',
       },
@@ -81,7 +82,7 @@ export function ReviewHistoryChart() {
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold">{i18n.charts.reviewHistory}</h3>
+      <h3 className="text-lg font-semibold">{t.charts.reviewHistory}</h3>
       <div style={{ height: '250px' }}>
         <Bar data={chartData} options={chartOptions} />
       </div>

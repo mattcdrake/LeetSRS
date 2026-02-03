@@ -3,7 +3,7 @@ import { STORAGE_KEYS } from './storage-keys';
 import { type StoredCard } from './cards';
 import { type DailyStats } from './stats';
 import { type Note } from '@/shared/notes';
-import { type Theme } from '@/shared/settings';
+import { type Theme, type Language } from '@/shared/settings';
 import { getCurrentSchemaVersion } from './migrations';
 
 export interface ExportData {
@@ -21,6 +21,7 @@ export interface ExportData {
       theme?: Theme;
       autoClearLeetcode?: boolean;
       badgeEnabled?: boolean;
+      language?: Language;
     };
     gistSync?: {
       gistId?: string;
@@ -51,6 +52,7 @@ export async function exportData(): Promise<string> {
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
   const autoClearLeetcode = await storage.getItem<boolean>(STORAGE_KEYS.autoClearLeetcode);
   const badgeEnabled = await storage.getItem<boolean>(STORAGE_KEYS.badgeEnabled);
+  const language = await storage.getItem<Language>(STORAGE_KEYS.language);
 
   // Get gist sync settings
   const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
@@ -76,6 +78,7 @@ export async function exportData(): Promise<string> {
         ...(theme != null && { theme }),
         ...(autoClearLeetcode != null && { autoClearLeetcode }),
         ...(badgeEnabled != null && { badgeEnabled }),
+        ...(language != null && { language }),
       },
       gistSync: {
         ...(gistId != null && { gistId }),
@@ -165,6 +168,9 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.data.settings.badgeEnabled != null) {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, data.data.settings.badgeEnabled);
     }
+    if (data.data.settings.language != null) {
+      await storage.setItem(STORAGE_KEYS.language, data.data.settings.language);
+    }
   }
 
   // Import gist sync settings
@@ -194,6 +200,7 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.theme);
   await storage.removeItem(STORAGE_KEYS.autoClearLeetcode);
   await storage.removeItem(STORAGE_KEYS.badgeEnabled);
+  await storage.removeItem(STORAGE_KEYS.language);
 
   // Remove gist sync settings
   await storage.removeItem(STORAGE_KEYS.githubPat);

@@ -4,7 +4,7 @@ import { Rating } from 'ts-fsrs';
 import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
 import { bounceButton } from '@/shared/styles';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
   card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'>;
@@ -14,7 +14,7 @@ type ReviewCardProps = {
 
 type RatingButtonConfig = {
   rating: Grade;
-  label: string;
+  labelKey: 'again' | 'hard' | 'good' | 'easy';
   colorClass: string;
 };
 
@@ -24,14 +24,15 @@ const difficultyColorMap: Record<Difficulty, string> = {
   Hard: 'bg-difficulty-hard',
 };
 
-const ratingButtons: RatingButtonConfig[] = [
-  { rating: Rating.Again, label: i18n.ratings.again, colorClass: 'bg-rating-again' },
-  { rating: Rating.Hard, label: i18n.ratings.hard, colorClass: 'bg-rating-hard' },
-  { rating: Rating.Good, label: i18n.ratings.good, colorClass: 'bg-rating-good' },
-  { rating: Rating.Easy, label: i18n.ratings.easy, colorClass: 'bg-rating-easy' },
+const ratingButtonConfigs: RatingButtonConfig[] = [
+  { rating: Rating.Again, labelKey: 'again', colorClass: 'bg-rating-again' },
+  { rating: Rating.Hard, labelKey: 'hard', colorClass: 'bg-rating-hard' },
+  { rating: Rating.Good, labelKey: 'good', colorClass: 'bg-rating-good' },
+  { rating: Rating.Easy, labelKey: 'easy', colorClass: 'bg-rating-easy' },
 ];
 
 export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardProps) {
+  const t = useI18n();
   const difficultyColor = difficultyColorMap[card.difficulty] || 'bg-difficulty-medium';
 
   const handleRating = (rating: Grade) => {
@@ -59,14 +60,14 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
       </div>
 
       <div className="flex gap-2 justify-center">
-        {ratingButtons.map(({ rating, label, colorClass }) => (
+        {ratingButtonConfigs.map(({ rating, labelKey, colorClass }) => (
           <Button
-            key={label}
+            key={labelKey}
             onPress={() => handleRating(rating)}
             isDisabled={isProcessing}
             className={`w-20 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {label}
+            {t.ratings[labelKey]}
           </Button>
         ))}
       </div>

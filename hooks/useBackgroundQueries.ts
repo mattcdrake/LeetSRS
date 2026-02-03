@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 import type { Difficulty, Card } from '@/shared/cards';
-import type { Theme } from '@/shared/settings';
+import type { Theme, Language } from '@/shared/settings';
 import type { GistSyncConfig } from '@/shared/gist-sync';
 
 // Query Keys with hierarchical structure
@@ -35,6 +35,7 @@ export const queryKeys = {
     theme: ['settings', 'theme'] as const,
     autoClearLeetcode: ['settings', 'autoClearLeetcode'] as const,
     badgeEnabled: ['settings', 'badgeEnabled'] as const,
+    language: ['settings', 'language'] as const,
   },
   // Gist Sync related queries
   gistSync: {
@@ -330,6 +331,24 @@ export function useSetBadgeEnabledMutation() {
     mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_BADGE_ENABLED, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.badgeEnabled });
+    },
+  });
+}
+
+export function useLanguageQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.language,
+    queryFn: () => sendMessage({ type: MessageType.GET_LANGUAGE }),
+  });
+}
+
+export function useSetLanguageMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: Language) => sendMessage({ type: MessageType.SET_LANGUAGE, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.language });
     },
   });
 }

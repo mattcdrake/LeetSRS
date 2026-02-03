@@ -1,4 +1,4 @@
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../contexts/I18nContext';
 
 interface HeaderProps {
   title: string;
@@ -6,13 +6,14 @@ interface HeaderProps {
 }
 
 export function Header({ title, children }: HeaderProps) {
+  const t = useI18n();
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-current">
       <h1 className="text-xl font-bold text-primary font-geist-mono">
-        {title === i18n.app.name ? (
+        {title === t.app.name ? (
           <>
-            {i18n.app.namePart1}
-            <span className="text-rating-easy">{i18n.app.namePart2}</span>
+            {t.app.namePart1}
+            <span className="text-rating-easy">{t.app.namePart2}</span>
           </>
         ) : (
           title

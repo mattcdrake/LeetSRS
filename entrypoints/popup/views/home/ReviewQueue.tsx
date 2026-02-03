@@ -11,10 +11,11 @@ import {
   useAnimationsEnabledQuery,
 } from '@/hooks/useBackgroundQueries';
 import type { Grade } from 'ts-fsrs';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 import type { Card } from '@/shared/cards';
 
 export function ReviewQueue() {
+  const t = useI18n();
   const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
@@ -104,7 +105,7 @@ export function ReviewQueue() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="text-secondary">{i18n.home.loadingReviewQueue}</div>
+        <div className="text-secondary">{t.home.loadingReviewQueue}</div>
       </div>
     );
   }
@@ -112,7 +113,7 @@ export function ReviewQueue() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="text-red-500">{i18n.errors.failedToLoadReviewQueue}</div>
+        <div className="text-red-500">{t.errors.failedToLoadReviewQueue}</div>
       </div>
     );
   }
@@ -122,9 +123,9 @@ export function ReviewQueue() {
   if (!currentCard) {
     return (
       <div className="flex flex-col items-center justify-center h-32 gap-3 px-4">
-        <div className="text-xl font-semibold text-primary">{i18n.home.noCardsToReview}</div>
+        <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
         <div className="text-base text-secondary text-center">
-          {i18n.home.addProblemsInstructions}{' '}
+          {t.home.addProblemsInstructions}{' '}
           <svg
             className="inline-block mx-1 align-text-bottom"
             width="20"
@@ -144,7 +145,7 @@ export function ReviewQueue() {
             <path d="M7.16 18.37l0 .01" />
             <path d="M11 19.94l0 .01" />
           </svg>
-          {i18n.home.addProblemsButton}
+          {t.home.addProblemsButton}
         </div>
       </div>
     );

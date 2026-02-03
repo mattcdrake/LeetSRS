@@ -1,8 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RatingMenu } from '../rating-menu';
-import { RATING_BUTTONS } from '../constants';
+import { RATING_BUTTON_CONFIGS } from '../constants';
+import { translations } from '@/shared/i18n';
 
 // @vitest-environment happy-dom
+
+// Get the labels from translations for testing
+const t = translations.en;
+const RATING_BUTTONS = RATING_BUTTON_CONFIGS.map((config) => ({
+  ...config,
+  label: t.ratings[config.labelKey],
+}));
 
 describe('RatingMenu', () => {
   let container: HTMLElement;

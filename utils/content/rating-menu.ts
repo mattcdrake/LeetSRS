@@ -1,7 +1,7 @@
-import { RATING_BUTTONS, THEME_COLORS } from './constants';
+import { RATING_BUTTON_CONFIGS, THEME_COLORS } from './constants';
 import { getRatingColor, isDarkMode } from './theme';
 import { createButton } from './button';
-import { i18n } from '@/shared/i18n';
+import { getServiceTranslations } from '@/services/i18n';
 
 export type RatingCallback = (rating: number, label: string) => void;
 type RatingMenuPosition = 'top' | 'bottom';
@@ -39,6 +39,7 @@ export class RatingMenu {
   show(): void {
     if (this.element) return;
 
+    const t = getServiceTranslations();
     this.element = document.createElement('div');
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
@@ -72,8 +73,9 @@ export class RatingMenu {
     `;
 
     // Create rating buttons
-    RATING_BUTTONS.forEach(({ rating, label, colorKey }) => {
+    RATING_BUTTON_CONFIGS.forEach(({ rating, labelKey, colorKey }) => {
       const { bg, hover } = getRatingColor(colorKey);
+      const label = t.ratings[labelKey];
 
       const button = createButton({
         style: `
@@ -123,6 +125,7 @@ export class RatingMenu {
   }
 
   private createAddWithoutRatingButton(): HTMLButtonElement {
+    const t = getServiceTranslations();
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
     const bgColor = colors.bgAddButton;
@@ -151,7 +154,7 @@ export class RatingMenu {
       },
     });
 
-    button.innerHTML = `<span style="filter: grayscale(1) brightness(${isDark ? '2' : '0.3'});">➕</span> ${i18n.contentScript.addToSrsNoRating}`;
+    button.innerHTML = `<span style="filter: grayscale(1) brightness(${isDark ? '2' : '0.3'});">➕</span> ${t.contentScript.addToSrsNoRating}`;
 
     button.addEventListener('mouseenter', () => {
       button.style.backgroundColor = hoverBgColor;

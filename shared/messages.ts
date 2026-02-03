@@ -3,7 +3,7 @@ import type { Card, Difficulty } from '@/shared/cards';
 import type { Grade, State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Note } from '@/shared/notes';
-import type { Theme } from '@/shared/settings';
+import type { Theme, Language } from '@/shared/settings';
 import type {
   GistSyncConfig,
   GistSyncStatus,
@@ -38,6 +38,8 @@ export const MessageType = {
   SET_AUTO_CLEAR_LEETCODE: 'SET_AUTO_CLEAR_LEETCODE',
   GET_BADGE_ENABLED: 'GET_BADGE_ENABLED',
   SET_BADGE_ENABLED: 'SET_BADGE_ENABLED',
+  GET_LANGUAGE: 'GET_LANGUAGE',
+  SET_LANGUAGE: 'SET_LANGUAGE',
   GET_CARD_STATE_STATS: 'GET_CARD_STATE_STATS',
   GET_ALL_STATS: 'GET_ALL_STATS',
   GET_LAST_N_DAYS_STATS: 'GET_LAST_N_DAYS_STATS',
@@ -88,6 +90,8 @@ export type MessageRequest =
   | { type: typeof MessageType.SET_AUTO_CLEAR_LEETCODE; value: boolean }
   | { type: typeof MessageType.GET_BADGE_ENABLED }
   | { type: typeof MessageType.SET_BADGE_ENABLED; value: boolean }
+  | { type: typeof MessageType.GET_LANGUAGE }
+  | { type: typeof MessageType.SET_LANGUAGE; value: Language }
   | { type: typeof MessageType.GET_CARD_STATE_STATS }
   | { type: typeof MessageType.GET_ALL_STATS }
   | { type: typeof MessageType.GET_LAST_N_DAYS_STATS; days: number }
@@ -130,6 +134,8 @@ export type MessageResponseMap = {
   [MessageType.SET_AUTO_CLEAR_LEETCODE]: void;
   [MessageType.GET_BADGE_ENABLED]: boolean;
   [MessageType.SET_BADGE_ENABLED]: void;
+  [MessageType.GET_LANGUAGE]: Language;
+  [MessageType.SET_LANGUAGE]: void;
   [MessageType.GET_CARD_STATE_STATS]: Record<FsrsState, number>;
   [MessageType.GET_ALL_STATS]: DailyStats[];
   [MessageType.GET_LAST_N_DAYS_STATS]: DailyStats[];

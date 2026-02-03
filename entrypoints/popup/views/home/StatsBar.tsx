@@ -1,6 +1,6 @@
 import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import { State } from 'ts-fsrs';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 interface StatItemProps {
   count: number;
@@ -23,6 +23,7 @@ function StatItem({ count, label, colorClass, testId }: StatItemProps) {
 }
 
 export function StatsBar() {
+  const t = useI18n();
   const { data: cards = [] } = useReviewQueueQuery();
 
   const stats = cards.reduce(
@@ -48,11 +49,11 @@ export function StatsBar() {
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <StatItem count={stats.reviews} label={i18n.statsBar.review} colorClass="text-info" testId="review" />
+      <StatItem count={stats.reviews} label={t.statsBar.review} colorClass="text-info" testId="review" />
       <span className="text-tertiary">•</span>
-      <StatItem count={stats.new} label={i18n.statsBar.new} colorClass="text-accent" testId="new" />
+      <StatItem count={stats.new} label={t.statsBar.new} colorClass="text-accent" testId="new" />
       <span className="text-tertiary">•</span>
-      <StatItem count={stats.learn} label={i18n.statsBar.learn} colorClass="text-danger" testId="learn" />
+      <StatItem count={stats.learn} label={t.statsBar.learn} colorClass="text-danger" testId="learn" />
     </div>
   );
 }

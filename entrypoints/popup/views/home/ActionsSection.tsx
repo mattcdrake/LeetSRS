@@ -3,7 +3,7 @@ import { Button } from 'react-aria-components';
 import { FaForwardStep, FaForwardFast, FaPause } from 'react-icons/fa6';
 import { bounceButton } from '@/shared/styles';
 import type { IconType } from 'react-icons';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 interface ActionsSectionProps {
   onDelete: () => void;
@@ -30,6 +30,7 @@ function ActionButton({ icon: Icon, label, onPress }: ActionButtonProps) {
 }
 
 export function ActionsSection({ onDelete, onDelay, onPause }: ActionsSectionProps) {
+  const t = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
@@ -40,7 +41,7 @@ export function ActionsSection({ onDelete, onDelay, onPause }: ActionsSectionPro
         onPress={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
       >
-        <span className="text-sm font-semibold text-primary">{i18n.actionsSection.title}</span>
+        <span className="text-sm font-semibold text-primary">{t.actionsSection.title}</span>
         <span className={`text-xs text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
           ▶
         </span>
@@ -50,9 +51,9 @@ export function ActionsSection({ onDelete, onDelay, onPause }: ActionsSectionPro
         <div className="px-4 pb-4 border-t border-current">
           <div className="mt-3 space-y-3">
             <div className="flex gap-2">
-              <ActionButton icon={FaForwardStep} label={i18n.actionsSection.delay1Day} onPress={() => onDelay(1)} />
-              <ActionButton icon={FaForwardFast} label={i18n.actionsSection.delay5Days} onPress={() => onDelay(5)} />
-              <ActionButton icon={FaPause} label={i18n.actions.pause} onPress={onPause} />
+              <ActionButton icon={FaForwardStep} label={t.actionsSection.delay1Day} onPress={() => onDelay(1)} />
+              <ActionButton icon={FaForwardFast} label={t.actionsSection.delay5Days} onPress={() => onDelay(5)} />
+              <ActionButton icon={FaPause} label={t.actions.pause} onPress={onPause} />
             </div>
 
             <div className="pt-2 border-t border-current">
@@ -70,7 +71,7 @@ export function ActionsSection({ onDelete, onDelay, onPause }: ActionsSectionPro
                   }
                 }}
               >
-                {deleteConfirm ? i18n.actions.confirmDelete : i18n.actionsSection.deleteCard}
+                {deleteConfirm ? t.actions.confirmDelete : t.actionsSection.deleteCard}
               </Button>
             </div>
           </div>

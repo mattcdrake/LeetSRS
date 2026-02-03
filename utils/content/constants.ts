@@ -1,5 +1,3 @@
-import { i18n } from '@/shared/i18n';
-
 // Theme colors from App.css
 export const THEME_COLORS = {
   light: {
@@ -69,11 +67,12 @@ export const RATING_COLORS = {
   },
 } as const;
 
-export const RATING_BUTTONS = [
-  { rating: 1, label: i18n.ratings.again, colorKey: 'again' as const },
-  { rating: 2, label: i18n.ratings.hard, colorKey: 'hard' as const },
-  { rating: 3, label: i18n.ratings.good, colorKey: 'good' as const },
-  { rating: 4, label: i18n.ratings.easy, colorKey: 'easy' as const },
+// Rating button config - labels are looked up dynamically from translations
+export const RATING_BUTTON_CONFIGS = [
+  { rating: 1, labelKey: 'again' as const, colorKey: 'again' as const },
+  { rating: 2, labelKey: 'hard' as const, colorKey: 'hard' as const },
+  { rating: 3, labelKey: 'good' as const, colorKey: 'good' as const },
+  { rating: 4, labelKey: 'easy' as const, colorKey: 'easy' as const },
 ];
 
 export const LEETSRS_BUTTON_COLOR = '#28c244';

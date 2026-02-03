@@ -3,13 +3,14 @@ import { Button, TextField, TextArea, Label } from 'react-aria-components';
 import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
 import { NOTES_MAX_LENGTH } from '@/shared/notes';
 import { bounceButton } from '@/shared/styles';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../../contexts/I18nContext';
 
 interface CardNotesProps {
   cardId: string;
 }
 
 export function CardNotes({ cardId }: CardNotesProps) {
+  const t = useI18n();
   const [noteText, setNoteText] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -83,13 +84,13 @@ export function CardNotes({ cardId }: CardNotesProps) {
 
   return (
     <div className="mt-3 pt-3 border-t border-current">
-      <span className="text-xs text-secondary">{i18n.notes.title}</span>
+      <span className="text-xs text-secondary">{t.notes.title}</span>
       <TextField className="w-full">
-        <Label className="sr-only">{i18n.notes.ariaLabel}</Label>
+        <Label className="sr-only">{t.notes.ariaLabel}</Label>
         <TextArea
           ref={textareaRef}
           className="w-full mt-1.5 p-2 rounded border border-current bg-tertiary text-primary text-xs resize-none focus:outline-none focus:ring-1 focus:ring-accent overflow-hidden"
-          placeholder={isLoading ? i18n.notes.placeholderLoading : i18n.notes.placeholderEmpty}
+          placeholder={isLoading ? t.notes.placeholderLoading : t.notes.placeholderEmpty}
           rows={1}
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
@@ -99,7 +100,7 @@ export function CardNotes({ cardId }: CardNotesProps) {
       </TextField>
       <div className="mt-1.5 flex items-center justify-between">
         <span className={`text-xs ${isOverLimit ? 'text-danger' : 'text-secondary'}`}>
-          {i18n.format.characterCount(characterCount, NOTES_MAX_LENGTH)}
+          {t.format.characterCount(characterCount, NOTES_MAX_LENGTH)}
         </span>
         <div className="flex gap-2">
           {hasExistingNote && (
@@ -108,11 +109,7 @@ export function CardNotes({ cardId }: CardNotesProps) {
               onPress={handleDelete}
               isDisabled={deleteNoteMutation.isPending}
             >
-              {deleteNoteMutation.isPending
-                ? i18n.actions.deleting
-                : deleteConfirm
-                  ? i18n.actions.confirm
-                  : i18n.actions.delete}
+              {deleteNoteMutation.isPending ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
             </Button>
           )}
           <Button
@@ -120,7 +117,7 @@ export function CardNotes({ cardId }: CardNotesProps) {
             onPress={handleSave}
             isDisabled={!canSave || saveNoteMutation.isPending}
           >
-            {saveNoteMutation.isPending ? i18n.actions.saving : i18n.actions.save}
+            {saveNoteMutation.isPending ? t.actions.saving : t.actions.save}
           </Button>
         </div>
       </div>
