@@ -17,6 +17,9 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
   useTodayStatsQuery: vi.fn(() => ({ data: { streak: 5 } })),
   usePauseCardMutation: vi.fn(),
   useRemoveCardMutation: vi.fn(),
+  useNoteQuery: vi.fn(() => ({ data: null, isLoading: false })),
+  useSaveNoteMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
+  useDeleteNoteMutation: vi.fn(() => ({ mutateAsync: vi.fn(), isPending: false })),
 }));
 
 import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
