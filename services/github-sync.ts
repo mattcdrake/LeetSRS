@@ -10,7 +10,7 @@ import type {
   PatValidationResult,
   GistValidationResult,
 } from '@/shared/gist-sync';
-import { i18n } from '@/shared/i18n';
+import { getServiceTranslations } from './i18n';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
 
@@ -111,7 +111,7 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   const exportJson = await exportData();
 
   const { data } = await octokit.rest.gists.create({
-    description: i18n.settings.gistSync.gistDescription,
+    description: getServiceTranslations().settings.gistSync.gistDescription,
     public: false,
     files: {
       [GIST_FILENAME]: {

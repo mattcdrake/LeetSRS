@@ -1,6 +1,6 @@
 import { FaHouseChimney, FaChartSimple, FaGear, FaCode } from 'react-icons/fa6';
 import { Tabs, TabList, Tab } from 'react-aria-components';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../contexts/I18nContext';
 import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 
 export type ViewId = 'home' | 'card' | 'stats' | 'settings';
@@ -11,14 +11,15 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
+  const t = useI18n();
   const { data: dueCards = [] } = useReviewQueueQuery();
   const dueCount = dueCards.length;
 
   const navItems: Array<{ id: ViewId; label: string; Icon: typeof FaHouseChimney }> = [
-    { id: 'home', label: i18n.nav.home, Icon: FaHouseChimney },
-    { id: 'card', label: i18n.nav.cards, Icon: FaCode },
-    { id: 'stats', label: i18n.nav.stats, Icon: FaChartSimple },
-    { id: 'settings', label: i18n.nav.settings, Icon: FaGear },
+    { id: 'home', label: t.nav.home, Icon: FaHouseChimney },
+    { id: 'card', label: t.nav.cards, Icon: FaCode },
+    { id: 'stats', label: t.nav.stats, Icon: FaChartSimple },
+    { id: 'settings', label: t.nav.settings, Icon: FaGear },
   ];
 
   return (

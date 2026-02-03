@@ -11,7 +11,7 @@ import {
   useValidatePatMutation,
   useValidateGistIdMutation,
 } from '@/hooks/useBackgroundQueries';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 // Simple toggle component without React Aria's hidden input
 function SimpleToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
@@ -35,6 +35,7 @@ function SimpleToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
 }
 
 export function GistSyncSection() {
+  const t = useI18n();
   const { data: config } = useGistSyncConfigQuery();
   const { data: status } = useGistSyncStatusQuery();
 
@@ -98,7 +99,7 @@ export function GistSyncSection() {
       setShowGistMessage(true);
     } catch (error) {
       console.error('Failed to create gist:', error);
-      alert(i18n.settings.gistSync.createGistFailed);
+      alert(t.settings.gistSync.createGistFailed);
     }
   };
 
@@ -108,11 +109,11 @@ export function GistSyncSection() {
     if (newValue) {
       // Enabling sync - validate requirements
       if (!pat || !patValidation?.valid) {
-        alert(i18n.settings.gistSync.patRequired);
+        alert(t.settings.gistSync.patRequired);
         return;
       }
       if (!gistId || !gistValidation?.valid) {
-        alert(i18n.settings.gistSync.gistRequired);
+        alert(t.settings.gistSync.gistRequired);
         return;
       }
     }
@@ -132,7 +133,7 @@ export function GistSyncSection() {
   };
 
   const formatLastSync = () => {
-    if (!status?.lastSyncTime) return i18n.settings.gistSync.lastSyncNever;
+    if (!status?.lastSyncTime) return t.settings.gistSync.lastSyncNever;
     const date = new Date(status.lastSyncTime);
     return date.toLocaleString();
   };
@@ -141,14 +142,14 @@ export function GistSyncSection() {
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
       <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
         <FaGithub />
-        {i18n.settings.gistSync.title}
+        {t.settings.gistSync.title}
       </h3>
-      <p className="text-sm text-tertiary mb-4">{i18n.settings.gistSync.description}</p>
+      <p className="text-sm text-tertiary mb-4">{t.settings.gistSync.description}</p>
 
       <div className="space-y-4">
         {/* PAT Input */}
         <TextField className="flex flex-col gap-1">
-          <Label className="text-sm">{i18n.settings.gistSync.patLabel}</Label>
+          <Label className="text-sm">{t.settings.gistSync.patLabel}</Label>
           <div className="flex gap-2">
             <Input
               type="password"
@@ -158,7 +159,7 @@ export function GistSyncSection() {
                 setPatValidation(null);
                 setShowPatMessage(false);
               }}
-              placeholder={i18n.settings.gistSync.patPlaceholder}
+              placeholder={t.settings.gistSync.patPlaceholder}
               className="flex-1 px-2 py-1 rounded border bg-tertiary text-primary border-current text-sm"
             />
             <Button
@@ -166,7 +167,7 @@ export function GistSyncSection() {
               isDisabled={!pat || validatePatMutation.isPending}
               className={`px-3 py-1 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`}
             >
-              {validatePatMutation.isPending ? i18n.settings.gistSync.validating : i18n.settings.gistSync.validatePat}
+              {validatePatMutation.isPending ? t.settings.gistSync.validating : t.settings.gistSync.validatePat}
             </Button>
           </div>
           {showPatMessage && patValidation && (
@@ -175,19 +176,19 @@ export function GistSyncSection() {
             >
               {patValidation.valid ? <FaCheck /> : <FaXmark />}
               {patValidation.valid
-                ? `${i18n.settings.gistSync.patValid}${patValidation.username ? ` (${patValidation.username})` : ''}`
-                : i18n.settings.gistSync.patInvalid}
+                ? `${t.settings.gistSync.patValid}${patValidation.username ? ` (${patValidation.username})` : ''}`
+                : t.settings.gistSync.patInvalid}
             </div>
           )}
           <div className="text-xs text-tertiary">
-            {i18n.settings.gistSync.patHelpText}{' '}
+            {t.settings.gistSync.patHelpText}{' '}
             <a
               href="https://github.com/settings/tokens/new?scopes=gist&description=LeetSRS"
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent hover:underline"
             >
-              {i18n.settings.gistSync.patHelpLink}
+              {t.settings.gistSync.patHelpLink}
             </a>
           </div>
         </TextField>
@@ -195,7 +196,7 @@ export function GistSyncSection() {
         {/* Gist Selection - only show after PAT is validated */}
         {patValidation?.valid && (
           <div className="space-y-2">
-            <Label className="text-sm">{i18n.settings.gistSync.gistIdLabel}</Label>
+            <Label className="text-sm">{t.settings.gistSync.gistIdLabel}</Label>
             <div className="flex gap-2">
               <Input
                 type="text"
@@ -205,7 +206,7 @@ export function GistSyncSection() {
                   setGistValidation(null);
                   setShowGistMessage(false);
                 }}
-                placeholder={i18n.settings.gistSync.gistIdPlaceholder}
+                placeholder={t.settings.gistSync.gistIdPlaceholder}
                 className="flex-1 px-2 py-1 rounded border bg-tertiary text-primary border-current text-sm"
               />
               <Button
@@ -213,7 +214,7 @@ export function GistSyncSection() {
                 isDisabled={!gistId || validateGistMutation.isPending}
                 className={`px-3 py-1 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`}
               >
-                {i18n.settings.gistSync.validateGist}
+                {t.settings.gistSync.validateGist}
               </Button>
             </div>
             <div className="flex gap-2">
@@ -222,7 +223,7 @@ export function GistSyncSection() {
                 isDisabled={createGistMutation.isPending}
                 className={`flex-1 px-3 py-2 rounded bg-tertiary text-primary text-sm disabled:opacity-50 ${bounceButton}`}
               >
-                {createGistMutation.isPending ? i18n.settings.gistSync.creating : i18n.settings.gistSync.createNewGist}
+                {createGistMutation.isPending ? t.settings.gistSync.creating : t.settings.gistSync.createNewGist}
               </Button>
             </div>
             {showGistMessage && gistValidation && (
@@ -230,7 +231,7 @@ export function GistSyncSection() {
                 className={`text-sm flex items-center gap-1 ${gistValidation.valid ? 'text-green-500' : 'text-red-500'}`}
               >
                 {gistValidation.valid ? <FaCheck /> : <FaXmark />}
-                {gistValidation.valid ? i18n.settings.gistSync.gistValid : i18n.settings.gistSync.gistInvalid}
+                {gistValidation.valid ? t.settings.gistSync.gistValid : t.settings.gistSync.gistInvalid}
               </div>
             )}
           </div>
@@ -241,13 +242,13 @@ export function GistSyncSection() {
           <div className="space-y-4 pt-2 border-t border-tertiary">
             {/* Enable Automatic Sync Toggle */}
             <div className="flex items-center justify-between">
-              <span>{i18n.settings.gistSync.enableSync}</span>
+              <span>{t.settings.gistSync.enableSync}</span>
               <SimpleToggle enabled={localEnabled} onToggle={handleToggleSync} />
             </div>
 
             {/* Sync Status */}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-tertiary">{i18n.settings.gistSync.lastSync}:</span>
+              <span className="text-tertiary">{t.settings.gistSync.lastSync}:</span>
               <span className="flex items-center gap-1">
                 {status?.lastSyncDirection === 'push' && <FaCloudArrowUp className="text-accent" />}
                 {status?.lastSyncDirection === 'pull' && <FaCloudArrowDown className="text-accent" />}
@@ -262,12 +263,12 @@ export function GistSyncSection() {
               className={`w-full px-4 py-2 rounded flex items-center justify-center gap-2 bg-accent text-white disabled:opacity-50 ${bounceButton}`}
             >
               <FaArrowsRotate className={triggerSyncMutation.isPending ? 'animate-spin' : ''} />
-              {triggerSyncMutation.isPending ? i18n.settings.gistSync.syncing : i18n.settings.gistSync.syncNow}
+              {triggerSyncMutation.isPending ? t.settings.gistSync.syncing : t.settings.gistSync.syncNow}
             </Button>
 
             {status?.lastError && (
               <div className="text-sm text-red-500">
-                {i18n.settings.gistSync.syncFailed}: {status.lastError}
+                {t.settings.gistSync.syncFailed}: {status.lastError}
               </div>
             )}
           </div>

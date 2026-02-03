@@ -1,8 +1,19 @@
 /**
  * Centralized text strings for internationalization. All user-facing text should be defined here.
+ *
+ * To add a new language:
+ * 1. Add the language code to the Language type in shared/settings.ts
+ * 2. Add the code to SUPPORTED_LANGUAGES array in shared/settings.ts
+ * 3. Add language metadata to LANGUAGE_OPTIONS below
+ * 4. Create a translation object (e.g., `const es: Translations = { ... }`)
+ * 5. Add the translation to the `translations` record
+ * 6. Run `npm run compile` - TypeScript will catch any missing keys
  */
 
-export const i18n = {
+import type { Language } from './settings';
+
+// English translations (base language - all other translations must match this structure)
+const en = {
   // App branding
   app: {
     name: 'LeetSRS',
@@ -139,6 +150,12 @@ export const i18n = {
   settings: {
     title: 'Settings',
 
+    // Language section
+    language: {
+      title: 'Language',
+      label: 'Display language',
+    },
+
     // Appearance section
     appearance: {
       title: 'Appearance',
@@ -221,7 +238,7 @@ export const i18n = {
     about: {
       title: 'About',
       feedbackMessage: 'Feel free to open issues for feature requests, bug reports, and feedback on GitHub!',
-      reviewRequest: 'If LeetSRS helped you, leave a review? 🙏',
+      reviewRequest: 'If LeetSRS helped you, leave a review?',
       copyright: '© 2026 Matt Drake',
       github: 'GitHub',
     },
@@ -240,3 +257,27 @@ export const i18n = {
     version: (version: string) => `v${version}`,
   },
 } as const;
+
+// Helper type to widen literal string types to string while preserving structure and functions
+type DeepStringify<T> = T extends (...args: infer A) => infer R
+  ? (...args: A) => R
+  : T extends object
+    ? { [K in keyof T]: DeepStringify<T[K]> }
+    : T extends string
+      ? string
+      : T;
+
+// Type for translations - all languages must match this structure
+export type Translations = DeepStringify<typeof en>;
+
+// All translations keyed by language code
+export const translations: Record<Language, Translations> = {
+  en,
+};
+
+// Language metadata for the dropdown UI
+export const LANGUAGE_OPTIONS: Array<{
+  code: Language;
+  name: string;
+  nativeName: string;
+}> = [{ code: 'en', name: 'English', nativeName: 'English' }];

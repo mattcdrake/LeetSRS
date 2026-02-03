@@ -2,9 +2,10 @@ import { Button } from 'react-aria-components';
 import { bounceButton } from '@/shared/styles';
 import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/useBackgroundQueries';
 import { useState, useRef } from 'react';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {
+  const t = useI18n();
   const exportDataMutation = useExportDataMutation();
   const importDataMutation = useImportDataMutation();
   const resetAllDataMutation = useResetAllDataMutation();
@@ -25,7 +26,7 @@ export function DataSection() {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Export failed:', error);
-      alert(i18n.errors.failedToExportData);
+      alert(t.errors.failedToExportData);
     }
   };
 
@@ -33,7 +34,7 @@ export function DataSection() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const confirmed = window.confirm(i18n.settings.data.importConfirmMessage);
+    const confirmed = window.confirm(t.settings.data.importConfirmMessage);
 
     if (!confirmed) {
       // Reset the input so the same file can be selected again
@@ -46,10 +47,10 @@ export function DataSection() {
     try {
       const text = await file.text();
       await importDataMutation.mutateAsync(text);
-      alert(i18n.settings.data.importSuccess);
+      alert(t.settings.data.importSuccess);
     } catch (error) {
       console.error('Import failed:', error);
-      alert(`${i18n.settings.data.importFailed} ${error instanceof Error ? error.message : i18n.errors.unknownError}`);
+      alert(`${t.settings.data.importFailed} ${error instanceof Error ? error.message : t.errors.unknownError}`);
     }
 
     // Reset the input so the same file can be selected again
@@ -66,7 +67,7 @@ export function DataSection() {
     }
 
     // Browser confirmation dialog
-    const confirmed = window.confirm(i18n.settings.data.resetConfirmMessage);
+    const confirmed = window.confirm(t.settings.data.resetConfirmMessage);
 
     if (!confirmed) {
       setResetConfirmation(false);
@@ -75,24 +76,24 @@ export function DataSection() {
 
     try {
       await resetAllDataMutation.mutateAsync();
-      alert(i18n.settings.data.resetSuccess);
+      alert(t.settings.data.resetSuccess);
       setResetConfirmation(false);
     } catch (error) {
       console.error('Reset failed:', error);
-      alert(i18n.errors.failedToResetData);
+      alert(t.errors.failedToResetData);
     }
   };
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">{i18n.settings.data.title}</h3>
+      <h3 className="text-lg font-semibold mb-4">{t.settings.data.title}</h3>
       <div className="space-y-2">
         <Button
           onPress={handleExport}
           isDisabled={exportDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
         >
-          {exportDataMutation.isPending ? i18n.settings.data.exporting : i18n.settings.data.exportData}
+          {exportDataMutation.isPending ? t.settings.data.exporting : t.settings.data.exportData}
         </Button>
         <input
           ref={fileInputRef}
@@ -107,7 +108,7 @@ export function DataSection() {
           isDisabled={importDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
         >
-          {importDataMutation.isPending ? i18n.settings.data.importing : i18n.settings.data.importData}
+          {importDataMutation.isPending ? t.settings.data.importing : t.settings.data.importData}
         </Button>
         <Button
           onPress={handleReset}
@@ -115,10 +116,10 @@ export function DataSection() {
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 text-white bg-danger ${bounceButton}`}
         >
           {resetAllDataMutation.isPending
-            ? i18n.settings.data.resetting
+            ? t.settings.data.resetting
             : resetConfirmation
-              ? i18n.settings.data.clickToConfirm
-              : i18n.settings.data.resetAllData}
+              ? t.settings.data.clickToConfirm
+              : t.settings.data.resetAllData}
         </Button>
       </div>
     </div>

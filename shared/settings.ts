@@ -10,3 +10,13 @@ export const DEFAULT_AUTO_CLEAR_LEETCODE = false;
 export const DEFAULT_BADGE_ENABLED = true;
 export type Theme = 'light' | 'dark';
 export const DEFAULT_THEME: Theme = 'dark';
+
+// Language settings
+export type Language = 'en';
+export const DEFAULT_LANGUAGE: Language = 'en';
+export const SUPPORTED_LANGUAGES: Language[] = ['en'];
+
+// Feature flags
+export const FEATURE_FLAGS = {
+  languageSelection: false,
+} as const;
