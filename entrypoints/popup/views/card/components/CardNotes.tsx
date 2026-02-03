@@ -18,15 +18,6 @@ export function CardNotes({ cardId }: CardNotesProps) {
   const saveNoteMutation = useSaveNoteMutation(cardId);
   const deleteNoteMutation = useDeleteNoteMutation(cardId);
 
-  // Auto-resize textarea
-  const adjustHeight = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-  };
-
   // Sync fetched note with local state
   useEffect(() => {
     const text = note?.text || '';
@@ -36,8 +27,27 @@ export function CardNotes({ cardId }: CardNotesProps) {
 
   // Adjust height when note text changes (including initial load)
   useEffect(() => {
-    adjustHeight();
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
   }, [noteText]);
+
+  // Auto-reset delete confirmation after a delay
+  useEffect(() => {
+    if (!deleteConfirm) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setDeleteConfirm(false);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [deleteConfirm]);
 
   const handleSave = async () => {
     try {
@@ -51,7 +61,6 @@ export function CardNotes({ cardId }: CardNotesProps) {
   const handleDelete = async () => {
     if (!deleteConfirm) {
       setDeleteConfirm(true);
-      setTimeout(() => setDeleteConfirm(false), 3000);
       return;
     }
 
@@ -69,8 +78,8 @@ export function CardNotes({ cardId }: CardNotesProps) {
   const characterCount = noteText.length;
   const isOverLimit = characterCount > NOTES_MAX_LENGTH;
   const hasChanges = noteText !== originalText;
-  const canSave = hasChanges && !isOverLimit && noteText.length > 0;
-  const hasExistingNote = originalText.length > 0;
+  const canSave = hasChanges && !isOverLimit;
+  const hasExistingNote = note != null;
 
   return (
     <div className="mt-3 pt-3 border-t border-current">
@@ -85,7 +94,7 @@ export function CardNotes({ cardId }: CardNotesProps) {
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           disabled={isLoading || saveNoteMutation.isPending}
-          maxLength={NOTES_MAX_LENGTH + 100}
+          maxLength={NOTES_MAX_LENGTH}
         />
       </TextField>
       <div className="mt-1.5 flex items-center justify-between">
