@@ -1,5 +1,6 @@
 import { ViewLayout } from '../../components/ViewLayout';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
+import { LanguageSection } from './LanguageSection';
 import { AppearanceSection } from './AppearanceSection';
 import { ProblemAutoClearSection } from './ProblemAutoClearSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';
@@ -8,8 +9,10 @@ import { DataSection } from './DataSection';
 import { AboutSection } from './AboutSection';
 
 export function SettingsView() {
+  const t = useI18n();
   return (
-    <ViewLayout title={i18n.settings.title}>
+    <ViewLayout title={t.settings.title}>
+      <LanguageSection />
       <AppearanceSection />
       <ProblemAutoClearSection />
       <ReviewSettingsSection />

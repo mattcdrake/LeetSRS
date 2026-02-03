@@ -22,6 +22,8 @@ import {
   setAutoClearLeetcode,
   getBadgeEnabled,
   setBadgeEnabled,
+  getLanguage,
+  setLanguage,
 } from '@/services/settings';
 import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
@@ -188,6 +190,12 @@ export default defineBackground(() => {
       case MessageType.SET_BADGE_ENABLED: {
         return handleDataUpdate(() => setBadgeEnabled(request.value));
       }
+
+      case MessageType.GET_LANGUAGE:
+        return await getLanguage();
+
+      case MessageType.SET_LANGUAGE:
+        return handleDataUpdate(() => setLanguage(request.value));
 
       case MessageType.GET_CARD_STATE_STATS:
         return await getCardStateStats();

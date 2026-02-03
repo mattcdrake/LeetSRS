@@ -3,11 +3,12 @@ import { StreakCounter } from '../../components/StreakCounter';
 import { CardDistributionChart } from './CardDistributionChart';
 import { ReviewHistoryChart } from './ReviewHistoryChart';
 import { UpcomingReviewsChart } from './UpcomingReviewsChart';
-import { i18n } from '@/shared/i18n';
+import { useI18n } from '../../contexts/I18nContext';
 
 export function StatsView() {
+  const t = useI18n();
   return (
-    <ViewLayout title={i18n.statsView.title} headerContent={<StreakCounter />}>
+    <ViewLayout title={t.statsView.title} headerContent={<StreakCounter />}>
       <CardDistributionChart />
       <ReviewHistoryChart />
       <UpcomingReviewsChart />
