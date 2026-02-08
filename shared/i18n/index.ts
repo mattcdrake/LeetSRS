@@ -13,7 +13,7 @@ import type { Language } from '../settings';
 import en from './en';
 import hi from './hi';
 import pl from './pl';
-import zhCN from './zhcn';
+import zhCN from './zh-CN';
 
 // Helper type to widen literal string types to string while preserving structure and functions
 type DeepStringify<T> = T extends (...args: infer A) => infer R

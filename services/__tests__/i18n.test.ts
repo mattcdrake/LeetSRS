@@ -43,5 +43,14 @@ describe('service i18n', () => {
       const t = getServiceTranslations();
       expect(t).toBe(translations.en);
     });
+
+    it('should fall back to default language for invalid storage values', async () => {
+      // Simulate corrupted/invalid language in storage
+      await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID' as any);
+      // Wait for the watcher to fire
+      await new Promise((r) => setTimeout(r, 50));
+      expect(getServiceLanguage()).toBe('en');
+      expect(getServiceTranslations()).toBe(translations.en);
+    });
   });
 });
