@@ -12,7 +12,7 @@ export type Theme = 'light' | 'dark';
 export const DEFAULT_THEME: Theme = 'dark';
 
 // Language settings
-export type Language = 'en' | 'hi';
+export type Language = 'en' | 'hi' | 'pl' | 'zh-CN';
 export const DEFAULT_LANGUAGE: Language = 'en';
 
 // Feature flags

@@ -12,6 +12,8 @@
 import type { Language } from '../settings';
 import en from './en';
 import hi from './hi';
+import pl from './pl';
+import zhCN from './zhcn';
 
 // Helper type to widen literal string types to string while preserving structure and functions
 type DeepStringify<T> = T extends (...args: infer A) => infer R
@@ -29,6 +31,8 @@ export type Translations = DeepStringify<typeof en>;
 export const translations: Record<Language, Translations> = {
   en,
   hi,
+  pl,
+  'zh-CN': zhCN,
 };
 
 // Language metadata for the dropdown UI
@@ -39,4 +43,6 @@ export const LANGUAGE_OPTIONS: Array<{
 }> = [
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
+  { code: 'pl', name: 'Polish', nativeName: 'Polski' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
 ];
