@@ -1,14 +1,14 @@
 import { storage } from '#imports';
 import { translations, type Translations } from '@/shared/i18n';
 import { STORAGE_KEYS } from './storage-keys';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, type Language } from '@/shared/settings';
+import { DEFAULT_LANGUAGE, type Language } from '@/shared/settings';
 
 // Service translations - cached and updated via storage watcher
 let cachedTranslations: Translations = translations.en;
 let cachedLanguage: Language = DEFAULT_LANGUAGE;
 
 function updateTranslations(language: Language | null | undefined): void {
-  const validLanguage = language && SUPPORTED_LANGUAGES.includes(language) ? language : DEFAULT_LANGUAGE;
+  const validLanguage = language && language in translations ? language : DEFAULT_LANGUAGE;
   cachedLanguage = validLanguage;
   cachedTranslations = translations[validLanguage];
 }
