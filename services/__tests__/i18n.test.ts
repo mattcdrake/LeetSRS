@@ -46,6 +46,7 @@ describe('service i18n', () => {
 
     it('should fall back to default language for invalid storage values', async () => {
       // Simulate corrupted/invalid language in storage
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID' as any);
       // Wait for the watcher to fire
       await new Promise((r) => setTimeout(r, 50));
