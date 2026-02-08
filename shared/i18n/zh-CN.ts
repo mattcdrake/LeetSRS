@@ -1,5 +1,7 @@
+import type { Translations } from './index';
+
 // Simplified Chinese translations
-const zhCN = {
+const zhCN: Translations = {
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',

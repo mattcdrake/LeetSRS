@@ -1,5 +1,7 @@
+import type { Translations } from './index';
+
 // Polish translations
-const pl = {
+const pl: Translations = {
   // App branding
   app: {
     name: 'LeetSRS',
