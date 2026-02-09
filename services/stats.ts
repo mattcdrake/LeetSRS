@@ -95,10 +95,10 @@ export async function rollupOldStats(): Promise<void> {
   if (keys.length === 0) return;
 
   // Find the cutoff date (DAILY_STATS_RETENTION_DAYS ago from today)
-  const now = new Date();
-  const cutoff = new Date(now);
+  const dayStartHour = await getDayStartHour();
+  const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - DAILY_STATS_RETENTION_DAYS);
-  const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
+  const cutoffKey = formatLocalDate(cutoff, dayStartHour);
 
   // Find entries older than the cutoff
   const oldKeys = keys.filter((key) => key < cutoffKey);
