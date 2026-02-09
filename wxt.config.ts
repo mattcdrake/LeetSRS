@@ -1,5 +1,6 @@
 import { defineConfig } from 'wxt';
 import tailwindcss from '@tailwindcss/vite';
+import pkg from './package.json';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -16,5 +17,8 @@ export default defineConfig({
   },
   vite: () => ({
     plugins: [tailwindcss()],
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
   }),
 });
