@@ -5,6 +5,8 @@ import {
   getTodayKey,
   getYesterdayKey,
   updateStats,
+  rollupOldStats,
+  getMonthlyStats,
   getStatsForDate,
   getTodayStats,
   getAllStats,
@@ -12,6 +14,7 @@ import {
   getLastNDaysStats,
   getNextNDaysStats,
   type DailyStats,
+  type MonthlyStats,
 } from '../stats';
 import { Rating, State as FsrsState } from 'ts-fsrs';
 import { STORAGE_KEYS } from '../storage-keys';
@@ -447,22 +450,42 @@ describe('Stats management', () => {
       expect(stats.streak).toBe(1);
     });
 
-    it('should handle stats across months and years', async () => {
-      vi.setSystemTime(new Date('2023-12-31T10:00:00'));
+    it('should handle stats across months', async () => {
+      // Use dates within 30 days so rollup doesn't remove them
+      vi.setSystemTime(new Date('2024-02-20T10:00:00'));
       await updateStats(Rating.Good, false);
 
-      vi.setSystemTime(new Date('2024-01-01T10:00:00'));
+      vi.setSystemTime(new Date('2024-03-05T10:00:00'));
       await updateStats(Rating.Easy, false);
 
-      vi.setSystemTime(new Date('2024-02-15T10:00:00'));
+      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
       await updateStats(Rating.Hard, false);
 
       const allStats = await getAllStats();
 
       expect(allStats).toHaveLength(3);
-      expect(allStats[0].date).toBe('2024-02-15');
-      expect(allStats[1].date).toBe('2024-01-01');
-      expect(allStats[2].date).toBe('2023-12-31');
+      expect(allStats[0].date).toBe('2024-03-15');
+      expect(allStats[1].date).toBe('2024-03-05');
+      expect(allStats[2].date).toBe('2024-02-20');
+    });
+
+    it('should handle stats across a year boundary', async () => {
+      // All within 30 days of Jan 10 2025, spanning year boundary
+      vi.setSystemTime(new Date('2024-12-20T10:00:00'));
+      await updateStats(Rating.Good, false);
+
+      vi.setSystemTime(new Date('2025-01-02T10:00:00'));
+      await updateStats(Rating.Easy, false);
+
+      vi.setSystemTime(new Date('2025-01-10T10:00:00'));
+      await updateStats(Rating.Hard, false);
+
+      const allStats = await getAllStats();
+
+      expect(allStats).toHaveLength(3);
+      expect(allStats[0].date).toBe('2025-01-10');
+      expect(allStats[1].date).toBe('2025-01-02');
+      expect(allStats[2].date).toBe('2024-12-20');
     });
   });
 
@@ -816,6 +839,248 @@ describe('Stats management', () => {
       expect(stats).toHaveLength(30);
       expect(stats[0].date).toBe('2024-03-15');
       expect(stats[29].date).toBe('2024-04-13');
+    });
+  });
+
+  describe('rollupOldStats', () => {
+    it('should roll up entries older than 30 days into monthly stats', async () => {
+      // Seed storage directly with old daily stats (bypassing updateStats to avoid triggering rollup during setup)
+      const oldStats: Record<string, DailyStats> = {
+        '2024-01-10': {
+          date: '2024-01-10',
+          totalReviews: 5,
+          gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 2, [Rating.Easy]: 1 },
+          newCards: 2,
+          reviewedCards: 3,
+          streak: 1,
+        },
+        '2024-01-15': {
+          date: '2024-01-15',
+          totalReviews: 3,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 1, [Rating.Good]: 1, [Rating.Easy]: 1 },
+          newCards: 1,
+          reviewedCards: 2,
+          streak: 1,
+        },
+        '2024-03-15': {
+          date: '2024-03-15',
+          totalReviews: 2,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 1 },
+          newCards: 1,
+          reviewedCards: 1,
+          streak: 1,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.stats, oldStats);
+
+      // "Today" is 2024-03-15, so cutoff is 2024-02-14. Jan entries should be rolled up.
+      await rollupOldStats();
+
+      // Daily stats should only have today's entry
+      const dailyStats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
+      expect(Object.keys(dailyStats!)).toEqual(['2024-03-15']);
+
+      // Monthly stats should have January rollup
+      const monthly = await getMonthlyStats();
+      expect(monthly['2024-01']).toEqual({
+        month: '2024-01',
+        totalReviews: 8,
+        gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 2, [Rating.Good]: 3, [Rating.Easy]: 2 },
+        newCards: 3,
+        reviewedCards: 5,
+        activeDays: 2,
+      });
+    });
+
+    it('should merge additively into existing monthly stats', async () => {
+      // Seed existing monthly stats
+      const existingMonthly: Record<string, MonthlyStats> = {
+        '2024-01': {
+          month: '2024-01',
+          totalReviews: 10,
+          gradeBreakdown: { [Rating.Again]: 2, [Rating.Hard]: 3, [Rating.Good]: 3, [Rating.Easy]: 2 },
+          newCards: 4,
+          reviewedCards: 6,
+          activeDays: 3,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.monthlyStats, existingMonthly);
+
+      // Seed a daily entry from the same month that's older than 30 days
+      const oldStats: Record<string, DailyStats> = {
+        '2024-01-25': {
+          date: '2024-01-25',
+          totalReviews: 2,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 1 },
+          newCards: 1,
+          reviewedCards: 1,
+          streak: 1,
+        },
+        '2024-03-15': {
+          date: '2024-03-15',
+          totalReviews: 1,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 0 },
+          newCards: 0,
+          reviewedCards: 1,
+          streak: 1,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.stats, oldStats);
+
+      await rollupOldStats();
+
+      const monthly = await getMonthlyStats();
+      expect(monthly['2024-01']).toEqual({
+        month: '2024-01',
+        totalReviews: 12, // 10 + 2
+        gradeBreakdown: { [Rating.Again]: 2, [Rating.Hard]: 3, [Rating.Good]: 4, [Rating.Easy]: 3 },
+        newCards: 5, // 4 + 1
+        reviewedCards: 7, // 6 + 1
+        activeDays: 4, // 3 + 1
+      });
+    });
+
+    it('should preserve entries within 30 days', async () => {
+      const stats: Record<string, DailyStats> = {
+        '2024-03-01': {
+          date: '2024-03-01',
+          totalReviews: 1,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 0 },
+          newCards: 0,
+          reviewedCards: 1,
+          streak: 1,
+        },
+        '2024-03-10': {
+          date: '2024-03-10',
+          totalReviews: 1,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 0, [Rating.Easy]: 1 },
+          newCards: 1,
+          reviewedCards: 0,
+          streak: 1,
+        },
+        '2024-03-15': {
+          date: '2024-03-15',
+          totalReviews: 1,
+          gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 0, [Rating.Good]: 0, [Rating.Easy]: 0 },
+          newCards: 0,
+          reviewedCards: 1,
+          streak: 1,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.stats, stats);
+
+      await rollupOldStats();
+
+      // All entries are within 30 days of 2024-03-15, so nothing should be rolled up
+      const dailyStats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
+      expect(Object.keys(dailyStats!).sort()).toEqual(['2024-03-01', '2024-03-10', '2024-03-15']);
+
+      const monthly = await getMonthlyStats();
+      expect(Object.keys(monthly)).toEqual([]);
+    });
+
+    it('should do nothing when stats are empty', async () => {
+      await rollupOldStats();
+
+      const monthly = await getMonthlyStats();
+      expect(Object.keys(monthly)).toEqual([]);
+    });
+
+    it('should roll up entries across multiple months', async () => {
+      const stats: Record<string, DailyStats> = {
+        '2023-11-15': {
+          date: '2023-11-15',
+          totalReviews: 2,
+          gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 0 },
+          newCards: 1,
+          reviewedCards: 1,
+          streak: 1,
+        },
+        '2023-12-20': {
+          date: '2023-12-20',
+          totalReviews: 3,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 1, [Rating.Good]: 1, [Rating.Easy]: 1 },
+          newCards: 2,
+          reviewedCards: 1,
+          streak: 1,
+        },
+        '2024-01-05': {
+          date: '2024-01-05',
+          totalReviews: 1,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 0, [Rating.Easy]: 1 },
+          newCards: 0,
+          reviewedCards: 1,
+          streak: 1,
+        },
+        '2024-03-15': {
+          date: '2024-03-15',
+          totalReviews: 1,
+          gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 0 },
+          newCards: 0,
+          reviewedCards: 1,
+          streak: 1,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.stats, stats);
+
+      await rollupOldStats();
+
+      const monthly = await getMonthlyStats();
+      expect(Object.keys(monthly).sort()).toEqual(['2023-11', '2023-12', '2024-01']);
+      expect(monthly['2023-11'].activeDays).toBe(1);
+      expect(monthly['2023-12'].activeDays).toBe(1);
+      expect(monthly['2024-01'].activeDays).toBe(1);
+    });
+
+    it('should be triggered by updateStats', async () => {
+      // Seed old data directly
+      const oldStats: Record<string, DailyStats> = {
+        '2024-01-05': {
+          date: '2024-01-05',
+          totalReviews: 4,
+          gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 1, [Rating.Easy]: 1 },
+          newCards: 2,
+          reviewedCards: 2,
+          streak: 1,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.stats, oldStats);
+
+      // updateStats triggers rollup
+      await updateStats(Rating.Good, false);
+
+      const monthly = await getMonthlyStats();
+      expect(monthly['2024-01']).toBeDefined();
+      expect(monthly['2024-01'].totalReviews).toBe(4);
+
+      // Old daily entry should be gone
+      const dailyStats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
+      expect(dailyStats!['2024-01-05']).toBeUndefined();
+      expect(dailyStats!['2024-03-15']).toBeDefined();
+    });
+  });
+
+  describe('getMonthlyStats', () => {
+    it('should return empty record when no monthly stats exist', async () => {
+      const monthly = await getMonthlyStats();
+      expect(monthly).toEqual({});
+    });
+
+    it('should return stored monthly stats', async () => {
+      const data: Record<string, MonthlyStats> = {
+        '2024-01': {
+          month: '2024-01',
+          totalReviews: 10,
+          gradeBreakdown: { [Rating.Again]: 2, [Rating.Hard]: 3, [Rating.Good]: 3, [Rating.Easy]: 2 },
+          newCards: 4,
+          reviewedCards: 6,
+          activeDays: 5,
+        },
+      };
+      await storage.setItem(STORAGE_KEYS.monthlyStats, data);
+
+      const monthly = await getMonthlyStats();
+      expect(monthly).toEqual(data);
     });
   });
 });
