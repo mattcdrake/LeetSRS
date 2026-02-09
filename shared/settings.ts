@@ -15,6 +15,9 @@ export const DEFAULT_THEME: Theme = 'dark';
 export type Language = 'en' | 'hi' | 'pl' | 'zh-CN';
 export const DEFAULT_LANGUAGE: Language = 'en';
 
+// Stats rollup
+export const DAILY_STATS_RETENTION_DAYS = 30;
+
 // Feature flags
 export const FEATURE_FLAGS = {
   languageSelection: true,

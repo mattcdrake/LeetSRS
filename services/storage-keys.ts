@@ -1,6 +1,7 @@
 export const STORAGE_KEYS = {
   cards: 'local:leetsrs:cards',
   stats: 'local:leetsrs:stats',
+  monthlyStats: 'local:leetsrs:monthlyStats',
   notes: 'local:leetsrs:notes',
   maxNewCardsPerDay: 'sync:leetsrs:maxNewCardsPerDay',
   dayStartHour: 'sync:leetsrs:dayStartHour',
