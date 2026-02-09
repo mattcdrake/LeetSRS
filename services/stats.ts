@@ -27,6 +27,20 @@ export interface MonthlyStats extends BaseStats {
   activeDays: number;
 }
 
+function createEmptyBaseStats(): BaseStats {
+  return {
+    totalReviews: 0,
+    gradeBreakdown: {
+      [Rating.Again]: 0,
+      [Rating.Hard]: 0,
+      [Rating.Good]: 0,
+      [Rating.Easy]: 0,
+    },
+    newCards: 0,
+    reviewedCards: 0,
+  };
+}
+
 async function getStats(): Promise<Record<string, DailyStats>> {
   const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
   return stats ?? {};
@@ -60,16 +74,8 @@ export async function updateStats(grade: Grade, isNewCard: boolean = false): Pro
     const streak = yesterdayStats ? yesterdayStats.streak + 1 : 1;
 
     stats[todayKey] = {
+      ...createEmptyBaseStats(),
       date: todayKey,
-      totalReviews: 0,
-      gradeBreakdown: {
-        [Rating.Again]: 0,
-        [Rating.Hard]: 0,
-        [Rating.Good]: 0,
-        [Rating.Easy]: 0,
-      },
-      newCards: 0,
-      reviewedCards: 0,
       streak,
     };
   }
@@ -113,16 +119,8 @@ export async function rollupOldStats(): Promise<void> {
 
     if (!monthlyStats[monthKey]) {
       monthlyStats[monthKey] = {
+        ...createEmptyBaseStats(),
         month: monthKey,
-        totalReviews: 0,
-        gradeBreakdown: {
-          [Rating.Again]: 0,
-          [Rating.Hard]: 0,
-          [Rating.Good]: 0,
-          [Rating.Easy]: 0,
-        },
-        newCards: 0,
-        reviewedCards: 0,
         activeDays: 0,
       };
     }
@@ -192,16 +190,8 @@ export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
     } else {
       // Include empty days for continuity in the chart
       result.push({
+        ...createEmptyBaseStats(),
         date: dateKey,
-        totalReviews: 0,
-        gradeBreakdown: {
-          [Rating.Again]: 0,
-          [Rating.Hard]: 0,
-          [Rating.Good]: 0,
-          [Rating.Easy]: 0,
-        },
-        newCards: 0,
-        reviewedCards: 0,
         streak: 0,
       });
     }
