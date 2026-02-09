@@ -9,7 +9,7 @@ export function Header({ title, children }: HeaderProps) {
   const t = useI18n();
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-current">
-      <h1 className="text-xl font-bold text-primary font-geist-mono">
+      <h1 className="text-xl font-bold text-primary font-jetbrains-mono">
         {title === t.app.name ? (
           <>
             {t.app.namePart1}

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap');
 @import 'tailwindcss';
 
 body {
@@ -146,8 +146,8 @@ body {
   }
 
   /* Font utilities */
-  .font-geist-mono {
-    font-family: 'Geist Mono', monospace;
+  .font-jetbrains-mono {
+    font-family: 'JetBrains Mono', monospace;
   }
 
   /* Border colors */
