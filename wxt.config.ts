@@ -8,7 +8,9 @@ export default defineConfig({
     action: {
       default_popup: 'popup.html',
     },
-    name: 'LeetSRS',
+    name: '__MSG_extName__',
+    description: '__MSG_extDescription__',
+    default_locale: 'en',
     permissions: ['storage', 'alarms'],
     host_permissions: ['*://*.leetcode.com/*'],
   },
