@@ -1,7 +1,7 @@
 import { storage } from '#imports';
 import { STORAGE_KEYS } from './storage-keys';
 import { type StoredCard } from './cards';
-import { type DailyStats } from './stats';
+import { type DailyStats, type MonthlyStats } from './stats';
 import { type Note } from '@/shared/notes';
 import { type Theme, type Language } from '@/shared/settings';
 import { getCurrentSchemaVersion } from './migrations';
@@ -13,6 +13,7 @@ export interface ExportData {
   data: {
     cards: Record<string, StoredCard>;
     stats: Record<string, DailyStats>;
+    monthlyStats?: Record<string, MonthlyStats>;
     notes: Record<string, Note>;
     settings: {
       maxNewCardsPerDay?: number;
@@ -34,6 +35,7 @@ export async function exportData(): Promise<string> {
   // Gather all data from storage
   const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
   const stats = (await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats)) ?? {};
+  const monthlyStats = (await storage.getItem<Record<string, MonthlyStats>>(STORAGE_KEYS.monthlyStats)) ?? {};
 
   // Get all notes
   const notes: Record<string, Note> = {};
@@ -70,6 +72,7 @@ export async function exportData(): Promise<string> {
     data: {
       cards,
       stats,
+      ...(Object.keys(monthlyStats).length > 0 && { monthlyStats }),
       notes,
       settings: {
         ...(maxNewCardsPerDay != null && { maxNewCardsPerDay }),
@@ -142,6 +145,11 @@ export async function importData(jsonData: string): Promise<void> {
   // Import stats
   await storage.setItem(STORAGE_KEYS.stats, data.data.stats);
 
+  // Import monthly stats
+  if (data.data.monthlyStats) {
+    await storage.setItem(STORAGE_KEYS.monthlyStats, data.data.monthlyStats);
+  }
+
   // Import notes
   for (const [cardId, note] of Object.entries(data.data.notes)) {
     const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
@@ -194,6 +202,7 @@ export async function resetAllData(): Promise<void> {
   // Remove all data
   await storage.removeItem(STORAGE_KEYS.cards);
   await storage.removeItem(STORAGE_KEYS.stats);
+  await storage.removeItem(STORAGE_KEYS.monthlyStats);
   await storage.removeItem(STORAGE_KEYS.maxNewCardsPerDay);
   await storage.removeItem(STORAGE_KEYS.dayStartHour);
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
