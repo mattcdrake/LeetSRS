@@ -226,7 +226,7 @@ const pl: Translations = {
     about: {
       title: 'O aplikacji',
       feedbackMessage: 'Zgłaszaj propozycje funkcji, błędy i uwagi na GitHubie!',
-      reviewRequest: 'Jeśli LeetSRS Ci pomógł, zostaw recenzję?',
+      reviewRequest: 'Zostaw recenzję 🙏',
       copyright: '© 2026 Matt Drake',
       github: 'GitHub',
     },

@@ -198,7 +198,7 @@ const zhCN: Translations = {
     about: {
       title: '关于',
       feedbackMessage: '欢迎在 GitHub 上提交功能请求、错误报告和反馈！',
-      reviewRequest: '如果 LeetSRS 对您有帮助，请留下评价？',
+      reviewRequest: '留下评价 🙏',
       copyright: '© 2026 Matt Drake',
       github: 'GitHub',
     },
