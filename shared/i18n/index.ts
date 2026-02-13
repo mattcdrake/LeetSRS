@@ -9,7 +9,7 @@
  * 5. Run `npm run compile` - TypeScript will catch any missing keys
  */
 
-import type { Language } from '../settings';
+import { DEFAULT_LANGUAGE, type Language } from '../settings';
 import en from './en';
 import hi from './hi';
 import pl from './pl';
@@ -46,3 +46,32 @@ export const LANGUAGE_OPTIONS: Array<{
   { code: 'pl', name: 'Polish', nativeName: 'Polski' },
   { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
 ];
+
+/**
+ * Detect the best matching supported language from the browser's language preferences.
+ * Checks navigator.languages in preference order: exact match, then base language, then zh variants → zh-CN.
+ * Falls back to DEFAULT_LANGUAGE if no match found.
+ */
+export function detectBrowserLanguage(): Language {
+  const browserLanguages = typeof navigator !== 'undefined' ? navigator.languages : [];
+
+  for (const browserLang of browserLanguages) {
+    // Exact match (e.g. "zh-CN" → "zh-CN", "en" → "en")
+    if (browserLang in translations) {
+      return browserLang as Language;
+    }
+
+    // Base language match (e.g. "en-US" → "en", "pl-PL" → "pl")
+    const baseLang = browserLang.split('-')[0];
+    if (baseLang in translations) {
+      return baseLang as Language;
+    }
+
+    // zh variants → zh-CN (e.g. "zh", "zh-TW", "zh-HK")
+    if (baseLang === 'zh') {
+      return 'zh-CN';
+    }
+  }
+
+  return DEFAULT_LANGUAGE;
+}

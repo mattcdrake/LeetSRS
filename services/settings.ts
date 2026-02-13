@@ -1,6 +1,6 @@
 import { storage } from '#imports';
 import { STORAGE_KEYS } from './storage-keys';
-import { translations } from '@/shared/i18n';
+import { detectBrowserLanguage, translations } from '@/shared/i18n';
 import {
   DEFAULT_MAX_NEW_CARDS_PER_DAY,
   MIN_NEW_CARDS_PER_DAY,
@@ -13,7 +13,6 @@ import {
   DEFAULT_AUTO_CLEAR_LEETCODE,
   DEFAULT_BADGE_ENABLED,
   Language,
-  DEFAULT_LANGUAGE,
 } from '@/shared/settings';
 
 export async function getMaxNewCardsPerDay(): Promise<number> {
@@ -87,7 +86,7 @@ export async function setBadgeEnabled(value: boolean): Promise<void> {
 
 export async function getLanguage(): Promise<Language> {
   const value = await storage.getItem<Language>(STORAGE_KEYS.language);
-  return value && value in translations ? value : DEFAULT_LANGUAGE;
+  return value && value in translations ? value : detectBrowserLanguage();
 }
 
 export async function setLanguage(value: Language): Promise<void> {
