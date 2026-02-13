@@ -2,7 +2,7 @@
   "name": "leetsrs",
   "description": "A spaced repetition extension for LeetCode problems",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.3.3",
   "license": "MIT",
   "author": "Matt Drake",
   "type": "module",

@@ -10,6 +10,7 @@ import {
   setTheme,
   getAutoClearLeetcode,
   setAutoClearLeetcode,
+  getLanguage,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 import {
@@ -334,6 +335,27 @@ describe('Settings Service', () => {
 
       await setTheme('dark');
       expect(await getTheme()).toBe('dark');
+    });
+  });
+
+  describe('getLanguage', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('should detect browser language when no language is stored', async () => {
+      vi.stubGlobal('navigator', { languages: ['pl', 'en'] });
+
+      const result = await getLanguage();
+      expect(result).toBe('pl');
+    });
+
+    it('should return stored language over detected browser language', async () => {
+      vi.stubGlobal('navigator', { languages: ['pl', 'en'] });
+      await storage.setItem(STORAGE_KEYS.language, 'hi');
+
+      const result = await getLanguage();
+      expect(result).toBe('hi');
     });
   });
 });
