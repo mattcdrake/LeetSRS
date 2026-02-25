@@ -1,4 +1,5 @@
 import type { ProblemData } from '@/shared/problem-data';
+import { getGraphQLUrl } from './domain';
 // Cache to avoid redundant requests
 let cachedData: { slug: string; data: ProblemData } | null = null;
 
@@ -84,7 +85,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData 
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch('https://leetcode.com/graphql', {
+    const response = await fetch(getGraphQLUrl(), {
       method: 'POST',
       headers,
       body: JSON.stringify(graphqlQuery),

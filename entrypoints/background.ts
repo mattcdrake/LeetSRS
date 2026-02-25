@@ -108,7 +108,7 @@ export default defineBackground(() => {
         return 'PONG' as const;
 
       case MessageType.ADD_CARD: {
-        return handleDataUpdate(() => addCard(request.slug, request.name, request.leetcodeId, request.difficulty));
+        return handleDataUpdate(() => addCard(request.slug, request.name, request.leetcodeId, request.difficulty, request.domain));
       }
 
       case MessageType.GET_ALL_CARDS:
@@ -128,7 +128,7 @@ export default defineBackground(() => {
 
       case MessageType.RATE_CARD: {
         return handleDataUpdate(() =>
-          rateCard(request.slug, request.name, request.rating, request.leetcodeId, request.difficulty)
+          rateCard(request.slug, request.name, request.rating, request.leetcodeId, request.difficulty, request.domain)
         );
       }
 

@@ -10,7 +10,7 @@ import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { updateStats, getTodayStats } from './stats';
 import { deleteNote } from './notes';
-import { type Card, type Difficulty } from '@/shared/cards';
+import { type Card, type Difficulty, type LeetcodeDomain } from '@/shared/cards';
 import { getMaxNewCardsPerDay, getDayStartHour } from './settings';
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
@@ -65,26 +65,27 @@ export function deserializeCard(stored: StoredCard): Card {
   };
 }
 
-function createCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty): Card {
+function createCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty, domain: LeetcodeDomain): Card {
   return {
     id: crypto.randomUUID(),
     slug,
     name,
     leetcodeId,
     difficulty,
+    domain,
     createdAt: new Date(),
     fsrs: createEmptyCard(),
     paused: false,
   };
 }
 
-export async function addCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty): Promise<Card> {
+export async function addCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty, domain: LeetcodeDomain): Promise<Card> {
   const cards = await getCards();
   if (slug in cards) {
     return deserializeCard(cards[slug]);
   }
 
-  const card = createCard(slug, name, leetcodeId, difficulty);
+  const card = createCard(slug, name, leetcodeId, difficulty, domain);
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
   return card;
@@ -150,7 +151,8 @@ export async function rateCard(
   name: string,
   rating: Grade,
   leetcodeId: string,
-  difficulty: Difficulty
+  difficulty: Difficulty,
+  domain: LeetcodeDomain
 ): Promise<{ card: Card; shouldRequeue: boolean }> {
   const cards = await getCards();
 
@@ -160,7 +162,7 @@ export async function rateCard(
     card = deserializeCard(cards[slug]);
     isNewCard = card.fsrs.state === FsrsState.New;
   } else {
-    card = createCard(slug, name, leetcodeId, difficulty);
+    card = createCard(slug, name, leetcodeId, difficulty, domain);
   }
 
   const now = new Date();
