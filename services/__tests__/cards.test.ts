@@ -152,7 +152,8 @@ describe('addCard', () => {
     expect(card.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     expect(card.slug).toBe('two-sum');
     expect(card.name).toBe('Two Sum');
-    expect(card.difficulty).toBe('Easy', 'leetcode.com');
+    expect(card.difficulty).toBe('Easy');
+    expect(card.domain).toBe('leetcode.com');
     expect(card.createdAt).toBeInstanceOf(Date);
 
     // Verify FSRS card is created
@@ -190,7 +191,8 @@ describe('addCard', () => {
     expect(secondCard.slug).toBe('valid-parentheses');
     expect(secondCard.createdAt.getTime()).toBe(firstCreatedAt.getTime());
     expect(secondCard.name).toBe('Valid Parentheses');
-    expect(secondCard.difficulty).toBe('Medium', 'leetcode.com');
+    expect(secondCard.difficulty).toBe('Medium');
+    expect(secondCard.domain).toBe('leetcode.com');
 
     // Verify only one card exists in storage
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);

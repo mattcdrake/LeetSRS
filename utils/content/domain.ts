@@ -2,7 +2,9 @@
  * Domain utilities for supporting both leetcode.com and leetcode.cn
  */
 
-export type LeetcodeDomain = 'leetcode.com' | 'leetcode.cn';
+import type { LeetcodeDomain } from '@/shared/cards';
+
+export type { LeetcodeDomain };
 
 /**
  * Detects the current LeetCode domain based on the hostname
