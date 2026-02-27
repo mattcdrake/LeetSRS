@@ -163,6 +163,12 @@ const en = {
       enableAutoReset: 'Enable auto reset',
     },
 
+    leetcodeCn: {
+      title: 'LeetCode China',
+      description: 'Enable support for leetcode.cn (力扣). Requires additional browser permission.',
+      enable: 'Enable leetcode.cn support',
+    },
+
     // Data section
     data: {
       title: 'Data',

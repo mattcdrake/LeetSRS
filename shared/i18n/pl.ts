@@ -165,6 +165,12 @@ const pl: Translations = {
       enableAutoReset: 'Włącz automatyczny reset',
     },
 
+    leetcodeCn: {
+      title: 'LeetCode Chiny',
+      description: 'Włącz obsługę leetcode.cn (力扣). Wymaga dodatkowego uprawnienia przeglądarki.',
+      enable: 'Włącz obsługę leetcode.cn',
+    },
+
     // Data section
     data: {
       title: 'Dane',

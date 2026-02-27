@@ -146,6 +146,12 @@ const zhCN: Translations = {
       enableAutoReset: '启用自动重置',
     },
 
+    leetcodeCn: {
+      title: '力扣中国',
+      description: '启用 leetcode.cn（力扣）支持。需要额外的浏览器权限。',
+      enable: '启用 leetcode.cn 支持',
+    },
+
     data: {
       title: '数据',
       exportData: '导出数据',

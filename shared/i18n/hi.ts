@@ -144,6 +144,12 @@ const hi: Translations = {
       description: 'LeetCode प्रॉब्लम खोलने पर कोड ऑटोमैटिकली रीसेट करें।',
       enableAutoReset: 'ऑटो रीसेट ऑन करें',
     },
+
+    leetcodeCn: {
+      title: 'LeetCode चीन',
+      description: 'leetcode.cn (力扣) के लिए सपोर्ट ऑन करें। अतिरिक्त ब्राउज़र अनुमति आवश्यक है।',
+      enable: 'leetcode.cn सपोर्ट ऑन करें',
+    },
     // Data section
     data: {
       title: 'डेटा',

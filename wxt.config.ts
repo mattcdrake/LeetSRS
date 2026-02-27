@@ -13,7 +13,8 @@ export default defineConfig({
     description: '__MSG_extDescription__',
     default_locale: 'en',
     permissions: ['storage', 'alarms'],
-    host_permissions: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
+    host_permissions: ['*://*.leetcode.com/*'],
+    optional_host_permissions: ['*://*.leetcode.cn/*'],
   },
   vite: () => ({
     plugins: [tailwindcss()],
