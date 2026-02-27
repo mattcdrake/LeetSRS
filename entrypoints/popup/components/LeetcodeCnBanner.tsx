@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { FaXmark } from 'react-icons/fa6';
 import { useI18n } from '../contexts/I18nContext';
 
 const LEETCODE_CN_ORIGIN = '*://*.leetcode.cn/*';
@@ -45,7 +46,7 @@ export function LeetcodeCnBanner() {
         aria-label="Dismiss"
         className="shrink-0 text-blue-400 hover:text-blue-600 dark:hover:text-blue-100"
       >
-        ✕
+        <FaXmark />
       </button>
     </div>
   );
