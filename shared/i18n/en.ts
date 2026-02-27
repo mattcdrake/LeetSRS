@@ -70,6 +70,10 @@ const en = {
     noCardsToReview: 'No cards to review!',
     addProblemsInstructions: 'Add problems on LeetCode using the',
     addProblemsButton: "button next to 'Submit'.",
+    leetcodeCnBanner: {
+      message: 'Using leetcode.cn? Enable support to add problems.',
+      enable: 'Enable',
+    },
   },
 
   // Home view - Stats bar

@@ -64,6 +64,10 @@ const zhCN: Translations = {
     noCardsToReview: '没有需要复习的卡片！',
     addProblemsInstructions: '在 LeetCode 上使用',
     addProblemsButton: '「提交」旁边的按钮添加题目。',
+    leetcodeCnBanner: {
+      message: '使用力扣中国站？启用支持以添加题目。',
+      enable: '启用',
+    },
   },
 
   statsBar: {

@@ -64,6 +64,10 @@ const hi: Translations = {
     noCardsToReview: 'रिव्यु के लिए कोई कार्ड नहीं!',
     addProblemsInstructions: 'LeetCode पर प्रॉब्लम्स जोड़ें',
     addProblemsButton: "'Submit' के बगल वाले बटन से।",
+    leetcodeCnBanner: {
+      message: 'leetcode.cn यूज़ कर रहे हैं? प्रॉब्लम्स जोड़ने के लिए सपोर्ट ऑन करें।',
+      enable: 'ऑन करें',
+    },
   },
   // Home view - Stats bar
   statsBar: {

@@ -72,6 +72,10 @@ const pl: Translations = {
     noCardsToReview: 'Brak kart do powtórki!',
     addProblemsInstructions: 'Dodawaj zadania na LeetCode za pomocą',
     addProblemsButton: "przycisku obok 'Submit'.",
+    leetcodeCnBanner: {
+      message: 'Używasz leetcode.cn? Włącz obsługę, aby dodawać zadania.',
+      enable: 'Włącz',
+    },
   },
 
   // Home view - Stats bar
