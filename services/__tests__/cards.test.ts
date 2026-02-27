@@ -113,6 +113,30 @@ describe('Card serialization', () => {
       expect(deserialized.createdAt).toBeInstanceOf(Date);
       expect(deserialized.createdAt.getTime()).toBe(timestamp);
     });
+
+    it('should default domain to leetcode.com when missing', () => {
+      const timestamp = new Date('2024-01-15T10:30:00Z').getTime();
+      const emptyFsrs = createEmptyCard();
+      // Simulate a pre-migration stored card that lacks the domain field
+      const storedCard = {
+        id: 'test-id-old',
+        slug: 'old-problem',
+        name: 'Old Problem',
+        leetcodeId: '100',
+        difficulty: 'Easy',
+        createdAt: timestamp,
+        fsrs: {
+          ...emptyFsrs,
+          due: emptyFsrs.due.getTime(),
+          last_review: emptyFsrs.last_review?.getTime(),
+        },
+        paused: false,
+      } as unknown as StoredCard;
+
+      const deserialized = deserializeCard(storedCard);
+
+      expect(deserialized.domain).toBe('leetcode.com');
+    });
   });
 
   describe('serializeCard and deserializeCard roundtrip', () => {

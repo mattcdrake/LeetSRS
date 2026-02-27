@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import { storage } from 'wxt/utils/storage';
-import { getCurrentSchemaVersion, setSchemaVersion, runMigrations, type Migration } from '../migrations';
+import { getCurrentSchemaVersion, setSchemaVersion, runMigrations, migrations, type Migration } from '../migrations';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('migrations', () => {
@@ -192,6 +192,41 @@ describe('migrations', () => {
 
       expect(versions).toEqual([0, 1]);
       expect(await getCurrentSchemaVersion()).toBe(2);
+    });
+  });
+
+  describe('migration v1: add domain to cards', () => {
+    it('should add domain to cards that are missing it', async () => {
+      // Set up cards without domain field (pre-migration state)
+      await storage.setItem(STORAGE_KEYS.cards, {
+        'two-sum': { slug: 'two-sum', name: 'Two Sum' },
+        'add-two-numbers': { slug: 'add-two-numbers', name: 'Add Two Numbers' },
+      });
+
+      await runMigrations(migrations);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
+      expect(cards!['two-sum'].domain).toBe('leetcode.com');
+      expect(cards!['add-two-numbers'].domain).toBe('leetcode.com');
+    });
+
+    it('should not overwrite existing domain values', async () => {
+      await storage.setItem(STORAGE_KEYS.cards, {
+        'two-sum': { slug: 'two-sum', domain: 'leetcode.cn' },
+      });
+
+      await runMigrations(migrations);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
+      expect(cards!['two-sum'].domain).toBe('leetcode.cn');
+    });
+
+    it('should handle empty or missing cards storage', async () => {
+      await runMigrations(migrations);
+
+      expect(await getCurrentSchemaVersion()).toBe(1);
     });
   });
 });

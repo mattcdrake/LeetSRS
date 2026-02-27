@@ -44,20 +44,20 @@ export async function runMigrations(migrations: Migration[]): Promise<void> {
 }
 
 export const migrations: Migration[] = [
-  // Example migration (version 1):
-  // {
-  //   version: 1,
-  //   description: 'Add difficulty field to cards',
-  //   migrate: async () => {
-  //     const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
-  //     if (cards) {
-  //       for (const cardId in cards) {
-  //         if (!cards[cardId].difficulty) {
-  //           cards[cardId].difficulty = 'medium';
-  //         }
-  //       }
-  //       await storage.setItem(STORAGE_KEYS.cards, cards);
-  //     }
-  //   }
-  // }
+  {
+    version: 1,
+    description: 'Add domain field to existing cards, defaulting to leetcode.com',
+    migrate: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
+      if (cards) {
+        for (const slug in cards) {
+          if (!cards[slug].domain) {
+            cards[slug].domain = 'leetcode.com';
+          }
+        }
+        await storage.setItem(STORAGE_KEYS.cards, cards);
+      }
+    },
+  },
 ];

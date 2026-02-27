@@ -56,6 +56,7 @@ export function deserializeCard(stored: StoredCard): Card {
   const { due, last_review, ...rest } = stored.fsrs;
   return {
     ...stored,
+    domain: stored.domain ?? 'leetcode.com',
     createdAt: new Date(stored.createdAt),
     fsrs: {
       ...rest,
