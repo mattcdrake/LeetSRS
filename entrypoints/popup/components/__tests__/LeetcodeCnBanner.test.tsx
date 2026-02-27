@@ -3,9 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { LeetcodeCnBanner } from '../LeetcodeCnBanner';
-
-const DISMISS_KEY = 'leetsrs:leetcodeCnBannerDismissed';
+import { LeetcodeCnBanner, DISMISS_KEY } from '../LeetcodeCnBanner';
 
 const mockContains = vi.fn<() => Promise<boolean>>();
 const mockRequest = vi.fn<() => Promise<boolean>>();

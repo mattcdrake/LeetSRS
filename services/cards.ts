@@ -27,7 +27,8 @@ export function formatLocalDate(date: Date, dayStartHour: number = 0): string {
   return `${year}-${month}-${day}`;
 }
 
-export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs'> {
+export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs' | 'domain'> {
+  domain?: Card['domain'];
   createdAt: number;
   fsrs: Omit<FsrsCard, 'due' | 'last_review'> & {
     due: number;

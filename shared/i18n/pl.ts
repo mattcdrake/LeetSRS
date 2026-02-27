@@ -75,6 +75,7 @@ const pl: Translations = {
     leetcodeCnBanner: {
       message: 'Używasz leetcode.cn? Włącz obsługę, aby dodawać zadania.',
       enable: 'Włącz',
+      dismiss: 'Odrzuć',
     },
   },
 

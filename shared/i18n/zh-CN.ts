@@ -67,6 +67,7 @@ const zhCN: Translations = {
     leetcodeCnBanner: {
       message: '使用力扣中国站？启用支持以添加题目。',
       enable: '启用',
+      dismiss: '关闭',
     },
   },
 

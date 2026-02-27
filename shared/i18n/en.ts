@@ -73,6 +73,7 @@ const en = {
     leetcodeCnBanner: {
       message: 'Using leetcode.cn? Enable support to add problems.',
       enable: 'Enable',
+      dismiss: 'Dismiss',
     },
   },
 

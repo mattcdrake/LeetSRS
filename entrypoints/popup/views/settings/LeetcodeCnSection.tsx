@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { browser } from 'wxt/browser';
 import { useI18n } from '../../contexts/I18nContext';
 
 const LEETCODE_CN_ORIGIN = '*://*.leetcode.cn/*';

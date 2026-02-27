@@ -67,6 +67,7 @@ const hi: Translations = {
     leetcodeCnBanner: {
       message: 'leetcode.cn यूज़ कर रहे हैं? प्रॉब्लम्स जोड़ने के लिए सपोर्ट ऑन करें।',
       enable: 'ऑन करें',
+      dismiss: 'खारिज करें',
     },
   },
   // Home view - Stats bar
