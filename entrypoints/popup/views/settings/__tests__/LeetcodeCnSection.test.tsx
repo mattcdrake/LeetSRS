@@ -7,16 +7,26 @@ import { LeetcodeCnSection } from '../LeetcodeCnSection';
 
 const mockContains = vi.fn<() => Promise<boolean>>();
 const mockRequest = vi.fn<() => Promise<boolean>>();
-const mockRemove = vi.fn<() => Promise<boolean>>();
 
 beforeEach(() => {
   browser.permissions.contains = mockContains;
   browser.permissions.request = mockRequest;
-  browser.permissions.remove = mockRemove;
+  mockContains.mockReset();
+  mockRequest.mockReset();
 });
 
 describe('LeetcodeCnSection', () => {
-  it('renders with toggle off when permission not granted', async () => {
+  it('renders nothing when permission already granted', async () => {
+    mockContains.mockResolvedValue(true);
+
+    await act(async () => {
+      render(<LeetcodeCnSection />);
+    });
+
+    expect(screen.queryByText('LeetCode China')).not.toBeInTheDocument();
+  });
+
+  it('renders enable button when permission not granted', async () => {
     mockContains.mockResolvedValue(false);
 
     await act(async () => {
@@ -24,20 +34,11 @@ describe('LeetcodeCnSection', () => {
     });
 
     expect(screen.getByText('LeetCode China')).toBeInTheDocument();
-    expect(screen.getByRole('switch')).not.toBeChecked();
+    expect(screen.getByRole('button', { name: /enable/i })).toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
 
-  it('renders with toggle on when permission already granted', async () => {
-    mockContains.mockResolvedValue(true);
-
-    await act(async () => {
-      render(<LeetcodeCnSection />);
-    });
-
-    expect(screen.getByRole('switch')).toBeChecked();
-  });
-
-  it('calls permissions.request when toggled on', async () => {
+  it('requests permission and hides when Enable clicked', async () => {
     mockContains.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
     mockRequest.mockResolvedValue(true);
 
@@ -46,31 +47,14 @@ describe('LeetcodeCnSection', () => {
     });
 
     await act(async () => {
-      screen.getByRole('switch').click();
+      screen.getByRole('button', { name: /enable/i }).click();
     });
 
     expect(mockRequest).toHaveBeenCalledWith({ origins: ['*://*.leetcode.cn/*'] });
-    expect(screen.getByRole('switch')).toBeChecked();
+    expect(screen.queryByText('LeetCode China')).not.toBeInTheDocument();
   });
 
-  it('calls permissions.remove when toggled off', async () => {
-    mockContains.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-    mockRemove.mockResolvedValue(true);
-
-    await act(async () => {
-      render(<LeetcodeCnSection />);
-    });
-
-    await act(async () => {
-      screen.getByRole('switch').click();
-    });
-
-    expect(mockRemove).toHaveBeenCalledWith({ origins: ['*://*.leetcode.cn/*'] });
-    expect(screen.getByRole('switch')).not.toBeChecked();
-  });
-
-  it('handles user denying the permission prompt', async () => {
-    // Initially off, user denies so still off after re-check
+  it('stays visible when user denies the permission prompt', async () => {
     mockContains.mockResolvedValue(false);
     mockRequest.mockResolvedValue(false);
 
@@ -79,10 +63,10 @@ describe('LeetcodeCnSection', () => {
     });
 
     await act(async () => {
-      screen.getByRole('switch').click();
+      screen.getByRole('button', { name: /enable/i }).click();
     });
 
     expect(mockRequest).toHaveBeenCalled();
-    expect(screen.getByRole('switch')).not.toBeChecked();
+    expect(screen.getByText('LeetCode China')).toBeInTheDocument();
   });
 });

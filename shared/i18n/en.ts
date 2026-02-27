@@ -170,7 +170,7 @@ const en = {
     leetcodeCn: {
       title: 'LeetCode China',
       description: 'Enable support for leetcode.cn (力扣). Requires additional browser permission.',
-      enable: 'Enable leetcode.cn support',
+      enable: 'Enable',
     },
 
     // Data section

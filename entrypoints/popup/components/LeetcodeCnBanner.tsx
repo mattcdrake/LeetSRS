@@ -32,7 +32,7 @@ export function LeetcodeCnBanner() {
   if (!visible) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+    <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
       <span className="flex-1">{t.home.leetcodeCnBanner.message}</span>
       <button
         onClick={enable}

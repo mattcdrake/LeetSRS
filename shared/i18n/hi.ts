@@ -152,7 +152,7 @@ const hi: Translations = {
     leetcodeCn: {
       title: 'LeetCode चीन',
       description: 'leetcode.cn (力扣) के लिए सपोर्ट ऑन करें। अतिरिक्त ब्राउज़र अनुमति आवश्यक है।',
-      enable: 'leetcode.cn सपोर्ट ऑन करें',
+      enable: 'ऑन करें',
     },
     // Data section
     data: {

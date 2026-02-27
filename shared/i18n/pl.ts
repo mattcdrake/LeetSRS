@@ -172,7 +172,7 @@ const pl: Translations = {
     leetcodeCn: {
       title: 'LeetCode Chiny',
       description: 'Włącz obsługę leetcode.cn (力扣). Wymaga dodatkowego uprawnienia przeglądarki.',
-      enable: 'Włącz obsługę leetcode.cn',
+      enable: 'Włącz',
     },
 
     // Data section
