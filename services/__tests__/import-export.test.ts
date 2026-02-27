@@ -156,7 +156,7 @@ describe('import-export', () => {
             difficulty: 'Easy',
             createdAt: Date.now(),
             paused: false,
-          domain: 'leetcode.com',
+            domain: 'leetcode.com',
             fsrs: {
               ...createEmptyCard(),
               due: Date.now(),

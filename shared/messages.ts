@@ -60,7 +60,14 @@ export const MessageType = {
 // Message request types as discriminated union
 export type MessageRequest =
   | { type: typeof MessageType.PING }
-  | { type: typeof MessageType.ADD_CARD; slug: string; name: string; leetcodeId: string; difficulty: Difficulty; domain: LeetcodeDomain }
+  | {
+      type: typeof MessageType.ADD_CARD;
+      slug: string;
+      name: string;
+      leetcodeId: string;
+      difficulty: Difficulty;
+      domain: LeetcodeDomain;
+    }
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
   | { type: typeof MessageType.DELAY_CARD; slug: string; days: number }

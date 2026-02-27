@@ -1,4 +1,11 @@
-import { createLeetSrsButton, extractProblemData, getCurrentDomain, RatingMenu, setupLeetcodeAutoReset, Tooltip } from '@/utils/content';
+import {
+  createLeetSrsButton,
+  extractProblemData,
+  getCurrentDomain,
+  RatingMenu,
+  setupLeetcodeAutoReset,
+  Tooltip,
+} from '@/utils/content';
 import { getServiceTranslations } from '@/services/i18n';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';

@@ -65,7 +65,13 @@ export function deserializeCard(stored: StoredCard): Card {
   };
 }
 
-function createCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty, domain: LeetcodeDomain): Card {
+function createCard(
+  slug: string,
+  name: string,
+  leetcodeId: string,
+  difficulty: Difficulty,
+  domain: LeetcodeDomain
+): Card {
   return {
     id: crypto.randomUUID(),
     slug,
@@ -79,7 +85,13 @@ function createCard(slug: string, name: string, leetcodeId: string, difficulty: 
   };
 }
 
-export async function addCard(slug: string, name: string, leetcodeId: string, difficulty: Difficulty, domain: LeetcodeDomain): Promise<Card> {
+export async function addCard(
+  slug: string,
+  name: string,
+  leetcodeId: string,
+  difficulty: Difficulty,
+  domain: LeetcodeDomain
+): Promise<Card> {
   const cards = await getCards();
   if (slug in cards) {
     return deserializeCard(cards[slug]);

@@ -16,6 +16,7 @@ export const createMockCard = (state: State, overrides: Partial<Card> = {}): Car
     name: 'Mock Problem',
     leetcodeId: '1',
     difficulty: 'Easy',
+    domain: 'leetcode.com',
     createdAt: now,
     fsrs: {
       state,

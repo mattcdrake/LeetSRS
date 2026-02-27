@@ -296,7 +296,7 @@ describe('getAllCards', () => {
         last_review: emptyFsrs.last_review?.getTime(),
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     await storage.setItem(STORAGE_KEYS.cards, { 'test-problem': storedCard });
@@ -838,7 +838,7 @@ describe('isDueToday', () => {
       createdAt: new Date(),
       fsrs: createEmptyCard(), // createEmptyCard sets due date to now
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(newCard)).toBe(true);
@@ -861,7 +861,7 @@ describe('isDueToday', () => {
         due: dueToday,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(true);
@@ -884,7 +884,7 @@ describe('isDueToday', () => {
         due: dueToday,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(true);
@@ -907,7 +907,7 @@ describe('isDueToday', () => {
         due: yesterday,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(true);
@@ -930,7 +930,7 @@ describe('isDueToday', () => {
         due: tomorrow,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(false);
@@ -953,7 +953,7 @@ describe('isDueToday', () => {
         due: futureDate,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(false);
@@ -976,7 +976,7 @@ describe('isDueToday', () => {
         due: midnightToday,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(true);
@@ -999,7 +999,7 @@ describe('isDueToday', () => {
         due: endOfToday,
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(card)).toBe(true);
@@ -1059,7 +1059,7 @@ describe('isDueToday', () => {
         due: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0),
       },
       paused: false,
-        domain: 'leetcode.com',
+      domain: 'leetcode.com',
     };
 
     expect(isDueByDate(cardDueToday)).toBe(true);

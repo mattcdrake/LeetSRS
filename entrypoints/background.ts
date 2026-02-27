@@ -108,7 +108,9 @@ export default defineBackground(() => {
         return 'PONG' as const;
 
       case MessageType.ADD_CARD: {
-        return handleDataUpdate(() => addCard(request.slug, request.name, request.leetcodeId, request.difficulty, request.domain));
+        return handleDataUpdate(() =>
+          addCard(request.slug, request.name, request.leetcodeId, request.difficulty, request.domain)
+        );
       }
 
       case MessageType.GET_ALL_CARDS:
