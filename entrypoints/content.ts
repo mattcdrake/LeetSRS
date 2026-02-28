@@ -1,10 +1,17 @@
-import { createLeetSrsButton, extractProblemData, RatingMenu, setupLeetcodeAutoReset, Tooltip } from '@/utils/content';
+import {
+  createLeetSrsButton,
+  extractProblemData,
+  getCurrentDomain,
+  RatingMenu,
+  setupLeetcodeAutoReset,
+  Tooltip,
+} from '@/utils/content';
 import { getServiceTranslations } from '@/services/i18n';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
 
 export default defineContentScript({
-  matches: ['*://*.leetcode.com/*'],
+  matches: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
   runAt: 'document_idle',
   async main() {
     // Wake up service worker so it's ready when user interacts
@@ -66,6 +73,7 @@ function setupLeetSrsButton() {
             rating: rating as Grade,
             leetcodeId: problemData.questionFrontendId,
             difficulty: problemData.difficulty,
+            domain: getCurrentDomain(),
           });
           console.log(`${label} - Card rated:`, result);
           return result;
@@ -79,6 +87,7 @@ function setupLeetSrsButton() {
             name: problemData.title,
             leetcodeId: problemData.questionFrontendId,
             difficulty: problemData.difficulty,
+            domain: getCurrentDomain(),
           });
           console.log('Add without rating - Card added:', result);
           return result;

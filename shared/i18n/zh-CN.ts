@@ -64,6 +64,11 @@ const zhCN: Translations = {
     noCardsToReview: '没有需要复习的卡片！',
     addProblemsInstructions: '在 LeetCode 上使用',
     addProblemsButton: '「提交」旁边的按钮添加题目。',
+    leetcodeCnBanner: {
+      message: '使用力扣中国站？启用支持以添加题目。',
+      enable: '启用',
+      dismiss: '关闭',
+    },
   },
 
   statsBar: {
@@ -144,6 +149,12 @@ const zhCN: Translations = {
       title: '题目自动重置',
       description: '打开 LeetCode 题目时自动重置代码。',
       enableAutoReset: '启用自动重置',
+    },
+
+    leetcodeCn: {
+      title: '力扣中国',
+      description: '启用 leetcode.cn（力扣）支持。需要额外的浏览器权限。',
+      enable: '启用',
     },
 
     data: {

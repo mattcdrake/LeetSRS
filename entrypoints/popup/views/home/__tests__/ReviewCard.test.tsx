@@ -12,11 +12,12 @@ import { createTestWrapper } from '@/test/utils/test-wrapper';
 
 describe('ReviewCard', () => {
   const mockOnRate = vi.fn();
-  const mockCard: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'> = {
+  const mockCard: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty' | 'domain'> = {
     slug: 'two-sum',
     leetcodeId: '1',
     name: 'Two Sum',
     difficulty: 'Easy',
+    domain: 'leetcode.com',
   };
 
   const { wrapper: TestWrapper } = createTestWrapper();

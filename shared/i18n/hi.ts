@@ -64,6 +64,11 @@ const hi: Translations = {
     noCardsToReview: 'रिव्यु के लिए कोई कार्ड नहीं!',
     addProblemsInstructions: 'LeetCode पर प्रॉब्लम्स जोड़ें',
     addProblemsButton: "'Submit' के बगल वाले बटन से।",
+    leetcodeCnBanner: {
+      message: 'leetcode.cn यूज़ कर रहे हैं? प्रॉब्लम्स जोड़ने के लिए सपोर्ट ऑन करें।',
+      enable: 'ऑन करें',
+      dismiss: 'खारिज करें',
+    },
   },
   // Home view - Stats bar
   statsBar: {
@@ -143,6 +148,12 @@ const hi: Translations = {
       title: 'प्रॉब्लम ऑटो रीसेट',
       description: 'LeetCode प्रॉब्लम खोलने पर कोड ऑटोमैटिकली रीसेट करें।',
       enableAutoReset: 'ऑटो रीसेट ऑन करें',
+    },
+
+    leetcodeCn: {
+      title: 'LeetCode चीन',
+      description: 'leetcode.cn (力扣) के लिए सपोर्ट ऑन करें। अतिरिक्त ब्राउज़र अनुमति आवश्यक है।',
+      enable: 'ऑन करें',
     },
     // Data section
     data: {

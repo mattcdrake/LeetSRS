@@ -3,6 +3,7 @@ import { useI18n } from '../../contexts/I18nContext';
 import { LanguageSection } from './LanguageSection';
 import { AppearanceSection } from './AppearanceSection';
 import { ProblemAutoClearSection } from './ProblemAutoClearSection';
+import { LeetcodeCnSection } from './LeetcodeCnSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';
 import { GistSyncSection } from './GistSyncSection';
 import { DataSection } from './DataSection';
@@ -18,6 +19,7 @@ export function SettingsView() {
       <ReviewSettingsSection />
       <GistSyncSection />
       <DataSection />
+      <LeetcodeCnSection />
       <AboutSection />
     </ViewLayout>
   );

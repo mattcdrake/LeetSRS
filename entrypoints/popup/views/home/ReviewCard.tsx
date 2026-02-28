@@ -7,7 +7,7 @@ import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
-  card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty'>;
+  card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty' | 'domain'>;
   onRate: (rating: Grade) => void;
   isProcessing?: boolean;
 };
@@ -48,7 +48,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
 
       <div className="flex justify-center pb-3 -mt-1 text-center">
         <a
-          href={`https://leetcode.com/problems/${card.slug}/description/`}
+          href={`https://${card.domain}/problems/${card.slug}/description/`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-lg font-semibold text-primary group"

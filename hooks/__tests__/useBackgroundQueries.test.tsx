@@ -54,6 +54,7 @@ describe('useRateCardMutation', () => {
       rating: Rating.Good as Grade,
       leetcodeId: '1',
       difficulty: 'Easy' as const,
+      domain: 'leetcode.com' as const,
     };
 
     const mockResponse: Card = {
@@ -62,6 +63,7 @@ describe('useRateCardMutation', () => {
       name: mockCard.name,
       leetcodeId: mockCard.leetcodeId,
       difficulty: mockCard.difficulty,
+      domain: 'leetcode.com',
       createdAt: new Date(),
       fsrs: createEmptyCard(),
       paused: false,
@@ -83,6 +85,7 @@ describe('useRateCardMutation', () => {
         rating: Rating.Good,
         leetcodeId: '1',
         difficulty: 'Easy',
+        domain: 'leetcode.com',
       });
     });
   });
@@ -255,6 +258,7 @@ describe('usePauseCardMutation', () => {
       name: 'Two Sum',
       leetcodeId: '1',
       difficulty: 'Easy',
+      domain: 'leetcode.com',
       createdAt: new Date(),
       fsrs: createEmptyCard(),
       paused: true,
@@ -284,6 +288,7 @@ describe('usePauseCardMutation', () => {
       name: 'Three Sum',
       leetcodeId: '15',
       difficulty: 'Medium',
+      domain: 'leetcode.com',
       createdAt: new Date(),
       fsrs: createEmptyCard(),
       paused: false,
@@ -313,6 +318,7 @@ describe('usePauseCardMutation', () => {
       name: 'Test Problem',
       leetcodeId: '999',
       difficulty: 'Hard',
+      domain: 'leetcode.com',
       createdAt: new Date(),
       fsrs: createEmptyCard(),
       paused: true,

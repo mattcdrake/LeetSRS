@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
-import type { Difficulty, Card } from '@/shared/cards';
+import type { Difficulty, Card, LeetcodeDomain } from '@/shared/cards';
 import type { Theme, Language } from '@/shared/settings';
 import type { GistSyncConfig } from '@/shared/gist-sync';
 
@@ -118,12 +118,14 @@ export function useAddCardMutation() {
       name,
       leetcodeId,
       difficulty,
+      domain,
     }: {
       slug: string;
       name: string;
       leetcodeId: string;
       difficulty: Difficulty;
-    }) => sendMessage({ type: MessageType.ADD_CARD, slug, name, leetcodeId, difficulty }),
+      domain: LeetcodeDomain;
+    }) => sendMessage({ type: MessageType.ADD_CARD, slug, name, leetcodeId, difficulty, domain }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
@@ -155,10 +157,11 @@ export function useRateCardMutation() {
       rating: Grade;
       leetcodeId: string;
       difficulty: Difficulty;
+      domain: LeetcodeDomain;
     }
   >({
-    mutationFn: ({ slug, name, rating, leetcodeId, difficulty }) =>
-      sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty }),
+    mutationFn: ({ slug, name, rating, leetcodeId, difficulty, domain }) =>
+      sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty, domain }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });

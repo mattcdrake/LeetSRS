@@ -72,6 +72,11 @@ const pl: Translations = {
     noCardsToReview: 'Brak kart do powtórki!',
     addProblemsInstructions: 'Dodawaj zadania na LeetCode za pomocą',
     addProblemsButton: "przycisku obok 'Submit'.",
+    leetcodeCnBanner: {
+      message: 'Używasz leetcode.cn? Włącz obsługę, aby dodawać zadania.',
+      enable: 'Włącz',
+      dismiss: 'Odrzuć',
+    },
   },
 
   // Home view - Stats bar
@@ -163,6 +168,12 @@ const pl: Translations = {
       title: 'Automatyczny reset zadania',
       description: 'Automatycznie resetuj kod przy otwieraniu zadania na LeetCode.',
       enableAutoReset: 'Włącz automatyczny reset',
+    },
+
+    leetcodeCn: {
+      title: 'LeetCode Chiny',
+      description: 'Włącz obsługę leetcode.cn (力扣). Wymaga dodatkowego uprawnienia przeglądarki.',
+      enable: 'Włącz',
     },
 
     // Data section

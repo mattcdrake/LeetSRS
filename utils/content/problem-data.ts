@@ -1,4 +1,5 @@
 import type { ProblemData } from '@/shared/problem-data';
+import { getCurrentDomain, getGraphQLUrl } from './domain';
 // Cache to avoid redundant requests
 let cachedData: { slug: string; data: ProblemData } | null = null;
 
@@ -60,6 +61,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData 
             questionId
             questionFrontendId
             title
+            translatedTitle
             titleSlug
             difficulty
           }
@@ -84,7 +86,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData 
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch('https://leetcode.com/graphql', {
+    const response = await fetch(getGraphQLUrl(), {
       method: 'POST',
       headers,
       body: JSON.stringify(graphqlQuery),
@@ -95,9 +97,10 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData 
       const question = data?.data?.question;
 
       if (question) {
+        const useTranslated = getCurrentDomain() === 'leetcode.cn' && question.translatedTitle;
         return {
           difficulty: question.difficulty as ProblemData['difficulty'],
-          title: question.title,
+          title: useTranslated ? question.translatedTitle : question.title,
           titleSlug: question.titleSlug,
           questionFrontendId: question.questionFrontendId,
         };

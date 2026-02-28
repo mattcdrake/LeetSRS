@@ -70,6 +70,7 @@ export function ReviewQueue() {
           rating,
           leetcodeId: currentCard.leetcodeId,
           difficulty: currentCard.difficulty,
+          domain: currentCard.domain,
         }),
       {
         getSlideDirection: (result) => (result.shouldRequeue ? 'left' : 'right'),

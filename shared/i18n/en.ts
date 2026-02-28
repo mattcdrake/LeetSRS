@@ -70,6 +70,11 @@ const en = {
     noCardsToReview: 'No cards to review!',
     addProblemsInstructions: 'Add problems on LeetCode using the',
     addProblemsButton: "button next to 'Submit'.",
+    leetcodeCnBanner: {
+      message: 'Using leetcode.cn? Enable support to add problems.',
+      enable: 'Enable',
+      dismiss: 'Dismiss',
+    },
   },
 
   // Home view - Stats bar
@@ -161,6 +166,12 @@ const en = {
       title: 'Problem Auto Reset',
       description: 'Automatically reset code when opening a LeetCode problem.',
       enableAutoReset: 'Enable auto reset',
+    },
+
+    leetcodeCn: {
+      title: 'LeetCode China',
+      description: 'Enable support for leetcode.cn (力扣). Requires additional browser permission.',
+      enable: 'Enable',
     },
 
     // Data section

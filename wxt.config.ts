@@ -14,6 +14,7 @@ export default defineConfig({
     default_locale: 'en',
     permissions: ['storage', 'alarms'],
     host_permissions: ['*://*.leetcode.com/*'],
+    optional_host_permissions: ['*://*.leetcode.cn/*'],
   },
   vite: () => ({
     plugins: [tailwindcss()],

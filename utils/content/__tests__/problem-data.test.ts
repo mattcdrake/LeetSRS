@@ -39,7 +39,7 @@ describe('extractProblemData', () => {
   it('should fetch problem data successfully', async () => {
     // Mock window.location with a problem URL
     Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/' },
+      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
@@ -71,7 +71,7 @@ describe('extractProblemData', () => {
   it('should return cached data for same slug', async () => {
     // Mock window.location
     Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/' },
+      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
@@ -103,7 +103,7 @@ describe('extractProblemData', () => {
   it('should handle fetch errors gracefully', async () => {
     // Mock window.location
     Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/' },
+      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
@@ -117,7 +117,7 @@ describe('extractProblemData', () => {
   it('should handle non-ok response', async () => {
     // Mock window.location
     Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/' },
+      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 

@@ -279,6 +279,7 @@ describe('ReviewQueue', () => {
           rating: Rating.Good,
           leetcodeId: '1',
           difficulty: 'Easy',
+          domain: 'leetcode.com',
         });
       });
     });
