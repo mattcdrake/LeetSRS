@@ -2,6 +2,7 @@ import { ViewLayout } from '../../components/ViewLayout';
 import { StatsBar } from './StatsBar';
 import { ReviewQueue } from './ReviewQueue';
 import { StreakCounter } from '../../components/StreakCounter';
+import { LeetcodeCnBanner } from '../../components/LeetcodeCnBanner';
 
 export function HomeView() {
   return (
@@ -13,6 +14,7 @@ export function HomeView() {
         </div>
       }
     >
+      <LeetcodeCnBanner />
       <ReviewQueue />
     </ViewLayout>
   );
