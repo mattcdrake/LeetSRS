@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ReviewCard } from './ReviewCard';
 import { NotesSection } from './NotesSection';
 import { ActionsSection } from './ActionsSection';
@@ -25,6 +25,13 @@ export function ReviewQueue() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+    };
+  }, []);
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
@@ -47,7 +54,8 @@ export function ReviewQueue() {
       }
 
       const animationDelay = animationsEnabled ? 400 : 0;
-      setTimeout(() => {
+      animationTimerRef.current = setTimeout(() => {
+        animationTimerRef.current = null;
         setSlideDirection(null);
         setIsProcessing(false);
         setAnimatingCard(null);
