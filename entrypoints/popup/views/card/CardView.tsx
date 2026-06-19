@@ -196,13 +196,13 @@ function CardItem({
           >
             <FaArrowUpRightFromSquare className="text-[10px]" />
           </a>
-          <div
-            className="flex-1 flex items-center justify-center hover:bg-tertiary text-secondary hover:text-primary transition-colors cursor-pointer"
-            onClick={onToggle}
-            aria-hidden="true"
+          <Button
+            className="flex-1 flex items-center justify-center hover:bg-tertiary text-secondary hover:text-primary transition-colors focus:outline-none"
+            onPress={onToggle}
+            aria-label="Toggle details"
           >
             <span className={`text-[10px] transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
-          </div>
+          </Button>
         </div>
       </div>
       {isExpanded && (

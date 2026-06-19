@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useReviewLogsQuery, useLanguageQuery } from '@/hooks/useBackgroundQueries';
+import { useState, useEffect } from 'react';
+import { useReviewLogsQuery, useLanguageQuery, useDayStartHourQuery } from '@/hooks/useBackgroundQueries';
 import { useI18n } from '../../contexts/I18nContext';
 import { FaChevronLeft, FaChevronRight, FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import { Difficulty } from '@/shared/cards';
@@ -29,14 +29,29 @@ export function CalendarSection() {
   const t = useI18n();
   const { data: language = 'en' } = useLanguageQuery();
   const { data: reviewLogs = {} } = useReviewLogsQuery();
+  const { data: dayStartHour = 0 } = useDayStartHourQuery();
 
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [hasAdjusted, setHasAdjusted] = useState(false);
+
+  useEffect(() => {
+    if (dayStartHour && !hasAdjusted) {
+      const adjusted = new Date();
+      adjusted.setHours(adjusted.getHours() - dayStartHour);
+      setSelectedDate(adjusted);
+      setViewDate(adjusted);
+      setHasAdjusted(true);
+    }
+  }, [dayStartHour, hasAdjusted]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth(); // 0-indexed
 
   const today = new Date();
+  if (dayStartHour) {
+    today.setHours(today.getHours() - dayStartHour);
+  }
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
 
   const canGoNext = !isCurrentMonth;

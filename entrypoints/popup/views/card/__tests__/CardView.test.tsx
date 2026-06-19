@@ -35,6 +35,22 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 };
 
 describe('CardView', () => {
+  const getCardButtons = () =>
+    screen.getAllByRole('button').filter((btn) => {
+      const label = btn.getAttribute('aria-label');
+      return (
+        !label ||
+        (!label.includes('Expand') &&
+          !label.includes('Collapse') &&
+          !label.includes('Toggle') &&
+          !label.includes('Pause') &&
+          !label.includes('Delete') &&
+          !label.includes('Confirm'))
+      );
+    });
+
+  const getCardButton = () => getCardButtons()[0];
+
   it('should render loading state', () => {
     mockedUseCardsQuery.mockReturnValue(
       createQueryMock<Card[] | undefined>(undefined, {
@@ -68,7 +84,7 @@ describe('CardView', () => {
 
     renderWithQueryClient(<CardView />);
 
-    const cardElements = screen.getAllByRole('button');
+    const cardElements = getCardButtons();
     expect(within(cardElements[0]).getByText('#1')).toBeInTheDocument();
     expect(within(cardElements[0]).getByText('Problem 1')).toBeInTheDocument();
     expect(within(cardElements[1]).getByText('#42')).toBeInTheDocument();
@@ -163,7 +179,7 @@ describe('CardView', () => {
     expect(screen.queryByText('State:')).not.toBeInTheDocument();
 
     // Click to expand
-    const cardButton = screen.getByRole('button');
+    const cardButton = getCardButton();
     fireEvent.click(cardButton);
 
     // Stats should now be visible
@@ -194,7 +210,7 @@ describe('CardView', () => {
 
     renderWithQueryClient(<CardView />);
 
-    const cardButtons = screen.getAllByRole('button');
+    const cardButtons = getCardButtons();
 
     // Expand first card
     fireEvent.click(cardButtons[0]);
@@ -231,7 +247,7 @@ describe('CardView', () => {
     renderWithQueryClient(<CardView />);
 
     // Expand card
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(getCardButton());
 
     // Check that the dates are present (just check that they're formatted, not exact values due to timezone)
     const addedRow = screen.getByText('Added:').parentElement;
@@ -552,7 +568,7 @@ describe('CardView', () => {
       renderWithQueryClient(<CardView />);
 
       // Expand both cards
-      const cardButtons = screen.getAllByRole('button');
+      const cardButtons = getCardButtons();
       fireEvent.click(cardButtons[0]); // First card
       fireEvent.click(cardButtons[1]); // Second card
 
