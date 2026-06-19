@@ -4,6 +4,20 @@ import { storage } from '#imports';
 import { getAllCards, isDueByDate, formatLocalDate } from './cards';
 import { getDayStartHour } from './settings';
 import { DAILY_STATS_RETENTION_DAYS } from '@/shared/settings';
+import type { Difficulty, LeetcodeDomain } from '@/shared/cards';
+
+export interface ReviewLogEntry {
+  cardId: string;
+  slug: string;
+  name: string;
+  leetcodeId: string;
+  difficulty: Difficulty;
+  domain: LeetcodeDomain;
+  rating: Grade;
+  timestamp: number;
+}
+
+export type DailyReviewLogs = Record<string, ReviewLogEntry[]>;
 
 interface BaseStats {
   totalReviews: number;
@@ -237,4 +251,44 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
   }
 
   return result;
+}
+
+export async function getReviewLogs(): Promise<DailyReviewLogs> {
+  const logs = await storage.getItem<DailyReviewLogs>(STORAGE_KEYS.reviewLogs);
+  return logs ?? {};
+}
+
+export async function addReviewLog(
+  cardId: string,
+  slug: string,
+  name: string,
+  leetcodeId: string,
+  difficulty: Difficulty,
+  domain: LeetcodeDomain,
+  rating: Grade
+): Promise<void> {
+  const logs = await getReviewLogs();
+  const todayKey = await getTodayKey();
+
+  if (!logs[todayKey]) {
+    logs[todayKey] = [];
+  }
+
+  logs[todayKey].push({
+    cardId,
+    slug,
+    name,
+    leetcodeId,
+    difficulty,
+    domain,
+    rating,
+    timestamp: Date.now(),
+  });
+
+  await storage.setItem(STORAGE_KEYS.reviewLogs, logs);
+}
+
+export async function getReviewLogsForDate(date: string): Promise<ReviewLogEntry[]> {
+  const logs = await getReviewLogs();
+  return logs[date] ?? [];
 }

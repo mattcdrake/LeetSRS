@@ -129,6 +129,8 @@ const pl: Translations = {
   // Stats view
   statsView: {
     title: 'Statystyki',
+    calendarTitle: 'Kalendarz',
+    noReviewsOnDay: 'Brak przejrzanych zadań w tym dniu',
   },
 
   // Charts

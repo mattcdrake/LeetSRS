@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import type { Card, Difficulty, LeetcodeDomain } from '@/shared/cards';
 import type { Grade, State as FsrsState } from 'ts-fsrs';
-import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
+import type { DailyStats, UpcomingReviewStats, DailyReviewLogs } from '@/services/stats';
 import type { Note } from '@/shared/notes';
 import type { Theme, Language } from '@/shared/settings';
 import type {
@@ -44,6 +44,7 @@ export const MessageType = {
   GET_ALL_STATS: 'GET_ALL_STATS',
   GET_LAST_N_DAYS_STATS: 'GET_LAST_N_DAYS_STATS',
   GET_NEXT_N_DAYS_STATS: 'GET_NEXT_N_DAYS_STATS',
+  GET_REVIEW_LOGS: 'GET_REVIEW_LOGS',
   EXPORT_DATA: 'EXPORT_DATA',
   IMPORT_DATA: 'IMPORT_DATA',
   RESET_ALL_DATA: 'RESET_ALL_DATA',
@@ -104,6 +105,7 @@ export type MessageRequest =
   | { type: typeof MessageType.GET_ALL_STATS }
   | { type: typeof MessageType.GET_LAST_N_DAYS_STATS; days: number }
   | { type: typeof MessageType.GET_NEXT_N_DAYS_STATS; days: number }
+  | { type: typeof MessageType.GET_REVIEW_LOGS }
   | { type: typeof MessageType.EXPORT_DATA }
   | { type: typeof MessageType.IMPORT_DATA; jsonData: string }
   | { type: typeof MessageType.RESET_ALL_DATA }
@@ -148,6 +150,7 @@ export type MessageResponseMap = {
   [MessageType.GET_ALL_STATS]: DailyStats[];
   [MessageType.GET_LAST_N_DAYS_STATS]: DailyStats[];
   [MessageType.GET_NEXT_N_DAYS_STATS]: UpcomingReviewStats[];
+  [MessageType.GET_REVIEW_LOGS]: DailyReviewLogs;
   [MessageType.EXPORT_DATA]: string;
   [MessageType.IMPORT_DATA]: void;
   [MessageType.RESET_ALL_DATA]: void;

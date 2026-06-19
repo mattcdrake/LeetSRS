@@ -115,6 +115,8 @@ const hi: Translations = {
   // Stats view
   statsView: {
     title: 'स्टैट्स',
+    calendarTitle: 'कैलेंडर',
+    noReviewsOnDay: 'इस दिन कोई कार्य नहीं दोहराया गया',
   },
   // Charts
   charts: {

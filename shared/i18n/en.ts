@@ -127,6 +127,8 @@ const en = {
   // Stats view
   statsView: {
     title: 'Statistics',
+    calendarTitle: 'Calendar',
+    noReviewsOnDay: 'No tasks reviewed on this day',
   },
 
   // Charts

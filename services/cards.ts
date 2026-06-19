@@ -8,7 +8,7 @@ import {
 } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
-import { updateStats, getTodayStats } from './stats';
+import { updateStats, getTodayStats, addReviewLog } from './stats';
 import { deleteNote } from './notes';
 import { type Card, type Difficulty, type LeetcodeDomain } from '@/shared/cards';
 import { getMaxNewCardsPerDay, getDayStartHour } from './settings';
@@ -187,6 +187,7 @@ export async function rateCard(
 
   // Update stats tracking
   await updateStats(rating, isNewCard);
+  await addReviewLog(card.id, slug, name, card.leetcodeId, difficulty, domain, rating);
 
   const dayStartHour = await getDayStartHour();
   const shouldRequeue = isDueByDate(card, now, dayStartHour);

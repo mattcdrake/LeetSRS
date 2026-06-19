@@ -25,6 +25,7 @@ export const queryKeys = {
     cardState: ['stats', 'cardState'] as const,
     lastNDays: (days: number) => ['stats', 'lastNDays', days] as const,
     nextNDays: (days: number) => ['stats', 'nextNDays', days] as const,
+    reviewLogs: ['stats', 'reviewLogs'] as const,
   },
   // Settings related queries
   settings: {
@@ -97,6 +98,13 @@ export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: queryKeys.stats.nextNDays(days),
     queryFn: () => sendMessage({ type: MessageType.GET_NEXT_N_DAYS_STATS, days }),
+  });
+}
+
+export function useReviewLogsQuery() {
+  return useQuery({
+    queryKey: queryKeys.stats.reviewLogs,
+    queryFn: () => sendMessage({ type: MessageType.GET_REVIEW_LOGS }),
   });
 }
 

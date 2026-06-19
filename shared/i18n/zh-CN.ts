@@ -115,6 +115,8 @@ const zhCN: Translations = {
 
   statsView: {
     title: '统计',
+    calendarTitle: '日历',
+    noReviewsOnDay: '这一天没有复习的任务',
   },
 
   charts: {

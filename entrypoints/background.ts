@@ -7,7 +7,14 @@ import {
   rateCard,
   getReviewQueue,
 } from '@/services/cards';
-import { getTodayStats, getCardStateStats, getAllStats, getLastNDaysStats, getNextNDaysStats } from '@/services/stats';
+import {
+  getTodayStats,
+  getCardStateStats,
+  getAllStats,
+  getLastNDaysStats,
+  getNextNDaysStats,
+  getReviewLogs,
+} from '@/services/stats';
 import { getNote, saveNote, deleteNote } from '@/services/notes';
 import {
   getMaxNewCardsPerDay,
@@ -210,6 +217,9 @@ export default defineBackground(() => {
 
       case MessageType.GET_NEXT_N_DAYS_STATS:
         return await getNextNDaysStats(request.days);
+
+      case MessageType.GET_REVIEW_LOGS:
+        return await getReviewLogs();
 
       case MessageType.EXPORT_DATA:
         return await exportData();

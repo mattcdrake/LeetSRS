@@ -1246,11 +1246,12 @@ describe('getReviewQueue', () => {
     await rateCard('evening', 'Evening Card', Rating.Good, '5002', 'Medium', 'leetcode.com');
     await rateCard('midnight', 'Midnight Card', Rating.Good, '5003', 'Hard', 'leetcode.com');
 
-    // Set due times to various times today
+    // Set due times to various times today using local timezone constructor to avoid timezone overflows
+    const now = new Date();
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    cards!['morning'].fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
-    cards!['evening'].fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
-    cards!['midnight'].fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
+    cards!['morning'].fsrs.due = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).getTime();
+    cards!['evening'].fsrs.due = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0).getTime();
+    cards!['midnight'].fsrs.due = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
