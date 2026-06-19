@@ -100,6 +100,7 @@ const zhCN: Translations = {
     noCardsAdded: '还没有添加卡片。',
     noCardsMatchFilter: '没有匹配的卡片。',
     cardPausedTitle: '卡片已暂停',
+    openOnLeetCode: '在 LeetCode 上打开',
   },
 
   cardStats: {

@@ -100,6 +100,7 @@ const hi: Translations = {
     noCardsAdded: 'अभी तक कोई कार्ड नहीं जोड़ा गया।',
     noCardsMatchFilter: 'कोई कार्ड आपके फ़िल्टर से मैच नहीं करता।',
     cardPausedTitle: 'कार्ड पॉज़्ड है',
+    openOnLeetCode: 'LeetCode पर खोलें',
   },
   // Card stats labels
   cardStats: {

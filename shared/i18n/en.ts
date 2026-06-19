@@ -110,6 +110,7 @@ const en = {
     noCardsAdded: 'No cards added yet.',
     noCardsMatchFilter: 'No cards match your filter.',
     cardPausedTitle: 'Card is paused',
+    openOnLeetCode: 'Open on LeetCode',
   },
 
   // Card stats labels

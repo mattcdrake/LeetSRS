@@ -112,6 +112,7 @@ const pl: Translations = {
     noCardsAdded: 'Nie dodano jeszcze żadnych kart.',
     noCardsMatchFilter: 'Żadne karty nie pasują do filtra.',
     cardPausedTitle: 'Karta jest wstrzymana',
+    openOnLeetCode: 'Otwórz na LeetCode',
   },
 
   // Card stats labels

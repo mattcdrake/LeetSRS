@@ -115,6 +115,29 @@ describe('CardView', () => {
     expect(within(activeCard!).queryByTitle('Card is paused')).not.toBeInTheDocument();
   });
 
+  it('should render a link to open the problem on LeetCode', () => {
+    const card = createMockCard(State.New, {
+      name: 'Test Problem',
+      slug: 'test-problem',
+      leetcodeId: '42',
+      domain: 'leetcode.com',
+    });
+
+    mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+
+    renderWithQueryClient(<CardView />);
+
+    const link = screen.getByRole('link', { name: /Open on LeetCode/i });
+    expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/test-problem/description/');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // Test that clicking the link stops propagation and does not toggle expansion
+    expect(screen.queryByText('State:')).not.toBeInTheDocument();
+    fireEvent.click(link);
+    expect(screen.queryByText('State:')).not.toBeInTheDocument();
+  });
+
   it('should expand and collapse card details', () => {
     const card = createMockCard(State.Learning, {
       name: 'Test Problem',
