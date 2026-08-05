@@ -12,8 +12,7 @@ export interface GistSyncStatus {
 }
 
 export type SyncResult =
-  | { success: true; action: 'pushed' | 'pulled' | 'no-change'; timestamp: string }
-  | { success: false; error: string };
+  { success: true; action: 'pushed' | 'pulled' | 'no-change'; timestamp: string } | { success: false; error: string };
 
 export interface PatValidationResult {
   valid: boolean;

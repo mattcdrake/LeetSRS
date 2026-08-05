@@ -8,11 +8,11 @@ import {
   DEFAULT_DAY_START_HOUR,
   MIN_DAY_START_HOUR,
   MAX_DAY_START_HOUR,
-  Theme,
+  type Theme,
   DEFAULT_THEME,
   DEFAULT_AUTO_CLEAR_LEETCODE,
   DEFAULT_BADGE_ENABLED,
-  Language,
+  type Language,
 } from '@/shared/settings';
 
 export async function getMaxNewCardsPerDay(): Promise<number> {
