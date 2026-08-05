@@ -1,5 +1,5 @@
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
-import { Difficulty, type Card } from '@/shared/cards';
+import { type Difficulty, type Card } from '@/shared/cards';
 import { Rating } from 'ts-fsrs';
 import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
