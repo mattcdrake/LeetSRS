@@ -125,12 +125,15 @@ describe('setupLeetcodeAutoReset', () => {
 
     const resetButton = renderResetButton('class');
     const resetClick = vi.spyOn(resetButton, 'click');
+    const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
+    const confirmClick = vi.spyOn(confirmButton, 'click');
 
     dispose = setupLeetcodeAutoReset();
-    await vi.advanceTimersByTimeAsync(3000);
+    await vi.advanceTimersByTimeAsync(0);
 
     expect(resetClick).toHaveBeenCalledTimes(1);
     expect(staleClick).not.toHaveBeenCalled();
+    expect(confirmClick).toHaveBeenCalledTimes(1);
   });
 
   it('should do nothing when auto clear is disabled', async () => {
