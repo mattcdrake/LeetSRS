@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { getCurrentSchemaVersion, setSchemaVersion, runMigrations, migrations, type Migration } from '../migrations';
 import { STORAGE_KEYS } from '../storage-keys';

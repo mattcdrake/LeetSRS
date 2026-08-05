@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '../storage-keys';
 
@@ -10,16 +10,18 @@ const mockGistsCreate = vi.fn();
 const mockGistsUpdate = vi.fn();
 
 vi.mock('octokit', () => ({
-  Octokit: vi.fn(() => ({
-    rest: {
-      users: { getAuthenticated: mockGetAuthenticated },
-      gists: {
-        get: mockGistsGet,
-        create: mockGistsCreate,
-        update: mockGistsUpdate,
+  Octokit: vi.fn(function MockOctokit() {
+    return {
+      rest: {
+        users: { getAuthenticated: mockGetAuthenticated },
+        gists: {
+          get: mockGistsGet,
+          create: mockGistsCreate,
+          update: mockGistsUpdate,
+        },
       },
-    },
-  })),
+    };
+  }),
 }));
 
 // Mock import-export

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RatingMenu } from '../rating-menu';
+import { RatingMenu, type RatingCallback } from '../rating-menu';
 import { RATING_BUTTON_CONFIGS } from '../constants';
 import { translations } from '@/shared/i18n';
 
@@ -14,15 +14,15 @@ const RATING_BUTTONS = RATING_BUTTON_CONFIGS.map((config) => ({
 
 describe('RatingMenu', () => {
   let container: HTMLElement;
-  let onRate: ReturnType<typeof vi.fn>;
-  let onAddWithoutRating: ReturnType<typeof vi.fn>;
+  let onRate: RatingCallback;
+  let onAddWithoutRating: () => void;
   let menu: RatingMenu;
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    onRate = vi.fn();
-    onAddWithoutRating = vi.fn();
+    onRate = vi.fn<RatingCallback>();
+    onAddWithoutRating = vi.fn<() => void>();
     menu = new RatingMenu(container, onRate, onAddWithoutRating);
   });
 
