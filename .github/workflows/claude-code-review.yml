@@ -28,7 +28,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          track_progress: true
+          # track_progress only supports opened, synchronize, ready_for_review and
+          # reopened, so it has to be off for review_requested runs.
+          track_progress: ${{ github.event.action != 'review_requested' }}
 
           prompt: |
             REPO: ${{ github.repository }}

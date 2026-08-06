@@ -5,7 +5,19 @@ const RESET_CONFIRM_POLL_MS = 50;
 const RESET_TOAST_DURATION_MS = 2500;
 const SLUG_CHECK_INTERVAL_MS = 1000;
 
-export function setupLeetcodeAutoReset(): void {
+// LeetCode inlines FontAwesome icons. Current markup only carries the icon name
+// in the class list; older markup also set data-icon.
+const RESET_ICON_SELECTOR = 'svg.fa-arrow-rotate-left, svg[data-icon="arrow-rotate-left"]';
+const CLICKABLE_SELECTOR = 'button, [role="button"]';
+const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]';
+// The dialog is rendered by LeetCode, so match their labels rather than ours.
+const CONFIRM_LABELS = ['confirm', '确认', '确定'];
+
+/**
+ * Watches for problem navigation and resets the editor to the default code.
+ * Returns a disposer that stops watching.
+ */
+export function setupLeetcodeAutoReset(): () => void {
   let lastSlug: string | null = null;
   let lastResetSlug: string | null = null;
   let isResetting = false;
@@ -54,8 +66,11 @@ export function setupLeetcodeAutoReset(): void {
         return;
       }
 
+      // Snapshot the dialogs already on the page so we only ever confirm the one
+      // our own click opens.
+      const openModals = new Set(findModals());
       resetButton.click();
-      const confirmed = await waitForConfirmClick();
+      const confirmed = await waitForConfirmClick(openModals);
       if (confirmed) {
         showToast('Code reset to default');
       }
@@ -75,7 +90,13 @@ export function setupLeetcodeAutoReset(): void {
   observer.observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('popstate', checkForNavigation);
-  window.setInterval(checkForNavigation, SLUG_CHECK_INTERVAL_MS);
+  const intervalId = window.setInterval(checkForNavigation, SLUG_CHECK_INTERVAL_MS);
+
+  return () => {
+    observer.disconnect();
+    window.removeEventListener('popstate', checkForNavigation);
+    window.clearInterval(intervalId);
+  };
 }
 
 function getCurrentTitleSlug(): string | null {
@@ -89,20 +110,26 @@ function getCurrentTitleSlug(): string | null {
   return match ? match[1] : null;
 }
 
-function waitForConfirmClick(): Promise<boolean> {
+function waitForConfirmClick(openModals: Set<Element>): Promise<boolean> {
   return new Promise((resolve) => {
-    const existing = findConfirmButton();
-    if (existing) {
-      existing.click();
+    const clickConfirm = () => {
+      const button = findConfirmButton(openModals);
+      if (!button) {
+        return false;
+      }
+
+      button.click();
+      return true;
+    };
+
+    if (clickConfirm()) {
       resolve(true);
       return;
     }
 
     const start = Date.now();
     const interval = window.setInterval(() => {
-      const button = findConfirmButton();
-      if (button) {
-        button.click();
+      if (clickConfirm()) {
         window.clearInterval(interval);
         resolve(true);
         return;
@@ -116,17 +143,35 @@ function waitForConfirmClick(): Promise<boolean> {
   });
 }
 
-function findResetButton(): HTMLButtonElement | null {
-  const icon = document.querySelector("svg[data-icon='arrow-rotate-left']");
-  const button = icon?.closest('button');
-  return button instanceof HTMLButtonElement ? button : null;
+function findResetButton(): HTMLElement | null {
+  for (const icon of document.querySelectorAll(RESET_ICON_SELECTOR)) {
+    const button = icon.closest(CLICKABLE_SELECTOR);
+    if (button instanceof HTMLElement) {
+      return button;
+    }
+  }
+  return null;
 }
 
-function findConfirmButton(): HTMLButtonElement | null {
-  const buttons = document.querySelectorAll('button');
-  for (const button of buttons) {
-    if (button.textContent?.trim() === 'Confirm') {
-      return button instanceof HTMLButtonElement ? button : null;
+function findModals(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR));
+}
+
+function findConfirmButton(openModals: Set<Element>): HTMLElement | null {
+  for (const modal of findModals()) {
+    if (openModals.has(modal)) {
+      continue;
+    }
+
+    const buttons = Array.from(modal.querySelectorAll('button'));
+    const labelled = buttons.find((button) => CONFIRM_LABELS.includes(button.textContent?.trim().toLowerCase() ?? ''));
+    if (labelled) {
+      return labelled;
+    }
+
+    // Unknown locale: the dialog is a plain cancel/confirm pair, confirm last.
+    if (buttons.length === 2) {
+      return buttons[1];
     }
   }
   return null;
