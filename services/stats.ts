@@ -1,7 +1,7 @@
 import { type Grade, Rating, State as FsrsState } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
-import { getAllCards, isDueByDate, formatLocalDate } from './cards';
+import { getAllCards, formatLocalDate } from './cards';
 import { getDayStartHour } from './settings';
 import { DAILY_STATS_RETENTION_DAYS } from '@/shared/settings';
 
@@ -203,6 +203,7 @@ export interface UpcomingReviewStats {
 export async function getNextNDaysStats(days: number): Promise<UpcomingReviewStats[]> {
   const cards = await getAllCards();
   const result: UpcomingReviewStats[] = [];
+  const dateToIndex = new Map<string, number>();
   const today = new Date();
   const dayStartHour = await getDayStartHour();
 
@@ -210,25 +211,31 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() + i);
+    const dateKey = formatLocalDate(date, dayStartHour);
     result.push({
-      date: formatLocalDate(date, dayStartHour),
+      date: dateKey,
       count: 0,
     });
+    dateToIndex.set(dateKey, i);
   }
+
+  if (result.length === 0) return result;
+
+  const firstDate = result[0].date;
 
   // Count cards due on each day
   for (const card of cards) {
     if (card.paused) continue;
 
-    for (let i = 0; i < days; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(checkDate.getDate() + i);
+    const dueKey = formatLocalDate(new Date(card.fsrs.due), dayStartHour);
 
-      if (isDueByDate(card, checkDate, dayStartHour)) {
-        result[i].count++;
-        break;
-      }
+    if (dueKey <= firstDate) {
+      result[0].count++;
+      continue;
     }
+
+    const bucketIndex = dateToIndex.get(dueKey);
+    if (bucketIndex !== undefined) result[bucketIndex].count++;
   }
 
   return result;
