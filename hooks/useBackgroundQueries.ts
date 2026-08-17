@@ -21,7 +21,6 @@ export const queryKeys = {
   stats: {
     all: ['stats'] as const,
     today: ['stats', 'today'] as const,
-    allTime: ['stats', 'allTime'] as const,
     cardState: ['stats', 'cardState'] as const,
     lastNDays: (days: number) => ['stats', 'lastNDays', days] as const,
     nextNDays: (days: number) => ['stats', 'nextNDays', days] as const,
@@ -76,13 +75,6 @@ export function useCardStateStatsQuery() {
   return useQuery({
     queryKey: queryKeys.stats.cardState,
     queryFn: () => sendMessage({ type: MessageType.GET_CARD_STATE_STATS }),
-  });
-}
-
-export function useAllStatsQuery() {
-  return useQuery({
-    queryKey: queryKeys.stats.allTime,
-    queryFn: () => sendMessage({ type: MessageType.GET_ALL_STATS }),
   });
 }
 

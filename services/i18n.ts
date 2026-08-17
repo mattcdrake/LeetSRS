@@ -6,11 +6,9 @@ import { type Language } from '@/shared/settings';
 // Service translations - cached and updated via storage watcher
 const detectedLanguage = detectBrowserLanguage();
 let cachedTranslations: Translations = translations[detectedLanguage];
-let cachedLanguage: Language = detectedLanguage;
 
 function updateTranslations(language: Language | null | undefined): void {
   const validLanguage = language && language in translations ? language : detectBrowserLanguage();
-  cachedLanguage = validLanguage;
   cachedTranslations = translations[validLanguage];
 }
 
@@ -35,11 +33,4 @@ function updateTranslations(language: Language | null | undefined): void {
  */
 export function getServiceTranslations(): Translations {
   return cachedTranslations;
-}
-
-/**
- * Get the current cached language code.
- */
-export function getServiceLanguage(): Language {
-  return cachedLanguage;
 }

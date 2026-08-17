@@ -41,7 +41,6 @@ export const MessageType = {
   GET_LANGUAGE: 'GET_LANGUAGE',
   SET_LANGUAGE: 'SET_LANGUAGE',
   GET_CARD_STATE_STATS: 'GET_CARD_STATE_STATS',
-  GET_ALL_STATS: 'GET_ALL_STATS',
   GET_LAST_N_DAYS_STATS: 'GET_LAST_N_DAYS_STATS',
   GET_NEXT_N_DAYS_STATS: 'GET_NEXT_N_DAYS_STATS',
   EXPORT_DATA: 'EXPORT_DATA',
@@ -101,7 +100,6 @@ export type MessageRequest =
   | { type: typeof MessageType.GET_LANGUAGE }
   | { type: typeof MessageType.SET_LANGUAGE; value: Language }
   | { type: typeof MessageType.GET_CARD_STATE_STATS }
-  | { type: typeof MessageType.GET_ALL_STATS }
   | { type: typeof MessageType.GET_LAST_N_DAYS_STATS; days: number }
   | { type: typeof MessageType.GET_NEXT_N_DAYS_STATS; days: number }
   | { type: typeof MessageType.EXPORT_DATA }
@@ -145,7 +143,6 @@ export type MessageResponseMap = {
   [MessageType.GET_LANGUAGE]: Language;
   [MessageType.SET_LANGUAGE]: void;
   [MessageType.GET_CARD_STATE_STATS]: Record<FsrsState, number>;
-  [MessageType.GET_ALL_STATS]: DailyStats[];
   [MessageType.GET_LAST_N_DAYS_STATS]: DailyStats[];
   [MessageType.GET_NEXT_N_DAYS_STATS]: UpcomingReviewStats[];
   [MessageType.EXPORT_DATA]: string;
