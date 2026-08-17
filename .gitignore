@@ -26,6 +26,4 @@ web-ext.config.ts
 *.sw?
 devex/
 
-# AI
-PLAN.md
-CLAUDE.md
+docs/plans
