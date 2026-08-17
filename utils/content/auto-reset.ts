@@ -1,4 +1,5 @@
 import { MessageType, sendMessage } from '@/shared/messages';
+import { getCurrentProblemSlug } from './domain';
 
 const RESET_CONFIRM_TIMEOUT_MS = 2000;
 const RESET_CONFIRM_POLL_MS = 50;
@@ -25,7 +26,7 @@ export function setupLeetcodeAutoReset(): () => void {
   let lastAttemptAt = 0;
 
   const checkForNavigation = () => {
-    const slug = getCurrentTitleSlug();
+    const slug = getCurrentProblemSlug();
     if (!slug) {
       lastSlug = null;
       return;
@@ -97,17 +98,6 @@ export function setupLeetcodeAutoReset(): () => void {
     window.removeEventListener('popstate', checkForNavigation);
     window.clearInterval(intervalId);
   };
-}
-
-function getCurrentTitleSlug(): string | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nextRouter = (window as any).next?.router;
-  if (nextRouter?.query?.slug) {
-    return nextRouter.query.slug;
-  }
-
-  const match = window.location.pathname.match(/\/problems\/([^/]+)/);
-  return match ? match[1] : null;
 }
 
 function waitForConfirmClick(openModals: Set<Element>): Promise<boolean> {

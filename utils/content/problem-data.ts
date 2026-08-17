@@ -1,5 +1,5 @@
 import type { ProblemData } from '@/shared/problem-data';
-import { getCurrentDomain, getGraphQLUrl } from './domain';
+import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
 // Cache to avoid redundant requests
 let cachedData: { slug: string; data: ProblemData } | null = null;
 
@@ -11,7 +11,7 @@ export function clearCache(): void {
 export async function extractProblemData(): Promise<ProblemData | null> {
   try {
     // Get the current slug from the URL or router
-    const currentSlug = getCurrentTitleSlug();
+    const currentSlug = getCurrentProblemSlug();
     if (!currentSlug) {
       console.log('Could not extract title slug');
       return null;
@@ -36,19 +36,6 @@ export async function extractProblemData(): Promise<ProblemData | null> {
     console.error('Error extracting problem data:', error);
     return null;
   }
-}
-
-function getCurrentTitleSlug(): string | null {
-  // Try window.next.router first (most reliable after navigation)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nextRouter = (window as any).next?.router;
-  if (nextRouter?.query?.slug) {
-    return nextRouter.query.slug;
-  }
-
-  // Fallback to URL parsing
-  const pathMatch = window.location.pathname.match(/\/problems\/([^/]+)/);
-  return pathMatch ? pathMatch[1] : null;
 }
 
 async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData | null> {
