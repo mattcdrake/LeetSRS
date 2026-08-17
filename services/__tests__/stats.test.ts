@@ -758,6 +758,55 @@ describe('Stats management', () => {
       expect(stats[0].date).toBe('2024-03-15');
       expect(stats[29].date).toBe('2024-04-13');
     });
+
+    it('should exclude cards due immediately after the requested window', async () => {
+      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+
+      cards['problem-1'].fsrs.due = new Date('2024-03-22T12:00:00').getTime();
+      await storage.setItem(STORAGE_KEYS.cards, cards);
+
+      const stats = await getNextNDaysStats(7);
+
+      expect(stats).toHaveLength(7);
+      expect(stats[0].date).toBe('2024-03-15');
+      expect(stats[6].date).toBe('2024-03-21');
+      expect(stats.every((stat) => stat.count === 0)).toBe(true);
+    });
+
+    it('should return an empty array when zero days are requested', async () => {
+      await expect(getNextNDaysStats(0)).resolves.toEqual([]);
+    });
+
+    it('should respect the configured day start hour', async () => {
+      await storage.setItem(STORAGE_KEYS.dayStartHour, 4);
+      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+
+      cards['problem-1'].fsrs.due = new Date('2024-03-16T01:00:00').getTime();
+      await storage.setItem(STORAGE_KEYS.cards, cards);
+
+      const stats = await getNextNDaysStats(2);
+
+      expect(stats).toEqual([
+        { date: '2024-03-15', count: 1 },
+        { date: '2024-03-16', count: 0 },
+      ]);
+    });
+
+    it('should accumulate active cards due on the same review day', async () => {
+      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
+      await addCard('problem-2', 'Problem 2', '2', 'Medium' as Difficulty, 'leetcode.com');
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+
+      cards['problem-1'].fsrs.due = new Date('2024-03-17T09:00:00').getTime();
+      cards['problem-2'].fsrs.due = new Date('2024-03-17T18:00:00').getTime();
+      await storage.setItem(STORAGE_KEYS.cards, cards);
+
+      const stats = await getNextNDaysStats(7);
+
+      expect(stats[2]).toEqual({ date: '2024-03-17', count: 2 });
+    });
   });
 
   describe('rollupOldStats', () => {
