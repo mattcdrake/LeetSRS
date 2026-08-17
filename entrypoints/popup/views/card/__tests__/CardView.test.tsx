@@ -1,8 +1,8 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, within, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CardView } from '../CardView';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -35,6 +35,10 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 };
 
 describe('CardView', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should render loading state', () => {
     mockedUseCardsQuery.mockReturnValue(
       createQueryMock<Card[] | undefined>(undefined, {
@@ -482,6 +486,49 @@ describe('CardView', () => {
 
       // Assert that mutateAsync was called with the slug
       expect(removeMutateAsyncMock).toHaveBeenCalledWith('test-problem');
+    });
+
+    it('should expire delete confirmation after 3000ms', () => {
+      vi.useFakeTimers();
+      const card = createMockCard(State.New, {
+        name: 'Test Problem',
+        slug: 'test-problem',
+      });
+
+      mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+
+      renderWithQueryClient(<CardView />);
+      fireEvent.click(screen.getByRole('button', { name: /Test Problem/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
+
+      expect(screen.getByRole('button', { name: /Confirm\?/i })).toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+
+      expect(screen.getByRole('button', { name: /^Delete$/i })).toBeInTheDocument();
+      expect(removeMutateAsyncMock).not.toHaveBeenCalled();
+    });
+
+    it('should keep delete confirmation independent between cards', () => {
+      const cards = [
+        createMockCard(State.New, { name: 'Problem 1', slug: 'problem-1', leetcodeId: '1' }),
+        createMockCard(State.New, { name: 'Problem 2', slug: 'problem-2', leetcodeId: '2' }),
+      ];
+
+      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+
+      renderWithQueryClient(<CardView />);
+      fireEvent.click(screen.getByRole('button', { name: /Problem 1/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Problem 2/i }));
+
+      const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i });
+      fireEvent.click(deleteButtons[0]);
+
+      expect(screen.getAllByRole('button', { name: /Confirm\?/i })).toHaveLength(1);
+      expect(screen.getAllByRole('button', { name: /^Delete$/i })).toHaveLength(1);
+      expect(removeMutateAsyncMock).not.toHaveBeenCalled();
     });
 
     it('should handle errors from mutations gracefully', async () => {

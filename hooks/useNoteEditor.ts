@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
+import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import { NOTES_MAX_LENGTH } from '@/shared/notes';
-
-const DELETE_CONFIRM_TIMEOUT_MS = 3000;
 
 export interface NoteEditor {
   text: string;
@@ -22,7 +21,7 @@ export interface NoteEditor {
 
 export function useNoteEditor(cardId: string): NoteEditor {
   const [text, setText] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
   const { data: note, isLoading, error } = useNoteQuery(cardId);
   const saveNoteMutation = useSaveNoteMutation(cardId);
@@ -31,23 +30,8 @@ export function useNoteEditor(cardId: string): NoteEditor {
   // Sync fetched note with local state
   useEffect(() => {
     setText(note?.text ?? '');
-    setDeleteConfirm(false);
-  }, [note]);
-
-  // Auto-reset delete confirmation after a delay
-  useEffect(() => {
-    if (!deleteConfirm) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setDeleteConfirm(false);
-    }, DELETE_CONFIRM_TIMEOUT_MS);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [deleteConfirm]);
+    resetConfirmation();
+  }, [note, resetConfirmation]);
 
   const save = async () => {
     try {
@@ -59,21 +43,15 @@ export function useNoteEditor(cardId: string): NoteEditor {
     }
   };
 
-  const remove = async () => {
-    if (!deleteConfirm) {
-      setDeleteConfirm(true);
-      return;
-    }
-
-    try {
-      await deleteNoteMutation.mutateAsync();
-      setText('');
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-    } finally {
-      setDeleteConfirm(false);
-    }
-  };
+  const remove = () =>
+    startOrConfirm(async () => {
+      try {
+        await deleteNoteMutation.mutateAsync();
+        setText('');
+      } catch (error) {
+        console.error('Failed to delete note:', error);
+      }
+    });
 
   const originalText = note?.text ?? '';
   const characterCount = text.length;
@@ -89,7 +67,7 @@ export function useNoteEditor(cardId: string): NoteEditor {
     isOverLimit,
     characterCount,
     hasExistingNote: note != null,
-    deleteConfirm,
+    deleteConfirm: isConfirming,
     isLoading,
     isSaving: saveNoteMutation.isPending,
     isDeleting: deleteNoteMutation.isPending,

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ActionsSection } from '../ActionsSection';
 
@@ -12,11 +12,6 @@ describe('ActionsSection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   const defaultProps = {
@@ -195,10 +190,6 @@ describe('ActionsSection', () => {
       expect(mockOnDelete).toHaveBeenCalledTimes(1);
     });
 
-    // Note: Timer-based state reset is tested implicitly in other tests.
-    // The setTimeout behavior is difficult to test reliably with fake timers
-    // and React's async state updates.
-
     it('should reset confirmation immediately after delete', () => {
       render(<ActionsSection {...defaultProps} />);
 
@@ -316,24 +307,6 @@ describe('ActionsSection', () => {
 
       expect(mockOnDelay).toHaveBeenCalledTimes(3);
       expect(mockOnDelay).toHaveBeenCalledWith(1);
-    });
-
-    it('should clear timeout on unmount to prevent memory leaks', () => {
-      const { unmount } = render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const deleteButton = screen.getByRole('button', { name: 'Delete Card' });
-      fireEvent.click(deleteButton);
-
-      // Unmount while confirmation is active
-      unmount();
-
-      // Advance timers to ensure no errors occur
-      vi.advanceTimersByTime(3000);
-
-      // Test passes if no errors are thrown
     });
   });
 });

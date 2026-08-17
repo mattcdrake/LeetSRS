@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useNoteEditor } from '../useNoteEditor';
 import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
@@ -244,58 +244,6 @@ describe('useNoteEditor', () => {
       expect(consoleSpy).toHaveBeenCalledWith('Failed to delete note:', expect.any(Error));
 
       consoleSpy.mockRestore();
-    });
-  });
-
-  describe('delete confirmation timeout', () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-      mockNote({ text: 'Existing note' });
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should reset the confirmation after 3000ms', async () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      await act(async () => {
-        await result.current.remove();
-      });
-      expect(result.current.deleteConfirm).toBe(true);
-
-      act(() => {
-        vi.advanceTimersByTime(2999);
-      });
-      expect(result.current.deleteConfirm).toBe(true);
-
-      act(() => {
-        vi.advanceTimersByTime(1);
-      });
-      expect(result.current.deleteConfirm).toBe(false);
-    });
-
-    it('should clear a pending confirmation timer on unmount', async () => {
-      const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
-      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
-
-      const { result, unmount } = renderHook(() => useNoteEditor(mockCardId));
-
-      await act(async () => {
-        await result.current.remove();
-      });
-
-      const timerIndex = setTimeoutSpy.mock.calls.findIndex(([, delay]) => delay === 3000);
-      expect(timerIndex).toBeGreaterThanOrEqual(0);
-      const timerId = setTimeoutSpy.mock.results[timerIndex].value;
-
-      unmount();
-
-      expect(clearTimeoutSpy).toHaveBeenCalledWith(timerId);
-
-      setTimeoutSpy.mockRestore();
-      clearTimeoutSpy.mockRestore();
     });
   });
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from 'react-aria-components';
 import { FaForwardStep, FaForwardFast, FaPause } from 'react-icons/fa6';
 import { bounceButton } from '@/shared/styles';
+import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import type { IconType } from 'react-icons';
 import { useI18n } from '../../contexts/I18nContext';
 
@@ -32,7 +33,7 @@ function ActionButton({ icon: Icon, label, onPress }: ActionButtonProps) {
 export function ActionsSection({ onDelete, onDelay, onPause }: ActionsSectionProps) {
   const t = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const { isConfirming, startOrConfirm } = useTimedConfirmation();
 
   return (
     <div className="border border-current rounded-lg bg-secondary overflow-hidden">
@@ -59,19 +60,11 @@ export function ActionsSection({ onDelete, onDelay, onPause }: ActionsSectionPro
             <div className="pt-2 border-t border-current">
               <Button
                 className={`w-full px-4 py-2 rounded text-sm ${
-                  deleteConfirm ? 'bg-ultra-danger' : 'bg-danger'
+                  isConfirming ? 'bg-ultra-danger' : 'bg-danger'
                 } text-white hover:opacity-90 transition-colors ${bounceButton}`}
-                onPress={() => {
-                  if (!deleteConfirm) {
-                    setDeleteConfirm(true);
-                    setTimeout(() => setDeleteConfirm(false), 3000);
-                  } else {
-                    onDelete();
-                    setDeleteConfirm(false);
-                  }
-                }}
+                onPress={() => startOrConfirm(onDelete)}
               >
-                {deleteConfirm ? t.actions.confirmDelete : t.actionsSection.deleteCard}
+                {isConfirming ? t.actions.confirmDelete : t.actionsSection.deleteCard}
               </Button>
             </div>
           </div>
