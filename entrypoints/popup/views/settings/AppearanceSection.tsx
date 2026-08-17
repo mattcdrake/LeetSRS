@@ -20,16 +20,16 @@ export function AppearanceSection() {
   const { data: badgeEnabled = DEFAULT_BADGE_ENABLED } = useBadgeEnabledQuery();
   const setBadgeEnabledMutation = useSetBadgeEnabledMutation();
 
-  const toggleTheme = () => {
-    setThemeMutation.mutate(theme === 'light' ? 'dark' : 'light');
+  const setDarkMode = (isSelected: boolean) => {
+    setThemeMutation.mutate(isSelected ? 'dark' : 'light');
   };
 
-  const toggleAnimations = () => {
-    setAnimationsEnabledMutation.mutate(!animationsEnabled);
+  const setAnimationsEnabled = (isSelected: boolean) => {
+    setAnimationsEnabledMutation.mutate(isSelected);
   };
 
-  const toggleBadge = () => {
-    setBadgeEnabledMutation.mutate(!badgeEnabled);
+  const setBadgeEnabled = (isSelected: boolean) => {
+    setBadgeEnabledMutation.mutate(isSelected);
   };
 
   return (
@@ -39,7 +39,7 @@ export function AppearanceSection() {
         <SettingsSwitch
           label={t.settings.appearance.darkMode}
           isSelected={theme === 'dark'}
-          onChange={toggleTheme}
+          onChange={setDarkMode}
           leftIcon={(isSelected) => (
             <FaSun
               className={`text-sm transition-colors ${!isSelected ? 'text-accent' : 'text-tertiary opacity-50'}`}
@@ -54,9 +54,9 @@ export function AppearanceSection() {
         <SettingsSwitch
           label={t.settings.appearance.enableAnimations}
           isSelected={animationsEnabled}
-          onChange={toggleAnimations}
+          onChange={setAnimationsEnabled}
         />
-        <SettingsSwitch label={t.settings.appearance.showBadge} isSelected={badgeEnabled} onChange={toggleBadge} />
+        <SettingsSwitch label={t.settings.appearance.showBadge} isSelected={badgeEnabled} onChange={setBadgeEnabled} />
       </div>
     </div>
   );

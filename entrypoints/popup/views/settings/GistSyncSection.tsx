@@ -12,27 +12,7 @@ import {
   useValidateGistIdMutation,
 } from '@/hooks/useBackgroundQueries';
 import { useI18n } from '../../contexts/I18nContext';
-
-// Simple toggle component without React Aria's hidden input
-function SimpleToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={enabled}
-      onClick={onToggle}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        enabled ? 'bg-accent' : 'bg-tertiary border border-current'
-      }`}
-    >
-      <span
-        className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-          enabled ? 'translate-x-5' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
-  );
-}
+import { SettingsSwitch } from './SettingsSwitch';
 
 export function GistSyncSection() {
   const t = useI18n();
@@ -103,9 +83,7 @@ export function GistSyncSection() {
     }
   };
 
-  const handleToggleSync = async () => {
-    const newValue = !localEnabled;
-
+  const handleToggleSync = async (newValue: boolean) => {
     if (newValue) {
       // Enabling sync - validate requirements
       if (!pat || !patValidation?.valid) {
@@ -241,10 +219,11 @@ export function GistSyncSection() {
         {patValidation?.valid && gistValidation?.valid && (
           <div className="space-y-4 pt-2 border-t border-tertiary">
             {/* Enable Automatic Sync Toggle */}
-            <div className="flex items-center justify-between">
-              <span>{t.settings.gistSync.enableSync}</span>
-              <SimpleToggle enabled={localEnabled} onToggle={handleToggleSync} />
-            </div>
+            <SettingsSwitch
+              label={t.settings.gistSync.enableSync}
+              isSelected={localEnabled}
+              onChange={handleToggleSync}
+            />
 
             {/* Sync Status */}
             <div className="flex items-center justify-between text-sm">
