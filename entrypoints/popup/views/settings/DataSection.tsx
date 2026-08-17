@@ -1,7 +1,8 @@
 import { Button } from 'react-aria-components';
 import { bounceButton } from '@/shared/styles';
 import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/useBackgroundQueries';
-import { useState, useRef } from 'react';
+import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
+import { useRef } from 'react';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {
@@ -10,7 +11,7 @@ export function DataSection() {
   const importDataMutation = useImportDataMutation();
   const resetAllDataMutation = useResetAllDataMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [resetConfirmation, setResetConfirmation] = useState(false);
+  const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
   const handleExport = async () => {
     try {
@@ -59,30 +60,24 @@ export function DataSection() {
     }
   };
 
-  const handleReset = async () => {
-    if (!resetConfirmation) {
-      setResetConfirmation(true);
-      setTimeout(() => setResetConfirmation(false), 3000);
-      return;
-    }
+  const handleReset = () =>
+    startOrConfirm(async () => {
+      // Browser confirmation dialog
+      const confirmed = window.confirm(t.settings.data.resetConfirmMessage);
 
-    // Browser confirmation dialog
-    const confirmed = window.confirm(t.settings.data.resetConfirmMessage);
+      if (!confirmed) {
+        resetConfirmation();
+        return;
+      }
 
-    if (!confirmed) {
-      setResetConfirmation(false);
-      return;
-    }
-
-    try {
-      await resetAllDataMutation.mutateAsync();
-      alert(t.settings.data.resetSuccess);
-      setResetConfirmation(false);
-    } catch (error) {
-      console.error('Reset failed:', error);
-      alert(t.errors.failedToResetData);
-    }
-  };
+      try {
+        await resetAllDataMutation.mutateAsync();
+        alert(t.settings.data.resetSuccess);
+      } catch (error) {
+        console.error('Reset failed:', error);
+        alert(t.errors.failedToResetData);
+      }
+    });
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
@@ -117,7 +112,7 @@ export function DataSection() {
         >
           {resetAllDataMutation.isPending
             ? t.settings.data.resetting
-            : resetConfirmation
+            : isConfirming
               ? t.settings.data.clickToConfirm
               : t.settings.data.resetAllData}
         </Button>

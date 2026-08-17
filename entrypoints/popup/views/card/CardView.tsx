@@ -3,6 +3,7 @@ import { ViewLayout } from '../../components/ViewLayout';
 import { StreakCounter } from '../../components/StreakCounter';
 import { CardNotes } from './components/CardNotes';
 import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
+import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import { Button, TextField, Input, Label } from 'react-aria-components';
 import { State as FsrsState } from 'ts-fsrs';
 import type { Card } from '@/shared/cards';
@@ -106,17 +107,7 @@ function CardStats({
   isDeleteProcessing,
   t,
 }: CardStatsProps) {
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-
-  const handleDelete = () => {
-    if (!deleteConfirm) {
-      setDeleteConfirm(true);
-      setTimeout(() => setDeleteConfirm(false), 3000);
-    } else {
-      onDelete();
-      setDeleteConfirm(false);
-    }
-  };
+  const { isConfirming, startOrConfirm } = useTimedConfirmation();
 
   return (
     <div className="px-4 pb-3 border-t border-current">
@@ -143,13 +134,13 @@ function CardStats({
 
         <Button
           className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs ${
-            deleteConfirm ? 'bg-ultra-danger' : 'bg-danger'
+            isConfirming ? 'bg-ultra-danger' : 'bg-danger'
           } text-white hover:opacity-90 transition-colors ${bounceButton} disabled:opacity-50`}
-          onPress={handleDelete}
+          onPress={() => startOrConfirm(onDelete)}
           isDisabled={isDeleteProcessing}
         >
           <FaTrash className="text-sm" />
-          <span>{deleteConfirm ? t.actions.confirm : t.actions.delete}</span>
+          <span>{isConfirming ? t.actions.confirm : t.actions.delete}</span>
         </Button>
       </div>
 
