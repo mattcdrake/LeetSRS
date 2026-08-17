@@ -9,6 +9,8 @@ import {
 import { getServiceTranslations } from '@/services/i18n';
 import { sendMessage, MessageType } from '@/shared/messages';
 import type { Grade } from 'ts-fsrs';
+import type { ProblemDescriptor } from '@/shared/cards';
+import type { ProblemData } from '@/shared/problem-data';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
@@ -25,9 +27,17 @@ export default defineContentScript({
   },
 });
 
-async function withProblemData<T>(
-  action: (problemData: NonNullable<Awaited<ReturnType<typeof extractProblemData>>>) => Promise<T>
-): Promise<T | undefined> {
+function toProblemDescriptor(problemData: ProblemData): ProblemDescriptor {
+  return {
+    slug: problemData.titleSlug,
+    name: problemData.title,
+    leetcodeId: problemData.questionFrontendId,
+    difficulty: problemData.difficulty,
+    domain: getCurrentDomain(),
+  };
+}
+
+async function withProblemData<T>(action: (problem: ProblemDescriptor) => Promise<T>): Promise<T | undefined> {
   const problemData = await extractProblemData();
   if (!problemData) {
     console.error('Could not extract problem data');
@@ -35,7 +45,7 @@ async function withProblemData<T>(
   }
 
   try {
-    return await action(problemData);
+    return await action(toProblemDescriptor(problemData));
   } catch (error) {
     console.error('Error processing action:', error);
     return undefined;
@@ -65,29 +75,20 @@ function setupLeetSrsButton() {
     ratingMenu = new RatingMenu(
       buttonWrapper,
       async (rating, label) => {
-        await withProblemData(async (problemData) => {
+        await withProblemData(async (problem) => {
           const result = await sendMessage({
             type: MessageType.RATE_CARD,
-            slug: problemData.titleSlug,
-            name: problemData.title,
-            rating: rating as Grade,
-            leetcodeId: problemData.questionFrontendId,
-            difficulty: problemData.difficulty,
-            domain: getCurrentDomain(),
+            input: { ...problem, rating: rating as Grade },
           });
           console.log(`${label} - Card rated:`, result);
           return result;
         });
       },
       async () => {
-        await withProblemData(async (problemData) => {
+        await withProblemData(async (problem) => {
           const result = await sendMessage({
             type: MessageType.ADD_CARD,
-            slug: problemData.titleSlug,
-            name: problemData.title,
-            leetcodeId: problemData.questionFrontendId,
-            difficulty: problemData.difficulty,
-            domain: getCurrentDomain(),
+            problem,
           });
           console.log('Add without rating - Card added:', result);
           return result;
