@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button, TextArea, TextField, Label } from 'react-aria-components';
-import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
+import { useNoteEditor } from '@/hooks/useNoteEditor';
 import { NOTES_MAX_LENGTH } from '@/shared/notes';
 import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
@@ -12,53 +12,22 @@ interface NotesSectionProps {
 export function NotesSection({ cardId }: NotesSectionProps) {
   const t = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [noteText, setNoteText] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  const { data: note, isLoading, error } = useNoteQuery(cardId);
-  const saveNoteMutation = useSaveNoteMutation(cardId);
-  const deleteNoteMutation = useDeleteNoteMutation(cardId);
-
-  // Sync fetched note with local state
-  useEffect(() => {
-    const text = note?.text || '';
-    setNoteText(text);
-    setDeleteConfirm(false);
-  }, [note]);
-
-  const handleSave = async () => {
-    try {
-      await saveNoteMutation.mutateAsync(noteText);
-    } catch (error) {
-      console.error('Failed to save note:', error);
-      // Revert to original text on error
-      setNoteText(note?.text || '');
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteConfirm) {
-      setDeleteConfirm(true);
-      setTimeout(() => setDeleteConfirm(false), 3000);
-      return;
-    }
-
-    try {
-      await deleteNoteMutation.mutateAsync();
-      setNoteText('');
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-    } finally {
-      setDeleteConfirm(false);
-    }
-  };
-
-  const originalText = note?.text || '';
-  const characterCount = noteText.length;
-  const isOverLimit = characterCount > NOTES_MAX_LENGTH;
-  const hasChanges = noteText !== originalText;
-  const canSave = hasChanges && !isOverLimit && noteText.length > 0;
-  const hasExistingNote = originalText.length > 0;
+  const {
+    text,
+    setText,
+    save,
+    remove,
+    canSave,
+    isOverLimit,
+    characterCount,
+    hasExistingNote,
+    deleteConfirm,
+    isLoading,
+    isSaving,
+    isDeleting,
+    error,
+  } = useNoteEditor(cardId);
 
   if (error) {
     console.error('Failed to load note:', error);
@@ -85,10 +54,9 @@ export function NotesSection({ cardId }: NotesSectionProps) {
               className="w-full mt-3 p-2 rounded border border-current bg-tertiary text-primary text-sm resize-none focus:outline-none focus:ring-1 focus:ring-accent"
               placeholder={isLoading ? t.notes.placeholderLoading : t.notes.placeholderEmpty}
               rows={4}
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              disabled={isLoading || saveNoteMutation.isPending}
-              maxLength={NOTES_MAX_LENGTH + 100} // Allow typing over limit to show error
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              disabled={isLoading || isSaving}
             />
           </TextField>
           <div className="mt-2 flex items-center justify-between">
@@ -99,22 +67,18 @@ export function NotesSection({ cardId }: NotesSectionProps) {
               {hasExistingNote && (
                 <Button
                   className={`px-4 py-1.5 rounded text-sm ${deleteConfirm ? 'bg-ultra-danger' : 'bg-danger'} text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
-                  onPress={handleDelete}
-                  isDisabled={deleteNoteMutation.isPending}
+                  onPress={remove}
+                  isDisabled={isDeleting}
                 >
-                  {deleteNoteMutation.isPending
-                    ? t.actions.deleting
-                    : deleteConfirm
-                      ? t.actions.confirm
-                      : t.actions.delete}
+                  {isDeleting ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
                 </Button>
               )}
               <Button
                 className={`px-4 py-1.5 rounded text-sm bg-accent text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
-                onPress={handleSave}
-                isDisabled={!canSave || saveNoteMutation.isPending}
+                onPress={save}
+                isDisabled={!canSave || isSaving}
               >
-                {saveNoteMutation.isPending ? t.actions.saving : t.actions.save}
+                {isSaving ? t.actions.saving : t.actions.save}
               </Button>
             </div>
           </div>
