@@ -9,7 +9,6 @@ import {
   getMonthlyStats,
   getStatsForDate,
   getTodayStats,
-  getAllStats,
   getCardStateStats,
   getLastNDaysStats,
   getNextNDaysStats,
@@ -400,92 +399,6 @@ describe('Stats management', () => {
       const stats = await getTodayStats();
       expect(stats?.date).toBe('2024-03-16');
       expect(stats?.gradeBreakdown[Rating.Hard]).toBe(1);
-    });
-  });
-
-  describe('getAllStats', () => {
-    it('should return empty array when no stats exist', async () => {
-      const stats = await getAllStats();
-      expect(stats).toEqual([]);
-    });
-
-    it('should return all stats sorted by date descending', async () => {
-      // Create stats in random order
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      vi.setSystemTime(new Date('2024-03-13T10:00:00'));
-      await updateStats(Rating.Easy, false);
-
-      vi.setSystemTime(new Date('2024-03-16T10:00:00'));
-      await updateStats(Rating.Hard, false);
-
-      vi.setSystemTime(new Date('2024-03-14T10:00:00'));
-      await updateStats(Rating.Again, false);
-
-      const allStats = await getAllStats();
-
-      expect(allStats).toHaveLength(4);
-      expect(allStats[0].date).toBe('2024-03-16');
-      expect(allStats[1].date).toBe('2024-03-15');
-      expect(allStats[2].date).toBe('2024-03-14');
-      expect(allStats[3].date).toBe('2024-03-13');
-    });
-
-    it('should return complete stats objects', async () => {
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Hard, true);
-
-      const allStats = await getAllStats();
-
-      expect(allStats).toHaveLength(1);
-      const stats = allStats[0];
-
-      expect(stats.date).toBe('2024-03-15');
-      expect(stats.totalReviews).toBe(2);
-      expect(stats.gradeBreakdown).toBeDefined();
-      expect(stats.newCards).toBe(1);
-      expect(stats.reviewedCards).toBe(1);
-      expect(stats.streak).toBe(1);
-    });
-
-    it('should handle stats across months', async () => {
-      // Use dates within 30 days so rollup doesn't remove them
-      vi.setSystemTime(new Date('2024-02-20T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      vi.setSystemTime(new Date('2024-03-05T10:00:00'));
-      await updateStats(Rating.Easy, false);
-
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Hard, false);
-
-      const allStats = await getAllStats();
-
-      expect(allStats).toHaveLength(3);
-      expect(allStats[0].date).toBe('2024-03-15');
-      expect(allStats[1].date).toBe('2024-03-05');
-      expect(allStats[2].date).toBe('2024-02-20');
-    });
-
-    it('should handle stats across a year boundary', async () => {
-      // All within 30 days of Jan 10 2025, spanning year boundary
-      vi.setSystemTime(new Date('2024-12-20T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      vi.setSystemTime(new Date('2025-01-02T10:00:00'));
-      await updateStats(Rating.Easy, false);
-
-      vi.setSystemTime(new Date('2025-01-10T10:00:00'));
-      await updateStats(Rating.Hard, false);
-
-      const allStats = await getAllStats();
-
-      expect(allStats).toHaveLength(3);
-      expect(allStats[0].date).toBe('2025-01-10');
-      expect(allStats[1].date).toBe('2025-01-02');
-      expect(allStats[2].date).toBe('2024-12-20');
     });
   });
 

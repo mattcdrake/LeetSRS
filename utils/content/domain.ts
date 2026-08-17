@@ -24,11 +24,3 @@ export function getGraphQLUrl(): string {
   const domain = getCurrentDomain();
   return `https://${domain}/graphql`;
 }
-
-/**
- * Returns the problem URL for a given slug on the current domain
- */
-export function getProblemUrl(slug: string): string {
-  const domain = getCurrentDomain();
-  return `https://${domain}/problems/${slug}/description/`;
-}

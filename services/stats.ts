@@ -151,11 +151,6 @@ export async function getTodayStats(): Promise<DailyStats | null> {
   return getStatsForDate(await getTodayKey());
 }
 
-export async function getAllStats(): Promise<DailyStats[]> {
-  const stats = await getStats();
-  return Object.values(stats).sort((a, b) => b.date.localeCompare(a.date));
-}
-
 export async function getCardStateStats(): Promise<Record<FsrsState, number>> {
   const cards = await getAllCards();
 

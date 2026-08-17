@@ -5,7 +5,3 @@ import { STORAGE_KEYS } from './storage-keys';
 export async function markDataUpdated(): Promise<void> {
   await storage.setItem(STORAGE_KEYS.dataUpdatedAt, new Date().toISOString());
 }
-
-export async function getDataUpdatedAt(): Promise<string | null> {
-  return (await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt)) ?? null;
-}

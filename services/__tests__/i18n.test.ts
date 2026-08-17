@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { getServiceTranslations, getServiceLanguage } from '../i18n';
+import { getServiceTranslations } from '../i18n';
 import { STORAGE_KEYS } from '../storage-keys';
 import { translations } from '@/shared/i18n';
 
@@ -29,13 +29,6 @@ describe('service i18n', () => {
     });
   });
 
-  describe('getServiceLanguage', () => {
-    it('should return a valid language code', () => {
-      const language = getServiceLanguage();
-      expect(language).toBe('en');
-    });
-  });
-
   describe('storage watching', () => {
     it('should be set up to watch for language changes', async () => {
       // Verify the service is functional with storage
@@ -50,7 +43,6 @@ describe('service i18n', () => {
       await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID' as any);
       // Wait for the watcher to fire
       await new Promise((r) => setTimeout(r, 50));
-      expect(getServiceLanguage()).toBe('en');
       expect(getServiceTranslations()).toBe(translations.en);
     });
   });
