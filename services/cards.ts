@@ -1,16 +1,9 @@
-import {
-  FSRS,
-  State as FsrsState,
-  createEmptyCard,
-  generatorParameters,
-  type Card as FsrsCard,
-  type Grade,
-} from 'ts-fsrs';
+import { FSRS, State as FsrsState, createEmptyCard, generatorParameters, type Card as FsrsCard } from 'ts-fsrs';
 import { STORAGE_KEYS } from './storage-keys';
 import { storage } from '#imports';
 import { updateStats, getTodayStats } from './stats';
 import { deleteNote } from './notes';
-import { type Card, type Difficulty, type LeetcodeDomain } from '@/shared/cards';
+import { type Card, type ProblemDescriptor, type RateCardInput } from '@/shared/cards';
 import { getMaxNewCardsPerDay, getDayStartHour } from './settings';
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
@@ -67,39 +60,24 @@ export function deserializeCard(stored: StoredCard): Card {
   };
 }
 
-function createCard(
-  slug: string,
-  name: string,
-  leetcodeId: string,
-  difficulty: Difficulty,
-  domain: LeetcodeDomain
-): Card {
+function createCard(problem: ProblemDescriptor): Card {
   return {
     id: crypto.randomUUID(),
-    slug,
-    name,
-    leetcodeId,
-    difficulty,
-    domain,
+    ...problem,
     createdAt: new Date(),
     fsrs: createEmptyCard(),
     paused: false,
   };
 }
 
-export async function addCard(
-  slug: string,
-  name: string,
-  leetcodeId: string,
-  difficulty: Difficulty,
-  domain: LeetcodeDomain
-): Promise<Card> {
+export async function addCard(problem: ProblemDescriptor): Promise<Card> {
   const cards = await getCards();
+  const { slug } = problem;
   if (slug in cards) {
     return deserializeCard(cards[slug]);
   }
 
-  const card = createCard(slug, name, leetcodeId, difficulty, domain);
+  const card = createCard(problem);
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
   return card;
@@ -160,15 +138,10 @@ export async function setPauseStatus(slug: string, paused: boolean): Promise<Car
   return card;
 }
 
-export async function rateCard(
-  slug: string,
-  name: string,
-  rating: Grade,
-  leetcodeId: string,
-  difficulty: Difficulty,
-  domain: LeetcodeDomain
-): Promise<{ card: Card; shouldRequeue: boolean }> {
+export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
   const cards = await getCards();
+  const { rating, ...problem } = input;
+  const { slug } = problem;
 
   let card: Card;
   let isNewCard = true;
@@ -176,7 +149,7 @@ export async function rateCard(
     card = deserializeCard(cards[slug]);
     isNewCard = card.fsrs.state === FsrsState.New;
   } else {
-    card = createCard(slug, name, leetcodeId, difficulty, domain);
+    card = createCard(problem);
   }
 
   const now = new Date();
