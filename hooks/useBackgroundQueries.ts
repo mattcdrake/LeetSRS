@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendMessage, MessageType } from '@/shared/messages';
-import type { Grade } from 'ts-fsrs';
-import type { Difficulty, Card, LeetcodeDomain } from '@/shared/cards';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { Theme, Language } from '@/shared/settings';
 import type { GistSyncConfig } from '@/shared/gist-sync';
 
@@ -105,19 +104,7 @@ export function useAddCardMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      slug,
-      name,
-      leetcodeId,
-      difficulty,
-      domain,
-    }: {
-      slug: string;
-      name: string;
-      leetcodeId: string;
-      difficulty: Difficulty;
-      domain: LeetcodeDomain;
-    }) => sendMessage({ type: MessageType.ADD_CARD, slug, name, leetcodeId, difficulty, domain }),
+    mutationFn: (problem: ProblemDescriptor) => sendMessage({ type: MessageType.ADD_CARD, problem }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
@@ -140,20 +127,8 @@ export function useRemoveCardMutation() {
 export function useRateCardMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { card: Card; shouldRequeue: boolean },
-    Error,
-    {
-      slug: string;
-      name: string;
-      rating: Grade;
-      leetcodeId: string;
-      difficulty: Difficulty;
-      domain: LeetcodeDomain;
-    }
-  >({
-    mutationFn: ({ slug, name, rating, leetcodeId, difficulty, domain }) =>
-      sendMessage({ type: MessageType.RATE_CARD, slug, name, rating, leetcodeId, difficulty, domain }),
+  return useMutation<{ card: Card; shouldRequeue: boolean }, Error, RateCardInput>({
+    mutationFn: (input) => sendMessage({ type: MessageType.RATE_CARD, input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
