@@ -4,7 +4,15 @@
 
 import type { LeetcodeDomain } from '@/shared/cards';
 
-export type { LeetcodeDomain };
+type LeetCodeWindow = Window & {
+  next?: {
+    router?: {
+      query?: {
+        slug?: string;
+      };
+    };
+  };
+};
 
 /**
  * Detects the current LeetCode domain based on the hostname
@@ -23,4 +31,17 @@ export function getCurrentDomain(): LeetcodeDomain {
 export function getGraphQLUrl(): string {
   const domain = getCurrentDomain();
   return `https://${domain}/graphql`;
+}
+
+/**
+ * Returns the slug for the problem currently displayed by LeetCode.
+ */
+export function getCurrentProblemSlug(): string | null {
+  const routerSlug = (window as LeetCodeWindow).next?.router?.query?.slug;
+  if (routerSlug) {
+    return routerSlug;
+  }
+
+  const pathMatch = window.location.pathname.match(/\/problems\/([^/]+)/);
+  return pathMatch ? pathMatch[1] : null;
 }
