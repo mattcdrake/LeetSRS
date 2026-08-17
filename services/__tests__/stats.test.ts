@@ -500,9 +500,27 @@ describe('Stats management', () => {
 
     it('should count cards by state correctly', async () => {
       // Add some cards - new cards start in New state
-      await addCard('two-sum', 'Two Sum', '1', 'Easy' as Difficulty, 'leetcode.com');
-      await addCard('add-two-numbers', 'Add Two Numbers', '2', 'Medium' as Difficulty, 'leetcode.com');
-      await addCard('longest-substring', 'Longest Substring', '3', 'Medium' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'two-sum',
+        name: 'Two Sum',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'add-two-numbers',
+        name: 'Add Two Numbers',
+        leetcodeId: '2',
+        difficulty: 'Medium' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'longest-substring',
+        name: 'Longest Substring',
+        leetcodeId: '3',
+        difficulty: 'Medium' as Difficulty,
+        domain: 'leetcode.com',
+      });
 
       const stats = await getCardStateStats();
 
@@ -675,7 +693,13 @@ describe('Stats management', () => {
 
     it('should count cards due today', async () => {
       // Add a card that's due today
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       // Manually set the card to be due today
@@ -691,9 +715,27 @@ describe('Stats management', () => {
 
     it('should count cards due in the future', async () => {
       // Add cards with different due dates
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
-      await addCard('problem-2', 'Problem 2', '2', 'Medium' as Difficulty, 'leetcode.com');
-      await addCard('problem-3', 'Problem 3', '3', 'Hard' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'problem-2',
+        name: 'Problem 2',
+        leetcodeId: '2',
+        difficulty: 'Medium' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'problem-3',
+        name: 'Problem 3',
+        leetcodeId: '3',
+        difficulty: 'Hard' as Difficulty,
+        domain: 'leetcode.com',
+      });
 
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
@@ -716,8 +758,20 @@ describe('Stats management', () => {
 
     it('should not count paused cards', async () => {
       // Add cards
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
-      await addCard('problem-2', 'Problem 2', '2', 'Medium' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'problem-2',
+        name: 'Problem 2',
+        leetcodeId: '2',
+        difficulty: 'Medium' as Difficulty,
+        domain: 'leetcode.com',
+      });
 
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
@@ -735,8 +789,20 @@ describe('Stats management', () => {
 
     it('should handle cards due in the past', async () => {
       // Add cards due in the past
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
-      await addCard('problem-2', 'Problem 2', '2', 'Medium' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'problem-2',
+        name: 'Problem 2',
+        leetcodeId: '2',
+        difficulty: 'Medium' as Difficulty,
+        domain: 'leetcode.com',
+      });
 
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
@@ -760,7 +826,13 @@ describe('Stats management', () => {
     });
 
     it('should exclude cards due immediately after the requested window', async () => {
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-22T12:00:00').getTime();
@@ -780,7 +852,13 @@ describe('Stats management', () => {
 
     it('should respect the configured day start hour', async () => {
       await storage.setItem(STORAGE_KEYS.dayStartHour, 4);
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-16T01:00:00').getTime();
@@ -795,8 +873,20 @@ describe('Stats management', () => {
     });
 
     it('should accumulate active cards due on the same review day', async () => {
-      await addCard('problem-1', 'Problem 1', '1', 'Easy' as Difficulty, 'leetcode.com');
-      await addCard('problem-2', 'Problem 2', '2', 'Medium' as Difficulty, 'leetcode.com');
+      await addCard({
+        slug: 'problem-1',
+        name: 'Problem 1',
+        leetcodeId: '1',
+        difficulty: 'Easy' as Difficulty,
+        domain: 'leetcode.com',
+      });
+      await addCard({
+        slug: 'problem-2',
+        name: 'Problem 2',
+        leetcodeId: '2',
+        difficulty: 'Medium' as Difficulty,
+        domain: 'leetcode.com',
+      });
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-17T09:00:00').getTime();

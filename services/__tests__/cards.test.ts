@@ -170,7 +170,13 @@ describe('addCard', () => {
   });
 
   it('should create and store a new card', async () => {
-    const card = await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
+    const card = await addCard({
+      slug: 'two-sum',
+      name: 'Two Sum',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     expect(card.id).toBeDefined();
     expect(card.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
@@ -203,12 +209,24 @@ describe('addCard', () => {
 
   it('should return existing card when adding same slug (idempotent)', async () => {
     // Add card first time
-    const firstCard = await addCard('valid-parentheses', 'Valid Parentheses', '20', 'Medium', 'leetcode.com');
+    const firstCard = await addCard({
+      slug: 'valid-parentheses',
+      name: 'Valid Parentheses',
+      leetcodeId: '20',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     const firstCreatedAt = firstCard.createdAt;
     const firstId = firstCard.id;
 
     // Add same card again
-    const secondCard = await addCard('valid-parentheses', 'A different name', '20', 'Hard', 'leetcode.com');
+    const secondCard = await addCard({
+      slug: 'valid-parentheses',
+      name: 'A different name',
+      leetcodeId: '20',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Should return the same card
     expect(secondCard.id).toBe(firstId);
@@ -226,9 +244,21 @@ describe('addCard', () => {
 
   it('should store multiple different cards correctly', async () => {
     // Add multiple cards
-    await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
-    await addCard('valid-parentheses', 'Valid Parentheses', '20', 'Medium', 'leetcode.com');
-    await addCard('merge-two-sorted-lists', 'Merge Two Sorted Lists', '21', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({
+      slug: 'valid-parentheses',
+      name: 'Valid Parentheses',
+      leetcodeId: '20',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'merge-two-sorted-lists',
+      name: 'Merge Two Sorted Lists',
+      leetcodeId: '21',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Verify all cards are stored
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -243,7 +273,13 @@ describe('addCard', () => {
 
   it('should set createdAt to current date', async () => {
     const beforeTime = new Date();
-    const card = await addCard('test-problem', 'Test Problem', '999', 'Medium', 'leetcode.com');
+    const card = await addCard({
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     const afterTime = new Date();
 
     expect(card.createdAt).toBeInstanceOf(Date);
@@ -252,7 +288,13 @@ describe('addCard', () => {
   });
 
   it('should properly serialize card when storing', async () => {
-    const card = await addCard('serialize-test', 'Serialize Test', '1000', 'Easy', 'leetcode.com');
+    const card = await addCard({
+      slug: 'serialize-test',
+      name: 'Serialize Test',
+      leetcodeId: '1000',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const storedCard = cards![card.slug];
@@ -276,9 +318,21 @@ describe('getAllCards', () => {
 
   it('should return all cards from storage', async () => {
     // Add multiple cards
-    await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
-    await addCard('valid-parentheses', 'Valid Parentheses', '20', 'Medium', 'leetcode.com');
-    await addCard('merge-intervals', 'Merge Intervals', '56', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({
+      slug: 'valid-parentheses',
+      name: 'Valid Parentheses',
+      leetcodeId: '20',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'merge-intervals',
+      name: 'Merge Intervals',
+      leetcodeId: '56',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Get all cards
     const allCards = await getAllCards();
@@ -344,7 +398,7 @@ describe('removeCard', () => {
 
   it('should remove an existing card and its slug mapping', async () => {
     // Add a card first
-    await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
+    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
 
     // Verify it exists
     let cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -369,9 +423,21 @@ describe('removeCard', () => {
 
   it('should only remove the specified card when multiple cards exist', async () => {
     // Add multiple cards
-    await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
-    await addCard('valid-parentheses', 'Valid Parentheses', '20', 'Medium', 'leetcode.com');
-    await addCard('merge-intervals', 'Merge Intervals', '56', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({
+      slug: 'valid-parentheses',
+      name: 'Valid Parentheses',
+      leetcodeId: '20',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'merge-intervals',
+      name: 'Merge Intervals',
+      leetcodeId: '56',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Remove the middle card
     await removeCard('valid-parentheses');
@@ -393,9 +459,21 @@ describe('removeCard', () => {
 
   it('should verify card is actually removed from getAllCards', async () => {
     // Add multiple cards
-    await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
-    await addCard('valid-parentheses', 'Valid Parentheses', '20', 'Medium', 'leetcode.com');
-    await addCard('merge-intervals', 'Merge Intervals', '56', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({
+      slug: 'valid-parentheses',
+      name: 'Valid Parentheses',
+      leetcodeId: '20',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'merge-intervals',
+      name: 'Merge Intervals',
+      leetcodeId: '56',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Get initial count
     let allCards = await getAllCards();
@@ -417,7 +495,13 @@ describe('removeCard', () => {
     vi.clearAllMocks();
 
     // Add a card
-    const card = await addCard('test-with-note', 'Test With Note', '123', 'Medium', 'leetcode.com');
+    const card = await addCard({
+      slug: 'test-with-note',
+      name: 'Test With Note',
+      leetcodeId: '123',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     const cardId = card.id;
 
     // Remove the card
@@ -458,7 +542,13 @@ describe('delayCard', () => {
 
   it('should delay card due date by specified number of days', async () => {
     // Create a card first
-    const card = await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
+    const card = await addCard({
+      slug: 'two-sum',
+      name: 'Two Sum',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
     const originalDueDate = new Date(card.fsrs.due);
 
     // Delay the card by 5 days
@@ -478,7 +568,13 @@ describe('delayCard', () => {
   });
 
   it('should handle delaying by 1 day', async () => {
-    const card = await addCard('test-problem', 'Test Problem', '999', 'Medium', 'leetcode.com');
+    const card = await addCard({
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     const originalDueDate = new Date(card.fsrs.due);
 
     const delayedCard = await delayCard('test-problem', 1);
@@ -490,7 +586,13 @@ describe('delayCard', () => {
   });
 
   it('should handle delaying by large number of days', async () => {
-    const card = await addCard('large-delay', 'Large Delay', '1000', 'Hard', 'leetcode.com');
+    const card = await addCard({
+      slug: 'large-delay',
+      name: 'Large Delay',
+      leetcodeId: '1000',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     const originalDueDate = new Date(card.fsrs.due);
 
     const delayedCard = await delayCard('large-delay', 30);
@@ -506,10 +608,23 @@ describe('delayCard', () => {
   });
 
   it('should preserve all other card properties when delaying', async () => {
-    await addCard('preserve-props', 'Preserve Props', '2000', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'preserve-props',
+      name: 'Preserve Props',
+      leetcodeId: '2000',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Rate the card first to change some FSRS properties
-    await rateCard('preserve-props', 'Preserve Props', Rating.Good, '2000', 'Medium', 'leetcode.com');
+    await rateCard({
+      slug: 'preserve-props',
+      name: 'Preserve Props',
+      rating: Rating.Good,
+      leetcodeId: '2000',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Get the updated card
     const ratedCards = await getAllCards();
@@ -539,7 +654,13 @@ describe('delayCard', () => {
   });
 
   it('should handle multiple delays on the same card', async () => {
-    await addCard('multi-delay', 'Multi Delay', '3000', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'multi-delay',
+      name: 'Multi Delay',
+      leetcodeId: '3000',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     // First delay by 2 days
     const firstDelay = await delayCard('multi-delay', 2);
@@ -557,12 +678,25 @@ describe('delayCard', () => {
 
   it('should work with cards in different states', async () => {
     // Test with a new card
-    await addCard('new-card', 'New Card', '4000', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'new-card',
+      name: 'New Card',
+      leetcodeId: '4000',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     const delayedNew = await delayCard('new-card', 10);
     expect(delayedNew.fsrs.state).toBe(FsrsState.New);
 
     // Test with a learning card
-    await rateCard('new-card', 'New Card', Rating.Again, '4000', 'Medium', 'leetcode.com');
+    await rateCard({
+      slug: 'new-card',
+      name: 'New Card',
+      rating: Rating.Again,
+      leetcodeId: '4000',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     const learningCards = await getAllCards();
     const learningCard = learningCards.find((c) => c.slug === 'new-card')!;
 
@@ -577,7 +711,13 @@ describe('setPauseStatus', () => {
   });
 
   it('should set pause status to true', async () => {
-    await addCard('set-pause-true', 'Set Pause True', '4500', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'set-pause-true',
+      name: 'Set Pause True',
+      leetcodeId: '4500',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     const pausedCard = await setPauseStatus('set-pause-true', true);
 
@@ -590,7 +730,13 @@ describe('setPauseStatus', () => {
   });
 
   it('should set pause status to false', async () => {
-    await addCard('set-pause-false', 'Set Pause False', '4501', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'set-pause-false',
+      name: 'Set Pause False',
+      leetcodeId: '4501',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     // First pause it
     await setPauseStatus('set-pause-false', true);
 
@@ -617,7 +763,13 @@ describe('setPauseStatus - pausing', () => {
   });
 
   it('should pause an existing card', async () => {
-    await addCard('pause-test', 'Pause Test', '5000', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'pause-test',
+      name: 'Pause Test',
+      leetcodeId: '5000',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     const pausedCard = await setPauseStatus('pause-test', true);
 
@@ -635,7 +787,13 @@ describe('setPauseStatus - pausing', () => {
   });
 
   it('should handle pausing already paused card', async () => {
-    await addCard('already-paused', 'Already Paused', '5001', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'already-paused',
+      name: 'Already Paused',
+      leetcodeId: '5001',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Pause once
     await setPauseStatus('already-paused', true);
@@ -652,7 +810,13 @@ describe('setPauseStatus - unpausing', () => {
   });
 
   it('should unpause a paused card', async () => {
-    await addCard('unpause-test', 'Unpause Test', '5002', 'Hard', 'leetcode.com');
+    await addCard({
+      slug: 'unpause-test',
+      name: 'Unpause Test',
+      leetcodeId: '5002',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     await setPauseStatus('unpause-test', true);
 
     const unpausedCard = await setPauseStatus('unpause-test', false);
@@ -671,7 +835,13 @@ describe('setPauseStatus - unpausing', () => {
   });
 
   it('should handle unpausing already unpaused card', async () => {
-    await addCard('already-unpaused', 'Already Unpaused', '5003', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'already-unpaused',
+      name: 'Already Unpaused',
+      leetcodeId: '5003',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     // Card starts unpaused, unpause it anyway
     const unpausedCard = await setPauseStatus('already-unpaused', false);
@@ -692,7 +862,14 @@ describe('rateCard', () => {
   });
 
   it('should create a new card if it does not exist', async () => {
-    const result = await rateCard('new-problem', 'New Problem', Rating.Good, '9999', 'Medium', 'leetcode.com');
+    const result = await rateCard({
+      slug: 'new-problem',
+      name: 'New Problem',
+      rating: Rating.Good,
+      leetcodeId: '9999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     expect(result.card.slug).toBe('new-problem');
     expect(result.card.name).toBe('New Problem');
@@ -706,12 +883,25 @@ describe('rateCard', () => {
 
   it('should update existing card when rating', async () => {
     // First create a card
-    const initialCard = await addCard('two-sum', 'Two Sum', '1', 'Easy', 'leetcode.com');
+    const initialCard = await addCard({
+      slug: 'two-sum',
+      name: 'Two Sum',
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
     const initialReps = initialCard.fsrs.reps;
     const initialStability = initialCard.fsrs.stability;
 
     // Rate the card as Good
-    const result = await rateCard('two-sum', 'Two Sum', Rating.Good, '1', 'Easy', 'leetcode.com');
+    const result = await rateCard({
+      slug: 'two-sum',
+      name: 'Two Sum',
+      rating: Rating.Good,
+      leetcodeId: '1',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     expect(result.card.slug).toBe('two-sum');
     expect(result.card.name).toBe('Two Sum');
@@ -724,33 +914,79 @@ describe('rateCard', () => {
 
   it('should handle different grades correctly', async () => {
     // Create a card
-    await addCard('test-problem', 'Test Problem', '999', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'test-problem',
+      name: 'Test Problem',
+      leetcodeId: '999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Rate as Again (fail)
-    const failedResult = await rateCard('test-problem', 'Test Problem', Rating.Again, '999', 'Medium', 'leetcode.com');
+    const failedResult = await rateCard({
+      slug: 'test-problem',
+      name: 'Test Problem',
+      rating: Rating.Again,
+      leetcodeId: '999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     expect(failedResult.card.fsrs.reps).toBe(1);
     expect(failedResult.card.fsrs.lapses).toBe(0);
 
     // Rate as Easy
-    const easyResult = await rateCard('test-problem', 'Test Problem', Rating.Easy, '999', 'Medium', 'leetcode.com');
+    const easyResult = await rateCard({
+      slug: 'test-problem',
+      name: 'Test Problem',
+      rating: Rating.Easy,
+      leetcodeId: '999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     expect(easyResult.card.fsrs.reps).toBeGreaterThan(0);
   });
 
   it('should update the due date after rating', async () => {
-    const card = await addCard('merge-sort', 'Merge Sort', '88', 'Hard', 'leetcode.com');
+    const card = await addCard({
+      slug: 'merge-sort',
+      name: 'Merge Sort',
+      leetcodeId: '88',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     const initialDue = card.fsrs.due;
 
-    const result = await rateCard('merge-sort', 'Merge Sort', Rating.Good, '88', 'Hard', 'leetcode.com');
+    const result = await rateCard({
+      slug: 'merge-sort',
+      name: 'Merge Sort',
+      rating: Rating.Good,
+      leetcodeId: '88',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     expect(result.card.fsrs.due).toBeInstanceOf(Date);
     expect(result.card.fsrs.due.getTime()).toBeGreaterThan(initialDue.getTime());
   });
 
   it('should persist card updates to storage', async () => {
-    await addCard('binary-search', 'Binary Search', '704', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'binary-search',
+      name: 'Binary Search',
+      leetcodeId: '704',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Rate the card
-    await rateCard('binary-search', 'Binary Search', Rating.Hard, '704', 'Medium', 'leetcode.com');
+    await rateCard({
+      slug: 'binary-search',
+      name: 'Binary Search',
+      rating: Rating.Hard,
+      leetcodeId: '704',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Verify the updated card is in storage
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -764,16 +1000,37 @@ describe('rateCard', () => {
     const slug = 'dynamic-programming';
 
     // First rating (creates card)
-    const result1 = await rateCard(slug, 'Multi Rate', Rating.Again, '9998', 'Hard', 'leetcode.com');
+    const result1 = await rateCard({
+      slug: slug,
+      name: 'Multi Rate',
+      rating: Rating.Again,
+      leetcodeId: '9998',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     expect(result1.card.fsrs.reps).toBe(1);
     expect(result1.card.fsrs.lapses).toBe(0);
 
     // Second rating
-    const result2 = await rateCard(slug, 'Multi Rate', Rating.Hard, '9998', 'Hard', 'leetcode.com');
+    const result2 = await rateCard({
+      slug: slug,
+      name: 'Multi Rate',
+      rating: Rating.Hard,
+      leetcodeId: '9998',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     expect(result2.card.fsrs.reps).toBeGreaterThan(0);
 
     // Third rating
-    const result3 = await rateCard(slug, 'Multi Rate', Rating.Good, '9998', 'Hard', 'leetcode.com');
+    const result3 = await rateCard({
+      slug: slug,
+      name: 'Multi Rate',
+      rating: Rating.Good,
+      leetcodeId: '9998',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     expect(result3.card.fsrs.reps).toBeGreaterThan(result2.card.fsrs.reps);
 
     // Verify only one card exists in storage
@@ -784,7 +1041,14 @@ describe('rateCard', () => {
 
   it('should update stats when rating a new card', async () => {
     // Rate a new card (doesn't exist yet)
-    await rateCard('new-problem', 'New Problem', Rating.Good, '9999', 'Medium', 'leetcode.com');
+    await rateCard({
+      slug: 'new-problem',
+      name: 'New Problem',
+      rating: Rating.Good,
+      leetcodeId: '9999',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Check that stats were created
     const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
@@ -799,26 +1063,60 @@ describe('rateCard', () => {
 
   it('should return shouldRequeue based on whether card is still due today', async () => {
     // Test with Rating.Again - card should still be due today
-    const againResult = await rateCard('test-again', 'Test Again', Rating.Again, '2001', 'Easy', 'leetcode.com');
+    const againResult = await rateCard({
+      slug: 'test-again',
+      name: 'Test Again',
+      rating: Rating.Again,
+      leetcodeId: '2001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
     expect(againResult.shouldRequeue).toBe(true); // Again typically schedules for same day
 
     // Test with Rating.Good on a new card - might schedule for tomorrow
-    const goodResult = await rateCard('test-good', 'Test Good', Rating.Good, '2002', 'Medium', 'leetcode.com');
+    const goodResult = await rateCard({
+      slug: 'test-good',
+      name: 'Test Good',
+      rating: Rating.Good,
+      leetcodeId: '2002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     // New cards rated Good typically get scheduled for the next day or later
     // The exact value depends on FSRS algorithm, but we can verify the field exists
     expect(typeof goodResult.shouldRequeue).toBe('boolean');
 
     // Test with Rating.Hard - often keeps cards due today
-    const hardResult = await rateCard('test-hard', 'Test Hard', Rating.Hard, '2003', 'Hard', 'leetcode.com');
+    const hardResult = await rateCard({
+      slug: 'test-hard',
+      name: 'Test Hard',
+      rating: Rating.Hard,
+      leetcodeId: '2003',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
     expect(typeof hardResult.shouldRequeue).toBe('boolean');
   });
 
   it('should update stats correctly for review cards vs new cards', async () => {
     // Create a card
-    await addCard('test-card', 'Test Card', '1000', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'test-card',
+      name: 'Test Card',
+      leetcodeId: '1000',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     // First rating (card is new)
-    await rateCard('test-card', 'Test Card', Rating.Good, '1000', 'Easy', 'leetcode.com');
+    await rateCard({
+      slug: 'test-card',
+      name: 'Test Card',
+      rating: Rating.Good,
+      leetcodeId: '1000',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     let stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
     let todayStats = stats?.['2024-03-15'];
@@ -828,7 +1126,14 @@ describe('rateCard', () => {
     expect(todayStats?.reviewedCards).toBe(0);
 
     // Second rating (card is now a review card)
-    await rateCard('test-card', 'Test Card', Rating.Hard, '1000', 'Easy', 'leetcode.com');
+    await rateCard({
+      slug: 'test-card',
+      name: 'Test Card',
+      rating: Rating.Hard,
+      leetcodeId: '1000',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
     todayStats = stats?.['2024-03-15'];
@@ -1145,11 +1450,41 @@ describe('getReviewQueue', () => {
 
   it('should return only new cards when no reviews are due', async () => {
     // Create cards - all new
-    await addCard('problem1', 'Problem 1', '1001', 'Easy', 'leetcode.com');
-    await addCard('problem2', 'Problem 2', '1002', 'Medium', 'leetcode.com');
-    await addCard('problem3', 'Problem 3', '1003', 'Hard', 'leetcode.com');
-    await addCard('problem4', 'Problem 4', '1004', 'Easy', 'leetcode.com');
-    await addCard('problem5', 'Problem 5', '1005', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'problem1',
+      name: 'Problem 1',
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'problem2',
+      name: 'Problem 2',
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'problem3',
+      name: 'Problem 3',
+      leetcodeId: '1003',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'problem4',
+      name: 'Problem 4',
+      leetcodeId: '1004',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'problem5',
+      name: 'Problem 5',
+      leetcodeId: '1005',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     const queue = await getReviewQueue();
 
@@ -1160,12 +1495,38 @@ describe('getReviewQueue', () => {
 
   it('should return only review cards when they are due', async () => {
     // Create and rate cards to make them review cards
-    await addCard('problem1', 'Problem 1', '1001', 'Easy', 'leetcode.com');
-    await addCard('problem2', 'Problem 2', '1002', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'problem1',
+      name: 'Problem 1',
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'problem2',
+      name: 'Problem 2',
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Rate them to move out of New state
-    await rateCard('problem1', 'Problem 1', Rating.Good, '1001', 'Easy', 'leetcode.com');
-    await rateCard('problem2', 'Problem 2', Rating.Good, '1002', 'Medium', 'leetcode.com');
+    await rateCard({
+      slug: 'problem1',
+      name: 'Problem 1',
+      rating: Rating.Good,
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'problem2',
+      name: 'Problem 2',
+      rating: Rating.Good,
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Manually update their due dates to be in the past
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1185,18 +1546,44 @@ describe('getReviewQueue', () => {
     await storage.setItem(STORAGE_KEYS.stats, {});
 
     // Create some new cards
-    await addCard('new1', 'New 1', '2001', 'Easy', 'leetcode.com');
-    await addCard('new2', 'New 2', '2002', 'Medium', 'leetcode.com');
-    await addCard('new3', 'New 3', '2003', 'Hard', 'leetcode.com');
-    await addCard('new4', 'New 4', '2004', 'Easy', 'leetcode.com'); // This won't be included (exceeds limit)
+    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '2001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '2002', difficulty: 'Medium', domain: 'leetcode.com' });
+    await addCard({ slug: 'new3', name: 'New 3', leetcodeId: '2003', difficulty: 'Hard', domain: 'leetcode.com' });
+    await addCard({ slug: 'new4', name: 'New 4', leetcodeId: '2004', difficulty: 'Easy', domain: 'leetcode.com' }); // This won't be included (exceeds limit)
 
     // Create some review cards
-    await addCard('review1', 'Review 1', '3001', 'Medium', 'leetcode.com');
-    await addCard('review2', 'Review 2', '3002', 'Hard', 'leetcode.com');
+    await addCard({
+      slug: 'review1',
+      name: 'Review 1',
+      leetcodeId: '3001',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'review2',
+      name: 'Review 2',
+      leetcodeId: '3002',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Rate review cards to move them out of New state
-    await rateCard('review1', 'Review 1', Rating.Good, '3001', 'Medium', 'leetcode.com');
-    await rateCard('review2', 'Review 2', Rating.Good, '3002', 'Hard', 'leetcode.com');
+    await rateCard({
+      slug: 'review1',
+      name: 'Review 1',
+      rating: Rating.Good,
+      leetcodeId: '3001',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'review2',
+      name: 'Review 2',
+      rating: Rating.Good,
+      leetcodeId: '3002',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Set their due dates to the past
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1221,8 +1608,21 @@ describe('getReviewQueue', () => {
   });
 
   it('should not include future due cards', async () => {
-    await addCard('future1', 'Future 1', '4001', 'Easy', 'leetcode.com');
-    await rateCard('future1', 'Future 1', Rating.Good, '4001', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'future1',
+      name: 'Future 1',
+      leetcodeId: '4001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'future1',
+      name: 'Future 1',
+      rating: Rating.Good,
+      leetcodeId: '4001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     // Set due date to future
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1237,14 +1637,53 @@ describe('getReviewQueue', () => {
 
   it('should include cards due today regardless of time', async () => {
     // Test that cards due at any time today are included
-    await addCard('morning', 'Morning Card', '5001', 'Easy', 'leetcode.com');
-    await addCard('evening', 'Evening Card', '5002', 'Medium', 'leetcode.com');
-    await addCard('midnight', 'Midnight Card', '5003', 'Hard', 'leetcode.com');
+    await addCard({
+      slug: 'morning',
+      name: 'Morning Card',
+      leetcodeId: '5001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'evening',
+      name: 'Evening Card',
+      leetcodeId: '5002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'midnight',
+      name: 'Midnight Card',
+      leetcodeId: '5003',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Rate them to move out of New state
-    await rateCard('morning', 'Morning Card', Rating.Good, '5001', 'Easy', 'leetcode.com');
-    await rateCard('evening', 'Evening Card', Rating.Good, '5002', 'Medium', 'leetcode.com');
-    await rateCard('midnight', 'Midnight Card', Rating.Good, '5003', 'Hard', 'leetcode.com');
+    await rateCard({
+      slug: 'morning',
+      name: 'Morning Card',
+      rating: Rating.Good,
+      leetcodeId: '5001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'evening',
+      name: 'Evening Card',
+      rating: Rating.Good,
+      leetcodeId: '5002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'midnight',
+      name: 'Midnight Card',
+      rating: Rating.Good,
+      leetcodeId: '5003',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Set due times to various times today
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1266,8 +1705,21 @@ describe('getReviewQueue', () => {
   });
 
   it('should exclude cards due tomorrow even if due at 00:00:01', async () => {
-    await addCard('tomorrow', 'Tomorrow Card', '5004', 'Medium', 'leetcode.com');
-    await rateCard('tomorrow', 'Tomorrow Card', Rating.Good, '5004', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'tomorrow',
+      name: 'Tomorrow Card',
+      leetcodeId: '5004',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'tomorrow',
+      name: 'Tomorrow Card',
+      rating: Rating.Good,
+      leetcodeId: '5004',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Set due to one second after midnight tomorrow in local timezone
     const now = new Date();
@@ -1287,16 +1739,36 @@ describe('getReviewQueue', () => {
     await storage.setItem(STORAGE_KEYS.stats, {});
 
     // Create new cards
-    await addCard('new1', 'New 1', '2001', 'Easy', 'leetcode.com');
-    await addCard('new2', 'New 2', '2002', 'Medium', 'leetcode.com');
+    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '2001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '2002', difficulty: 'Medium', domain: 'leetcode.com' });
 
     // Create due review cards
-    await addCard('due1', 'Due 1', '5001', 'Medium', 'leetcode.com');
-    await rateCard('due1', 'Due 1', Rating.Good, '5001', 'Medium', 'leetcode.com');
+    await addCard({ slug: 'due1', name: 'Due 1', leetcodeId: '5001', difficulty: 'Medium', domain: 'leetcode.com' });
+    await rateCard({
+      slug: 'due1',
+      name: 'Due 1',
+      rating: Rating.Good,
+      leetcodeId: '5001',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Create future review cards
-    await addCard('future1', 'Future 1', '4001', 'Easy', 'leetcode.com');
-    await rateCard('future1', 'Future 1', Rating.Easy, '4001', 'Easy', 'leetcode.com');
+    await addCard({
+      slug: 'future1',
+      name: 'Future 1',
+      leetcodeId: '4001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'future1',
+      name: 'Future 1',
+      rating: Rating.Easy,
+      leetcodeId: '4001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     // Manually set due dates
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1323,7 +1795,13 @@ describe('getReviewQueue', () => {
   it('should respect max new cards per day limit from settings', async () => {
     // Create many new cards
     for (let i = 1; i <= 10; i++) {
-      await addCard(`new${i}`, `New ${i}`, `${6000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: `new${i}`,
+        name: `New ${i}`,
+        leetcodeId: `${6000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     const queue = await getReviewQueue();
@@ -1336,8 +1814,21 @@ describe('getReviewQueue', () => {
   it('should include all due review cards regardless of limit', async () => {
     // Create many review cards
     for (let i = 1; i <= 10; i++) {
-      await addCard(`review${i}`, `Review ${i}`, `${7000 + i}`, 'Medium', 'leetcode.com');
-      await rateCard(`review${i}`, `Review ${i}`, Rating.Good, `${7000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: `review${i}`,
+        name: `Review ${i}`,
+        leetcodeId: `${7000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
+      await rateCard({
+        slug: `review${i}`,
+        name: `Review ${i}`,
+        rating: Rating.Good,
+        leetcodeId: `${7000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     // Set all to be due
@@ -1372,7 +1863,13 @@ describe('getReviewQueue', () => {
 
     // Create 5 new cards
     for (let i = 1; i <= 5; i++) {
-      await addCard(`new${i}`, `New ${i}`, `${6000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: `new${i}`,
+        name: `New ${i}`,
+        leetcodeId: `${6000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     const queue = await getReviewQueue();
@@ -1399,7 +1896,13 @@ describe('getReviewQueue', () => {
 
     // Create new cards
     for (let i = 1; i <= 5; i++) {
-      await addCard(`new${i}`, `New ${i}`, `${8000 + i}`, 'Easy', 'leetcode.com');
+      await addCard({
+        slug: `new${i}`,
+        name: `New ${i}`,
+        leetcodeId: `${8000 + i}`,
+        difficulty: 'Easy',
+        domain: 'leetcode.com',
+      });
     }
 
     const queue = await getReviewQueue();
@@ -1426,14 +1929,40 @@ describe('getReviewQueue', () => {
     );
 
     // Create new cards (won't be included)
-    await addCard('new1', 'New 1', '2001', 'Easy', 'leetcode.com');
-    await addCard('new2', 'New 2', '2002', 'Medium', 'leetcode.com');
+    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '2001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '2002', difficulty: 'Medium', domain: 'leetcode.com' });
 
     // Create review cards (should be included)
-    await addCard('review1', 'Review 1', '3001', 'Medium', 'leetcode.com');
-    await addCard('review2', 'Review 2', '3002', 'Hard', 'leetcode.com');
-    await rateCard('review1', 'Review 1', Rating.Good, '3001', 'Medium', 'leetcode.com');
-    await rateCard('review2', 'Review 2', Rating.Good, '3002', 'Hard', 'leetcode.com');
+    await addCard({
+      slug: 'review1',
+      name: 'Review 1',
+      leetcodeId: '3001',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'review2',
+      name: 'Review 2',
+      leetcodeId: '3002',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'review1',
+      name: 'Review 1',
+      rating: Rating.Good,
+      leetcodeId: '3001',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'review2',
+      name: 'Review 2',
+      rating: Rating.Good,
+      leetcodeId: '3002',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Set review cards to be due
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1466,7 +1995,13 @@ describe('getReviewQueue', () => {
 
     // Create 10 new cards
     for (let i = 1; i <= 10; i++) {
-      await addCard(`new${i}`, `New ${i}`, `${6000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: `new${i}`,
+        name: `New ${i}`,
+        leetcodeId: `${6000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     const queue = await getReviewQueue();
@@ -1481,7 +2016,13 @@ describe('getReviewQueue', () => {
 
     // Create new cards
     for (let i = 1; i <= 5; i++) {
-      await addCard(`new${i}`, `New ${i}`, `${8000 + i}`, 'Easy', 'leetcode.com');
+      await addCard({
+        slug: `new${i}`,
+        name: `New ${i}`,
+        leetcodeId: `${8000 + i}`,
+        difficulty: 'Easy',
+        domain: 'leetcode.com',
+      });
     }
 
     const queue = await getReviewQueue();
@@ -1498,7 +2039,13 @@ describe('getReviewQueue', () => {
 
     // Create new cards
     for (let i = 1; i <= 10; i++) {
-      await addCard(`new${i}`, `New ${i}`, `${9000 + i}`, 'Easy', 'leetcode.com');
+      await addCard({
+        slug: `new${i}`,
+        name: `New ${i}`,
+        leetcodeId: `${9000 + i}`,
+        difficulty: 'Easy',
+        domain: 'leetcode.com',
+      });
     }
 
     const queue = await getReviewQueue();
@@ -1510,9 +2057,9 @@ describe('getReviewQueue', () => {
 
   it('should sort cards by due date then slug for stable ordering', async () => {
     // Create cards with specific due dates
-    await addCard('card-c', 'Card C', '1001', 'Easy', 'leetcode.com');
-    await addCard('card-a', 'Card A', '1002', 'Medium', 'leetcode.com');
-    await addCard('card-b', 'Card B', '1003', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'card-c', name: 'Card C', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'card-a', name: 'Card A', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
+    await addCard({ slug: 'card-b', name: 'Card B', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
 
     // Set same due date for all cards
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1533,7 +2080,13 @@ describe('getReviewQueue', () => {
   it('should maintain stable order across multiple calls', async () => {
     // Create multiple cards
     for (let i = 1; i <= 5; i++) {
-      await addCard(`card-${i}`, `Card ${i}`, `${1000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: `card-${i}`,
+        name: `Card ${i}`,
+        leetcodeId: `${1000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     // Get queue multiple times
@@ -1549,12 +2102,37 @@ describe('getReviewQueue', () => {
 
   it('should place cards rated "Again" at the back of the queue', async () => {
     // Create cards
-    await addCard('first-card', 'First Card', '1001', 'Easy', 'leetcode.com');
-    await addCard('second-card', 'Second Card', '1002', 'Medium', 'leetcode.com');
-    await addCard('third-card', 'Third Card', '1003', 'Hard', 'leetcode.com');
+    await addCard({
+      slug: 'first-card',
+      name: 'First Card',
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'second-card',
+      name: 'Second Card',
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'third-card',
+      name: 'Third Card',
+      leetcodeId: '1003',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Rate first card as "Again" - it should get a due date later today
-    await rateCard('first-card', 'First Card', Rating.Again, '1001', 'Easy', 'leetcode.com');
+    await rateCard({
+      slug: 'first-card',
+      name: 'First Card',
+      rating: Rating.Again,
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     const queue = await getReviewQueue();
 
@@ -1569,7 +2147,13 @@ describe('getReviewQueue', () => {
     // Create more new cards than the daily limit
     const cardSlugs = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot'];
     for (let i = 0; i < cardSlugs.length; i++) {
-      await addCard(cardSlugs[i], `Card ${cardSlugs[i]}`, `${2000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: cardSlugs[i],
+        name: `Card ${cardSlugs[i]}`,
+        leetcodeId: `${2000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     // Set all cards to have the same due date for predictable ordering
@@ -1591,12 +2175,37 @@ describe('getReviewQueue', () => {
 
   it('should maintain order when mixing review and new cards', async () => {
     // Create new cards with early due dates
-    await addCard('new-early', 'New Early', '1001', 'Easy', 'leetcode.com');
-    await addCard('new-late', 'New Late', '1002', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'new-early',
+      name: 'New Early',
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'new-late',
+      name: 'New Late',
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Create review cards
-    await addCard('review-middle', 'Review Middle', '2001', 'Hard', 'leetcode.com');
-    await rateCard('review-middle', 'Review Middle', Rating.Good, '2001', 'Hard', 'leetcode.com');
+    await addCard({
+      slug: 'review-middle',
+      name: 'Review Middle',
+      leetcodeId: '2001',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'review-middle',
+      name: 'Review Middle',
+      rating: Rating.Good,
+      leetcodeId: '2001',
+      difficulty: 'Hard',
+      domain: 'leetcode.com',
+    });
 
     // Set specific due dates
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1618,16 +2227,23 @@ describe('getReviewQueue', () => {
     vi.setSystemTime(new Date('2024-01-15T09:00:00'));
 
     // Create cards
-    await addCard('card-1', 'Card 1', '1001', 'Easy', 'leetcode.com');
-    await addCard('card-2', 'Card 2', '1002', 'Medium', 'leetcode.com');
-    await addCard('card-3', 'Card 3', '1003', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'card-1', name: 'Card 1', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'card-2', name: 'Card 2', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
+    await addCard({ slug: 'card-3', name: 'Card 3', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
 
     // Get initial queue
     const initialQueue = await getReviewQueue();
     expect(initialQueue[0].slug).toBe('card-1');
 
     // Rate first card as "Hard" - should move to later today
-    await rateCard('card-1', 'Card 1', Rating.Hard, '1001', 'Easy', 'leetcode.com');
+    await rateCard({
+      slug: 'card-1',
+      name: 'Card 1',
+      rating: Rating.Hard,
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
 
     // Get queue again
     const updatedQueue = await getReviewQueue();
@@ -1644,7 +2260,13 @@ describe('getReviewQueue', () => {
 
     // Create many new cards
     for (let i = 1; i <= 10; i++) {
-      await addCard(`card-${i}`, `Card ${i}`, `${3000 + i}`, 'Medium', 'leetcode.com');
+      await addCard({
+        slug: `card-${i}`,
+        name: `Card ${i}`,
+        leetcodeId: `${3000 + i}`,
+        difficulty: 'Medium',
+        domain: 'leetcode.com',
+      });
     }
 
     // Start with default (3)
@@ -1669,9 +2291,9 @@ describe('getReviewQueue', () => {
 
   it('should properly sort by due date timestamps', async () => {
     // Create cards and rate them to get different due times
-    await addCard('early', 'Early', '1001', 'Easy', 'leetcode.com');
-    await addCard('middle', 'Middle', '1002', 'Medium', 'leetcode.com');
-    await addCard('late', 'Late', '1003', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'early', name: 'Early', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'middle', name: 'Middle', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
+    await addCard({ slug: 'late', name: 'Late', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
 
     // Set specific due times
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1689,9 +2311,9 @@ describe('getReviewQueue', () => {
   });
 
   it('should handle cards with millisecond-precision due times', async () => {
-    await addCard('card-a', 'Card A', '1001', 'Easy', 'leetcode.com');
-    await addCard('card-b', 'Card B', '1002', 'Medium', 'leetcode.com');
-    await addCard('card-c', 'Card C', '1003', 'Hard', 'leetcode.com');
+    await addCard({ slug: 'card-a', name: 'Card A', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'card-b', name: 'Card B', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
+    await addCard({ slug: 'card-c', name: 'Card C', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
 
     // Set due times with millisecond differences
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1715,8 +2337,20 @@ describe('getReviewQueue', () => {
   });
 
   it('should handle queue with only paused cards', async () => {
-    await addCard('paused-1', 'Paused 1', '1001', 'Easy', 'leetcode.com');
-    await addCard('paused-2', 'Paused 2', '1002', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'paused-1',
+      name: 'Paused 1',
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'paused-2',
+      name: 'Paused 2',
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     await setPauseStatus('paused-1', true);
     await setPauseStatus('paused-2', true);
@@ -1726,8 +2360,20 @@ describe('getReviewQueue', () => {
   });
 
   it('should handle queue with only future cards', async () => {
-    await addCard('future-1', 'Future 1', '1001', 'Easy', 'leetcode.com');
-    await addCard('future-2', 'Future 2', '1002', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'future-1',
+      name: 'Future 1',
+      leetcodeId: '1001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'future-2',
+      name: 'Future 2',
+      leetcodeId: '1002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Set due dates to tomorrow
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -1746,14 +2392,28 @@ describe('getReviewQueue', () => {
     vi.setSystemTime(today);
 
     // Create new cards
-    await addCard('new1', 'New 1', '1001', 'Easy', 'leetcode.com');
-    await addCard('new2', 'New 2', '1002', 'Medium', 'leetcode.com');
-    await addCard('new3', 'New 3', '1003', 'Hard', 'leetcode.com');
-    await addCard('new4', 'New 4', '1004', 'Easy', 'leetcode.com');
+    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
+    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
+    await addCard({ slug: 'new3', name: 'New 3', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
+    await addCard({ slug: 'new4', name: 'New 4', leetcodeId: '1004', difficulty: 'Easy', domain: 'leetcode.com' });
 
     // Create review cards (rate them to make them due)
-    await rateCard('review1', 'Review 1', Rating.Again, '2001', 'Easy', 'leetcode.com');
-    await rateCard('review2', 'Review 2', Rating.Hard, '2002', 'Medium', 'leetcode.com');
+    await rateCard({
+      slug: 'review1',
+      name: 'Review 1',
+      rating: Rating.Again,
+      leetcodeId: '2001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await rateCard({
+      slug: 'review2',
+      name: 'Review 2',
+      rating: Rating.Hard,
+      leetcodeId: '2002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
 
     // Pause some cards
     await setPauseStatus('new2', true); // Pause a new card
@@ -1779,8 +2439,20 @@ describe('getReviewQueue', () => {
 
   it('should handle all cards being paused', async () => {
     // Create and pause all cards
-    await addCard('paused1', 'Paused 1', '3001', 'Easy', 'leetcode.com');
-    await addCard('paused2', 'Paused 2', '3002', 'Medium', 'leetcode.com');
+    await addCard({
+      slug: 'paused1',
+      name: 'Paused 1',
+      leetcodeId: '3001',
+      difficulty: 'Easy',
+      domain: 'leetcode.com',
+    });
+    await addCard({
+      slug: 'paused2',
+      name: 'Paused 2',
+      leetcodeId: '3002',
+      difficulty: 'Medium',
+      domain: 'leetcode.com',
+    });
     await setPauseStatus('paused1', true);
     await setPauseStatus('paused2', true);
 

@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
-import type { Card, Difficulty, LeetcodeDomain } from '@/shared/cards';
-import type { Grade, State as FsrsState } from 'ts-fsrs';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
+import type { State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Note } from '@/shared/notes';
 import type { Theme, Language } from '@/shared/settings';
@@ -59,27 +59,12 @@ export const MessageType = {
 // Message request types as discriminated union
 export type MessageRequest =
   | { type: typeof MessageType.PING }
-  | {
-      type: typeof MessageType.ADD_CARD;
-      slug: string;
-      name: string;
-      leetcodeId: string;
-      difficulty: Difficulty;
-      domain: LeetcodeDomain;
-    }
+  | { type: typeof MessageType.ADD_CARD; problem: ProblemDescriptor }
   | { type: typeof MessageType.GET_ALL_CARDS }
   | { type: typeof MessageType.REMOVE_CARD; slug: string }
   | { type: typeof MessageType.DELAY_CARD; slug: string; days: number }
   | { type: typeof MessageType.SET_PAUSE_STATUS; slug: string; paused: boolean }
-  | {
-      type: typeof MessageType.RATE_CARD;
-      slug: string;
-      name: string;
-      rating: Grade;
-      leetcodeId: string;
-      difficulty: Difficulty;
-      domain: LeetcodeDomain;
-    }
+  | { type: typeof MessageType.RATE_CARD; input: RateCardInput }
   | { type: typeof MessageType.GET_REVIEW_QUEUE }
   | { type: typeof MessageType.GET_TODAY_STATS }
   | { type: typeof MessageType.GET_NOTE; cardId: string }

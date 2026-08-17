@@ -12,7 +12,7 @@ import {
 } from '@/hooks/useBackgroundQueries';
 import type { Grade } from 'ts-fsrs';
 import { useI18n } from '../../contexts/I18nContext';
-import type { Card } from '@/shared/cards';
+import type { Card, RateCardInput } from '@/shared/cards';
 
 export function ReviewQueue() {
   const t = useI18n();
@@ -70,21 +70,18 @@ export function ReviewQueue() {
 
   const handleRating = async (rating: Grade) => {
     const currentCard = queue[0];
-    await handleCardAction(
-      () =>
-        rateCardMutation.mutateAsync({
-          slug: currentCard.slug,
-          name: currentCard.name,
-          rating,
-          leetcodeId: currentCard.leetcodeId,
-          difficulty: currentCard.difficulty,
-          domain: currentCard.domain,
-        }),
-      {
-        getSlideDirection: (result) => (result.shouldRequeue ? 'left' : 'right'),
-        errorMessage: 'Failed to rate card:',
-      }
-    );
+    const input: RateCardInput = {
+      slug: currentCard.slug,
+      name: currentCard.name,
+      leetcodeId: currentCard.leetcodeId,
+      difficulty: currentCard.difficulty,
+      domain: currentCard.domain,
+      rating,
+    };
+    await handleCardAction(() => rateCardMutation.mutateAsync(input), {
+      getSlideDirection: (result) => (result.shouldRequeue ? 'left' : 'right'),
+      errorMessage: 'Failed to rate card:',
+    });
   };
 
   const handleDelete = async () => {

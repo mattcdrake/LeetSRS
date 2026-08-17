@@ -80,12 +80,14 @@ describe('useRateCardMutation', () => {
     await waitFor(() => {
       expect(sendMessage).toHaveBeenCalledWith({
         type: MessageType.RATE_CARD,
-        slug: 'two-sum',
-        name: 'Two Sum',
-        rating: Rating.Good,
-        leetcodeId: '1',
-        difficulty: 'Easy',
-        domain: 'leetcode.com',
+        input: {
+          slug: 'two-sum',
+          name: 'Two Sum',
+          rating: Rating.Good,
+          leetcodeId: '1',
+          difficulty: 'Easy',
+          domain: 'leetcode.com',
+        },
       });
     });
   });
