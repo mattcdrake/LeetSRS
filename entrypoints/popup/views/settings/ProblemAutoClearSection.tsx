@@ -8,8 +8,8 @@ export function ProblemAutoClearSection() {
   const { data: autoClearLeetcode = DEFAULT_AUTO_CLEAR_LEETCODE } = useAutoClearLeetcodeQuery();
   const setAutoClearLeetcodeMutation = useSetAutoClearLeetcodeMutation();
 
-  const toggleLeetcode = () => {
-    setAutoClearLeetcodeMutation.mutate(!autoClearLeetcode);
+  const setAutoClearLeetcode = (isSelected: boolean) => {
+    setAutoClearLeetcodeMutation.mutate(isSelected);
   };
 
   return (
@@ -20,7 +20,7 @@ export function ProblemAutoClearSection() {
         <SettingsSwitch
           label={t.settings.problemAutoClear.enableAutoReset}
           isSelected={autoClearLeetcode}
-          onChange={toggleLeetcode}
+          onChange={setAutoClearLeetcode}
         />
       </div>
     </div>
