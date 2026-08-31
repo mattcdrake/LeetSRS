@@ -21,6 +21,7 @@ export interface ExportData {
       animationsEnabled?: boolean;
       theme?: Theme;
       autoClearLeetcode?: boolean;
+      clearEditorOnReview?: boolean;
       badgeEnabled?: boolean;
       language?: Language;
     };
@@ -53,6 +54,7 @@ export async function exportData(): Promise<string> {
   const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
   const autoClearLeetcode = await storage.getItem<boolean>(STORAGE_KEYS.autoClearLeetcode);
+  const clearEditorOnReview = await storage.getItem<boolean>(STORAGE_KEYS.clearEditorOnReview);
   const badgeEnabled = await storage.getItem<boolean>(STORAGE_KEYS.badgeEnabled);
   const language = await storage.getItem<Language>(STORAGE_KEYS.language);
 
@@ -80,6 +82,7 @@ export async function exportData(): Promise<string> {
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
         ...(autoClearLeetcode != null && { autoClearLeetcode }),
+        ...(clearEditorOnReview != null && { clearEditorOnReview }),
         ...(badgeEnabled != null && { badgeEnabled }),
         ...(language != null && { language }),
       },
@@ -173,6 +176,9 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.data.settings.autoClearLeetcode != null) {
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, data.data.settings.autoClearLeetcode);
     }
+    if (data.data.settings.clearEditorOnReview != null) {
+      await storage.setItem(STORAGE_KEYS.clearEditorOnReview, data.data.settings.clearEditorOnReview);
+    }
     if (data.data.settings.badgeEnabled != null) {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, data.data.settings.badgeEnabled);
     }
@@ -208,6 +214,7 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
   await storage.removeItem(STORAGE_KEYS.theme);
   await storage.removeItem(STORAGE_KEYS.autoClearLeetcode);
+  await storage.removeItem(STORAGE_KEYS.clearEditorOnReview);
   await storage.removeItem(STORAGE_KEYS.badgeEnabled);
   await storage.removeItem(STORAGE_KEYS.language);
 

@@ -1,15 +1,26 @@
-import { useAutoClearLeetcodeQuery, useSetAutoClearLeetcodeMutation } from '@/hooks/useBackgroundQueries';
-import { DEFAULT_AUTO_CLEAR_LEETCODE } from '@/shared/settings';
+import {
+  useAutoClearLeetcodeQuery,
+  useClearEditorOnReviewQuery,
+  useSetAutoClearLeetcodeMutation,
+  useSetClearEditorOnReviewMutation,
+} from '@/hooks/useBackgroundQueries';
+import { DEFAULT_AUTO_CLEAR_LEETCODE, DEFAULT_CLEAR_EDITOR_ON_REVIEW } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 
 export function ProblemAutoClearSection() {
   const t = useI18n();
   const { data: autoClearLeetcode = DEFAULT_AUTO_CLEAR_LEETCODE } = useAutoClearLeetcodeQuery();
+  const { data: clearEditorOnReview = DEFAULT_CLEAR_EDITOR_ON_REVIEW } = useClearEditorOnReviewQuery();
   const setAutoClearLeetcodeMutation = useSetAutoClearLeetcodeMutation();
+  const setClearEditorOnReviewMutation = useSetClearEditorOnReviewMutation();
 
   const setAutoClearLeetcode = (isSelected: boolean) => {
     setAutoClearLeetcodeMutation.mutate(isSelected);
+  };
+
+  const setClearEditorOnReview = (isSelected: boolean) => {
+    setClearEditorOnReviewMutation.mutate(isSelected);
   };
 
   return (
@@ -21,6 +32,11 @@ export function ProblemAutoClearSection() {
           label={t.settings.problemAutoClear.enableAutoReset}
           isSelected={autoClearLeetcode}
           onChange={setAutoClearLeetcode}
+        />
+        <SettingsSwitch
+          label={t.settings.problemAutoClear.clearEditorOnReview}
+          isSelected={clearEditorOnReview}
+          onChange={setClearEditorOnReview}
         />
       </div>
     </div>

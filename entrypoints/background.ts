@@ -20,6 +20,8 @@ import {
   setTheme,
   getAutoClearLeetcode,
   setAutoClearLeetcode,
+  getClearEditorOnReview,
+  setClearEditorOnReview,
   getBadgeEnabled,
   setBadgeEnabled,
   getLanguage,
@@ -29,6 +31,7 @@ import { browser } from 'wxt/browser';
 import { MessageType, type MessageRequest } from '@/shared/messages';
 import { runMigrations, migrations } from '@/services/migrations';
 import { exportData, importData, resetAllData } from '@/services/import-export';
+import { getClearEditorOnReviewDecision } from '@/services/clear-editor-on-review';
 import {
   getGistSyncConfig,
   setGistSyncConfig,
@@ -181,6 +184,16 @@ export default defineBackground(() => {
       case MessageType.SET_AUTO_CLEAR_LEETCODE: {
         return handleDataUpdate(() => setAutoClearLeetcode(request.value));
       }
+
+      case MessageType.GET_CLEAR_EDITOR_ON_REVIEW:
+        return await getClearEditorOnReview();
+
+      case MessageType.SET_CLEAR_EDITOR_ON_REVIEW: {
+        return handleDataUpdate(() => setClearEditorOnReview(request.value));
+      }
+
+      case MessageType.GET_CLEAR_EDITOR_ON_REVIEW_DECISION:
+        return await getClearEditorOnReviewDecision(request.slug, request.domain);
 
       case MessageType.GET_BADGE_ENABLED:
         return await getBadgeEnabled();

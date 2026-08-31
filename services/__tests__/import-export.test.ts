@@ -64,6 +64,7 @@ describe('import-export', () => {
         animationsEnabled: true,
         theme: 'dark' as const,
         autoClearLeetcode: true,
+        clearEditorOnReview: true,
         badgeEnabled: true,
         language: 'en' as const,
       };
@@ -77,6 +78,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
       await storage.setItem(STORAGE_KEYS.autoClearLeetcode, mockSettings.autoClearLeetcode);
+      await storage.setItem(STORAGE_KEYS.clearEditorOnReview, mockSettings.clearEditorOnReview);
       await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
       await storage.setItem(STORAGE_KEYS.language, mockSettings.language);
 
@@ -187,6 +189,7 @@ describe('import-export', () => {
           animationsEnabled: false,
           theme: 'light' as const,
           autoClearLeetcode: true,
+          clearEditorOnReview: true,
           badgeEnabled: false,
           language: 'en' as const,
         },
@@ -208,6 +211,7 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
       expect(await storage.getItem(STORAGE_KEYS.autoClearLeetcode)).toEqual(true);
+      expect(await storage.getItem(STORAGE_KEYS.clearEditorOnReview)).toEqual(true);
       expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.language)).toEqual('en');
     });

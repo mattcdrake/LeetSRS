@@ -226,7 +226,27 @@ describe('migrations', () => {
     it('should handle empty or missing cards storage', async () => {
       await runMigrations(migrations);
 
-      expect(await getCurrentSchemaVersion()).toBe(1);
+      expect(await getCurrentSchemaVersion()).toBe(2);
+    });
+  });
+
+  describe('migration v2: clear editor on review setting', () => {
+    it('should initialize the setting as disabled', async () => {
+      await setSchemaVersion(1);
+
+      await runMigrations(migrations);
+
+      expect(await storage.getItem(STORAGE_KEYS.clearEditorOnReview)).toBe(false);
+      expect(await getCurrentSchemaVersion()).toBe(2);
+    });
+
+    it('should not overwrite an existing setting', async () => {
+      await setSchemaVersion(1);
+      await storage.setItem(STORAGE_KEYS.clearEditorOnReview, true);
+
+      await runMigrations(migrations);
+
+      expect(await storage.getItem(STORAGE_KEYS.clearEditorOnReview)).toBe(true);
     });
   });
 });

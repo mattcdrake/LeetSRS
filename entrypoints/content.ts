@@ -3,6 +3,7 @@ import {
   extractProblemData,
   getCurrentDomain,
   RatingMenu,
+  setupClearEditorOnReview,
   setupLeetcodeAutoReset,
   Tooltip,
 } from '@/utils/content';
@@ -14,8 +15,12 @@ import type { ProblemData } from '@/shared/problem-data';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
-  runAt: 'document_idle',
+  runAt: 'document_start',
   async main() {
+    setupClearEditorOnReview();
+
+    await whenDocumentBodyIsReady();
+
     // Wake up service worker so it's ready when user interacts
     try {
       await sendMessage({ type: MessageType.PING });
@@ -26,6 +31,24 @@ export default defineContentScript({
     setupLeetcodeAutoReset();
   },
 });
+
+function whenDocumentBodyIsReady(): Promise<void> {
+  if (document.body) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (!document.body) {
+        return;
+      }
+
+      observer.disconnect();
+      resolve();
+    });
+    observer.observe(document.documentElement, { childList: true });
+  });
+}
 
 function toProblemDescriptor(problemData: ProblemData): ProblemDescriptor {
   return {

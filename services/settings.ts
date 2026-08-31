@@ -11,6 +11,7 @@ import {
   type Theme,
   DEFAULT_THEME,
   DEFAULT_AUTO_CLEAR_LEETCODE,
+  DEFAULT_CLEAR_EDITOR_ON_REVIEW,
   DEFAULT_BADGE_ENABLED,
   type Language,
 } from '@/shared/settings';
@@ -73,6 +74,15 @@ export async function getAutoClearLeetcode(): Promise<boolean> {
 
 export async function setAutoClearLeetcode(value: boolean): Promise<void> {
   await storage.setItem(STORAGE_KEYS.autoClearLeetcode, value);
+}
+
+export async function getClearEditorOnReview(): Promise<boolean> {
+  const value = await storage.getItem<boolean>(STORAGE_KEYS.clearEditorOnReview);
+  return value ?? DEFAULT_CLEAR_EDITOR_ON_REVIEW;
+}
+
+export async function setClearEditorOnReview(value: boolean): Promise<void> {
+  await storage.setItem(STORAGE_KEYS.clearEditorOnReview, value);
 }
 
 export async function getBadgeEnabled(): Promise<boolean> {

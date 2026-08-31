@@ -1,4 +1,5 @@
 export * from './auto-reset';
+export * from './editor-state';
 export * from './button';
 export * from './constants';
 export * from './domain';

@@ -60,4 +60,14 @@ export const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 2,
+    description: 'Initialize the clear editor on review setting as disabled',
+    migrate: async () => {
+      const value = await storage.getItem<boolean>(STORAGE_KEYS.clearEditorOnReview);
+      if (value == null) {
+        await storage.setItem(STORAGE_KEYS.clearEditorOnReview, false);
+      }
+    },
+  },
 ];

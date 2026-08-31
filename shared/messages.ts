@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
+import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Note } from '@/shared/notes';
@@ -36,6 +36,9 @@ export const MessageType = {
   SET_THEME: 'SET_THEME',
   GET_AUTO_CLEAR_LEETCODE: 'GET_AUTO_CLEAR_LEETCODE',
   SET_AUTO_CLEAR_LEETCODE: 'SET_AUTO_CLEAR_LEETCODE',
+  GET_CLEAR_EDITOR_ON_REVIEW: 'GET_CLEAR_EDITOR_ON_REVIEW',
+  SET_CLEAR_EDITOR_ON_REVIEW: 'SET_CLEAR_EDITOR_ON_REVIEW',
+  GET_CLEAR_EDITOR_ON_REVIEW_DECISION: 'GET_CLEAR_EDITOR_ON_REVIEW_DECISION',
   GET_BADGE_ENABLED: 'GET_BADGE_ENABLED',
   SET_BADGE_ENABLED: 'SET_BADGE_ENABLED',
   GET_LANGUAGE: 'GET_LANGUAGE',
@@ -55,6 +58,11 @@ export const MessageType = {
   VALIDATE_PAT: 'VALIDATE_PAT',
   VALIDATE_GIST_ID: 'VALIDATE_GIST_ID',
 } as const;
+
+export interface ClearEditorOnReviewDecision {
+  shouldClear: boolean;
+  questionFrontendId?: string;
+}
 
 // Message request types as discriminated union
 export type MessageRequest =
@@ -80,6 +88,13 @@ export type MessageRequest =
   | { type: typeof MessageType.SET_THEME; value: Theme }
   | { type: typeof MessageType.GET_AUTO_CLEAR_LEETCODE }
   | { type: typeof MessageType.SET_AUTO_CLEAR_LEETCODE; value: boolean }
+  | { type: typeof MessageType.GET_CLEAR_EDITOR_ON_REVIEW }
+  | { type: typeof MessageType.SET_CLEAR_EDITOR_ON_REVIEW; value: boolean }
+  | {
+      type: typeof MessageType.GET_CLEAR_EDITOR_ON_REVIEW_DECISION;
+      slug: string;
+      domain: LeetcodeDomain;
+    }
   | { type: typeof MessageType.GET_BADGE_ENABLED }
   | { type: typeof MessageType.SET_BADGE_ENABLED; value: boolean }
   | { type: typeof MessageType.GET_LANGUAGE }
@@ -123,6 +138,9 @@ export type MessageResponseMap = {
   [MessageType.SET_THEME]: void;
   [MessageType.GET_AUTO_CLEAR_LEETCODE]: boolean;
   [MessageType.SET_AUTO_CLEAR_LEETCODE]: void;
+  [MessageType.GET_CLEAR_EDITOR_ON_REVIEW]: boolean;
+  [MessageType.SET_CLEAR_EDITOR_ON_REVIEW]: void;
+  [MessageType.GET_CLEAR_EDITOR_ON_REVIEW_DECISION]: ClearEditorOnReviewDecision;
   [MessageType.GET_BADGE_ENABLED]: boolean;
   [MessageType.SET_BADGE_ENABLED]: void;
   [MessageType.GET_LANGUAGE]: Language;

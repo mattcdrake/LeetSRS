@@ -10,6 +10,8 @@ import {
   setTheme,
   getAutoClearLeetcode,
   setAutoClearLeetcode,
+  getClearEditorOnReview,
+  setClearEditorOnReview,
   getLanguage,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
@@ -19,6 +21,7 @@ import {
   MAX_NEW_CARDS_PER_DAY,
   DEFAULT_THEME,
   DEFAULT_AUTO_CLEAR_LEETCODE,
+  DEFAULT_CLEAR_EDITOR_ON_REVIEW,
 } from '@/shared/settings';
 
 describe('Settings Service', () => {
@@ -237,11 +240,17 @@ describe('Settings Service', () => {
   describe('auto clear settings', () => {
     it('should return default values when not set', async () => {
       expect(await getAutoClearLeetcode()).toBe(DEFAULT_AUTO_CLEAR_LEETCODE);
+      expect(await getClearEditorOnReview()).toBe(DEFAULT_CLEAR_EDITOR_ON_REVIEW);
     });
 
     it('should store and retrieve LeetCode auto clear', async () => {
       await setAutoClearLeetcode(true);
       expect(await getAutoClearLeetcode()).toBe(true);
+    });
+
+    it('should store and retrieve clear editor on review', async () => {
+      await setClearEditorOnReview(true);
+      expect(await getClearEditorOnReview()).toBe(true);
     });
   });
 

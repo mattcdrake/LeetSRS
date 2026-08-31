@@ -32,6 +32,7 @@ export const queryKeys = {
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
     autoClearLeetcode: ['settings', 'autoClearLeetcode'] as const,
+    clearEditorOnReview: ['settings', 'clearEditorOnReview'] as const,
     badgeEnabled: ['settings', 'badgeEnabled'] as const,
     language: ['settings', 'language'] as const,
   },
@@ -283,6 +284,24 @@ export function useSetAutoClearLeetcodeMutation() {
     mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_AUTO_CLEAR_LEETCODE, value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.autoClearLeetcode });
+    },
+  });
+}
+
+export function useClearEditorOnReviewQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.clearEditorOnReview,
+    queryFn: () => sendMessage({ type: MessageType.GET_CLEAR_EDITOR_ON_REVIEW }),
+  });
+}
+
+export function useSetClearEditorOnReviewMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_CLEAR_EDITOR_ON_REVIEW, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.clearEditorOnReview });
     },
   });
 }

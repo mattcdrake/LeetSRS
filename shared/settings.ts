@@ -7,6 +7,7 @@ export const MIN_DAY_START_HOUR = 0;
 export const MAX_DAY_START_HOUR = 23;
 
 export const DEFAULT_AUTO_CLEAR_LEETCODE = false;
+export const DEFAULT_CLEAR_EDITOR_ON_REVIEW = false;
 export const DEFAULT_BADGE_ENABLED = true;
 export type Theme = 'light' | 'dark';
 export const DEFAULT_THEME: Theme = 'dark';
