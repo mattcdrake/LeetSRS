@@ -1,83 +1,70 @@
 import { MessageType, sendMessage } from '@/shared/messages';
-import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
+import { getCurrentDomain, getCurrentProblemSlug } from './domain';
 
-const SLUG_CHECK_INTERVAL_MS = 250;
+const NAVIGATION_EVENT = 'leetsrs:navigation';
+const RESET_ACTION_PATTERN = /^reset\s+to\s+default\s+code\s+definition$/i;
+const SETTINGS_CONTROL_SELECTOR = [
+  '[data-cy*="editor" i][data-cy*="setting" i]',
+  '[data-testid*="editor" i][data-testid*="setting" i]',
+  '[aria-label*="editor settings" i]',
+  '[aria-label*="code settings" i]',
+  '[aria-label*="editor actions" i]',
+  '[data-tooltip*="editor settings" i]',
+  '[title*="editor settings" i]',
+].join(', ');
+const INTERACTIVE_SELECTOR = 'button, [role="button"], [role="menuitem"], [role="menuitemradio"]';
 
-export interface LeetcodeEditorStateIdentifiers {
-  questionFrontendId?: string;
-  questionId?: string;
-}
-
-export function getLeetcodeEditorStateKeys(
-  storageArea: Storage,
-  identifiers: LeetcodeEditorStateIdentifiers
-): string[] {
-  const keys: string[] = [];
-
-  for (let index = 0; index < storageArea.length; index += 1) {
-    const key = storageArea.key(index);
-    if (!key || !isLeetcodeEditorStateKey(key, identifiers)) {
-      continue;
-    }
-    keys.push(key);
-  }
-
-  return keys;
-}
-
-export function isLeetcodeEditorStateKey(key: string, identifiers: LeetcodeEditorStateIdentifiers): boolean {
-  if (identifiers.questionFrontendId && key.startsWith(`${identifiers.questionFrontendId}_`) && key.endsWith('_code')) {
-    return true;
-  }
-
-  if (identifiers.questionId) {
-    const ugcPattern = new RegExp(`^ugc_.+_${escapeRegExp(identifiers.questionId)}_[^_]+_code$`);
-    return ugcPattern.test(key);
-  }
-
-  return false;
-}
-
-export function clearLeetcodeEditorState(identifiers: LeetcodeEditorStateIdentifiers): string[] {
-  const keys = getLeetcodeEditorStateKeys(localStorage, identifiers);
-  for (const key of keys) {
-    localStorage.removeItem(key);
-  }
-  return keys;
-}
-
+/**
+ * Installs a navigation-aware reset flow for due review cards.
+ *
+ * LeetCode owns the editor's saved state, so this deliberately invokes its
+ * reset action rather than guessing at or deleting browser storage entries.
+ */
 export function setupClearEditorOnReview(): () => void {
-  let lastProcessedSlug: string | null = null;
+  let routeKey: string | null = null;
+  let disposePendingReset: (() => void) | undefined;
 
-  const checkCurrentProblem = () => {
+  const processCurrentRoute = () => {
+    const nextRouteKey = `${window.location.pathname}${window.location.search}`;
+    if (nextRouteKey === routeKey) {
+      return;
+    }
+
+    routeKey = nextRouteKey;
+    disposePendingReset?.();
+    disposePendingReset = undefined;
+
     const slug = getCurrentProblemSlug();
     if (!slug) {
-      lastProcessedSlug = null;
       return;
     }
 
-    if (slug === lastProcessedSlug) {
-      return;
-    }
-
-    lastProcessedSlug = slug;
-    void clearEditorIfDueForReview(slug);
+    const requestedRouteKey = nextRouteKey;
+    void requestDueReviewReset(slug, () => currentRouteKey() === requestedRouteKey).then((dispose) => {
+      if (currentRouteKey() === requestedRouteKey) {
+        disposePendingReset = dispose;
+      } else {
+        dispose();
+      }
+    });
   };
 
-  checkCurrentProblem();
-
-  const intervalId = window.setInterval(checkCurrentProblem, SLUG_CHECK_INTERVAL_MS);
-  window.addEventListener('popstate', checkCurrentProblem);
-  window.addEventListener('pageshow', checkCurrentProblem);
+  const restoreHistory = observeHistoryNavigation();
+  window.addEventListener(NAVIGATION_EVENT, processCurrentRoute);
+  window.addEventListener('popstate', processCurrentRoute);
+  window.addEventListener('pageshow', processCurrentRoute);
+  processCurrentRoute();
 
   return () => {
-    window.clearInterval(intervalId);
-    window.removeEventListener('popstate', checkCurrentProblem);
-    window.removeEventListener('pageshow', checkCurrentProblem);
+    disposePendingReset?.();
+    restoreHistory();
+    window.removeEventListener(NAVIGATION_EVENT, processCurrentRoute);
+    window.removeEventListener('popstate', processCurrentRoute);
+    window.removeEventListener('pageshow', processCurrentRoute);
   };
 }
 
-async function clearEditorIfDueForReview(slug: string): Promise<void> {
+async function requestDueReviewReset(slug: string, isCurrentRoute: () => boolean): Promise<() => void> {
   try {
     const decision = await sendMessage({
       type: MessageType.GET_CLEAR_EDITOR_ON_REVIEW_DECISION,
@@ -85,63 +72,153 @@ async function clearEditorIfDueForReview(slug: string): Promise<void> {
       domain: getCurrentDomain(),
     });
 
-    if (!decision.shouldClear) {
+    if (!decision.shouldClear || !isCurrentRoute()) {
+      return () => undefined;
+    }
+
+    return waitForEditorAndReset(isCurrentRoute);
+  } catch (error) {
+    console.error('Failed to reset LeetCode editor for due review:', error);
+    return () => undefined;
+  }
+}
+
+/** Waits for LeetCode's editor controls without polling, then resets once. */
+export function waitForEditorAndReset(isCurrentRoute: () => boolean = () => true): () => void {
+  let complete = false;
+  let observer: MutationObserver | undefined;
+  let settingsOpened = false;
+  let resetRequested = false;
+
+  const stop = () => {
+    complete = true;
+    observer?.disconnect();
+  };
+
+  const tryReset = () => {
+    if (complete || !isCurrentRoute()) {
+      stop();
       return;
     }
 
-    clearLeetcodeEditorState({ questionFrontendId: decision.questionFrontendId });
-
-    const questionId = await fetchQuestionId(slug);
-    if (questionId) {
-      clearLeetcodeEditorState({ questionId });
+    if (resetRequested) {
+      // A confirmation dialog may be rendered by React after the menu action
+      // click. Keep observing mutations so it is confirmed when it appears.
+      if (clickResetConfirmation(document)) {
+        stop();
+      }
+      return;
     }
-  } catch (error) {
-    console.error('Failed to clear LeetCode editor state:', error);
+
+    const settingsControl = findEditorSettingsControl(document);
+    if (!settingsControl) {
+      return;
+    }
+
+    if (!settingsOpened) {
+      settingsControl.click();
+      settingsOpened = true;
+    }
+
+    const resetAction = findResetToDefaultCodeDefinition(document);
+    if (!resetAction) {
+      return;
+    }
+
+    resetRequested = true;
+    resetAction.click();
+    if (clickResetConfirmation(document)) {
+      stop();
+    }
+  };
+
+  tryReset();
+  if (!complete) {
+    observer = new MutationObserver(tryReset);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
   }
+
+  return stop;
 }
 
-async function fetchQuestionId(titleSlug: string): Promise<string | undefined> {
-  try {
-    const csrfToken = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith('csrftoken='))
-      ?.split('=')[1];
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-    if (csrfToken) {
-      headers['X-CSRFToken'] = csrfToken;
-    }
-
-    const response = await fetch(getGraphQLUrl(), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        operationName: 'questionDetail',
-        query: `
-          query questionDetail($titleSlug: String!) {
-            question(titleSlug: $titleSlug) {
-              questionId
-            }
-          }
-        `,
-        variables: { titleSlug },
-      }),
-    });
-
-    if (!response.ok) {
-      return undefined;
-    }
-
-    const data = await response.json();
-    const questionId = data?.data?.question?.questionId;
-    return typeof questionId === 'string' ? questionId : undefined;
-  } catch {
-    return undefined;
+/** Finds the editor's settings/actions control via stable semantics, not CSS classes. */
+export function findEditorSettingsControl(root: ParentNode): HTMLElement | null {
+  const labelledControl = Array.from(root.querySelectorAll<HTMLElement>(SETTINGS_CONTROL_SELECTOR)).find(isInteractive);
+  if (labelledControl) {
+    return labelledControl;
   }
+
+  return (
+    Array.from(root.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)).find((element) => {
+      const label = accessibleLabel(element);
+      return /\b(settings|actions)\b/i.test(label) && /\b(editor|code)\b/i.test(label);
+    }) ?? null
+  );
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** Finds LeetCode's English reset command once the settings menu is open. */
+export function findResetToDefaultCodeDefinition(root: ParentNode): HTMLElement | null {
+  return (
+    Array.from(root.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)).find((element) => {
+      return RESET_ACTION_PATTERN.test(accessibleLabel(element));
+    }) ?? null
+  );
+}
+
+/** Confirms the reset only in a visible dialog, when LeetCode presents one. */
+export function clickResetConfirmation(root: ParentNode): boolean {
+  const dialog = root.querySelector<HTMLElement>('[role="dialog"], [aria-modal="true"]');
+  if (!dialog) {
+    return false;
+  }
+
+  const confirmation = Array.from(dialog.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)).find((element) => {
+    return /^(reset|confirm)$/i.test(accessibleLabel(element));
+  });
+  if (!confirmation) {
+    return false;
+  }
+
+  confirmation.click();
+  return true;
+}
+
+function observeHistoryNavigation(): () => void {
+  const historyWithOriginals = history as History & {
+    pushState: History['pushState'];
+    replaceState: History['replaceState'];
+  };
+  const originalPushState = historyWithOriginals.pushState;
+  const originalReplaceState = historyWithOriginals.replaceState;
+
+  const dispatchNavigation = () => window.dispatchEvent(new Event(NAVIGATION_EVENT));
+  historyWithOriginals.pushState = function (...args) {
+    originalPushState.apply(this, args);
+    dispatchNavigation();
+  };
+  historyWithOriginals.replaceState = function (...args) {
+    originalReplaceState.apply(this, args);
+    dispatchNavigation();
+  };
+
+  return () => {
+    historyWithOriginals.pushState = originalPushState;
+    historyWithOriginals.replaceState = originalReplaceState;
+  };
+}
+
+function accessibleLabel(element: HTMLElement): string {
+  return [element.getAttribute('aria-label'), element.getAttribute('title'), element.textContent]
+    .filter((value): value is string => Boolean(value))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isInteractive(element: HTMLElement): boolean {
+  return element.matches(INTERACTIVE_SELECTOR);
+}
+
+function currentRouteKey(): string {
+  return `${window.location.pathname}${window.location.search}`;
 }

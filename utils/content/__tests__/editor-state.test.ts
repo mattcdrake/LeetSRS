@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  clearLeetcodeEditorState,
-  getLeetcodeEditorStateKeys,
-  isLeetcodeEditorStateKey,
+  clickResetConfirmation,
+  findEditorSettingsControl,
+  findResetToDefaultCodeDefinition,
   setupClearEditorOnReview,
+  waitForEditorAndReset,
 } from '../editor-state';
 import { sendMessage } from '@/shared/messages';
 
@@ -14,75 +15,107 @@ vi.mock('@/shared/messages', async (importOriginal) => ({
   sendMessage: vi.fn(),
 }));
 
-describe('LeetCode editor state keys', () => {
+describe('due-review editor reset fallback', () => {
   beforeEach(() => {
-    localStorage.clear();
+    document.body.innerHTML = '';
+    history.replaceState({}, '', '/');
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     history.replaceState({}, '', '/');
   });
 
-  it('should match legacy frontend-id editor keys', () => {
-    expect(isLeetcodeEditorStateKey('1_python3_code', { questionFrontendId: '1' })).toBe(true);
-    expect(isLeetcodeEditorStateKey('11_python3_code', { questionFrontendId: '1' })).toBe(false);
-    expect(isLeetcodeEditorStateKey('1_python3_testcase', { questionFrontendId: '1' })).toBe(false);
+  it('finds settings controls by accessible semantics and resets through LeetCode UI', async () => {
+    const settings = document.createElement('button');
+    settings.setAttribute('aria-label', 'Editor settings');
+    const action = document.createElement('button');
+    action.setAttribute('role', 'menuitem');
+    action.textContent = 'Reset to Default Code Definition';
+    const confirmationDialog = document.createElement('div');
+    confirmationDialog.setAttribute('role', 'dialog');
+    const confirm = document.createElement('button');
+    confirm.textContent = 'Reset';
+    confirmationDialog.append(confirm);
+
+    const settingsClick = vi.fn(() => document.body.append(action));
+    const actionClick = vi.fn(() => document.body.append(confirmationDialog));
+    const confirmClick = vi.fn();
+    settings.addEventListener('click', settingsClick);
+    action.addEventListener('click', actionClick);
+    confirm.addEventListener('click', confirmClick);
+
+    document.body.append(settings);
+    expect(findEditorSettingsControl(document)).toBe(settings);
+    expect(findResetToDefaultCodeDefinition(document)).toBeNull();
+
+    const dispose = waitForEditorAndReset();
+    await vi.waitFor(() => expect(actionClick).toHaveBeenCalledOnce());
+    await vi.waitFor(() => expect(confirmClick).toHaveBeenCalledOnce());
+
+    expect(settingsClick).toHaveBeenCalledOnce();
+    expect(findResetToDefaultCodeDefinition(document)).toBe(action);
+    dispose();
   });
 
-  it('should match ugc editor keys by backend question id', () => {
-    expect(isLeetcodeEditorStateKey('ugc_user-slug_123_python3_code', { questionId: '123' })).toBe(true);
-    expect(isLeetcodeEditorStateKey('ugc_user-slug_123_javascript_code', { questionId: '123' })).toBe(true);
-    expect(isLeetcodeEditorStateKey('ugc_user-slug_123_python3_testcase', { questionId: '123' })).toBe(false);
-    expect(isLeetcodeEditorStateKey('ugc_user-slug_1234_python3_code', { questionId: '123' })).toBe(false);
+  it('does not click a destructive action outside a confirmation dialog', () => {
+    const pageReset = document.createElement('button');
+    pageReset.textContent = 'Reset';
+    const click = vi.fn();
+    pageReset.addEventListener('click', click);
+    document.body.append(pageReset);
+
+    expect(clickResetConfirmation(document)).toBe(false);
+    expect(click).not.toHaveBeenCalled();
   });
 
-  it('should return only matching storage keys', () => {
-    localStorage.setItem('1_python3_code', '"draft"');
-    localStorage.setItem('ugc_user-slug_123_python3_code', '{"code":"draft"}');
-    localStorage.setItem('1_python3_testcase', '[]');
-    localStorage.setItem('2_python3_code', '"other"');
-
-    expect(getLeetcodeEditorStateKeys(localStorage, { questionFrontendId: '1', questionId: '123' }).sort()).toEqual([
-      '1_python3_code',
-      'ugc_user-slug_123_python3_code',
-    ]);
-  });
-
-  it('should clear only editor state for the requested problem', () => {
-    localStorage.setItem('1_python3_code', '"draft"');
-    localStorage.setItem('ugc_user-slug_123_python3_code', '{"code":"draft"}');
-    localStorage.setItem('2_python3_code', '"other"');
-
-    expect(clearLeetcodeEditorState({ questionFrontendId: '1', questionId: '123' }).sort()).toEqual([
-      '1_python3_code',
-      'ugc_user-slug_123_python3_code',
-    ]);
-    expect(localStorage.getItem('1_python3_code')).toBeNull();
-    expect(localStorage.getItem('ugc_user-slug_123_python3_code')).toBeNull();
-    expect(localStorage.getItem('2_python3_code')).toBe('"other"');
-  });
-
-  it('should clear the destination problem during SPA navigation', async () => {
-    vi.useFakeTimers();
+  it('waits for editor UI after SPA navigation and only resets a due decision', async () => {
     history.replaceState({}, '', '/problems/first-problem/');
     vi.mocked(sendMessage)
       .mockResolvedValueOnce({ shouldClear: false })
       .mockResolvedValueOnce({ shouldClear: true, questionFrontendId: '2' });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false } as Response));
-    localStorage.setItem('1_python3_code', 'first draft');
-    localStorage.setItem('2_python3_code', 'second draft');
 
     const dispose = setupClearEditorOnReview();
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledOnce());
 
-    history.pushState({}, '', '/problems/second-problem/');
-    await vi.advanceTimersByTimeAsync(250);
+    history.pushState({}, '', '/problems/second-problem/description/');
+    await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(2));
 
-    expect(localStorage.getItem('1_python3_code')).toBe('first draft');
-    expect(localStorage.getItem('2_python3_code')).toBeNull();
+    const settings = document.createElement('button');
+    settings.title = 'Code settings';
+    const resetAction = document.createElement('button');
+    resetAction.setAttribute('role', 'menuitem');
+    resetAction.textContent = 'Reset to Default Code Definition';
+    const settingsClick = vi.fn(() => document.body.append(resetAction));
+    const resetClick = vi.fn();
+    settings.addEventListener('click', settingsClick);
+    resetAction.addEventListener('click', resetClick);
+    document.body.append(settings);
+
+    await vi.waitFor(() => expect(resetClick).toHaveBeenCalledOnce());
+    expect(settingsClick).toHaveBeenCalledOnce();
+    expect(sendMessage).toHaveBeenLastCalledWith({
+      type: 'GET_CLEAR_EDITOR_ON_REVIEW_DECISION',
+      slug: 'second-problem',
+      domain: 'leetcode.com',
+    });
+    dispose();
+  });
+
+  it('does not wait for or open the editor when the decision is not due', async () => {
+    history.replaceState({}, '', '/problems/not-due/');
+    vi.mocked(sendMessage).mockResolvedValue({ shouldClear: false });
+    const settings = document.createElement('button');
+    settings.setAttribute('aria-label', 'Editor settings');
+    const settingsClick = vi.fn();
+    settings.addEventListener('click', settingsClick);
+    document.body.append(settings);
+
+    const dispose = setupClearEditorOnReview();
+    await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledOnce());
+
+    expect(settingsClick).not.toHaveBeenCalled();
     dispose();
   });
 });
