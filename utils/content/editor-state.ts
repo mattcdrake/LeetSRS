@@ -1,8 +1,10 @@
 import { MessageType, sendMessage } from '@/shared/messages';
-import { getCurrentDomain, getCurrentProblemSlug } from './domain';
+import { getCurrentDomain } from './domain';
 
 const NAVIGATION_EVENT = 'leetsrs:navigation';
 const RESET_ACTION_PATTERN = /^reset\s+to\s+default\s+code\s+definition$/i;
+const RESET_CONFIRMATION_PATTERN = /\breset\b|\bdefault code\b/i;
+export const RESET_CONFIRMATION_TIMEOUT_MS = 1_000;
 const SETTINGS_CONTROL_SELECTOR = [
   '[data-cy*="editor" i][data-cy*="setting" i]',
   '[data-testid*="editor" i][data-testid*="setting" i]',
@@ -34,13 +36,13 @@ export function setupClearEditorOnReview(): () => void {
     disposePendingReset?.();
     disposePendingReset = undefined;
 
-    const slug = getCurrentProblemSlug();
+    const slug = getProblemSlugFromRouteKey(nextRouteKey);
     if (!slug) {
       return;
     }
 
     const requestedRouteKey = nextRouteKey;
-    void requestDueReviewReset(slug, () => currentRouteKey() === requestedRouteKey).then((dispose) => {
+    void requestDueReviewReset(slug, () => isCurrentProblemRoute(requestedRouteKey, slug)).then((dispose) => {
       if (currentRouteKey() === requestedRouteKey) {
         disposePendingReset = dispose;
       } else {
@@ -87,12 +89,17 @@ async function requestDueReviewReset(slug: string, isCurrentRoute: () => boolean
 export function waitForEditorAndReset(isCurrentRoute: () => boolean = () => true): () => void {
   let complete = false;
   let observer: MutationObserver | undefined;
+  let confirmationTimeout: ReturnType<typeof setTimeout> | undefined;
   let settingsOpened = false;
   let resetRequested = false;
+  let dialogsBeforeReset = new Set<HTMLElement>();
 
   const stop = () => {
     complete = true;
     observer?.disconnect();
+    if (confirmationTimeout !== undefined) {
+      clearTimeout(confirmationTimeout);
+    }
   };
 
   const tryReset = () => {
@@ -104,7 +111,7 @@ export function waitForEditorAndReset(isCurrentRoute: () => boolean = () => true
     if (resetRequested) {
       // A confirmation dialog may be rendered by React after the menu action
       // click. Keep observing mutations so it is confirmed when it appears.
-      if (clickResetConfirmation(document)) {
+      if (clickResetConfirmation(document, dialogsBeforeReset)) {
         stop();
       }
       return;
@@ -126,8 +133,10 @@ export function waitForEditorAndReset(isCurrentRoute: () => boolean = () => true
     }
 
     resetRequested = true;
+    dialogsBeforeReset = new Set(findDialogs(document));
+    confirmationTimeout = setTimeout(stop, RESET_CONFIRMATION_TIMEOUT_MS);
     resetAction.click();
-    if (clickResetConfirmation(document)) {
+    if (clickResetConfirmation(document, dialogsBeforeReset)) {
       stop();
     }
   };
@@ -165,16 +174,25 @@ export function findResetToDefaultCodeDefinition(root: ParentNode): HTMLElement 
   );
 }
 
-/** Confirms the reset only in a visible dialog, when LeetCode presents one. */
-export function clickResetConfirmation(root: ParentNode): boolean {
-  const dialog = root.querySelector<HTMLElement>('[role="dialog"], [aria-modal="true"]');
+/**
+ * Confirms only a visible reset dialog created after this reset action began.
+ * Existing dialogs are deliberately excluded so an unrelated destructive UI
+ * cannot be acknowledged by the extension.
+ */
+export function clickResetConfirmation(root: ParentNode, dialogsBeforeReset: ReadonlySet<HTMLElement>): boolean {
+  const dialog = findDialogs(root).find(
+    (candidate) =>
+      !dialogsBeforeReset.has(candidate) &&
+      isVisible(candidate) &&
+      RESET_CONFIRMATION_PATTERN.test(accessibleLabel(candidate))
+  );
   if (!dialog) {
     return false;
   }
 
-  const confirmation = Array.from(dialog.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)).find((element) => {
-    return /^(reset|confirm)$/i.test(accessibleLabel(element));
-  });
+  const confirmation = Array.from(dialog.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)).find(
+    (element) => isVisible(element) && /^(reset|confirm)$/i.test(accessibleLabel(element))
+  );
   if (!confirmation) {
     return false;
   }
@@ -221,4 +239,27 @@ function isInteractive(element: HTMLElement): boolean {
 
 function currentRouteKey(): string {
   return `${window.location.pathname}${window.location.search}`;
+}
+
+function getProblemSlugFromRouteKey(routeKey: string): string | null {
+  const pathname = routeKey.split('?')[0];
+  const pathMatch = pathname.match(/\/problems\/([^/]+)/);
+  return pathMatch ? pathMatch[1] : null;
+}
+
+function isCurrentProblemRoute(routeKey: string, slug: string): boolean {
+  return currentRouteKey() === routeKey && getProblemSlugFromRouteKey(currentRouteKey()) === slug;
+}
+
+function findDialogs(root: ParentNode): HTMLElement[] {
+  return Array.from(root.querySelectorAll<HTMLElement>('[role="dialog"], [aria-modal="true"]'));
+}
+
+function isVisible(element: HTMLElement): boolean {
+  if (!element.isConnected || element.hidden || element.getAttribute('aria-hidden') === 'true') {
+    return false;
+  }
+
+  const style = window.getComputedStyle(element);
+  return style.display !== 'none' && style.visibility !== 'hidden';
 }
