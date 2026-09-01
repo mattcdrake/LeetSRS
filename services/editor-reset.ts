@@ -1,6 +1,6 @@
+import type { LeetcodeDomain } from '@/shared/cards';
 import { getAllCards, isDueByDate } from './cards';
 import { getDayStartHour, getResetEditorOnDueReview, getResetEditorOnEveryProblem } from './settings';
-import type { LeetcodeDomain } from '@/shared/cards';
 
 export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): Promise<boolean> {
   if (await getResetEditorOnEveryProblem()) {

@@ -1,15 +1,16 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { render, screen } from '@testing-library/react';
-import { StatsBar } from '../StatsBar';
-import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import { State } from 'ts-fsrs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import type { Card } from '@/shared/cards';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { StatsBar } from '../StatsBar';
 
 // Mock the useReviewQueueQuery hook
 vi.mock('@/hooks/useBackgroundQueries', () => ({

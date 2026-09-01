@@ -1,15 +1,16 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, within, fireEvent, act } from '@testing-library/react';
+
+import type { UseQueryResult } from '@tanstack/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CardView } from '../CardView';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { State } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Card } from '@/shared/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createQueryMock } from '@/test/utils/query-mocks';
-import { State } from 'ts-fsrs';
-import type { Card } from '@/shared/cards';
-import type { UseQueryResult } from '@tanstack/react-query';
+import { CardView } from '../CardView';
 
 // Mock the hooks
 vi.mock('@/hooks/useBackgroundQueries', () => ({
@@ -23,6 +24,7 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
 }));
 
 import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
+
 const mockedUseCardsQuery = vi.mocked(useCardsQuery);
 
 const renderWithQueryClient = (component: React.ReactElement) => {

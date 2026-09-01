@@ -1,8 +1,9 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+
+import { act, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LeetcodeCnSection } from '../LeetcodeCnSection';
 
 const mockContains = vi.fn<() => Promise<boolean>>();

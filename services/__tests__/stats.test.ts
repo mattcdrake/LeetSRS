@@ -1,25 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { State as FsrsState, Rating } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import {
-  getTodayKey,
-  getYesterdayKey,
-  updateStats,
-  rollupOldStats,
-  getMonthlyStats,
-  getStatsForDate,
-  getTodayStats,
-  getCardStateStats,
-  getLastNDaysStats,
-  getNextNDaysStats,
-  type DailyStats,
-  type MonthlyStats,
-} from '../stats';
-import { Rating, State as FsrsState } from 'ts-fsrs';
-import { STORAGE_KEYS } from '../storage-keys';
-import { addCard } from '../cards';
 import type { Difficulty } from '@/shared/cards';
 import type { StoredCard } from '../cards';
+import { addCard } from '../cards';
+import {
+  type DailyStats,
+  getCardStateStats,
+  getLastNDaysStats,
+  getMonthlyStats,
+  getNextNDaysStats,
+  getStatsForDate,
+  getTodayKey,
+  getTodayStats,
+  getYesterdayKey,
+  type MonthlyStats,
+  rollupOldStats,
+  updateStats,
+} from '../stats';
+import { STORAGE_KEYS } from '../storage-keys';
 
 describe('Date key generation', () => {
   beforeEach(() => {

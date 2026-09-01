@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { setupLeetcodeAutoReset } from '../auto-reset';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/shared/messages';
+import { setupLeetcodeAutoReset } from '../auto-reset';
 
 // @vitest-environment happy-dom
 

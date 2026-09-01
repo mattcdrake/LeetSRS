@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RatingMenu, type RatingCallback } from '../rating-menu';
-import { RATING_BUTTON_CONFIGS } from '../constants';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { translations } from '@/shared/i18n';
+import { RATING_BUTTON_CONFIGS } from '../constants';
+import { type RatingCallback, RatingMenu } from '../rating-menu';
 
 // @vitest-environment happy-dom
 

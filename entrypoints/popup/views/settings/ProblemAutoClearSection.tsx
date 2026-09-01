@@ -1,8 +1,8 @@
 import {
-  useResetEditorOnEveryProblemQuery,
   useResetEditorOnDueReviewQuery,
-  useSetResetEditorOnEveryProblemMutation,
+  useResetEditorOnEveryProblemQuery,
   useSetResetEditorOnDueReviewMutation,
+  useSetResetEditorOnEveryProblemMutation,
 } from '@/hooks/useBackgroundQueries';
 import { DEFAULT_RESET_EDITOR_ON_DUE_REVIEW, DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';

@@ -1,5 +1,5 @@
-import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 import { translations } from '@/shared/i18n';
 
 // ErrorBoundary is a class component and renders outside of I18nProvider,

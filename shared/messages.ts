@@ -1,16 +1,16 @@
-import { browser } from 'wxt/browser';
-import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { State as FsrsState } from 'ts-fsrs';
+import { browser } from 'wxt/browser';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
-import type { Note } from '@/shared/notes';
-import type { Theme, Language } from '@/shared/settings';
+import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type {
   GistSyncConfig,
   GistSyncStatus,
-  SyncResult,
-  PatValidationResult,
   GistValidationResult,
+  PatValidationResult,
+  SyncResult,
 } from '@/shared/gist-sync';
+import type { Note } from '@/shared/notes';
+import type { Language, Theme } from '@/shared/settings';
 
 // Message type constants
 export const MessageType = {

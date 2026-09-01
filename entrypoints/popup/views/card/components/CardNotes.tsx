@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Button, TextField, TextArea, Label } from 'react-aria-components';
+import { Button, Label, TextArea, TextField } from 'react-aria-components';
 import { useNoteEditor } from '@/hooks/useNoteEditor';
 import { NOTES_MAX_LENGTH } from '@/shared/notes';
 import { bounceButton } from '@/shared/styles';

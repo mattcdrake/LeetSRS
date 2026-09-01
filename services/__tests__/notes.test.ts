@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { getNote, saveNote, deleteNote } from '../notes';
-import { getNoteStorageKey } from '../storage-keys';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
+import { deleteNote, getNote, saveNote } from '../notes';
+import { getNoteStorageKey } from '../storage-keys';
 
 describe('Notes Service', () => {
   beforeEach(() => {

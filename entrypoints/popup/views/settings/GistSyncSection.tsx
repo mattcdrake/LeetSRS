@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Button, TextField, Label, Input } from 'react-aria-components';
-import { FaGithub, FaCheck, FaXmark, FaArrowsRotate, FaCloudArrowUp, FaCloudArrowDown } from 'react-icons/fa6';
-import { bounceButton } from '@/shared/styles';
+import { useEffect, useState } from 'react';
+import { Button, Input, Label, TextField } from 'react-aria-components';
+import { FaArrowsRotate, FaCheck, FaCloudArrowDown, FaCloudArrowUp, FaGithub, FaXmark } from 'react-icons/fa6';
 import {
+  useCreateNewGistMutation,
   useGistSyncConfigQuery,
   useGistSyncStatusQuery,
   useSetGistSyncConfigMutation,
   useTriggerGistSyncMutation,
-  useCreateNewGistMutation,
-  useValidatePatMutation,
   useValidateGistIdMutation,
+  useValidatePatMutation,
 } from '@/hooks/useBackgroundQueries';
+import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 

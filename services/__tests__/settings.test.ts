@@ -1,28 +1,28 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import {
-  getMaxNewCardsPerDay,
-  setMaxNewCardsPerDay,
+  DEFAULT_MAX_NEW_CARDS_PER_DAY,
+  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
+  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+  DEFAULT_THEME,
+  MAX_NEW_CARDS_PER_DAY,
+  MIN_NEW_CARDS_PER_DAY,
+} from '@/shared/settings';
+import {
   getAnimationsEnabled,
-  setAnimationsEnabled,
-  getTheme,
-  setTheme,
-  getResetEditorOnEveryProblem,
-  setResetEditorOnEveryProblem,
-  getResetEditorOnDueReview,
-  setResetEditorOnDueReview,
   getLanguage,
+  getMaxNewCardsPerDay,
+  getResetEditorOnDueReview,
+  getResetEditorOnEveryProblem,
+  getTheme,
+  setAnimationsEnabled,
+  setMaxNewCardsPerDay,
+  setResetEditorOnDueReview,
+  setResetEditorOnEveryProblem,
+  setTheme,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
-import {
-  DEFAULT_MAX_NEW_CARDS_PER_DAY,
-  MIN_NEW_CARDS_PER_DAY,
-  MAX_NEW_CARDS_PER_DAY,
-  DEFAULT_THEME,
-  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
-} from '@/shared/settings';
 
 describe('Settings Service', () => {
   beforeEach(() => {

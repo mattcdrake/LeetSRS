@@ -1,9 +1,9 @@
-import { type Grade, Rating, State as FsrsState } from 'ts-fsrs';
-import { STORAGE_KEYS } from './storage-keys';
+import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { storage } from '#imports';
-import { getAllCards, formatLocalDate } from './cards';
-import { getDayStartHour } from './settings';
 import { DAILY_STATS_RETENTION_DAYS } from '@/shared/settings';
+import { formatLocalDate, getAllCards } from './cards';
+import { getDayStartHour } from './settings';
+import { STORAGE_KEYS } from './storage-keys';
 
 interface BaseStats {
   totalReviews: number;

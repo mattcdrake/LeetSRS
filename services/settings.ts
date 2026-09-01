@@ -1,20 +1,20 @@
 import { storage } from '#imports';
-import { STORAGE_KEYS } from './storage-keys';
 import { detectBrowserLanguage, translations } from '@/shared/i18n';
 import {
-  DEFAULT_MAX_NEW_CARDS_PER_DAY,
-  MIN_NEW_CARDS_PER_DAY,
-  MAX_NEW_CARDS_PER_DAY,
-  DEFAULT_DAY_START_HOUR,
-  MIN_DAY_START_HOUR,
-  MAX_DAY_START_HOUR,
-  type Theme,
-  DEFAULT_THEME,
-  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
   DEFAULT_BADGE_ENABLED,
+  DEFAULT_DAY_START_HOUR,
+  DEFAULT_MAX_NEW_CARDS_PER_DAY,
+  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
+  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+  DEFAULT_THEME,
   type Language,
+  MAX_DAY_START_HOUR,
+  MAX_NEW_CARDS_PER_DAY,
+  MIN_DAY_START_HOUR,
+  MIN_NEW_CARDS_PER_DAY,
+  type Theme,
 } from '@/shared/settings';
+import { STORAGE_KEYS } from './storage-keys';
 
 export async function getMaxNewCardsPerDay(): Promise<number> {
   const value = await storage.getItem<number>(STORAGE_KEYS.maxNewCardsPerDay);

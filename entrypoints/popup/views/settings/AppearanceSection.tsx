@@ -1,13 +1,13 @@
-import { FaSun, FaMoon } from 'react-icons/fa6';
+import { FaMoon, FaSun } from 'react-icons/fa6';
 import {
-  useThemeQuery,
-  useSetThemeMutation,
   useAnimationsEnabledQuery,
-  useSetAnimationsEnabledMutation,
   useBadgeEnabledQuery,
+  useSetAnimationsEnabledMutation,
   useSetBadgeEnabledMutation,
+  useSetThemeMutation,
+  useThemeQuery,
 } from '@/hooks/useBackgroundQueries';
-import { DEFAULT_THEME, DEFAULT_BADGE_ENABLED } from '@/shared/settings';
+import { DEFAULT_BADGE_ENABLED, DEFAULT_THEME } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 

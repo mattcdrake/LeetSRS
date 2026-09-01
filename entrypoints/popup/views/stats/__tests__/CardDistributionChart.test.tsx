@@ -1,14 +1,15 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { CardDistributionChart } from '../CardDistributionChart';
-import { State as FsrsState } from 'ts-fsrs';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { createQueryMock } from '@/test/utils/query-mocks';
-import { useCardStateStatsQuery } from '@/hooks/useBackgroundQueries';
+
 import type { UseQueryResult } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
+import { State as FsrsState } from 'ts-fsrs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useCardStateStatsQuery } from '@/hooks/useBackgroundQueries';
+import { createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { CardDistributionChart } from '../CardDistributionChart';
 
 // Mock react-chartjs-2
 vi.mock('react-chartjs-2', () => ({

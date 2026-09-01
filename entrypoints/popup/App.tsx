@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
-import { BottomNav, type ViewId } from './components/BottomNav';
-import { HomeView } from './views/home/HomeView';
-import { CardView } from './views/card/CardView';
-import { StatsView } from './views/stats/StatsView';
-import { SettingsView } from './views/settings/SettingsView';
 import { useAnimationsEnabledQuery, useThemeQuery } from '@/hooks/useBackgroundQueries';
 import { DEFAULT_THEME } from '@/shared/settings';
+import { BottomNav, type ViewId } from './components/BottomNav';
+import { CardView } from './views/card/CardView';
+import { HomeView } from './views/home/HomeView';
+import { SettingsView } from './views/settings/SettingsView';
+import { StatsView } from './views/stats/StatsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');

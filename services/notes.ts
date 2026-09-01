@@ -1,6 +1,6 @@
 import { storage } from '#imports';
+import { type Note, validateNoteText } from '@/shared/notes';
 import { getNoteStorageKey } from './storage-keys';
-import { validateNoteText, type Note } from '@/shared/notes';
 
 export async function getNote(cardId: string): Promise<Note | null> {
   const key = getNoteStorageKey(cardId);

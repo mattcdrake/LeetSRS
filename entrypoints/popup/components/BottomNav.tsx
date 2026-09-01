@@ -1,7 +1,7 @@
-import { FaHouseChimney, FaChartSimple, FaGear, FaCode } from 'react-icons/fa6';
-import { Tabs, TabList, Tab } from 'react-aria-components';
-import { useI18n } from '../contexts/I18nContext';
+import { Tab, TabList, Tabs } from 'react-aria-components';
+import { FaChartSimple, FaCode, FaGear, FaHouseChimney } from 'react-icons/fa6';
 import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
+import { useI18n } from '../contexts/I18nContext';
 
 export type ViewId = 'home' | 'card' | 'stats' | 'settings';
 

@@ -1,20 +1,21 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ReviewQueue } from '../ReviewQueue';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Rating, State } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  useReviewQueueQuery,
-  useRateCardMutation,
-  useRemoveCardMutation,
   useDelayCardMutation,
   usePauseCardMutation,
+  useRateCardMutation,
+  useRemoveCardMutation,
+  useReviewQueueQuery,
 } from '@/hooks/useBackgroundQueries';
-import { createQueryMock, createMutationMock } from '@/test/utils/query-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { Rating, State } from 'ts-fsrs';
+import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { ReviewQueue } from '../ReviewQueue';
 
 // Mock localStorage to disable animations in tests
 const originalLocalStorage = window.localStorage;

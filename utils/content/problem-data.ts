@@ -1,5 +1,6 @@
 import type { ProblemData } from '@/shared/problem-data';
 import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
+
 // Cache to avoid redundant requests
 let cachedData: { slug: string; data: ProblemData } | null = null;
 

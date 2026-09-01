@@ -1,8 +1,8 @@
-import { ViewLayout } from '../../components/ViewLayout';
-import { StatsBar } from './StatsBar';
-import { ReviewQueue } from './ReviewQueue';
-import { StreakCounter } from '../../components/StreakCounter';
 import { LeetcodeCnBanner } from '../../components/LeetcodeCnBanner';
+import { StreakCounter } from '../../components/StreakCounter';
+import { ViewLayout } from '../../components/ViewLayout';
+import { ReviewQueue } from './ReviewQueue';
+import { StatsBar } from './StatsBar';
 
 export function HomeView() {
   return (

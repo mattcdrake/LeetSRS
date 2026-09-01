@@ -1,10 +1,10 @@
 import { storage } from '#imports';
-import { STORAGE_KEYS } from './storage-keys';
-import { type StoredCard } from './cards';
-import { type DailyStats, type MonthlyStats } from './stats';
 import { type Note } from '@/shared/notes';
-import { type Theme, type Language } from '@/shared/settings';
+import { type Language, type Theme } from '@/shared/settings';
+import { type StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
+import { type DailyStats, type MonthlyStats } from './stats';
+import { STORAGE_KEYS } from './storage-keys';
 
 export interface ExportData {
   schemaVersion: number;

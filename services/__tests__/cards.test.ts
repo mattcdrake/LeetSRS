@@ -1,25 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { createEmptyCard, State as FsrsState, Rating } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { type Card } from '@/shared/cards';
+import { DEFAULT_MAX_NEW_CARDS_PER_DAY } from '@/shared/settings';
 import {
   addCard,
-  getAllCards,
-  removeCard,
   delayCard,
-  setPauseStatus,
-  serializeCard,
   deserializeCard,
-  rateCard,
+  getAllCards,
   getReviewQueue,
   isDueByDate,
+  rateCard,
+  removeCard,
   type StoredCard,
+  serializeCard,
+  setPauseStatus,
 } from '../cards';
-import { type Card } from '@/shared/cards';
-import { STORAGE_KEYS } from '../storage-keys';
-import { createEmptyCard, Rating, State as FsrsState } from 'ts-fsrs';
-import type { DailyStats } from '../stats';
 import * as notesModule from '../notes';
-import { DEFAULT_MAX_NEW_CARDS_PER_DAY } from '@/shared/settings';
+import type { DailyStats } from '../stats';
+import { STORAGE_KEYS } from '../storage-keys';
 
 // Mock the notes module
 vi.mock('../notes', () => ({

@@ -1,9 +1,9 @@
-import { FaGlobe, FaChevronDown } from 'react-icons/fa6';
-import { Select, SelectValue, Button, Popover, ListBox, ListBoxItem } from 'react-aria-components';
+import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
+import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
 import { useLanguageQuery, useSetLanguageMutation } from '@/hooks/useBackgroundQueries';
 import { LANGUAGE_OPTIONS } from '@/shared/i18n';
-import { useI18n } from '../../contexts/I18nContext';
 import { DEFAULT_LANGUAGE, FEATURE_FLAGS, type Language } from '@/shared/settings';
+import { useI18n } from '../../contexts/I18nContext';
 
 export function LanguageSection() {
   const t = useI18n();
