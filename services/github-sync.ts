@@ -206,7 +206,10 @@ export async function triggerGistSync(): Promise<SyncResult> {
 
     // Compare dataUpdatedAt timestamps (LWW)
     // At this point both are guaranteed non-null by the checks above
-    const localUpdated = new Date(localDataUpdatedAt!);
+    if (!localDataUpdatedAt) {
+      throw new Error('Local data update timestamp is missing');
+    }
+    const localUpdated = new Date(localDataUpdatedAt);
     const remoteUpdated = new Date(remoteData.dataUpdatedAt);
 
     if (localUpdated < remoteUpdated) {
