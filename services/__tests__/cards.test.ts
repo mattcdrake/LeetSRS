@@ -4,6 +4,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/shared/cards';
 import { DEFAULT_MAX_NEW_CARDS_PER_DAY } from '@/shared/settings';
+import { requireDefined } from '@/test/utils/assertions';
 import {
   addCard,
   delayCard,
@@ -198,13 +199,13 @@ describe('addCard', () => {
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
 
     expect(cards).toBeDefined();
-    expect(cards!['two-sum']).toBeDefined();
-    expect(cards!['two-sum'].slug).toBe('two-sum');
-    expect(cards!['two-sum'].name).toBe('Two Sum');
+    expect(requireDefined(cards)['two-sum']).toBeDefined();
+    expect(requireDefined(cards)['two-sum'].slug).toBe('two-sum');
+    expect(requireDefined(cards)['two-sum'].name).toBe('Two Sum');
 
     // Verify FSRS data is stored properly
-    expect(cards!['two-sum'].fsrs).toBeDefined();
-    expect(typeof cards!['two-sum'].fsrs.due).toBe('number');
+    expect(requireDefined(cards)['two-sum'].fsrs).toBeDefined();
+    expect(typeof requireDefined(cards)['two-sum'].fsrs.due).toBe('number');
   });
 
   it('should return existing card when adding same slug (idempotent)', async () => {
@@ -266,9 +267,9 @@ describe('addCard', () => {
     expect(Object.keys(cards || {}).length).toBe(3);
 
     // Verify cards exist
-    expect(cards!['two-sum']).toBeDefined();
-    expect(cards!['valid-parentheses']).toBeDefined();
-    expect(cards!['merge-two-sorted-lists']).toBeDefined();
+    expect(requireDefined(cards)['two-sum']).toBeDefined();
+    expect(requireDefined(cards)['valid-parentheses']).toBeDefined();
+    expect(requireDefined(cards)['merge-two-sorted-lists']).toBeDefined();
   });
 
   it('should set createdAt to current date', async () => {
@@ -297,7 +298,7 @@ describe('addCard', () => {
     });
 
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    const storedCard = cards![card.slug];
+    const storedCard = requireDefined(cards)[card.slug];
 
     expect(typeof storedCard.createdAt).toBe('number');
     expect(storedCard.slug).toBe(card.slug);
@@ -402,14 +403,14 @@ describe('removeCard', () => {
 
     // Verify it exists
     let cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    expect(cards!['two-sum']).toBeDefined();
+    expect(requireDefined(cards)['two-sum']).toBeDefined();
 
     // Remove the card
     await removeCard('two-sum');
 
     // Verify it's removed
     cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    expect(cards!['two-sum']).toBeUndefined();
+    expect(requireDefined(cards)['two-sum']).toBeUndefined();
   });
 
   it('should handle removing non-existent card gracefully', async () => {
@@ -448,13 +449,13 @@ describe('removeCard', () => {
     expect(Object.keys(cards || {}).length).toBe(2);
 
     // Card 1 should still exist
-    expect(cards!['two-sum']).toBeDefined();
+    expect(requireDefined(cards)['two-sum']).toBeDefined();
 
     // Card 2 should be removed
-    expect(cards!['valid-parentheses']).toBeUndefined();
+    expect(requireDefined(cards)['valid-parentheses']).toBeUndefined();
 
     // Card 3 should still exist
-    expect(cards!['merge-intervals']).toBeDefined();
+    expect(requireDefined(cards)['merge-intervals']).toBeDefined();
   });
 
   it('should verify card is actually removed from getAllCards', async () => {
@@ -513,7 +514,7 @@ describe('removeCard', () => {
 
     // Verify the card is actually removed
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    expect(cards!['test-with-note']).toBeUndefined();
+    expect(requireDefined(cards)['test-with-note']).toBeUndefined();
   });
 
   it('should not call deleteNote when removing non-existent card', async () => {
@@ -563,7 +564,7 @@ describe('delayCard', () => {
 
     // Verify it was persisted to storage
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    const storedCard = cards!['two-sum'];
+    const storedCard = requireDefined(cards)['two-sum'];
     expect(storedCard.fsrs.due).toBe(expectedDueDate.getTime());
   });
 
@@ -628,7 +629,7 @@ describe('delayCard', () => {
 
     // Get the updated card
     const ratedCards = await getAllCards();
-    const ratedCard = ratedCards.find((c) => c.slug === 'preserve-props')!;
+    const ratedCard = requireDefined(ratedCards.find((c) => c.slug === 'preserve-props'));
 
     // Delay the card
     const delayedCard = await delayCard('preserve-props', 7);
@@ -698,7 +699,7 @@ describe('delayCard', () => {
       domain: 'leetcode.com',
     });
     const learningCards = await getAllCards();
-    const learningCard = learningCards.find((c) => c.slug === 'new-card')!;
+    const learningCard = requireDefined(learningCards.find((c) => c.slug === 'new-card'));
 
     const delayedLearning = await delayCard('new-card', 5);
     expect(delayedLearning.fsrs.state).toBe(learningCard.fsrs.state);
@@ -878,7 +879,7 @@ describe('rateCard', () => {
 
     // Verify the card was stored
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    expect(cards!['new-problem']).toBeDefined();
+    expect(requireDefined(cards)['new-problem']).toBeDefined();
   });
 
   it('should update existing card when rating', async () => {
@@ -990,7 +991,7 @@ describe('rateCard', () => {
 
     // Verify the updated card is in storage
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    const storedCard = cards!['binary-search'];
+    const storedCard = requireDefined(cards)['binary-search'];
 
     expect(storedCard).toBeDefined();
     expect(typeof storedCard.fsrs.last_review).toBe('number');
@@ -1531,8 +1532,8 @@ describe('getReviewQueue', () => {
     // Manually update their due dates to be in the past
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    cards!['problem1'].fsrs.due = pastTime;
-    cards!['problem2'].fsrs.due = pastTime;
+    requireDefined(cards)['problem1'].fsrs.due = pastTime;
+    requireDefined(cards)['problem2'].fsrs.due = pastTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1588,8 +1589,8 @@ describe('getReviewQueue', () => {
     // Set their due dates to the past
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    cards!['review1'].fsrs.due = pastTime;
-    cards!['review2'].fsrs.due = pastTime;
+    requireDefined(cards)['review1'].fsrs.due = pastTime;
+    requireDefined(cards)['review2'].fsrs.due = pastTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1627,7 +1628,7 @@ describe('getReviewQueue', () => {
     // Set due date to future
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
-    cards!['future1'].fsrs.due = futureTime;
+    requireDefined(cards)['future1'].fsrs.due = futureTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1687,9 +1688,9 @@ describe('getReviewQueue', () => {
 
     // Set due times to various times today
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    cards!['morning'].fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
-    cards!['evening'].fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
-    cards!['midnight'].fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
+    requireDefined(cards)['morning'].fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
+    requireDefined(cards)['evening'].fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
+    requireDefined(cards)['midnight'].fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1725,7 +1726,7 @@ describe('getReviewQueue', () => {
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    cards!['tomorrow'].fsrs.due = tomorrow.getTime();
+    requireDefined(cards)['tomorrow'].fsrs.due = tomorrow.getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1774,8 +1775,8 @@ describe('getReviewQueue', () => {
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
-    cards!['due1'].fsrs.due = pastTime;
-    cards!['future1'].fsrs.due = futureTime;
+    requireDefined(cards)['due1'].fsrs.due = pastTime;
+    requireDefined(cards)['future1'].fsrs.due = futureTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1835,7 +1836,7 @@ describe('getReviewQueue', () => {
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     for (let i = 1; i <= 10; i++) {
-      cards![`review${i}`].fsrs.due = pastTime;
+      requireDefined(cards)[`review${i}`].fsrs.due = pastTime;
     }
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
@@ -1967,8 +1968,8 @@ describe('getReviewQueue', () => {
     // Set review cards to be due
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    cards!['review1'].fsrs.due = pastTime;
-    cards!['review2'].fsrs.due = pastTime;
+    requireDefined(cards)['review1'].fsrs.due = pastTime;
+    requireDefined(cards)['review2'].fsrs.due = pastTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -2064,9 +2065,9 @@ describe('getReviewQueue', () => {
     // Set same due date for all cards
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const sameTime = new Date('2024-01-15T10:00:00').getTime();
-    cards!['card-c'].fsrs.due = sameTime;
-    cards!['card-a'].fsrs.due = sameTime;
-    cards!['card-b'].fsrs.due = sameTime;
+    requireDefined(cards)['card-c'].fsrs.due = sameTime;
+    requireDefined(cards)['card-a'].fsrs.due = sameTime;
+    requireDefined(cards)['card-b'].fsrs.due = sameTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -2160,7 +2161,7 @@ describe('getReviewQueue', () => {
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const sameTime = new Date('2024-01-15T10:00:00').getTime();
     for (const slug of cardSlugs) {
-      cards![slug].fsrs.due = sameTime;
+      requireDefined(cards)[slug].fsrs.due = sameTime;
     }
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
@@ -2209,9 +2210,9 @@ describe('getReviewQueue', () => {
 
     // Set specific due dates
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    cards!['new-early'].fsrs.due = new Date('2024-01-15T08:00:00').getTime();
-    cards!['review-middle'].fsrs.due = new Date('2024-01-15T10:00:00').getTime();
-    cards!['new-late'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
+    requireDefined(cards)['new-early'].fsrs.due = new Date('2024-01-15T08:00:00').getTime();
+    requireDefined(cards)['review-middle'].fsrs.due = new Date('2024-01-15T10:00:00').getTime();
+    requireDefined(cards)['new-late'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -2297,9 +2298,9 @@ describe('getReviewQueue', () => {
 
     // Set specific due times
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    cards!['early'].fsrs.due = new Date('2024-01-15T06:00:00').getTime();
-    cards!['middle'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
-    cards!['late'].fsrs.due = new Date('2024-01-15T18:00:00').getTime();
+    requireDefined(cards)['early'].fsrs.due = new Date('2024-01-15T06:00:00').getTime();
+    requireDefined(cards)['middle'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
+    requireDefined(cards)['late'].fsrs.due = new Date('2024-01-15T18:00:00').getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -2318,9 +2319,9 @@ describe('getReviewQueue', () => {
     // Set due times with millisecond differences
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const baseTime = new Date('2024-01-15T10:00:00').getTime();
-    cards!['card-a'].fsrs.due = baseTime + 100; // 100ms later
-    cards!['card-b'].fsrs.due = baseTime + 50; // 50ms later
-    cards!['card-c'].fsrs.due = baseTime + 150; // 150ms later
+    requireDefined(cards)['card-a'].fsrs.due = baseTime + 100; // 100ms later
+    requireDefined(cards)['card-b'].fsrs.due = baseTime + 50; // 50ms later
+    requireDefined(cards)['card-c'].fsrs.due = baseTime + 150; // 150ms later
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -2378,8 +2379,8 @@ describe('getReviewQueue', () => {
     // Set due dates to tomorrow
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const tomorrow = new Date('2024-01-16T10:00:00').getTime();
-    cards!['future-1'].fsrs.due = tomorrow;
-    cards!['future-2'].fsrs.due = tomorrow;
+    requireDefined(cards)['future-1'].fsrs.due = tomorrow;
+    requireDefined(cards)['future-2'].fsrs.due = tomorrow;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();

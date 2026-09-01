@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { requireDefined } from '@/test/utils/assertions';
 import { Tooltip } from '../tooltip';
 
 // @vitest-environment happy-dom
@@ -33,7 +34,7 @@ describe('Tooltip', () => {
       // Tooltip should now be visible
       const tooltipElement = document.querySelector('.z-50');
       expect(tooltipElement).toBeTruthy();
-      expect(tooltipElement!.textContent).toBe('Test tooltip');
+      expect(requireDefined(tooltipElement).textContent).toBe('Test tooltip');
 
       document.body.removeChild(anchor);
     });
@@ -95,7 +96,7 @@ describe('Tooltip', () => {
       vi.advanceTimersByTime(300);
 
       const tooltipElement = document.querySelector('.z-50');
-      expect(tooltipElement!.textContent).toBe('First tooltip');
+      expect(requireDefined(tooltipElement).textContent).toBe('First tooltip');
 
       // Show second tooltip
       tooltip.show(anchor2, 'Second tooltip');

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { translations } from '@/shared/i18n';
+import { requireDefined } from '@/test/utils/assertions';
 import { RATING_BUTTON_CONFIGS } from '../constants';
 import { type RatingCallback, RatingMenu } from '../rating-menu';
 
@@ -53,7 +54,7 @@ describe('RatingMenu', () => {
       expect(menuElement).toBeTruthy();
 
       // Check rating buttons
-      const buttons = menuElement!.querySelectorAll('button');
+      const buttons = requireDefined(menuElement).querySelectorAll('button');
       expect(buttons.length).toBe(5); // 4 rating buttons + 1 add without rating
 
       // Verify rating buttons text
@@ -157,7 +158,7 @@ describe('RatingMenu', () => {
 
       // Click inside menu
       const menuElement = container.querySelector('[style*="position: absolute"]');
-      menuElement!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      requireDefined(menuElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
       expect(container.querySelector('[style*="position: absolute"]')).toBeTruthy();
     });

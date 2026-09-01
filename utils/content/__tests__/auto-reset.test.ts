@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/shared/messages';
+import { requireDefined } from '@/test/utils/assertions';
 import { setupLeetcodeAutoReset } from '../auto-reset';
 
 // @vitest-environment happy-dom
@@ -26,7 +27,7 @@ function renderResetButton(markup: ResetIconMarkup): HTMLButtonElement {
   toolbar.innerHTML = `<button data-state="closed">${icon}</button>`;
   document.body.appendChild(toolbar);
 
-  return toolbar.querySelector('button')!;
+  return requireDefined(toolbar.querySelector('button'));
 }
 
 function createConfirmDialog(confirmLabel: string): HTMLElement {

@@ -8,6 +8,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
+import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createQueryMock } from '@/test/utils/query-mocks';
 import { CardView } from '../CardView';
@@ -114,11 +115,11 @@ describe('CardView', () => {
 
     // Check for pause icon on paused card
     const pausedCard = screen.getByText('Paused Problem').closest('button');
-    expect(within(pausedCard!).getByTitle('Card is paused')).toBeInTheDocument();
+    expect(within(requireDefined(pausedCard)).getByTitle('Card is paused')).toBeInTheDocument();
 
     // Check no pause icon on active card
     const activeCard = screen.getByText('Active Problem').closest('button');
-    expect(within(activeCard!).queryByTitle('Card is paused')).not.toBeInTheDocument();
+    expect(within(requireDefined(activeCard)).queryByTitle('Card is paused')).not.toBeInTheDocument();
   });
 
   it('should expand and collapse card details', () => {
@@ -155,12 +156,12 @@ describe('CardView', () => {
     expect(screen.getByText('Reviews:')).toBeInTheDocument();
     // Use more specific query to avoid conflict with streak counter
     const reviewsRow = screen.getByText('Reviews:').parentElement;
-    expect(within(reviewsRow!).getByText('5')).toBeInTheDocument();
+    expect(within(requireDefined(reviewsRow)).getByText('5')).toBeInTheDocument();
     expect(screen.getByText('Stability:')).toBeInTheDocument();
     expect(screen.getByText('2.5d')).toBeInTheDocument();
     expect(screen.getByText('Lapses:')).toBeInTheDocument();
     const lapsesRow = screen.getByText('Lapses:').parentElement;
-    expect(within(lapsesRow!).getByText('1')).toBeInTheDocument();
+    expect(within(requireDefined(lapsesRow)).getByText('1')).toBeInTheDocument();
 
     // Click to collapse
     fireEvent.click(cardButton);
@@ -218,13 +219,13 @@ describe('CardView', () => {
 
     // Check that the dates are present (just check that they're formatted, not exact values due to timezone)
     const addedRow = screen.getByText('Added:').parentElement;
-    expect(within(addedRow!).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
+    expect(within(requireDefined(addedRow)).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
 
     const dueRow = screen.getByText('Due:').parentElement;
-    expect(within(dueRow!).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
+    expect(within(requireDefined(dueRow)).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
 
     const lastRow = screen.getByText('Last:').parentElement;
-    expect(within(lastRow!).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
+    expect(within(requireDefined(lastRow)).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
   });
 
   it('should show all FSRS states correctly', () => {
