@@ -1,5 +1,5 @@
-import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
 import { FaFireFlameCurved } from 'react-icons/fa6';
+import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
 
 export function StreakCounter() {
   const { data: todayStats } = useTodayStatsQuery();

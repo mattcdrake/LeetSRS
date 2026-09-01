@@ -1,5 +1,5 @@
-import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 import { translations } from '@/shared/i18n';
 
 // ErrorBoundary is a class component and renders outside of I18nProvider,
@@ -42,6 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </pre>
           </details>
           <button
+            type="button"
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
           >

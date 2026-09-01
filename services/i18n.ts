@@ -1,7 +1,7 @@
 import { storage } from '#imports';
-import { detectBrowserLanguage, translations, type Translations } from '@/shared/i18n';
+import { detectBrowserLanguage, type Translations, translations } from '@/shared/i18n';
+import type { Language } from '@/shared/settings';
 import { STORAGE_KEYS } from './storage-keys';
-import { type Language } from '@/shared/settings';
 
 // Service translations - cached and updated via storage watcher
 const detectedLanguage = detectBrowserLanguage();

@@ -1,16 +1,16 @@
 import { Octokit } from 'octokit';
 import { storage } from '#imports';
-import { STORAGE_KEYS } from './storage-keys';
-import { exportData, importData } from './import-export';
-import type { ExportData } from './import-export';
 import type {
   GistSyncConfig,
   GistSyncStatus,
-  SyncResult,
-  PatValidationResult,
   GistValidationResult,
+  PatValidationResult,
+  SyncResult,
 } from '@/shared/gist-sync';
 import { getServiceTranslations } from './i18n';
+import type { ExportData } from './import-export';
+import { exportData, importData } from './import-export';
+import { STORAGE_KEYS } from './storage-keys';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
 
@@ -159,7 +159,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const octokit = new Octokit({ auth: config.pat });
 
     // Fetch remote gist
-    let remoteGist;
+    let remoteGist: Awaited<ReturnType<typeof octokit.rest.gists.get>>['data'];
     try {
       const { data } = await octokit.rest.gists.get({ gist_id: config.gistId });
       remoteGist = data;
@@ -206,7 +206,10 @@ export async function triggerGistSync(): Promise<SyncResult> {
 
     // Compare dataUpdatedAt timestamps (LWW)
     // At this point both are guaranteed non-null by the checks above
-    const localUpdated = new Date(localDataUpdatedAt!);
+    if (!localDataUpdatedAt) {
+      throw new Error('Local data update timestamp is missing');
+    }
+    const localUpdated = new Date(localDataUpdatedAt);
     const remoteUpdated = new Date(remoteData.dataUpdatedAt);
 
     if (localUpdated < remoteUpdated) {

@@ -1,14 +1,14 @@
-import { Line } from 'react-chartjs-2';
 import {
   CategoryScale,
   Chart as ChartJS,
   Legend,
-  LineElement,
   LinearScale,
+  LineElement,
   PointElement,
   Title,
   Tooltip,
 } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import { useNextNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
 import { useI18n } from '../../contexts/I18nContext';
 

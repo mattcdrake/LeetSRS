@@ -1,15 +1,16 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { StreakCounter } from '../StreakCounter';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { createQueryMock } from '@/test/utils/query-mocks';
-import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
+
 import type { UseQueryResult } from '@tanstack/react-query';
-import type { DailyStats } from '@/services/stats';
+import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
+import { describe, expect, it, vi } from 'vitest';
+import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
+import type { DailyStats } from '@/services/stats';
+import { createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { StreakCounter } from '../StreakCounter';
 
 // Mock the query hook
 vi.mock('@/hooks/useBackgroundQueries', () => ({

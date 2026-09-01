@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { detectBrowserLanguage } from '..';
 
 function mockLanguages(languages: string[]) {

@@ -1,20 +1,21 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ReviewQueue } from '../ReviewQueue';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Rating, State } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  useReviewQueueQuery,
-  useRateCardMutation,
-  useRemoveCardMutation,
   useDelayCardMutation,
   usePauseCardMutation,
+  useRateCardMutation,
+  useRemoveCardMutation,
+  useReviewQueueQuery,
 } from '@/hooks/useBackgroundQueries';
-import { createQueryMock, createMutationMock } from '@/test/utils/query-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { Rating, State } from 'ts-fsrs';
+import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { ReviewQueue } from '../ReviewQueue';
 
 // Mock localStorage to disable animations in tests
 const originalLocalStorage = window.localStorage;
@@ -75,16 +76,16 @@ vi.mock('../ReviewCard', () => ({
   ReviewCard: ({ card, onRate, isProcessing }: MockReviewCardProps) => (
     <div data-testid="review-card">
       <div>{card.name}</div>
-      <button onClick={() => onRate(Rating.Again)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Again)} disabled={isProcessing}>
         Again
       </button>
-      <button onClick={() => onRate(Rating.Hard)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Hard)} disabled={isProcessing}>
         Hard
       </button>
-      <button onClick={() => onRate(Rating.Good)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Good)} disabled={isProcessing}>
         Good
       </button>
-      <button onClick={() => onRate(Rating.Easy)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Easy)} disabled={isProcessing}>
         Easy
       </button>
     </div>
@@ -106,16 +107,16 @@ vi.mock('../ActionsSection', () => ({
     onPause: () => void;
   }) => (
     <div data-testid="actions-section">
-      <button onClick={onDelete} data-testid="delete-button">
+      <button type="button" onClick={onDelete} data-testid="delete-button">
         Delete
       </button>
-      <button onClick={() => onDelay(1)} data-testid="delay-1-button">
+      <button type="button" onClick={() => onDelay(1)} data-testid="delay-1-button">
         Delay 1 day
       </button>
-      <button onClick={() => onDelay(5)} data-testid="delay-5-button">
+      <button type="button" onClick={() => onDelay(5)} data-testid="delay-5-button">
         Delay 5 days
       </button>
-      <button onClick={onPause} data-testid="pause-button">
+      <button type="button" onClick={onPause} data-testid="pause-button">
         Pause
       </button>
     </div>

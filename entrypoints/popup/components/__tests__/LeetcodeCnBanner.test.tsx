@@ -1,9 +1,10 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
-import { LeetcodeCnBanner, DISMISS_KEY } from '../LeetcodeCnBanner';
+
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DISMISS_KEY, LeetcodeCnBanner } from '../LeetcodeCnBanner';
 
 const mockContains = vi.fn<() => Promise<boolean>>();
 const mockRequest = vi.fn<() => Promise<boolean>>();

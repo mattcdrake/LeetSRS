@@ -1,15 +1,16 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { ReviewHistoryChart } from '../ReviewHistoryChart';
-import { Rating } from 'ts-fsrs';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { createQueryMock } from '@/test/utils/query-mocks';
-import { useLastNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
+
 import type { UseQueryResult } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
+import { Rating } from 'ts-fsrs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useLastNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
 import type { DailyStats } from '@/services/stats';
+import { createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { ReviewHistoryChart } from '../ReviewHistoryChart';
 
 // Mock react-chartjs-2
 vi.mock('react-chartjs-2', () => ({

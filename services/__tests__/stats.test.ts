@@ -1,25 +1,26 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { State as FsrsState, Rating } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import type { Difficulty } from '@/shared/cards';
+import { requireDefined } from '@/test/utils/assertions';
+import type { StoredCard } from '../cards';
+import { addCard } from '../cards';
 import {
-  getTodayKey,
-  getYesterdayKey,
-  updateStats,
-  rollupOldStats,
-  getMonthlyStats,
-  getStatsForDate,
-  getTodayStats,
+  type DailyStats,
   getCardStateStats,
   getLastNDaysStats,
+  getMonthlyStats,
   getNextNDaysStats,
-  type DailyStats,
+  getStatsForDate,
+  getTodayKey,
+  getTodayStats,
+  getYesterdayKey,
   type MonthlyStats,
+  rollupOldStats,
+  updateStats,
 } from '../stats';
-import { Rating, State as FsrsState } from 'ts-fsrs';
 import { STORAGE_KEYS } from '../storage-keys';
-import { addCard } from '../cards';
-import type { Difficulty } from '@/shared/cards';
-import type { StoredCard } from '../cards';
 
 describe('Date key generation', () => {
   beforeEach(() => {
@@ -935,7 +936,7 @@ describe('Stats management', () => {
 
       // Daily stats should only have today's entry
       const dailyStats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(Object.keys(dailyStats!)).toEqual(['2024-03-15']);
+      expect(Object.keys(requireDefined(dailyStats))).toEqual(['2024-03-15']);
 
       // Monthly stats should have January rollup
       const monthly = await getMonthlyStats();
@@ -1030,7 +1031,7 @@ describe('Stats management', () => {
 
       // All entries are within 30 days of 2024-03-15, so nothing should be rolled up
       const dailyStats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(Object.keys(dailyStats!).sort()).toEqual(['2024-03-01', '2024-03-10', '2024-03-15']);
+      expect(Object.keys(requireDefined(dailyStats)).sort()).toEqual(['2024-03-01', '2024-03-10', '2024-03-15']);
 
       const monthly = await getMonthlyStats();
       expect(Object.keys(monthly)).toEqual([]);
@@ -1112,8 +1113,8 @@ describe('Stats management', () => {
 
       // Old daily entry should be gone
       const dailyStats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(dailyStats!['2024-01-05']).toBeUndefined();
-      expect(dailyStats!['2024-03-15']).toBeDefined();
+      expect(requireDefined(dailyStats)['2024-01-05']).toBeUndefined();
+      expect(requireDefined(dailyStats)['2024-03-15']).toBeDefined();
     });
   });
 

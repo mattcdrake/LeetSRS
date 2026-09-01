@@ -1,8 +1,8 @@
-import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
-import { type Difficulty, type Card } from '@/shared/cards';
-import { Rating } from 'ts-fsrs';
-import type { Grade } from 'ts-fsrs';
 import { Button } from 'react-aria-components';
+import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
+import type { Grade } from 'ts-fsrs';
+import { Rating } from 'ts-fsrs';
+import type { Card, Difficulty } from '@/shared/cards';
 import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 

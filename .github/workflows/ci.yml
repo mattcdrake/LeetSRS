@@ -41,11 +41,8 @@ jobs:
           fi
           echo "All versions match: $PKG_VERSION"
 
-      - name: Check formatting
-        run: npm run format:check
-
-      - name: Run linter
-        run: npm run lint
+      - name: Check formatting and linting
+        run: npx biome check --error-on-warnings .
 
       - name: Type check
         run: npm run compile

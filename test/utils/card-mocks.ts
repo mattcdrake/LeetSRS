@@ -1,4 +1,4 @@
-import { State } from 'ts-fsrs';
+import type { State } from 'ts-fsrs';
 import type { Card } from '@/shared/cards';
 
 /**

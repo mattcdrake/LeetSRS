@@ -1,5 +1,5 @@
-import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import { State } from 'ts-fsrs';
+import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface StatItemProps {

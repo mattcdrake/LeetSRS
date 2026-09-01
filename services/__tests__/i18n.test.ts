@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { translations } from '@/shared/i18n';
 import { getServiceTranslations } from '../i18n';
 import { STORAGE_KEYS } from '../storage-keys';
-import { translations } from '@/shared/i18n';
 
 describe('service i18n', () => {
   beforeEach(() => {
@@ -39,8 +39,7 @@ describe('service i18n', () => {
 
     it('should fall back to default language for invalid storage values', async () => {
       // Simulate corrupted/invalid language in storage
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID' as any);
+      await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID');
       // Wait for the watcher to fire
       await new Promise((r) => setTimeout(r, 50));
       expect(getServiceTranslations()).toBe(translations.en);

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '../storage-keys';
@@ -35,13 +35,13 @@ vi.mock('../import-export', () => ({
 
 // Import after mocks are set up
 import {
-  getGistSyncConfig,
-  setGistSyncConfig,
-  getGistSyncStatus,
-  validatePat,
-  validateGistId,
   createNewGist,
+  getGistSyncConfig,
+  getGistSyncStatus,
+  setGistSyncConfig,
   triggerGistSync,
+  validateGistId,
+  validatePat,
 } from '../github-sync';
 
 describe('github-sync', () => {

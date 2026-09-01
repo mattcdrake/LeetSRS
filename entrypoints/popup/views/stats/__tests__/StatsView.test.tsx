@@ -1,10 +1,11 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi } from 'vitest';
+
 import { render, screen } from '@testing-library/react';
-import { StatsView } from '../StatsView';
+import { describe, expect, it, vi } from 'vitest';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { StatsView } from '../StatsView';
 
 // Mock the ViewLayout component
 vi.mock('../../../components/ViewLayout', () => ({

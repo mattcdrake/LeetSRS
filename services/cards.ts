@@ -1,10 +1,11 @@
-import { FSRS, State as FsrsState, createEmptyCard, generatorParameters, type Card as FsrsCard } from 'ts-fsrs';
-import { STORAGE_KEYS } from './storage-keys';
+import { createEmptyCard, FSRS, type Card as FsrsCard, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { storage } from '#imports';
-import { updateStats, getTodayStats } from './stats';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import { deleteNote } from './notes';
-import { type Card, type ProblemDescriptor, type RateCardInput } from '@/shared/cards';
-import { getMaxNewCardsPerDay, getDayStartHour } from './settings';
+import { getDayStartHour, getMaxNewCardsPerDay } from './settings';
+import { getTodayStats, updateStats } from './stats';
+import { STORAGE_KEYS } from './storage-keys';
+
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 

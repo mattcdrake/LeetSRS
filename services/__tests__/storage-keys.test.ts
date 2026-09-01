@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { STORAGE_KEYS, getNoteStorageKey } from '../storage-keys';
+import { describe, expect, it } from 'vitest';
+import { getNoteStorageKey, STORAGE_KEYS } from '../storage-keys';
 
 describe('Storage Keys', () => {
   describe('getNoteStorageKey', () => {

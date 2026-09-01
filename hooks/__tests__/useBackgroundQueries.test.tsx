@@ -1,20 +1,20 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { renderHook, waitFor } from '@testing-library/react';
+import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Card } from '@/shared/cards';
+import { MessageType, sendMessage } from '@/shared/messages';
+import { createTestWrapper, createWrapper } from '@/test/utils/test-wrapper';
 import {
-  useRateCardMutation,
-  useSaveNoteMutation,
+  queryKeys,
   useDeleteNoteMutation,
   usePauseCardMutation,
-  queryKeys,
+  useRateCardMutation,
+  useSaveNoteMutation,
 } from '../useBackgroundQueries';
-import { sendMessage } from '@/shared/messages';
-import { MessageType } from '@/shared/messages';
-import { Rating, type Grade, createEmptyCard } from 'ts-fsrs';
-import { createWrapper, createTestWrapper } from '@/test/utils/test-wrapper';
-import type { Card } from '@/shared/cards';
 
 // Mock the sendMessage function
 vi.mock('@/shared/messages', () => ({
@@ -23,7 +23,7 @@ vi.mock('@/shared/messages', () => ({
     if (message.type === 'GET_ANIMATIONS_ENABLED') {
       return Promise.resolve(false);
     }
-    return Promise.resolve();
+    return Promise.resolve(undefined);
   }),
   MessageType: {
     RATE_CARD: 'RATE_CARD',
@@ -43,7 +43,7 @@ describe('useRateCardMutation', () => {
       if (message.type === 'GET_ANIMATIONS_ENABLED') {
         return Promise.resolve(false);
       }
-      return Promise.resolve();
+      return Promise.resolve(undefined);
     });
   });
 

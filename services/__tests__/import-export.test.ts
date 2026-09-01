@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createEmptyCard, Rating } from 'ts-fsrs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import type { Note } from '@/shared/notes';
+import type { StoredCard } from '../cards';
 import { exportData, importData, resetAllData } from '../import-export';
+import type { DailyStats, MonthlyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
-import { type StoredCard } from '../cards';
-import { type DailyStats, type MonthlyStats } from '../stats';
-import { type Note } from '@/shared/notes';
-import { Rating, createEmptyCard } from 'ts-fsrs';
 
 describe('import-export', () => {
   beforeEach(() => {

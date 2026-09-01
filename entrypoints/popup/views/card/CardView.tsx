@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { ViewLayout } from '../../components/ViewLayout';
-import { StreakCounter } from '../../components/StreakCounter';
-import { CardNotes } from './components/CardNotes';
+import { Button, Input, Label, TextField } from 'react-aria-components';
+import { FaCirclePause, FaMagnifyingGlass, FaPlay, FaTrash, FaXmark } from 'react-icons/fa6';
+import { State as FsrsState } from 'ts-fsrs';
 import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
 import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
-import { Button, TextField, Input, Label } from 'react-aria-components';
-import { State as FsrsState } from 'ts-fsrs';
 import type { Card } from '@/shared/cards';
-import { FaCirclePause, FaPlay, FaTrash, FaXmark, FaMagnifyingGlass } from 'react-icons/fa6';
-import { bounceButton } from '@/shared/styles';
-import { useI18n } from '../../contexts/I18nContext';
 import type { Translations } from '@/shared/i18n';
+import { bounceButton } from '@/shared/styles';
+import { StreakCounter } from '../../components/StreakCounter';
+import { ViewLayout } from '../../components/ViewLayout';
+import { useI18n } from '../../contexts/I18nContext';
+import { CardNotes } from './components/CardNotes';
 
 // Utility functions
 const getStateLabel = (state: FsrsState, t: Translations) => {
@@ -210,8 +210,8 @@ export function CardView() {
   });
 
   const sortedCards = [...filteredCards].sort((a, b) => {
-    const aId = parseInt(a.leetcodeId);
-    const bId = parseInt(b.leetcodeId);
+    const aId = parseInt(a.leetcodeId, 10);
+    const bId = parseInt(b.leetcodeId, 10);
     return aId - bId;
   });
 

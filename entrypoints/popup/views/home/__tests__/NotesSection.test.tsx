@@ -1,13 +1,14 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { NotesSection } from '../NotesSection';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/useBackgroundQueries';
 import type { Note } from '@/shared/notes';
-import { createQueryMock, createMutationMock } from '@/test/utils/query-mocks';
+import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { NotesSection } from '../NotesSection';
 
 // Mock the hooks
 vi.mock('@/hooks/useBackgroundQueries', () => ({

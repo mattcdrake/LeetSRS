@@ -1,12 +1,13 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useNoteEditor } from '../useNoteEditor';
-import { useNoteQuery, useSaveNoteMutation, useDeleteNoteMutation } from '@/hooks/useBackgroundQueries';
-import { createQueryMock, createMutationMock } from '@/test/utils/query-mocks';
+
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/useBackgroundQueries';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
+import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { useNoteEditor } from '../useNoteEditor';
 
 // Mock the hooks
 vi.mock('@/hooks/useBackgroundQueries', () => ({

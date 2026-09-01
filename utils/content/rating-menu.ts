@@ -1,7 +1,7 @@
+import { getServiceTranslations } from '@/services/i18n';
+import { createButton } from './button';
 import { RATING_BUTTON_CONFIGS, THEME_COLORS } from './constants';
 import { getRatingColor, isDarkMode } from './theme';
-import { createButton } from './button';
-import { getServiceTranslations } from '@/services/i18n';
 
 export type RatingCallback = (rating: number, label: string) => void;
 type RatingMenuPosition = 'top' | 'bottom';

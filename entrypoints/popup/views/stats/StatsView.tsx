@@ -1,9 +1,9 @@
-import { ViewLayout } from '../../components/ViewLayout';
 import { StreakCounter } from '../../components/StreakCounter';
+import { ViewLayout } from '../../components/ViewLayout';
+import { useI18n } from '../../contexts/I18nContext';
 import { CardDistributionChart } from './CardDistributionChart';
 import { ReviewHistoryChart } from './ReviewHistoryChart';
 import { UpcomingReviewsChart } from './UpcomingReviewsChart';
-import { useI18n } from '../../contexts/I18nContext';
 
 export function StatsView() {
   const t = useI18n();

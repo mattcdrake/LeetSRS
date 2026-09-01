@@ -1,12 +1,13 @@
 /**
  * @vitest-environment happy-dom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ReviewCard } from '../ReviewCard';
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { ReviewCard } from '../ReviewCard';
 
 // No longer need to mock useRateCardMutation since we're using onRate prop
 

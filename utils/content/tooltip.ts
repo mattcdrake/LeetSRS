@@ -1,5 +1,5 @@
-import { isDarkMode } from './theme';
 import { THEME_COLORS } from './constants';
+import { isDarkMode } from './theme';
 
 export class Tooltip {
   private element: HTMLDivElement | null = null;

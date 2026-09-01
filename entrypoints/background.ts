@@ -1,47 +1,47 @@
+import { browser } from 'wxt/browser';
 import {
   addCard,
-  getAllCards,
-  removeCard,
   delayCard,
-  setPauseStatus,
-  rateCard,
+  getAllCards,
   getReviewQueue,
+  rateCard,
+  removeCard,
+  setPauseStatus,
 } from '@/services/cards';
-import { getTodayStats, getCardStateStats, getLastNDaysStats, getNextNDaysStats } from '@/services/stats';
-import { getNote, saveNote, deleteNote } from '@/services/notes';
-import {
-  getMaxNewCardsPerDay,
-  setMaxNewCardsPerDay,
-  getDayStartHour,
-  setDayStartHour,
-  getAnimationsEnabled,
-  setAnimationsEnabled,
-  getTheme,
-  setTheme,
-  getResetEditorOnEveryProblem,
-  setResetEditorOnEveryProblem,
-  getResetEditorOnDueReview,
-  setResetEditorOnDueReview,
-  getBadgeEnabled,
-  setBadgeEnabled,
-  getLanguage,
-  setLanguage,
-} from '@/services/settings';
-import { browser } from 'wxt/browser';
-import { MessageType, type MessageRequest } from '@/shared/messages';
-import { runMigrations, migrations } from '@/services/migrations';
-import { exportData, importData, resetAllData } from '@/services/import-export';
-import {
-  getGistSyncConfig,
-  setGistSyncConfig,
-  getGistSyncStatus,
-  triggerGistSync,
-  createNewGist,
-  validatePat,
-  validateGistId,
-} from '@/services/github-sync';
 import { markDataUpdated } from '@/services/data-tracker';
 import { shouldResetEditor } from '@/services/editor-reset';
+import {
+  createNewGist,
+  getGistSyncConfig,
+  getGistSyncStatus,
+  setGistSyncConfig,
+  triggerGistSync,
+  validateGistId,
+  validatePat,
+} from '@/services/github-sync';
+import { exportData, importData, resetAllData } from '@/services/import-export';
+import { migrations, runMigrations } from '@/services/migrations';
+import { deleteNote, getNote, saveNote } from '@/services/notes';
+import {
+  getAnimationsEnabled,
+  getBadgeEnabled,
+  getDayStartHour,
+  getLanguage,
+  getMaxNewCardsPerDay,
+  getResetEditorOnDueReview,
+  getResetEditorOnEveryProblem,
+  getTheme,
+  setAnimationsEnabled,
+  setBadgeEnabled,
+  setDayStartHour,
+  setLanguage,
+  setMaxNewCardsPerDay,
+  setResetEditorOnDueReview,
+  setResetEditorOnEveryProblem,
+  setTheme,
+} from '@/services/settings';
+import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
+import { type MessageRequest, MessageType } from '@/shared/messages';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -256,7 +256,7 @@ export default defineBackground(() => {
   }
 
   // Message handler for popup communication
-  browser.runtime.onMessage.addListener((request: MessageRequest, sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((request: MessageRequest, _sender, sendResponse) => {
     handleMessage(request).then(sendResponse);
 
     // Return true to indicate we'll send a response asynchronously

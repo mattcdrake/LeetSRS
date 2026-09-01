@@ -1,19 +1,19 @@
-import { TextField, Label, Input } from 'react-aria-components';
+import { useEffect, useState } from 'react';
+import { Input, Label, TextField } from 'react-aria-components';
 import {
-  useMaxNewCardsPerDayQuery,
-  useSetMaxNewCardsPerDayMutation,
   useDayStartHourQuery,
+  useMaxNewCardsPerDayQuery,
   useSetDayStartHourMutation,
+  useSetMaxNewCardsPerDayMutation,
 } from '@/hooks/useBackgroundQueries';
 import {
-  DEFAULT_MAX_NEW_CARDS_PER_DAY,
-  MIN_NEW_CARDS_PER_DAY,
-  MAX_NEW_CARDS_PER_DAY,
   DEFAULT_DAY_START_HOUR,
-  MIN_DAY_START_HOUR,
+  DEFAULT_MAX_NEW_CARDS_PER_DAY,
   MAX_DAY_START_HOUR,
+  MAX_NEW_CARDS_PER_DAY,
+  MIN_DAY_START_HOUR,
+  MIN_NEW_CARDS_PER_DAY,
 } from '@/shared/settings';
-import { useState, useEffect } from 'react';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function ReviewSettingsSection() {
@@ -39,7 +39,7 @@ export function ReviewSettingsSection() {
 
   const handleBlur = () => {
     const value = parseInt(inputValue, 10);
-    if (!isNaN(value) && value >= MIN_NEW_CARDS_PER_DAY && value <= MAX_NEW_CARDS_PER_DAY) {
+    if (!Number.isNaN(value) && value >= MIN_NEW_CARDS_PER_DAY && value <= MAX_NEW_CARDS_PER_DAY) {
       setMaxNewCardsPerDayMutation.mutate(value);
     } else {
       // Reset to current value on invalid input
@@ -49,7 +49,7 @@ export function ReviewSettingsSection() {
 
   const handleDayStartBlur = () => {
     const value = parseInt(dayStartHourValue, 10);
-    if (!isNaN(value) && value >= MIN_DAY_START_HOUR && value <= MAX_DAY_START_HOUR) {
+    if (!Number.isNaN(value) && value >= MIN_DAY_START_HOUR && value <= MAX_DAY_START_HOUR) {
       setDayStartHourMutation.mutate(value);
     } else {
       setDayStartHourValue((dayStartHour ?? DEFAULT_DAY_START_HOUR).toString());

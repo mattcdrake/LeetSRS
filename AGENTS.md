@@ -14,11 +14,11 @@ Use Node.js 24+ and install dependencies with `npm install`.
 - `npm test` runs the Vitest suite once.
 - `npm run compile` performs TypeScript checking without emitting files.
 - `npm run lint` and `npm run format:check` check style.
-- `npm run check` formats, lints, type-checks, and tests.
+- `npm run check` checks formatting, lints, type-checks, and tests.
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semicolons; Prettier and ESLint enforce these rules. Avoid `any`; prefix intentionally unused names with `_`. Use PascalCase for components (`ReviewQueue.tsx`), `use` plus camelCase for hooks (`useNoteEditor.ts`), and kebab-case for utilities and services (`github-sync.ts`). Keep domain logic out of UI components.
+Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semicolons; Biome enforces these rules. Avoid `any`; prefix intentionally unused names with `_`. Use PascalCase for components (`ReviewQueue.tsx`), `use` plus camelCase for hooks (`useNoteEditor.ts`), and kebab-case for utilities and services (`github-sync.ts`). Keep domain logic out of UI components.
 
 ## Testing Guidelines
 

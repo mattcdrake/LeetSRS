@@ -1,6 +1,6 @@
-import { createContext, useContext, type ReactNode } from 'react';
-import { translations, type Translations } from '@/shared/i18n';
+import { createContext, type ReactNode, useContext } from 'react';
 import { useLanguageQuery } from '@/hooks/useBackgroundQueries';
+import { type Translations, translations } from '@/shared/i18n';
 import { DEFAULT_LANGUAGE } from '@/shared/settings';
 
 const I18nContext = createContext<Translations>(translations.en);

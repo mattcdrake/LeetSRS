@@ -1,5 +1,5 @@
-import { LEETSRS_BUTTON_COLOR } from './constants';
 import { getServiceTranslations } from '@/services/i18n';
+import { LEETSRS_BUTTON_COLOR } from './constants';
 
 export function createButton(options: {
   className?: string;

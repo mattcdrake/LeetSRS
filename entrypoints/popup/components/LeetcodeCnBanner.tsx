@@ -37,12 +37,14 @@ export function LeetcodeCnBanner() {
     <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
       <span className="flex-1">{t.home.leetcodeCnBanner.message}</span>
       <button
+        type="button"
         onClick={enable}
         className="shrink-0 rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-blue-700"
       >
         {t.home.leetcodeCnBanner.enable}
       </button>
       <button
+        type="button"
         onClick={dismiss}
         aria-label={t.home.leetcodeCnBanner.dismiss}
         className="shrink-0 text-blue-400 hover:text-blue-600 dark:hover:text-blue-100"

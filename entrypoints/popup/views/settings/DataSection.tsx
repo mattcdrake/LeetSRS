@@ -1,8 +1,8 @@
+import { useRef } from 'react';
 import { Button } from 'react-aria-components';
-import { bounceButton } from '@/shared/styles';
 import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/useBackgroundQueries';
 import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
-import { useRef } from 'react';
+import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {

@@ -1,15 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap');
-@import 'tailwindcss';
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap");
+@import "tailwindcss";
 
 body {
-  font-family:
-    'Geist',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 #root {
@@ -147,7 +140,7 @@ body {
 
   /* Font utilities */
   .font-jetbrains-mono {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
   }
 
   /* Border colors */
@@ -232,8 +225,8 @@ body {
 
 /* Disable animations when preference is set */
 .animations-disabled * {
-  animation: none !important;
-  transition: none !important;
+  animation: none;
+  transition: none;
 }
 
 /* Hide scrollbar until hovering over scrollable area */

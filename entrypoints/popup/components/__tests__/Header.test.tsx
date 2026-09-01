@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Header } from '../Header';
 
 describe('Header', () => {
@@ -17,7 +17,7 @@ describe('Header', () => {
   it('renders children when provided', () => {
     render(
       <Header title="Test Title">
-        <button>Test Button</button>
+        <button type="button">Test Button</button>
       </Header>
     );
 

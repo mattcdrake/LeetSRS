@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { isDarkMode, getRatingColor } from '../theme';
-import { RATING_COLORS } from '../constants';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { RATING_COLORS } from '../constants';
+import { getRatingColor, isDarkMode } from '../theme';
 
 // @vitest-environment happy-dom
 

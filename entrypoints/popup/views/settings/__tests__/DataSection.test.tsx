@@ -3,9 +3,9 @@
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/useBackgroundQueries';
 import { createMutationMock } from '@/test/utils/query-mocks';
 import { DataSection } from '../DataSection';
-import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/useBackgroundQueries';
 
 vi.mock('@/hooks/useBackgroundQueries', () => ({
   useExportDataMutation: vi.fn(),

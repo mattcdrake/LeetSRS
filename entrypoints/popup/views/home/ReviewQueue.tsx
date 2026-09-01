@@ -1,18 +1,18 @@
-import { useState, useRef, useEffect } from 'react';
-import { ReviewCard } from './ReviewCard';
-import { NotesSection } from './NotesSection';
-import { ActionsSection } from './ActionsSection';
+import { useEffect, useRef, useState } from 'react';
+import type { Grade } from 'ts-fsrs';
 import {
-  useReviewQueueQuery,
-  useRateCardMutation,
-  useRemoveCardMutation,
+  useAnimationsEnabledQuery,
   useDelayCardMutation,
   usePauseCardMutation,
-  useAnimationsEnabledQuery,
+  useRateCardMutation,
+  useRemoveCardMutation,
+  useReviewQueueQuery,
 } from '@/hooks/useBackgroundQueries';
-import type { Grade } from 'ts-fsrs';
-import { useI18n } from '../../contexts/I18nContext';
 import type { Card, RateCardInput } from '@/shared/cards';
+import { useI18n } from '../../contexts/I18nContext';
+import { ActionsSection } from './ActionsSection';
+import { NotesSection } from './NotesSection';
+import { ReviewCard } from './ReviewCard';
 
 export function ReviewQueue() {
   const t = useI18n();
@@ -133,6 +133,7 @@ export function ReviewQueue() {
         <div className="text-base text-secondary text-center">
           {t.home.addProblemsInstructions}{' '}
           <svg
+            aria-hidden="true"
             className="inline-block mx-1 align-text-bottom"
             width="20"
             height="20"
