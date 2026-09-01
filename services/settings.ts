@@ -10,7 +10,7 @@ import {
   MAX_DAY_START_HOUR,
   type Theme,
   DEFAULT_THEME,
-  DEFAULT_AUTO_CLEAR_LEETCODE,
+  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
   DEFAULT_BADGE_ENABLED,
   type Language,
 } from '@/shared/settings';
@@ -66,13 +66,13 @@ export async function setTheme(value: Theme): Promise<void> {
   await storage.setItem(STORAGE_KEYS.theme, value);
 }
 
-export async function getAutoClearLeetcode(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.autoClearLeetcode);
-  return value ?? DEFAULT_AUTO_CLEAR_LEETCODE;
+export async function getResetEditorOnEveryProblem(): Promise<boolean> {
+  const value = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnEveryProblem);
+  return value ?? DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM;
 }
 
-export async function setAutoClearLeetcode(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.autoClearLeetcode, value);
+export async function setResetEditorOnEveryProblem(value: boolean): Promise<void> {
+  await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, value);
 }
 
 export async function getBadgeEnabled(): Promise<boolean> {

@@ -165,7 +165,7 @@ const en = {
     problemAutoClear: {
       title: 'Problem Auto Reset',
       description: 'Automatically reset code when opening a LeetCode problem.',
-      enableAutoReset: 'Enable auto reset',
+      resetEditorOnEveryProblem: 'Reset editor on every problem',
     },
 
     leetcodeCn: {

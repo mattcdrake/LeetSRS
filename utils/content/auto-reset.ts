@@ -57,8 +57,8 @@ export function setupLeetcodeAutoReset(): () => void {
 
     isResetting = true;
     try {
-      const autoClearEnabled = await sendMessage({ type: MessageType.GET_AUTO_CLEAR_LEETCODE });
-      if (!autoClearEnabled) {
+      const resetEveryProblem = await sendMessage({ type: MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM });
+      if (!resetEveryProblem) {
         return;
       }
 

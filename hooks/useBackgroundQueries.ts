@@ -31,7 +31,7 @@ export const queryKeys = {
     dayStartHour: ['settings', 'dayStartHour'] as const,
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
-    autoClearLeetcode: ['settings', 'autoClearLeetcode'] as const,
+    resetEditorOnEveryProblem: ['settings', 'resetEditorOnEveryProblem'] as const,
     badgeEnabled: ['settings', 'badgeEnabled'] as const,
     language: ['settings', 'language'] as const,
   },
@@ -269,20 +269,20 @@ export function useSetThemeMutation() {
   });
 }
 
-export function useAutoClearLeetcodeQuery() {
+export function useResetEditorOnEveryProblemQuery() {
   return useQuery({
-    queryKey: queryKeys.settings.autoClearLeetcode,
-    queryFn: () => sendMessage({ type: MessageType.GET_AUTO_CLEAR_LEETCODE }),
+    queryKey: queryKeys.settings.resetEditorOnEveryProblem,
+    queryFn: () => sendMessage({ type: MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM }),
   });
 }
 
-export function useSetAutoClearLeetcodeMutation() {
+export function useSetResetEditorOnEveryProblemMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_AUTO_CLEAR_LEETCODE, value }),
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM, value }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.autoClearLeetcode });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnEveryProblem });
     },
   });
 }

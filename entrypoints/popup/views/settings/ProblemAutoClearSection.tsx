@@ -1,15 +1,19 @@
-import { useAutoClearLeetcodeQuery, useSetAutoClearLeetcodeMutation } from '@/hooks/useBackgroundQueries';
-import { DEFAULT_AUTO_CLEAR_LEETCODE } from '@/shared/settings';
+import {
+  useResetEditorOnEveryProblemQuery,
+  useSetResetEditorOnEveryProblemMutation,
+} from '@/hooks/useBackgroundQueries';
+import { DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 
 export function ProblemAutoClearSection() {
   const t = useI18n();
-  const { data: autoClearLeetcode = DEFAULT_AUTO_CLEAR_LEETCODE } = useAutoClearLeetcodeQuery();
-  const setAutoClearLeetcodeMutation = useSetAutoClearLeetcodeMutation();
+  const { data: resetEditorOnEveryProblem = DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM } =
+    useResetEditorOnEveryProblemQuery();
+  const setResetEditorOnEveryProblemMutation = useSetResetEditorOnEveryProblemMutation();
 
-  const setAutoClearLeetcode = (isSelected: boolean) => {
-    setAutoClearLeetcodeMutation.mutate(isSelected);
+  const setResetEditorOnEveryProblem = (isSelected: boolean) => {
+    setResetEditorOnEveryProblemMutation.mutate(isSelected);
   };
 
   return (
@@ -18,9 +22,9 @@ export function ProblemAutoClearSection() {
       <p className="text-sm text-tertiary mb-4">{t.settings.problemAutoClear.description}</p>
       <div className="space-y-3">
         <SettingsSwitch
-          label={t.settings.problemAutoClear.enableAutoReset}
-          isSelected={autoClearLeetcode}
-          onChange={setAutoClearLeetcode}
+          label={t.settings.problemAutoClear.resetEditorOnEveryProblem}
+          isSelected={resetEditorOnEveryProblem}
+          onChange={setResetEditorOnEveryProblem}
         />
       </div>
     </div>

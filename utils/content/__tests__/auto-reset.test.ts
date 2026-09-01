@@ -136,7 +136,7 @@ describe('setupLeetcodeAutoReset', () => {
     expect(confirmClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should do nothing when auto clear is disabled', async () => {
+  it('should do nothing when reset on every problem is disabled', async () => {
     vi.mocked(sendMessage).mockResolvedValue(false);
     const resetButton = renderResetButton('class');
     const resetClick = vi.spyOn(resetButton, 'click');
