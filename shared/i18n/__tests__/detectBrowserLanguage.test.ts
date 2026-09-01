@@ -25,6 +25,11 @@ describe('detectBrowserLanguage', () => {
     expect(detectBrowserLanguage()).toBe('en');
   });
 
+  it('base language match (de-DE → de)', () => {
+    mockLanguages(['de-DE']);
+    expect(detectBrowserLanguage()).toBe('de');
+  });
+
   it('zh variant falls back to zh-CN', () => {
     mockLanguages(['zh-TW']);
     expect(detectBrowserLanguage()).toBe('zh-CN');
@@ -41,7 +46,7 @@ describe('detectBrowserLanguage', () => {
   });
 
   it('falls back to en for unsupported languages', () => {
-    mockLanguages(['fr', 'de', 'ja']);
+    mockLanguages(['fr', 'ja', 'ko']);
     expect(detectBrowserLanguage()).toBe('en');
   });
 

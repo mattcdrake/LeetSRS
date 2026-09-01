@@ -10,6 +10,7 @@
  */
 
 import { DEFAULT_LANGUAGE, type Language } from '../settings';
+import de from './de';
 import en from './en';
 import hi from './hi';
 import pl from './pl';
@@ -29,6 +30,7 @@ export type Translations = DeepStringify<typeof en>;
 
 // All translations keyed by language code
 export const translations: Record<Language, Translations> = {
+  de,
   en,
   hi,
   pl,
@@ -41,6 +43,7 @@ export const LANGUAGE_OPTIONS: Array<{
   name: string;
   nativeName: string;
 }> = [
+  { code: 'de', name: 'German', nativeName: 'Deutsch' },
   { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
   { code: 'pl', name: 'Polish', nativeName: 'Polski' },
