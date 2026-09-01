@@ -159,7 +159,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const octokit = new Octokit({ auth: config.pat });
 
     // Fetch remote gist
-    let remoteGist;
+    let remoteGist: Awaited<ReturnType<typeof octokit.rest.gists.get>>['data'];
     try {
       const { data } = await octokit.rest.gists.get({ gist_id: config.gistId });
       remoteGist = data;
