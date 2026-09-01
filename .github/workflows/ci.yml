@@ -42,7 +42,7 @@ jobs:
           echo "All versions match: $PKG_VERSION"
 
       - name: Check formatting and linting
-        run: npx biome check .
+        run: npx biome check --error-on-warnings .
 
       - name: Type check
         run: npm run compile

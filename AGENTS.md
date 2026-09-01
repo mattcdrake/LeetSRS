@@ -35,7 +35,3 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 ## Commit & Pull Request Guidelines
 
 Write concise, imperative commit subjects with a lowercase prefix, such as `fix: clean up animation timeout`. Existing prefixes include `fix`, `bugfix`, `refactor`, and `chore`. Pull requests should explain user impact, summarize implementation and testing, link issues, and include screenshots for UI changes. Do not commit generated `.output/` or `.wxt/` content.
-
-## Changelog Guidelines
-
-Record user-facing changes and notable developer-tooling changes in `CHANGELOG.md` under `Unreleased`. Do not assign them a version until a release is cut. At release time, rename the accumulated `Unreleased` section to the released version and date, then add a new empty `Unreleased` section for subsequent work.
