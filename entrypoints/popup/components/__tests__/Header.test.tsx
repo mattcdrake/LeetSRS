@@ -17,7 +17,7 @@ describe('Header', () => {
   it('renders children when provided', () => {
     render(
       <Header title="Test Title">
-        <button>Test Button</button>
+        <button type="button">Test Button</button>
       </Header>
     );
 

@@ -30,6 +30,7 @@ export function LeetcodeCnSection() {
       <h3 className="text-lg font-semibold mb-2">{t.settings.leetcodeCn.title}</h3>
       <p className="text-sm text-tertiary mb-4">{t.settings.leetcodeCn.description}</p>
       <button
+        type="button"
         onClick={enable}
         className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
       >

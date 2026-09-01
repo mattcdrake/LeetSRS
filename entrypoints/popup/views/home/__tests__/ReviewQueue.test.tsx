@@ -76,16 +76,16 @@ vi.mock('../ReviewCard', () => ({
   ReviewCard: ({ card, onRate, isProcessing }: MockReviewCardProps) => (
     <div data-testid="review-card">
       <div>{card.name}</div>
-      <button onClick={() => onRate(Rating.Again)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Again)} disabled={isProcessing}>
         Again
       </button>
-      <button onClick={() => onRate(Rating.Hard)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Hard)} disabled={isProcessing}>
         Hard
       </button>
-      <button onClick={() => onRate(Rating.Good)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Good)} disabled={isProcessing}>
         Good
       </button>
-      <button onClick={() => onRate(Rating.Easy)} disabled={isProcessing}>
+      <button type="button" onClick={() => onRate(Rating.Easy)} disabled={isProcessing}>
         Easy
       </button>
     </div>
@@ -107,16 +107,16 @@ vi.mock('../ActionsSection', () => ({
     onPause: () => void;
   }) => (
     <div data-testid="actions-section">
-      <button onClick={onDelete} data-testid="delete-button">
+      <button type="button" onClick={onDelete} data-testid="delete-button">
         Delete
       </button>
-      <button onClick={() => onDelay(1)} data-testid="delay-1-button">
+      <button type="button" onClick={() => onDelay(1)} data-testid="delay-1-button">
         Delay 1 day
       </button>
-      <button onClick={() => onDelay(5)} data-testid="delay-5-button">
+      <button type="button" onClick={() => onDelay(5)} data-testid="delay-5-button">
         Delay 5 days
       </button>
-      <button onClick={onPause} data-testid="pause-button">
+      <button type="button" onClick={onPause} data-testid="pause-button">
         Pause
       </button>
     </div>
