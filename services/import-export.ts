@@ -20,7 +20,7 @@ export interface ExportData {
       dayStartHour?: number;
       animationsEnabled?: boolean;
       theme?: Theme;
-      autoClearLeetcode?: boolean;
+      resetEditorOnEveryProblem?: boolean;
       badgeEnabled?: boolean;
       language?: Language;
     };
@@ -30,6 +30,12 @@ export interface ExportData {
     };
   };
 }
+
+type ImportData = Omit<ExportData, 'data'> & {
+  data: Omit<ExportData['data'], 'settings'> & {
+    settings: ExportData['data']['settings'] & { autoClearLeetcode?: boolean };
+  };
+};
 
 export async function exportData(): Promise<string> {
   // Gather all data from storage
@@ -79,7 +85,7 @@ export async function exportData(): Promise<string> {
         ...(dayStartHour != null && { dayStartHour }),
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
-        ...(resetEditorOnEveryProblem != null && { autoClearLeetcode: resetEditorOnEveryProblem }),
+        ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
         ...(badgeEnabled != null && { badgeEnabled }),
         ...(language != null && { language }),
       },
@@ -95,7 +101,7 @@ export async function exportData(): Promise<string> {
 
 export async function importData(jsonData: string): Promise<void> {
   // Parse and validate JSON
-  let data: ExportData;
+  let data: ImportData;
   try {
     data = JSON.parse(jsonData);
   } catch {
@@ -170,8 +176,10 @@ export async function importData(jsonData: string): Promise<void> {
     if (data.data.settings.theme != null) {
       await storage.setItem(STORAGE_KEYS.theme, data.data.settings.theme);
     }
-    if (data.data.settings.autoClearLeetcode != null) {
-      await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, data.data.settings.autoClearLeetcode);
+    const resetEditorOnEveryProblem =
+      data.data.settings.resetEditorOnEveryProblem ?? data.data.settings.autoClearLeetcode;
+    if (resetEditorOnEveryProblem != null) {
+      await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, resetEditorOnEveryProblem);
     }
     if (data.data.settings.badgeEnabled != null) {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, data.data.settings.badgeEnabled);

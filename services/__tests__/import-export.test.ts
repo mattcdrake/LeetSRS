@@ -63,7 +63,7 @@ describe('import-export', () => {
         dayStartHour: 4,
         animationsEnabled: true,
         theme: 'dark' as const,
-        autoClearLeetcode: true,
+        resetEditorOnEveryProblem: true,
         badgeEnabled: true,
         language: 'en' as const,
       };
@@ -76,7 +76,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.dayStartHour, mockSettings.dayStartHour);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
-      await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, mockSettings.autoClearLeetcode);
+      await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, mockSettings.resetEditorOnEveryProblem);
       await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
       await storage.setItem(STORAGE_KEYS.language, mockSettings.language);
 
@@ -186,7 +186,7 @@ describe('import-export', () => {
           dayStartHour: 2,
           animationsEnabled: false,
           theme: 'light' as const,
-          autoClearLeetcode: true,
+          resetEditorOnEveryProblem: true,
           badgeEnabled: false,
           language: 'en' as const,
         },
@@ -210,6 +210,21 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toEqual(true);
       expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.language)).toEqual('en');
+    });
+
+    it('should import the legacy autoClearLeetcode setting', async () => {
+      const { resetEditorOnEveryProblem: _, ...legacySettings } = validExportData.data.settings;
+      const legacyData = {
+        ...validExportData,
+        data: {
+          ...validExportData.data,
+          settings: { ...legacySettings, autoClearLeetcode: true },
+        },
+      };
+
+      await importData(JSON.stringify(legacyData));
+
+      expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toBe(true);
     });
 
     it('should clear existing data before importing', async () => {
