@@ -18,8 +18,8 @@ import {
   setAnimationsEnabled,
   getTheme,
   setTheme,
-  getAutoClearLeetcode,
-  setAutoClearLeetcode,
+  getResetEditorOnEveryProblem,
+  setResetEditorOnEveryProblem,
   getBadgeEnabled,
   setBadgeEnabled,
   getLanguage,
@@ -175,11 +175,11 @@ export default defineBackground(() => {
         return handleDataUpdate(() => setTheme(request.value));
       }
 
-      case MessageType.GET_AUTO_CLEAR_LEETCODE:
-        return await getAutoClearLeetcode();
+      case MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM:
+        return await getResetEditorOnEveryProblem();
 
-      case MessageType.SET_AUTO_CLEAR_LEETCODE: {
-        return handleDataUpdate(() => setAutoClearLeetcode(request.value));
+      case MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM: {
+        return handleDataUpdate(() => setResetEditorOnEveryProblem(request.value));
       }
 
       case MessageType.GET_BADGE_ENABLED:

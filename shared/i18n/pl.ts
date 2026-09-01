@@ -167,7 +167,7 @@ const pl: Translations = {
     problemAutoClear: {
       title: 'Automatyczny reset zadania',
       description: 'Automatycznie resetuj kod przy otwieraniu zadania na LeetCode.',
-      enableAutoReset: 'Włącz automatyczny reset',
+      resetEditorOnEveryProblem: 'Resetuj edytor dla każdego zadania',
     },
 
     leetcodeCn: {

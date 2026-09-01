@@ -8,8 +8,8 @@ import {
   setAnimationsEnabled,
   getTheme,
   setTheme,
-  getAutoClearLeetcode,
-  setAutoClearLeetcode,
+  getResetEditorOnEveryProblem,
+  setResetEditorOnEveryProblem,
   getLanguage,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
@@ -18,7 +18,7 @@ import {
   MIN_NEW_CARDS_PER_DAY,
   MAX_NEW_CARDS_PER_DAY,
   DEFAULT_THEME,
-  DEFAULT_AUTO_CLEAR_LEETCODE,
+  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
 } from '@/shared/settings';
 
 describe('Settings Service', () => {
@@ -234,14 +234,14 @@ describe('Settings Service', () => {
     });
   });
 
-  describe('auto clear settings', () => {
+  describe('editor reset settings', () => {
     it('should return default values when not set', async () => {
-      expect(await getAutoClearLeetcode()).toBe(DEFAULT_AUTO_CLEAR_LEETCODE);
+      expect(await getResetEditorOnEveryProblem()).toBe(DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM);
     });
 
-    it('should store and retrieve LeetCode auto clear', async () => {
-      await setAutoClearLeetcode(true);
-      expect(await getAutoClearLeetcode()).toBe(true);
+    it('should store and retrieve reset editor on every problem', async () => {
+      await setResetEditorOnEveryProblem(true);
+      expect(await getResetEditorOnEveryProblem()).toBe(true);
     });
   });
 

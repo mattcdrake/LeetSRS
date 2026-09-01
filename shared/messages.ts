@@ -34,8 +34,8 @@ export const MessageType = {
   SET_ANIMATIONS_ENABLED: 'SET_ANIMATIONS_ENABLED',
   GET_THEME: 'GET_THEME',
   SET_THEME: 'SET_THEME',
-  GET_AUTO_CLEAR_LEETCODE: 'GET_AUTO_CLEAR_LEETCODE',
-  SET_AUTO_CLEAR_LEETCODE: 'SET_AUTO_CLEAR_LEETCODE',
+  GET_RESET_EDITOR_ON_EVERY_PROBLEM: 'GET_RESET_EDITOR_ON_EVERY_PROBLEM',
+  SET_RESET_EDITOR_ON_EVERY_PROBLEM: 'SET_RESET_EDITOR_ON_EVERY_PROBLEM',
   GET_BADGE_ENABLED: 'GET_BADGE_ENABLED',
   SET_BADGE_ENABLED: 'SET_BADGE_ENABLED',
   GET_LANGUAGE: 'GET_LANGUAGE',
@@ -78,8 +78,8 @@ export type MessageRequest =
   | { type: typeof MessageType.SET_ANIMATIONS_ENABLED; value: boolean }
   | { type: typeof MessageType.GET_THEME }
   | { type: typeof MessageType.SET_THEME; value: Theme }
-  | { type: typeof MessageType.GET_AUTO_CLEAR_LEETCODE }
-  | { type: typeof MessageType.SET_AUTO_CLEAR_LEETCODE; value: boolean }
+  | { type: typeof MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM }
+  | { type: typeof MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM; value: boolean }
   | { type: typeof MessageType.GET_BADGE_ENABLED }
   | { type: typeof MessageType.SET_BADGE_ENABLED; value: boolean }
   | { type: typeof MessageType.GET_LANGUAGE }
@@ -121,8 +121,8 @@ export type MessageResponseMap = {
   [MessageType.SET_ANIMATIONS_ENABLED]: void;
   [MessageType.GET_THEME]: Theme;
   [MessageType.SET_THEME]: void;
-  [MessageType.GET_AUTO_CLEAR_LEETCODE]: boolean;
-  [MessageType.SET_AUTO_CLEAR_LEETCODE]: void;
+  [MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM]: boolean;
+  [MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM]: void;
   [MessageType.GET_BADGE_ENABLED]: boolean;
   [MessageType.SET_BADGE_ENABLED]: void;
   [MessageType.GET_LANGUAGE]: Language;

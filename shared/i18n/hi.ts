@@ -147,7 +147,7 @@ const hi: Translations = {
     problemAutoClear: {
       title: 'प्रॉब्लम ऑटो रीसेट',
       description: 'LeetCode प्रॉब्लम खोलने पर कोड ऑटोमैटिकली रीसेट करें।',
-      enableAutoReset: 'ऑटो रीसेट ऑन करें',
+      resetEditorOnEveryProblem: 'हर प्रश्न पर संपादक रीसेट करें',
     },
 
     leetcodeCn: {
