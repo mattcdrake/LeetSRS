@@ -10,6 +10,8 @@ import {
   setTheme,
   getResetEditorOnEveryProblem,
   setResetEditorOnEveryProblem,
+  getResetEditorOnDueReview,
+  setResetEditorOnDueReview,
   getLanguage,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
@@ -19,6 +21,7 @@ import {
   MAX_NEW_CARDS_PER_DAY,
   DEFAULT_THEME,
   DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
 } from '@/shared/settings';
 
 describe('Settings Service', () => {
@@ -237,11 +240,17 @@ describe('Settings Service', () => {
   describe('editor reset settings', () => {
     it('should return default values when not set', async () => {
       expect(await getResetEditorOnEveryProblem()).toBe(DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM);
+      expect(await getResetEditorOnDueReview()).toBe(DEFAULT_RESET_EDITOR_ON_DUE_REVIEW);
     });
 
     it('should store and retrieve reset editor on every problem', async () => {
       await setResetEditorOnEveryProblem(true);
       expect(await getResetEditorOnEveryProblem()).toBe(true);
+    });
+
+    it('should store and retrieve reset editor on due review', async () => {
+      await setResetEditorOnDueReview(true);
+      expect(await getResetEditorOnDueReview()).toBe(true);
     });
   });
 

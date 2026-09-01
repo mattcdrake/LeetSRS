@@ -32,6 +32,7 @@ export const queryKeys = {
     animationsEnabled: ['settings', 'animationsEnabled'] as const,
     theme: ['settings', 'theme'] as const,
     resetEditorOnEveryProblem: ['settings', 'resetEditorOnEveryProblem'] as const,
+    resetEditorOnDueReview: ['settings', 'resetEditorOnDueReview'] as const,
     badgeEnabled: ['settings', 'badgeEnabled'] as const,
     language: ['settings', 'language'] as const,
   },
@@ -284,6 +285,22 @@ export function useSetResetEditorOnEveryProblemMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnEveryProblem });
     },
+  });
+}
+
+export function useResetEditorOnDueReviewQuery() {
+  return useQuery({
+    queryKey: queryKeys.settings.resetEditorOnDueReview,
+    queryFn: () => sendMessage({ type: MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW }),
+  });
+}
+
+export function useSetResetEditorOnDueReviewMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW, value }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnDueReview }),
   });
 }
 

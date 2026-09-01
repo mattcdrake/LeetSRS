@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
+import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Note } from '@/shared/notes';
@@ -36,6 +36,9 @@ export const MessageType = {
   SET_THEME: 'SET_THEME',
   GET_RESET_EDITOR_ON_EVERY_PROBLEM: 'GET_RESET_EDITOR_ON_EVERY_PROBLEM',
   SET_RESET_EDITOR_ON_EVERY_PROBLEM: 'SET_RESET_EDITOR_ON_EVERY_PROBLEM',
+  GET_RESET_EDITOR_ON_DUE_REVIEW: 'GET_RESET_EDITOR_ON_DUE_REVIEW',
+  SET_RESET_EDITOR_ON_DUE_REVIEW: 'SET_RESET_EDITOR_ON_DUE_REVIEW',
+  SHOULD_RESET_EDITOR: 'SHOULD_RESET_EDITOR',
   GET_BADGE_ENABLED: 'GET_BADGE_ENABLED',
   SET_BADGE_ENABLED: 'SET_BADGE_ENABLED',
   GET_LANGUAGE: 'GET_LANGUAGE',
@@ -80,6 +83,9 @@ export type MessageRequest =
   | { type: typeof MessageType.SET_THEME; value: Theme }
   | { type: typeof MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM }
   | { type: typeof MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM; value: boolean }
+  | { type: typeof MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW }
+  | { type: typeof MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW; value: boolean }
+  | { type: typeof MessageType.SHOULD_RESET_EDITOR; slug: string; domain: LeetcodeDomain }
   | { type: typeof MessageType.GET_BADGE_ENABLED }
   | { type: typeof MessageType.SET_BADGE_ENABLED; value: boolean }
   | { type: typeof MessageType.GET_LANGUAGE }
@@ -123,6 +129,9 @@ export type MessageResponseMap = {
   [MessageType.SET_THEME]: void;
   [MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM]: boolean;
   [MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM]: void;
+  [MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW]: boolean;
+  [MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW]: void;
+  [MessageType.SHOULD_RESET_EDITOR]: boolean;
   [MessageType.GET_BADGE_ENABLED]: boolean;
   [MessageType.SET_BADGE_ENABLED]: void;
   [MessageType.GET_LANGUAGE]: Language;

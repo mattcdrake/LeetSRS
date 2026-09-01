@@ -64,6 +64,7 @@ describe('import-export', () => {
         animationsEnabled: true,
         theme: 'dark' as const,
         resetEditorOnEveryProblem: true,
+        resetEditorOnDueReview: true,
         badgeEnabled: true,
         language: 'en' as const,
       };
@@ -77,6 +78,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, mockSettings.resetEditorOnEveryProblem);
+      await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, mockSettings.resetEditorOnDueReview);
       await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
       await storage.setItem(STORAGE_KEYS.language, mockSettings.language);
 
@@ -187,6 +189,7 @@ describe('import-export', () => {
           animationsEnabled: false,
           theme: 'light' as const,
           resetEditorOnEveryProblem: true,
+          resetEditorOnDueReview: true,
           badgeEnabled: false,
           language: 'en' as const,
         },
@@ -208,6 +211,7 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toEqual(true);
+      expect(await storage.getItem(STORAGE_KEYS.resetEditorOnDueReview)).toEqual(true);
       expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.language)).toEqual('en');
     });
@@ -351,6 +355,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, true);
+      await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, true);
       await storage.setItem(STORAGE_KEYS.badgeEnabled, true);
       await storage.setItem(STORAGE_KEYS.language, 'en');
       await storage.setItem(`${STORAGE_KEYS.notes}:${uuid1}` as const, { text: 'note 1' });
@@ -367,6 +372,7 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.resetEditorOnDueReview)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.language)).toBeNull();
       expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid1}` as const)).toBeNull();
