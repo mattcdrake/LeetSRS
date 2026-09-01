@@ -39,7 +39,7 @@ export function ReviewSettingsSection() {
 
   const handleBlur = () => {
     const value = parseInt(inputValue, 10);
-    if (!isNaN(value) && value >= MIN_NEW_CARDS_PER_DAY && value <= MAX_NEW_CARDS_PER_DAY) {
+    if (!Number.isNaN(value) && value >= MIN_NEW_CARDS_PER_DAY && value <= MAX_NEW_CARDS_PER_DAY) {
       setMaxNewCardsPerDayMutation.mutate(value);
     } else {
       // Reset to current value on invalid input
@@ -49,7 +49,7 @@ export function ReviewSettingsSection() {
 
   const handleDayStartBlur = () => {
     const value = parseInt(dayStartHourValue, 10);
-    if (!isNaN(value) && value >= MIN_DAY_START_HOUR && value <= MAX_DAY_START_HOUR) {
+    if (!Number.isNaN(value) && value >= MIN_DAY_START_HOUR && value <= MAX_DAY_START_HOUR) {
       setDayStartHourMutation.mutate(value);
     } else {
       setDayStartHourValue((dayStartHour ?? DEFAULT_DAY_START_HOUR).toString());
