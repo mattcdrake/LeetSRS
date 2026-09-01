@@ -133,6 +133,7 @@ export function ReviewQueue() {
         <div className="text-base text-secondary text-center">
           {t.home.addProblemsInstructions}{' '}
           <svg
+            aria-hidden="true"
             className="inline-block mx-1 align-text-bottom"
             width="20"
             height="20"
