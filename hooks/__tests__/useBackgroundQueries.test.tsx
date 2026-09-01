@@ -23,7 +23,7 @@ vi.mock('@/shared/messages', () => ({
     if (message.type === 'GET_ANIMATIONS_ENABLED') {
       return Promise.resolve(false);
     }
-    return Promise.resolve();
+    return Promise.resolve(undefined);
   }),
   MessageType: {
     RATE_CARD: 'RATE_CARD',
@@ -43,7 +43,7 @@ describe('useRateCardMutation', () => {
       if (message.type === 'GET_ANIMATIONS_ENABLED') {
         return Promise.resolve(false);
       }
-      return Promise.resolve();
+      return Promise.resolve(undefined);
     });
   });
 
