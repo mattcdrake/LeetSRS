@@ -225,8 +225,8 @@ body {
 
 /* Disable animations when preference is set */
 .animations-disabled * {
-  animation: none !important;
-  transition: none !important;
+  animation: none;
+  transition: none;
 }
 
 /* Hide scrollbar until hovering over scrollable area */
