@@ -1,4 +1,4 @@
-import { browser } from "wxt/browser";
+import { browser } from 'wxt/browser';
 import {
   addCard,
   delayCard,
@@ -7,9 +7,9 @@ import {
   rateCard,
   removeCard,
   setPauseStatus,
-} from "@/services/cards";
-import { markDataUpdated } from "@/services/data-tracker";
-import { shouldResetEditor } from "@/services/editor-reset";
+} from '@/services/cards';
+import { markDataUpdated } from '@/services/data-tracker';
+import { shouldResetEditor } from '@/services/editor-reset';
 import {
   createNewGist,
   getGistSyncConfig,
@@ -18,10 +18,10 @@ import {
   triggerGistSync,
   validateGistId,
   validatePat,
-} from "@/services/github-sync";
-import { exportData, importData, resetAllData } from "@/services/import-export";
-import { migrations, runMigrations } from "@/services/migrations";
-import { deleteNote, getNote, saveNote } from "@/services/notes";
+} from '@/services/github-sync';
+import { exportData, importData, resetAllData } from '@/services/import-export';
+import { migrations, runMigrations } from '@/services/migrations';
+import { deleteNote, getNote, saveNote } from '@/services/notes';
 import {
   getAnimationsEnabled,
   getBadgeEnabled,
@@ -39,16 +39,11 @@ import {
   setResetEditorOnDueReview,
   setResetEditorOnEveryProblem,
   setTheme,
-} from "@/services/settings";
-import {
-  getCardStateStats,
-  getLastNDaysStats,
-  getNextNDaysStats,
-  getTodayStats,
-} from "@/services/stats";
-import { type MessageRequest, MessageType } from "@/shared/messages";
+} from '@/services/settings';
+import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
+import { type MessageRequest, MessageType } from '@/shared/messages';
 
-const SYNC_ALARM_NAME = "gist-sync";
+const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 
 async function updateBadge() {
@@ -57,18 +52,18 @@ async function updateBadge() {
     const queue = await getReviewQueue();
     if (queue.length > 0) {
       await browser.action.setBadgeText({ text: String(queue.length) });
-      await browser.action.setBadgeBackgroundColor({ color: "#EF4444" });
+      await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
       return;
     }
   }
-  await browser.action.setBadgeText({ text: "" });
+  await browser.action.setBadgeText({ text: '' });
 }
 
 export default defineBackground(() => {
   // Initialize async and track completion so message handlers can wait
   const readyPromise = (async () => {
     await runMigrations(migrations).catch((error) => {
-      console.error("Failed to run migrations:", error);
+      console.error('Failed to run migrations:', error);
     });
 
     // Set up periodic sync alarm if not already scheduled
@@ -104,9 +99,7 @@ export default defineBackground(() => {
     // Wait for initialization before handling any messages
     await readyPromise;
 
-    const handleDataUpdate = async <T>(
-      handler: () => Promise<T>,
-    ): Promise<T> => {
+    const handleDataUpdate = async <T>(handler: () => Promise<T>): Promise<T> => {
       const result = await handler();
       await markDataUpdated();
       await updateBadge();
@@ -115,7 +108,7 @@ export default defineBackground(() => {
 
     switch (request.type) {
       case MessageType.PING:
-        return "PONG" as const;
+        return 'PONG' as const;
 
       case MessageType.ADD_CARD: {
         return handleDataUpdate(() => addCard(request.problem));
@@ -133,9 +126,7 @@ export default defineBackground(() => {
       }
 
       case MessageType.SET_PAUSE_STATUS: {
-        return handleDataUpdate(() =>
-          setPauseStatus(request.slug, request.paused),
-        );
+        return handleDataUpdate(() => setPauseStatus(request.slug, request.paused));
       }
 
       case MessageType.RATE_CARD: {
@@ -191,9 +182,7 @@ export default defineBackground(() => {
         return await getResetEditorOnEveryProblem();
 
       case MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM: {
-        return handleDataUpdate(() =>
-          setResetEditorOnEveryProblem(request.value),
-        );
+        return handleDataUpdate(() => setResetEditorOnEveryProblem(request.value));
       }
 
       case MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW:
@@ -261,20 +250,16 @@ export default defineBackground(() => {
       default: {
         // Exhaustive check - compile error if a message type is not handled
         const _: never = request;
-        throw new Error(
-          `Unknown message type: ${(request as { type?: string }).type}`,
-        );
+        throw new Error(`Unknown message type: ${(request as { type?: string }).type}`);
       }
     }
   }
 
   // Message handler for popup communication
-  browser.runtime.onMessage.addListener(
-    (request: MessageRequest, _sender, sendResponse) => {
-      handleMessage(request).then(sendResponse);
+  browser.runtime.onMessage.addListener((request: MessageRequest, _sender, sendResponse) => {
+    handleMessage(request).then(sendResponse);
 
-      // Return true to indicate we'll send a response asynchronously
-      return true;
-    },
-  );
+    // Return true to indicate we'll send a response asynchronously
+    return true;
+  });
 });
