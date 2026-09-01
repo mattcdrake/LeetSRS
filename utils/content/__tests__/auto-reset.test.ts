@@ -146,4 +146,15 @@ describe('setupLeetcodeAutoReset', () => {
 
     expect(resetClick).not.toHaveBeenCalled();
   });
+
+  it('asks for a reset decision using the current problem', async () => {
+    dispose = setupLeetcodeAutoReset();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(sendMessage).toHaveBeenCalledWith({
+      type: 'SHOULD_RESET_EDITOR',
+      slug: 'two-sum',
+      domain: 'leetcode.com',
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import { MessageType, sendMessage } from '@/shared/messages';
-import { getCurrentProblemSlug } from './domain';
+import { getCurrentDomain, getCurrentProblemSlug } from './domain';
 
 const RESET_CONFIRM_TIMEOUT_MS = 2000;
 const RESET_CONFIRM_POLL_MS = 50;
@@ -57,8 +57,12 @@ export function setupLeetcodeAutoReset(): () => void {
 
     isResetting = true;
     try {
-      const resetEveryProblem = await sendMessage({ type: MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM });
-      if (!resetEveryProblem) {
+      const shouldReset = await sendMessage({
+        type: MessageType.SHOULD_RESET_EDITOR,
+        slug,
+        domain: getCurrentDomain(),
+      });
+      if (!shouldReset) {
         return;
       }
 

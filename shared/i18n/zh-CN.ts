@@ -149,6 +149,7 @@ const zhCN: Translations = {
       title: '题目自动重置',
       description: '打开 LeetCode 题目时自动重置代码。',
       resetEditorOnEveryProblem: '每道题都重置编辑器',
+      resetEditorOnDueReview: '复习到期时重置编辑器',
     },
 
     leetcodeCn: {

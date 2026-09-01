@@ -168,6 +168,7 @@ const pl: Translations = {
       title: 'Automatyczny reset zadania',
       description: 'Automatycznie resetuj kod przy otwieraniu zadania na LeetCode.',
       resetEditorOnEveryProblem: 'Resetuj edytor dla każdego zadania',
+      resetEditorOnDueReview: 'Resetuj edytor przy wymaganej powtórce',
     },
 
     leetcodeCn: {

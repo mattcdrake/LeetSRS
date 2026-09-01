@@ -11,6 +11,7 @@ import {
   type Theme,
   DEFAULT_THEME,
   DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
   DEFAULT_BADGE_ENABLED,
   type Language,
 } from '@/shared/settings';
@@ -73,6 +74,15 @@ export async function getResetEditorOnEveryProblem(): Promise<boolean> {
 
 export async function setResetEditorOnEveryProblem(value: boolean): Promise<void> {
   await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, value);
+}
+
+export async function getResetEditorOnDueReview(): Promise<boolean> {
+  const value = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnDueReview);
+  return value ?? DEFAULT_RESET_EDITOR_ON_DUE_REVIEW;
+}
+
+export async function setResetEditorOnDueReview(value: boolean): Promise<void> {
+  await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, value);
 }
 
 export async function getBadgeEnabled(): Promise<boolean> {

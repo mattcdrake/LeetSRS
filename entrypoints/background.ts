@@ -20,6 +20,8 @@ import {
   setTheme,
   getResetEditorOnEveryProblem,
   setResetEditorOnEveryProblem,
+  getResetEditorOnDueReview,
+  setResetEditorOnDueReview,
   getBadgeEnabled,
   setBadgeEnabled,
   getLanguage,
@@ -39,6 +41,7 @@ import {
   validateGistId,
 } from '@/services/github-sync';
 import { markDataUpdated } from '@/services/data-tracker';
+import { shouldResetEditor } from '@/services/editor-reset';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -181,6 +184,15 @@ export default defineBackground(() => {
       case MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM: {
         return handleDataUpdate(() => setResetEditorOnEveryProblem(request.value));
       }
+
+      case MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW:
+        return await getResetEditorOnDueReview();
+
+      case MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW:
+        return handleDataUpdate(() => setResetEditorOnDueReview(request.value));
+
+      case MessageType.SHOULD_RESET_EDITOR:
+        return await shouldResetEditor(request.slug, request.domain);
 
       case MessageType.GET_BADGE_ENABLED:
         return await getBadgeEnabled();

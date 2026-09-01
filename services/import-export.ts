@@ -21,6 +21,7 @@ export interface ExportData {
       animationsEnabled?: boolean;
       theme?: Theme;
       resetEditorOnEveryProblem?: boolean;
+      resetEditorOnDueReview?: boolean;
       badgeEnabled?: boolean;
       language?: Language;
     };
@@ -59,6 +60,7 @@ export async function exportData(): Promise<string> {
   const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
   const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
   const resetEditorOnEveryProblem = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnEveryProblem);
+  const resetEditorOnDueReview = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnDueReview);
   const badgeEnabled = await storage.getItem<boolean>(STORAGE_KEYS.badgeEnabled);
   const language = await storage.getItem<Language>(STORAGE_KEYS.language);
 
@@ -86,6 +88,7 @@ export async function exportData(): Promise<string> {
         ...(animationsEnabled != null && { animationsEnabled }),
         ...(theme != null && { theme }),
         ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
+        ...(resetEditorOnDueReview != null && { resetEditorOnDueReview }),
         ...(badgeEnabled != null && { badgeEnabled }),
         ...(language != null && { language }),
       },
@@ -181,6 +184,9 @@ export async function importData(jsonData: string): Promise<void> {
     if (resetEditorOnEveryProblem != null) {
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, resetEditorOnEveryProblem);
     }
+    if (data.data.settings.resetEditorOnDueReview != null) {
+      await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, data.data.settings.resetEditorOnDueReview);
+    }
     if (data.data.settings.badgeEnabled != null) {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, data.data.settings.badgeEnabled);
     }
@@ -216,6 +222,7 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.animationsEnabled);
   await storage.removeItem(STORAGE_KEYS.theme);
   await storage.removeItem(STORAGE_KEYS.resetEditorOnEveryProblem);
+  await storage.removeItem(STORAGE_KEYS.resetEditorOnDueReview);
   await storage.removeItem(STORAGE_KEYS.badgeEnabled);
   await storage.removeItem(STORAGE_KEYS.language);
 

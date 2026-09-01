@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
   resetEditorOnEveryProblem: 'sync:leetsrs:autoClearLeetcode',
+  resetEditorOnDueReview: 'sync:leetsrs:resetEditorOnDueReview',
   badgeEnabled: 'sync:leetsrs:badgeEnabled',
   language: 'sync:leetsrs:language',
   schemaVersion: 'local:leetsrs:schemaVersion',
