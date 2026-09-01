@@ -1,7 +1,7 @@
 import type { Grade } from 'ts-fsrs';
 import { getServiceTranslations } from '@/services/i18n';
 import type { ProblemDescriptor } from '@/shared/cards';
-import { MessageType, sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/shared/messages';
 import type { ProblemData } from '@/shared/problem-data';
 import {
   createLeetSrsButton,
@@ -18,7 +18,7 @@ export default defineContentScript({
   async main() {
     // Wake up service worker so it's ready when user interacts
     try {
-      await sendMessage({ type: MessageType.PING });
+      await sendMessage('ping');
     } catch (error) {
       console.error('Failed to ping service worker:', error);
     }
@@ -76,8 +76,7 @@ function setupLeetSrsButton() {
       buttonWrapper,
       async (rating, label) => {
         await withProblemData(async (problem) => {
-          const result = await sendMessage({
-            type: MessageType.RATE_CARD,
+          const result = await sendMessage('rateCard', {
             input: { ...problem, rating: rating as Grade },
           });
           console.log(`${label} - Card rated:`, result);
@@ -86,10 +85,7 @@ function setupLeetSrsButton() {
       },
       async () => {
         await withProblemData(async (problem) => {
-          const result = await sendMessage({
-            type: MessageType.ADD_CARD,
-            problem,
-          });
+          const result = await sendMessage('addCard', { problem });
           console.log('Add without rating - Card added:', result);
           return result;
         });

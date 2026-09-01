@@ -1,4 +1,4 @@
-import { MessageType, sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/shared/messages';
 import { getCurrentDomain, getCurrentProblemSlug } from './domain';
 
 const RESET_CONFIRM_TIMEOUT_MS = 2000;
@@ -57,8 +57,7 @@ export function setupLeetcodeAutoReset(): () => void {
 
     isResetting = true;
     try {
-      const shouldReset = await sendMessage({
-        type: MessageType.SHOULD_RESET_EDITOR,
+      const shouldReset = await sendMessage('shouldResetEditor', {
         slug,
         domain: getCurrentDomain(),
       });
