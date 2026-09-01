@@ -1,5 +1,5 @@
+import { defineExtensionMessaging } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
-import { browser } from 'wxt/browser';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type {
@@ -12,149 +12,49 @@ import type {
 import type { Note } from '@/shared/notes';
 import type { Language, Theme } from '@/shared/settings';
 
-// Message type constants
-export const MessageType = {
-  PING: 'PING',
-  ADD_CARD: 'ADD_CARD',
-  GET_ALL_CARDS: 'GET_ALL_CARDS',
-  REMOVE_CARD: 'REMOVE_CARD',
-  DELAY_CARD: 'DELAY_CARD',
-  SET_PAUSE_STATUS: 'SET_PAUSE_STATUS',
-  RATE_CARD: 'RATE_CARD',
-  GET_REVIEW_QUEUE: 'GET_REVIEW_QUEUE',
-  GET_TODAY_STATS: 'GET_TODAY_STATS',
-  GET_NOTE: 'GET_NOTE',
-  SAVE_NOTE: 'SAVE_NOTE',
-  DELETE_NOTE: 'DELETE_NOTE',
-  GET_MAX_NEW_CARDS_PER_DAY: 'GET_MAX_NEW_CARDS_PER_DAY',
-  SET_MAX_NEW_CARDS_PER_DAY: 'SET_MAX_NEW_CARDS_PER_DAY',
-  GET_DAY_START_HOUR: 'GET_DAY_START_HOUR',
-  SET_DAY_START_HOUR: 'SET_DAY_START_HOUR',
-  GET_ANIMATIONS_ENABLED: 'GET_ANIMATIONS_ENABLED',
-  SET_ANIMATIONS_ENABLED: 'SET_ANIMATIONS_ENABLED',
-  GET_THEME: 'GET_THEME',
-  SET_THEME: 'SET_THEME',
-  GET_RESET_EDITOR_ON_EVERY_PROBLEM: 'GET_RESET_EDITOR_ON_EVERY_PROBLEM',
-  SET_RESET_EDITOR_ON_EVERY_PROBLEM: 'SET_RESET_EDITOR_ON_EVERY_PROBLEM',
-  GET_RESET_EDITOR_ON_DUE_REVIEW: 'GET_RESET_EDITOR_ON_DUE_REVIEW',
-  SET_RESET_EDITOR_ON_DUE_REVIEW: 'SET_RESET_EDITOR_ON_DUE_REVIEW',
-  SHOULD_RESET_EDITOR: 'SHOULD_RESET_EDITOR',
-  GET_BADGE_ENABLED: 'GET_BADGE_ENABLED',
-  SET_BADGE_ENABLED: 'SET_BADGE_ENABLED',
-  GET_LANGUAGE: 'GET_LANGUAGE',
-  SET_LANGUAGE: 'SET_LANGUAGE',
-  GET_CARD_STATE_STATS: 'GET_CARD_STATE_STATS',
-  GET_LAST_N_DAYS_STATS: 'GET_LAST_N_DAYS_STATS',
-  GET_NEXT_N_DAYS_STATS: 'GET_NEXT_N_DAYS_STATS',
-  EXPORT_DATA: 'EXPORT_DATA',
-  IMPORT_DATA: 'IMPORT_DATA',
-  RESET_ALL_DATA: 'RESET_ALL_DATA',
-  // GitHub Gist Sync
-  GET_GIST_SYNC_CONFIG: 'GET_GIST_SYNC_CONFIG',
-  SET_GIST_SYNC_CONFIG: 'SET_GIST_SYNC_CONFIG',
-  GET_GIST_SYNC_STATUS: 'GET_GIST_SYNC_STATUS',
-  TRIGGER_GIST_SYNC: 'TRIGGER_GIST_SYNC',
-  CREATE_NEW_GIST: 'CREATE_NEW_GIST',
-  VALIDATE_PAT: 'VALIDATE_PAT',
-  VALIDATE_GIST_ID: 'VALIDATE_GIST_ID',
-} as const;
-
-// Message request types as discriminated union
-export type MessageRequest =
-  | { type: typeof MessageType.PING }
-  | { type: typeof MessageType.ADD_CARD; problem: ProblemDescriptor }
-  | { type: typeof MessageType.GET_ALL_CARDS }
-  | { type: typeof MessageType.REMOVE_CARD; slug: string }
-  | { type: typeof MessageType.DELAY_CARD; slug: string; days: number }
-  | { type: typeof MessageType.SET_PAUSE_STATUS; slug: string; paused: boolean }
-  | { type: typeof MessageType.RATE_CARD; input: RateCardInput }
-  | { type: typeof MessageType.GET_REVIEW_QUEUE }
-  | { type: typeof MessageType.GET_TODAY_STATS }
-  | { type: typeof MessageType.GET_NOTE; cardId: string }
-  | { type: typeof MessageType.SAVE_NOTE; cardId: string; text: string }
-  | { type: typeof MessageType.DELETE_NOTE; cardId: string }
-  | { type: typeof MessageType.GET_MAX_NEW_CARDS_PER_DAY }
-  | { type: typeof MessageType.SET_MAX_NEW_CARDS_PER_DAY; value: number }
-  | { type: typeof MessageType.GET_DAY_START_HOUR }
-  | { type: typeof MessageType.SET_DAY_START_HOUR; value: number }
-  | { type: typeof MessageType.GET_ANIMATIONS_ENABLED }
-  | { type: typeof MessageType.SET_ANIMATIONS_ENABLED; value: boolean }
-  | { type: typeof MessageType.GET_THEME }
-  | { type: typeof MessageType.SET_THEME; value: Theme }
-  | { type: typeof MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM }
-  | { type: typeof MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM; value: boolean }
-  | { type: typeof MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW }
-  | { type: typeof MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW; value: boolean }
-  | { type: typeof MessageType.SHOULD_RESET_EDITOR; slug: string; domain: LeetcodeDomain }
-  | { type: typeof MessageType.GET_BADGE_ENABLED }
-  | { type: typeof MessageType.SET_BADGE_ENABLED; value: boolean }
-  | { type: typeof MessageType.GET_LANGUAGE }
-  | { type: typeof MessageType.SET_LANGUAGE; value: Language }
-  | { type: typeof MessageType.GET_CARD_STATE_STATS }
-  | { type: typeof MessageType.GET_LAST_N_DAYS_STATS; days: number }
-  | { type: typeof MessageType.GET_NEXT_N_DAYS_STATS; days: number }
-  | { type: typeof MessageType.EXPORT_DATA }
-  | { type: typeof MessageType.IMPORT_DATA; jsonData: string }
-  | { type: typeof MessageType.RESET_ALL_DATA }
-  // GitHub Gist Sync
-  | { type: typeof MessageType.GET_GIST_SYNC_CONFIG }
-  | { type: typeof MessageType.SET_GIST_SYNC_CONFIG; config: Partial<GistSyncConfig> }
-  | { type: typeof MessageType.GET_GIST_SYNC_STATUS }
-  | { type: typeof MessageType.TRIGGER_GIST_SYNC }
-  | { type: typeof MessageType.CREATE_NEW_GIST }
-  | { type: typeof MessageType.VALIDATE_PAT; pat: string }
-  | { type: typeof MessageType.VALIDATE_GIST_ID; gistId: string; pat: string };
-
-// Type mapping for request to response
-export type MessageResponseMap = {
-  [MessageType.PING]: 'PONG';
-  [MessageType.ADD_CARD]: Card;
-  [MessageType.GET_ALL_CARDS]: Card[];
-  [MessageType.REMOVE_CARD]: undefined;
-  [MessageType.DELAY_CARD]: Card;
-  [MessageType.SET_PAUSE_STATUS]: Card;
-  [MessageType.RATE_CARD]: { card: Card; shouldRequeue: boolean };
-  [MessageType.GET_REVIEW_QUEUE]: Card[];
-  [MessageType.GET_TODAY_STATS]: DailyStats | null;
-  [MessageType.GET_NOTE]: Note | null;
-  [MessageType.SAVE_NOTE]: undefined;
-  [MessageType.DELETE_NOTE]: undefined;
-  [MessageType.GET_MAX_NEW_CARDS_PER_DAY]: number;
-  [MessageType.SET_MAX_NEW_CARDS_PER_DAY]: undefined;
-  [MessageType.GET_DAY_START_HOUR]: number;
-  [MessageType.SET_DAY_START_HOUR]: undefined;
-  [MessageType.GET_ANIMATIONS_ENABLED]: boolean;
-  [MessageType.SET_ANIMATIONS_ENABLED]: undefined;
-  [MessageType.GET_THEME]: Theme;
-  [MessageType.SET_THEME]: undefined;
-  [MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM]: boolean;
-  [MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM]: undefined;
-  [MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW]: boolean;
-  [MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW]: undefined;
-  [MessageType.SHOULD_RESET_EDITOR]: boolean;
-  [MessageType.GET_BADGE_ENABLED]: boolean;
-  [MessageType.SET_BADGE_ENABLED]: undefined;
-  [MessageType.GET_LANGUAGE]: Language;
-  [MessageType.SET_LANGUAGE]: undefined;
-  [MessageType.GET_CARD_STATE_STATS]: Record<FsrsState, number>;
-  [MessageType.GET_LAST_N_DAYS_STATS]: DailyStats[];
-  [MessageType.GET_NEXT_N_DAYS_STATS]: UpcomingReviewStats[];
-  [MessageType.EXPORT_DATA]: string;
-  [MessageType.IMPORT_DATA]: undefined;
-  [MessageType.RESET_ALL_DATA]: undefined;
-  // GitHub Gist Sync
-  [MessageType.GET_GIST_SYNC_CONFIG]: GistSyncConfig;
-  [MessageType.SET_GIST_SYNC_CONFIG]: undefined;
-  [MessageType.GET_GIST_SYNC_STATUS]: GistSyncStatus;
-  [MessageType.TRIGGER_GIST_SYNC]: SyncResult;
-  [MessageType.CREATE_NEW_GIST]: { gistId: string };
-  [MessageType.VALIDATE_PAT]: PatValidationResult;
-  [MessageType.VALIDATE_GIST_ID]: GistValidationResult;
-};
-
-/**
- * Type-safe wrapper for sending messages to the background script
- */
-export async function sendMessage<T extends MessageRequest>(message: T): Promise<MessageResponseMap[T['type']]> {
-  return browser.runtime.sendMessage(message);
+export interface ExtensionProtocolMap {
+  ping(): 'PONG';
+  addCard(data: { problem: ProblemDescriptor }): Card;
+  getAllCards(): Card[];
+  removeCard(data: { slug: string }): void;
+  delayCard(data: { slug: string; days: number }): Card;
+  setPauseStatus(data: { slug: string; paused: boolean }): Card;
+  rateCard(data: { input: RateCardInput }): { card: Card; shouldRequeue: boolean };
+  getReviewQueue(): Card[];
+  getTodayStats(): DailyStats | null;
+  getNote(data: { cardId: string }): Note | null;
+  saveNote(data: { cardId: string; text: string }): void;
+  deleteNote(data: { cardId: string }): void;
+  getMaxNewCardsPerDay(): number;
+  setMaxNewCardsPerDay(data: { value: number }): void;
+  getDayStartHour(): number;
+  setDayStartHour(data: { value: number }): void;
+  getAnimationsEnabled(): boolean;
+  setAnimationsEnabled(data: { value: boolean }): void;
+  getTheme(): Theme;
+  setTheme(data: { value: Theme }): void;
+  getResetEditorOnEveryProblem(): boolean;
+  setResetEditorOnEveryProblem(data: { value: boolean }): void;
+  getResetEditorOnDueReview(): boolean;
+  setResetEditorOnDueReview(data: { value: boolean }): void;
+  shouldResetEditor(data: { slug: string; domain: LeetcodeDomain }): boolean;
+  getBadgeEnabled(): boolean;
+  setBadgeEnabled(data: { value: boolean }): void;
+  getLanguage(): Language;
+  setLanguage(data: { value: Language }): void;
+  getCardStateStats(): Record<FsrsState, number>;
+  getLastNDaysStats(data: { days: number }): DailyStats[];
+  getNextNDaysStats(data: { days: number }): UpcomingReviewStats[];
+  exportData(): string;
+  importData(data: { jsonData: string }): void;
+  resetAllData(): void;
+  getGistSyncConfig(): GistSyncConfig;
+  setGistSyncConfig(data: { config: Partial<GistSyncConfig> }): void;
+  getGistSyncStatus(): GistSyncStatus;
+  triggerGistSync(): SyncResult;
+  createNewGist(): { gistId: string };
+  validatePat(data: { pat: string }): PatValidationResult;
+  validateGistId(data: { gistId: string; pat: string }): GistValidationResult;
 }
+
+export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionProtocolMap>();

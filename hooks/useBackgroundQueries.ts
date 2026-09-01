@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { GistSyncConfig } from '@/shared/gist-sync';
-import { MessageType, sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/shared/messages';
 import type { Language, Theme } from '@/shared/settings';
 
 // Query Keys with hierarchical structure
@@ -48,7 +48,7 @@ export const queryKeys = {
 export function useCardsQuery() {
   return useQuery({
     queryKey: queryKeys.cards.all,
-    queryFn: () => sendMessage({ type: MessageType.GET_ALL_CARDS }),
+    queryFn: () => sendMessage('getAllCards'),
   });
 }
 
@@ -56,7 +56,7 @@ export function useReviewQueueQuery(options?: { enabled?: boolean; refetchOnWind
   const { enabled = true, refetchOnWindowFocus = false } = options || {};
   return useQuery({
     queryKey: queryKeys.cards.reviewQueue,
-    queryFn: () => sendMessage({ type: MessageType.GET_REVIEW_QUEUE }),
+    queryFn: () => sendMessage('getReviewQueue'),
     enabled,
     staleTime: 0,
     gcTime: 0,
@@ -67,35 +67,35 @@ export function useReviewQueueQuery(options?: { enabled?: boolean; refetchOnWind
 export function useTodayStatsQuery() {
   return useQuery({
     queryKey: queryKeys.stats.today,
-    queryFn: () => sendMessage({ type: MessageType.GET_TODAY_STATS }),
+    queryFn: () => sendMessage('getTodayStats'),
   });
 }
 
 export function useCardStateStatsQuery() {
   return useQuery({
     queryKey: queryKeys.stats.cardState,
-    queryFn: () => sendMessage({ type: MessageType.GET_CARD_STATE_STATS }),
+    queryFn: () => sendMessage('getCardStateStats'),
   });
 }
 
 export function useLastNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: queryKeys.stats.lastNDays(days),
-    queryFn: () => sendMessage({ type: MessageType.GET_LAST_N_DAYS_STATS, days }),
+    queryFn: () => sendMessage('getLastNDaysStats', { days }),
   });
 }
 
 export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: queryKeys.stats.nextNDays(days),
-    queryFn: () => sendMessage({ type: MessageType.GET_NEXT_N_DAYS_STATS, days }),
+    queryFn: () => sendMessage('getNextNDaysStats', { days }),
   });
 }
 
 export function useNoteQuery(cardId: string) {
   return useQuery({
     queryKey: queryKeys.notes.detail(cardId),
-    queryFn: () => sendMessage({ type: MessageType.GET_NOTE, cardId }),
+    queryFn: () => sendMessage('getNote', { cardId }),
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
@@ -105,7 +105,7 @@ export function useAddCardMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (problem: ProblemDescriptor) => sendMessage({ type: MessageType.ADD_CARD, problem }),
+    mutationFn: (problem: ProblemDescriptor) => sendMessage('addCard', { problem }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
@@ -117,7 +117,7 @@ export function useRemoveCardMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (slug: string) => sendMessage({ type: MessageType.REMOVE_CARD, slug }),
+    mutationFn: (slug: string) => sendMessage('removeCard', { slug }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
@@ -129,7 +129,7 @@ export function useRateCardMutation() {
   const queryClient = useQueryClient();
 
   return useMutation<{ card: Card; shouldRequeue: boolean }, Error, RateCardInput>({
-    mutationFn: (input) => sendMessage({ type: MessageType.RATE_CARD, input }),
+    mutationFn: (input) => sendMessage('rateCard', { input }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
@@ -141,7 +141,7 @@ export function useSaveNoteMutation(cardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (text: string) => sendMessage({ type: MessageType.SAVE_NOTE, cardId, text }),
+    mutationFn: (text: string) => sendMessage('saveNote', { cardId, text }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notes.detail(cardId) });
     },
@@ -152,7 +152,7 @@ export function useDeleteNoteMutation(cardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => sendMessage({ type: MessageType.DELETE_NOTE, cardId }),
+    mutationFn: () => sendMessage('deleteNote', { cardId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notes.detail(cardId) });
     },
@@ -170,7 +170,7 @@ export function useDelayCardMutation() {
       days: number;
     }
   >({
-    mutationFn: ({ slug, days }) => sendMessage({ type: MessageType.DELAY_CARD, slug, days }),
+    mutationFn: ({ slug, days }) => sendMessage('delayCard', { slug, days }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
     },
@@ -188,7 +188,7 @@ export function usePauseCardMutation() {
       paused: boolean;
     }
   >({
-    mutationFn: ({ slug, paused }) => sendMessage({ type: MessageType.SET_PAUSE_STATUS, slug, paused }),
+    mutationFn: ({ slug, paused }) => sendMessage('setPauseStatus', { slug, paused }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.all });
     },
@@ -198,7 +198,7 @@ export function usePauseCardMutation() {
 export function useMaxNewCardsPerDayQuery() {
   return useQuery({
     queryKey: queryKeys.settings.maxNewCardsPerDay,
-    queryFn: () => sendMessage({ type: MessageType.GET_MAX_NEW_CARDS_PER_DAY }),
+    queryFn: () => sendMessage('getMaxNewCardsPerDay'),
   });
 }
 
@@ -206,7 +206,7 @@ export function useSetMaxNewCardsPerDayMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: number) => sendMessage({ type: MessageType.SET_MAX_NEW_CARDS_PER_DAY, value }),
+    mutationFn: (value: number) => sendMessage('setMaxNewCardsPerDay', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.maxNewCardsPerDay });
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
@@ -217,7 +217,7 @@ export function useSetMaxNewCardsPerDayMutation() {
 export function useDayStartHourQuery() {
   return useQuery({
     queryKey: queryKeys.settings.dayStartHour,
-    queryFn: () => sendMessage({ type: MessageType.GET_DAY_START_HOUR }),
+    queryFn: () => sendMessage('getDayStartHour'),
   });
 }
 
@@ -225,7 +225,7 @@ export function useSetDayStartHourMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: number) => sendMessage({ type: MessageType.SET_DAY_START_HOUR, value }),
+    mutationFn: (value: number) => sendMessage('setDayStartHour', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.dayStartHour });
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
@@ -237,7 +237,7 @@ export function useSetDayStartHourMutation() {
 export function useAnimationsEnabledQuery() {
   return useQuery({
     queryKey: queryKeys.settings.animationsEnabled,
-    queryFn: () => sendMessage({ type: MessageType.GET_ANIMATIONS_ENABLED }),
+    queryFn: () => sendMessage('getAnimationsEnabled'),
   });
 }
 
@@ -245,7 +245,7 @@ export function useSetAnimationsEnabledMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_ANIMATIONS_ENABLED, value }),
+    mutationFn: (value: boolean) => sendMessage('setAnimationsEnabled', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.animationsEnabled });
     },
@@ -255,7 +255,7 @@ export function useSetAnimationsEnabledMutation() {
 export function useThemeQuery() {
   return useQuery({
     queryKey: queryKeys.settings.theme,
-    queryFn: () => sendMessage({ type: MessageType.GET_THEME }),
+    queryFn: () => sendMessage('getTheme'),
   });
 }
 
@@ -263,7 +263,7 @@ export function useSetThemeMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: Theme) => sendMessage({ type: MessageType.SET_THEME, value }),
+    mutationFn: (value: Theme) => sendMessage('setTheme', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.theme });
     },
@@ -273,7 +273,7 @@ export function useSetThemeMutation() {
 export function useResetEditorOnEveryProblemQuery() {
   return useQuery({
     queryKey: queryKeys.settings.resetEditorOnEveryProblem,
-    queryFn: () => sendMessage({ type: MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM }),
+    queryFn: () => sendMessage('getResetEditorOnEveryProblem'),
   });
 }
 
@@ -281,7 +281,7 @@ export function useSetResetEditorOnEveryProblemMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM, value }),
+    mutationFn: (value: boolean) => sendMessage('setResetEditorOnEveryProblem', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnEveryProblem });
     },
@@ -291,7 +291,7 @@ export function useSetResetEditorOnEveryProblemMutation() {
 export function useResetEditorOnDueReviewQuery() {
   return useQuery({
     queryKey: queryKeys.settings.resetEditorOnDueReview,
-    queryFn: () => sendMessage({ type: MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW }),
+    queryFn: () => sendMessage('getResetEditorOnDueReview'),
   });
 }
 
@@ -299,7 +299,7 @@ export function useSetResetEditorOnDueReviewMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW, value }),
+    mutationFn: (value: boolean) => sendMessage('setResetEditorOnDueReview', { value }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnDueReview }),
   });
 }
@@ -307,7 +307,7 @@ export function useSetResetEditorOnDueReviewMutation() {
 export function useBadgeEnabledQuery() {
   return useQuery({
     queryKey: queryKeys.settings.badgeEnabled,
-    queryFn: () => sendMessage({ type: MessageType.GET_BADGE_ENABLED }),
+    queryFn: () => sendMessage('getBadgeEnabled'),
   });
 }
 
@@ -315,7 +315,7 @@ export function useSetBadgeEnabledMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage({ type: MessageType.SET_BADGE_ENABLED, value }),
+    mutationFn: (value: boolean) => sendMessage('setBadgeEnabled', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.badgeEnabled });
     },
@@ -325,7 +325,7 @@ export function useSetBadgeEnabledMutation() {
 export function useLanguageQuery() {
   return useQuery({
     queryKey: queryKeys.settings.language,
-    queryFn: () => sendMessage({ type: MessageType.GET_LANGUAGE }),
+    queryFn: () => sendMessage('getLanguage'),
   });
 }
 
@@ -333,7 +333,7 @@ export function useSetLanguageMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: Language) => sendMessage({ type: MessageType.SET_LANGUAGE, value }),
+    mutationFn: (value: Language) => sendMessage('setLanguage', { value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.language });
     },
@@ -343,7 +343,7 @@ export function useSetLanguageMutation() {
 // Import/Export mutations
 export function useExportDataMutation() {
   return useMutation({
-    mutationFn: () => sendMessage({ type: MessageType.EXPORT_DATA }),
+    mutationFn: () => sendMessage('exportData'),
   });
 }
 
@@ -351,7 +351,7 @@ export function useImportDataMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (jsonData: string) => sendMessage({ type: MessageType.IMPORT_DATA, jsonData }),
+    mutationFn: (jsonData: string) => sendMessage('importData', { jsonData }),
     onSuccess: () => {
       queryClient.invalidateQueries();
     },
@@ -362,7 +362,7 @@ export function useResetAllDataMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => sendMessage({ type: MessageType.RESET_ALL_DATA }),
+    mutationFn: () => sendMessage('resetAllData'),
     onSuccess: () => {
       queryClient.invalidateQueries();
     },
@@ -373,14 +373,14 @@ export function useResetAllDataMutation() {
 export function useGistSyncConfigQuery() {
   return useQuery({
     queryKey: queryKeys.gistSync.config,
-    queryFn: () => sendMessage({ type: MessageType.GET_GIST_SYNC_CONFIG }),
+    queryFn: () => sendMessage('getGistSyncConfig'),
   });
 }
 
 export function useGistSyncStatusQuery() {
   return useQuery({
     queryKey: queryKeys.gistSync.status,
-    queryFn: () => sendMessage({ type: MessageType.GET_GIST_SYNC_STATUS }),
+    queryFn: () => sendMessage('getGistSyncStatus'),
     refetchInterval: 15000,
   });
 }
@@ -389,7 +389,7 @@ export function useSetGistSyncConfigMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (config: Partial<GistSyncConfig>) => sendMessage({ type: MessageType.SET_GIST_SYNC_CONFIG, config }),
+    mutationFn: (config: Partial<GistSyncConfig>) => sendMessage('setGistSyncConfig', { config }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gistSync.config });
     },
@@ -400,7 +400,7 @@ export function useTriggerGistSyncMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => sendMessage({ type: MessageType.TRIGGER_GIST_SYNC }),
+    mutationFn: () => sendMessage('triggerGistSync'),
     onSuccess: () => {
       queryClient.invalidateQueries();
     },
@@ -411,7 +411,7 @@ export function useCreateNewGistMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => sendMessage({ type: MessageType.CREATE_NEW_GIST }),
+    mutationFn: () => sendMessage('createNewGist'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.gistSync.all });
     },
@@ -420,13 +420,12 @@ export function useCreateNewGistMutation() {
 
 export function useValidatePatMutation() {
   return useMutation({
-    mutationFn: (pat: string) => sendMessage({ type: MessageType.VALIDATE_PAT, pat }),
+    mutationFn: (pat: string) => sendMessage('validatePat', { pat }),
   });
 }
 
 export function useValidateGistIdMutation() {
   return useMutation({
-    mutationFn: ({ gistId, pat }: { gistId: string; pat: string }) =>
-      sendMessage({ type: MessageType.VALIDATE_GIST_ID, gistId, pat }),
+    mutationFn: ({ gistId, pat }: { gistId: string; pat: string }) => sendMessage('validateGistId', { gistId, pat }),
   });
 }

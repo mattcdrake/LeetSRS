@@ -152,8 +152,7 @@ describe('setupLeetcodeAutoReset', () => {
     dispose = setupLeetcodeAutoReset();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(sendMessage).toHaveBeenCalledWith({
-      type: 'SHOULD_RESET_EDITOR',
+    expect(sendMessage).toHaveBeenCalledWith('shouldResetEditor', {
       slug: 'two-sum',
       domain: 'leetcode.com',
     });

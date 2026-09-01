@@ -6,45 +6,38 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
-import { MessageType, sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/shared/messages';
 import { createTestWrapper, createWrapper } from '@/test/utils/test-wrapper';
 import {
   queryKeys,
+  useCardsQuery,
   useDeleteNoteMutation,
   usePauseCardMutation,
   useRateCardMutation,
   useSaveNoteMutation,
 } from '../useBackgroundQueries';
 
-// Mock the sendMessage function
 vi.mock('@/shared/messages', () => ({
-  sendMessage: vi.fn((message) => {
-    // Return appropriate default values for animations queries
-    if (message.type === 'GET_ANIMATIONS_ENABLED') {
-      return Promise.resolve(false);
-    }
-    return Promise.resolve(undefined);
-  }),
-  MessageType: {
-    RATE_CARD: 'RATE_CARD',
-    SAVE_NOTE: 'SAVE_NOTE',
-    DELETE_NOTE: 'DELETE_NOTE',
-    SET_PAUSE_STATUS: 'SET_PAUSE_STATUS',
-    GET_ANIMATIONS_ENABLED: 'GET_ANIMATIONS_ENABLED',
-    SET_ANIMATIONS_ENABLED: 'SET_ANIMATIONS_ENABLED',
-  },
+  sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
+
+describe('useCardsQuery', () => {
+  it('sends a message without a payload', async () => {
+    vi.mocked(sendMessage).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useCardsQuery(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(sendMessage).toHaveBeenCalledWith('getAllCards');
+  });
+});
 
 describe('useRateCardMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Ensure sendMessage returns appropriate values after clearing
-    vi.mocked(sendMessage).mockImplementation((message) => {
-      if (message.type === 'GET_ANIMATIONS_ENABLED') {
-        return Promise.resolve(false);
-      }
-      return Promise.resolve(undefined);
-    });
+    vi.mocked(sendMessage).mockResolvedValue(undefined);
   });
 
   it('should call sendMessage with correct parameters when mutate is called', async () => {
@@ -78,8 +71,7 @@ describe('useRateCardMutation', () => {
     result.current.mutate(mockCard);
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.RATE_CARD,
+      expect(sendMessage).toHaveBeenCalledWith('rateCard', {
         input: {
           slug: 'two-sum',
           name: 'Two Sum',
@@ -111,8 +103,7 @@ describe('useSaveNoteMutation', () => {
     result.current.mutate(noteText);
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.SAVE_NOTE,
+      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
         cardId: 'test-card-123',
         text: 'This is my solution using two pointers approach',
       });
@@ -132,8 +123,7 @@ describe('useSaveNoteMutation', () => {
     result.current.mutate(noteText);
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.SAVE_NOTE,
+      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
         cardId: 'test-card-456',
         text: '',
       });
@@ -153,8 +143,7 @@ describe('useSaveNoteMutation', () => {
     result.current.mutate(noteText);
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.SAVE_NOTE,
+      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
         cardId: 'test-card-789',
         text: noteText,
       });
@@ -210,8 +199,7 @@ describe('useDeleteNoteMutation', () => {
     result.current.mutate();
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.DELETE_NOTE,
+      expect(sendMessage).toHaveBeenCalledWith('deleteNote', {
         cardId: 'test-card-123',
       });
     });
@@ -275,8 +263,7 @@ describe('usePauseCardMutation', () => {
     result.current.mutate({ slug: 'two-sum', paused: true });
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.SET_PAUSE_STATUS,
+      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', {
         slug: 'two-sum',
         paused: true,
       });
@@ -305,8 +292,7 @@ describe('usePauseCardMutation', () => {
     result.current.mutate({ slug: 'three-sum', paused: false });
 
     await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith({
-        type: MessageType.SET_PAUSE_STATUS,
+      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', {
         slug: 'three-sum',
         paused: false,
       });

@@ -41,7 +41,7 @@ import {
   setTheme,
 } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
-import { type MessageRequest, MessageType } from '@/shared/messages';
+import { onMessage } from '@/shared/messages';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -95,171 +95,62 @@ export default defineBackground(() => {
     }
   });
 
-  async function handleMessage(request: MessageRequest) {
-    // Wait for initialization before handling any messages
+  const handleRequest = async <T>(handler: () => T | Promise<T>): Promise<T> => {
     await readyPromise;
+    return handler();
+  };
 
-    const handleDataUpdate = async <T>(handler: () => Promise<T>): Promise<T> => {
+  const handleDataUpdate = async <T>(handler: () => Promise<T>): Promise<T> => {
+    return handleRequest(async () => {
       const result = await handler();
       await markDataUpdated();
       await updateBadge();
       return result;
-    };
+    });
+  };
 
-    switch (request.type) {
-      case MessageType.PING:
-        return 'PONG' as const;
-
-      case MessageType.ADD_CARD: {
-        return handleDataUpdate(() => addCard(request.problem));
-      }
-
-      case MessageType.GET_ALL_CARDS:
-        return await getAllCards();
-
-      case MessageType.REMOVE_CARD: {
-        return handleDataUpdate(() => removeCard(request.slug));
-      }
-
-      case MessageType.DELAY_CARD: {
-        return handleDataUpdate(() => delayCard(request.slug, request.days));
-      }
-
-      case MessageType.SET_PAUSE_STATUS: {
-        return handleDataUpdate(() => setPauseStatus(request.slug, request.paused));
-      }
-
-      case MessageType.RATE_CARD: {
-        return handleDataUpdate(() => rateCard(request.input));
-      }
-
-      case MessageType.GET_REVIEW_QUEUE:
-        return await getReviewQueue();
-
-      case MessageType.GET_TODAY_STATS:
-        return await getTodayStats();
-
-      case MessageType.GET_NOTE:
-        return await getNote(request.cardId);
-
-      case MessageType.SAVE_NOTE: {
-        return handleDataUpdate(() => saveNote(request.cardId, request.text));
-      }
-
-      case MessageType.DELETE_NOTE: {
-        return handleDataUpdate(() => deleteNote(request.cardId));
-      }
-
-      case MessageType.GET_MAX_NEW_CARDS_PER_DAY:
-        return await getMaxNewCardsPerDay();
-
-      case MessageType.SET_MAX_NEW_CARDS_PER_DAY: {
-        return handleDataUpdate(() => setMaxNewCardsPerDay(request.value));
-      }
-
-      case MessageType.GET_DAY_START_HOUR:
-        return await getDayStartHour();
-
-      case MessageType.SET_DAY_START_HOUR: {
-        return handleDataUpdate(() => setDayStartHour(request.value));
-      }
-
-      case MessageType.GET_ANIMATIONS_ENABLED:
-        return await getAnimationsEnabled();
-
-      case MessageType.SET_ANIMATIONS_ENABLED: {
-        return handleDataUpdate(() => setAnimationsEnabled(request.value));
-      }
-
-      case MessageType.GET_THEME:
-        return await getTheme();
-
-      case MessageType.SET_THEME: {
-        return handleDataUpdate(() => setTheme(request.value));
-      }
-
-      case MessageType.GET_RESET_EDITOR_ON_EVERY_PROBLEM:
-        return await getResetEditorOnEveryProblem();
-
-      case MessageType.SET_RESET_EDITOR_ON_EVERY_PROBLEM: {
-        return handleDataUpdate(() => setResetEditorOnEveryProblem(request.value));
-      }
-
-      case MessageType.GET_RESET_EDITOR_ON_DUE_REVIEW:
-        return await getResetEditorOnDueReview();
-
-      case MessageType.SET_RESET_EDITOR_ON_DUE_REVIEW:
-        return handleDataUpdate(() => setResetEditorOnDueReview(request.value));
-
-      case MessageType.SHOULD_RESET_EDITOR:
-        return await shouldResetEditor(request.slug, request.domain);
-
-      case MessageType.GET_BADGE_ENABLED:
-        return await getBadgeEnabled();
-
-      case MessageType.SET_BADGE_ENABLED: {
-        return handleDataUpdate(() => setBadgeEnabled(request.value));
-      }
-
-      case MessageType.GET_LANGUAGE:
-        return await getLanguage();
-
-      case MessageType.SET_LANGUAGE:
-        return handleDataUpdate(() => setLanguage(request.value));
-
-      case MessageType.GET_CARD_STATE_STATS:
-        return await getCardStateStats();
-
-      case MessageType.GET_LAST_N_DAYS_STATS:
-        return await getLastNDaysStats(request.days);
-
-      case MessageType.GET_NEXT_N_DAYS_STATS:
-        return await getNextNDaysStats(request.days);
-
-      case MessageType.EXPORT_DATA:
-        return await exportData();
-
-      case MessageType.IMPORT_DATA:
-        return await importData(request.jsonData);
-
-      case MessageType.RESET_ALL_DATA:
-        return await resetAllData();
-
-      // GitHub Gist Sync
-      case MessageType.GET_GIST_SYNC_CONFIG:
-        return await getGistSyncConfig();
-
-      case MessageType.SET_GIST_SYNC_CONFIG:
-        return await setGistSyncConfig(request.config);
-
-      case MessageType.GET_GIST_SYNC_STATUS:
-        return await getGistSyncStatus();
-
-      case MessageType.TRIGGER_GIST_SYNC:
-        return await triggerGistSync();
-
-      case MessageType.CREATE_NEW_GIST:
-        return await createNewGist();
-
-      case MessageType.VALIDATE_PAT:
-        return await validatePat(request.pat);
-
-      case MessageType.VALIDATE_GIST_ID:
-        return await validateGistId(request.gistId, request.pat);
-
-      default: {
-        // Exhaustive check - compile error if a message type is not handled
-        const _: never = request;
-        throw new Error(`Unknown message type: ${(request as { type?: string }).type}`);
-      }
-    }
-  }
-
-  // Message handler for popup communication
-  browser.runtime.onMessage.addListener((request: MessageRequest, _sender, sendResponse) => {
-    handleMessage(request).then(sendResponse);
-
-    // Return true to indicate we'll send a response asynchronously
-    return true;
-  });
+  onMessage('ping', () => handleRequest(() => 'PONG' as const));
+  onMessage('addCard', ({ data }) => handleDataUpdate(() => addCard(data.problem)));
+  onMessage('getAllCards', () => handleRequest(getAllCards));
+  onMessage('removeCard', ({ data }) => handleDataUpdate(() => removeCard(data.slug)));
+  onMessage('delayCard', ({ data }) => handleDataUpdate(() => delayCard(data.slug, data.days)));
+  onMessage('setPauseStatus', ({ data }) => handleDataUpdate(() => setPauseStatus(data.slug, data.paused)));
+  onMessage('rateCard', ({ data }) => handleDataUpdate(() => rateCard(data.input)));
+  onMessage('getReviewQueue', () => handleRequest(getReviewQueue));
+  onMessage('getTodayStats', () => handleRequest(getTodayStats));
+  onMessage('getNote', ({ data }) => handleRequest(() => getNote(data.cardId)));
+  onMessage('saveNote', ({ data }) => handleDataUpdate(() => saveNote(data.cardId, data.text)));
+  onMessage('deleteNote', ({ data }) => handleDataUpdate(() => deleteNote(data.cardId)));
+  onMessage('getMaxNewCardsPerDay', () => handleRequest(getMaxNewCardsPerDay));
+  onMessage('setMaxNewCardsPerDay', ({ data }) => handleDataUpdate(() => setMaxNewCardsPerDay(data.value)));
+  onMessage('getDayStartHour', () => handleRequest(getDayStartHour));
+  onMessage('setDayStartHour', ({ data }) => handleDataUpdate(() => setDayStartHour(data.value)));
+  onMessage('getAnimationsEnabled', () => handleRequest(getAnimationsEnabled));
+  onMessage('setAnimationsEnabled', ({ data }) => handleDataUpdate(() => setAnimationsEnabled(data.value)));
+  onMessage('getTheme', () => handleRequest(getTheme));
+  onMessage('setTheme', ({ data }) => handleDataUpdate(() => setTheme(data.value)));
+  onMessage('getResetEditorOnEveryProblem', () => handleRequest(getResetEditorOnEveryProblem));
+  onMessage('setResetEditorOnEveryProblem', ({ data }) =>
+    handleDataUpdate(() => setResetEditorOnEveryProblem(data.value))
+  );
+  onMessage('getResetEditorOnDueReview', () => handleRequest(getResetEditorOnDueReview));
+  onMessage('setResetEditorOnDueReview', ({ data }) => handleDataUpdate(() => setResetEditorOnDueReview(data.value)));
+  onMessage('shouldResetEditor', ({ data }) => handleRequest(() => shouldResetEditor(data.slug, data.domain)));
+  onMessage('getBadgeEnabled', () => handleRequest(getBadgeEnabled));
+  onMessage('setBadgeEnabled', ({ data }) => handleDataUpdate(() => setBadgeEnabled(data.value)));
+  onMessage('getLanguage', () => handleRequest(getLanguage));
+  onMessage('setLanguage', ({ data }) => handleDataUpdate(() => setLanguage(data.value)));
+  onMessage('getCardStateStats', () => handleRequest(getCardStateStats));
+  onMessage('getLastNDaysStats', ({ data }) => handleRequest(() => getLastNDaysStats(data.days)));
+  onMessage('getNextNDaysStats', ({ data }) => handleRequest(() => getNextNDaysStats(data.days)));
+  onMessage('exportData', () => handleRequest(exportData));
+  onMessage('importData', ({ data }) => handleRequest(() => importData(data.jsonData)));
+  onMessage('resetAllData', () => handleRequest(resetAllData));
+  onMessage('getGistSyncConfig', () => handleRequest(getGistSyncConfig));
+  onMessage('setGistSyncConfig', ({ data }) => handleRequest(() => setGistSyncConfig(data.config)));
+  onMessage('getGistSyncStatus', () => handleRequest(getGistSyncStatus));
+  onMessage('triggerGistSync', () => handleRequest(triggerGistSync));
+  onMessage('createNewGist', () => handleRequest(createNewGist));
+  onMessage('validatePat', ({ data }) => handleRequest(() => validatePat(data.pat)));
+  onMessage('validateGistId', ({ data }) => handleRequest(() => validateGistId(data.gistId, data.pat)));
 });
