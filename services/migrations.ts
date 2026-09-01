@@ -48,8 +48,7 @@ export const migrations: Migration[] = [
     version: 1,
     description: 'Add domain field to existing cards, defaulting to leetcode.com',
     migrate: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
+      const cards = await storage.getItem<Record<string, { domain?: string }>>(STORAGE_KEYS.cards);
       if (cards) {
         for (const slug in cards) {
           if (!cards[slug].domain) {

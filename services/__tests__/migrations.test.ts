@@ -206,8 +206,7 @@ describe('migrations', () => {
 
       await runMigrations(migrations);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
+      const cards = await storage.getItem<Record<string, { domain?: string }>>(STORAGE_KEYS.cards);
       expect(requireDefined(cards)['two-sum'].domain).toBe('leetcode.com');
       expect(requireDefined(cards)['add-two-numbers'].domain).toBe('leetcode.com');
     });
@@ -219,8 +218,7 @@ describe('migrations', () => {
 
       await runMigrations(migrations);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cards = await storage.getItem<Record<string, any>>(STORAGE_KEYS.cards);
+      const cards = await storage.getItem<Record<string, { domain?: string }>>(STORAGE_KEYS.cards);
       expect(requireDefined(cards)['two-sum'].domain).toBe('leetcode.cn');
     });
 

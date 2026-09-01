@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
 import { CardView } from '../CardView';
 
 // Mock the hooks
@@ -398,17 +398,13 @@ describe('CardView', () => {
       removeMutateAsyncMock = vi.fn().mockResolvedValue({});
 
       // Set up default mocks
-      vi.mocked(usePauseCardMutation).mockReturnValue({
-        mutateAsync: mutateAsyncMock,
-        isPending: false,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      vi.mocked(usePauseCardMutation).mockReturnValue(
+        createMutationMock({ mutateAsync: mutateAsyncMock }) as ReturnType<typeof usePauseCardMutation>
+      );
 
-      vi.mocked(useRemoveCardMutation).mockReturnValue({
-        mutateAsync: removeMutateAsyncMock,
-        isPending: false,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any);
+      vi.mocked(useRemoveCardMutation).mockReturnValue(
+        createMutationMock({ mutateAsync: removeMutateAsyncMock }) as ReturnType<typeof useRemoveCardMutation>
+      );
     });
 
     it('should call pause mutation when pause button is clicked', async () => {
