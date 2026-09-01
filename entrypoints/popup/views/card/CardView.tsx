@@ -210,8 +210,8 @@ export function CardView() {
   });
 
   const sortedCards = [...filteredCards].sort((a, b) => {
-    const aId = parseInt(a.leetcodeId);
-    const bId = parseInt(b.leetcodeId);
+    const aId = parseInt(a.leetcodeId, 10);
+    const bId = parseInt(b.leetcodeId, 10);
     return aId - bId;
   });
 

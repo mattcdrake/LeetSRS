@@ -1532,8 +1532,8 @@ describe('getReviewQueue', () => {
     // Manually update their due dates to be in the past
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    requireDefined(cards)['problem1'].fsrs.due = pastTime;
-    requireDefined(cards)['problem2'].fsrs.due = pastTime;
+    requireDefined(cards).problem1.fsrs.due = pastTime;
+    requireDefined(cards).problem2.fsrs.due = pastTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1589,8 +1589,8 @@ describe('getReviewQueue', () => {
     // Set their due dates to the past
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    requireDefined(cards)['review1'].fsrs.due = pastTime;
-    requireDefined(cards)['review2'].fsrs.due = pastTime;
+    requireDefined(cards).review1.fsrs.due = pastTime;
+    requireDefined(cards).review2.fsrs.due = pastTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1628,7 +1628,7 @@ describe('getReviewQueue', () => {
     // Set due date to future
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
-    requireDefined(cards)['future1'].fsrs.due = futureTime;
+    requireDefined(cards).future1.fsrs.due = futureTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1688,9 +1688,9 @@ describe('getReviewQueue', () => {
 
     // Set due times to various times today
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    requireDefined(cards)['morning'].fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
-    requireDefined(cards)['evening'].fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
-    requireDefined(cards)['midnight'].fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
+    requireDefined(cards).morning.fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
+    requireDefined(cards).evening.fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
+    requireDefined(cards).midnight.fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1726,7 +1726,7 @@ describe('getReviewQueue', () => {
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    requireDefined(cards)['tomorrow'].fsrs.due = tomorrow.getTime();
+    requireDefined(cards).tomorrow.fsrs.due = tomorrow.getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1775,8 +1775,8 @@ describe('getReviewQueue', () => {
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
-    requireDefined(cards)['due1'].fsrs.due = pastTime;
-    requireDefined(cards)['future1'].fsrs.due = futureTime;
+    requireDefined(cards).due1.fsrs.due = pastTime;
+    requireDefined(cards).future1.fsrs.due = futureTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -1968,8 +1968,8 @@ describe('getReviewQueue', () => {
     // Set review cards to be due
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    requireDefined(cards)['review1'].fsrs.due = pastTime;
-    requireDefined(cards)['review2'].fsrs.due = pastTime;
+    requireDefined(cards).review1.fsrs.due = pastTime;
+    requireDefined(cards).review2.fsrs.due = pastTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
@@ -2298,9 +2298,9 @@ describe('getReviewQueue', () => {
 
     // Set specific due times
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    requireDefined(cards)['early'].fsrs.due = new Date('2024-01-15T06:00:00').getTime();
-    requireDefined(cards)['middle'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
-    requireDefined(cards)['late'].fsrs.due = new Date('2024-01-15T18:00:00').getTime();
+    requireDefined(cards).early.fsrs.due = new Date('2024-01-15T06:00:00').getTime();
+    requireDefined(cards).middle.fsrs.due = new Date('2024-01-15T12:00:00').getTime();
+    requireDefined(cards).late.fsrs.due = new Date('2024-01-15T18:00:00').getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
     const queue = await getReviewQueue();
