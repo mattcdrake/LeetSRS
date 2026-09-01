@@ -94,7 +94,7 @@ describe('Tooltip', () => {
       tooltip.show(anchor1, 'First tooltip');
       vi.advanceTimersByTime(300);
 
-      let tooltipElement = document.querySelector('.z-50');
+      const tooltipElement = document.querySelector('.z-50');
       expect(tooltipElement!.textContent).toBe('First tooltip');
 
       // Show second tooltip
