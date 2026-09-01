@@ -21,7 +21,7 @@
     "test": "vitest --run",
     "test:ui": "vitest --ui",
     "test:verbose": "vitest --run --reporter=verbose",
-    "check": "biome check . && npm run compile && npm test",
+    "check": "biome check --error-on-warnings . && npm run compile && npm test",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
