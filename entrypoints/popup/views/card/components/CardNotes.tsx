@@ -33,7 +33,7 @@ export function CardNotes({ cardId }: CardNotesProps) {
   // Adjust height when note text changes (including initial load), scrolling past the cap
   useEffect(() => {
     const textarea = textareaRef.current;
-    if (textarea) {
+    if (textarea?.value === text) {
       textarea.style.height = 'auto';
       textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
     }
