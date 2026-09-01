@@ -2,7 +2,7 @@ import { createEmptyCard, State as FsrsState, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { type Card } from '@/shared/cards';
+import type { Card } from '@/shared/cards';
 import { DEFAULT_MAX_NEW_CARDS_PER_DAY } from '@/shared/settings';
 import {
   addCard,

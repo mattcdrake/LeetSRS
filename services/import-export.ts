@@ -1,9 +1,9 @@
 import { storage } from '#imports';
-import { type Note } from '@/shared/notes';
-import { type Language, type Theme } from '@/shared/settings';
-import { type StoredCard } from './cards';
+import type { Note } from '@/shared/notes';
+import type { Language, Theme } from '@/shared/settings';
+import type { StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
-import { type DailyStats, type MonthlyStats } from './stats';
+import type { DailyStats, MonthlyStats } from './stats';
 import { STORAGE_KEYS } from './storage-keys';
 
 export interface ExportData {

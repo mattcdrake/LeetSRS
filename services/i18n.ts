@@ -1,6 +1,6 @@
 import { storage } from '#imports';
 import { detectBrowserLanguage, type Translations, translations } from '@/shared/i18n';
-import { type Language } from '@/shared/settings';
+import type { Language } from '@/shared/settings';
 import { STORAGE_KEYS } from './storage-keys';
 
 // Service translations - cached and updated via storage watcher
