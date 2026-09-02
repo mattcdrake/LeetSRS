@@ -28,7 +28,7 @@ Replace per-registration wrapper choices in `entrypoints/background/index.ts` wi
 
 - [x] Move dirty tracking out of `services/settings.ts` so `updateSettings()` does not independently call `markDataUpdated()`; the message executor should own that side effect and invoke it exactly once. Keep import/sync internals able to restore a supplied `dataUpdatedAt` without it being overwritten by message policy.
 
-- [ ] Use the same serialized sync execution path for the periodic alarm in `entrypoints/background/index.ts`, including badge refresh after a pull, so alarm-driven sync cannot race message-driven writes or bypass message policy.
+- [x] Use the same serialized sync execution path for the periodic alarm in `entrypoints/background/index.ts`, including badge refresh after a pull, so alarm-driven sync cannot race message-driven writes or bypass message policy.
 
 - [ ] Add focused tests for the registry/executor (for example, `entrypoints/background/__tests__/messaging.test.ts`):
   - A representative read waits for readiness but does not enter the write queue, mark data updated, or refresh the badge.

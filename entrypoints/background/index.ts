@@ -62,23 +62,6 @@ export default defineBackground(() => {
     await updateBadge();
   })();
 
-  // Register alarm listener synchronously at top level (required for MV3 service workers)
-  // The listener awaits readyPromise internally before proceeding
-  browser.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name !== SYNC_ALARM_NAME) return;
-
-    // Wait for initialization before handling
-    await readyPromise;
-
-    // Refresh badge on periodic alarm
-    await updateBadge();
-
-    const config = await getGistSyncConfig();
-    if (config.enabled && config.pat && config.gistId) {
-      await triggerGistSync();
-    }
-  });
-
   const messages = {
     ping: { kind: 'read', handler: () => 'PONG' as const },
     addCard: {
@@ -181,9 +164,24 @@ export default defineBackground(() => {
     },
   } satisfies BackgroundMessageRegistry;
 
-  registerBackgroundMessages(messages, {
+  const messageExecutor = registerBackgroundMessages(messages, {
     ready: readyPromise,
     markDataUpdated,
     refreshBadge: updateBadge,
+  });
+
+  // Register synchronously during background startup so the MV3 service worker
+  // is ready to receive alarms immediately.
+  browser.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name !== SYNC_ALARM_NAME) return;
+
+    await readyPromise;
+
+    const config = await getGistSyncConfig();
+    if (config.enabled && config.pat && config.gistId) {
+      await messageExecutor.execute(messages.triggerGistSync, undefined);
+    } else {
+      await updateBadge();
+    }
   });
 });
