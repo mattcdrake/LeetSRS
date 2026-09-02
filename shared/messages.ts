@@ -1,4 +1,4 @@
-import { defineExtensionMessaging } from '@webext-core/messaging';
+import { defineExtensionMessaging, type MaybePromise } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
@@ -12,7 +12,7 @@ import type {
 import type { Note } from '@/shared/notes';
 import type { Settings } from '@/shared/settings';
 
-export interface ExtensionProtocolMap {
+export interface ExtensionMessageMap {
   ping(): 'PONG';
   addCard(data: { problem: ProblemDescriptor }): Card;
   getAllCards(): Card[];
@@ -43,4 +43,23 @@ export interface ExtensionProtocolMap {
   validateGistId(data: { gistId: string; pat: string }): GistValidationResult;
 }
 
-export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionProtocolMap>();
+type MessageHandler<Name extends keyof ExtensionMessageMap> = (
+  ...args: Parameters<ExtensionMessageMap[Name]>
+) => MaybePromise<ReturnType<ExtensionMessageMap[Name]>>;
+
+type BackgroundMessage<Name extends keyof ExtensionMessageMap> = {
+  handler: MessageHandler<Name>;
+} & (
+  | { kind: 'read' }
+  | {
+      kind: 'mutation';
+      markDataUpdated: boolean;
+      refreshBadge: boolean;
+    }
+);
+
+export type BackgroundMessageRegistry = {
+  [Name in keyof ExtensionMessageMap]: BackgroundMessage<Name>;
+};
+
+export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionMessageMap>();

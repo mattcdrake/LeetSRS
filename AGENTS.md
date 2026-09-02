@@ -26,7 +26,7 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 
 ## Architecture Invariants
 
-- Extend `ExtensionProtocolMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background.ts`.
+- Extend `ExtensionMessageMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background.ts`.
 - Persist cards as `StoredCard`; serialize and deserialize at the storage boundary.
 - Route schema changes through a new, sequential migration in `services/migrations.ts`.
 - Use `formatLocalDate` and `isDueByDate` with `dayStartHour` for review-day comparisons; do not compare raw timestamps.
