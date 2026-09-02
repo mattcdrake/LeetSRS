@@ -2,13 +2,23 @@
  * @vitest-environment happy-dom
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { cardQueryKeys, useCardsQuery, usePauseCardMutation, useRateCardMutation } from '../cards';
+import {
+  cardQueryKeys,
+  useAddCardMutation,
+  useCardsQuery,
+  useDelayCardMutation,
+  usePauseCardMutation,
+  useRateCardMutation,
+  useRemoveCardMutation,
+} from '../cards';
+import { statsQueryKeys } from '../stats';
 
 vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
@@ -78,6 +88,53 @@ describe('useRateCardMutation', () => {
   });
 });
 
+describe('card mutation invalidation', () => {
+  it('invalidates only the queries affected by each mutation', async () => {
+    const problem = buildProblem();
+    const { wrapper, queryClient } = createTestWrapper();
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(
+      () => ({
+        add: useAddCardMutation(),
+        remove: useRemoveCardMutation(),
+        rate: useRateCardMutation(),
+        delay: useDelayCardMutation(),
+        pause: usePauseCardMutation(),
+      }),
+      { wrapper }
+    );
+
+    const expectInvalidations = async (mutate: () => Promise<unknown>, queryKeys: readonly (readonly unknown[])[]) => {
+      invalidateQueries.mockClear();
+      await act(mutate);
+      expect(invalidateQueries.mock.calls.map(([filters]) => filters)).toEqual(
+        queryKeys.map((queryKey) => ({ queryKey }))
+      );
+    };
+
+    await expectInvalidations(
+      () => result.current.add.mutateAsync(problem),
+      [cardQueryKeys.all, statsQueryKeys.cardState, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.remove.mutateAsync(problem.slug),
+      [cardQueryKeys.all, statsQueryKeys.cardState, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }),
+      [cardQueryKeys.all, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.pause.mutateAsync({ slug: problem.slug, paused: true }),
+      [cardQueryKeys.all, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.rate.mutateAsync({ ...problem, rating: Rating.Good }),
+      [cardQueryKeys.all, statsQueryKeys.all]
+    );
+  });
+});
+
 describe('usePauseCardMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -141,7 +198,7 @@ describe('usePauseCardMutation', () => {
     });
   });
 
-  it('should invalidate cards and review queue queries on successful pause', async () => {
+  it('should invalidate card queries on successful pause', async () => {
     const mockCard: Card = {
       id: 'test-id',
       slug: 'test-problem',
