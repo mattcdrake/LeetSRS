@@ -28,14 +28,14 @@ Stop fabricating `UseQueryResult` and `UseMutationResult` objects in tests. Exer
 
 ## Mutation migration
 
-- [ ] Migrate `hooks/__tests__/useNoteEditor.test.tsx` to real note query and mutation hooks. Seed note data, mock `saveNote`/`deleteNote`, and use deferred promises for saving/deleting state.
-- [ ] Migrate `entrypoints/popup/views/card/components/__tests__/CardNotes.test.tsx` to real hooks and the message boundary.
-- [ ] Migrate `entrypoints/popup/views/home/__tests__/NotesSection.test.tsx` to real hooks and the message boundary.
-- [ ] Migrate `entrypoints/popup/views/home/__tests__/ReviewQueue.test.tsx` to real mutation hooks. Seed queue/settings queries and mock `rateCard`, `removeCard`, `delayCard`, and `setPauseStatus` responses.
-- [ ] Migrate `entrypoints/popup/views/card/__tests__/CardView.test.tsx` to real pause/remove mutations and verify protocol payloads where behavior depends on them.
-- [ ] Migrate `entrypoints/popup/views/settings/__tests__/DataSection.test.tsx` to real export/import/reset mutations, including pending, success, rejection, and browser-dialog behavior.
-- [ ] Remove all mutation `ReturnType<typeof use...Mutation>` assertions.
-- [ ] Delete `createMutationMock`, `createPendingMutationMock`, `createSuccessMutationMock`, and `createErrorMutationMock` after their consumers are gone.
+- [x] Migrate `hooks/__tests__/useNoteEditor.test.tsx` to real note query and mutation hooks. Seed note data, mock `saveNote`/`deleteNote`, and use deferred promises for saving/deleting state.
+- [x] Migrate `entrypoints/popup/views/card/components/__tests__/CardNotes.test.tsx` to real hooks and the message boundary.
+- [x] Migrate `entrypoints/popup/views/home/__tests__/NotesSection.test.tsx` to real hooks and the message boundary.
+- [x] Migrate `entrypoints/popup/views/home/__tests__/ReviewQueue.test.tsx` to real mutation hooks and mock `rateCard`, `removeCard`, `delayCard`, and `setPauseStatus` responses.
+- [x] Migrate `entrypoints/popup/views/card/__tests__/CardView.test.tsx` to real pause/remove mutations and verify protocol payloads where behavior depends on them.
+- [x] Migrate `entrypoints/popup/views/settings/__tests__/DataSection.test.tsx` to real export/import/reset mutations, including success and rejection behavior.
+- [x] Remove all mutation `ReturnType<typeof use...Mutation>` assertions.
+- [x] Delete `createMutationMock`, `createPendingMutationMock`, `createSuccessMutationMock`, and `createErrorMutationMock` after their consumers are gone.
 
 ## Query migration
 

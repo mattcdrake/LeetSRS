@@ -2,20 +2,17 @@
  * @vitest-environment happy-dom
  */
 
+import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/useBackgroundQueries';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
-import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardNotes } from '../CardNotes';
 
-// Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useNoteQuery: vi.fn(),
-  useSaveNoteMutation: vi.fn(),
-  useDeleteNoteMutation: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 /**
  * The note-editing state machine itself is covered by hooks/__tests__/useNoteEditor.test.tsx.
@@ -23,26 +20,20 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
  */
 describe('CardNotes', () => {
   const mockCardId = 'test-card-123';
-  const { wrapper } = createTestWrapper();
-  const mockSaveMutateAsync = vi.fn();
-  const mockDeleteMutateAsync = vi.fn();
+  const messages = createMessageMock(vi.mocked(sendMessage));
+  let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
+  let queryClient: QueryClient;
 
   const mockNote = (note: Note | null) => {
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(note) as ReturnType<typeof useNoteQuery>);
+    queryClient.setQueryData(queryKeys.notes.detail(mockCardId), note);
   };
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
+    messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
+    ({ wrapper, queryClient } = createTestWrapper());
     mockNote(null);
-    vi.mocked(useSaveNoteMutation).mockReturnValue(
-      createMutationMock({ mutateAsync: mockSaveMutateAsync }) as ReturnType<typeof useSaveNoteMutation>
-    );
-    vi.mocked(useDeleteNoteMutation).mockReturnValue(
-      createMutationMock({ mutateAsync: mockDeleteMutateAsync }) as ReturnType<typeof useDeleteNoteMutation>
-    );
   });
 
   it('should render the stored note', () => {
@@ -61,7 +52,7 @@ describe('CardNotes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
-      expect(mockSaveMutateAsync).toHaveBeenCalledWith('A new note');
+      expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId: mockCardId, text: 'A new note' });
     });
   });
 
@@ -121,12 +112,12 @@ describe('CardNotes', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
       const confirmButton = await screen.findByRole('button', { name: 'Confirm?' });
-      expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
+      expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
 
       fireEvent.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockDeleteMutateAsync).toHaveBeenCalledTimes(1);
+        expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId: mockCardId });
       });
     });
   });

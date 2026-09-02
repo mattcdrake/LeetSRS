@@ -4,16 +4,13 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  useDelayCardMutation,
-  usePauseCardMutation,
-  useRateCardMutation,
-  useRemoveCardMutation,
-  useReviewQueueQuery,
-} from '@/hooks/useBackgroundQueries';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
+import type { Card } from '@/shared/cards';
+import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createMessageMock } from '@/test/utils/message-mocks';
+import { createQueryMock } from '@/test/utils/query-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
 
@@ -32,12 +29,9 @@ const mockLocalStorage = {
 };
 
 // Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', () => ({
+vi.mock('@/hooks/useBackgroundQueries', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/useBackgroundQueries')>()),
   useReviewQueueQuery: vi.fn(),
-  useRateCardMutation: vi.fn(),
-  useRemoveCardMutation: vi.fn(),
-  useDelayCardMutation: vi.fn(),
-  usePauseCardMutation: vi.fn(),
   useSettingsQuery: vi.fn(() => ({ data: { animationsEnabled: false } })),
   queryKeys: {
     cards: {
@@ -49,18 +43,7 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
     },
   },
 }));
-
-// Create a mock for useQueryClient
-const mockInvalidateQueries = vi.fn();
-vi.mock('@tanstack/react-query', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
-  return {
-    ...actual,
-    useQueryClient: () => ({
-      invalidateQueries: mockInvalidateQueries,
-    }),
-  };
-});
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 // Mock the child components
 interface MockReviewCardProps {
@@ -146,6 +129,7 @@ describe('ReviewQueue', () => {
   ];
 
   const mockMutateAsync = vi.fn();
+  const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
 
   beforeEach(() => {
@@ -156,8 +140,13 @@ describe('ReviewQueue', () => {
       configurable: true,
     });
 
-    vi.clearAllMocks();
-    mockInvalidateQueries.mockClear();
+    messages
+      .reset()
+      .handle('rateCard', mockMutateAsync)
+      .resolve('removeCard', undefined)
+      .resolve('delayCard', mockCards[0])
+      .resolve('setPauseStatus', mockCards[0]);
+    mockMutateAsync.mockReset();
 
     const testWrapper = createTestWrapper();
     wrapper = testWrapper.wrapper;
@@ -167,37 +156,7 @@ describe('ReviewQueue', () => {
       createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
     );
 
-    // Default mock for rate mutation
-    vi.mocked(useRateCardMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: mockMutateAsync,
-        isPending: false,
-      }) as ReturnType<typeof useRateCardMutation>
-    );
-
-    // Default mock for remove mutation
-    vi.mocked(useRemoveCardMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: vi.fn(),
-        isPending: false,
-      }) as ReturnType<typeof useRemoveCardMutation>
-    );
-
-    // Default mock for delay mutation
-    vi.mocked(useDelayCardMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: vi.fn(),
-        isPending: false,
-      }) as ReturnType<typeof useDelayCardMutation>
-    );
-
-    // Default mock for pause mutation
-    vi.mocked(usePauseCardMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: vi.fn(),
-        isPending: false,
-      }) as ReturnType<typeof usePauseCardMutation>
-    );
+    mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });
 
   afterEach(() => {
@@ -272,12 +231,14 @@ describe('ReviewQueue', () => {
 
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith({
-          slug: 'two-sum',
-          name: 'Two Sum',
-          rating: Rating.Good,
-          leetcodeId: '1',
-          difficulty: 'Easy',
-          domain: 'leetcode.com',
+          input: {
+            slug: 'two-sum',
+            name: 'Two Sum',
+            rating: Rating.Good,
+            leetcodeId: '1',
+            difficulty: 'Easy',
+            domain: 'leetcode.com',
+          },
         });
       });
     });
@@ -340,7 +301,7 @@ describe('ReviewQueue', () => {
       fireEvent.click(goodButton);
 
       // Should only have called mutateAsync once
-      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
     });
   });
 
@@ -389,16 +350,11 @@ describe('ReviewQueue', () => {
   });
 
   describe('Card Deletion', () => {
-    let mockRemoveMutateAsync: ReturnType<typeof vi.fn>;
+    let mockRemoveMutateAsync: Mock<(data: { slug: string }) => Promise<void>>;
 
     beforeEach(() => {
       mockRemoveMutateAsync = vi.fn();
-      vi.mocked(useRemoveCardMutation).mockReturnValue(
-        createMutationMock({
-          mutateAsync: mockRemoveMutateAsync,
-          isPending: false,
-        }) as ReturnType<typeof useRemoveCardMutation>
-      );
+      messages.handle('removeCard', mockRemoveMutateAsync);
     });
 
     it('should call delete mutation when delete button is clicked', async () => {
@@ -417,7 +373,7 @@ describe('ReviewQueue', () => {
 
       // Verify the mutation was called with correct slug
       await waitFor(() => {
-        expect(mockRemoveMutateAsync).toHaveBeenCalledWith('two-sum');
+        expect(mockRemoveMutateAsync).toHaveBeenCalledWith({ slug: 'two-sum' });
       });
     });
 
@@ -522,21 +478,16 @@ describe('ReviewQueue', () => {
       fireEvent.click(deleteButton);
 
       // Should only have called remove mutation once
-      expect(mockRemoveMutateAsync).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(mockRemoveMutateAsync).toHaveBeenCalledTimes(1));
     });
   });
 
   describe('Card Delay', () => {
-    let mockDelayMutateAsync: ReturnType<typeof vi.fn>;
+    let mockDelayMutateAsync: Mock<(data: { slug: string; days: number }) => Promise<Card>>;
 
     beforeEach(() => {
       mockDelayMutateAsync = vi.fn();
-      vi.mocked(useDelayCardMutation).mockReturnValue(
-        createMutationMock({
-          mutateAsync: mockDelayMutateAsync,
-          isPending: false,
-        }) as ReturnType<typeof useDelayCardMutation>
-      );
+      messages.handle('delayCard', mockDelayMutateAsync);
     });
 
     it('should call delay mutation when delay buttons are clicked', async () => {
@@ -654,7 +605,7 @@ describe('ReviewQueue', () => {
       fireEvent.click(delay1Button);
 
       // Should only have called delay mutation once
-      expect(mockDelayMutateAsync).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(mockDelayMutateAsync).toHaveBeenCalledTimes(1));
     });
   });
 

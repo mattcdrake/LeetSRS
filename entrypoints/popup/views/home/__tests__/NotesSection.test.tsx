@@ -4,46 +4,33 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/useBackgroundQueries';
+import { useNoteQuery } from '@/hooks/useBackgroundQueries';
+import { sendMessage } from '@/shared/messages';
 import type { Note } from '@/shared/notes';
-import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createDeferred } from '@/test/utils/deferred';
+import { createMessageMock } from '@/test/utils/message-mocks';
+import { createQueryMock } from '@/test/utils/query-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
 // Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', () => ({
+vi.mock('@/hooks/useBackgroundQueries', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/hooks/useBackgroundQueries')>()),
   useNoteQuery: vi.fn(),
-  useSaveNoteMutation: vi.fn(),
-  useDeleteNoteMutation: vi.fn(),
 }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('NotesSection', () => {
   const mockCardId = 'test-card-123';
-  const { wrapper } = createTestWrapper();
-  const mockMutateAsync = vi.fn();
-  const mockDeleteMutateAsync = vi.fn();
+  const messages = createMessageMock(vi.mocked(sendMessage));
+  let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    messages.reset().resolve('saveNote', undefined).resolve('deleteNote', undefined);
+    wrapper = createTestWrapper().wrapper;
 
     // Default mock - no existing note, not loading
     vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(null) as ReturnType<typeof useNoteQuery>);
-
-    // Default mock for save mutation
-    vi.mocked(useSaveNoteMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: mockMutateAsync,
-        isPending: false,
-      }) as ReturnType<typeof useSaveNoteMutation>
-    );
-
-    // Default mock for delete mutation
-    vi.mocked(useDeleteNoteMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: mockDeleteMutateAsync,
-        isPending: false,
-      }) as ReturnType<typeof useDeleteNoteMutation>
-    );
   });
 
   it('should render collapsed by default', () => {
@@ -143,8 +130,6 @@ describe('NotesSection', () => {
   });
 
   it('should save note when save button clicked', async () => {
-    mockMutateAsync.mockResolvedValue(undefined);
-
     render(<NotesSection cardId={mockCardId} />, { wrapper });
 
     const expandButton = screen.getByRole('button', { expanded: false });
@@ -161,7 +146,7 @@ describe('NotesSection', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith('New note text');
+      expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId: mockCardId, text: 'New note text' });
     });
   });
 
@@ -205,8 +190,6 @@ describe('NotesSection', () => {
   });
 
   it('should call mutateAsync when save button is clicked', async () => {
-    mockMutateAsync.mockResolvedValue(undefined);
-
     render(<NotesSection cardId={mockCardId} />, { wrapper });
 
     const expandButton = screen.getByRole('button', { expanded: false });
@@ -223,7 +206,7 @@ describe('NotesSection', () => {
     fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockMutateAsync).toHaveBeenCalledWith('New note to save');
+      expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId: mockCardId, text: 'New note to save' });
     });
   });
 
@@ -236,7 +219,7 @@ describe('NotesSection', () => {
     vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(originalNote) as ReturnType<typeof useNoteQuery>);
 
     // Setup save mutation to reject
-    mockMutateAsync.mockRejectedValue(new Error('Save failed'));
+    messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -335,7 +318,6 @@ describe('NotesSection', () => {
     };
 
     vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
-    mockDeleteMutateAsync.mockResolvedValue(undefined);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
     rerender(<NotesSection cardId={mockCardId} />);
@@ -354,14 +336,14 @@ describe('NotesSection', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
     });
-    expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
 
     // Second click should actually delete
     const confirmButton = screen.getByRole('button', { name: 'Confirm?' });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockDeleteMutateAsync).toHaveBeenCalled();
+      expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId: mockCardId });
     });
   });
 
@@ -371,7 +353,6 @@ describe('NotesSection', () => {
     };
 
     vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
-    mockDeleteMutateAsync.mockResolvedValue(undefined);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
     rerender(<NotesSection cardId={mockCardId} />);
@@ -407,13 +388,8 @@ describe('NotesSection', () => {
 
     vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
 
-    // Mock delete mutation as pending
-    vi.mocked(useDeleteNoteMutation).mockReturnValue(
-      createMutationMock({
-        mutateAsync: mockDeleteMutateAsync,
-        isPending: true,
-      }) as ReturnType<typeof useDeleteNoteMutation>
-    );
+    const deletion = createDeferred<void>();
+    messages.resolve('deleteNote', deletion.promise);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
     rerender(<NotesSection cardId={mockCardId} />);
@@ -421,10 +397,11 @@ describe('NotesSection', () => {
     const expandButton = screen.getByRole('button', { expanded: false });
     fireEvent.click(expandButton);
 
-    await waitFor(() => {
-      const deleteButton = screen.getByRole('button', { name: 'Deleting...' });
-      expect(deleteButton).toBeDisabled();
-    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Deleting...' })).toBeDisabled());
+    deletion.resolve();
+    await deletion.promise;
   });
 
   it('should handle delete error gracefully', async () => {
@@ -433,7 +410,7 @@ describe('NotesSection', () => {
     };
 
     vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
-    mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
+    messages.handle('deleteNote', () => Promise.reject(new Error('Delete failed')));
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

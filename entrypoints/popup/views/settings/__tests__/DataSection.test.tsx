@@ -3,27 +3,20 @@
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/useBackgroundQueries';
-import { createMutationMock } from '@/test/utils/query-mocks';
+import { sendMessage } from '@/shared/messages';
+import { createMessageMock } from '@/test/utils/message-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { DataSection } from '../DataSection';
 
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useExportDataMutation: vi.fn(),
-  useImportDataMutation: vi.fn(),
-  useResetAllDataMutation: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('DataSection reset', () => {
-  const resetMutateAsync = vi.fn();
+  const messages = createMessageMock(vi.mocked(sendMessage));
+  let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(useExportDataMutation).mockReturnValue(createMutationMock() as ReturnType<typeof useExportDataMutation>);
-    vi.mocked(useImportDataMutation).mockReturnValue(createMutationMock() as ReturnType<typeof useImportDataMutation>);
-    vi.mocked(useResetAllDataMutation).mockReturnValue(
-      createMutationMock({ mutateAsync: resetMutateAsync }) as ReturnType<typeof useResetAllDataMutation>
-    );
-    resetMutateAsync.mockResolvedValue(undefined);
+    messages.reset().resolve('exportData', '').resolve('importData', undefined).resolve('resetAllData', undefined);
+    wrapper = createTestWrapper().wrapper;
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     vi.stubGlobal('alert', vi.fn());
   });
@@ -35,18 +28,18 @@ describe('DataSection reset', () => {
   });
 
   it('arms on the first click without opening the browser dialog', () => {
-    render(<DataSection />);
+    render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
 
     expect(screen.getByRole('button', { name: 'Click again to confirm' })).toBeInTheDocument();
     expect(window.confirm).not.toHaveBeenCalled();
-    expect(resetMutateAsync).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
   });
 
   it('expires confirmation after 3000ms', () => {
     vi.useFakeTimers();
-    render(<DataSection />);
+    render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
     act(() => {
@@ -54,27 +47,27 @@ describe('DataSection reset', () => {
     });
 
     expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument();
-    expect(resetMutateAsync).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
   });
 
   it('disarms when the browser dialog is cancelled', async () => {
     vi.mocked(window.confirm).mockReturnValue(false);
-    render(<DataSection />);
+    render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
     fireEvent.click(screen.getByRole('button', { name: 'Click again to confirm' }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument());
-    expect(resetMutateAsync).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
   });
 
   it('resets data, alerts success, and disarms after confirmation', async () => {
-    render(<DataSection />);
+    render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
     fireEvent.click(screen.getByRole('button', { name: 'Click again to confirm' }));
 
-    await waitFor(() => expect(resetMutateAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('resetAllData'));
     expect(window.alert).toHaveBeenCalledWith('All data has been reset');
     expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument();
   });
@@ -82,8 +75,8 @@ describe('DataSection reset', () => {
   it('alerts the error and disarms when reset fails', async () => {
     const error = new Error('Reset failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    resetMutateAsync.mockRejectedValue(error);
-    render(<DataSection />);
+    messages.handle('resetAllData', () => Promise.reject(error));
+    render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
     fireEvent.click(screen.getByRole('button', { name: 'Click again to confirm' }));

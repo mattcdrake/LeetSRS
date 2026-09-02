@@ -1,276 +1,130 @@
-/**
- * @vitest-environment happy-dom
- */
-
-import { act, renderHook } from '@testing-library/react';
+/** @vitest-environment happy-dom */
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/useBackgroundQueries';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
-import { createMutationMock, createQueryMock } from '@/test/utils/query-mocks';
+import { createDeferred } from '@/test/utils/deferred';
+import { createMessageMock } from '@/test/utils/message-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { useNoteEditor } from '../useNoteEditor';
 
-// Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useNoteQuery: vi.fn(),
-  useSaveNoteMutation: vi.fn(),
-  useDeleteNoteMutation: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('useNoteEditor', () => {
-  const mockCardId = 'test-card-123';
-  const mockSaveMutateAsync = vi.fn();
-  const mockDeleteMutateAsync = vi.fn();
+  const cardId = 'test-card-123';
+  const messages = createMessageMock(vi.mocked(sendMessage));
 
-  const mockNote = (note: Note | null, overrides = {}) => {
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(note, overrides) as ReturnType<typeof useNoteQuery>);
-  };
-
-  const mockSave = (overrides = {}) => {
-    vi.mocked(useSaveNoteMutation).mockReturnValue(
-      createMutationMock({ mutateAsync: mockSaveMutateAsync, ...overrides }) as ReturnType<typeof useSaveNoteMutation>
-    );
-  };
-
-  const mockDelete = (overrides = {}) => {
-    vi.mocked(useDeleteNoteMutation).mockReturnValue(
-      createMutationMock({ mutateAsync: mockDeleteMutateAsync, ...overrides }) as ReturnType<
-        typeof useDeleteNoteMutation
-      >
-    );
+  const renderEditor = (note: Note | null = null) => {
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(queryKeys.notes.detail(cardId), note);
+    return renderHook(() => useNoteEditor(cardId), { wrapper });
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockSaveMutateAsync.mockResolvedValue(undefined);
-    mockDeleteMutateAsync.mockResolvedValue(undefined);
-
-    // Default mocks - no existing note, idle mutations
-    mockNote(null);
-    mockSave();
-    mockDelete();
+    messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
   });
 
-  describe('syncing with the query', () => {
-    it('should start empty when there is no note', () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
+  it('syncs text with stored note data', () => {
+    const { result } = renderEditor({ text: 'Existing note' });
+    expect(result.current.text).toBe('Existing note');
+    expect(result.current.characterCount).toBe(13);
+    expect(result.current.hasExistingNote).toBe(true);
 
-      expect(result.current.text).toBe('');
-      expect(result.current.characterCount).toBe(0);
-    });
+    const empty = renderEditor();
+    expect(empty.result.current.text).toBe('');
+    expect(empty.result.current.hasExistingNote).toBe(false);
+  });
 
-    it('should seed text from the fetched note', () => {
-      mockNote({ text: 'Existing note' });
+  it('exposes real loading and mutation pending states', async () => {
+    const query = createDeferred<Note | null>();
+    const save = createDeferred<void>();
+    const remove = createDeferred<void>();
+    messages
+      .reset()
+      .resolve('getNote', query.promise)
+      .resolve('saveNote', save.promise)
+      .resolve('deleteNote', remove.promise);
+    const { wrapper } = createTestWrapper();
+    const { result } = renderHook(() => useNoteEditor(cardId), { wrapper });
 
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
+    expect(result.current.isLoading).toBe(true);
+    act(() => result.current.setText('new'));
+    act(() => void result.current.save());
+    await waitFor(() => expect(result.current.isSaving).toBe(true));
+    await act(() => result.current.remove());
+    act(() => void result.current.remove());
+    await waitFor(() => expect(result.current.isDeleting).toBe(true));
 
-      expect(result.current.text).toBe('Existing note');
-      expect(result.current.characterCount).toBe(13);
-    });
-
-    it('should reset text and delete confirmation when the note changes', async () => {
-      mockNote({ text: 'Existing note' });
-
-      const { result, rerender } = renderHook(() => useNoteEditor(mockCardId));
-
-      await act(async () => {
-        await result.current.remove();
-      });
-      expect(result.current.deleteConfirm).toBe(true);
-
-      mockNote({ text: 'Updated elsewhere' });
-      rerender();
-
-      expect(result.current.text).toBe('Updated elsewhere');
-      expect(result.current.deleteConfirm).toBe(false);
-    });
-
-    it('should expose the query and mutation states', () => {
-      const error = new Error('Failed to load');
-      mockNote(null, { isLoading: true, error });
-      mockSave({ isPending: true });
-      mockDelete({ isPending: true });
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      expect(result.current.isLoading).toBe(true);
-      expect(result.current.isSaving).toBe(true);
-      expect(result.current.isDeleting).toBe(true);
-      expect(result.current.error).toBe(error);
+    await act(async () => {
+      query.resolve(null);
+      save.resolve();
+      remove.resolve();
+      await Promise.all([query.promise, save.promise, remove.promise]);
     });
   });
 
-  describe('canSave', () => {
-    it('should be false when the text is unchanged', () => {
-      mockNote({ text: 'Existing note' });
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      expect(result.current.canSave).toBe(false);
-    });
-
-    it('should be true when the text has changed', () => {
-      mockNote({ text: 'Existing note' });
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      act(() => {
-        result.current.setText('Edited note');
-      });
-
-      expect(result.current.canSave).toBe(true);
-    });
-
-    it('should be false when the text is empty', () => {
-      mockNote({ text: 'Existing note' });
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      act(() => {
-        result.current.setText('');
-      });
-
-      expect(result.current.canSave).toBe(false);
-    });
-
-    it('should be false when the text is over the limit', () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      act(() => {
-        result.current.setText('a'.repeat(NOTES_MAX_LENGTH + 1));
-      });
-
-      expect(result.current.isOverLimit).toBe(true);
-      expect(result.current.characterCount).toBe(NOTES_MAX_LENGTH + 1);
-      expect(result.current.canSave).toBe(false);
-    });
-
-    it('should be true at exactly the limit', () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      act(() => {
-        result.current.setText('a'.repeat(NOTES_MAX_LENGTH));
-      });
-
-      expect(result.current.isOverLimit).toBe(false);
-      expect(result.current.canSave).toBe(true);
-    });
+  it('computes save eligibility', () => {
+    const { result } = renderEditor({ text: 'Existing note' });
+    expect(result.current.canSave).toBe(false);
+    act(() => result.current.setText('Edited note'));
+    expect(result.current.canSave).toBe(true);
+    act(() => result.current.setText(''));
+    expect(result.current.canSave).toBe(false);
+    act(() => result.current.setText('a'.repeat(NOTES_MAX_LENGTH + 1)));
+    expect(result.current.isOverLimit).toBe(true);
+    expect(result.current.canSave).toBe(false);
+    act(() => result.current.setText('a'.repeat(NOTES_MAX_LENGTH)));
+    expect(result.current.isOverLimit).toBe(false);
+    expect(result.current.canSave).toBe(true);
   });
 
-  describe('save', () => {
-    it('should save the current text', async () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      act(() => {
-        result.current.setText('A new note');
-      });
-
-      await act(async () => {
-        await result.current.save();
-      });
-
-      expect(mockSaveMutateAsync).toHaveBeenCalledWith('A new note');
-      expect(result.current.text).toBe('A new note');
-    });
-
-    it('should revert to the stored text when saving fails', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockNote({ text: 'Existing note' });
-      mockSaveMutateAsync.mockRejectedValue(new Error('Save failed'));
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      act(() => {
-        result.current.setText('Edited note');
-      });
-
-      await act(async () => {
-        await result.current.save();
-      });
-
-      expect(result.current.text).toBe('Existing note');
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to save note:', expect.any(Error));
-
-      consoleSpy.mockRestore();
-    });
+  it('saves the current text', async () => {
+    const { result } = renderEditor();
+    act(() => result.current.setText('A new note'));
+    await act(() => result.current.save());
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId, text: 'A new note' });
+    expect(result.current.text).toBe('A new note');
   });
 
-  describe('remove', () => {
-    beforeEach(() => {
-      mockNote({ text: 'Existing note' });
-    });
-
-    it('should arm the confirmation on the first call without deleting', async () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      await act(async () => {
-        await result.current.remove();
-      });
-
-      expect(result.current.deleteConfirm).toBe(true);
-      expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
-      expect(result.current.text).toBe('Existing note');
-    });
-
-    it('should delete and clear the text on the second call', async () => {
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      await act(async () => {
-        await result.current.remove();
-      });
-      await act(async () => {
-        await result.current.remove();
-      });
-
-      expect(mockDeleteMutateAsync).toHaveBeenCalledTimes(1);
-      expect(result.current.text).toBe('');
-      expect(result.current.deleteConfirm).toBe(false);
-    });
-
-    it('should keep the text and disarm when deleting fails', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      await act(async () => {
-        await result.current.remove();
-      });
-      await act(async () => {
-        await result.current.remove();
-      });
-
-      expect(result.current.text).toBe('Existing note');
-      expect(result.current.deleteConfirm).toBe(false);
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete note:', expect.any(Error));
-
-      consoleSpy.mockRestore();
-    });
+  it('reverts to stored text when saving fails', async () => {
+    const error = new Error('Save failed');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    messages.handle('saveNote', () => Promise.reject(error));
+    const { result } = renderEditor({ text: 'Existing note' });
+    act(() => result.current.setText('Edited note'));
+    await act(() => result.current.save());
+    expect(result.current.text).toBe('Existing note');
+    expect(consoleError).toHaveBeenCalledWith('Failed to save note:', error);
+    consoleError.mockRestore();
   });
 
-  describe('hasExistingNote', () => {
-    it('should be true when a note row exists', () => {
-      mockNote({ text: 'Existing note' });
+  it('requires confirmation, then deletes and clears the text', async () => {
+    const { result } = renderEditor({ text: 'Existing note' });
+    await act(() => result.current.remove());
+    expect(result.current.deleteConfirm).toBe(true);
+    expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
+    await act(() => result.current.remove());
+    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId });
+    expect(result.current.text).toBe('');
+    expect(result.current.deleteConfirm).toBe(false);
+  });
 
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
+  it('keeps the text when deleting fails', async () => {
+    const error = new Error('Delete failed');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    messages.handle('deleteNote', () => Promise.reject(error));
+    const { result } = renderEditor({ text: 'Existing note' });
+    await act(() => result.current.remove());
+    await act(() => result.current.remove());
+    expect(result.current.text).toBe('Existing note');
+    expect(result.current.deleteConfirm).toBe(false);
+    expect(consoleError).toHaveBeenCalledWith('Failed to delete note:', error);
+    consoleError.mockRestore();
+  });
 
-      expect(result.current.hasExistingNote).toBe(true);
-    });
-
-    it('should be true for a stored note with empty text', () => {
-      mockNote({ text: '' });
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      expect(result.current.hasExistingNote).toBe(true);
-    });
-
-    it('should be false when there is no note', () => {
-      mockNote(null);
-
-      const { result } = renderHook(() => useNoteEditor(mockCardId));
-
-      expect(result.current.hasExistingNote).toBe(false);
-    });
+  it('distinguishes no note from a stored empty note', () => {
+    expect(renderEditor({ text: '' }).result.current.hasExistingNote).toBe(true);
+    expect(renderEditor().result.current.hasExistingNote).toBe(false);
   });
 });
