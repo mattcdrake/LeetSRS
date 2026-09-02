@@ -22,7 +22,7 @@ import {
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { migrations, runMigrations } from '@/services/migrations';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
-import { getBadgeEnabled, getSettings, updateSettings } from '@/services/settings';
+import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
 import { onMessage } from '@/shared/messages';
 
@@ -30,8 +30,8 @@ const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 
 async function updateBadge() {
-  const enabled = await getBadgeEnabled();
-  if (enabled) {
+  const settings = await getSettings();
+  if (settings.badgeEnabled) {
     const queue = await getReviewQueue();
     if (queue.length > 0) {
       await browser.action.setBadgeText({ text: String(queue.length) });

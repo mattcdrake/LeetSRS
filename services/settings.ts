@@ -104,10 +104,6 @@ async function getSetting<K extends keyof Settings>(key: K): Promise<Settings[K]
   return definition.validate(value) ? value : getDefaultValue(definition);
 }
 
-async function setSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
-  await updateSettings({ [key]: value } as Partial<Settings>);
-}
-
 const SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as Array<keyof Settings>;
 
 export async function getSettings(): Promise<Settings> {
@@ -152,68 +148,4 @@ export async function exportSettings(): Promise<Partial<Settings>> {
 
 export async function resetSettings(): Promise<void> {
   await Promise.all(SETTING_KEYS.map((key) => storage.removeItem(getSettingDefinition(key).storageKey)));
-}
-
-export async function getMaxNewCardsPerDay(): Promise<number> {
-  return getSetting('maxNewCardsPerDay');
-}
-
-export async function setMaxNewCardsPerDay(value: number): Promise<void> {
-  await setSetting('maxNewCardsPerDay', value);
-}
-
-export async function getDayStartHour(): Promise<number> {
-  return getSetting('dayStartHour');
-}
-
-export async function setDayStartHour(value: number): Promise<void> {
-  await setSetting('dayStartHour', value);
-}
-
-export async function getAnimationsEnabled(): Promise<boolean> {
-  return getSetting('animationsEnabled');
-}
-
-export async function setAnimationsEnabled(value: boolean): Promise<void> {
-  await setSetting('animationsEnabled', value);
-}
-
-export async function getTheme(): Promise<Theme> {
-  return getSetting('theme');
-}
-
-export async function setTheme(value: Theme): Promise<void> {
-  await setSetting('theme', value);
-}
-
-export async function getResetEditorOnEveryProblem(): Promise<boolean> {
-  return getSetting('resetEditorOnEveryProblem');
-}
-
-export async function setResetEditorOnEveryProblem(value: boolean): Promise<void> {
-  await setSetting('resetEditorOnEveryProblem', value);
-}
-
-export async function getResetEditorOnDueReview(): Promise<boolean> {
-  return getSetting('resetEditorOnDueReview');
-}
-
-export async function setResetEditorOnDueReview(value: boolean): Promise<void> {
-  await setSetting('resetEditorOnDueReview', value);
-}
-
-export async function getBadgeEnabled(): Promise<boolean> {
-  return getSetting('badgeEnabled');
-}
-
-export async function setBadgeEnabled(value: boolean): Promise<void> {
-  await setSetting('badgeEnabled', value);
-}
-
-export async function getLanguage(): Promise<Language> {
-  return getSetting('language');
-}
-
-export async function setLanguage(value: Language): Promise<void> {
-  await setSetting('language', value);
 }

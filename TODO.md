@@ -30,8 +30,8 @@ Storage keys, defaults, validation, browser-language fallback, and sync behavior
 - [x] Reduce `shared/settings.ts` to the public cross-context contract; move defaults, registry metadata, validation, and other implementation-only details into the settings service.
 - [x] Drive backup export, import, and reset from the same internal metadata.
 - [x] Ensure synchronized setting changes call `markDataUpdated()`.
-- [ ] Test defaults, validation, updates, import/export, reset, and sync tracking.
-- [ ] Run `npm run check`.
+- [x] Test defaults, validation, updates, import/export, reset, and sync tracking.
+- [x] Run `npm run check`.
 
 ## Constraints
 

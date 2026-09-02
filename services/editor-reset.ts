@@ -1,12 +1,13 @@
 import type { LeetcodeDomain } from '@/shared/cards';
 import { getAllCards, isDueByDate } from './cards';
-import { getDayStartHour, getResetEditorOnDueReview, getResetEditorOnEveryProblem } from './settings';
+import { getSettings } from './settings';
 
 export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): Promise<boolean> {
-  if (await getResetEditorOnEveryProblem()) {
+  const settings = await getSettings();
+  if (settings.resetEditorOnEveryProblem) {
     return true;
   }
-  if (!(await getResetEditorOnDueReview())) {
+  if (!settings.resetEditorOnDueReview) {
     return false;
   }
 
@@ -15,5 +16,5 @@ export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): P
     return false;
   }
 
-  return isDueByDate(card, new Date(), await getDayStartHour());
+  return isDueByDate(card, new Date(), settings.dayStartHour);
 }

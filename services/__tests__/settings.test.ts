@@ -2,21 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { SETTINGS_CONSTRAINTS, type Settings } from '@/shared/settings';
-import {
-  getAnimationsEnabled,
-  getLanguage,
-  getMaxNewCardsPerDay,
-  getResetEditorOnDueReview,
-  getResetEditorOnEveryProblem,
-  getSettings,
-  getTheme,
-  setAnimationsEnabled,
-  setMaxNewCardsPerDay,
-  setResetEditorOnDueReview,
-  setResetEditorOnEveryProblem,
-  setTheme,
-  updateSettings,
-} from '../settings';
+import { exportSettings, getSettings, resetSettings, updateSettings } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 
 const EXPECTED_DEFAULT_SETTINGS = {
@@ -30,403 +16,80 @@ const EXPECTED_DEFAULT_SETTINGS = {
   language: 'en',
 } satisfies Settings;
 
-describe('Settings Service', () => {
-  beforeEach(() => {
-    fakeBrowser.reset();
+describe('settings service', () => {
+  beforeEach(() => fakeBrowser.reset());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('returns a complete settings object with defaults', async () => {
+    expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it('returns stored values and defaults invalid stored values', async () => {
+    await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
+    await storage.setItem(STORAGE_KEYS.theme, 'invalid');
+
+    expect(await getSettings()).toEqual({ ...EXPECTED_DEFAULT_SETTINGS, maxNewCardsPerDay: 12 });
   });
 
-  describe('getSettings', () => {
-    it('returns a complete settings object with defaults', async () => {
-      expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
-    });
-
-    it('returns stored values and falls back for invalid values', async () => {
-      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
-      await storage.setItem(STORAGE_KEYS.theme, 'invalid');
-
-      const settings = await getSettings();
-
-      expect(settings.maxNewCardsPerDay).toBe(12);
-      expect(settings.theme).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
-    });
+  it('uses the browser language when stored language is missing or invalid', async () => {
+    vi.stubGlobal('navigator', { languages: ['pl', 'en'] });
+    expect((await getSettings()).language).toBe('pl');
+    await storage.setItem(STORAGE_KEYS.language, 'invalid');
+    expect((await getSettings()).language).toBe('pl');
   });
 
-  describe('updateSettings', () => {
-    it('validates and persists partial changes', async () => {
-      await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'light' });
+  it('validates and persists partial changes', async () => {
+    await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'light' });
 
-      expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBe(8);
-      expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBe(false);
-      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
-      expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
+    expect(await getSettings()).toEqual({
+      ...EXPECTED_DEFAULT_SETTINGS,
+      maxNewCardsPerDay: 8,
+      animationsEnabled: false,
+      theme: 'light',
     });
-
-    it('does nothing for an empty update', async () => {
-      await updateSettings({});
-
-      expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
-    });
-
-    it('does not persist any changes when validation fails', async () => {
-      await expect(
-        updateSettings({
-          animationsEnabled: false,
-          maxNewCardsPerDay: SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max + 1,
-        })
-      ).rejects.toThrow(
-        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
-      );
-
-      expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
-    });
-
-    it('rejects invalid runtime values', async () => {
-      await expect(
-        updateSettings({ badgeEnabled: 'yes' } as unknown as Parameters<typeof updateSettings>[0])
-      ).rejects.toThrow('Badge enabled must be a boolean');
-    });
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
   });
 
-  describe('getMaxNewCardsPerDay', () => {
-    it('should return the stored value when it exists', async () => {
-      // Set a custom value in storage
-      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
-
-      const result = await getMaxNewCardsPerDay();
-      expect(result).toBe(5);
-    });
-
-    it('should return the default value when no stored value exists', async () => {
-      const result = await getMaxNewCardsPerDay();
-      expect(result).toBe(EXPECTED_DEFAULT_SETTINGS.maxNewCardsPerDay);
-    });
-
-    it('should handle zero value correctly', async () => {
-      // Even though setMaxNewCardsPerDay doesn't allow 0, test that get handles it
-      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 0);
-
-      const result = await getMaxNewCardsPerDay();
-      expect(result).toBe(0);
-    });
-
-    it('should handle maximum allowed value', async () => {
-      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
-
-      const result = await getMaxNewCardsPerDay();
-      expect(result).toBe(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
-    });
+  it.each([
+    [{ maxNewCardsPerDay: 1.5 }, 'Max new cards per day must be a whole number'],
+    [
+      { maxNewCardsPerDay: SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max + 1 },
+      `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`,
+    ],
+    [{ dayStartHour: 1.5 }, 'Day start hour must be a whole number'],
+    [
+      { dayStartHour: SETTINGS_CONSTRAINTS.dayStartHour.max + 1 },
+      `Day start hour must be between ${SETTINGS_CONSTRAINTS.dayStartHour.min} and ${SETTINGS_CONSTRAINTS.dayStartHour.max}`,
+    ],
+    [{ animationsEnabled: 'yes' }, 'Animations enabled must be a boolean'],
+    [{ theme: 'blue' }, 'Theme must be either "light" or "dark"'],
+    [{ resetEditorOnEveryProblem: 1 }, 'Reset editor on every problem must be a boolean'],
+    [{ resetEditorOnDueReview: 1 }, 'Reset editor on due review must be a boolean'],
+    [{ badgeEnabled: 'yes' }, 'Badge enabled must be a boolean'],
+    [{ language: 'fr' }, 'Unsupported language: fr'],
+  ])('rejects invalid update %#', async (changes, error) => {
+    await expect(updateSettings(changes as Partial<Settings>)).rejects.toThrow(error as string);
+    expect(await exportSettings()).toEqual({});
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
-  describe('setMaxNewCardsPerDay', () => {
-    it('should store valid values correctly', async () => {
-      await setMaxNewCardsPerDay(10);
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
-      expect(storedValue).toBe(10);
-    });
-
-    it('should accept minimum allowed value', async () => {
-      await setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min);
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
-      expect(storedValue).toBe(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min);
-    });
-
-    it('should accept maximum allowed value', async () => {
-      await setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
-      expect(storedValue).toBe(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
-    });
-
-    it('should throw error for values less than minimum', async () => {
-      await expect(setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min - 1)).rejects.toThrow(
-        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
-      );
-      await expect(setMaxNewCardsPerDay(-10)).rejects.toThrow(
-        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
-      );
-    });
-
-    it('should throw error for values greater than maximum', async () => {
-      await expect(setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max + 1)).rejects.toThrow(
-        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
-      );
-    });
-
-    it('should not modify storage when validation fails', async () => {
-      // Set an initial valid value
-      await setMaxNewCardsPerDay(5);
-
-      // Try to set an invalid value
-      await expect(setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min - 1)).rejects.toThrow();
-
-      // Verify the original value is still there
-      const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
-      expect(storedValue).toBe(5);
-    });
-
-    it('should reject decimal values', async () => {
-      // All decimal values should be rejected
-      await expect(setMaxNewCardsPerDay(5.5)).rejects.toThrow('Max new cards per day must be a whole number');
-      await expect(setMaxNewCardsPerDay(1.1)).rejects.toThrow('Max new cards per day must be a whole number');
-      await expect(setMaxNewCardsPerDay(99.9)).rejects.toThrow('Max new cards per day must be a whole number');
-
-      // Even decimals outside range should fail with whole number error first
-      await expect(setMaxNewCardsPerDay(0.5)).rejects.toThrow('Max new cards per day must be a whole number');
-      await expect(setMaxNewCardsPerDay(100.1)).rejects.toThrow('Max new cards per day must be a whole number');
-    });
+  it('validates all changes before persisting any of them', async () => {
+    await expect(updateSettings({ animationsEnabled: false, maxNewCardsPerDay: -1 })).rejects.toThrowError();
+    expect(await exportSettings()).toEqual({});
   });
 
-  describe('Integration tests', () => {
-    it('should work correctly when setting and then getting a value', async () => {
-      // Initially should return default
-      let value = await getMaxNewCardsPerDay();
-      expect(value).toBe(EXPECTED_DEFAULT_SETTINGS.maxNewCardsPerDay);
-
-      // Set a new value
-      await setMaxNewCardsPerDay(15);
-
-      // Should return the new value
-      value = await getMaxNewCardsPerDay();
-      expect(value).toBe(15);
-    });
-
-    it('should handle multiple updates correctly', async () => {
-      await setMaxNewCardsPerDay(5);
-      expect(await getMaxNewCardsPerDay()).toBe(5);
-
-      await setMaxNewCardsPerDay(10);
-      expect(await getMaxNewCardsPerDay()).toBe(10);
-
-      await setMaxNewCardsPerDay(20);
-      expect(await getMaxNewCardsPerDay()).toBe(20);
-    });
+  it('does not mark an empty update', async () => {
+    await updateSettings({});
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
-  describe('getAnimationsEnabled', () => {
-    it('should return the stored value when it exists', async () => {
-      await storage.setItem(STORAGE_KEYS.animationsEnabled, false);
+  it('exports only valid stored values and resets every setting', async () => {
+    await updateSettings({ maxNewCardsPerDay: 9, theme: 'light' });
+    await storage.setItem(STORAGE_KEYS.language, 'invalid');
+    expect(await exportSettings()).toEqual({ maxNewCardsPerDay: 9, theme: 'light' });
 
-      const result = await getAnimationsEnabled();
-      expect(result).toBe(false);
-    });
-
-    it('should return true (default) when no stored value exists', async () => {
-      const result = await getAnimationsEnabled();
-      expect(result).toBe(true);
-    });
-
-    it('should handle true value correctly', async () => {
-      await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
-
-      const result = await getAnimationsEnabled();
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('setAnimationsEnabled', () => {
-    it('should store true value correctly', async () => {
-      await setAnimationsEnabled(true);
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.animationsEnabled);
-      expect(storedValue).toBe(true);
-    });
-
-    it('should store false value correctly', async () => {
-      await setAnimationsEnabled(false);
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.animationsEnabled);
-      expect(storedValue).toBe(false);
-    });
-
-    it('should handle multiple toggles correctly', async () => {
-      await setAnimationsEnabled(true);
-      expect(await getAnimationsEnabled()).toBe(true);
-
-      await setAnimationsEnabled(false);
-      expect(await getAnimationsEnabled()).toBe(false);
-
-      await setAnimationsEnabled(true);
-      expect(await getAnimationsEnabled()).toBe(true);
-    });
-  });
-
-  describe('Integration tests for animations', () => {
-    it('should work correctly when setting and then getting animations enabled', async () => {
-      // Initially should return default (true)
-      let value = await getAnimationsEnabled();
-      expect(value).toBe(true);
-
-      // Set to false
-      await setAnimationsEnabled(false);
-      value = await getAnimationsEnabled();
-      expect(value).toBe(false);
-
-      // Set back to true
-      await setAnimationsEnabled(true);
-      value = await getAnimationsEnabled();
-      expect(value).toBe(true);
-    });
-  });
-
-  describe('getTheme', () => {
-    it('should return the stored theme when it exists', async () => {
-      await storage.setItem(STORAGE_KEYS.theme, 'light');
-
-      const result = await getTheme();
-      expect(result).toBe('light');
-    });
-
-    it('should return the default theme when no stored value exists', async () => {
-      const result = await getTheme();
-      expect(result).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
-    });
-
-    it('should handle dark theme correctly', async () => {
-      await storage.setItem(STORAGE_KEYS.theme, 'dark');
-
-      const result = await getTheme();
-      expect(result).toBe('dark');
-    });
-  });
-
-  describe('editor reset settings', () => {
-    it('should return default values when not set', async () => {
-      expect(await getResetEditorOnEveryProblem()).toBe(EXPECTED_DEFAULT_SETTINGS.resetEditorOnEveryProblem);
-      expect(await getResetEditorOnDueReview()).toBe(EXPECTED_DEFAULT_SETTINGS.resetEditorOnDueReview);
-    });
-
-    it('should store and retrieve reset editor on every problem', async () => {
-      await setResetEditorOnEveryProblem(true);
-      expect(await getResetEditorOnEveryProblem()).toBe(true);
-    });
-
-    it('should store and retrieve reset editor on due review', async () => {
-      await setResetEditorOnDueReview(true);
-      expect(await getResetEditorOnDueReview()).toBe(true);
-    });
-  });
-
-  describe('setTheme', () => {
-    it('should store light theme correctly', async () => {
-      await setTheme('light');
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.theme);
-      expect(storedValue).toBe('light');
-    });
-
-    it('should store dark theme correctly', async () => {
-      await setTheme('dark');
-
-      const storedValue = await storage.getItem(STORAGE_KEYS.theme);
-      expect(storedValue).toBe('dark');
-    });
-
-    it('should throw an error for invalid theme values', async () => {
-      // @ts-expect-error Testing invalid input
-      await expect(setTheme('invalid')).rejects.toThrow('Theme must be either "light" or "dark"');
-
-      // @ts-expect-error Testing invalid input
-      await expect(setTheme('')).rejects.toThrow('Theme must be either "light" or "dark"');
-
-      // @ts-expect-error Testing invalid input
-      await expect(setTheme(null)).rejects.toThrow('Theme must be either "light" or "dark"');
-
-      // @ts-expect-error Testing invalid input
-      await expect(setTheme(undefined)).rejects.toThrow('Theme must be either "light" or "dark"');
-
-      // @ts-expect-error Testing invalid input
-      await expect(setTheme(123)).rejects.toThrow('Theme must be either "light" or "dark"');
-    });
-
-    it('should not modify storage when validation fails', async () => {
-      // Set an initial valid value
-      await setTheme('light');
-
-      // Try to set an invalid value
-      // @ts-expect-error Testing invalid input
-      await expect(setTheme('invalid')).rejects.toThrow();
-
-      // Verify the original value is still there
-      const storedValue = await storage.getItem(STORAGE_KEYS.theme);
-      expect(storedValue).toBe('light');
-    });
-
-    it('should handle theme toggling correctly', async () => {
-      await setTheme('light');
-      expect(await getTheme()).toBe('light');
-
-      await setTheme('dark');
-      expect(await getTheme()).toBe('dark');
-
-      await setTheme('light');
-      expect(await getTheme()).toBe('light');
-    });
-  });
-
-  describe('Integration tests for theme', () => {
-    it('should work correctly when setting and then getting theme', async () => {
-      // Initially should return default
-      let value = await getTheme();
-      expect(value).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
-
-      // Set to light
-      await setTheme('light');
-      value = await getTheme();
-      expect(value).toBe('light');
-
-      // Set to dark
-      await setTheme('dark');
-      value = await getTheme();
-      expect(value).toBe('dark');
-    });
-
-    it('should handle multiple theme updates correctly', async () => {
-      // Start with default
-      expect(await getTheme()).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
-
-      // Toggle through themes multiple times
-      await setTheme('light');
-      expect(await getTheme()).toBe('light');
-
-      await setTheme('dark');
-      expect(await getTheme()).toBe('dark');
-
-      await setTheme('light');
-      expect(await getTheme()).toBe('light');
-
-      await setTheme('dark');
-      expect(await getTheme()).toBe('dark');
-    });
-  });
-
-  describe('getLanguage', () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    it('should detect browser language when no language is stored', async () => {
-      vi.stubGlobal('navigator', { languages: ['pl', 'en'] });
-
-      const result = await getLanguage();
-      expect(result).toBe('pl');
-    });
-
-    it('should return stored language over detected browser language', async () => {
-      vi.stubGlobal('navigator', { languages: ['pl', 'en'] });
-      await storage.setItem(STORAGE_KEYS.language, 'hi');
-
-      const result = await getLanguage();
-      expect(result).toBe('hi');
-    });
+    await resetSettings();
+    expect(await exportSettings()).toEqual({});
+    expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
   });
 });
