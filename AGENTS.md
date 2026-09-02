@@ -22,7 +22,7 @@ Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semico
 
 ## Testing Guidelines
 
-Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Reuse `test/utils/` helpers and cover behavior changes and bug fixes. Before submitting, run `npm test` and `npm run compile`.
+Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Check `test/utils/` before adding local test helpers, and reuse an existing helper when it fits. Cover behavior changes and bug fixes. Before submitting, run `npm test` and `npm run compile`.
 
 ## Architecture Invariants
 

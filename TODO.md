@@ -30,7 +30,7 @@ Replace per-registration wrapper choices in `entrypoints/background/index.ts` wi
 
 - [x] Use the same serialized sync execution path for the periodic alarm in `entrypoints/background/index.ts`, including badge refresh after a pull, so alarm-driven sync cannot race message-driven writes or bypass message policy.
 
-- [ ] Add focused tests for the registry/executor (for example, `entrypoints/background/__tests__/messaging.test.ts`):
+- [x] Add focused tests for the registry/executor (for example, `entrypoints/background/__tests__/messaging.test.ts`):
   - A representative read waits for readiness but does not enter the write queue, mark data updated, or refresh the badge.
   - Concurrent writes execute in arrival order and apply only their declared side effects.
   - Handler rejection skips success-only side effects, propagates the error, and does not poison the queue.
