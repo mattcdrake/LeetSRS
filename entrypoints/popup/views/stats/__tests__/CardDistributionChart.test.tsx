@@ -2,12 +2,13 @@
  * @vitest-environment happy-dom
  */
 
-import type { UseQueryResult } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { State as FsrsState } from 'ts-fsrs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCardStateStatsQuery } from '@/hooks/useBackgroundQueries';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { describe, expect, it, vi } from 'vitest';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { sendMessage } from '@/shared/messages';
+import { createDeferred } from '@/test/utils/deferred';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardDistributionChart } from '../CardDistributionChart';
 
@@ -24,13 +25,10 @@ vi.mock('react-chartjs-2', () => ({
   ),
 }));
 
-// Mock the query hook
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useCardStateStatsQuery: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('CardDistributionChart', () => {
-  const { wrapper } = createTestWrapper();
+  const messages = createMessageMock(vi.mocked(sendMessage));
 
   // Default mock data
   const mockCardStateStats: Record<FsrsState, number> = {
@@ -40,16 +38,10 @@ describe('CardDistributionChart', () => {
     [FsrsState.Relearning]: 2,
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Default mock - return stats data
-    vi.mocked(useCardStateStatsQuery).mockReturnValue(
-      createQueryMock(mockCardStateStats) as UseQueryResult<Record<FsrsState, number>>
-    );
-  });
-
-  const renderChart = () => {
+  const renderChart = (data: Record<FsrsState, number> = mockCardStateStats) => {
+    messages.reset().resolve('getCardStateStats', data);
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(queryKeys.stats.cardState, data);
     return render(<CardDistributionChart />, { wrapper });
   };
 
@@ -102,16 +94,17 @@ describe('CardDistributionChart', () => {
   });
 
   it('should render zeros when no stats data is available', () => {
-    vi.mocked(useCardStateStatsQuery).mockReturnValue(
-      createQueryMock<Record<FsrsState, number> | undefined>(undefined) as UseQueryResult<Record<FsrsState, number>>
-    );
-
-    renderChart();
+    const pending = createDeferred<Record<FsrsState, number>>();
+    messages.reset().resolve('getCardStateStats', pending.promise);
+    const { wrapper } = createTestWrapper();
+    const view = render(<CardDistributionChart />, { wrapper });
 
     const chart = screen.getByTestId('doughnut-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
     expect(chartData.datasets[0].data).toEqual([0, 0, 0, 0]);
+    view.unmount();
+    pending.resolve(mockCardStateStats);
   });
 
   it('should set chart container height', () => {
@@ -123,20 +116,10 @@ describe('CardDistributionChart', () => {
 
   describe('loading state', () => {
     it('should handle loading state gracefully', () => {
-      vi.mocked(useCardStateStatsQuery).mockReturnValue(
-        createQueryMock<Record<FsrsState, number> | undefined>(undefined, {
-          isLoading: true,
-          isPending: true,
-          isSuccess: false,
-          isFetching: true,
-          isFetched: false,
-          status: 'pending',
-          fetchStatus: 'fetching',
-          dataUpdatedAt: 0,
-        }) as UseQueryResult<Record<FsrsState, number>>
-      );
-
-      renderChart();
+      const pending = createDeferred<Record<FsrsState, number>>();
+      messages.reset().resolve('getCardStateStats', pending.promise);
+      const { wrapper } = createTestWrapper();
+      const view = render(<CardDistributionChart />, { wrapper });
 
       // Chart should still render with default data
       const chart = screen.getByTestId('doughnut-chart');
@@ -144,28 +127,16 @@ describe('CardDistributionChart', () => {
 
       const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
       expect(chartData.datasets[0].data).toEqual([0, 0, 0, 0]);
+      view.unmount();
+      pending.resolve(mockCardStateStats);
     });
   });
 
   describe('error state', () => {
     it('should handle error state gracefully', () => {
-      const error = new Error('Failed to fetch stats');
-      vi.mocked(useCardStateStatsQuery).mockReturnValue(
-        createQueryMock<Record<FsrsState, number> | undefined>(undefined, {
-          error,
-          isError: true,
-          isSuccess: false,
-          isLoadingError: true,
-          status: 'error',
-          errorUpdatedAt: Date.now(),
-          dataUpdatedAt: 0,
-          failureReason: error,
-          failureCount: 1,
-          errorUpdateCount: 1,
-        }) as UseQueryResult<Record<FsrsState, number>>
-      );
-
-      renderChart();
+      messages.reset().handle('getCardStateStats', () => Promise.reject(new Error('Failed to fetch stats')));
+      const { wrapper } = createTestWrapper();
+      render(<CardDistributionChart />, { wrapper });
 
       // Chart should still render with default data
       const chart = screen.getByTestId('doughnut-chart');
@@ -178,16 +149,12 @@ describe('CardDistributionChart', () => {
 
   describe('data edge cases', () => {
     it('should handle all zero values', () => {
-      vi.mocked(useCardStateStatsQuery).mockReturnValue(
-        createQueryMock({
-          [FsrsState.New]: 0,
-          [FsrsState.Learning]: 0,
-          [FsrsState.Review]: 0,
-          [FsrsState.Relearning]: 0,
-        }) as UseQueryResult<Record<FsrsState, number>>
-      );
-
-      renderChart();
+      renderChart({
+        [FsrsState.New]: 0,
+        [FsrsState.Learning]: 0,
+        [FsrsState.Review]: 0,
+        [FsrsState.Relearning]: 0,
+      });
 
       const chart = screen.getByTestId('doughnut-chart');
       const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
@@ -196,16 +163,12 @@ describe('CardDistributionChart', () => {
     });
 
     it('should handle large numbers', () => {
-      vi.mocked(useCardStateStatsQuery).mockReturnValue(
-        createQueryMock({
-          [FsrsState.New]: 1000,
-          [FsrsState.Learning]: 500,
-          [FsrsState.Review]: 2500,
-          [FsrsState.Relearning]: 100,
-        }) as UseQueryResult<Record<FsrsState, number>>
-      );
-
-      renderChart();
+      renderChart({
+        [FsrsState.New]: 1000,
+        [FsrsState.Learning]: 500,
+        [FsrsState.Review]: 2500,
+        [FsrsState.Relearning]: 100,
+      });
 
       const chart = screen.getByTestId('doughnut-chart');
       const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');

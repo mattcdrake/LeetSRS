@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 
 /**
  * Creates a new QueryClient with test-friendly defaults
@@ -22,27 +22,22 @@ export function createTestQueryClient() {
   });
 }
 
-/**
- * Creates a wrapper component with QueryClientProvider for testing
- * Each test gets its own QueryClient instance to ensure isolation
- */
-export function createWrapper() {
-  const testQueryClient = createTestQueryClient();
+function TestQueryClientProvider({ children, queryClient }: { children: ReactNode; queryClient: QueryClient }) {
+  useEffect(() => () => queryClient.clear(), [queryClient]);
 
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>;
-  };
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
 /**
- * Utility for rendering components with QueryClient in tests
- * Returns both the wrapper and the client for advanced testing scenarios
+ * Creates a QueryClient and provider wrapper for a test.
+ * Call this inside each test or `beforeEach` to avoid sharing cached state.
+ * The client is cleared when the wrapper unmounts.
  */
 export function createTestWrapper() {
   const queryClient = createTestQueryClient();
 
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <TestQueryClientProvider queryClient={queryClient}>{children}</TestQueryClientProvider>
   );
 
   return { wrapper, queryClient };

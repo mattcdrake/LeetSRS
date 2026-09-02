@@ -7,7 +7,7 @@ import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
-import { createTestWrapper, createWrapper } from '@/test/utils/test-wrapper';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
 import {
   queryKeys,
   useCardsQuery,
@@ -26,7 +26,7 @@ describe('useCardsQuery', () => {
     vi.mocked(sendMessage).mockResolvedValue([]);
 
     const { result } = renderHook(() => useCardsQuery(), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -65,7 +65,7 @@ describe('useRateCardMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(mockResponse);
 
     const { result } = renderHook(() => useRateCardMutation(), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate(mockCard);
@@ -97,7 +97,7 @@ describe('useSaveNoteMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate(noteText);
@@ -117,7 +117,7 @@ describe('useSaveNoteMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate(noteText);
@@ -137,7 +137,7 @@ describe('useSaveNoteMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate(noteText);
@@ -154,7 +154,6 @@ describe('useSaveNoteMutation', () => {
     const cardId = 'test-card-cache';
     const noteText = 'Test note for cache invalidation';
 
-    // Use createTestWrapper to get access to the queryClient
     const { wrapper, queryClient } = createTestWrapper();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -193,7 +192,7 @@ describe('useDeleteNoteMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useDeleteNoteMutation(cardId), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate();
@@ -208,7 +207,6 @@ describe('useDeleteNoteMutation', () => {
   it('should invalidate note query cache on successful delete', async () => {
     const cardId = 'test-card-delete';
 
-    // Use createTestWrapper to get access to the queryClient
     const { wrapper, queryClient } = createTestWrapper();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -257,7 +255,7 @@ describe('usePauseCardMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(mockCard);
 
     const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate({ slug: 'two-sum', paused: true });
@@ -286,7 +284,7 @@ describe('usePauseCardMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(mockCard);
 
     const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate({ slug: 'three-sum', paused: false });
@@ -340,7 +338,7 @@ describe('usePauseCardMutation', () => {
     vi.mocked(sendMessage).mockRejectedValue(new Error(errorMessage));
 
     const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createWrapper(),
+      wrapper: createTestWrapper().wrapper,
     });
 
     result.current.mutate({ slug: 'non-existent', paused: true });

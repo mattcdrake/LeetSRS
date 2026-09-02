@@ -2,12 +2,13 @@
  * @vitest-environment happy-dom
  */
 
-import type { UseQueryResult } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useNextNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
+import { describe, expect, it, vi } from 'vitest';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import type { UpcomingReviewStats } from '@/services/stats';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { sendMessage } from '@/shared/messages';
+import { createDeferred } from '@/test/utils/deferred';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { UpcomingReviewsChart } from '../UpcomingReviewsChart';
 
@@ -20,13 +21,10 @@ vi.mock('react-chartjs-2', () => ({
   ),
 }));
 
-// Mock the query hook
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useNextNDaysStatsQuery: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('UpcomingReviewsChart', () => {
-  const { wrapper } = createTestWrapper();
+  const messages = createMessageMock(vi.mocked(sendMessage));
 
   // Default mock data
   const mockNext14DaysStats: UpcomingReviewStats[] = [
@@ -44,16 +42,10 @@ describe('UpcomingReviewsChart', () => {
     },
   ];
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Default mock - return stats data
-    vi.mocked(useNextNDaysStatsQuery).mockReturnValue(
-      createQueryMock(mockNext14DaysStats) as UseQueryResult<UpcomingReviewStats[]>
-    );
-  });
-
-  const renderChart = () => {
+  const renderChart = (data: UpcomingReviewStats[] = mockNext14DaysStats) => {
+    messages.reset().resolve('getNextNDaysStats', data);
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(queryKeys.stats.nextNDays(14), data);
     return render(<UpcomingReviewsChart />, { wrapper });
   };
 
@@ -113,11 +105,7 @@ describe('UpcomingReviewsChart', () => {
   });
 
   it('should handle empty data gracefully', () => {
-    vi.mocked(useNextNDaysStatsQuery).mockReturnValue(
-      createQueryMock<UpcomingReviewStats[] | undefined>(undefined) as UseQueryResult<UpcomingReviewStats[]>
-    );
-
-    renderChart();
+    renderChart([]);
 
     const chart = screen.getByTestId('line-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
@@ -129,7 +117,7 @@ describe('UpcomingReviewsChart', () => {
   it('should request exactly 14 days of data', () => {
     renderChart();
 
-    expect(useNextNDaysStatsQuery).toHaveBeenCalledWith(14);
+    expect(sendMessage).toHaveBeenCalledWith('getNextNDaysStats', { days: 14 });
   });
 
   it('should apply correct CSS classes to upcoming reviews section', () => {
@@ -147,20 +135,10 @@ describe('UpcomingReviewsChart', () => {
   });
 
   it('should handle loading state gracefully', () => {
-    vi.mocked(useNextNDaysStatsQuery).mockReturnValue(
-      createQueryMock<UpcomingReviewStats[] | undefined>(undefined, {
-        isLoading: true,
-        isPending: true,
-        isSuccess: false,
-        isFetching: true,
-        isFetched: false,
-        status: 'pending',
-        fetchStatus: 'fetching',
-        dataUpdatedAt: 0,
-      }) as UseQueryResult<UpcomingReviewStats[]>
-    );
-
-    renderChart();
+    const pending = createDeferred<UpcomingReviewStats[]>();
+    messages.reset().resolve('getNextNDaysStats', pending.promise);
+    const { wrapper } = createTestWrapper();
+    const view = render(<UpcomingReviewsChart />, { wrapper });
 
     // Chart should still render with empty data
     const chart = screen.getByTestId('line-chart');
@@ -169,6 +147,8 @@ describe('UpcomingReviewsChart', () => {
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
     expect(chartData.labels).toEqual([]);
     expect(chartData.datasets[0].data).toEqual([]);
+    view.unmount();
+    pending.resolve([]);
   });
 
   it('should handle dates with no reviews', () => {
@@ -180,11 +160,7 @@ describe('UpcomingReviewsChart', () => {
       { date: '2024-05-19', count: 7 },
     ];
 
-    vi.mocked(useNextNDaysStatsQuery).mockReturnValue(
-      createQueryMock(statsWithZeros) as UseQueryResult<UpcomingReviewStats[]>
-    );
-
-    renderChart();
+    renderChart(statsWithZeros);
 
     const chart = screen.getByTestId('line-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');

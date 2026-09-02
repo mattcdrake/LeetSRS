@@ -1,244 +1,62 @@
-/**
- * @vitest-environment happy-dom
- */
-
+/** @vitest-environment happy-dom */
 import { render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
+import { describe, expect, it, vi } from 'vitest';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import type { Card } from '@/shared/cards';
+import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { StatsBar } from '../StatsBar';
 
-// Mock the useReviewQueueQuery hook
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useReviewQueueQuery: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('StatsBar', () => {
-  const { wrapper: TestWrapper } = createTestWrapper();
+  const messages = createMessageMock(vi.mocked(sendMessage));
 
-  const renderWithProviders = () => {
-    return render(<StatsBar />, { wrapper: TestWrapper });
+  const renderStats = (cards: Card[] = []) => {
+    messages.reset().resolve('getReviewQueue', cards);
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(queryKeys.cards.reviewQueue, cards);
+    return render(<StatsBar />, { wrapper });
   };
 
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('renders all categories with zero counts for an empty queue', () => {
+    renderStats();
+    expect(screen.getByTestId('stat-review-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('stat-new-count')).toHaveTextContent('0');
+    expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('0');
   });
 
-  describe('Rendering', () => {
-    it('should render all three stat categories', () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock<Card[]>([]) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-new')).toBeInTheDocument();
-      expect(screen.getByTestId('stat-learn')).toBeInTheDocument();
-    });
-
-    it('should display zero counts when no cards', () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock<Card[]>([]) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('0');
-      expect(screen.getByTestId('stat-new-count')).toHaveTextContent('0');
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('0');
-    });
-
-    it('should display zero counts when data is undefined', () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock<Card[] | undefined>(undefined) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('0');
-      expect(screen.getByTestId('stat-new-count')).toHaveTextContent('0');
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('0');
-    });
+  it('counts review, new, learning, and relearning cards', () => {
+    renderStats([
+      ...Array.from({ length: 5 }, () => createMockCard(State.Review)),
+      ...Array.from({ length: 3 }, () => createMockCard(State.New)),
+      createMockCard(State.Learning),
+      createMockCard(State.Learning),
+      createMockCard(State.Relearning),
+    ]);
+    expect(screen.getByTestId('stat-review-count')).toHaveTextContent('5');
+    expect(screen.getByTestId('stat-new-count')).toHaveTextContent('3');
+    expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('3');
   });
 
-  describe('State Counting', () => {
-    it('should count Review state cards correctly', () => {
-      const mockCards = [
-        createMockCard(State.Review),
-        createMockCard(State.Review),
-        createMockCard(State.Review),
-        createMockCard(State.New),
-        createMockCard(State.Learning),
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('3');
-    });
-
-    it('should count New state cards correctly', () => {
-      const mockCards = [
-        createMockCard(State.New),
-        createMockCard(State.New),
-        createMockCard(State.Review),
-        createMockCard(State.Learning),
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-new-count')).toHaveTextContent('2');
-    });
-
-    it('should count Learning state cards correctly', () => {
-      const mockCards = [
-        createMockCard(State.Learning),
-        createMockCard(State.Learning),
-        createMockCard(State.Learning),
-        createMockCard(State.New),
-        createMockCard(State.Review),
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('3');
-    });
-
-    it('should count Relearning state cards correctly', () => {
-      const mockCards = [
-        createMockCard(State.Relearning),
-        createMockCard(State.Relearning),
-        createMockCard(State.New),
-        createMockCard(State.Review),
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('2');
-    });
-
-    it('should count mixed Learning and Relearning states together', () => {
-      const mockCards = [
-        createMockCard(State.Learning),
-        createMockCard(State.Relearning),
-        createMockCard(State.Learning),
-        createMockCard(State.Relearning),
-        createMockCard(State.New),
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('4');
-    });
-
-    it('should handle all states correctly in one dataset', () => {
-      const mockCards = [
-        // 5 Review
-        createMockCard(State.Review),
-        createMockCard(State.Review),
-        createMockCard(State.Review),
-        createMockCard(State.Review),
-        createMockCard(State.Review),
-        // 3 New
-        createMockCard(State.New),
-        createMockCard(State.New),
-        createMockCard(State.New),
-        // 2 Learning + 1 Relearning = 3 learn
-        createMockCard(State.Learning),
-        createMockCard(State.Learning),
-        createMockCard(State.Relearning),
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('5');
-      expect(screen.getByTestId('stat-new-count')).toHaveTextContent('3');
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('3');
-    });
-
-    it('should ignore cards with unknown states', () => {
-      const baseCard = createMockCard(State.New);
-
-      // Create cards with invalid states for testing edge cases
-      const cardWithInvalidState = {
-        ...baseCard,
-        fsrs: { ...baseCard.fsrs, state: 999 as State },
-      };
-
-      const mockCards: Card[] = [
-        createMockCard(State.Review),
-        createMockCard(State.New),
-        createMockCard(State.Learning),
-        // This card has an invalid state value that should be ignored
-        cardWithInvalidState,
-      ];
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      // Should only count the valid states
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('1');
-      expect(screen.getByTestId('stat-new-count')).toHaveTextContent('1');
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('1');
-    });
+  it('ignores unknown states', () => {
+    const card = createMockCard(State.New);
+    renderStats([
+      createMockCard(State.Review),
+      createMockCard(State.New),
+      createMockCard(State.Learning),
+      { ...card, fsrs: { ...card.fsrs, state: 999 as State } },
+    ]);
+    expect(screen.getByTestId('stat-review-count')).toHaveTextContent('1');
+    expect(screen.getByTestId('stat-new-count')).toHaveTextContent('1');
+    expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('1');
   });
 
-  describe('Edge Cases', () => {
-    it('should handle empty array gracefully', () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock<Card[]>([]) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('0');
-      expect(screen.getByTestId('stat-new-count')).toHaveTextContent('0');
-      expect(screen.getByTestId('stat-learn-count')).toHaveTextContent('0');
-    });
-
-    it('should handle large numbers correctly', () => {
-      const mockCards = Array(999)
-        .fill(null)
-        .map(() => createMockCard(State.Review));
-
-      vi.mocked(useReviewQueueQuery).mockReturnValue(
-        createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-      );
-
-      renderWithProviders();
-
-      expect(screen.getByTestId('stat-review-count')).toHaveTextContent('999');
-    });
+  it('handles large counts', () => {
+    renderStats(Array.from({ length: 999 }, () => createMockCard(State.Review)));
+    expect(screen.getByTestId('stat-review-count')).toHaveTextContent('999');
   });
 });
