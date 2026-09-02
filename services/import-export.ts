@@ -1,8 +1,9 @@
 import { storage } from '#imports';
 import type { Note } from '@/shared/notes';
-import type { Language, Theme } from '@/shared/settings';
+import type { Settings } from '@/shared/settings';
 import type { StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
+import { exportSettings, resetSettings, updateSettings } from './settings';
 import type { DailyStats, MonthlyStats } from './stats';
 import { STORAGE_KEYS } from './storage-keys';
 
@@ -15,16 +16,7 @@ export interface ExportData {
     stats: Record<string, DailyStats>;
     monthlyStats?: Record<string, MonthlyStats>;
     notes: Record<string, Note>;
-    settings: {
-      maxNewCardsPerDay?: number;
-      dayStartHour?: number;
-      animationsEnabled?: boolean;
-      theme?: Theme;
-      resetEditorOnEveryProblem?: boolean;
-      resetEditorOnDueReview?: boolean;
-      badgeEnabled?: boolean;
-      language?: Language;
-    };
+    settings: Partial<Settings>;
     gistSync?: {
       gistId?: string;
       enabled?: boolean;
@@ -54,15 +46,7 @@ export async function exportData(): Promise<string> {
     }
   }
 
-  // Get settings
-  const maxNewCardsPerDay = await storage.getItem<number>(STORAGE_KEYS.maxNewCardsPerDay);
-  const dayStartHour = await storage.getItem<number>(STORAGE_KEYS.dayStartHour);
-  const animationsEnabled = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
-  const theme = await storage.getItem<Theme>(STORAGE_KEYS.theme);
-  const resetEditorOnEveryProblem = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnEveryProblem);
-  const resetEditorOnDueReview = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnDueReview);
-  const badgeEnabled = await storage.getItem<boolean>(STORAGE_KEYS.badgeEnabled);
-  const language = await storage.getItem<Language>(STORAGE_KEYS.language);
+  const settings = await exportSettings();
 
   // Get gist sync settings
   const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
@@ -82,16 +66,7 @@ export async function exportData(): Promise<string> {
       stats,
       ...(Object.keys(monthlyStats).length > 0 && { monthlyStats }),
       notes,
-      settings: {
-        ...(maxNewCardsPerDay != null && { maxNewCardsPerDay }),
-        ...(dayStartHour != null && { dayStartHour }),
-        ...(animationsEnabled != null && { animationsEnabled }),
-        ...(theme != null && { theme }),
-        ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
-        ...(resetEditorOnDueReview != null && { resetEditorOnDueReview }),
-        ...(badgeEnabled != null && { badgeEnabled }),
-        ...(language != null && { language }),
-      },
+      settings,
       gistSync: {
         ...(gistId != null && { gistId }),
         ...(gistSyncEnabled != null && { enabled: gistSyncEnabled }),
@@ -167,32 +142,13 @@ export async function importData(jsonData: string): Promise<void> {
 
   // Import settings
   if (data.data.settings) {
-    if (data.data.settings.maxNewCardsPerDay != null) {
-      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, data.data.settings.maxNewCardsPerDay);
-    }
-    if (data.data.settings.dayStartHour != null) {
-      await storage.setItem(STORAGE_KEYS.dayStartHour, data.data.settings.dayStartHour);
-    }
-    if (data.data.settings.animationsEnabled != null) {
-      await storage.setItem(STORAGE_KEYS.animationsEnabled, data.data.settings.animationsEnabled);
-    }
-    if (data.data.settings.theme != null) {
-      await storage.setItem(STORAGE_KEYS.theme, data.data.settings.theme);
-    }
     const resetEditorOnEveryProblem =
       data.data.settings.resetEditorOnEveryProblem ?? data.data.settings.autoClearLeetcode;
-    if (resetEditorOnEveryProblem != null) {
-      await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, resetEditorOnEveryProblem);
-    }
-    if (data.data.settings.resetEditorOnDueReview != null) {
-      await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, data.data.settings.resetEditorOnDueReview);
-    }
-    if (data.data.settings.badgeEnabled != null) {
-      await storage.setItem(STORAGE_KEYS.badgeEnabled, data.data.settings.badgeEnabled);
-    }
-    if (data.data.settings.language != null) {
-      await storage.setItem(STORAGE_KEYS.language, data.data.settings.language);
-    }
+    const { autoClearLeetcode: _, ...settings } = data.data.settings;
+    await updateSettings({
+      ...settings,
+      ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
+    });
   }
 
   // Import gist sync settings
@@ -217,14 +173,7 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.cards);
   await storage.removeItem(STORAGE_KEYS.stats);
   await storage.removeItem(STORAGE_KEYS.monthlyStats);
-  await storage.removeItem(STORAGE_KEYS.maxNewCardsPerDay);
-  await storage.removeItem(STORAGE_KEYS.dayStartHour);
-  await storage.removeItem(STORAGE_KEYS.animationsEnabled);
-  await storage.removeItem(STORAGE_KEYS.theme);
-  await storage.removeItem(STORAGE_KEYS.resetEditorOnEveryProblem);
-  await storage.removeItem(STORAGE_KEYS.resetEditorOnDueReview);
-  await storage.removeItem(STORAGE_KEYS.badgeEnabled);
-  await storage.removeItem(STORAGE_KEYS.language);
+  await resetSettings();
 
   // Remove gist sync settings
   await storage.removeItem(STORAGE_KEYS.githubPat);

@@ -136,6 +136,22 @@ export async function updateSettings(changes: Partial<Settings>): Promise<void> 
   await Promise.all(updates.map(({ definition, value }) => storage.setItem(definition.storageKey, value)));
 }
 
+export async function exportSettings(): Promise<Partial<Settings>> {
+  const entries = await Promise.all(
+    SETTING_KEYS.map(async (key) => {
+      const definition = getSettingDefinition(key);
+      const value: unknown = await storage.getItem(definition.storageKey);
+      return definition.validate(value) ? ([key, value] as const) : null;
+    })
+  );
+
+  return Object.fromEntries(entries.filter((entry) => entry !== null)) as Partial<Settings>;
+}
+
+export async function resetSettings(): Promise<void> {
+  await Promise.all(SETTING_KEYS.map((key) => storage.removeItem(getSettingDefinition(key).storageKey)));
+}
+
 export async function getMaxNewCardsPerDay(): Promise<number> {
   return getSetting('maxNewCardsPerDay');
 }
