@@ -98,16 +98,16 @@ function getSettingDefinition<K extends keyof Settings>(key: K): SettingDefiniti
   return SETTINGS_REGISTRY[key] as SettingDefinition<Settings[K]>;
 }
 
-async function getSetting<K extends keyof Settings>(key: K): Promise<Settings[K]> {
-  const definition = getSettingDefinition(key);
-  const value: unknown = await storage.getItem(definition.storageKey);
-  return definition.validate(value) ? value : getDefaultValue(definition);
-}
-
 const SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as Array<keyof Settings>;
 
 export async function getSettings(): Promise<Settings> {
-  const entries = await Promise.all(SETTING_KEYS.map(async (key) => [key, await getSetting(key)] as const));
+  const entries = await Promise.all(
+    SETTING_KEYS.map(async (key) => {
+      const definition = getSettingDefinition(key);
+      const value: unknown = await storage.getItem(definition.storageKey);
+      return [key, definition.validate(value) ? value : getDefaultValue(definition)] as const;
+    })
+  );
   return Object.fromEntries(entries) as unknown as Settings;
 }
 

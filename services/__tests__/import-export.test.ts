@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/shared/notes';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import type { StoredCard } from '../cards';
 import { exportData, importData, resetAllData } from '../import-export';
 import type { DailyStats, MonthlyStats } from '../stats';
@@ -58,16 +59,16 @@ describe('import-export', () => {
         [cardUuid]: { text: 'Use hash map for O(n) solution' },
       };
 
-      const mockSettings = {
+      const mockSettings = buildSettings({
         maxNewCardsPerDay: 5,
         dayStartHour: 4,
         animationsEnabled: true,
-        theme: 'dark' as const,
+        theme: 'dark',
         resetEditorOnEveryProblem: true,
         resetEditorOnDueReview: true,
         badgeEnabled: true,
-        language: 'en' as const,
-      };
+        language: 'en',
+      });
 
       // Set up storage with mock data
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
@@ -183,16 +184,16 @@ describe('import-export', () => {
         notes: {
           [cardUuid]: { text: 'Use hash map' },
         },
-        settings: {
+        settings: buildSettings({
           maxNewCardsPerDay: 5,
           dayStartHour: 2,
           animationsEnabled: false,
-          theme: 'light' as const,
+          theme: 'light',
           resetEditorOnEveryProblem: true,
           resetEditorOnDueReview: true,
           badgeEnabled: false,
-          language: 'en' as const,
-        },
+          language: 'en',
+        }),
       },
     };
 

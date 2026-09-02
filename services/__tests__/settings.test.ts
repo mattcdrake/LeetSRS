@@ -2,33 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { SETTINGS_CONSTRAINTS, type Settings } from '@/shared/settings';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import { exportSettings, getSettings, resetSettings, updateSettings } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
-
-const EXPECTED_DEFAULT_SETTINGS = {
-  maxNewCardsPerDay: 3,
-  dayStartHour: 0,
-  animationsEnabled: true,
-  theme: 'dark',
-  resetEditorOnEveryProblem: false,
-  resetEditorOnDueReview: false,
-  badgeEnabled: true,
-  language: 'en',
-} satisfies Settings;
 
 describe('settings service', () => {
   beforeEach(() => fakeBrowser.reset());
   afterEach(() => vi.unstubAllGlobals());
 
   it('returns a complete settings object with defaults', async () => {
-    expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
+    expect(await getSettings()).toEqual(buildSettings());
   });
 
   it('returns stored values and defaults invalid stored values', async () => {
     await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
     await storage.setItem(STORAGE_KEYS.theme, 'invalid');
 
-    expect(await getSettings()).toEqual({ ...EXPECTED_DEFAULT_SETTINGS, maxNewCardsPerDay: 12 });
+    expect(await getSettings()).toEqual(buildSettings({ maxNewCardsPerDay: 12 }));
   });
 
   it('uses the browser language when stored language is missing or invalid', async () => {
@@ -41,12 +31,13 @@ describe('settings service', () => {
   it('validates and persists partial changes', async () => {
     await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'light' });
 
-    expect(await getSettings()).toEqual({
-      ...EXPECTED_DEFAULT_SETTINGS,
-      maxNewCardsPerDay: 8,
-      animationsEnabled: false,
-      theme: 'light',
-    });
+    expect(await getSettings()).toEqual(
+      buildSettings({
+        maxNewCardsPerDay: 8,
+        animationsEnabled: false,
+        theme: 'light',
+      })
+    );
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
   });
 
@@ -90,6 +81,6 @@ describe('settings service', () => {
 
     await resetSettings();
     expect(await exportSettings()).toEqual({});
-    expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
+    expect(await getSettings()).toEqual(buildSettings());
   });
 });

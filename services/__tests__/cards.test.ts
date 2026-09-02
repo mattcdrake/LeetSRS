@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/shared/cards';
-import type { Settings } from '@/shared/settings';
 import { requireDefined } from '@/test/utils/assertions';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import {
   addCard,
   delayCard,
@@ -22,19 +22,8 @@ import * as notesModule from '../notes';
 import type { DailyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
-const { MOCK_SETTINGS } = vi.hoisted(() => ({
-  MOCK_SETTINGS: {
-    maxNewCardsPerDay: 3,
-    dayStartHour: 0,
-    animationsEnabled: true,
-    theme: 'dark',
-    resetEditorOnEveryProblem: false,
-    resetEditorOnDueReview: false,
-    badgeEnabled: true,
-    language: 'en',
-  } satisfies Settings,
-}));
-const MOCK_MAX_NEW_CARDS_PER_DAY = MOCK_SETTINGS.maxNewCardsPerDay;
+const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
+const MOCK_MAX_NEW_CARDS_PER_DAY = buildSettings().maxNewCardsPerDay;
 
 // Mock the notes module
 vi.mock('../notes', () => ({
@@ -43,8 +32,12 @@ vi.mock('../notes', () => ({
 
 // Mock the settings module
 vi.mock('../settings', () => ({
-  getSettings: vi.fn(() => Promise.resolve(MOCK_SETTINGS)),
+  getSettings: mockGetSettings,
 }));
+
+beforeEach(() => {
+  mockGetSettings.mockResolvedValue(buildSettings());
+});
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -2047,7 +2040,7 @@ describe('getReviewQueue', () => {
   it('should respect custom max new cards per day setting', async () => {
     // Set custom max new cards per day
     const { getSettings } = await import('../settings');
-    vi.mocked(getSettings).mockResolvedValue({ ...MOCK_SETTINGS, maxNewCardsPerDay: 5 });
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 5 }));
 
     // Create new cards
     for (let i = 1; i <= 10; i++) {
@@ -2282,17 +2275,17 @@ describe('getReviewQueue', () => {
     }
 
     // Start with default (3)
-    vi.mocked(getSettings).mockResolvedValue({ ...MOCK_SETTINGS, maxNewCardsPerDay: 3 });
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 3 }));
     let queue = await getReviewQueue();
     expect(queue.length).toBe(3);
 
     // Increase to 5
-    vi.mocked(getSettings).mockResolvedValue({ ...MOCK_SETTINGS, maxNewCardsPerDay: 5 });
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 5 }));
     queue = await getReviewQueue();
     expect(queue.length).toBe(5);
 
     // Decrease to 2
-    vi.mocked(getSettings).mockResolvedValue({ ...MOCK_SETTINGS, maxNewCardsPerDay: 2 });
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 2 }));
     queue = await getReviewQueue();
     expect(queue.length).toBe(2);
 
