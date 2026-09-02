@@ -38,7 +38,6 @@ describe('settings service', () => {
         theme: 'light',
       })
     );
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
   });
 
   it.each([
@@ -61,7 +60,6 @@ describe('settings service', () => {
   ])('rejects invalid update %#', async (changes, error) => {
     await expect(updateSettings(changes as Partial<Settings>)).rejects.toThrow(error as string);
     expect(await exportSettings()).toEqual({});
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
   it('validates all changes before persisting any of them', async () => {
@@ -69,9 +67,9 @@ describe('settings service', () => {
     expect(await exportSettings()).toEqual({});
   });
 
-  it('does not mark an empty update', async () => {
+  it('ignores an empty update', async () => {
     await updateSettings({});
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    expect(await exportSettings()).toEqual({});
   });
 
   it('exports only valid stored values and resets every setting', async () => {

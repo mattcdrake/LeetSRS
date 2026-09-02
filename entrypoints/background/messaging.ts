@@ -13,12 +13,12 @@ interface MessageExecutorOptions {
 }
 
 export function createBackgroundMessageExecutor(options: MessageExecutorOptions) {
-  // Mutations share this promise chain so each one waits for the previous one
+  // Writes share this promise chain so each one waits for the previous one
   // before touching storage. Reads skip the chain because they do not change
   // data. After a mutation fails, the stored tail is changed back to a resolved
   // promise so the next mutation can still run, while the caller still receives
   // the original error through `result`.
-  let mutationQueue = Promise.resolve();
+  let writeQueue = Promise.resolve();
 
   const execute = <Name extends MessageName>(
     message: BackgroundMessageRegistry[Name],
@@ -29,8 +29,8 @@ export function createBackgroundMessageExecutor(options: MessageExecutorOptions)
 
       const result = await message.handler(data);
 
-      if (message.kind === 'mutation') {
-        if (message.markDataUpdated) await options.markDataUpdated();
+      if (message.kind === 'write') {
+        if (message.affectsSyncedData) await options.markDataUpdated();
         if (message.refreshBadge) await options.refreshBadge();
       }
 
@@ -39,8 +39,8 @@ export function createBackgroundMessageExecutor(options: MessageExecutorOptions)
 
     if (message.kind === 'read') return run();
 
-    const result = mutationQueue.then(run);
-    mutationQueue = result.then(
+    const result = writeQueue.then(run);
+    writeQueue = result.then(
       () => undefined,
       () => undefined
     );

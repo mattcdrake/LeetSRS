@@ -30,7 +30,7 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 - Persist cards as `StoredCard`; serialize and deserialize at the storage boundary.
 - Route schema changes through a new, sequential migration in `services/migrations.ts`.
 - Use `formatLocalDate` and `isDueByDate` with `dayStartHour` for review-day comparisons; do not compare raw timestamps.
-- Ordinary data mutations must call `markDataUpdated()` through `handleDataUpdate`, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
+- Writes that affect synced data must declare `affectsSyncedData: true` in the background message registry, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
 
 ## Commit & Pull Request Guidelines
 

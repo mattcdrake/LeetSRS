@@ -1,7 +1,6 @@
 import { storage } from '#imports';
 import { translations } from '@/shared/i18n';
 import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/shared/settings';
-import { markDataUpdated } from './data-tracker';
 import { detectBrowserLanguage } from './i18n';
 import { STORAGE_KEYS } from './storage-keys';
 
@@ -135,7 +134,6 @@ export async function updateSettings(changes: Partial<Settings>): Promise<void> 
       storage.setItem(getSettingDefinition(key).storageKey, changes[key] as Settings[typeof key])
     )
   );
-  await markDataUpdated();
 }
 
 export async function exportSettings(): Promise<Partial<Settings>> {

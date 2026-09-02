@@ -24,7 +24,8 @@ import { migrations, runMigrations } from '@/services/migrations';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
-import { onMessage } from '@/shared/messages';
+import type { BackgroundMessageRegistry } from '@/shared/messages';
+import { registerBackgroundMessages } from './messaging';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -78,51 +79,111 @@ export default defineBackground(() => {
     }
   });
 
-  const handleRequest = async <T>(handler: () => T | Promise<T>): Promise<T> => {
-    await readyPromise;
-    return handler();
-  };
+  const messages = {
+    ping: { kind: 'read', handler: () => 'PONG' as const },
+    addCard: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ problem }) => addCard(problem),
+    },
+    getAllCards: { kind: 'read', handler: () => getAllCards() },
+    removeCard: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ slug }) => removeCard(slug),
+    },
+    delayCard: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ slug, days }) => delayCard(slug, days),
+    },
+    setPauseStatus: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ slug, paused }) => setPauseStatus(slug, paused),
+    },
+    rateCard: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ input }) => rateCard(input),
+    },
+    getReviewQueue: { kind: 'read', handler: () => getReviewQueue() },
+    getTodayStats: { kind: 'read', handler: () => getTodayStats() },
+    getNote: { kind: 'read', handler: ({ cardId }) => getNote(cardId) },
+    saveNote: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: false,
+      handler: ({ cardId, text }) => saveNote(cardId, text),
+    },
+    deleteNote: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: false,
+      handler: ({ cardId }) => deleteNote(cardId),
+    },
+    getSettings: { kind: 'read', handler: () => getSettings() },
+    updateSettings: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ changes }) => updateSettings(changes),
+    },
+    shouldResetEditor: {
+      kind: 'read',
+      handler: ({ slug, domain }) => shouldResetEditor(slug, domain),
+    },
+    getCardStateStats: { kind: 'read', handler: () => getCardStateStats() },
+    getLastNDaysStats: { kind: 'read', handler: ({ days }) => getLastNDaysStats(days) },
+    getNextNDaysStats: { kind: 'read', handler: ({ days }) => getNextNDaysStats(days) },
+    exportData: { kind: 'read', handler: () => exportData() },
+    importData: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: ({ jsonData }) => importData(jsonData),
+    },
+    resetAllData: {
+      kind: 'write',
+      affectsSyncedData: true,
+      refreshBadge: true,
+      handler: () => resetAllData(),
+    },
+    getGistSyncConfig: { kind: 'read', handler: () => getGistSyncConfig() },
+    setGistSyncConfig: {
+      kind: 'write',
+      affectsSyncedData: false,
+      refreshBadge: false,
+      handler: ({ config }) => setGistSyncConfig(config),
+    },
+    getGistSyncStatus: { kind: 'read', handler: () => getGistSyncStatus() },
+    triggerGistSync: {
+      kind: 'write',
+      affectsSyncedData: false,
+      refreshBadge: true,
+      handler: () => triggerGistSync(),
+    },
+    createNewGist: {
+      kind: 'write',
+      affectsSyncedData: false,
+      refreshBadge: false,
+      handler: () => createNewGist(),
+    },
+    validatePat: { kind: 'read', handler: ({ pat }) => validatePat(pat) },
+    validateGistId: {
+      kind: 'read',
+      handler: ({ gistId, pat }) => validateGistId(gistId, pat),
+    },
+  } satisfies BackgroundMessageRegistry;
 
-  const handleDataUpdate = async <T>(handler: () => Promise<T>): Promise<T> => {
-    return handleRequest(async () => {
-      const result = await handler();
-      await markDataUpdated();
-      await updateBadge();
-      return result;
-    });
-  };
-
-  onMessage('ping', () => handleRequest(() => 'PONG' as const));
-  onMessage('addCard', ({ data }) => handleDataUpdate(() => addCard(data.problem)));
-  onMessage('getAllCards', () => handleRequest(getAllCards));
-  onMessage('removeCard', ({ data }) => handleDataUpdate(() => removeCard(data.slug)));
-  onMessage('delayCard', ({ data }) => handleDataUpdate(() => delayCard(data.slug, data.days)));
-  onMessage('setPauseStatus', ({ data }) => handleDataUpdate(() => setPauseStatus(data.slug, data.paused)));
-  onMessage('rateCard', ({ data }) => handleDataUpdate(() => rateCard(data.input)));
-  onMessage('getReviewQueue', () => handleRequest(getReviewQueue));
-  onMessage('getTodayStats', () => handleRequest(getTodayStats));
-  onMessage('getNote', ({ data }) => handleRequest(() => getNote(data.cardId)));
-  onMessage('saveNote', ({ data }) => handleDataUpdate(() => saveNote(data.cardId, data.text)));
-  onMessage('deleteNote', ({ data }) => handleDataUpdate(() => deleteNote(data.cardId)));
-  onMessage('getSettings', () => handleRequest(getSettings));
-  onMessage('updateSettings', ({ data }) =>
-    handleRequest(async () => {
-      await updateSettings(data.changes);
-      await updateBadge();
-    })
-  );
-  onMessage('shouldResetEditor', ({ data }) => handleRequest(() => shouldResetEditor(data.slug, data.domain)));
-  onMessage('getCardStateStats', () => handleRequest(getCardStateStats));
-  onMessage('getLastNDaysStats', ({ data }) => handleRequest(() => getLastNDaysStats(data.days)));
-  onMessage('getNextNDaysStats', ({ data }) => handleRequest(() => getNextNDaysStats(data.days)));
-  onMessage('exportData', () => handleRequest(exportData));
-  onMessage('importData', ({ data }) => handleRequest(() => importData(data.jsonData)));
-  onMessage('resetAllData', () => handleRequest(resetAllData));
-  onMessage('getGistSyncConfig', () => handleRequest(getGistSyncConfig));
-  onMessage('setGistSyncConfig', ({ data }) => handleRequest(() => setGistSyncConfig(data.config)));
-  onMessage('getGistSyncStatus', () => handleRequest(getGistSyncStatus));
-  onMessage('triggerGistSync', () => handleRequest(triggerGistSync));
-  onMessage('createNewGist', () => handleRequest(createNewGist));
-  onMessage('validatePat', ({ data }) => handleRequest(() => validatePat(data.pat)));
-  onMessage('validateGistId', ({ data }) => handleRequest(() => validateGistId(data.gistId, data.pat)));
+  registerBackgroundMessages(messages, {
+    ready: readyPromise,
+    markDataUpdated,
+    refreshBadge: updateBadge,
+  });
 });

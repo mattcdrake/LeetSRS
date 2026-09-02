@@ -57,8 +57,8 @@ type BackgroundMessage<Name extends MessageName> = {
 } & (
   | { kind: 'read' }
   | {
-      kind: 'mutation';
-      markDataUpdated: boolean;
+      kind: 'write';
+      affectsSyncedData: boolean;
       refreshBadge: boolean;
     }
 );
