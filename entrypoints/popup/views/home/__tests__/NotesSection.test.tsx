@@ -2,35 +2,32 @@
  * @vitest-environment happy-dom
  */
 
+import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useNoteQuery } from '@/hooks/useBackgroundQueries';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import { sendMessage } from '@/shared/messages';
 import type { Note } from '@/shared/notes';
 import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createQueryMock } from '@/test/utils/query-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
 // Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/hooks/useBackgroundQueries')>()),
-  useNoteQuery: vi.fn(),
-}));
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('NotesSection', () => {
   const mockCardId = 'test-card-123';
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
+  let queryClient: QueryClient;
+
+  const seedNote = (note: Note | null) => queryClient.setQueryData(queryKeys.notes.detail(mockCardId), note);
 
   beforeEach(() => {
-    messages.reset().resolve('saveNote', undefined).resolve('deleteNote', undefined);
-    wrapper = createTestWrapper().wrapper;
-
-    // Default mock - no existing note, not loading
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(null) as ReturnType<typeof useNoteQuery>);
+    messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
+    ({ wrapper, queryClient } = createTestWrapper());
+    seedNote(null);
   });
 
   it('should render collapsed by default', () => {
@@ -93,7 +90,7 @@ describe('NotesSection', () => {
       text: 'Existing note',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(mockNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(mockNote);
 
     render(<NotesSection cardId={mockCardId} />, { wrapper });
 
@@ -111,7 +108,7 @@ describe('NotesSection', () => {
       text: 'Existing note',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(mockNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(mockNote);
 
     render(<NotesSection cardId={mockCardId} />, { wrapper });
 
@@ -173,7 +170,7 @@ describe('NotesSection', () => {
       text: 'This is an existing note',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(existingNote);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
 
@@ -216,7 +213,7 @@ describe('NotesSection', () => {
     };
 
     // Setup mock to return original note
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(originalNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(originalNote);
 
     // Setup save mutation to reject
     messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
@@ -299,7 +296,7 @@ describe('NotesSection', () => {
       text: 'This is an existing note',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(existingNote);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
     rerender(<NotesSection cardId={mockCardId} />);
@@ -317,7 +314,7 @@ describe('NotesSection', () => {
       text: 'Note to be deleted',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(existingNote);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
     rerender(<NotesSection cardId={mockCardId} />);
@@ -352,7 +349,7 @@ describe('NotesSection', () => {
       text: 'Note to be deleted',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(existingNote);
 
     const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
     rerender(<NotesSection cardId={mockCardId} />);
@@ -386,7 +383,7 @@ describe('NotesSection', () => {
       text: 'Note being deleted',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(existingNote);
 
     const deletion = createDeferred<void>();
     messages.resolve('deleteNote', deletion.promise);
@@ -409,7 +406,7 @@ describe('NotesSection', () => {
       text: 'Note that fails to delete',
     };
 
-    vi.mocked(useNoteQuery).mockReturnValue(createQueryMock(existingNote) as ReturnType<typeof useNoteQuery>);
+    seedNote(existingNote);
     messages.handle('deleteNote', () => Promise.reject(new Error('Delete failed')));
 
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

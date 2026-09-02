@@ -2,46 +2,38 @@
  * @vitest-environment happy-dom
  */
 
-import type { UseQueryResult } from '@tanstack/react-query';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
+import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createQueryMock } from '@/test/utils/query-mocks';
 import { CardView } from '../CardView';
 
-// Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/hooks/useBackgroundQueries')>()),
-  useCardsQuery: vi.fn(),
-  useTodayStatsQuery: vi.fn(() => ({ data: { streak: 5 } })),
-}));
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('../components/CardNotes', () => ({ CardNotes: () => null }));
 
-import { useCardsQuery } from '@/hooks/useBackgroundQueries';
-
-const mockedUseCardsQuery = vi.mocked(useCardsQuery);
+let queryClient: QueryClient;
 
 const renderWithQueryClient = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
-  });
   return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('CardView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
+  const seedCards = (cards: Card[]) => {
+    messages.resolve('getAllCards', cards);
+    queryClient.setQueryData(queryKeys.cards.all, cards);
+  };
 
   beforeEach(() => {
     messages.reset().resolve('setPauseStatus', createMockCard(State.New)).resolve('removeCard', undefined);
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   });
 
   afterEach(() => {
@@ -49,22 +41,16 @@ describe('CardView', () => {
   });
 
   it('should render loading state', () => {
-    mockedUseCardsQuery.mockReturnValue(
-      createQueryMock<Card[] | undefined>(undefined, {
-        isLoading: true,
-        isSuccess: false,
-        isPending: true,
-        status: 'pending',
-        fetchStatus: 'fetching',
-      }) as UseQueryResult<Card[]>
-    );
-
-    renderWithQueryClient(<CardView />);
+    const pending = createDeferred<Card[]>();
+    messages.resolve('getAllCards', pending.promise);
+    const view = renderWithQueryClient(<CardView />);
     expect(screen.getByText('Loading cards...')).toBeInTheDocument();
+    view.unmount();
+    pending.resolve([]);
   });
 
   it('should render empty state when no cards', () => {
-    mockedUseCardsQuery.mockReturnValue(createQueryMock<Card[]>([]) as UseQueryResult<Card[]>);
+    seedCards([]);
 
     renderWithQueryClient(<CardView />);
     expect(screen.getByText('No cards added yet.')).toBeInTheDocument();
@@ -77,7 +63,7 @@ describe('CardView', () => {
       createMockCard(State.New, { leetcodeId: '100', name: 'Problem 100' }),
     ];
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+    seedCards(cards);
 
     renderWithQueryClient(<CardView />);
 
@@ -95,7 +81,7 @@ describe('CardView', () => {
       createMockCard(State.New, { difficulty: 'Hard' }),
     ];
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+    seedCards(cards);
 
     renderWithQueryClient(<CardView />);
 
@@ -115,7 +101,7 @@ describe('CardView', () => {
       createMockCard(State.New, { paused: false, name: 'Active Problem' }),
     ];
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+    seedCards(cards);
 
     renderWithQueryClient(<CardView />);
 
@@ -145,7 +131,7 @@ describe('CardView', () => {
       },
     });
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+    seedCards([card]);
 
     renderWithQueryClient(<CardView />);
 
@@ -180,7 +166,7 @@ describe('CardView', () => {
       createMockCard(State.New, { name: 'Problem 2', leetcodeId: '2' }),
     ];
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+    seedCards(cards);
 
     renderWithQueryClient(<CardView />);
 
@@ -216,7 +202,7 @@ describe('CardView', () => {
       },
     });
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+    seedCards([card]);
 
     renderWithQueryClient(<CardView />);
 
@@ -242,7 +228,7 @@ describe('CardView', () => {
       createMockCard(State.Relearning, { name: 'Relearning Card' }),
     ];
 
-    mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+    seedCards(cards);
 
     renderWithQueryClient(<CardView />);
 
@@ -261,7 +247,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Longest Substring', leetcodeId: '3' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
 
@@ -287,7 +273,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Problem C', leetcodeId: '789' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
 
@@ -306,7 +292,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Add Two Numbers', leetcodeId: '2' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
 
@@ -325,7 +311,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Longest Substring', leetcodeId: '3' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
 
@@ -355,7 +341,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Longest Substring', leetcodeId: '3' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
 
@@ -369,7 +355,7 @@ describe('CardView', () => {
     });
 
     it('should not show filter input when there are no cards', () => {
-      mockedUseCardsQuery.mockReturnValue(createQueryMock([]) as UseQueryResult<Card[]>);
+      seedCards([]);
 
       renderWithQueryClient(<CardView />);
 
@@ -378,20 +364,14 @@ describe('CardView', () => {
     });
 
     it('should not show filter input during loading', () => {
-      mockedUseCardsQuery.mockReturnValue(
-        createQueryMock<Card[] | undefined>(undefined, {
-          isLoading: true,
-          isSuccess: false,
-          isPending: true,
-          status: 'pending',
-          fetchStatus: 'fetching',
-        }) as UseQueryResult<Card[]>
-      );
-
-      renderWithQueryClient(<CardView />);
+      const pending = createDeferred<Card[]>();
+      messages.resolve('getAllCards', pending.promise);
+      const view = renderWithQueryClient(<CardView />);
 
       expect(screen.queryByPlaceholderText('Filter by name or ID...')).not.toBeInTheDocument();
       expect(screen.getByText('Loading cards...')).toBeInTheDocument();
+      view.unmount();
+      pending.resolve([]);
     });
   });
 
@@ -403,7 +383,7 @@ describe('CardView', () => {
         paused: false,
       });
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+      seedCards([card]);
 
       renderWithQueryClient(<CardView />);
 
@@ -428,7 +408,7 @@ describe('CardView', () => {
         paused: true,
       });
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+      seedCards([card]);
 
       renderWithQueryClient(<CardView />);
 
@@ -452,7 +432,7 @@ describe('CardView', () => {
         slug: 'test-problem',
       });
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+      seedCards([card]);
 
       renderWithQueryClient(<CardView />);
 
@@ -481,7 +461,7 @@ describe('CardView', () => {
         slug: 'test-problem',
       });
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+      seedCards([card]);
 
       renderWithQueryClient(<CardView />);
       fireEvent.click(screen.getByRole('button', { name: /Test Problem/i }));
@@ -503,7 +483,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Problem 2', slug: 'problem-2', leetcodeId: '2' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
       fireEvent.click(screen.getByRole('button', { name: /Problem 1/i }));
@@ -525,7 +505,7 @@ describe('CardView', () => {
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock([card]) as UseQueryResult<Card[]>);
+      seedCards([card]);
 
       // Mock the mutation to reject
       messages.handle('setPauseStatus', () => Promise.reject(new Error('Network error')));
@@ -557,7 +537,7 @@ describe('CardView', () => {
         createMockCard(State.New, { name: 'Problem 2', slug: 'problem-2', leetcodeId: '2' }),
       ];
 
-      mockedUseCardsQuery.mockReturnValue(createQueryMock(cards) as UseQueryResult<Card[]>);
+      seedCards(cards);
 
       renderWithQueryClient(<CardView />);
 

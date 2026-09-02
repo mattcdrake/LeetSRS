@@ -2,15 +2,16 @@
  * @vitest-environment happy-dom
  */
 
+import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { useReviewQueueQuery } from '@/hooks/useBackgroundQueries';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
 
@@ -28,21 +29,6 @@ const mockLocalStorage = {
   key: () => null,
 };
 
-// Mock the hooks
-vi.mock('@/hooks/useBackgroundQueries', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/hooks/useBackgroundQueries')>()),
-  useReviewQueueQuery: vi.fn(),
-  useSettingsQuery: vi.fn(() => ({ data: { animationsEnabled: false } })),
-  queryKeys: {
-    cards: {
-      all: ['cards'],
-      reviewQueue: ['cards', 'reviewQueue'],
-    },
-    stats: {
-      today: ['stats', 'today'],
-    },
-  },
-}));
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 // Mock the child components
@@ -131,6 +117,8 @@ describe('ReviewQueue', () => {
   const mockMutateAsync = vi.fn();
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
+  let queryClient: QueryClient;
+  const seedQueue = (cards: Card[]) => queryClient.setQueryData(queryKeys.cards.reviewQueue, cards);
 
   beforeEach(() => {
     // Set up localStorage mock
@@ -143,18 +131,16 @@ describe('ReviewQueue', () => {
     messages
       .reset()
       .handle('rateCard', mockMutateAsync)
+      .resolve('getReviewQueue', mockCards)
+      .resolve('getSettings', buildSettings({ animationsEnabled: false }))
       .resolve('removeCard', undefined)
       .resolve('delayCard', mockCards[0])
       .resolve('setPauseStatus', mockCards[0]);
     mockMutateAsync.mockReset();
 
-    const testWrapper = createTestWrapper();
-    wrapper = testWrapper.wrapper;
-
-    // Default mock - queue with cards
-    vi.mocked(useReviewQueueQuery).mockReturnValue(
-      createQueryMock(mockCards) as ReturnType<typeof useReviewQueueQuery>
-    );
+    ({ wrapper, queryClient } = createTestWrapper());
+    seedQueue(mockCards);
+    queryClient.setQueryData(queryKeys.settings.all, buildSettings({ animationsEnabled: false }));
 
     mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });
@@ -174,7 +160,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should show empty state when no cards to review', async () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(createQueryMock([]) as ReturnType<typeof useReviewQueueQuery>);
+      seedQueue([]);
 
       render(<ReviewQueue />, { wrapper });
 
@@ -334,7 +320,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should not crash when queue is empty and handleRating is called', async () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(createQueryMock([]) as ReturnType<typeof useReviewQueueQuery>);
+      seedQueue([]);
 
       render(<ReviewQueue />, { wrapper });
 
@@ -441,7 +427,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should not crash when queue is empty and handleDelete is called', async () => {
-      vi.mocked(useReviewQueueQuery).mockReturnValue(createQueryMock([]) as ReturnType<typeof useReviewQueueQuery>);
+      seedQueue([]);
 
       render(<ReviewQueue />, { wrapper });
 

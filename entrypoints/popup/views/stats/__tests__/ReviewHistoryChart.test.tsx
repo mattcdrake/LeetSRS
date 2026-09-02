@@ -2,13 +2,13 @@
  * @vitest-environment happy-dom
  */
 
-import type { UseQueryResult } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useLastNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
+import { describe, expect, it, vi } from 'vitest';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import type { DailyStats } from '@/services/stats';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { sendMessage } from '@/shared/messages';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewHistoryChart } from '../ReviewHistoryChart';
 
@@ -21,13 +21,10 @@ vi.mock('react-chartjs-2', () => ({
   ),
 }));
 
-// Mock the query hook
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useLastNDaysStatsQuery: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('Bar Chart (Last 30 Days Review History)', () => {
-  const { wrapper } = createTestWrapper();
+  const messages = createMessageMock(vi.mocked(sendMessage));
 
   // Default mock data
   const mockLast30DaysStats: DailyStats[] = [
@@ -59,16 +56,10 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     },
   ];
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    // Default mock - return stats data
-    vi.mocked(useLastNDaysStatsQuery).mockReturnValue(
-      createQueryMock(mockLast30DaysStats) as UseQueryResult<DailyStats[]>
-    );
-  });
-
-  const renderChart = () => {
+  const renderChart = (data: DailyStats[] = mockLast30DaysStats) => {
+    messages.reset().resolve('getLastNDaysStats', data);
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(queryKeys.stats.lastNDays(30), data);
     return render(<ReviewHistoryChart />, { wrapper });
   };
 
@@ -131,11 +122,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
   });
 
   it('should handle empty data gracefully', () => {
-    vi.mocked(useLastNDaysStatsQuery).mockReturnValue(
-      createQueryMock<DailyStats[] | undefined>(undefined) as UseQueryResult<DailyStats[]>
-    );
-
-    renderChart();
+    renderChart([]);
 
     const chart = screen.getByTestId('bar-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
@@ -150,7 +137,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
   it('should request exactly 30 days of data', () => {
     renderChart();
 
-    expect(useLastNDaysStatsQuery).toHaveBeenCalledWith(30);
+    expect(sendMessage).toHaveBeenCalledWith('getLastNDaysStats', { days: 30 });
   });
 
   it('should apply correct CSS classes to review history section', () => {

@@ -39,25 +39,25 @@ Stop fabricating `UseQueryResult` and `UseMutationResult` objects in tests. Exer
 
 ## Query migration
 
-- [ ] Migrate `entrypoints/popup/views/card/__tests__/CardView.test.tsx` from `createQueryMock` to seeded cache data or controlled `getAllCards` responses.
-- [ ] Migrate `entrypoints/popup/views/home/__tests__/ReviewQueue.test.tsx` from `createQueryMock` to seeded queue/settings data or controlled messages.
-- [ ] Migrate `entrypoints/popup/views/home/__tests__/StatsBar.test.tsx` to the real review-queue query.
-- [ ] Migrate `entrypoints/popup/components/__tests__/StreakCounter.test.tsx` to the real today-stats query.
-- [ ] Migrate `entrypoints/popup/views/stats/__tests__/CardDistributionChart.test.tsx` to the real card-state-stats query.
-- [ ] Migrate `entrypoints/popup/views/stats/__tests__/ReviewHistoryChart.test.tsx` to the real last-N-days query.
-- [ ] Migrate `entrypoints/popup/views/stats/__tests__/UpcomingReviewsChart.test.tsx` to the real next-N-days query.
-- [ ] Migrate the note-related tests above from `createQueryMock` while migrating their mutations.
-- [ ] Model loading with unresolved deferred responses and errors with rejected responses instead of overriding query status fields.
-- [ ] Remove all `UseQueryResult` and query-hook `ReturnType` assertions from tests.
-- [ ] Delete `createQueryMock` and then delete `test/utils/query-mocks.ts`.
+- [x] Migrate `entrypoints/popup/views/card/__tests__/CardView.test.tsx` from `createQueryMock` to seeded cache data or controlled `getAllCards` responses.
+- [x] Migrate `entrypoints/popup/views/home/__tests__/ReviewQueue.test.tsx` from `createQueryMock` to seeded queue/settings data or controlled messages.
+- [x] Migrate `entrypoints/popup/views/home/__tests__/StatsBar.test.tsx` to the real review-queue query.
+- [x] Migrate `entrypoints/popup/components/__tests__/StreakCounter.test.tsx` to the real today-stats query.
+- [x] Migrate `entrypoints/popup/views/stats/__tests__/CardDistributionChart.test.tsx` to the real card-state-stats query.
+- [x] Migrate `entrypoints/popup/views/stats/__tests__/ReviewHistoryChart.test.tsx` to the real last-N-days query.
+- [x] Migrate `entrypoints/popup/views/stats/__tests__/UpcomingReviewsChart.test.tsx` to the real next-N-days query.
+- [x] Migrate the note-related tests above from `createQueryMock` while migrating their mutations.
+- [x] Model loading with unresolved deferred responses and errors with rejected responses instead of overriding query status fields.
+- [x] Remove all `UseQueryResult` and query-hook `ReturnType` assertions from tests.
+- [x] Delete `createQueryMock` and then delete `test/utils/query-mocks.ts`.
 
 ## Test ownership cleanup
 
 - [ ] Keep protocol wiring, mutation invalidation, and query-key behavior covered in `hooks/__tests__/useBackgroundQueries.test.tsx`.
 - [ ] Remove duplicate low-level hook assertions from component tests once the real hooks make them redundant; retain user-visible behavior and message-payload assertions.
 - [ ] Review mocked child components after each migration and keep only mocks that isolate expensive or unrelated UI behavior.
-- [ ] Search for remaining full-module mocks of `@/hooks/useBackgroundQueries` and justify or remove each one.
-- [ ] Search for remaining casts to React Query result types and eliminate them where possible.
+- [x] Search for remaining full-module mocks of `@/hooks/useBackgroundQueries` and justify or remove each one.
+- [x] Search for remaining casts to React Query result types and eliminate them where possible.
 
 ## Suggested order
 

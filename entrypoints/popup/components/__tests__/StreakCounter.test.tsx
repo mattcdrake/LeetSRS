@@ -1,185 +1,61 @@
-/**
- * @vitest-environment happy-dom
- */
-
-import type { UseQueryResult } from '@tanstack/react-query';
+/** @vitest-environment happy-dom */
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { useTodayStatsQuery } from '@/hooks/useBackgroundQueries';
+import { queryKeys } from '@/hooks/useBackgroundQueries';
 import type { DailyStats } from '@/services/stats';
-import { createQueryMock } from '@/test/utils/query-mocks';
+import { sendMessage } from '@/shared/messages';
+import { createDeferred } from '@/test/utils/deferred';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { StreakCounter } from '../StreakCounter';
 
-// Mock the query hook
-vi.mock('@/hooks/useBackgroundQueries', () => ({
-  useTodayStatsQuery: vi.fn(),
-}));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+
+const stats = (streak: number): DailyStats => ({
+  date: '2024-03-15',
+  totalReviews: 5,
+  gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 2, [Rating.Easy]: 1 },
+  newCards: 2,
+  reviewedCards: 3,
+  streak,
+});
 
 describe('StreakCounter', () => {
-  const { wrapper } = createTestWrapper();
+  const messages = createMessageMock(vi.mocked(sendMessage));
 
-  const renderStreakCounter = () => {
+  const renderStats = (data: DailyStats | null) => {
+    messages.reset().resolve('getTodayStats', data);
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(queryKeys.stats.today, data);
     return render(<StreakCounter />, { wrapper });
   };
 
-  it('should not render when streak is 0', () => {
-    const mockStats: DailyStats = {
-      date: '2024-03-15',
-      totalReviews: 0,
-      gradeBreakdown: {
-        [Rating.Again]: 0,
-        [Rating.Hard]: 0,
-        [Rating.Good]: 0,
-        [Rating.Easy]: 0,
-      },
-      newCards: 0,
-      reviewedCards: 0,
-      streak: 0,
-    };
-
-    vi.mocked(useTodayStatsQuery).mockReturnValue(createQueryMock(mockStats) as UseQueryResult<DailyStats | null>);
-
-    const { container } = renderStreakCounter();
-    expect(container.firstChild).toBeNull();
+  it.each([null, stats(0)])('does not render without an active streak', (data) => {
+    expect(renderStats(data).container.firstChild).toBeNull();
   });
 
-  it('should not render when todayStats is null', () => {
-    vi.mocked(useTodayStatsQuery).mockReturnValue(createQueryMock(null) as UseQueryResult<DailyStats | null>);
-
-    const { container } = renderStreakCounter();
-    expect(container.firstChild).toBeNull();
-  });
-
-  it('should render streak when greater than 0', () => {
-    const mockStats: DailyStats = {
-      date: '2024-03-15',
-      totalReviews: 5,
-      gradeBreakdown: {
-        [Rating.Again]: 1,
-        [Rating.Hard]: 1,
-        [Rating.Good]: 2,
-        [Rating.Easy]: 1,
-      },
-      newCards: 2,
-      reviewedCards: 3,
-      streak: 5,
-    };
-
-    vi.mocked(useTodayStatsQuery).mockReturnValue(createQueryMock(mockStats) as UseQueryResult<DailyStats | null>);
-
-    renderStreakCounter();
-
-    expect(screen.getByText('5')).toBeInTheDocument();
-  });
-
-  it('should render fire icon', () => {
-    const mockStats: DailyStats = {
-      date: '2024-03-15',
-      totalReviews: 10,
-      gradeBreakdown: {
-        [Rating.Again]: 2,
-        [Rating.Hard]: 2,
-        [Rating.Good]: 4,
-        [Rating.Easy]: 2,
-      },
-      newCards: 3,
-      reviewedCards: 7,
-      streak: 10,
-    };
-
-    vi.mocked(useTodayStatsQuery).mockReturnValue(createQueryMock(mockStats) as UseQueryResult<DailyStats | null>);
-
-    const { container } = renderStreakCounter();
-
-    // Check for fire icon by class
-    const fireIcon = container.querySelector('svg');
-    expect(fireIcon).toBeInTheDocument();
-    expect(fireIcon).toHaveClass('text-orange-500');
-  });
-
-  it('should display large streak numbers correctly', () => {
-    const mockStats: DailyStats = {
-      date: '2024-03-15',
-      totalReviews: 100,
-      gradeBreakdown: {
-        [Rating.Again]: 10,
-        [Rating.Hard]: 20,
-        [Rating.Good]: 50,
-        [Rating.Easy]: 20,
-      },
-      newCards: 10,
-      reviewedCards: 90,
-      streak: 365,
-    };
-
-    vi.mocked(useTodayStatsQuery).mockReturnValue(createQueryMock(mockStats) as UseQueryResult<DailyStats | null>);
-
-    renderStreakCounter();
-
+  it('renders and styles the streak', () => {
+    const { container } = renderStats(stats(365));
     expect(screen.getByText('365')).toBeInTheDocument();
+    expect(container.querySelector('svg')).toHaveClass('text-orange-500');
+    expect(container.firstChild).toHaveClass('flex', 'items-center', 'gap-1', 'text-sm', 'font-medium', 'text-primary');
   });
 
-  it('should apply correct styling classes', () => {
-    const mockStats: DailyStats = {
-      date: '2024-03-15',
-      totalReviews: 5,
-      gradeBreakdown: {
-        [Rating.Again]: 1,
-        [Rating.Hard]: 1,
-        [Rating.Good]: 2,
-        [Rating.Easy]: 1,
-      },
-      newCards: 2,
-      reviewedCards: 3,
-      streak: 7,
-    };
-
-    vi.mocked(useTodayStatsQuery).mockReturnValue(createQueryMock(mockStats) as UseQueryResult<DailyStats | null>);
-
-    const { container } = renderStreakCounter();
-
-    const streakContainer = container.firstChild as HTMLElement;
-    expect(streakContainer).toHaveClass('flex', 'items-center', 'gap-1', 'text-sm', 'font-medium', 'text-primary');
+  it('renders nothing while loading', () => {
+    const pending = createDeferred<DailyStats | null>();
+    messages.reset().resolve('getTodayStats', pending.promise);
+    const { wrapper } = createTestWrapper();
+    const view = render(<StreakCounter />, { wrapper });
+    expect(view.container.firstChild).toBeNull();
+    view.unmount();
+    pending.resolve(null);
   });
 
-  it('should handle loading state gracefully', () => {
-    vi.mocked(useTodayStatsQuery).mockReturnValue(
-      createQueryMock<DailyStats | null>(null, {
-        isLoading: true,
-        isPending: true,
-        isSuccess: false,
-        isFetching: true,
-        isFetched: false,
-        status: 'pending',
-        fetchStatus: 'fetching',
-        dataUpdatedAt: 0,
-      }) as UseQueryResult<DailyStats | null>
-    );
-
-    const { container } = renderStreakCounter();
-    expect(container.firstChild).toBeNull();
-  });
-
-  it('should handle error state gracefully', () => {
-    const error = new Error('Failed to fetch stats');
-    vi.mocked(useTodayStatsQuery).mockReturnValue(
-      createQueryMock<DailyStats | null>(null, {
-        error,
-        isError: true,
-        isSuccess: false,
-        isLoadingError: true,
-        status: 'error',
-        errorUpdatedAt: Date.now(),
-        dataUpdatedAt: 0,
-        failureReason: error,
-        failureCount: 1,
-        errorUpdateCount: 1,
-      }) as UseQueryResult<DailyStats | null>
-    );
-
-    const { container } = renderStreakCounter();
-    expect(container.firstChild).toBeNull();
+  it('renders nothing after an error', async () => {
+    messages.reset().handle('getTodayStats', () => Promise.reject(new Error('Failed to fetch stats')));
+    const { wrapper } = createTestWrapper();
+    const view = render(<StreakCounter />, { wrapper });
+    expect(view.container.firstChild).toBeNull();
   });
 });
