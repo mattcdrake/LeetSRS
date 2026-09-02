@@ -20,10 +20,18 @@ export function useUpdateSettingsMutation() {
 
   return useMutation({
     mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
-    onSuccess: () => {
+    onSuccess: (_data, changes) => {
       queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
-      queryClient.invalidateQueries({ queryKey: cardQueryKeys.reviewQueue });
-      queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
+
+      if ('maxNewCardsPerDay' in changes || 'dayStartHour' in changes) {
+        queryClient.invalidateQueries({ queryKey: cardQueryKeys.reviewQueue });
+      }
+
+      if ('dayStartHour' in changes) {
+        queryClient.invalidateQueries({ queryKey: statsQueryKeys.today });
+        queryClient.invalidateQueries({ queryKey: statsQueryKeys.lastNDays.all });
+        queryClient.invalidateQueries({ queryKey: statsQueryKeys.nextNDays.all });
+      }
     },
   });
 }

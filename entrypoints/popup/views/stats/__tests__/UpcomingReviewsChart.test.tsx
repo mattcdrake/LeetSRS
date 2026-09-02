@@ -45,7 +45,7 @@ describe('UpcomingReviewsChart', () => {
   const renderChart = (data: UpcomingReviewStats[] = mockNext14DaysStats) => {
     messages.reset().resolve('getNextNDaysStats', data);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(statsQueryKeys.nextNDays(14), data);
+    queryClient.setQueryData(statsQueryKeys.nextNDays.detail(14), data);
     return render(<UpcomingReviewsChart />, { wrapper });
   };
 

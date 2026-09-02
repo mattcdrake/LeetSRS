@@ -59,7 +59,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
   const renderChart = (data: DailyStats[] = mockLast30DaysStats) => {
     messages.reset().resolve('getLastNDaysStats', data);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(statsQueryKeys.lastNDays(30), data);
+    queryClient.setQueryData(statsQueryKeys.lastNDays.detail(30), data);
     return render(<ReviewHistoryChart />, { wrapper });
   };
 

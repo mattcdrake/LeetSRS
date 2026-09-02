@@ -5,8 +5,14 @@ export const statsQueryKeys = {
   all: ['stats'] as const,
   today: ['stats', 'today'] as const,
   cardState: ['stats', 'cardState'] as const,
-  lastNDays: (days: number) => ['stats', 'lastNDays', days] as const,
-  nextNDays: (days: number) => ['stats', 'nextNDays', days] as const,
+  lastNDays: {
+    all: ['stats', 'lastNDays'] as const,
+    detail: (days: number) => ['stats', 'lastNDays', days] as const,
+  },
+  nextNDays: {
+    all: ['stats', 'nextNDays'] as const,
+    detail: (days: number) => ['stats', 'nextNDays', days] as const,
+  },
 };
 
 export function useTodayStatsQuery() {
@@ -25,14 +31,14 @@ export function useCardStateStatsQuery() {
 
 export function useLastNDaysStatsQuery(days: number) {
   return useQuery({
-    queryKey: statsQueryKeys.lastNDays(days),
+    queryKey: statsQueryKeys.lastNDays.detail(days),
     queryFn: () => sendMessage('getLastNDaysStats', { days }),
   });
 }
 
 export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
-    queryKey: statsQueryKeys.nextNDays(days),
+    queryKey: statsQueryKeys.nextNDays.detail(days),
     queryFn: () => sendMessage('getNextNDaysStats', { days }),
   });
 }

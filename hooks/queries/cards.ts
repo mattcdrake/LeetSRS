@@ -34,7 +34,8 @@ export function useAddCardMutation() {
     mutationFn: (problem: ProblemDescriptor) => sendMessage('addCard', { problem }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
-      queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.cardState });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.nextNDays.all });
     },
   });
 }
@@ -46,7 +47,8 @@ export function useRemoveCardMutation() {
     mutationFn: (slug: string) => sendMessage('removeCard', { slug }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
-      queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.cardState });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.nextNDays.all });
     },
   });
 }
@@ -77,6 +79,7 @@ export function useDelayCardMutation() {
     mutationFn: ({ slug, days }) => sendMessage('delayCard', { slug, days }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.nextNDays.all });
     },
   });
 }
@@ -95,6 +98,7 @@ export function usePauseCardMutation() {
     mutationFn: ({ slug, paused }) => sendMessage('setPauseStatus', { slug, paused }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.nextNDays.all });
     },
   });
 }
