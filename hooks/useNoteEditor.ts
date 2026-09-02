@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/useBackgroundQueries';
+import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/hooks/queries/notes';
 import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import { NOTES_MAX_LENGTH } from '@/shared/notes';
 

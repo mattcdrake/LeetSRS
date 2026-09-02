@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { useSettingsQuery } from '@/hooks/useBackgroundQueries';
+import { useSettingsQuery } from '@/hooks/queries/settings';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';

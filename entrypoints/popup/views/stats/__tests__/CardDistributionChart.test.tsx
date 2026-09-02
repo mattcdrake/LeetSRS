@@ -5,7 +5,7 @@
 import { render, screen } from '@testing-library/react';
 import { State as FsrsState } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { statsQueryKeys } from '@/hooks/queries/stats';
 import { sendMessage } from '@/shared/messages';
 import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -41,7 +41,7 @@ describe('CardDistributionChart', () => {
   const renderChart = (data: Record<FsrsState, number> = mockCardStateStats) => {
     messages.reset().resolve('getCardStateStats', data);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(queryKeys.stats.cardState, data);
+    queryClient.setQueryData(statsQueryKeys.cardState, data);
     return render(<CardDistributionChart />, { wrapper });
   };
 

@@ -8,14 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
-import {
-  queryKeys,
-  useCardsQuery,
-  useDeleteNoteMutation,
-  usePauseCardMutation,
-  useRateCardMutation,
-  useSaveNoteMutation,
-} from '../useBackgroundQueries';
+import { cardQueryKeys, useCardsQuery, usePauseCardMutation, useRateCardMutation } from '../queries/cards';
+import { noteQueryKeys, useDeleteNoteMutation, useSaveNoteMutation } from '../queries/notes';
 
 vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
@@ -173,7 +167,7 @@ describe('useSaveNoteMutation', () => {
 
     // Verify that invalidateQueries was called with the correct query key
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.notes.detail(cardId),
+      queryKey: noteQueryKeys.detail(cardId),
     });
 
     // Clean up the spy
@@ -226,7 +220,7 @@ describe('useDeleteNoteMutation', () => {
 
     // Verify that invalidateQueries was called with the correct query key
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.notes.detail(cardId),
+      queryKey: noteQueryKeys.detail(cardId),
     });
 
     // Clean up the spy
@@ -327,7 +321,7 @@ describe('usePauseCardMutation', () => {
 
     // Verify that all card queries were invalidated
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: ['cards'],
+      queryKey: cardQueryKeys.all,
     });
 
     invalidateQueriesSpy.mockRestore();

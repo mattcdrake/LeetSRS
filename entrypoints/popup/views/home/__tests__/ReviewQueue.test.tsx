@@ -6,7 +6,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { cardQueryKeys } from '@/hooks/queries/cards';
+import { settingsQueryKeys } from '@/hooks/queries/settings';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -118,7 +119,7 @@ describe('ReviewQueue', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
-  const seedQueue = (cards: Card[]) => queryClient.setQueryData(queryKeys.cards.reviewQueue, cards);
+  const seedQueue = (cards: Card[]) => queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
 
   beforeEach(() => {
     // Set up localStorage mock
@@ -140,7 +141,7 @@ describe('ReviewQueue', () => {
 
     ({ wrapper, queryClient } = createTestWrapper());
     seedQueue(mockCards);
-    queryClient.setQueryData(queryKeys.settings.all, buildSettings({ animationsEnabled: false }));
+    queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ animationsEnabled: false }));
 
     mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });

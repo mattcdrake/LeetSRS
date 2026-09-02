@@ -1,31 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { sendMessage } from '@/shared/messages';
-import { queryKeys } from '../useBackgroundQueries';
+
+export const statsQueryKeys = {
+  all: ['stats'] as const,
+  today: ['stats', 'today'] as const,
+  cardState: ['stats', 'cardState'] as const,
+  lastNDays: (days: number) => ['stats', 'lastNDays', days] as const,
+  nextNDays: (days: number) => ['stats', 'nextNDays', days] as const,
+};
 
 export function useTodayStatsQuery() {
   return useQuery({
-    queryKey: queryKeys.stats.today,
+    queryKey: statsQueryKeys.today,
     queryFn: () => sendMessage('getTodayStats'),
   });
 }
 
 export function useCardStateStatsQuery() {
   return useQuery({
-    queryKey: queryKeys.stats.cardState,
+    queryKey: statsQueryKeys.cardState,
     queryFn: () => sendMessage('getCardStateStats'),
   });
 }
 
 export function useLastNDaysStatsQuery(days: number) {
   return useQuery({
-    queryKey: queryKeys.stats.lastNDays(days),
+    queryKey: statsQueryKeys.lastNDays(days),
     queryFn: () => sendMessage('getLastNDaysStats', { days }),
   });
 }
 
 export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
-    queryKey: queryKeys.stats.nextNDays(days),
+    queryKey: statsQueryKeys.nextNDays(days),
     queryFn: () => sendMessage('getNextNDaysStats', { days }),
   });
 }

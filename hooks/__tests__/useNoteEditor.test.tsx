@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { noteQueryKeys } from '@/hooks/queries/notes';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
 import { createDeferred } from '@/test/utils/deferred';
@@ -17,7 +17,7 @@ describe('useNoteEditor', () => {
 
   const renderEditor = (note: Note | null = null) => {
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(queryKeys.notes.detail(cardId), note);
+    queryClient.setQueryData(noteQueryKeys.detail(cardId), note);
     return renderHook(() => useNoteEditor(cardId), { wrapper });
   };
 

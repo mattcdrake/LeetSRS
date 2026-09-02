@@ -5,7 +5,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { noteQueryKeys } from '@/hooks/queries/notes';
 import { sendMessage } from '@/shared/messages';
 import type { Note } from '@/shared/notes';
 import { createDeferred } from '@/test/utils/deferred';
@@ -22,7 +22,7 @@ describe('NotesSection', () => {
   let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
   let queryClient: QueryClient;
 
-  const seedNote = (note: Note | null) => queryClient.setQueryData(queryKeys.notes.detail(mockCardId), note);
+  const seedNote = (note: Note | null) => queryClient.setQueryData(noteQueryKeys.detail(mockCardId), note);
 
   beforeEach(() => {
     messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);

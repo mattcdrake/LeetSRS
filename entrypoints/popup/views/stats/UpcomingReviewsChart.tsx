@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { useNextNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
+import { useNextNDaysStatsQuery } from '@/hooks/queries/stats';
 import { useI18n } from '../../contexts/I18nContext';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);

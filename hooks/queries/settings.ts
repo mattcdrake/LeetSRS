@@ -1,11 +1,16 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { sendMessage } from '@/shared/messages';
 import type { Settings } from '@/shared/settings';
-import { queryKeys } from '../useBackgroundQueries';
+import { cardQueryKeys } from './cards';
+import { statsQueryKeys } from './stats';
+
+export const settingsQueryKeys = {
+  all: ['settings'] as const,
+};
 
 export function useSettingsQuery() {
   return useSuspenseQuery({
-    queryKey: queryKeys.settings.all,
+    queryKey: settingsQueryKeys.all,
     queryFn: () => sendMessage('getSettings'),
   });
 }
@@ -16,9 +21,9 @@ export function useUpdateSettingsMutation() {
   return useMutation({
     mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
-      queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
+      queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: cardQueryKeys.reviewQueue });
+      queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
     },
   });
 }

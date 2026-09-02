@@ -4,7 +4,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { statsQueryKeys } from '@/hooks/queries/stats';
 import type { UpcomingReviewStats } from '@/services/stats';
 import { sendMessage } from '@/shared/messages';
 import { createDeferred } from '@/test/utils/deferred';
@@ -45,7 +45,7 @@ describe('UpcomingReviewsChart', () => {
   const renderChart = (data: UpcomingReviewStats[] = mockNext14DaysStats) => {
     messages.reset().resolve('getNextNDaysStats', data);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(queryKeys.stats.nextNDays(14), data);
+    queryClient.setQueryData(statsQueryKeys.nextNDays(14), data);
     return render(<UpcomingReviewsChart />, { wrapper });
   };
 

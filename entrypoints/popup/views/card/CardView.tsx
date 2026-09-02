@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
 import { FaCirclePause, FaMagnifyingGlass, FaPlay, FaTrash, FaXmark } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
-import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/useBackgroundQueries';
+import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/queries/cards';
 import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import type { Card } from '@/shared/cards';
 import type { Translations } from '@/shared/i18n';

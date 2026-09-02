@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { statsQueryKeys } from '@/hooks/queries/stats';
 import type { DailyStats } from '@/services/stats';
 import { sendMessage } from '@/shared/messages';
 import { createDeferred } from '@/test/utils/deferred';
@@ -27,7 +27,7 @@ describe('StreakCounter', () => {
   const renderStats = (data: DailyStats | null) => {
     messages.reset().resolve('getTodayStats', data);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(queryKeys.stats.today, data);
+    queryClient.setQueryData(statsQueryKeys.today, data);
     return render(<StreakCounter />, { wrapper });
   };
 

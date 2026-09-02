@@ -5,7 +5,7 @@
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { statsQueryKeys } from '@/hooks/queries/stats';
 import type { DailyStats } from '@/services/stats';
 import { sendMessage } from '@/shared/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -59,7 +59,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
   const renderChart = (data: DailyStats[] = mockLast30DaysStats) => {
     messages.reset().resolve('getLastNDaysStats', data);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(queryKeys.stats.lastNDays(30), data);
+    queryClient.setQueryData(statsQueryKeys.lastNDays(30), data);
     return render(<ReviewHistoryChart />, { wrapper });
   };
 

@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { cardQueryKeys } from '@/hooks/queries/cards';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { requireDefined } from '@/test/utils/assertions';
@@ -28,7 +28,7 @@ describe('CardView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   const seedCards = (cards: Card[]) => {
     messages.resolve('getAllCards', cards);
-    queryClient.setQueryData(queryKeys.cards.all, cards);
+    queryClient.setQueryData(cardQueryKeys.all, cards);
   };
 
   beforeEach(() => {
