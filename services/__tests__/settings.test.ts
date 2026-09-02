@@ -2,6 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import {
+  DEFAULT_ANIMATIONS_ENABLED,
+  DEFAULT_BADGE_ENABLED,
+  DEFAULT_DAY_START_HOUR,
   DEFAULT_MAX_NEW_CARDS_PER_DAY,
   DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
   DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
@@ -15,12 +18,14 @@ import {
   getMaxNewCardsPerDay,
   getResetEditorOnDueReview,
   getResetEditorOnEveryProblem,
+  getSettings,
   getTheme,
   setAnimationsEnabled,
   setMaxNewCardsPerDay,
   setResetEditorOnDueReview,
   setResetEditorOnEveryProblem,
   setTheme,
+  updateSettings,
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 
@@ -31,6 +36,75 @@ describe('Settings Service', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('getSettings', () => {
+    it('returns a complete settings object with defaults', async () => {
+      expect(await getSettings()).toEqual({
+        maxNewCardsPerDay: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+        dayStartHour: DEFAULT_DAY_START_HOUR,
+        animationsEnabled: DEFAULT_ANIMATIONS_ENABLED,
+        theme: DEFAULT_THEME,
+        resetEditorOnEveryProblem: DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+        resetEditorOnDueReview: DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
+        badgeEnabled: DEFAULT_BADGE_ENABLED,
+        language: 'en',
+      });
+    });
+
+    it('returns stored values and falls back for invalid values', async () => {
+      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
+      await storage.setItem(STORAGE_KEYS.theme, 'invalid');
+
+      const settings = await getSettings();
+
+      expect(settings.maxNewCardsPerDay).toBe(12);
+      expect(settings.theme).toBe(DEFAULT_THEME);
+    });
+  });
+
+  describe('updateSettings', () => {
+    it('validates and persists partial changes', async () => {
+      await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'light' });
+
+      expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBe(8);
+      expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBe(false);
+      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
+      expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toBeNull();
+    });
+
+    it('does nothing for an empty update', async () => {
+      await updateSettings({});
+
+      expect(await getSettings()).toEqual({
+        maxNewCardsPerDay: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+        dayStartHour: DEFAULT_DAY_START_HOUR,
+        animationsEnabled: DEFAULT_ANIMATIONS_ENABLED,
+        theme: DEFAULT_THEME,
+        resetEditorOnEveryProblem: DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+        resetEditorOnDueReview: DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
+        badgeEnabled: DEFAULT_BADGE_ENABLED,
+        language: 'en',
+      });
+    });
+
+    it('does not persist any changes when validation fails', async () => {
+      await expect(
+        updateSettings({
+          animationsEnabled: false,
+          maxNewCardsPerDay: MAX_NEW_CARDS_PER_DAY + 1,
+        })
+      ).rejects.toThrow(`Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`);
+
+      expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
+    });
+
+    it('rejects invalid runtime values', async () => {
+      await expect(
+        updateSettings({ badgeEnabled: 'yes' } as unknown as Parameters<typeof updateSettings>[0])
+      ).rejects.toThrow('Badge enabled must be a boolean');
+    });
   });
 
   describe('getMaxNewCardsPerDay', () => {

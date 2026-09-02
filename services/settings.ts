@@ -115,6 +115,31 @@ async function setSetting<K extends keyof Settings>(key: K, value: Settings[K]):
   await storage.setItem(definition.storageKey, value);
 }
 
+const SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as Array<keyof Settings>;
+
+export async function getSettings(): Promise<Settings> {
+  const entries = await Promise.all(SETTING_KEYS.map(async (key) => [key, await getSetting(key)] as const));
+  return Object.fromEntries(entries) as unknown as Settings;
+}
+
+export async function updateSettings(changes: Partial<Settings>): Promise<void> {
+  const updates = SETTING_KEYS.flatMap((key) => {
+    if (!Object.hasOwn(changes, key)) {
+      return [];
+    }
+
+    const value: unknown = changes[key];
+    const definition = getSettingDefinition(key);
+    if (!definition.validate(value)) {
+      throw new Error(definition.validationError(value));
+    }
+
+    return [{ definition, value }];
+  });
+
+  await Promise.all(updates.map(({ definition, value }) => storage.setItem(definition.storageKey, value)));
+}
+
 export async function getMaxNewCardsPerDay(): Promise<number> {
   return getSetting('maxNewCardsPerDay');
 }
