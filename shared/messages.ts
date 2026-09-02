@@ -58,7 +58,7 @@ type BackgroundMessage<Name extends MessageName> = {
   | { kind: 'read' }
   | {
       kind: 'write';
-      affectsSyncedData: boolean;
+      syncTrackingOwner: 'executor' | 'handler' | 'none';
       refreshBadge: boolean;
     }
 );

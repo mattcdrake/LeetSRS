@@ -30,7 +30,7 @@ export function createBackgroundMessageExecutor(options: MessageExecutorOptions)
       const result = await message.handler(data);
 
       if (message.kind === 'write') {
-        if (message.affectsSyncedData) await options.markDataUpdated();
+        if (message.syncTrackingOwner === 'executor') await options.markDataUpdated();
         if (message.refreshBadge) await options.refreshBadge();
       }
 

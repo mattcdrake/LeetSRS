@@ -22,7 +22,7 @@ describe('background message executor', () => {
     } satisfies BackgroundMessageRegistry['ping'];
     const write = {
       kind: 'write',
-      affectsSyncedData: false,
+      syncTrackingOwner: 'handler',
       refreshBadge: false,
       handler: async (_data: { cardId: string }) => {
         writeStarted.resolve();
@@ -60,7 +60,7 @@ describe('background message executor', () => {
     });
     const write = {
       kind: 'write',
-      affectsSyncedData: true,
+      syncTrackingOwner: 'executor',
       refreshBadge: true,
       handler: async ({ cardId }: { cardId: string }) => {
         events.push(`${cardId}:start`);
@@ -102,7 +102,7 @@ describe('background message executor', () => {
     const failure = new Error('write failed');
     const failingWrite = {
       kind: 'write',
-      affectsSyncedData: true,
+      syncTrackingOwner: 'executor',
       refreshBadge: true,
       handler: async () => {
         throw failure;
@@ -111,7 +111,7 @@ describe('background message executor', () => {
     const nextHandler = vi.fn(async () => {});
     const nextWrite = {
       kind: 'write',
-      affectsSyncedData: false,
+      syncTrackingOwner: 'none',
       refreshBadge: false,
       handler: nextHandler,
     } satisfies BackgroundMessageRegistry['resetAllData'];
@@ -135,7 +135,7 @@ describe('background message executor', () => {
     const handler = vi.fn(async () => {});
     const write = {
       kind: 'write',
-      affectsSyncedData: true,
+      syncTrackingOwner: 'executor',
       refreshBadge: false,
       handler,
     } satisfies BackgroundMessageRegistry['resetAllData'];
