@@ -1,36 +1,50 @@
 import { storage } from '#imports';
-import { detectBrowserLanguage, type Translations, translations } from '@/shared/i18n';
+import { type Translations, translations } from '@/shared/i18n';
 import type { Language } from '@/shared/settings';
 import { STORAGE_KEYS } from './storage-keys';
 
-// Service translations - cached and updated via storage watcher
-const detectedLanguage = detectBrowserLanguage();
-let cachedTranslations: Translations = translations[detectedLanguage];
+const DEFAULT_LANGUAGE: Language = 'en';
+let cachedTranslations: Translations | undefined;
 
-function updateTranslations(language: Language | null | undefined): void {
-  const validLanguage = language && language in translations ? language : detectBrowserLanguage();
-  cachedTranslations = translations[validLanguage];
+export function detectBrowserLanguage(): Language {
+  const browserLanguages = typeof navigator !== 'undefined' ? navigator.languages : [];
+
+  for (const browserLanguage of browserLanguages) {
+    if (browserLanguage in translations) {
+      return browserLanguage as Language;
+    }
+
+    const baseLanguage = browserLanguage.split('-')[0];
+    if (baseLanguage in translations) {
+      return baseLanguage as Language;
+    }
+    if (baseLanguage === 'zh') {
+      return 'zh-CN';
+    }
+  }
+
+  return DEFAULT_LANGUAGE;
 }
 
-// Initialize translations from storage and watch for changes
-(async () => {
-  try {
-    const language = await storage.getItem<Language>(STORAGE_KEYS.language);
-    updateTranslations(language);
+function resolveLanguage(language: unknown): Language {
+  return typeof language === 'string' && language in translations ? (language as Language) : detectBrowserLanguage();
+}
 
-    // Watch for language changes
-    storage.watch<Language>(STORAGE_KEYS.language, (newLanguage) => {
-      updateTranslations(newLanguage);
-    });
-  } catch (error) {
-    console.error('Failed to load language setting for services:', error);
-  }
-})();
+export async function initializeServiceTranslations(): Promise<void> {
+  const language = await storage.getItem<Language>(STORAGE_KEYS.language);
+  cachedTranslations = translations[resolveLanguage(language)];
+  storage.watch<Language>(STORAGE_KEYS.language, (newLanguage) => {
+    cachedTranslations = translations[resolveLanguage(newLanguage)];
+  });
+}
 
 /**
  * Get the current translations for use in services.
  * Translations are automatically updated when the language setting changes.
  */
 export function getServiceTranslations(): Translations {
+  if (!cachedTranslations) {
+    throw new Error('Service translations have not been initialized');
+  }
   return cachedTranslations;
 }

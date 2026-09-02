@@ -1,5 +1,5 @@
 import type { Grade } from 'ts-fsrs';
-import { getServiceTranslations } from '@/services/i18n';
+import { getServiceTranslations, initializeServiceTranslations } from '@/services/i18n';
 import type { ProblemDescriptor } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import type { ProblemData } from '@/shared/problem-data';
@@ -22,6 +22,7 @@ export default defineContentScript({
     } catch (error) {
       console.error('Failed to ping service worker:', error);
     }
+    await initializeServiceTranslations();
     setupLeetSrsButton();
     setupLeetcodeAutoReset();
   },

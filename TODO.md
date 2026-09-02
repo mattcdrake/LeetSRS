@@ -27,7 +27,7 @@ Storage keys, defaults, validation, browser-language fallback, and sync behavior
 - [x] Replace individual React Query hooks with settings-level query and mutation hooks.
 - [x] Update all clients to read from the settings object.
 - [x] Make the React settings API return non-optional `Settings` through a loading or suspense boundary; clients must access `settings.<name>` directly, without handling `undefined`, optional chaining, ternaries, fallback values, or loading guards.
-- [ ] Reduce `shared/settings.ts` to the public cross-context contract; move defaults, registry metadata, validation, and other implementation-only details into the settings service.
+- [x] Reduce `shared/settings.ts` to the public cross-context contract; move defaults, registry metadata, validation, and other implementation-only details into the settings service.
 - [ ] Drive backup export, import, and reset from the same internal metadata.
 - [ ] Ensure synchronized setting changes call `markDataUpdated()`.
 - [ ] Test defaults, validation, updates, import/export, reset, and sync tracking.

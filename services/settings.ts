@@ -1,22 +1,16 @@
 import { storage } from '#imports';
-import { detectBrowserLanguage, translations } from '@/shared/i18n';
-import {
-  DEFAULT_ANIMATIONS_ENABLED,
-  DEFAULT_BADGE_ENABLED,
-  DEFAULT_DAY_START_HOUR,
-  DEFAULT_MAX_NEW_CARDS_PER_DAY,
-  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
-  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-  DEFAULT_THEME,
-  type Language,
-  MAX_DAY_START_HOUR,
-  MAX_NEW_CARDS_PER_DAY,
-  MIN_DAY_START_HOUR,
-  MIN_NEW_CARDS_PER_DAY,
-  type Settings,
-  type Theme,
-} from '@/shared/settings';
+import { translations } from '@/shared/i18n';
+import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/shared/settings';
+import { detectBrowserLanguage } from './i18n';
 import { STORAGE_KEYS } from './storage-keys';
+
+const DEFAULT_MAX_NEW_CARDS_PER_DAY = 3;
+const DEFAULT_DAY_START_HOUR = 0;
+const DEFAULT_ANIMATIONS_ENABLED = true;
+const DEFAULT_THEME: Theme = 'dark';
+const DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM = false;
+const DEFAULT_RESET_EDITOR_ON_DUE_REVIEW = false;
+const DEFAULT_BADGE_ENABLED = true;
 
 type SettingDefinition<T> = {
   storageKey: (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
@@ -35,21 +29,23 @@ const SETTINGS_REGISTRY = {
     defaultValue: DEFAULT_MAX_NEW_CARDS_PER_DAY,
     validate: (value): value is number =>
       Number.isInteger(value) &&
-      (value as number) >= MIN_NEW_CARDS_PER_DAY &&
-      (value as number) <= MAX_NEW_CARDS_PER_DAY,
+      (value as number) >= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min &&
+      (value as number) <= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max,
     validationError: (value) =>
       Number.isInteger(value)
-        ? `Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`
+        ? `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
         : 'Max new cards per day must be a whole number',
   },
   dayStartHour: {
     storageKey: STORAGE_KEYS.dayStartHour,
     defaultValue: DEFAULT_DAY_START_HOUR,
     validate: (value): value is number =>
-      Number.isInteger(value) && (value as number) >= MIN_DAY_START_HOUR && (value as number) <= MAX_DAY_START_HOUR,
+      Number.isInteger(value) &&
+      (value as number) >= SETTINGS_CONSTRAINTS.dayStartHour.min &&
+      (value as number) <= SETTINGS_CONSTRAINTS.dayStartHour.max,
     validationError: (value) =>
       Number.isInteger(value)
-        ? `Day start hour must be between ${MIN_DAY_START_HOUR} and ${MAX_DAY_START_HOUR}`
+        ? `Day start hour must be between ${SETTINGS_CONSTRAINTS.dayStartHour.min} and ${SETTINGS_CONSTRAINTS.dayStartHour.max}`
         : 'Day start hour must be a whole number',
   },
   animationsEnabled: {

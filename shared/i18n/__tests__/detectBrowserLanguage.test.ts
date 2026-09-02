@@ -1,57 +1,62 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { detectBrowserLanguage } from '..';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { getLanguage } from '@/services/settings';
 
 function mockLanguages(languages: string[]) {
   vi.stubGlobal('navigator', { languages });
 }
 
 describe('detectBrowserLanguage', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('exact match', () => {
+  it('exact match', async () => {
     mockLanguages(['pl']);
-    expect(detectBrowserLanguage()).toBe('pl');
+    expect(await getLanguage()).toBe('pl');
   });
 
-  it('exact match with region code', () => {
+  it('exact match with region code', async () => {
     mockLanguages(['zh-CN']);
-    expect(detectBrowserLanguage()).toBe('zh-CN');
+    expect(await getLanguage()).toBe('zh-CN');
   });
 
-  it('base language match (en-US → en)', () => {
+  it('base language match (en-US → en)', async () => {
     mockLanguages(['en-US']);
-    expect(detectBrowserLanguage()).toBe('en');
+    expect(await getLanguage()).toBe('en');
   });
 
-  it('base language match (de-DE → de)', () => {
+  it('base language match (de-DE → de)', async () => {
     mockLanguages(['de-DE']);
-    expect(detectBrowserLanguage()).toBe('de');
+    expect(await getLanguage()).toBe('de');
   });
 
-  it('zh variant falls back to zh-CN', () => {
+  it('zh variant falls back to zh-CN', async () => {
     mockLanguages(['zh-TW']);
-    expect(detectBrowserLanguage()).toBe('zh-CN');
+    expect(await getLanguage()).toBe('zh-CN');
   });
 
-  it('zh-Hans falls back to zh-CN', () => {
+  it('zh-Hans falls back to zh-CN', async () => {
     mockLanguages(['zh-Hans']);
-    expect(detectBrowserLanguage()).toBe('zh-CN');
+    expect(await getLanguage()).toBe('zh-CN');
   });
 
-  it('picks first matching language from preferences', () => {
+  it('picks first matching language from preferences', async () => {
     mockLanguages(['fr', 'pl', 'en']);
-    expect(detectBrowserLanguage()).toBe('pl');
+    expect(await getLanguage()).toBe('pl');
   });
 
-  it('falls back to en for unsupported languages', () => {
+  it('falls back to en for unsupported languages', async () => {
     mockLanguages(['fr', 'ja', 'ko']);
-    expect(detectBrowserLanguage()).toBe('en');
+    expect(await getLanguage()).toBe('en');
   });
 
-  it('falls back to en when navigator.languages is empty', () => {
+  it('falls back to en when navigator.languages is empty', async () => {
     mockLanguages([]);
-    expect(detectBrowserLanguage()).toBe('en');
+    expect(await getLanguage()).toBe('en');
   });
 });

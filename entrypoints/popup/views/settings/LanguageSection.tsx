@@ -2,17 +2,13 @@ import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'reac
 import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/useBackgroundQueries';
 import { LANGUAGE_OPTIONS } from '@/shared/i18n';
-import { FEATURE_FLAGS, type Language } from '@/shared/settings';
+import type { Language } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function LanguageSection() {
   const t = useI18n();
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
-
-  if (!FEATURE_FLAGS.languageSelection) {
-    return null;
-  }
 
   const selectedOption = LANGUAGE_OPTIONS.find((opt) => opt.code === settings.language);
 

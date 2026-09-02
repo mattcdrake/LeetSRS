@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Input, Label, TextField } from 'react-aria-components';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/useBackgroundQueries';
-import {
-  MAX_DAY_START_HOUR,
-  MAX_NEW_CARDS_PER_DAY,
-  MIN_DAY_START_HOUR,
-  MIN_NEW_CARDS_PER_DAY,
-} from '@/shared/settings';
+import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function ReviewSettingsSection() {
@@ -26,7 +21,11 @@ export function ReviewSettingsSection() {
 
   const handleBlur = () => {
     const value = parseInt(inputValue, 10);
-    if (!Number.isNaN(value) && value >= MIN_NEW_CARDS_PER_DAY && value <= MAX_NEW_CARDS_PER_DAY) {
+    if (
+      !Number.isNaN(value) &&
+      value >= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min &&
+      value <= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max
+    ) {
       updateSettingsMutation.mutate({ maxNewCardsPerDay: value });
     } else {
       // Reset to current value on invalid input
@@ -36,7 +35,11 @@ export function ReviewSettingsSection() {
 
   const handleDayStartBlur = () => {
     const value = parseInt(dayStartHourValue, 10);
-    if (!Number.isNaN(value) && value >= MIN_DAY_START_HOUR && value <= MAX_DAY_START_HOUR) {
+    if (
+      !Number.isNaN(value) &&
+      value >= SETTINGS_CONSTRAINTS.dayStartHour.min &&
+      value <= SETTINGS_CONSTRAINTS.dayStartHour.max
+    ) {
       updateSettingsMutation.mutate({ dayStartHour: value });
     } else {
       setDayStartHourValue(settings.dayStartHour.toString());
@@ -54,8 +57,8 @@ export function ReviewSettingsSection() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onBlur={handleBlur}
-            min={MIN_NEW_CARDS_PER_DAY.toString()}
-            max={MAX_NEW_CARDS_PER_DAY.toString()}
+            min={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min.toString()}
+            max={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max.toString()}
             placeholder={settings.maxNewCardsPerDay.toString()}
             className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"
           />
@@ -67,8 +70,8 @@ export function ReviewSettingsSection() {
             value={dayStartHourValue}
             onChange={(e) => setDayStartHourValue(e.target.value)}
             onBlur={handleDayStartBlur}
-            min={MIN_DAY_START_HOUR.toString()}
-            max={MAX_DAY_START_HOUR.toString()}
+            min={SETTINGS_CONSTRAINTS.dayStartHour.min.toString()}
+            max={SETTINGS_CONSTRAINTS.dayStartHour.max.toString()}
             step="1"
             placeholder={settings.dayStartHour.toString()}
             className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"

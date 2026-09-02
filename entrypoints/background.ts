@@ -19,6 +19,7 @@ import {
   validateGistId,
   validatePat,
 } from '@/services/github-sync';
+import { initializeServiceTranslations } from '@/services/i18n';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { migrations, runMigrations } from '@/services/migrations';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
@@ -48,6 +49,7 @@ export default defineBackground(() => {
     await runMigrations(migrations).catch((error) => {
       console.error('Failed to run migrations:', error);
     });
+    await initializeServiceTranslations();
 
     // Set up periodic sync alarm if not already scheduled
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);

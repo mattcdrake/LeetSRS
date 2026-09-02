@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { translations } from '@/shared/i18n';
-import { getServiceTranslations } from '../i18n';
+import { getServiceTranslations, initializeServiceTranslations } from '../i18n';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('service i18n', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
+    await initializeServiceTranslations();
   });
 
   afterEach(() => {

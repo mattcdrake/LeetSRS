@@ -1,17 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import {
-  DEFAULT_ANIMATIONS_ENABLED,
-  DEFAULT_BADGE_ENABLED,
-  DEFAULT_DAY_START_HOUR,
-  DEFAULT_MAX_NEW_CARDS_PER_DAY,
-  DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
-  DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-  DEFAULT_THEME,
-  MAX_NEW_CARDS_PER_DAY,
-  MIN_NEW_CARDS_PER_DAY,
-} from '@/shared/settings';
+import { SETTINGS_CONSTRAINTS, type Settings } from '@/shared/settings';
 import {
   getAnimationsEnabled,
   getLanguage,
@@ -29,6 +19,17 @@ import {
 } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 
+const EXPECTED_DEFAULT_SETTINGS = {
+  maxNewCardsPerDay: 3,
+  dayStartHour: 0,
+  animationsEnabled: true,
+  theme: 'dark',
+  resetEditorOnEveryProblem: false,
+  resetEditorOnDueReview: false,
+  badgeEnabled: true,
+  language: 'en',
+} satisfies Settings;
+
 describe('Settings Service', () => {
   beforeEach(() => {
     fakeBrowser.reset();
@@ -40,16 +41,7 @@ describe('Settings Service', () => {
 
   describe('getSettings', () => {
     it('returns a complete settings object with defaults', async () => {
-      expect(await getSettings()).toEqual({
-        maxNewCardsPerDay: DEFAULT_MAX_NEW_CARDS_PER_DAY,
-        dayStartHour: DEFAULT_DAY_START_HOUR,
-        animationsEnabled: DEFAULT_ANIMATIONS_ENABLED,
-        theme: DEFAULT_THEME,
-        resetEditorOnEveryProblem: DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-        resetEditorOnDueReview: DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
-        badgeEnabled: DEFAULT_BADGE_ENABLED,
-        language: 'en',
-      });
+      expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
     });
 
     it('returns stored values and falls back for invalid values', async () => {
@@ -59,7 +51,7 @@ describe('Settings Service', () => {
       const settings = await getSettings();
 
       expect(settings.maxNewCardsPerDay).toBe(12);
-      expect(settings.theme).toBe(DEFAULT_THEME);
+      expect(settings.theme).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
     });
   });
 
@@ -76,25 +68,18 @@ describe('Settings Service', () => {
     it('does nothing for an empty update', async () => {
       await updateSettings({});
 
-      expect(await getSettings()).toEqual({
-        maxNewCardsPerDay: DEFAULT_MAX_NEW_CARDS_PER_DAY,
-        dayStartHour: DEFAULT_DAY_START_HOUR,
-        animationsEnabled: DEFAULT_ANIMATIONS_ENABLED,
-        theme: DEFAULT_THEME,
-        resetEditorOnEveryProblem: DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-        resetEditorOnDueReview: DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
-        badgeEnabled: DEFAULT_BADGE_ENABLED,
-        language: 'en',
-      });
+      expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
     });
 
     it('does not persist any changes when validation fails', async () => {
       await expect(
         updateSettings({
           animationsEnabled: false,
-          maxNewCardsPerDay: MAX_NEW_CARDS_PER_DAY + 1,
+          maxNewCardsPerDay: SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max + 1,
         })
-      ).rejects.toThrow(`Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`);
+      ).rejects.toThrow(
+        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
+      );
 
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
@@ -118,7 +103,7 @@ describe('Settings Service', () => {
 
     it('should return the default value when no stored value exists', async () => {
       const result = await getMaxNewCardsPerDay();
-      expect(result).toBe(DEFAULT_MAX_NEW_CARDS_PER_DAY);
+      expect(result).toBe(EXPECTED_DEFAULT_SETTINGS.maxNewCardsPerDay);
     });
 
     it('should handle zero value correctly', async () => {
@@ -130,10 +115,10 @@ describe('Settings Service', () => {
     });
 
     it('should handle maximum allowed value', async () => {
-      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, MAX_NEW_CARDS_PER_DAY);
+      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
 
       const result = await getMaxNewCardsPerDay();
-      expect(result).toBe(MAX_NEW_CARDS_PER_DAY);
+      expect(result).toBe(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
     });
   });
 
@@ -146,31 +131,31 @@ describe('Settings Service', () => {
     });
 
     it('should accept minimum allowed value', async () => {
-      await setMaxNewCardsPerDay(MIN_NEW_CARDS_PER_DAY);
+      await setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min);
 
       const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
-      expect(storedValue).toBe(MIN_NEW_CARDS_PER_DAY);
+      expect(storedValue).toBe(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min);
     });
 
     it('should accept maximum allowed value', async () => {
-      await setMaxNewCardsPerDay(MAX_NEW_CARDS_PER_DAY);
+      await setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
 
       const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
-      expect(storedValue).toBe(MAX_NEW_CARDS_PER_DAY);
+      expect(storedValue).toBe(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max);
     });
 
     it('should throw error for values less than minimum', async () => {
-      await expect(setMaxNewCardsPerDay(MIN_NEW_CARDS_PER_DAY - 1)).rejects.toThrow(
-        `Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`
+      await expect(setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min - 1)).rejects.toThrow(
+        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
       );
       await expect(setMaxNewCardsPerDay(-10)).rejects.toThrow(
-        `Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`
+        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
       );
     });
 
     it('should throw error for values greater than maximum', async () => {
-      await expect(setMaxNewCardsPerDay(MAX_NEW_CARDS_PER_DAY + 1)).rejects.toThrow(
-        `Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`
+      await expect(setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max + 1)).rejects.toThrow(
+        `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
       );
     });
 
@@ -179,7 +164,7 @@ describe('Settings Service', () => {
       await setMaxNewCardsPerDay(5);
 
       // Try to set an invalid value
-      await expect(setMaxNewCardsPerDay(MIN_NEW_CARDS_PER_DAY - 1)).rejects.toThrow();
+      await expect(setMaxNewCardsPerDay(SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min - 1)).rejects.toThrow();
 
       // Verify the original value is still there
       const storedValue = await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay);
@@ -202,7 +187,7 @@ describe('Settings Service', () => {
     it('should work correctly when setting and then getting a value', async () => {
       // Initially should return default
       let value = await getMaxNewCardsPerDay();
-      expect(value).toBe(DEFAULT_MAX_NEW_CARDS_PER_DAY);
+      expect(value).toBe(EXPECTED_DEFAULT_SETTINGS.maxNewCardsPerDay);
 
       // Set a new value
       await setMaxNewCardsPerDay(15);
@@ -300,7 +285,7 @@ describe('Settings Service', () => {
 
     it('should return the default theme when no stored value exists', async () => {
       const result = await getTheme();
-      expect(result).toBe(DEFAULT_THEME);
+      expect(result).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
     });
 
     it('should handle dark theme correctly', async () => {
@@ -313,8 +298,8 @@ describe('Settings Service', () => {
 
   describe('editor reset settings', () => {
     it('should return default values when not set', async () => {
-      expect(await getResetEditorOnEveryProblem()).toBe(DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM);
-      expect(await getResetEditorOnDueReview()).toBe(DEFAULT_RESET_EDITOR_ON_DUE_REVIEW);
+      expect(await getResetEditorOnEveryProblem()).toBe(EXPECTED_DEFAULT_SETTINGS.resetEditorOnEveryProblem);
+      expect(await getResetEditorOnDueReview()).toBe(EXPECTED_DEFAULT_SETTINGS.resetEditorOnDueReview);
     });
 
     it('should store and retrieve reset editor on every problem', async () => {
@@ -389,7 +374,7 @@ describe('Settings Service', () => {
     it('should work correctly when setting and then getting theme', async () => {
       // Initially should return default
       let value = await getTheme();
-      expect(value).toBe(DEFAULT_THEME);
+      expect(value).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
 
       // Set to light
       await setTheme('light');
@@ -404,7 +389,7 @@ describe('Settings Service', () => {
 
     it('should handle multiple theme updates correctly', async () => {
       // Start with default
-      expect(await getTheme()).toBe(DEFAULT_THEME);
+      expect(await getTheme()).toBe(EXPECTED_DEFAULT_SETTINGS.theme);
 
       // Toggle through themes multiple times
       await setTheme('light');

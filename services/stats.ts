@@ -1,9 +1,10 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { storage } from '#imports';
-import { DAILY_STATS_RETENTION_DAYS } from '@/shared/settings';
 import { formatLocalDate, getAllCards } from './cards';
 import { getDayStartHour } from './settings';
 import { STORAGE_KEYS } from './storage-keys';
+
+const DAILY_STATS_RETENTION_DAYS = 30;
 
 interface BaseStats {
   totalReviews: number;
