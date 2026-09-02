@@ -1,35 +1,25 @@
 import { FaMoon, FaSun } from 'react-icons/fa6';
-import {
-  useAnimationsEnabledQuery,
-  useBadgeEnabledQuery,
-  useSetAnimationsEnabledMutation,
-  useSetBadgeEnabledMutation,
-  useSetThemeMutation,
-  useThemeQuery,
-} from '@/hooks/useBackgroundQueries';
-import { DEFAULT_BADGE_ENABLED, DEFAULT_THEME } from '@/shared/settings';
+import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/useBackgroundQueries';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 
 export function AppearanceSection() {
   const t = useI18n();
-  const { data: theme = DEFAULT_THEME } = useThemeQuery();
-  const setThemeMutation = useSetThemeMutation();
-  const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
-  const setAnimationsEnabledMutation = useSetAnimationsEnabledMutation();
-  const { data: badgeEnabled = DEFAULT_BADGE_ENABLED } = useBadgeEnabledQuery();
-  const setBadgeEnabledMutation = useSetBadgeEnabledMutation();
+  const { data: settings } = useSettingsQuery();
+  const updateSettingsMutation = useUpdateSettingsMutation();
+
+  if (!settings) return null;
 
   const setDarkMode = (isSelected: boolean) => {
-    setThemeMutation.mutate(isSelected ? 'dark' : 'light');
+    updateSettingsMutation.mutate({ theme: isSelected ? 'dark' : 'light' });
   };
 
   const setAnimationsEnabled = (isSelected: boolean) => {
-    setAnimationsEnabledMutation.mutate(isSelected);
+    updateSettingsMutation.mutate({ animationsEnabled: isSelected });
   };
 
   const setBadgeEnabled = (isSelected: boolean) => {
-    setBadgeEnabledMutation.mutate(isSelected);
+    updateSettingsMutation.mutate({ badgeEnabled: isSelected });
   };
 
   return (
@@ -38,7 +28,7 @@ export function AppearanceSection() {
       <div className="space-y-4">
         <SettingsSwitch
           label={t.settings.appearance.darkMode}
-          isSelected={theme === 'dark'}
+          isSelected={settings.theme === 'dark'}
           onChange={setDarkMode}
           leftIcon={(isSelected) => (
             <FaSun
@@ -53,10 +43,14 @@ export function AppearanceSection() {
         />
         <SettingsSwitch
           label={t.settings.appearance.enableAnimations}
-          isSelected={animationsEnabled}
+          isSelected={settings.animationsEnabled}
           onChange={setAnimationsEnabled}
         />
-        <SettingsSwitch label={t.settings.appearance.showBadge} isSelected={badgeEnabled} onChange={setBadgeEnabled} />
+        <SettingsSwitch
+          label={t.settings.appearance.showBadge}
+          isSelected={settings.badgeEnabled}
+          onChange={setBadgeEnabled}
+        />
       </div>
     </div>
   );

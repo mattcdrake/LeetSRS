@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Grade } from 'ts-fsrs';
 import {
-  useAnimationsEnabledQuery,
   useDelayCardMutation,
   usePauseCardMutation,
   useRateCardMutation,
   useRemoveCardMutation,
   useReviewQueueQuery,
+  useSettingsQuery,
 } from '@/hooks/useBackgroundQueries';
 import type { Card, RateCardInput } from '@/shared/cards';
 import { useI18n } from '../../contexts/I18nContext';
@@ -16,7 +16,7 @@ import { ReviewCard } from './ReviewCard';
 
 export function ReviewQueue() {
   const t = useI18n();
-  const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
+  const { data: settings } = useSettingsQuery();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
@@ -33,6 +33,8 @@ export function ReviewQueue() {
     };
   }, []);
 
+  if (!settings) return null;
+
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
     options: {
@@ -48,12 +50,12 @@ export function ReviewQueue() {
     try {
       const result = await action();
 
-      if (animationsEnabled && options.getSlideDirection) {
+      if (settings.animationsEnabled && options.getSlideDirection) {
         const direction = options.getSlideDirection(result);
         if (direction) setSlideDirection(direction);
       }
 
-      const animationDelay = animationsEnabled ? 400 : 0;
+      const animationDelay = settings.animationsEnabled ? 400 : 0;
       animationTimerRef.current = setTimeout(() => {
         animationTimerRef.current = null;
         setSlideDirection(null);
@@ -159,7 +161,7 @@ export function ReviewQueue() {
   }
 
   const getAnimationClass = () => {
-    if (!animationsEnabled) return '';
+    if (!settings.animationsEnabled) return '';
 
     const baseClasses = 'transition-all duration-300 ease-out';
 
