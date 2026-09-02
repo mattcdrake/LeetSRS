@@ -20,7 +20,7 @@ Stop fabricating `UseQueryResult` and `UseMutationResult` objects in tests. Exer
 ## Test infrastructure
 
 - [x] Update `test/utils/test-wrapper.tsx` so the normal wrapper creates and clears a `QueryClient` for each mounted render; document that the advanced explicit-client wrapper must be created per test.
-- [ ] Consolidate `createWrapper()` and `createTestWrapper()` into one helper that always returns `{ wrapper, queryClient }`. Migrate existing `createWrapper()` consumers and remove the redundant API.
+- [x] Consolidate `createWrapper()` and `createTestWrapper()` into one helper that always returns `{ wrapper, queryClient }`. Migrate existing `createWrapper()` consumers and remove the redundant API.
 - [x] Add a small deferred-promise test utility for deterministic loading and pending states.
 - [x] Keep cache seeding explicit with `queryClient.setQueryData`; a wrapper adds no value yet and can be introduced later if migrations reveal meaningful repetition.
 - [x] Establish a typed `sendMessage` mock pattern that returns results by protocol message name without broad `any` casts and rejects unexpected traffic.
