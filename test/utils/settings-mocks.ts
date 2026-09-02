@@ -5,7 +5,7 @@ export function buildSettings(overrides: Partial<Settings> = {}): Settings {
     maxNewCardsPerDay: 3,
     dayStartHour: 0,
     animationsEnabled: true,
-    theme: 'dark',
+    theme: 'system',
     resetEditorOnEveryProblem: false,
     resetEditorOnDueReview: false,
     badgeEnabled: true,

@@ -8,7 +8,7 @@ import { STORAGE_KEYS } from './storage-keys';
 const DEFAULT_MAX_NEW_CARDS_PER_DAY = 3;
 const DEFAULT_DAY_START_HOUR = 0;
 const DEFAULT_ANIMATIONS_ENABLED = true;
-const DEFAULT_THEME: Theme = 'dark';
+const DEFAULT_THEME: Theme = 'system';
 const DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM = false;
 const DEFAULT_RESET_EDITOR_ON_DUE_REVIEW = false;
 const DEFAULT_BADGE_ENABLED = true;
@@ -58,8 +58,8 @@ const SETTINGS_REGISTRY = {
   theme: {
     storageKey: STORAGE_KEYS.theme,
     defaultValue: DEFAULT_THEME,
-    validate: (value): value is Theme => value === 'light' || value === 'dark',
-    validationError: () => 'Theme must be either "light" or "dark"',
+    validate: (value): value is Theme => value === 'system' || value === 'light' || value === 'dark',
+    validationError: () => 'Theme must be "system", "light", or "dark"',
   },
   resetEditorOnEveryProblem: {
     storageKey: STORAGE_KEYS.resetEditorOnEveryProblem,

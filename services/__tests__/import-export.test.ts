@@ -217,6 +217,21 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.language)).toEqual('en');
     });
 
+    it.each(['system', 'light', 'dark'] as const)('should round-trip the %s theme', async (theme) => {
+      const data = {
+        ...validExportData,
+        data: {
+          ...validExportData.data,
+          settings: { ...validExportData.data.settings, theme },
+        },
+      };
+
+      await importData(JSON.stringify(data));
+
+      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe(theme);
+      expect(JSON.parse(await exportData()).data.settings.theme).toBe(theme);
+    });
+
     it('should preserve the imported data update timestamp', async () => {
       const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
       await importData(JSON.stringify({ ...validExportData, dataUpdatedAt }));
