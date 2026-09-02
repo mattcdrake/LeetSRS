@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { useAnimationsEnabledQuery, useThemeQuery } from '@/hooks/useBackgroundQueries';
-import { DEFAULT_THEME } from '@/shared/settings';
+import { useSettingsQuery } from '@/hooks/useBackgroundQueries';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';
@@ -10,27 +9,26 @@ import { StatsView } from './views/stats/StatsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
-  const { data: animationsEnabled = true } = useAnimationsEnabledQuery();
-  const { data: theme = DEFAULT_THEME } = useThemeQuery();
+  const { data: settings } = useSettingsQuery();
 
   useEffect(() => {
-    if (!animationsEnabled) {
+    if (!settings.animationsEnabled) {
       document.documentElement.classList.add('animations-disabled');
     } else {
       document.documentElement.classList.remove('animations-disabled');
     }
-  }, [animationsEnabled]);
+  }, [settings]);
 
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
 
     root.classList.remove('light', 'dark');
-    root.classList.add(theme);
+    root.classList.add(settings.theme);
 
     body.classList.remove('light', 'dark');
-    body.classList.add(theme);
-  }, [theme]);
+    body.classList.add(settings.theme);
+  }, [settings]);
 
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,

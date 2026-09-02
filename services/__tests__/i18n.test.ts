@@ -16,33 +16,30 @@ describe('service i18n', () => {
   });
 
   describe('getServiceTranslations', () => {
-    it('should return translations object', () => {
-      const t = getServiceTranslations();
+    it('should return translations object', async () => {
+      const t = await getServiceTranslations();
       expect(t).toBeDefined();
       expect(t.app.name).toBe('LeetSRS');
     });
 
-    it('should have all required translation keys', () => {
-      const t = getServiceTranslations();
+    it('should have all required translation keys', async () => {
+      const t = await getServiceTranslations();
       expect(t.settings.gistSync.gistDescription).toBeDefined();
       expect(typeof t.settings.gistSync.gistDescription).toBe('string');
     });
   });
 
-  describe('storage watching', () => {
-    it('should be set up to watch for language changes', async () => {
-      // Verify the service is functional with storage
+  describe('stored language', () => {
+    it('should use the current stored language', async () => {
       await storage.setItem(STORAGE_KEYS.language, 'en');
-      const t = getServiceTranslations();
+      const t = await getServiceTranslations();
       expect(t).toBe(translations.en);
     });
 
     it('should fall back to default language for invalid storage values', async () => {
       // Simulate corrupted/invalid language in storage
       await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID');
-      // Wait for the watcher to fire
-      await new Promise((r) => setTimeout(r, 50));
-      expect(getServiceTranslations()).toBe(translations.en);
+      expect(await getServiceTranslations()).toBe(translations.en);
     });
   });
 });

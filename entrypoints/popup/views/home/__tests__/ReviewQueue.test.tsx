@@ -38,10 +38,7 @@ vi.mock('@/hooks/useBackgroundQueries', () => ({
   useRemoveCardMutation: vi.fn(),
   useDelayCardMutation: vi.fn(),
   usePauseCardMutation: vi.fn(),
-  useAnimationsEnabledQuery: vi.fn(() => ({ data: false })),
-  useSetAnimationsEnabledMutation: vi.fn(() => ({ mutate: vi.fn() })),
-  useThemeQuery: vi.fn(() => ({ data: 'dark' })),
-  useSetThemeMutation: vi.fn(() => ({ mutate: vi.fn() })),
+  useSettingsQuery: vi.fn(() => ({ data: { animationsEnabled: false } })),
   queryKeys: {
     cards: {
       all: ['cards'],

@@ -5,21 +5,21 @@ import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/shared/cards';
 import { serializeCard } from '../cards';
 import { shouldResetEditor } from '../editor-reset';
-import { setResetEditorOnDueReview, setResetEditorOnEveryProblem } from '../settings';
+import { updateSettings } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('shouldResetEditor', () => {
   beforeEach(() => fakeBrowser.reset());
 
   it('resets every problem when the global setting is enabled', async () => {
-    await setResetEditorOnEveryProblem(true);
+    await updateSettings({ resetEditorOnEveryProblem: true });
     await expect(shouldResetEditor('two-sum', 'leetcode.com')).resolves.toBe(true);
   });
 
   it.each([FsrsState.New, FsrsState.Learning, FsrsState.Review, FsrsState.Relearning])(
     'resets a due card in state %s',
     async (state) => {
-      await setResetEditorOnDueReview(true);
+      await updateSettings({ resetEditorOnDueReview: true });
       await storeCard(makeCard({ state }));
       await expect(shouldResetEditor('two-sum', 'leetcode.com')).resolves.toBe(true);
     }
@@ -30,13 +30,13 @@ describe('shouldResetEditor', () => {
     ['not due', { due: new Date('2999-01-01') }, true],
     ['paused', { paused: true }, true],
   ])('does not reset a %s card', async (_name, overrides, enableSetting) => {
-    if (enableSetting) await setResetEditorOnDueReview(true);
+    if (enableSetting) await updateSettings({ resetEditorOnDueReview: true });
     await storeCard(makeCard(overrides));
     await expect(shouldResetEditor('two-sum', 'leetcode.com')).resolves.toBe(false);
   });
 
   it('does not reset a card from the other LeetCode domain', async () => {
-    await setResetEditorOnDueReview(true);
+    await updateSettings({ resetEditorOnDueReview: true });
     await storeCard(makeCard());
     await expect(shouldResetEditor('two-sum', 'leetcode.cn')).resolves.toBe(false);
   });

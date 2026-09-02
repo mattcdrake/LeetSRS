@@ -1,58 +1,48 @@
 import { useEffect, useState } from 'react';
 import { Input, Label, TextField } from 'react-aria-components';
-import {
-  useDayStartHourQuery,
-  useMaxNewCardsPerDayQuery,
-  useSetDayStartHourMutation,
-  useSetMaxNewCardsPerDayMutation,
-} from '@/hooks/useBackgroundQueries';
-import {
-  DEFAULT_DAY_START_HOUR,
-  DEFAULT_MAX_NEW_CARDS_PER_DAY,
-  MAX_DAY_START_HOUR,
-  MAX_NEW_CARDS_PER_DAY,
-  MIN_DAY_START_HOUR,
-  MIN_NEW_CARDS_PER_DAY,
-} from '@/shared/settings';
+import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/useBackgroundQueries';
+import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function ReviewSettingsSection() {
   const t = useI18n();
-  const { data: maxNewCardsPerDay } = useMaxNewCardsPerDayQuery();
-  const setMaxNewCardsPerDayMutation = useSetMaxNewCardsPerDayMutation();
+  const { data: settings } = useSettingsQuery();
+  const updateSettingsMutation = useUpdateSettingsMutation();
   const [inputValue, setInputValue] = useState('');
-  const { data: dayStartHour } = useDayStartHourQuery();
-  const setDayStartHourMutation = useSetDayStartHourMutation();
   const [dayStartHourValue, setDayStartHourValue] = useState('');
 
   useEffect(() => {
-    if (maxNewCardsPerDay !== undefined) {
-      setInputValue(maxNewCardsPerDay.toString());
-    }
-  }, [maxNewCardsPerDay]);
+    setInputValue(settings.maxNewCardsPerDay.toString());
+  }, [settings]);
 
   useEffect(() => {
-    if (dayStartHour !== undefined) {
-      setDayStartHourValue(dayStartHour.toString());
-    }
-  }, [dayStartHour]);
+    setDayStartHourValue(settings.dayStartHour.toString());
+  }, [settings]);
 
   const handleBlur = () => {
     const value = parseInt(inputValue, 10);
-    if (!Number.isNaN(value) && value >= MIN_NEW_CARDS_PER_DAY && value <= MAX_NEW_CARDS_PER_DAY) {
-      setMaxNewCardsPerDayMutation.mutate(value);
+    if (
+      !Number.isNaN(value) &&
+      value >= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min &&
+      value <= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max
+    ) {
+      updateSettingsMutation.mutate({ maxNewCardsPerDay: value });
     } else {
       // Reset to current value on invalid input
-      setInputValue((maxNewCardsPerDay ?? DEFAULT_MAX_NEW_CARDS_PER_DAY).toString());
+      setInputValue(settings.maxNewCardsPerDay.toString());
     }
   };
 
   const handleDayStartBlur = () => {
     const value = parseInt(dayStartHourValue, 10);
-    if (!Number.isNaN(value) && value >= MIN_DAY_START_HOUR && value <= MAX_DAY_START_HOUR) {
-      setDayStartHourMutation.mutate(value);
+    if (
+      !Number.isNaN(value) &&
+      value >= SETTINGS_CONSTRAINTS.dayStartHour.min &&
+      value <= SETTINGS_CONSTRAINTS.dayStartHour.max
+    ) {
+      updateSettingsMutation.mutate({ dayStartHour: value });
     } else {
-      setDayStartHourValue((dayStartHour ?? DEFAULT_DAY_START_HOUR).toString());
+      setDayStartHourValue(settings.dayStartHour.toString());
     }
   };
 
@@ -67,9 +57,9 @@ export function ReviewSettingsSection() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onBlur={handleBlur}
-            min={MIN_NEW_CARDS_PER_DAY.toString()}
-            max={MAX_NEW_CARDS_PER_DAY.toString()}
-            placeholder={DEFAULT_MAX_NEW_CARDS_PER_DAY.toString()}
+            min={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min.toString()}
+            max={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max.toString()}
+            placeholder={settings.maxNewCardsPerDay.toString()}
             className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"
           />
         </TextField>
@@ -80,10 +70,10 @@ export function ReviewSettingsSection() {
             value={dayStartHourValue}
             onChange={(e) => setDayStartHourValue(e.target.value)}
             onBlur={handleDayStartBlur}
-            min={MIN_DAY_START_HOUR.toString()}
-            max={MAX_DAY_START_HOUR.toString()}
+            min={SETTINGS_CONSTRAINTS.dayStartHour.min.toString()}
+            max={SETTINGS_CONSTRAINTS.dayStartHour.max.toString()}
             step="1"
-            placeholder={DEFAULT_DAY_START_HOUR.toString()}
+            placeholder={settings.dayStartHour.toString()}
             className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"
           />
         </TextField>

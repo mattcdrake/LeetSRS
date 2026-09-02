@@ -1,6 +1,7 @@
 import type { Grade } from 'ts-fsrs';
 import { getServiceTranslations } from '@/services/i18n';
 import type { ProblemDescriptor } from '@/shared/cards';
+import type { Translations } from '@/shared/i18n';
 import { sendMessage } from '@/shared/messages';
 import type { ProblemData } from '@/shared/problem-data';
 import {
@@ -22,7 +23,7 @@ export default defineContentScript({
     } catch (error) {
       console.error('Failed to ping service worker:', error);
     }
-    setupLeetSrsButton();
+    setupLeetSrsButton(await getServiceTranslations());
     setupLeetcodeAutoReset();
   },
 });
@@ -52,7 +53,7 @@ async function withProblemData<T>(action: (problem: ProblemDescriptor) => Promis
   }
 }
 
-function setupLeetSrsButton() {
+function setupLeetSrsButton(t: Translations) {
   const BUTTON_ID = 'leetsrs-button-wrapper';
   const tooltip = new Tooltip();
 
@@ -66,9 +67,9 @@ function setupLeetSrsButton() {
 
     const buttonWrapper = createLeetSrsButton(() => {
       if (ratingMenu) {
-        ratingMenu.toggle();
+        void ratingMenu.toggle();
       }
-    });
+    }, t);
     buttonWrapper.id = BUTTON_ID;
 
     // Setup rating menu
@@ -89,11 +90,11 @@ function setupLeetSrsButton() {
           console.log('Add without rating - Card added:', result);
           return result;
         });
-      }
+      },
+      getServiceTranslations
     );
 
     // Setup tooltip
-    const t = getServiceTranslations();
     const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
     if (clickableDiv) {
       clickableDiv.addEventListener('mouseenter', () => {

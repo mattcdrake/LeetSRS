@@ -1,4 +1,4 @@
-import { getServiceTranslations } from '@/services/i18n';
+import type { Translations } from '@/shared/i18n';
 import { createButton } from './button';
 import { RATING_BUTTON_CONFIGS, THEME_COLORS } from './constants';
 import { getRatingColor, isDarkMode } from './theme';
@@ -11,35 +11,45 @@ type RatingMenuOptions = {
 
 export class RatingMenu {
   private element: HTMLDivElement | null = null;
+  private isOpening = false;
   private container: HTMLElement;
   private onRate: RatingCallback;
   private onAddWithoutRating: () => void;
   private position: RatingMenuPosition;
+  private getTranslations: () => Promise<Translations>;
 
   constructor(
     container: HTMLElement,
     onRate: RatingCallback,
     onAddWithoutRating: () => void,
+    getTranslations: () => Promise<Translations>,
     options?: RatingMenuOptions
   ) {
     this.container = container;
     this.onRate = onRate;
     this.onAddWithoutRating = onAddWithoutRating;
+    this.getTranslations = getTranslations;
     this.position = options?.position ?? 'bottom';
   }
 
-  toggle(): void {
+  async toggle(): Promise<void> {
     if (this.element) {
       this.hide();
     } else {
-      this.show();
+      await this.show();
     }
   }
 
-  show(): void {
-    if (this.element) return;
+  async show(): Promise<void> {
+    if (this.element || this.isOpening) return;
 
-    const t = getServiceTranslations();
+    this.isOpening = true;
+    let t: Translations;
+    try {
+      t = await this.getTranslations();
+    } finally {
+      this.isOpening = false;
+    }
     this.element = document.createElement('div');
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
@@ -111,7 +121,7 @@ export class RatingMenu {
     this.element.appendChild(ratingButtonsContainer);
 
     // Add "Add without rating" button
-    const addButton = this.createAddWithoutRatingButton();
+    const addButton = this.createAddWithoutRatingButton(t);
     this.element.appendChild(addButton);
 
     // Add menu to container
@@ -124,8 +134,7 @@ export class RatingMenu {
     }, 0);
   }
 
-  private createAddWithoutRatingButton(): HTMLButtonElement {
-    const t = getServiceTranslations();
+  private createAddWithoutRatingButton(t: Translations): HTMLButtonElement {
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
     const bgColor = colors.bgAddButton;

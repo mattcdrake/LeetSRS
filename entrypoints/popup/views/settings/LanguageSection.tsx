@@ -1,20 +1,16 @@
 import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
-import { useLanguageQuery, useSetLanguageMutation } from '@/hooks/useBackgroundQueries';
+import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/useBackgroundQueries';
 import { LANGUAGE_OPTIONS } from '@/shared/i18n';
-import { DEFAULT_LANGUAGE, FEATURE_FLAGS, type Language } from '@/shared/settings';
+import type { Language } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function LanguageSection() {
   const t = useI18n();
-  const { data: language = DEFAULT_LANGUAGE } = useLanguageQuery();
-  const setLanguageMutation = useSetLanguageMutation();
+  const { data: settings } = useSettingsQuery();
+  const updateSettingsMutation = useUpdateSettingsMutation();
 
-  if (!FEATURE_FLAGS.languageSelection) {
-    return null;
-  }
-
-  const selectedOption = LANGUAGE_OPTIONS.find((opt) => opt.code === language);
+  const selectedOption = LANGUAGE_OPTIONS.find((opt) => opt.code === settings.language);
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
@@ -25,12 +21,12 @@ export function LanguageSection() {
           <span>{t.settings.language.label}</span>
         </div>
         <Select
-          selectedKey={language}
-          onSelectionChange={(key) => setLanguageMutation.mutate(key as Language)}
+          selectedKey={settings.language}
+          onSelectionChange={(key) => updateSettingsMutation.mutate({ language: key as Language })}
           aria-label={t.settings.language.label}
         >
           <Button className="flex items-center gap-2 px-3 py-1.5 rounded bg-tertiary text-primary hover:opacity-80 transition-opacity cursor-pointer">
-            <SelectValue>{selectedOption?.nativeName ?? language}</SelectValue>
+            <SelectValue>{selectedOption?.nativeName ?? settings.language}</SelectValue>
             <FaChevronDown className="text-xs" />
           </Button>
           <Popover className="bg-secondary text-primary border border-tertiary rounded-lg shadow-lg p-1 min-w-[120px]">

@@ -10,7 +10,7 @@ import type {
   SyncResult,
 } from '@/shared/gist-sync';
 import type { Note } from '@/shared/notes';
-import type { Language, Theme } from '@/shared/settings';
+import type { Settings } from '@/shared/settings';
 
 export interface ExtensionProtocolMap {
   ping(): 'PONG';
@@ -25,23 +25,9 @@ export interface ExtensionProtocolMap {
   getNote(data: { cardId: string }): Note | null;
   saveNote(data: { cardId: string; text: string }): void;
   deleteNote(data: { cardId: string }): void;
-  getMaxNewCardsPerDay(): number;
-  setMaxNewCardsPerDay(data: { value: number }): void;
-  getDayStartHour(): number;
-  setDayStartHour(data: { value: number }): void;
-  getAnimationsEnabled(): boolean;
-  setAnimationsEnabled(data: { value: boolean }): void;
-  getTheme(): Theme;
-  setTheme(data: { value: Theme }): void;
-  getResetEditorOnEveryProblem(): boolean;
-  setResetEditorOnEveryProblem(data: { value: boolean }): void;
-  getResetEditorOnDueReview(): boolean;
-  setResetEditorOnDueReview(data: { value: boolean }): void;
+  getSettings(): Settings;
+  updateSettings(data: { changes: Partial<Settings> }): void;
   shouldResetEditor(data: { slug: string; domain: LeetcodeDomain }): boolean;
-  getBadgeEnabled(): boolean;
-  setBadgeEnabled(data: { value: boolean }): void;
-  getLanguage(): Language;
-  setLanguage(data: { value: Language }): void;
   getCardStateStats(): Record<FsrsState, number>;
   getLastNDaysStats(data: { days: number }): DailyStats[];
   getNextNDaysStats(data: { days: number }): UpcomingReviewStats[];

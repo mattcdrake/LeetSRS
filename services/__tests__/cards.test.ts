@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/shared/cards';
-import { DEFAULT_MAX_NEW_CARDS_PER_DAY } from '@/shared/settings';
 import { requireDefined } from '@/test/utils/assertions';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import {
   addCard,
   delayCard,
@@ -22,6 +22,9 @@ import * as notesModule from '../notes';
 import type { DailyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
+const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
+const MOCK_MAX_NEW_CARDS_PER_DAY = buildSettings().maxNewCardsPerDay;
+
 // Mock the notes module
 vi.mock('../notes', () => ({
   deleteNote: vi.fn(),
@@ -29,11 +32,12 @@ vi.mock('../notes', () => ({
 
 // Mock the settings module
 vi.mock('../settings', () => ({
-  getMaxNewCardsPerDay: vi.fn(() => Promise.resolve(3)),
-  setMaxNewCardsPerDay: vi.fn(),
-  getDayStartHour: vi.fn(() => Promise.resolve(0)),
-  setDayStartHour: vi.fn(),
+  getSettings: mockGetSettings,
 }));
+
+beforeEach(() => {
+  mockGetSettings.mockResolvedValue(buildSettings());
+});
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {
@@ -1489,8 +1493,8 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should only get DEFAULT_MAX_NEW_CARDS_PER_DAY
-    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY);
+    // Should only get the configured maximum
+    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
@@ -1597,7 +1601,7 @@ describe('getReviewQueue', () => {
 
     // Rating the cards created stats entries, so we need to account for that
     // We rated 2 cards as new (review1 and review2 were new when first rated)
-    // So remaining new cards = DEFAULT_MAX_NEW_CARDS_PER_DAY - 2 = 1
+    // So remaining new cards = configured maximum - 2 = 1
     // Total = 2 review cards + 1 new card = 3
     expect(queue).toHaveLength(3);
 
@@ -1807,8 +1811,8 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should only include DEFAULT_MAX_NEW_CARDS_PER_DAY new cards
-    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY);
+    // Should only include the configured maximum of new cards
+    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
@@ -1875,8 +1879,8 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should only get (DEFAULT_MAX_NEW_CARDS_PER_DAY - 1) since 1 was already done
-    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY - 1);
+    // Should only get one less than the configured maximum since 1 was already done
+    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY - 1);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
@@ -1885,11 +1889,11 @@ describe('getReviewQueue', () => {
     await storage.setItem(
       STORAGE_KEYS.stats,
       createTestStats({
-        newCards: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+        newCards: MOCK_MAX_NEW_CARDS_PER_DAY,
         gradeBreakdown: {
           [Rating.Again]: 0,
           [Rating.Hard]: 0,
-          [Rating.Good]: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+          [Rating.Good]: MOCK_MAX_NEW_CARDS_PER_DAY,
           [Rating.Easy]: 0,
         },
       })
@@ -1917,13 +1921,13 @@ describe('getReviewQueue', () => {
     await storage.setItem(
       STORAGE_KEYS.stats,
       createTestStats({
-        newCards: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+        newCards: MOCK_MAX_NEW_CARDS_PER_DAY,
         reviewedCards: 2,
-        totalReviews: DEFAULT_MAX_NEW_CARDS_PER_DAY + 2,
+        totalReviews: MOCK_MAX_NEW_CARDS_PER_DAY + 2,
         gradeBreakdown: {
           [Rating.Again]: 0,
           [Rating.Hard]: 2,
-          [Rating.Good]: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+          [Rating.Good]: MOCK_MAX_NEW_CARDS_PER_DAY,
           [Rating.Easy]: 0,
         },
       })
@@ -1980,7 +1984,7 @@ describe('getReviewQueue', () => {
   });
 
   it('should handle partial new card limit correctly', async () => {
-    // Set DEFAULT_MAX_NEW_CARDS_PER_DAY = 3, already did 2
+    // Configured maximum is 3, already did 2
     await storage.setItem(
       STORAGE_KEYS.stats,
       createTestStats({
@@ -2028,15 +2032,15 @@ describe('getReviewQueue', () => {
 
     const queue = await getReviewQueue();
 
-    // Should get full DEFAULT_MAX_NEW_CARDS_PER_DAY when no stats exist
-    expect(queue).toHaveLength(DEFAULT_MAX_NEW_CARDS_PER_DAY);
+    // Should get the full configured maximum when no stats exist
+    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY);
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
   it('should respect custom max new cards per day setting', async () => {
     // Set custom max new cards per day
-    const { getMaxNewCardsPerDay } = await import('../settings');
-    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(5);
+    const { getSettings } = await import('../settings');
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 5 }));
 
     // Create new cards
     for (let i = 1; i <= 10; i++) {
@@ -2257,7 +2261,7 @@ describe('getReviewQueue', () => {
   });
 
   it('should handle dynamic changes to max new cards setting', async () => {
-    const { getMaxNewCardsPerDay } = await import('../settings');
+    const { getSettings } = await import('../settings');
 
     // Create many new cards
     for (let i = 1; i <= 10; i++) {
@@ -2271,17 +2275,17 @@ describe('getReviewQueue', () => {
     }
 
     // Start with default (3)
-    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(3);
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 3 }));
     let queue = await getReviewQueue();
     expect(queue.length).toBe(3);
 
     // Increase to 5
-    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(5);
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 5 }));
     queue = await getReviewQueue();
     expect(queue.length).toBe(5);
 
     // Decrease to 2
-    vi.mocked(getMaxNewCardsPerDay).mockResolvedValue(2);
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 2 }));
     queue = await getReviewQueue();
     expect(queue.length).toBe(2);
 

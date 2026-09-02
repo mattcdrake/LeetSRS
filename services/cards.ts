@@ -2,7 +2,7 @@ import { createEmptyCard, FSRS, type Card as FsrsCard, State as FsrsState, gener
 import { storage } from '#imports';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import { deleteNote } from './notes';
-import { getDayStartHour, getMaxNewCardsPerDay } from './settings';
+import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 import { STORAGE_KEYS } from './storage-keys';
 
@@ -162,8 +162,8 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   // Update stats tracking
   await updateStats(rating, isNewCard);
 
-  const dayStartHour = await getDayStartHour();
-  const shouldRequeue = isDueByDate(card, now, dayStartHour);
+  const settings = await getSettings();
+  const shouldRequeue = isDueByDate(card, now, settings.dayStartHour);
 
   return { card, shouldRequeue };
 }
@@ -185,9 +185,9 @@ const sortByDueDateThenSlug = (a: Card, b: Card): number => {
 
 export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
-  const dayStartHour = await getDayStartHour();
+  const settings = await getSettings();
   // Filter out paused cards and cards not due yet
-  const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card, new Date(), dayStartHour));
+  const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card, new Date(), settings.dayStartHour));
 
   // Separate into review cards and new cards
   const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);
@@ -199,8 +199,7 @@ export async function getReviewQueue(): Promise<Card[]> {
   // Get today's stats to determine how many new cards have already been done
   const todayStats = await getTodayStats();
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
-  const maxNewCardsPerDay = await getMaxNewCardsPerDay();
-  const remainingNewCards = Math.max(0, maxNewCardsPerDay - newCardsCompletedToday);
+  const remainingNewCards = Math.max(0, settings.maxNewCardsPerDay - newCardsCompletedToday);
 
   // Limit new cards to the remaining daily allowance (after sorting for stability)
   const limitedNewCards = newCards.slice(0, remainingNewCards);

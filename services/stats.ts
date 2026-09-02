@@ -1,9 +1,10 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { storage } from '#imports';
-import { DAILY_STATS_RETENTION_DAYS } from '@/shared/settings';
 import { formatLocalDate, getAllCards } from './cards';
-import { getDayStartHour } from './settings';
+import { getSettings } from './settings';
 import { STORAGE_KEYS } from './storage-keys';
+
+const DAILY_STATS_RETENTION_DAYS = 30;
 
 interface BaseStats {
   totalReviews: number;
@@ -53,15 +54,15 @@ export async function getMonthlyStats(): Promise<Record<string, MonthlyStats>> {
 
 export async function getTodayKey(): Promise<string> {
   const now = new Date();
-  const dayStartHour = await getDayStartHour();
-  return formatLocalDate(now, dayStartHour);
+  const settings = await getSettings();
+  return formatLocalDate(now, settings.dayStartHour);
 }
 
 export async function getYesterdayKey(): Promise<string> {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const dayStartHour = await getDayStartHour();
-  return formatLocalDate(yesterday, dayStartHour);
+  const settings = await getSettings();
+  return formatLocalDate(yesterday, settings.dayStartHour);
 }
 
 export async function updateStats(grade: Grade, isNewCard: boolean = false): Promise<void> {
@@ -101,7 +102,7 @@ export async function rollupOldStats(): Promise<void> {
   if (keys.length === 0) return;
 
   // Find the cutoff date (DAILY_STATS_RETENTION_DAYS ago from today)
-  const dayStartHour = await getDayStartHour();
+  const { dayStartHour } = await getSettings();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - DAILY_STATS_RETENTION_DAYS);
   const cutoffKey = formatLocalDate(cutoff, dayStartHour);
@@ -173,7 +174,7 @@ export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
   const stats = await getStats();
   const result: DailyStats[] = [];
   const today = new Date();
-  const dayStartHour = await getDayStartHour();
+  const { dayStartHour } = await getSettings();
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
@@ -205,7 +206,7 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
   const result: UpcomingReviewStats[] = [];
   const dateToIndex = new Map<string, number>();
   const today = new Date();
-  const dayStartHour = await getDayStartHour();
+  const { dayStartHour } = await getSettings();
 
   // Initialize result array with dates
   for (let i = 0; i < days; i++) {

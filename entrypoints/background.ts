@@ -22,24 +22,7 @@ import {
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { migrations, runMigrations } from '@/services/migrations';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
-import {
-  getAnimationsEnabled,
-  getBadgeEnabled,
-  getDayStartHour,
-  getLanguage,
-  getMaxNewCardsPerDay,
-  getResetEditorOnDueReview,
-  getResetEditorOnEveryProblem,
-  getTheme,
-  setAnimationsEnabled,
-  setBadgeEnabled,
-  setDayStartHour,
-  setLanguage,
-  setMaxNewCardsPerDay,
-  setResetEditorOnDueReview,
-  setResetEditorOnEveryProblem,
-  setTheme,
-} from '@/services/settings';
+import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
 import { onMessage } from '@/shared/messages';
 
@@ -47,8 +30,8 @@ const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 
 async function updateBadge() {
-  const enabled = await getBadgeEnabled();
-  if (enabled) {
+  const settings = await getSettings();
+  if (settings.badgeEnabled) {
     const queue = await getReviewQueue();
     if (queue.length > 0) {
       await browser.action.setBadgeText({ text: String(queue.length) });
@@ -121,25 +104,14 @@ export default defineBackground(() => {
   onMessage('getNote', ({ data }) => handleRequest(() => getNote(data.cardId)));
   onMessage('saveNote', ({ data }) => handleDataUpdate(() => saveNote(data.cardId, data.text)));
   onMessage('deleteNote', ({ data }) => handleDataUpdate(() => deleteNote(data.cardId)));
-  onMessage('getMaxNewCardsPerDay', () => handleRequest(getMaxNewCardsPerDay));
-  onMessage('setMaxNewCardsPerDay', ({ data }) => handleDataUpdate(() => setMaxNewCardsPerDay(data.value)));
-  onMessage('getDayStartHour', () => handleRequest(getDayStartHour));
-  onMessage('setDayStartHour', ({ data }) => handleDataUpdate(() => setDayStartHour(data.value)));
-  onMessage('getAnimationsEnabled', () => handleRequest(getAnimationsEnabled));
-  onMessage('setAnimationsEnabled', ({ data }) => handleDataUpdate(() => setAnimationsEnabled(data.value)));
-  onMessage('getTheme', () => handleRequest(getTheme));
-  onMessage('setTheme', ({ data }) => handleDataUpdate(() => setTheme(data.value)));
-  onMessage('getResetEditorOnEveryProblem', () => handleRequest(getResetEditorOnEveryProblem));
-  onMessage('setResetEditorOnEveryProblem', ({ data }) =>
-    handleDataUpdate(() => setResetEditorOnEveryProblem(data.value))
+  onMessage('getSettings', () => handleRequest(getSettings));
+  onMessage('updateSettings', ({ data }) =>
+    handleRequest(async () => {
+      await updateSettings(data.changes);
+      await updateBadge();
+    })
   );
-  onMessage('getResetEditorOnDueReview', () => handleRequest(getResetEditorOnDueReview));
-  onMessage('setResetEditorOnDueReview', ({ data }) => handleDataUpdate(() => setResetEditorOnDueReview(data.value)));
   onMessage('shouldResetEditor', ({ data }) => handleRequest(() => shouldResetEditor(data.slug, data.domain)));
-  onMessage('getBadgeEnabled', () => handleRequest(getBadgeEnabled));
-  onMessage('setBadgeEnabled', ({ data }) => handleDataUpdate(() => setBadgeEnabled(data.value)));
-  onMessage('getLanguage', () => handleRequest(getLanguage));
-  onMessage('setLanguage', ({ data }) => handleDataUpdate(() => setLanguage(data.value)));
   onMessage('getCardStateStats', () => handleRequest(getCardStateStats));
   onMessage('getLastNDaysStats', ({ data }) => handleRequest(() => getLastNDaysStats(data.days)));
   onMessage('getNextNDaysStats', ({ data }) => handleRequest(() => getNextNDaysStats(data.days)));

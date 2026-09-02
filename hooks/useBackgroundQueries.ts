@@ -1,8 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { GistSyncConfig } from '@/shared/gist-sync';
 import { sendMessage } from '@/shared/messages';
-import type { Language, Theme } from '@/shared/settings';
+import type { Settings } from '@/shared/settings';
 
 // Query Keys with hierarchical structure
 export const queryKeys = {
@@ -27,14 +27,6 @@ export const queryKeys = {
   // Settings related queries
   settings: {
     all: ['settings'] as const,
-    maxNewCardsPerDay: ['settings', 'maxNewCardsPerDay'] as const,
-    dayStartHour: ['settings', 'dayStartHour'] as const,
-    animationsEnabled: ['settings', 'animationsEnabled'] as const,
-    theme: ['settings', 'theme'] as const,
-    resetEditorOnEveryProblem: ['settings', 'resetEditorOnEveryProblem'] as const,
-    resetEditorOnDueReview: ['settings', 'resetEditorOnDueReview'] as const,
-    badgeEnabled: ['settings', 'badgeEnabled'] as const,
-    language: ['settings', 'language'] as const,
   },
   // Gist Sync related queries
   gistSync: {
@@ -195,147 +187,22 @@ export function usePauseCardMutation() {
   });
 }
 
-export function useMaxNewCardsPerDayQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.maxNewCardsPerDay,
-    queryFn: () => sendMessage('getMaxNewCardsPerDay'),
+export function useSettingsQuery() {
+  return useSuspenseQuery({
+    queryKey: queryKeys.settings.all,
+    queryFn: () => sendMessage('getSettings'),
   });
 }
 
-export function useSetMaxNewCardsPerDayMutation() {
+export function useUpdateSettingsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: number) => sendMessage('setMaxNewCardsPerDay', { value }),
+    mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.maxNewCardsPerDay });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
-    },
-  });
-}
-
-export function useDayStartHourQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.dayStartHour,
-    queryFn: () => sendMessage('getDayStartHour'),
-  });
-}
-
-export function useSetDayStartHourMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: number) => sendMessage('setDayStartHour', { value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.dayStartHour });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
       queryClient.invalidateQueries({ queryKey: queryKeys.stats.all });
-    },
-  });
-}
-
-export function useAnimationsEnabledQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.animationsEnabled,
-    queryFn: () => sendMessage('getAnimationsEnabled'),
-  });
-}
-
-export function useSetAnimationsEnabledMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setAnimationsEnabled', { value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.animationsEnabled });
-    },
-  });
-}
-
-export function useThemeQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.theme,
-    queryFn: () => sendMessage('getTheme'),
-  });
-}
-
-export function useSetThemeMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: Theme) => sendMessage('setTheme', { value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.theme });
-    },
-  });
-}
-
-export function useResetEditorOnEveryProblemQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.resetEditorOnEveryProblem,
-    queryFn: () => sendMessage('getResetEditorOnEveryProblem'),
-  });
-}
-
-export function useSetResetEditorOnEveryProblemMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setResetEditorOnEveryProblem', { value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnEveryProblem });
-    },
-  });
-}
-
-export function useResetEditorOnDueReviewQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.resetEditorOnDueReview,
-    queryFn: () => sendMessage('getResetEditorOnDueReview'),
-  });
-}
-
-export function useSetResetEditorOnDueReviewMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setResetEditorOnDueReview', { value }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnDueReview }),
-  });
-}
-
-export function useBadgeEnabledQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.badgeEnabled,
-    queryFn: () => sendMessage('getBadgeEnabled'),
-  });
-}
-
-export function useSetBadgeEnabledMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setBadgeEnabled', { value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.badgeEnabled });
-    },
-  });
-}
-
-export function useLanguageQuery() {
-  return useQuery({
-    queryKey: queryKeys.settings.language,
-    queryFn: () => sendMessage('getLanguage'),
-  });
-}
-
-export function useSetLanguageMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (value: Language) => sendMessage('setLanguage', { value }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.language });
     },
   });
 }

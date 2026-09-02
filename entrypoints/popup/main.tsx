@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import React from 'react';
+import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -26,9 +26,17 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <I18nProvider>
-          <App />
-        </I18nProvider>
+        <Suspense
+          fallback={
+            <div className="popup-loading" role="status" aria-label="Loading">
+              <div className="popup-loading-spinner" />
+            </div>
+          }
+        >
+          <I18nProvider>
+            <App />
+          </I18nProvider>
+        </Suspense>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </ErrorBoundary>
