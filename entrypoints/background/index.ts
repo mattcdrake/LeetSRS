@@ -113,7 +113,7 @@ export default defineBackground(() => {
     getSettings: { kind: 'read', handler: () => getSettings() },
     updateSettings: {
       kind: 'write',
-      syncTrackingOwner: 'executor',
+      syncTrackingOwner: 'handler',
       refreshBadge: true,
       handler: ({ changes }) => updateSettings(changes),
     },

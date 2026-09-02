@@ -38,7 +38,7 @@ describe('settings service', () => {
         theme: 'light',
       })
     );
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
   });
 
   it.each([
@@ -71,6 +71,7 @@ describe('settings service', () => {
   it('ignores an empty update', async () => {
     await updateSettings({});
     expect(await exportSettings()).toEqual({});
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
   it('exports only valid stored values and resets every setting', async () => {
