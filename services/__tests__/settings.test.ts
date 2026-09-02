@@ -63,12 +63,14 @@ describe('Settings Service', () => {
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBe(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
       expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
     });
 
     it('does nothing for an empty update', async () => {
       await updateSettings({});
 
       expect(await getSettings()).toEqual(EXPECTED_DEFAULT_SETTINGS);
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
     });
 
     it('does not persist any changes when validation fails', async () => {
@@ -83,6 +85,7 @@ describe('Settings Service', () => {
 
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
     });
 
     it('rejects invalid runtime values', async () => {

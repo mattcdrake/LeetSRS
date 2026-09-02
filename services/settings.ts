@@ -1,6 +1,7 @@
 import { storage } from '#imports';
 import { translations } from '@/shared/i18n';
 import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/shared/settings';
+import { markDataUpdated } from './data-tracker';
 import { detectBrowserLanguage } from './i18n';
 import { STORAGE_KEYS } from './storage-keys';
 
@@ -104,11 +105,7 @@ async function getSetting<K extends keyof Settings>(key: K): Promise<Settings[K]
 }
 
 async function setSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
-  const definition = getSettingDefinition(key);
-  if (!definition.validate(value)) {
-    throw new Error(definition.validationError(value));
-  }
-  await storage.setItem(definition.storageKey, value);
+  await updateSettings({ [key]: value } as Partial<Settings>);
 }
 
 const SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as Array<keyof Settings>;
@@ -133,7 +130,12 @@ export async function updateSettings(changes: Partial<Settings>): Promise<void> 
     return [{ definition, value }];
   });
 
+  if (updates.length === 0) {
+    return;
+  }
+
   await Promise.all(updates.map(({ definition, value }) => storage.setItem(definition.storageKey, value)));
+  await markDataUpdated();
 }
 
 export async function exportSettings(): Promise<Partial<Settings>> {

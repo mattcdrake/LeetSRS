@@ -105,7 +105,12 @@ export default defineBackground(() => {
   onMessage('saveNote', ({ data }) => handleDataUpdate(() => saveNote(data.cardId, data.text)));
   onMessage('deleteNote', ({ data }) => handleDataUpdate(() => deleteNote(data.cardId)));
   onMessage('getSettings', () => handleRequest(getSettings));
-  onMessage('updateSettings', ({ data }) => handleDataUpdate(() => updateSettings(data.changes)));
+  onMessage('updateSettings', ({ data }) =>
+    handleRequest(async () => {
+      await updateSettings(data.changes);
+      await updateBadge();
+    })
+  );
   onMessage('shouldResetEditor', ({ data }) => handleRequest(() => shouldResetEditor(data.slug, data.domain)));
   onMessage('getCardStateStats', () => handleRequest(getCardStateStats));
   onMessage('getLastNDaysStats', ({ data }) => handleRequest(() => getLastNDaysStats(data.days)));
