@@ -4,7 +4,6 @@ import type { Language } from '@/shared/settings';
 import { STORAGE_KEYS } from './storage-keys';
 
 const DEFAULT_LANGUAGE: Language = 'en';
-let cachedTranslations: Translations | undefined;
 
 export function detectBrowserLanguage(): Language {
   const browserLanguages = typeof navigator !== 'undefined' ? navigator.languages : [];
@@ -30,21 +29,7 @@ function resolveLanguage(language: unknown): Language {
   return typeof language === 'string' && language in translations ? (language as Language) : detectBrowserLanguage();
 }
 
-export async function initializeServiceTranslations(): Promise<void> {
+export async function getServiceTranslations(): Promise<Translations> {
   const language = await storage.getItem<Language>(STORAGE_KEYS.language);
-  cachedTranslations = translations[resolveLanguage(language)];
-  storage.watch<Language>(STORAGE_KEYS.language, (newLanguage) => {
-    cachedTranslations = translations[resolveLanguage(newLanguage)];
-  });
-}
-
-/**
- * Get the current translations for use in services.
- * Translations are automatically updated when the language setting changes.
- */
-export function getServiceTranslations(): Translations {
-  if (!cachedTranslations) {
-    throw new Error('Service translations have not been initialized');
-  }
-  return cachedTranslations;
+  return translations[resolveLanguage(language)];
 }

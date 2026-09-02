@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { translations } from '@/shared/i18n';
 import { createButton, createLeetSrsButton } from '../button';
 import { LEETSRS_BUTTON_COLOR } from '../constants';
 
@@ -61,7 +62,7 @@ describe('button utilities', () => {
 
     it('should create a div wrapper with correct structure', () => {
       const onClick = vi.fn();
-      const button = createLeetSrsButton(onClick);
+      const button = createLeetSrsButton(onClick, translations.en);
 
       expect(button.tagName).toBe('DIV');
       expect(button.className).toBe('relative flex');
@@ -78,7 +79,7 @@ describe('button utilities', () => {
 
     it('should create clickable div with correct attributes', () => {
       const onClick = vi.fn();
-      const button = createLeetSrsButton(onClick);
+      const button = createLeetSrsButton(onClick, translations.en);
 
       const clickableDiv = button.querySelector('[data-state="closed"]');
       expect(clickableDiv).toBeTruthy();
@@ -90,7 +91,7 @@ describe('button utilities', () => {
 
     it('should attach click handler to clickable div', () => {
       const onClick = vi.fn();
-      const button = createLeetSrsButton(onClick);
+      const button = createLeetSrsButton(onClick, translations.en);
 
       const clickableDiv = button.querySelector('[data-state="closed"]') as HTMLElement;
       clickableDiv.click();
@@ -100,7 +101,7 @@ describe('button utilities', () => {
 
     it('should include SVG icon', () => {
       const onClick = vi.fn();
-      const button = createLeetSrsButton(onClick);
+      const button = createLeetSrsButton(onClick, translations.en);
 
       const svg = button.querySelector('svg');
       expect(svg).toBeTruthy();
@@ -115,7 +116,7 @@ describe('button utilities', () => {
 
     it('should apply green color to clickable div', () => {
       const onClick = vi.fn();
-      const button = createLeetSrsButton(onClick);
+      const button = createLeetSrsButton(onClick, translations.en);
 
       const clickableDiv = button.querySelector('[data-state="closed"]') as HTMLElement;
       expect(clickableDiv.style.color).toBe(LEETSRS_BUTTON_COLOR);
@@ -126,13 +127,13 @@ describe('button utilities', () => {
 
       // Test light mode
       document.documentElement.classList.remove('dark');
-      const buttonLight = createLeetSrsButton(onClick);
+      const buttonLight = createLeetSrsButton(onClick, translations.en);
       const clickableDivLight = buttonLight.querySelector('[data-state="closed"]') as HTMLElement;
       expect(clickableDivLight.style.color).toBe('#28c244');
 
       // Test dark mode
       document.documentElement.classList.add('dark');
-      const buttonDark = createLeetSrsButton(onClick);
+      const buttonDark = createLeetSrsButton(onClick, translations.en);
       const clickableDivDark = buttonDark.querySelector('[data-state="closed"]') as HTMLElement;
       expect(clickableDivDark.style.color).toBe('#28c244');
     });

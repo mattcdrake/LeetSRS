@@ -1,4 +1,4 @@
-import { getServiceTranslations } from '@/services/i18n';
+import type { Translations } from '@/shared/i18n';
 import { LEETSRS_BUTTON_COLOR } from './constants';
 
 export function createButton(options: {
@@ -28,8 +28,7 @@ export function createButton(options: {
   return button;
 }
 
-export function createLeetSrsButton(onClick: () => void): HTMLDivElement {
-  const t = getServiceTranslations();
+export function createLeetSrsButton(onClick: () => void, t: Translations): HTMLDivElement {
   const buttonWrapper = document.createElement('div');
   buttonWrapper.className = 'relative flex';
 

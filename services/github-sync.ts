@@ -111,7 +111,7 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   const exportJson = await exportData();
 
   const { data } = await octokit.rest.gists.create({
-    description: getServiceTranslations().settings.gistSync.gistDescription,
+    description: (await getServiceTranslations()).settings.gistSync.gistDescription,
     public: false,
     files: {
       [GIST_FILENAME]: {
