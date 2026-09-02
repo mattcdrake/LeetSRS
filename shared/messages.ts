@@ -1,4 +1,9 @@
-import { defineExtensionMessaging, type MaybePromise } from '@webext-core/messaging';
+import {
+  defineExtensionMessaging,
+  type GetDataType,
+  type GetReturnType,
+  type MaybePromise,
+} from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
@@ -43,12 +48,12 @@ export interface ExtensionMessageMap {
   validateGistId(data: { gistId: string; pat: string }): GistValidationResult;
 }
 
-type MessageHandler<Name extends keyof ExtensionMessageMap> = (
-  ...args: Parameters<ExtensionMessageMap[Name]>
-) => MaybePromise<ReturnType<ExtensionMessageMap[Name]>>;
+export type MessageName = keyof ExtensionMessageMap;
+export type MessageData<Name extends MessageName> = GetDataType<ExtensionMessageMap[Name]>;
+export type MessageResult<Name extends MessageName> = GetReturnType<ExtensionMessageMap[Name]>;
 
-type BackgroundMessage<Name extends keyof ExtensionMessageMap> = {
-  handler: MessageHandler<Name>;
+type BackgroundMessage<Name extends MessageName> = {
+  handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
 } & (
   | { kind: 'read' }
   | {
@@ -59,7 +64,7 @@ type BackgroundMessage<Name extends keyof ExtensionMessageMap> = {
 );
 
 export type BackgroundMessageRegistry = {
-  [Name in keyof ExtensionMessageMap]: BackgroundMessage<Name>;
+  [Name in MessageName]: BackgroundMessage<Name>;
 };
 
 export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionMessageMap>();
