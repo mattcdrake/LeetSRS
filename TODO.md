@@ -34,7 +34,7 @@ Issue: [#150](https://github.com/mattcdrake/LeetSRS/issues/150)
 - [x] Move query keys into their corresponding domain modules.
 - [x] Update application and test imports to reference domain modules directly.
 - [x] Apply the narrower invalidation policies above.
-- [ ] Split `hooks/__tests__/useBackgroundQueries.test.tsx` into domain-focused tests.
+- [x] Split `hooks/__tests__/useBackgroundQueries.test.tsx` into domain-focused tests.
 - [ ] Add explicit coverage for each mutation's invalidation policy.
 - [x] Delete `hooks/useBackgroundQueries.ts`.
 - [ ] Run `npm test`.

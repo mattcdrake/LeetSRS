@@ -8,8 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { cardQueryKeys, useCardsQuery, usePauseCardMutation, useRateCardMutation } from '../queries/cards';
-import { noteQueryKeys, useDeleteNoteMutation, useSaveNoteMutation } from '../queries/notes';
+import { cardQueryKeys, useCardsQuery, usePauseCardMutation, useRateCardMutation } from '../cards';
 
 vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
@@ -76,155 +75,6 @@ describe('useRateCardMutation', () => {
         },
       });
     });
-  });
-});
-
-describe('useSaveNoteMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const cardId = 'test-card-123';
-    const noteText = 'This is my solution using two pointers approach';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-123',
-        text: 'This is my solution using two pointers approach',
-      });
-    });
-  });
-
-  it('should handle empty note text', async () => {
-    const cardId = 'test-card-456';
-    const noteText = '';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-456',
-        text: '',
-      });
-    });
-  });
-
-  it('should handle maximum length note text', async () => {
-    const cardId = 'test-card-789';
-    const noteText = 'a'.repeat(500); // Max length from NOTES_MAX_LENGTH
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-789',
-        text: noteText,
-      });
-    });
-  });
-
-  it('should invalidate note query cache on successful save', async () => {
-    const cardId = 'test-card-cache';
-    const noteText = 'Test note for cache invalidation';
-
-    const { wrapper, queryClient } = createTestWrapper();
-    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper,
-    });
-
-    // Trigger the mutation
-    result.current.mutate(noteText);
-
-    // Wait for the mutation to complete successfully
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    // Verify that invalidateQueries was called with the correct query key
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: noteQueryKeys.detail(cardId),
-    });
-
-    // Clean up the spy
-    invalidateQueriesSpy.mockRestore();
-  });
-});
-
-describe('useDeleteNoteMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const cardId = 'test-card-123';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useDeleteNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate();
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('deleteNote', {
-        cardId: 'test-card-123',
-      });
-    });
-  });
-
-  it('should invalidate note query cache on successful delete', async () => {
-    const cardId = 'test-card-delete';
-
-    const { wrapper, queryClient } = createTestWrapper();
-    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useDeleteNoteMutation(cardId), {
-      wrapper,
-    });
-
-    // Trigger the mutation
-    result.current.mutate();
-
-    // Wait for the mutation to complete successfully
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    // Verify that invalidateQueries was called with the correct query key
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: noteQueryKeys.detail(cardId),
-    });
-
-    // Clean up the spy
-    invalidateQueriesSpy.mockRestore();
   });
 });
 
@@ -319,7 +169,6 @@ describe('usePauseCardMutation', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    // Verify that all card queries were invalidated
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
       queryKey: cardQueryKeys.all,
     });
