@@ -1,4 +1,9 @@
-import { defineExtensionMessaging } from '@webext-core/messaging';
+import {
+  defineExtensionMessaging,
+  type GetDataType,
+  type GetReturnType,
+  type MaybePromise,
+} from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { DailyStats, UpcomingReviewStats } from '@/services/stats';
 import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
@@ -12,7 +17,7 @@ import type {
 import type { Note } from '@/shared/notes';
 import type { Settings } from '@/shared/settings';
 
-export interface ExtensionProtocolMap {
+export interface ExtensionMessageMap {
   ping(): 'PONG';
   addCard(data: { problem: ProblemDescriptor }): Card;
   getAllCards(): Card[];
@@ -43,4 +48,23 @@ export interface ExtensionProtocolMap {
   validateGistId(data: { gistId: string; pat: string }): GistValidationResult;
 }
 
-export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionProtocolMap>();
+export type MessageName = keyof ExtensionMessageMap;
+export type MessageData<Name extends MessageName> = GetDataType<ExtensionMessageMap[Name]>;
+export type MessageResult<Name extends MessageName> = GetReturnType<ExtensionMessageMap[Name]>;
+
+type BackgroundMessage<Name extends MessageName> = {
+  handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
+} & (
+  | { kind: 'read' }
+  | {
+      kind: 'write';
+      syncTrackingOwner: 'executor' | 'handler' | 'none';
+      refreshBadge: boolean;
+    }
+);
+
+export type BackgroundMessageRegistry = {
+  [Name in MessageName]: BackgroundMessage<Name>;
+};
+
+export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionMessageMap>();

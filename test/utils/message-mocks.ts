@@ -1,11 +1,11 @@
 import type { GetDataType, GetReturnType, MaybePromise } from '@webext-core/messaging';
 import type { MockedFunction } from 'vitest';
-import type { ExtensionProtocolMap, sendMessage } from '@/shared/messages';
+import type { ExtensionMessageMap, sendMessage } from '@/shared/messages';
 
-type MessageName = keyof ExtensionProtocolMap;
+type MessageName = keyof ExtensionMessageMap;
 type MessageHandler<TName extends MessageName> = (
-  data: GetDataType<ExtensionProtocolMap[TName]>
-) => MaybePromise<GetReturnType<ExtensionProtocolMap[TName]>>;
+  data: GetDataType<ExtensionMessageMap[TName]>
+) => MaybePromise<GetReturnType<ExtensionMessageMap[TName]>>;
 
 /**
  * Configures a mocked `sendMessage` as a typed protocol dispatcher.
@@ -35,7 +35,7 @@ export function createMessageMock(mock: MockedFunction<typeof sendMessage>) {
 
   const resolve = <TName extends MessageName>(
     type: TName,
-    result: MaybePromise<GetReturnType<ExtensionProtocolMap[TName]>>
+    result: MaybePromise<GetReturnType<ExtensionMessageMap[TName]>>
   ) => handle(type, () => result);
 
   const reset = () => {

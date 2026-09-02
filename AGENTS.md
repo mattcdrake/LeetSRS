@@ -22,16 +22,16 @@ Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semico
 
 ## Testing Guidelines
 
-Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Reuse `test/utils/` helpers and cover behavior changes and bug fixes. Before submitting, run `npm test` and `npm run compile`.
+Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Check `test/utils/` before adding local test helpers, and reuse an existing helper when it fits. Cover behavior changes and bug fixes. Before submitting, run `npm test` and `npm run compile`.
 
 ## Architecture Invariants
 
-- Extend `ExtensionProtocolMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background.ts`.
+- Extend `ExtensionMessageMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background/index.ts`.
 - Persist cards as `StoredCard`; serialize and deserialize at the storage boundary.
 - Route schema changes through a new, sequential migration in `services/migrations.ts`.
 - Use `formatLocalDate` and `isDueByDate` with `dayStartHour` for review-day comparisons; do not compare raw timestamps.
-- Ordinary data mutations must call `markDataUpdated()` through `handleDataUpdate`, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
+- Writes must declare the appropriate `syncTrackingOwner` in the background message registry, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
 
 ## Commit & Pull Request Guidelines
 
-Use Conventional Commits for commit subjects and pull request titles, such as `fix: clean up animation timeout`. Use standard lowercase types including `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, and `revert`; add an optional scope in parentheses. Mark breaking changes with `!` and explain them in a `BREAKING CHANGE:` footer. Keep subjects concise and imperative. Pull requests should explain user impact, summarize implementation and testing, link issues, and include screenshots for UI changes. Do not commit generated `.output/` or `.wxt/` content.
+Use Conventional Commits for commit subjects and pull request titles, such as `fix: clean up animation timeout`. Use standard lowercase types including `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, and `revert`; add an optional scope in parentheses. Mark breaking changes with `!` and explain them in a `BREAKING CHANGE:` footer. Keep subjects concise and imperative. For most pull requests, use concise bullet points followed by linked or closing issues; omit section headings such as `Summary` and `Testing` unless the change is genuinely complex. Include screenshots for UI changes. Do not commit generated `.output/` or `.wxt/` content.
