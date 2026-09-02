@@ -11,6 +11,7 @@ type RatingMenuOptions = {
 
 export class RatingMenu {
   private element: HTMLDivElement | null = null;
+  private isOpening = false;
   private container: HTMLElement;
   private onRate: RatingCallback;
   private onAddWithoutRating: () => void;
@@ -40,9 +41,15 @@ export class RatingMenu {
   }
 
   async show(): Promise<void> {
-    if (this.element) return;
+    if (this.element || this.isOpening) return;
 
-    const t = await this.getTranslations();
+    this.isOpening = true;
+    let t: Translations;
+    try {
+      t = await this.getTranslations();
+    } finally {
+      this.isOpening = false;
+    }
     this.element = document.createElement('div');
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;

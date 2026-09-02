@@ -250,6 +250,32 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
     });
 
+    it('should leave existing data unchanged when imported settings are invalid', async () => {
+      const existingCards = { 'existing-card': { id: 'existing-card-id' } };
+      const existingStats = { '2024-02-01': { totalReviews: 7 } };
+      const existingNote = { text: 'existing note' };
+      await storage.setItem(STORAGE_KEYS.cards, existingCards);
+      await storage.setItem(STORAGE_KEYS.stats, existingStats);
+      await storage.setItem(`${STORAGE_KEYS.notes}:existing-card-id`, existingNote);
+      await storage.setItem(STORAGE_KEYS.theme, 'dark');
+
+      const invalidImport = {
+        ...validExportData,
+        data: {
+          ...validExportData.data,
+          settings: { ...validExportData.data.settings, dayStartHour: 99 },
+        },
+      };
+
+      await expect(importData(JSON.stringify(invalidImport))).rejects.toThrow(
+        'Day start hour must be between 0 and 23'
+      );
+      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(existingCards);
+      expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(existingStats);
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:existing-card-id`)).toEqual(existingNote);
+      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
+    });
+
     it('should throw error for invalid JSON', async () => {
       await expect(importData('invalid json')).rejects.toThrow('Invalid JSON format');
     });

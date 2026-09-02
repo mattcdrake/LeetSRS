@@ -3,7 +3,7 @@ import type { Note } from '@/shared/notes';
 import type { Settings } from '@/shared/settings';
 import type { StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
-import { exportSettings, resetSettings, updateSettings } from './settings';
+import { exportSettings, resetSettings, updateSettings, validateSettings } from './settings';
 import type { DailyStats, MonthlyStats } from './stats';
 import { STORAGE_KEYS } from './storage-keys';
 
@@ -29,6 +29,17 @@ type ImportData = Omit<ExportData, 'data'> & {
     settings: ExportData['data']['settings'] & { autoClearLeetcode?: boolean };
   };
 };
+
+function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
+  if (!settings) return {};
+
+  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
+  const { autoClearLeetcode: _, ...currentSettings } = settings;
+  return {
+    ...currentSettings,
+    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
+  };
+}
 
 export async function exportData(): Promise<string> {
   // Gather all data from storage
@@ -112,6 +123,10 @@ export async function importData(jsonData: string): Promise<void> {
     throw new Error('Invalid notes data');
   }
 
+  // Validate settings before resetting existing data.
+  const importedSettings = getImportedSettings(data.data.settings);
+  validateSettings(importedSettings);
+
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
 
@@ -142,13 +157,7 @@ export async function importData(jsonData: string): Promise<void> {
 
   // Import settings
   if (data.data.settings) {
-    const resetEditorOnEveryProblem =
-      data.data.settings.resetEditorOnEveryProblem ?? data.data.settings.autoClearLeetcode;
-    const { autoClearLeetcode: _, ...settings } = data.data.settings;
-    await updateSettings({
-      ...settings,
-      ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
-    });
+    await updateSettings(importedSettings);
   }
 
   // Import gist sync settings

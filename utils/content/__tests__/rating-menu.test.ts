@@ -74,6 +74,22 @@ describe('RatingMenu', () => {
       expect(menus.length).toBe(1);
     });
 
+    it('should not create duplicate menus while translations are loading', async () => {
+      let resolveTranslations: (value: typeof t) => void = () => undefined;
+      const pendingTranslations = new Promise<typeof t>((resolve) => {
+        resolveTranslations = resolve;
+      });
+      menu = new RatingMenu(container, onRate, onAddWithoutRating, () => pendingTranslations);
+
+      const firstShow = menu.show();
+      const secondShow = menu.show();
+      resolveTranslations(t);
+      await Promise.all([firstShow, secondShow]);
+
+      const menus = container.querySelectorAll('[style*="position: absolute"]');
+      expect(menus.length).toBe(1);
+    });
+
     it('should set container position to relative', async () => {
       await menu.show();
       expect(container.style.position).toBe('relative');

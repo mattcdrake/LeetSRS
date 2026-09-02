@@ -100,6 +100,17 @@ function getSettingDefinition<K extends keyof Settings>(key: K): SettingDefiniti
 
 const SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as Array<keyof Settings>;
 
+export function validateSettings(changes: Partial<Settings>): void {
+  for (const key of SETTING_KEYS) {
+    if (!Object.hasOwn(changes, key)) continue;
+    const value: unknown = changes[key];
+    const definition = getSettingDefinition(key);
+    if (!definition.validate(value)) {
+      throw new Error(definition.validationError(value));
+    }
+  }
+}
+
 export async function getSettings(): Promise<Settings> {
   const entries = await Promise.all(
     SETTING_KEYS.map(async (key) => {
@@ -112,25 +123,18 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export async function updateSettings(changes: Partial<Settings>): Promise<void> {
-  const updates = SETTING_KEYS.flatMap((key) => {
-    if (!Object.hasOwn(changes, key)) {
-      return [];
-    }
+  validateSettings(changes);
+  const changedKeys = SETTING_KEYS.filter((key) => Object.hasOwn(changes, key));
 
-    const value: unknown = changes[key];
-    const definition = getSettingDefinition(key);
-    if (!definition.validate(value)) {
-      throw new Error(definition.validationError(value));
-    }
-
-    return [{ definition, value }];
-  });
-
-  if (updates.length === 0) {
+  if (changedKeys.length === 0) {
     return;
   }
 
-  await Promise.all(updates.map(({ definition, value }) => storage.setItem(definition.storageKey, value)));
+  await Promise.all(
+    changedKeys.map((key) =>
+      storage.setItem(getSettingDefinition(key).storageKey, changes[key] as Settings[typeof key])
+    )
+  );
   await markDataUpdated();
 }
 
