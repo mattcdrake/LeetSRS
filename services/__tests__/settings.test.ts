@@ -38,6 +38,7 @@ describe('settings service', () => {
         theme: 'light',
       })
     );
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
   it.each([

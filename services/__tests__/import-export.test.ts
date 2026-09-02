@@ -217,6 +217,12 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.language)).toEqual('en');
     });
 
+    it('should preserve the imported data update timestamp', async () => {
+      const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
+      await importData(JSON.stringify({ ...validExportData, dataUpdatedAt }));
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
+    });
+
     it('should import the legacy autoClearLeetcode setting', async () => {
       const { resetEditorOnEveryProblem: _, ...legacySettings } = validExportData.data.settings;
       const legacyData = {
