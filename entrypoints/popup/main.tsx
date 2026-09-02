@@ -26,7 +26,13 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <Suspense fallback={null}>
+        <Suspense
+          fallback={
+            <div className="popup-loading" role="status" aria-label="Loading">
+              <div className="popup-loading-spinner" />
+            </div>
+          }
+        >
           <I18nProvider>
             <App />
           </I18nProvider>
