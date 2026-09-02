@@ -1,6 +1,7 @@
 import { storage } from '#imports';
 import { detectBrowserLanguage, translations } from '@/shared/i18n';
 import {
+  DEFAULT_ANIMATIONS_ENABLED,
   DEFAULT_BADGE_ENABLED,
   DEFAULT_DAY_START_HOUR,
   DEFAULT_MAX_NEW_CARDS_PER_DAY,
@@ -12,96 +13,168 @@ import {
   MAX_NEW_CARDS_PER_DAY,
   MIN_DAY_START_HOUR,
   MIN_NEW_CARDS_PER_DAY,
+  type Settings,
   type Theme,
 } from '@/shared/settings';
 import { STORAGE_KEYS } from './storage-keys';
 
+type SettingDefinition<T> = {
+  storageKey: (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
+  defaultValue: T | (() => T);
+  validate: (value: unknown) => value is T;
+  validationError: (value: unknown) => string;
+};
+
+type SettingsRegistry = {
+  [K in keyof Settings]: SettingDefinition<Settings[K]>;
+};
+
+const SETTINGS_REGISTRY = {
+  maxNewCardsPerDay: {
+    storageKey: STORAGE_KEYS.maxNewCardsPerDay,
+    defaultValue: DEFAULT_MAX_NEW_CARDS_PER_DAY,
+    validate: (value): value is number =>
+      Number.isInteger(value) &&
+      (value as number) >= MIN_NEW_CARDS_PER_DAY &&
+      (value as number) <= MAX_NEW_CARDS_PER_DAY,
+    validationError: (value) =>
+      Number.isInteger(value)
+        ? `Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`
+        : 'Max new cards per day must be a whole number',
+  },
+  dayStartHour: {
+    storageKey: STORAGE_KEYS.dayStartHour,
+    defaultValue: DEFAULT_DAY_START_HOUR,
+    validate: (value): value is number =>
+      Number.isInteger(value) && (value as number) >= MIN_DAY_START_HOUR && (value as number) <= MAX_DAY_START_HOUR,
+    validationError: (value) =>
+      Number.isInteger(value)
+        ? `Day start hour must be between ${MIN_DAY_START_HOUR} and ${MAX_DAY_START_HOUR}`
+        : 'Day start hour must be a whole number',
+  },
+  animationsEnabled: {
+    storageKey: STORAGE_KEYS.animationsEnabled,
+    defaultValue: DEFAULT_ANIMATIONS_ENABLED,
+    validate: (value): value is boolean => typeof value === 'boolean',
+    validationError: () => 'Animations enabled must be a boolean',
+  },
+  theme: {
+    storageKey: STORAGE_KEYS.theme,
+    defaultValue: DEFAULT_THEME,
+    validate: (value): value is Theme => value === 'light' || value === 'dark',
+    validationError: () => 'Theme must be either "light" or "dark"',
+  },
+  resetEditorOnEveryProblem: {
+    storageKey: STORAGE_KEYS.resetEditorOnEveryProblem,
+    defaultValue: DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
+    validate: (value): value is boolean => typeof value === 'boolean',
+    validationError: () => 'Reset editor on every problem must be a boolean',
+  },
+  resetEditorOnDueReview: {
+    storageKey: STORAGE_KEYS.resetEditorOnDueReview,
+    defaultValue: DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
+    validate: (value): value is boolean => typeof value === 'boolean',
+    validationError: () => 'Reset editor on due review must be a boolean',
+  },
+  badgeEnabled: {
+    storageKey: STORAGE_KEYS.badgeEnabled,
+    defaultValue: DEFAULT_BADGE_ENABLED,
+    validate: (value): value is boolean => typeof value === 'boolean',
+    validationError: () => 'Badge enabled must be a boolean',
+  },
+  language: {
+    storageKey: STORAGE_KEYS.language,
+    defaultValue: detectBrowserLanguage,
+    validate: (value): value is Language => typeof value === 'string' && value in translations,
+    validationError: (value) =>
+      `Unsupported language: ${String(value)}. Supported languages: ${Object.keys(translations).join(', ')}`,
+  },
+} satisfies SettingsRegistry;
+
+function getDefaultValue<K extends keyof Settings>(definition: SettingDefinition<Settings[K]>): Settings[K] {
+  return typeof definition.defaultValue === 'function'
+    ? (definition.defaultValue as () => Settings[K])()
+    : definition.defaultValue;
+}
+
+function getSettingDefinition<K extends keyof Settings>(key: K): SettingDefinition<Settings[K]> {
+  return SETTINGS_REGISTRY[key] as SettingDefinition<Settings[K]>;
+}
+
+async function getSetting<K extends keyof Settings>(key: K): Promise<Settings[K]> {
+  const definition = getSettingDefinition(key);
+  const value: unknown = await storage.getItem(definition.storageKey);
+  return definition.validate(value) ? value : getDefaultValue(definition);
+}
+
+async function setSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
+  const definition = getSettingDefinition(key);
+  if (!definition.validate(value)) {
+    throw new Error(definition.validationError(value));
+  }
+  await storage.setItem(definition.storageKey, value);
+}
+
 export async function getMaxNewCardsPerDay(): Promise<number> {
-  const value = await storage.getItem<number>(STORAGE_KEYS.maxNewCardsPerDay);
-  return value ?? DEFAULT_MAX_NEW_CARDS_PER_DAY;
+  return getSetting('maxNewCardsPerDay');
 }
 
 export async function setMaxNewCardsPerDay(value: number): Promise<void> {
-  if (!Number.isInteger(value)) {
-    throw new Error('Max new cards per day must be a whole number');
-  }
-  if (value < MIN_NEW_CARDS_PER_DAY || value > MAX_NEW_CARDS_PER_DAY) {
-    throw new Error(`Max new cards per day must be between ${MIN_NEW_CARDS_PER_DAY} and ${MAX_NEW_CARDS_PER_DAY}`);
-  }
-  await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, value);
+  await setSetting('maxNewCardsPerDay', value);
 }
 
 export async function getDayStartHour(): Promise<number> {
-  const value = await storage.getItem<number>(STORAGE_KEYS.dayStartHour);
-  return value ?? DEFAULT_DAY_START_HOUR;
+  return getSetting('dayStartHour');
 }
 
 export async function setDayStartHour(value: number): Promise<void> {
-  if (!Number.isInteger(value)) {
-    throw new Error('Day start hour must be a whole number');
-  }
-  if (value < MIN_DAY_START_HOUR || value > MAX_DAY_START_HOUR) {
-    throw new Error(`Day start hour must be between ${MIN_DAY_START_HOUR} and ${MAX_DAY_START_HOUR}`);
-  }
-  await storage.setItem(STORAGE_KEYS.dayStartHour, value);
+  await setSetting('dayStartHour', value);
 }
 
 export async function getAnimationsEnabled(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.animationsEnabled);
-  return value ?? true;
+  return getSetting('animationsEnabled');
 }
 
 export async function setAnimationsEnabled(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.animationsEnabled, value);
+  await setSetting('animationsEnabled', value);
 }
 
 export async function getTheme(): Promise<Theme> {
-  const value = await storage.getItem<Theme>(STORAGE_KEYS.theme);
-  return value ?? DEFAULT_THEME;
+  return getSetting('theme');
 }
 
 export async function setTheme(value: Theme): Promise<void> {
-  if (value !== 'light' && value !== 'dark') {
-    throw new Error('Theme must be either "light" or "dark"');
-  }
-  await storage.setItem(STORAGE_KEYS.theme, value);
+  await setSetting('theme', value);
 }
 
 export async function getResetEditorOnEveryProblem(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnEveryProblem);
-  return value ?? DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM;
+  return getSetting('resetEditorOnEveryProblem');
 }
 
 export async function setResetEditorOnEveryProblem(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, value);
+  await setSetting('resetEditorOnEveryProblem', value);
 }
 
 export async function getResetEditorOnDueReview(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.resetEditorOnDueReview);
-  return value ?? DEFAULT_RESET_EDITOR_ON_DUE_REVIEW;
+  return getSetting('resetEditorOnDueReview');
 }
 
 export async function setResetEditorOnDueReview(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, value);
+  await setSetting('resetEditorOnDueReview', value);
 }
 
 export async function getBadgeEnabled(): Promise<boolean> {
-  const value = await storage.getItem<boolean>(STORAGE_KEYS.badgeEnabled);
-  return value ?? DEFAULT_BADGE_ENABLED;
+  return getSetting('badgeEnabled');
 }
 
 export async function setBadgeEnabled(value: boolean): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.badgeEnabled, value);
+  await setSetting('badgeEnabled', value);
 }
 
 export async function getLanguage(): Promise<Language> {
-  const value = await storage.getItem<Language>(STORAGE_KEYS.language);
-  return value && value in translations ? value : detectBrowserLanguage();
+  return getSetting('language');
 }
 
 export async function setLanguage(value: Language): Promise<void> {
-  if (!(value in translations)) {
-    throw new Error(`Unsupported language: ${value}. Supported languages: ${Object.keys(translations).join(', ')}`);
-  }
-  await storage.setItem(STORAGE_KEYS.language, value);
+  await setSetting('language', value);
 }
