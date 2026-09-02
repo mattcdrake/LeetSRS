@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext } from 'react';
-import { useSettingsQuery } from '@/hooks/useBackgroundQueries';
+import { useSettingsQuery } from '@/hooks/queries/settings';
 import { type Translations, translations } from '@/shared/i18n';
 
 const I18nContext = createContext<Translations>(translations.en);

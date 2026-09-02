@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { cardQueryKeys } from '@/hooks/queries/cards';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -18,7 +18,7 @@ describe('StatsBar', () => {
   const renderStats = (cards: Card[] = []) => {
     messages.reset().resolve('getReviewQueue', cards);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(queryKeys.cards.reviewQueue, cards);
+    queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
     return render(<StatsBar />, { wrapper });
   };
 

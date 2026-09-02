@@ -9,7 +9,7 @@ import {
   useTriggerGistSyncMutation,
   useValidateGistIdMutation,
   useValidatePatMutation,
-} from '@/hooks/useBackgroundQueries';
+} from '@/hooks/queries/gist-sync';
 import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';

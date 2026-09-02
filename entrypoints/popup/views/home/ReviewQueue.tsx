@@ -6,8 +6,8 @@ import {
   useRateCardMutation,
   useRemoveCardMutation,
   useReviewQueueQuery,
-  useSettingsQuery,
-} from '@/hooks/useBackgroundQueries';
+} from '@/hooks/queries/cards';
+import { useSettingsQuery } from '@/hooks/queries/settings';
 import type { Card, RateCardInput } from '@/shared/cards';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';

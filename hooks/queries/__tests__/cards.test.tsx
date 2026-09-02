@@ -2,20 +2,23 @@
  * @vitest-environment happy-dom
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import {
-  queryKeys,
+  cardQueryKeys,
+  useAddCardMutation,
   useCardsQuery,
-  useDeleteNoteMutation,
+  useDelayCardMutation,
   usePauseCardMutation,
   useRateCardMutation,
-  useSaveNoteMutation,
-} from '../useBackgroundQueries';
+  useRemoveCardMutation,
+} from '../cards';
+import { statsQueryKeys } from '../stats';
 
 vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
@@ -85,152 +88,50 @@ describe('useRateCardMutation', () => {
   });
 });
 
-describe('useSaveNoteMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const cardId = 'test-card-123';
-    const noteText = 'This is my solution using two pointers approach';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-123',
-        text: 'This is my solution using two pointers approach',
-      });
-    });
-  });
-
-  it('should handle empty note text', async () => {
-    const cardId = 'test-card-456';
-    const noteText = '';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-456',
-        text: '',
-      });
-    });
-  });
-
-  it('should handle maximum length note text', async () => {
-    const cardId = 'test-card-789';
-    const noteText = 'a'.repeat(500); // Max length from NOTES_MAX_LENGTH
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-789',
-        text: noteText,
-      });
-    });
-  });
-
-  it('should invalidate note query cache on successful save', async () => {
-    const cardId = 'test-card-cache';
-    const noteText = 'Test note for cache invalidation';
-
+describe('card mutation invalidation', () => {
+  it('invalidates only the queries affected by each mutation', async () => {
+    const problem = buildProblem();
     const { wrapper, queryClient } = createTestWrapper();
-    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(
+      () => ({
+        add: useAddCardMutation(),
+        remove: useRemoveCardMutation(),
+        rate: useRateCardMutation(),
+        delay: useDelayCardMutation(),
+        pause: usePauseCardMutation(),
+      }),
+      { wrapper }
+    );
 
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
+    const expectInvalidations = async (mutate: () => Promise<unknown>, queryKeys: readonly (readonly unknown[])[]) => {
+      invalidateQueries.mockClear();
+      await act(mutate);
+      expect(invalidateQueries.mock.calls.map(([filters]) => filters)).toEqual(
+        queryKeys.map((queryKey) => ({ queryKey }))
+      );
+    };
 
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper,
-    });
-
-    // Trigger the mutation
-    result.current.mutate(noteText);
-
-    // Wait for the mutation to complete successfully
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    // Verify that invalidateQueries was called with the correct query key
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.notes.detail(cardId),
-    });
-
-    // Clean up the spy
-    invalidateQueriesSpy.mockRestore();
-  });
-});
-
-describe('useDeleteNoteMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const cardId = 'test-card-123';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useDeleteNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate();
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('deleteNote', {
-        cardId: 'test-card-123',
-      });
-    });
-  });
-
-  it('should invalidate note query cache on successful delete', async () => {
-    const cardId = 'test-card-delete';
-
-    const { wrapper, queryClient } = createTestWrapper();
-    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useDeleteNoteMutation(cardId), {
-      wrapper,
-    });
-
-    // Trigger the mutation
-    result.current.mutate();
-
-    // Wait for the mutation to complete successfully
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    // Verify that invalidateQueries was called with the correct query key
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: queryKeys.notes.detail(cardId),
-    });
-
-    // Clean up the spy
-    invalidateQueriesSpy.mockRestore();
+    await expectInvalidations(
+      () => result.current.add.mutateAsync(problem),
+      [cardQueryKeys.all, statsQueryKeys.cardState, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.remove.mutateAsync(problem.slug),
+      [cardQueryKeys.all, statsQueryKeys.cardState, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }),
+      [cardQueryKeys.all, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.pause.mutateAsync({ slug: problem.slug, paused: true }),
+      [cardQueryKeys.all, statsQueryKeys.nextNDays.all]
+    );
+    await expectInvalidations(
+      () => result.current.rate.mutateAsync({ ...problem, rating: Rating.Good }),
+      [cardQueryKeys.all, statsQueryKeys.all]
+    );
   });
 });
 
@@ -297,7 +198,7 @@ describe('usePauseCardMutation', () => {
     });
   });
 
-  it('should invalidate cards and review queue queries on successful pause', async () => {
+  it('should invalidate card queries on successful pause', async () => {
     const mockCard: Card = {
       id: 'test-id',
       slug: 'test-problem',
@@ -325,9 +226,8 @@ describe('usePauseCardMutation', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    // Verify that all card queries were invalidated
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: ['cards'],
+      queryKey: cardQueryKeys.all,
     });
 
     invalidateQueriesSpy.mockRestore();

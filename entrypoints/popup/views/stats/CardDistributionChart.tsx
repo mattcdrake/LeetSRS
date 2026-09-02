@@ -1,7 +1,7 @@
 import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { State as FsrsState } from 'ts-fsrs';
-import { useCardStateStatsQuery } from '@/hooks/useBackgroundQueries';
+import { useCardStateStatsQuery } from '@/hooks/queries/stats';
 import { useI18n } from '../../contexts/I18nContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend);

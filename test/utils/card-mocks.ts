@@ -1,5 +1,16 @@
 import type { State } from 'ts-fsrs';
-import type { Card } from '@/shared/cards';
+import type { Card, ProblemDescriptor } from '@/shared/cards';
+
+export function buildProblem(overrides: Partial<ProblemDescriptor> = {}): ProblemDescriptor {
+  return {
+    slug: 'two-sum',
+    name: 'Two Sum',
+    leetcodeId: '1',
+    difficulty: 'Easy',
+    domain: 'leetcode.com',
+    ...overrides,
+  };
+}
 
 /**
  * Creates a mock Card object for testing

@@ -5,7 +5,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { queryKeys } from '@/hooks/useBackgroundQueries';
+import { noteQueryKeys } from '@/hooks/queries/notes';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -25,7 +25,7 @@ describe('CardNotes', () => {
   let queryClient: QueryClient;
 
   const mockNote = (note: Note | null) => {
-    queryClient.setQueryData(queryKeys.notes.detail(mockCardId), note);
+    queryClient.setQueryData(noteQueryKeys.detail(mockCardId), note);
   };
 
   const getTextarea = () => screen.getByRole('textbox') as HTMLTextAreaElement;

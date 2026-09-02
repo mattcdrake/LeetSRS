@@ -1,7 +1,7 @@
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { Rating } from 'ts-fsrs';
-import { useLastNDaysStatsQuery } from '@/hooks/useBackgroundQueries';
+import { useLastNDaysStatsQuery } from '@/hooks/queries/stats';
 import { useI18n } from '../../contexts/I18nContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);

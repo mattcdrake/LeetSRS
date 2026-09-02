@@ -1,4 +1,4 @@
-import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/useBackgroundQueries';
+import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/queries/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 
