@@ -198,7 +198,7 @@ export function usePauseCardMutation() {
 export function useMaxNewCardsPerDayQuery() {
   return useQuery({
     queryKey: queryKeys.settings.maxNewCardsPerDay,
-    queryFn: () => sendMessage('getMaxNewCardsPerDay'),
+    queryFn: async () => (await sendMessage('getSettings')).maxNewCardsPerDay,
   });
 }
 
@@ -206,7 +206,7 @@ export function useSetMaxNewCardsPerDayMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: number) => sendMessage('setMaxNewCardsPerDay', { value }),
+    mutationFn: (value: number) => sendMessage('updateSettings', { changes: { maxNewCardsPerDay: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.maxNewCardsPerDay });
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
@@ -217,7 +217,7 @@ export function useSetMaxNewCardsPerDayMutation() {
 export function useDayStartHourQuery() {
   return useQuery({
     queryKey: queryKeys.settings.dayStartHour,
-    queryFn: () => sendMessage('getDayStartHour'),
+    queryFn: async () => (await sendMessage('getSettings')).dayStartHour,
   });
 }
 
@@ -225,7 +225,7 @@ export function useSetDayStartHourMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: number) => sendMessage('setDayStartHour', { value }),
+    mutationFn: (value: number) => sendMessage('updateSettings', { changes: { dayStartHour: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.dayStartHour });
       queryClient.invalidateQueries({ queryKey: queryKeys.cards.reviewQueue });
@@ -237,7 +237,7 @@ export function useSetDayStartHourMutation() {
 export function useAnimationsEnabledQuery() {
   return useQuery({
     queryKey: queryKeys.settings.animationsEnabled,
-    queryFn: () => sendMessage('getAnimationsEnabled'),
+    queryFn: async () => (await sendMessage('getSettings')).animationsEnabled,
   });
 }
 
@@ -245,7 +245,7 @@ export function useSetAnimationsEnabledMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setAnimationsEnabled', { value }),
+    mutationFn: (value: boolean) => sendMessage('updateSettings', { changes: { animationsEnabled: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.animationsEnabled });
     },
@@ -255,7 +255,7 @@ export function useSetAnimationsEnabledMutation() {
 export function useThemeQuery() {
   return useQuery({
     queryKey: queryKeys.settings.theme,
-    queryFn: () => sendMessage('getTheme'),
+    queryFn: async () => (await sendMessage('getSettings')).theme,
   });
 }
 
@@ -263,7 +263,7 @@ export function useSetThemeMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: Theme) => sendMessage('setTheme', { value }),
+    mutationFn: (value: Theme) => sendMessage('updateSettings', { changes: { theme: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.theme });
     },
@@ -273,7 +273,7 @@ export function useSetThemeMutation() {
 export function useResetEditorOnEveryProblemQuery() {
   return useQuery({
     queryKey: queryKeys.settings.resetEditorOnEveryProblem,
-    queryFn: () => sendMessage('getResetEditorOnEveryProblem'),
+    queryFn: async () => (await sendMessage('getSettings')).resetEditorOnEveryProblem,
   });
 }
 
@@ -281,7 +281,7 @@ export function useSetResetEditorOnEveryProblemMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setResetEditorOnEveryProblem', { value }),
+    mutationFn: (value: boolean) => sendMessage('updateSettings', { changes: { resetEditorOnEveryProblem: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnEveryProblem });
     },
@@ -291,7 +291,7 @@ export function useSetResetEditorOnEveryProblemMutation() {
 export function useResetEditorOnDueReviewQuery() {
   return useQuery({
     queryKey: queryKeys.settings.resetEditorOnDueReview,
-    queryFn: () => sendMessage('getResetEditorOnDueReview'),
+    queryFn: async () => (await sendMessage('getSettings')).resetEditorOnDueReview,
   });
 }
 
@@ -299,7 +299,7 @@ export function useSetResetEditorOnDueReviewMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setResetEditorOnDueReview', { value }),
+    mutationFn: (value: boolean) => sendMessage('updateSettings', { changes: { resetEditorOnDueReview: value } }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.settings.resetEditorOnDueReview }),
   });
 }
@@ -307,7 +307,7 @@ export function useSetResetEditorOnDueReviewMutation() {
 export function useBadgeEnabledQuery() {
   return useQuery({
     queryKey: queryKeys.settings.badgeEnabled,
-    queryFn: () => sendMessage('getBadgeEnabled'),
+    queryFn: async () => (await sendMessage('getSettings')).badgeEnabled,
   });
 }
 
@@ -315,7 +315,7 @@ export function useSetBadgeEnabledMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: boolean) => sendMessage('setBadgeEnabled', { value }),
+    mutationFn: (value: boolean) => sendMessage('updateSettings', { changes: { badgeEnabled: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.badgeEnabled });
     },
@@ -325,7 +325,7 @@ export function useSetBadgeEnabledMutation() {
 export function useLanguageQuery() {
   return useQuery({
     queryKey: queryKeys.settings.language,
-    queryFn: () => sendMessage('getLanguage'),
+    queryFn: async () => (await sendMessage('getSettings')).language,
   });
 }
 
@@ -333,7 +333,7 @@ export function useSetLanguageMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (value: Language) => sendMessage('setLanguage', { value }),
+    mutationFn: (value: Language) => sendMessage('updateSettings', { changes: { language: value } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settings.language });
     },

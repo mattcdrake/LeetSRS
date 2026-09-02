@@ -23,7 +23,7 @@ Storage keys, defaults, validation, browser-language fallback, and sync behavior
 
 - [x] Define the `Settings` type and internal metadata for storage keys, defaults, and validation.
 - [x] Implement `getSettings()` and `updateSettings()`.
-- [ ] Replace individual background messages with get/update settings messages.
+- [x] Replace individual background messages with get/update settings messages.
 - [ ] Replace individual React Query hooks with settings-level query and mutation hooks.
 - [ ] Update all clients to read from the settings object.
 - [ ] Reduce `shared/settings.ts` to the public cross-context contract; move defaults, registry metadata, validation, and other implementation-only details into the settings service.
