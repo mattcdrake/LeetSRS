@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
 import type { GistSyncConfig } from '@/shared/gist-sync';
 import { sendMessage } from '@/shared/messages';
@@ -188,7 +188,7 @@ export function usePauseCardMutation() {
 }
 
 export function useSettingsQuery() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: queryKeys.settings.all,
     queryFn: () => sendMessage('getSettings'),
   });

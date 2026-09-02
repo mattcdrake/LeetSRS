@@ -12,7 +12,6 @@ function App() {
   const { data: settings } = useSettingsQuery();
 
   useEffect(() => {
-    if (!settings) return;
     if (!settings.animationsEnabled) {
       document.documentElement.classList.add('animations-disabled');
     } else {
@@ -21,7 +20,6 @@ function App() {
   }, [settings]);
 
   useEffect(() => {
-    if (!settings) return;
     const root = document.documentElement;
     const body = document.body;
 
@@ -31,8 +29,6 @@ function App() {
     body.classList.remove('light', 'dark');
     body.classList.add(settings.theme);
   }, [settings]);
-
-  if (!settings) return null;
 
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,

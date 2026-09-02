@@ -10,7 +10,7 @@ export function LanguageSection() {
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
 
-  if (!FEATURE_FLAGS.languageSelection || !settings) {
+  if (!FEATURE_FLAGS.languageSelection) {
     return null;
   }
 

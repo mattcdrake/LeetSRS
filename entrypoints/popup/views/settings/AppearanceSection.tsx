@@ -8,8 +8,6 @@ export function AppearanceSection() {
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
 
-  if (!settings) return null;
-
   const setDarkMode = (isSelected: boolean) => {
     updateSettingsMutation.mutate({ theme: isSelected ? 'dark' : 'light' });
   };

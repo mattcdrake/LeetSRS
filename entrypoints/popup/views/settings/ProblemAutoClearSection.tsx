@@ -7,8 +7,6 @@ export function ProblemAutoClearSection() {
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
 
-  if (!settings) return null;
-
   const setResetEditorOnEveryProblem = (isSelected: boolean) => {
     updateSettingsMutation.mutate({ resetEditorOnEveryProblem: isSelected });
   };

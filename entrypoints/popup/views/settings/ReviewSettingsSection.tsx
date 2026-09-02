@@ -17,18 +17,12 @@ export function ReviewSettingsSection() {
   const [dayStartHourValue, setDayStartHourValue] = useState('');
 
   useEffect(() => {
-    if (settings) {
-      setInputValue(settings.maxNewCardsPerDay.toString());
-    }
+    setInputValue(settings.maxNewCardsPerDay.toString());
   }, [settings]);
 
   useEffect(() => {
-    if (settings) {
-      setDayStartHourValue(settings.dayStartHour.toString());
-    }
+    setDayStartHourValue(settings.dayStartHour.toString());
   }, [settings]);
-
-  if (!settings) return null;
 
   const handleBlur = () => {
     const value = parseInt(inputValue, 10);

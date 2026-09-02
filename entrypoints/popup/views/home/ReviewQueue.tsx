@@ -33,8 +33,6 @@ export function ReviewQueue() {
     };
   }, []);
 
-  if (!settings) return null;
-
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
     options: {

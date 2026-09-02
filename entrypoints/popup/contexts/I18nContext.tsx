@@ -6,7 +6,7 @@ const I18nContext = createContext<Translations>(translations.en);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const { data: settings } = useSettingsQuery();
-  const t = settings ? translations[settings.language] : translations.en;
+  const t = translations[settings.language];
 
   return <I18nContext.Provider value={t}>{children}</I18nContext.Provider>;
 }
