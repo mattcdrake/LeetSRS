@@ -95,6 +95,31 @@ describe('CardView', () => {
     expect(hardCard).toHaveClass('text-red-500');
   });
 
+  it('should link cards to their problem on the stored LeetCode domain', () => {
+    const cards = [
+      createMockCard(State.New, { name: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),
+      createMockCard(State.New, { name: 'Chinese Problem', slug: 'chinese-problem', domain: 'leetcode.cn' }),
+    ];
+
+    seedCards(cards);
+
+    renderWithQueryClient(<CardView />);
+
+    expect(screen.getByRole('link', { name: 'Open Two Sum on LeetCode' })).toHaveAttribute(
+      'href',
+      'https://leetcode.com/problems/two-sum/description/'
+    );
+    expect(screen.getByRole('link', { name: 'Open Chinese Problem on LeetCode' })).toHaveAttribute(
+      'href',
+      'https://leetcode.cn/problems/chinese-problem/description/'
+    );
+
+    for (const link of screen.getAllByRole('link')) {
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    }
+  });
+
   it('should show pause indicator for paused cards', () => {
     const cards = [
       createMockCard(State.New, { paused: true, name: 'Paused Problem' }),

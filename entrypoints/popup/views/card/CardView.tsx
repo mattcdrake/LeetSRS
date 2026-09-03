@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
-import { FaCirclePause, FaMagnifyingGlass, FaPlay, FaTrash, FaXmark } from 'react-icons/fa6';
+import { FaArrowUpRightFromSquare, FaCirclePause, FaMagnifyingGlass, FaPlay, FaTrash, FaXmark } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
 import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/hooks/queries/cards';
 import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
@@ -172,13 +172,24 @@ function CardItem({
 }: CardItemProps) {
   return (
     <div className="bg-secondary rounded-lg border border-current overflow-hidden">
-      <Button
-        className="w-full flex items-center justify-between p-3 hover:bg-tertiary transition-colors text-left"
-        onPress={onToggle}
-        aria-expanded={isExpanded}
-      >
-        <CardHeader card={card} isExpanded={isExpanded} t={t} />
-      </Button>
+      <div className="flex items-center hover:bg-tertiary transition-colors">
+        <Button
+          className="flex-1 flex items-center justify-between p-3 text-left"
+          onPress={onToggle}
+          aria-expanded={isExpanded}
+        >
+          <CardHeader card={card} isExpanded={isExpanded} t={t} />
+        </Button>
+        <a
+          href={`https://${card.domain}/problems/${card.slug}/description/`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="self-stretch flex items-center px-3 text-secondary hover:text-primary transition-colors"
+          aria-label={`Open ${card.name} on LeetCode`}
+        >
+          <FaArrowUpRightFromSquare className="text-sm" />
+        </a>
+      </div>
       {isExpanded && (
         <CardStats
           card={card}
