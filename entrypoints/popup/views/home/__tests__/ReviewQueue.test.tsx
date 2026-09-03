@@ -5,7 +5,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
-import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { cardQueryKeys } from '@/hooks/queries/cards';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
@@ -122,6 +122,10 @@ describe('ReviewQueue', () => {
     mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe('Empty Queue', () => {
     it('should show empty state when no cards to review', async () => {
       seedQueue([]);
@@ -195,6 +199,24 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
+    it('should finish immediately when reduced motion is preferred', async () => {
+      vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query) =>
+          ({
+            matches: query === '(prefers-reduced-motion: reduce)',
+            media: query,
+          }) as MediaQueryList
+      );
+      render(<ReviewQueue />, { wrapper });
+
+      const goodButton = await screen.findByRole('button', { name: 'Good' });
+      fireEvent.click(goodButton);
+
+      await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
+      await waitFor(() => expect(goodButton).not.toBeDisabled());
+      expect(screen.getByTestId('review-card').parentElement).not.toHaveClass('animate-slide-right');
+    });
+
     it('should finish processing when the slide animation ends', async () => {
       render(<ReviewQueue />, { wrapper });
 

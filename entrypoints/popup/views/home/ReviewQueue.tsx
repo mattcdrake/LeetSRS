@@ -13,6 +13,8 @@ import { ActionsSection } from './ActionsSection';
 import { NotesSection } from './NotesSection';
 import { ReviewCard } from './ReviewCard';
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
 export function ReviewQueue() {
   const t = useI18n();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
@@ -24,9 +26,7 @@ export function ReviewQueue() {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
 
-  const finishAnimation = () => {
-    if (!slideDirection) return;
-
+  const finishCardAction = () => {
     setSlideDirection(null);
     setIsProcessing(false);
     setAnimatingCard(null);
@@ -46,6 +46,11 @@ export function ReviewQueue() {
 
     try {
       const result = await action();
+
+      if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
+        finishCardAction();
+        return;
+      }
 
       const direction = options.getSlideDirection(result);
       setSlideDirection(direction);
@@ -164,7 +169,7 @@ export function ReviewQueue() {
       <div
         className={getAnimationClass()}
         onAnimationEnd={(event) => {
-          if (event.currentTarget === event.target) finishAnimation();
+          if (slideDirection && event.currentTarget === event.target) finishCardAction();
         }}
       >
         {/* The key is important to ensure React re-mounts the component for a new card */}
