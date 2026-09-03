@@ -6,6 +6,7 @@ import type { Note } from '@/shared/notes';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import type { StoredCard } from '../cards';
 import { exportData, importData, resetAllData } from '../import-export';
+import { migrations, runMigrations, setSchemaVersion } from '../migrations';
 import type { DailyStats, MonthlyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
@@ -124,6 +125,12 @@ describe('import-export', () => {
       expect(parsed.data.monthlyStats).toBeUndefined();
     });
 
+    it('should export schema version 2 after migrations run', async () => {
+      await runMigrations(migrations);
+      const parsed = JSON.parse(await exportData());
+      expect(parsed.schemaVersion).toBe(2);
+    });
+
     it('should include monthlyStats in export when present', async () => {
       const mockMonthly: Record<string, MonthlyStats> = {
         '2024-01': {
@@ -217,6 +224,21 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.language)).toEqual('en');
     });
 
+    it.each(['system', 'light', 'dark'] as const)('should round-trip the %s theme', async (theme) => {
+      const data = {
+        ...validExportData,
+        data: {
+          ...validExportData.data,
+          settings: { ...validExportData.data.settings, theme },
+        },
+      };
+
+      await importData(JSON.stringify(data));
+
+      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe(theme);
+      expect(JSON.parse(await exportData()).data.settings.theme).toBe(theme);
+    });
+
     it('should preserve the imported data update timestamp', async () => {
       const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
       await importData(JSON.stringify({ ...validExportData, dataUpdatedAt }));
@@ -295,6 +317,22 @@ describe('import-export', () => {
       const newerSchema = { ...validExportData, schemaVersion: 999 };
       await expect(importData(JSON.stringify(newerSchema))).rejects.toThrow(
         'Export is from a newer version (schema 999). Please update the extension.'
+      );
+    });
+
+    it('should reject a system-theme export on a schema version 1 client', async () => {
+      await setSchemaVersion(1);
+      const systemThemeExport = {
+        ...validExportData,
+        schemaVersion: 2,
+        data: {
+          ...validExportData.data,
+          settings: { ...validExportData.data.settings, theme: 'system' },
+        },
+      };
+
+      await expect(importData(JSON.stringify(systemThemeExport))).rejects.toThrow(
+        'Export is from a newer version (schema 2). Please update the extension.'
       );
     });
 

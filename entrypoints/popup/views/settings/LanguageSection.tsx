@@ -21,8 +21,8 @@ export function LanguageSection() {
           <span>{t.settings.language.label}</span>
         </div>
         <Select
-          selectedKey={settings.language}
-          onSelectionChange={(key) => updateSettingsMutation.mutate({ language: key as Language })}
+          value={settings.language}
+          onChange={(key) => updateSettingsMutation.mutate({ language: key as Language })}
           aria-label={t.settings.language.label}
         >
           <Button className="flex items-center gap-2 px-3 py-1.5 rounded bg-tertiary text-primary hover:opacity-80 transition-opacity cursor-pointer">

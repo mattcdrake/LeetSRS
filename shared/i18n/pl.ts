@@ -152,7 +152,10 @@ const pl: Translations = {
     // Appearance section
     appearance: {
       title: 'Wygląd',
-      darkMode: 'Tryb ciemny',
+      theme: 'Motyw',
+      themeSystem: 'Systemowy',
+      themeLight: 'Jasny',
+      themeDark: 'Ciemny',
       enableAnimations: 'Włącz animacje',
       showBadge: 'Pokaż liczbę powtórek na ikonie',
     },

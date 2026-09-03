@@ -1,4 +1,4 @@
-export type Theme = 'light' | 'dark';
+export type Theme = 'system' | 'light' | 'dark';
 export type Language = 'de' | 'en' | 'hi' | 'pl' | 'zh-CN';
 
 export const SETTINGS_CONSTRAINTS = {

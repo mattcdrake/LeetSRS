@@ -116,7 +116,10 @@ const de: Translations = {
     },
     appearance: {
       title: 'Darstellung',
-      darkMode: 'Dunkelmodus',
+      theme: 'Design',
+      themeSystem: 'System',
+      themeLight: 'Hell',
+      themeDark: 'Dunkel',
       enableAnimations: 'Animationen aktivieren',
       showBadge: 'Fällige Karten am Symbol anzeigen',
     },

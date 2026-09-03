@@ -29,13 +29,13 @@ describe('settings service', () => {
   });
 
   it('validates and persists partial changes', async () => {
-    await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'light' });
+    await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'system' });
 
     expect(await getSettings()).toEqual(
       buildSettings({
         maxNewCardsPerDay: 8,
         animationsEnabled: false,
-        theme: 'light',
+        theme: 'system',
       })
     );
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).not.toBeNull();
@@ -53,7 +53,7 @@ describe('settings service', () => {
       `Day start hour must be between ${SETTINGS_CONSTRAINTS.dayStartHour.min} and ${SETTINGS_CONSTRAINTS.dayStartHour.max}`,
     ],
     [{ animationsEnabled: 'yes' }, 'Animations enabled must be a boolean'],
-    [{ theme: 'blue' }, 'Theme must be either "light" or "dark"'],
+    [{ theme: 'blue' }, 'Theme must be "system", "light", or "dark"'],
     [{ resetEditorOnEveryProblem: 1 }, 'Reset editor on every problem must be a boolean'],
     [{ resetEditorOnDueReview: 1 }, 'Reset editor on due review must be a boolean'],
     [{ badgeEnabled: 'yes' }, 'Badge enabled must be a boolean'],
@@ -82,5 +82,12 @@ describe('settings service', () => {
     await resetSettings();
     expect(await exportSettings()).toEqual({});
     expect(await getSettings()).toEqual(buildSettings());
+  });
+
+  it.each(['system', 'light', 'dark'] as const)('accepts and exports the %s theme', async (theme) => {
+    await updateSettings({ theme });
+
+    expect((await getSettings()).theme).toBe(theme);
+    expect(await exportSettings()).toEqual({ theme });
   });
 });

@@ -225,7 +225,19 @@ describe('migrations', () => {
     it('should handle empty or missing cards storage', async () => {
       await runMigrations(migrations);
 
-      expect(await getCurrentSchemaVersion()).toBe(1);
+      expect(await getCurrentSchemaVersion()).toBe(2);
+    });
+  });
+
+  describe('migration v2: add system theme preference', () => {
+    it('should advance the schema without changing an existing theme', async () => {
+      await setSchemaVersion(1);
+      await storage.setItem(STORAGE_KEYS.theme, 'dark');
+
+      await runMigrations(migrations);
+
+      expect(await getCurrentSchemaVersion()).toBe(2);
+      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
     });
   });
 });

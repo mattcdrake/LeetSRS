@@ -35,3 +35,7 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 ## Commit & Pull Request Guidelines
 
 Use Conventional Commits for commit subjects and pull request titles, such as `fix: clean up animation timeout`. Use standard lowercase types including `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, and `revert`; add an optional scope in parentheses. Mark breaking changes with `!` and explain them in a `BREAKING CHANGE:` footer. Keep subjects concise and imperative. For most pull requests, use concise bullet points followed by linked or closing issues; omit section headings such as `Summary` and `Testing` unless the change is genuinely complex. Include screenshots for UI changes. Do not commit generated `.output/` or `.wxt/` content.
+
+## Code Review Guidelines
+
+When reviewing code, follow `.github/code-review-guidelines.md`.

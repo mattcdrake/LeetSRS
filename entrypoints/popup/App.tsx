@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { useSettingsQuery } from '@/hooks/queries/settings';
+import { useTheme } from '@/hooks/useTheme';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';
@@ -10,6 +11,7 @@ import { StatsView } from './views/stats/StatsView';
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
   const { data: settings } = useSettingsQuery();
+  const theme = useTheme();
 
   useEffect(() => {
     if (!settings.animationsEnabled) {
@@ -24,11 +26,13 @@ function App() {
     const body = document.body;
 
     root.classList.remove('light', 'dark');
-    root.classList.add(settings.theme);
+    root.classList.add(theme);
+    root.style.colorScheme = theme;
 
     body.classList.remove('light', 'dark');
-    body.classList.add(settings.theme);
-  }, [settings]);
+    body.classList.add(theme);
+    body.style.colorScheme = theme;
+  }, [theme]);
 
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,
