@@ -24,13 +24,11 @@ export function useUpdateSettingsMutation() {
       queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
 
       if ('maxNewCardsPerDay' in changes || 'dayStartHour' in changes) {
-        queryClient.invalidateQueries({ queryKey: cardQueryKeys.reviewQueue });
+        queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
       }
 
       if ('dayStartHour' in changes) {
-        queryClient.invalidateQueries({ queryKey: statsQueryKeys.today });
-        queryClient.invalidateQueries({ queryKey: statsQueryKeys.lastNDays.all });
-        queryClient.invalidateQueries({ queryKey: statsQueryKeys.nextNDays.all });
+        queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
       }
     },
   });

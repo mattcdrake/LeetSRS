@@ -112,21 +112,18 @@ describe('card mutation invalidation', () => {
       );
     };
 
-    await expectInvalidations(
-      () => result.current.add.mutateAsync(problem),
-      [cardQueryKeys.all, statsQueryKeys.cardState, statsQueryKeys.nextNDays.all]
-    );
+    await expectInvalidations(() => result.current.add.mutateAsync(problem), [cardQueryKeys.all, statsQueryKeys.all]);
     await expectInvalidations(
       () => result.current.remove.mutateAsync(problem.slug),
-      [cardQueryKeys.all, statsQueryKeys.cardState, statsQueryKeys.nextNDays.all]
+      [cardQueryKeys.all, statsQueryKeys.all]
     );
     await expectInvalidations(
       () => result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }),
-      [cardQueryKeys.all, statsQueryKeys.nextNDays.all]
+      [cardQueryKeys.all, statsQueryKeys.all]
     );
     await expectInvalidations(
       () => result.current.pause.mutateAsync({ slug: problem.slug, paused: true }),
-      [cardQueryKeys.all, statsQueryKeys.nextNDays.all]
+      [cardQueryKeys.all, statsQueryKeys.all]
     );
     await expectInvalidations(
       () => result.current.rate.mutateAsync({ ...problem, rating: Rating.Good }),

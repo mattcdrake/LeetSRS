@@ -25,12 +25,6 @@ it('invalidates only the queries affected by each settings change', async () => 
   };
 
   await expectInvalidations({ theme: 'dark' }, [settingsQueryKeys.all]);
-  await expectInvalidations({ maxNewCardsPerDay: 10 }, [settingsQueryKeys.all, cardQueryKeys.reviewQueue]);
-  await expectInvalidations({ dayStartHour: 4 }, [
-    settingsQueryKeys.all,
-    cardQueryKeys.reviewQueue,
-    statsQueryKeys.today,
-    statsQueryKeys.lastNDays.all,
-    statsQueryKeys.nextNDays.all,
-  ]);
+  await expectInvalidations({ maxNewCardsPerDay: 10 }, [settingsQueryKeys.all, cardQueryKeys.all]);
+  await expectInvalidations({ dayStartHour: 4 }, [settingsQueryKeys.all, cardQueryKeys.all, statsQueryKeys.all]);
 });
