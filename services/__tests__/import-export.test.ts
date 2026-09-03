@@ -246,6 +246,20 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toBe(true);
     });
 
+    it('should ignore the legacy animationsEnabled setting', async () => {
+      const legacyData = {
+        ...validExportData,
+        data: {
+          ...validExportData.data,
+          settings: { ...validExportData.data.settings, animationsEnabled: false },
+        },
+      };
+
+      await importData(JSON.stringify(legacyData));
+
+      expect(JSON.parse(await exportData()).data.settings).toEqual(validExportData.data.settings);
+    });
+
     it('should clear existing data before importing', async () => {
       // Set up existing data
       const oldCardUuid = 'old-card-uuid-1234';

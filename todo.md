@@ -2,7 +2,7 @@
 
 - [x] Remove the “Enable animations” control and its translations.
 - [x] Remove `animationsEnabled` from settings, storage, sync import/export, mocks, and tests.
-- [ ] Continue accepting older imports containing `animationsEnabled`, but ignore the field.
+- [x] Continue accepting older imports containing `animationsEnabled`, but ignore the field.
 - [ ] Always apply the review-card animation classes.
 - [ ] Make `getSlideDirection` required because every card action supplies it.
 - [ ] Replace the duplicated JavaScript timeout with animation-completion handling.
