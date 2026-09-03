@@ -12,7 +12,7 @@ export default defineConfig({
     name: '__MSG_extName__',
     description: '__MSG_extDescription__',
     default_locale: 'en',
-    permissions: ['storage', 'alarms'],
+    permissions: ['storage', 'alarms', 'activeTab'],
     host_permissions: ['*://*.leetcode.com/*'],
     optional_host_permissions: ['*://*.leetcode.cn/*'],
   },
