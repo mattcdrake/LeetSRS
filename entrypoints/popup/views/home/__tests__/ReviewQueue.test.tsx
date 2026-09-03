@@ -618,6 +618,21 @@ describe('ReviewQueue', () => {
     });
   });
 
+  describe('Card Actions', () => {
+    it.each([
+      ['delete-button', 'animate-slide-left'],
+      ['delay-1-button', 'animate-slide-right'],
+      ['pause-button', 'animate-slide-right'],
+    ] as const)('should animate %s in the expected direction', async (buttonTestId, animationClass) => {
+      render(<ReviewQueue />, { wrapper });
+
+      fireEvent.click(await screen.findByTestId(buttonTestId));
+
+      const cardContainer = screen.getByTestId('review-card').parentElement;
+      await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
+    });
+  });
+
   describe('Component Integration', () => {
     it('should pass correct props to ReviewCard', async () => {
       render(<ReviewQueue />, { wrapper });
