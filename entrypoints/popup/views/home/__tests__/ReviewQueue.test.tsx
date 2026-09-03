@@ -199,7 +199,7 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
-    it('should finish immediately when reduced motion is preferred', async () => {
+    it('should wait for the queue refresh before finishing with reduced motion', async () => {
       vi.spyOn(window, 'matchMedia').mockImplementation(
         (query) =>
           ({
@@ -210,10 +210,22 @@ describe('ReviewQueue', () => {
       render(<ReviewQueue />, { wrapper });
 
       const goodButton = await screen.findByRole('button', { name: 'Good' });
+      let resolveQueueRefresh: (cards: Card[]) => void = () => {};
+      const queueRefresh = new Promise<Card[]>((resolve) => {
+        resolveQueueRefresh = resolve;
+      });
+      messages.resolve('getReviewQueue', queueRefresh);
+
       fireEvent.click(goodButton);
 
       await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
-      await waitFor(() => expect(goodButton).not.toBeDisabled());
+      expect(goodButton).toBeDisabled();
+      expect(screen.getByText('Two Sum')).toBeInTheDocument();
+
+      resolveQueueRefresh(mockCards.slice(1));
+
+      await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: 'Good' })).not.toBeDisabled();
       expect(screen.getByTestId('review-card').parentElement).not.toHaveClass('animate-slide-right');
     });
 

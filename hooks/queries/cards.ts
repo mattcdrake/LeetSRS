@@ -8,9 +8,11 @@ export const cardQueryKeys = {
   reviewQueue: ['cards', 'reviewQueue'] as const,
 };
 
-function invalidateCardData(queryClient: QueryClient) {
-  queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
-  queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
+async function invalidateCardData(queryClient: QueryClient) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
+    queryClient.invalidateQueries({ queryKey: statsQueryKeys.all }),
+  ]);
 }
 
 export function useCardsQuery() {
