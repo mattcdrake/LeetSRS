@@ -38,12 +38,6 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .popup-loading-spinner {
-    animation: none;
-  }
-}
-
 /* CSS variables that switch based on theme */
 :root {
   /* Light theme (default) */
@@ -261,4 +255,15 @@ body {
 
 .overflow-y-auto:hover::-webkit-scrollbar-thumb {
   background: var(--current-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  :root *,
+  :root *::before,
+  :root *::after {
+    animation: none;
+    scroll-behavior: auto;
+    transition: none;
+  }
 }
