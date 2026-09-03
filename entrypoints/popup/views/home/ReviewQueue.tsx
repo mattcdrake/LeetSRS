@@ -171,7 +171,7 @@ export function ReviewQueue() {
         <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       </div>
       <NotesSection cardId={currentCard.id} />
-      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} />
+      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
     </div>
   );
 }

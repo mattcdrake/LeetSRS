@@ -19,6 +19,7 @@ describe('ActionsSection', () => {
     onDelete: mockOnDelete,
     onDelay: mockOnDelay,
     onPause: mockOnPause,
+    isDisabled: false,
   };
 
   describe('Expand/Collapse', () => {
@@ -279,6 +280,18 @@ describe('ActionsSection', () => {
   });
 
   describe('Edge Cases', () => {
+    it('should disable every action while processing', () => {
+      const { rerender } = render(<ActionsSection {...defaultProps} />);
+      fireEvent.click(screen.getByRole('button', { name: /Actions/i }));
+      rerender(<ActionsSection {...defaultProps} isDisabled />);
+
+      expect(screen.getByRole('button', { name: /Actions/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /1 Day/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /5 Days/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Pause/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Delete Card' })).toBeDisabled();
+    });
+
     it('should handle rapid clicks on expand button', () => {
       render(<ActionsSection {...defaultProps} />);
 

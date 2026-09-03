@@ -52,22 +52,24 @@ vi.mock('../ActionsSection', () => ({
     onDelete,
     onDelay,
     onPause,
+    isDisabled,
   }: {
     onDelete: () => void;
     onDelay: (days: number) => void;
     onPause: () => void;
+    isDisabled: boolean;
   }) => (
     <div data-testid="actions-section">
-      <button type="button" onClick={onDelete} data-testid="delete-button">
+      <button type="button" onClick={onDelete} data-testid="delete-button" disabled={isDisabled}>
         Delete
       </button>
-      <button type="button" onClick={() => onDelay(1)} data-testid="delay-1-button">
+      <button type="button" onClick={() => onDelay(1)} data-testid="delay-1-button" disabled={isDisabled}>
         Delay 1 day
       </button>
-      <button type="button" onClick={() => onDelay(5)} data-testid="delay-5-button">
+      <button type="button" onClick={() => onDelay(5)} data-testid="delay-5-button" disabled={isDisabled}>
         Delay 5 days
       </button>
-      <button type="button" onClick={onPause} data-testid="pause-button">
+      <button type="button" onClick={onPause} data-testid="pause-button" disabled={isDisabled}>
         Pause
       </button>
     </div>
@@ -207,6 +209,27 @@ describe('ReviewQueue', () => {
 
       await waitFor(() => expect(goodButton).not.toBeDisabled());
       expect(cardContainer).not.toHaveClass('animate-slide-right');
+    });
+
+    it('should retain the outgoing card and disabled actions until the animation ends', async () => {
+      render(<ReviewQueue />, { wrapper });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
+      const cardContainer = screen.getByTestId('review-card').parentElement as HTMLElement;
+      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
+
+      seedQueue(mockCards.slice(1));
+
+      expect(screen.getByText('Two Sum')).toBeInTheDocument();
+      expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
+      expect(screen.getByTestId('delete-button')).toBeDisabled();
+      expect(screen.getByTestId('delay-1-button')).toBeDisabled();
+      expect(screen.getByTestId('pause-button')).toBeDisabled();
+
+      fireEvent.animationEnd(cardContainer);
+
+      await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
+      expect(screen.getByTestId('delete-button')).not.toBeDisabled();
     });
 
     it('should disable rating buttons while processing', async () => {
