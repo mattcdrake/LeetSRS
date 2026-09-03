@@ -138,7 +138,6 @@ const zhCN: Translations = {
       themeSystem: '跟随系统',
       themeLight: '浅色',
       themeDark: '深色',
-      enableAnimations: '启用动画',
       showBadge: '在图标上显示待复习数量',
     },
 

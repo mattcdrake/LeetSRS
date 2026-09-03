@@ -65,7 +65,6 @@ describe('import-export', () => {
       const mockSettings = buildSettings({
         maxNewCardsPerDay: 5,
         dayStartHour: 4,
-        animationsEnabled: true,
         theme: 'dark',
         resetEditorOnEveryProblem: true,
         resetEditorOnDueReview: true,
@@ -79,7 +78,6 @@ describe('import-export', () => {
       await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}` as const, mockNotes[cardUuid]);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
       await storage.setItem(STORAGE_KEYS.dayStartHour, mockSettings.dayStartHour);
-      await storage.setItem(STORAGE_KEYS.animationsEnabled, mockSettings.animationsEnabled);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, mockSettings.resetEditorOnEveryProblem);
       await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, mockSettings.resetEditorOnDueReview);
@@ -184,7 +182,6 @@ describe('import-export', () => {
         settings: buildSettings({
           maxNewCardsPerDay: 5,
           dayStartHour: 2,
-          animationsEnabled: false,
           theme: 'light',
           resetEditorOnEveryProblem: true,
           resetEditorOnDueReview: true,
@@ -206,7 +203,6 @@ describe('import-export', () => {
       );
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toEqual(5);
       expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toEqual(2);
-      expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toEqual(false);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toEqual('light');
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toEqual(true);
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnDueReview)).toEqual(true);
@@ -398,7 +394,6 @@ describe('import-export', () => {
       await storage.setItem(legacyMonthlyStatsKey, legacyMonthlyStats);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
       await storage.setItem(STORAGE_KEYS.dayStartHour, 3);
-      await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, true);
       await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, true);
@@ -415,7 +410,6 @@ describe('import-export', () => {
       expect(await storage.getItem(legacyMonthlyStatsKey)).toEqual(legacyMonthlyStats);
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnDueReview)).toBeNull();

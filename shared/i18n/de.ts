@@ -120,7 +120,6 @@ const de: Translations = {
       themeSystem: 'System',
       themeLight: 'Hell',
       themeDark: 'Dunkel',
-      enableAnimations: 'Animationen aktivieren',
       showBadge: 'Fällige Karten am Symbol anzeigen',
     },
     reviewSettings: {

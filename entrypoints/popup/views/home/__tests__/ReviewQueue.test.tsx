@@ -7,12 +7,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { cardQueryKeys } from '@/hooks/queries/cards';
-import { settingsQueryKeys } from '@/hooks/queries/settings';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
 
@@ -112,7 +110,6 @@ describe('ReviewQueue', () => {
       .reset()
       .handle('rateCard', mockMutateAsync)
       .resolve('getReviewQueue', mockCards)
-      .resolve('getSettings', buildSettings({ animationsEnabled: false }))
       .resolve('removeCard', undefined)
       .resolve('delayCard', mockCards[0])
       .resolve('setPauseStatus', mockCards[0]);
@@ -120,8 +117,6 @@ describe('ReviewQueue', () => {
 
     ({ wrapper, queryClient } = createTestWrapper());
     seedQueue(mockCards);
-    queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ animationsEnabled: false }));
-
     mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });
 

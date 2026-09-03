@@ -156,7 +156,6 @@ const pl: Translations = {
       themeSystem: 'Systemowy',
       themeLight: 'Jasny',
       themeDark: 'Ciemny',
-      enableAnimations: 'Włącz animacje',
       showBadge: 'Pokaż liczbę powtórek na ikonie',
     },
 

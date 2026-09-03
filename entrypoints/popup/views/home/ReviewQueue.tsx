@@ -7,7 +7,6 @@ import {
   useRemoveCardMutation,
   useReviewQueueQuery,
 } from '@/hooks/queries/cards';
-import { useSettingsQuery } from '@/hooks/queries/settings';
 import type { Card, RateCardInput } from '@/shared/cards';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
@@ -16,7 +15,6 @@ import { ReviewCard } from './ReviewCard';
 
 export function ReviewQueue() {
   const t = useI18n();
-  const { data: settings } = useSettingsQuery();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
@@ -48,12 +46,12 @@ export function ReviewQueue() {
     try {
       const result = await action();
 
-      if (settings.animationsEnabled && options.getSlideDirection) {
+      if (options.getSlideDirection) {
         const direction = options.getSlideDirection(result);
         if (direction) setSlideDirection(direction);
       }
 
-      const animationDelay = settings.animationsEnabled ? 400 : 0;
+      const animationDelay = 400;
       animationTimerRef.current = setTimeout(() => {
         animationTimerRef.current = null;
         setSlideDirection(null);
@@ -159,8 +157,6 @@ export function ReviewQueue() {
   }
 
   const getAnimationClass = () => {
-    if (!settings.animationsEnabled) return '';
-
     const baseClasses = 'transition-all duration-300 ease-out';
 
     if (slideDirection === 'left') {

@@ -29,12 +29,11 @@ describe('settings service', () => {
   });
 
   it('validates and persists partial changes', async () => {
-    await updateSettings({ maxNewCardsPerDay: 8, animationsEnabled: false, theme: 'system' });
+    await updateSettings({ maxNewCardsPerDay: 8, theme: 'system' });
 
     expect(await getSettings()).toEqual(
       buildSettings({
         maxNewCardsPerDay: 8,
-        animationsEnabled: false,
         theme: 'system',
       })
     );
@@ -52,7 +51,6 @@ describe('settings service', () => {
       { dayStartHour: SETTINGS_CONSTRAINTS.dayStartHour.max + 1 },
       `Day start hour must be between ${SETTINGS_CONSTRAINTS.dayStartHour.min} and ${SETTINGS_CONSTRAINTS.dayStartHour.max}`,
     ],
-    [{ animationsEnabled: 'yes' }, 'Animations enabled must be a boolean'],
     [{ theme: 'blue' }, 'Theme must be "system", "light", or "dark"'],
     [{ resetEditorOnEveryProblem: 1 }, 'Reset editor on every problem must be a boolean'],
     [{ resetEditorOnDueReview: 1 }, 'Reset editor on due review must be a boolean'],
@@ -64,7 +62,7 @@ describe('settings service', () => {
   });
 
   it('validates all changes before persisting any of them', async () => {
-    await expect(updateSettings({ animationsEnabled: false, maxNewCardsPerDay: -1 })).rejects.toThrowError();
+    await expect(updateSettings({ theme: 'dark', maxNewCardsPerDay: -1 })).rejects.toThrowError();
     expect(await exportSettings()).toEqual({});
   });
 

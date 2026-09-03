@@ -254,12 +254,6 @@ body {
   scrollbar-color: var(--current-text-tertiary) transparent;
 }
 
-/* Disable animations when preference is set */
-.animations-disabled * {
-  animation: none;
-  transition: none;
-}
-
 /* Hide scrollbar until hovering over scrollable area */
 .overflow-y-auto::-webkit-scrollbar-thumb {
   background: transparent;
