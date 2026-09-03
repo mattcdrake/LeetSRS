@@ -13,11 +13,11 @@ Assumption: add `system` as a third theme preference and make it the default, wh
 
 ## Theme resolution
 
-- [ ] Add a small popup hook or utility that resolves `system` with `window.matchMedia('(prefers-color-scheme: dark)')` and otherwise returns the explicit preference.
-- [ ] Subscribe to the media query's `change` event only while the preference is `system`, and clean up the listener on preference changes or unmount.
-- [ ] In `entrypoints/popup/App.tsx`, apply only the resolved `light` or `dark` class to `<html>` and `<body>`; never apply `system` as a CSS theme class.
-- [ ] Set `color-scheme` consistently with the resolved theme so browser-rendered controls match the popup.
-- [ ] Preserve the current system-aware loading state in `App.css` to avoid a light/dark flash before settings load.
+- [x] Add a `useTheme` popup hook that loads the preference, resolves `system` with `window.matchMedia('(prefers-color-scheme: dark)')`, and returns the resolved theme.
+- [x] Subscribe to the media query's `change` event only while the preference is `system`, and clean up the listener on preference changes or unmount.
+- [x] In `entrypoints/popup/App.tsx`, apply only the resolved `light` or `dark` class to `<html>` and `<body>`; never apply `system` as a CSS theme class.
+- [x] Set `color-scheme` consistently with the resolved theme so browser-rendered controls match the popup.
+- [x] Preserve the current system-aware loading state in `App.css` to avoid a light/dark flash before settings load.
 
 ## Appearance UI
 
@@ -27,8 +27,8 @@ Assumption: add `system` as a third theme preference and make it the default, wh
 
 ## Tests and verification
 
-- [ ] Add focused tests for explicit light, explicit dark, system-light, and system-dark resolution.
-- [ ] Test that a live OS theme change updates the applied classes when set to System, including listener cleanup; mock `matchMedia` locally or add a reusable typed test helper if multiple tests need it.
+- [x] Add focused tests for explicit light, explicit dark, system-light, and system-dark resolution.
+- [x] Test that a live OS theme change updates the applied classes when set to System, including listener cleanup; mock `matchMedia` locally or add a reusable typed test helper if multiple tests need it.
 - [ ] Add an `AppearanceSection` test that selecting each option sends the corresponding `updateSettings` change.
 - [ ] Check the popup manually in all three modes, including changing the OS theme while the popup is open and reopening it afterward.
 - [ ] Run `npm test`, `npm run compile`, and `npm run format:check`.
