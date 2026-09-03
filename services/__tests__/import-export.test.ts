@@ -6,6 +6,7 @@ import type { Note } from '@/shared/notes';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import type { StoredCard } from '../cards';
 import { exportData, importData, resetAllData } from '../import-export';
+import { migrations, runMigrations, setSchemaVersion } from '../migrations';
 import type { DailyStats, MonthlyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
@@ -122,6 +123,12 @@ describe('import-export', () => {
       });
       // monthlyStats should not be present when empty
       expect(parsed.data.monthlyStats).toBeUndefined();
+    });
+
+    it('should export schema version 2 after migrations run', async () => {
+      await runMigrations(migrations);
+      const parsed = JSON.parse(await exportData());
+      expect(parsed.schemaVersion).toBe(2);
     });
 
     it('should include monthlyStats in export when present', async () => {
@@ -310,6 +317,22 @@ describe('import-export', () => {
       const newerSchema = { ...validExportData, schemaVersion: 999 };
       await expect(importData(JSON.stringify(newerSchema))).rejects.toThrow(
         'Export is from a newer version (schema 999). Please update the extension.'
+      );
+    });
+
+    it('should reject a system-theme export on a schema version 1 client', async () => {
+      await setSchemaVersion(1);
+      const systemThemeExport = {
+        ...validExportData,
+        schemaVersion: 2,
+        data: {
+          ...validExportData.data,
+          settings: { ...validExportData.data.settings, theme: 'system' },
+        },
+      };
+
+      await expect(importData(JSON.stringify(systemThemeExport))).rejects.toThrow(
+        'Export is from a newer version (schema 2). Please update the extension.'
       );
     });
 

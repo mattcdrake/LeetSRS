@@ -59,4 +59,9 @@ export const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 2,
+    description: 'Add system theme preference',
+    migrate: async () => {},
+  },
 ];
