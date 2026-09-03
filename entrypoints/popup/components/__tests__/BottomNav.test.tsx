@@ -18,4 +18,19 @@ describe('BottomNav', () => {
 
     expect(onNavigate).toHaveBeenCalledWith('settings');
   });
+
+  it('navigates when arrow keys move focus', () => {
+    const onNavigate = vi.fn();
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(cardQueryKeys.reviewQueue, []);
+    render(<BottomNav activeView="home" onNavigate={onNavigate} />, { wrapper });
+    const home = screen.getByRole('radio', { name: 'Home' });
+    const cards = screen.getByRole('radio', { name: 'Cards' });
+    home.focus();
+
+    fireEvent.keyDown(home, { key: 'ArrowRight' });
+
+    expect(cards).toHaveFocus();
+    expect(onNavigate).toHaveBeenCalledWith('card');
+  });
 });

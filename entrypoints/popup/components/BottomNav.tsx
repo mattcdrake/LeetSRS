@@ -38,6 +38,9 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
           <ToggleButton
             key={item.id}
             id={item.id}
+            onFocus={() => {
+              if (item.id !== activeView) onNavigate(item.id);
+            }}
             className={({ isSelected }) =>
               `flex flex-col items-center gap-1 bg-transparent border-none cursor-pointer p-2 transition-colors duration-200 hover:text-primary ${
                 isSelected ? 'text-accent' : 'text-secondary'
