@@ -6,6 +6,7 @@ import { useCardsQuery, usePauseCardMutation, useRemoveCardMutation } from '@/ho
 import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import type { Card } from '@/shared/cards';
 import type { Translations } from '@/shared/i18n';
+import { getLeetcodeProblemUrl } from '@/shared/leetcode';
 import { bounceButton } from '@/shared/styles';
 import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
@@ -181,7 +182,7 @@ function CardItem({
           <CardHeader card={card} isExpanded={isExpanded} t={t} />
         </Button>
         <a
-          href={`https://${card.domain}/problems/${card.slug}/description/`}
+          href={getLeetcodeProblemUrl(card)}
           target="_blank"
           rel="noopener noreferrer"
           className="self-stretch flex items-center px-3 text-secondary hover:text-primary transition-colors"

@@ -3,6 +3,7 @@ import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import { Rating } from 'ts-fsrs';
 import type { Card, Difficulty } from '@/shared/cards';
+import { getLeetcodeProblemUrl } from '@/shared/leetcode';
 import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 
@@ -48,7 +49,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
 
       <div className="flex justify-center pb-3 -mt-1 text-center">
         <a
-          href={`https://${card.domain}/problems/${card.slug}/description/`}
+          href={getLeetcodeProblemUrl(card)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-lg font-semibold text-primary group"
