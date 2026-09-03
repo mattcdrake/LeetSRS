@@ -1,6 +1,6 @@
 import { Button } from 'react-aria-components';
+import { bounceButton } from '@/entrypoints/popup/styles';
 import { APP_VERSION, CHROME_STORE_REVIEWS_URL } from '@/shared/config';
-import { bounceButton } from '@/shared/styles';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function AboutSection() {
