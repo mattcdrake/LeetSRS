@@ -17,10 +17,11 @@ describe('useSaveNoteMutation', () => {
     vi.clearAllMocks();
   });
 
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const cardId = 'test-card-123';
-    const noteText = 'This is my solution using two pointers approach';
-
+  it.each([
+    ['ordinary text', 'test-card-123', 'This is my solution using two pointers approach'],
+    ['empty text', 'test-card-456', ''],
+    ['maximum length text', 'test-card-789', 'a'.repeat(500)],
+  ])('sends %s unchanged', async (_case, cardId, noteText) => {
     vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useSaveNoteMutation(cardId), {
@@ -31,47 +32,7 @@ describe('useSaveNoteMutation', () => {
 
     await waitFor(() => {
       expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-123',
-        text: 'This is my solution using two pointers approach',
-      });
-    });
-  });
-
-  it('should handle empty note text', async () => {
-    const cardId = 'test-card-456';
-    const noteText = '';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-456',
-        text: '',
-      });
-    });
-  });
-
-  it('should handle maximum length note text', async () => {
-    const cardId = 'test-card-789';
-    const noteText = 'a'.repeat(500);
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId: 'test-card-789',
+        cardId,
         text: noteText,
       });
     });
