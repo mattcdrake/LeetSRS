@@ -7,10 +7,12 @@ import { buildSettings } from '@/test/utils/settings-mocks';
 import type { StoredCard } from '../cards';
 import { exportData, importData, resetAllData } from '../import-export';
 import { migrations, runMigrations, setSchemaVersion } from '../migrations';
-import type { DailyStats, MonthlyStats } from '../stats';
+import type { DailyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('import-export', () => {
+  const legacyMonthlyStatsKey = 'local:leetsrs:monthlyStats';
+
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
@@ -121,7 +123,6 @@ describe('import-export', () => {
           settings: {},
         },
       });
-      // monthlyStats should not be present when empty
       expect(parsed.data.monthlyStats).toBeUndefined();
     });
 
@@ -131,23 +132,12 @@ describe('import-export', () => {
       expect(parsed.schemaVersion).toBe(2);
     });
 
-    it('should include monthlyStats in export when present', async () => {
-      const mockMonthly: Record<string, MonthlyStats> = {
-        '2024-01': {
-          month: '2024-01',
-          totalReviews: 15,
-          gradeBreakdown: { [Rating.Again]: 3, [Rating.Hard]: 4, [Rating.Good]: 5, [Rating.Easy]: 3 },
-          newCards: 6,
-          reviewedCards: 9,
-          activeDays: 8,
-        },
-      };
-      await storage.setItem(STORAGE_KEYS.monthlyStats, mockMonthly);
+    it('does not export legacy monthly stats', async () => {
+      await storage.setItem(legacyMonthlyStatsKey, { '2024-01': { totalReviews: 15 } });
 
-      const result = await exportData();
-      const parsed = JSON.parse(result);
+      const parsed = JSON.parse(await exportData());
 
-      expect(parsed.data.monthlyStats).toEqual(mockMonthly);
+      expect(parsed.data.monthlyStats).toBeUndefined();
     });
   });
 
@@ -357,33 +347,17 @@ describe('import-export', () => {
       await expect(importData(JSON.stringify(invalidCards))).rejects.toThrow('Invalid cards data');
     });
 
-    it('should import monthlyStats when present', async () => {
-      const monthlyStats: Record<string, MonthlyStats> = {
-        '2024-01': {
-          month: '2024-01',
-          totalReviews: 20,
-          gradeBreakdown: { [Rating.Again]: 5, [Rating.Hard]: 5, [Rating.Good]: 5, [Rating.Easy]: 5 },
-          newCards: 8,
-          reviewedCards: 12,
-          activeDays: 10,
-        },
-      };
+    it('accepts and ignores legacy monthly stats', async () => {
+      const existingMonthlyStats = { '2023-12': { totalReviews: 5 } };
+      await storage.setItem(legacyMonthlyStatsKey, existingMonthlyStats);
       const dataWithMonthly = {
         ...validExportData,
-        data: { ...validExportData.data, monthlyStats },
+        data: { ...validExportData.data, monthlyStats: { '2024-01': { totalReviews: 20 } } },
       };
 
-      await importData(JSON.stringify(dataWithMonthly));
+      await expect(importData(JSON.stringify(dataWithMonthly))).resolves.not.toThrow();
 
-      expect(await storage.getItem(STORAGE_KEYS.monthlyStats)).toEqual(monthlyStats);
-    });
-
-    it('should handle import without monthlyStats (backward compat)', async () => {
-      // validExportData has no monthlyStats field
-      await importData(JSON.stringify(validExportData));
-
-      // monthlyStats should not be set
-      expect(await storage.getItem(STORAGE_KEYS.monthlyStats)).toBeNull();
+      expect(await storage.getItem(legacyMonthlyStatsKey)).toEqual(existingMonthlyStats);
     });
 
     it('should handle empty data sections by clearing existing data', async () => {
@@ -420,7 +394,8 @@ describe('import-export', () => {
       };
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });
-      await storage.setItem(STORAGE_KEYS.monthlyStats, { '2023-12': { month: '2023-12', totalReviews: 5 } });
+      const legacyMonthlyStats = { '2023-12': { totalReviews: 5 } };
+      await storage.setItem(legacyMonthlyStatsKey, legacyMonthlyStats);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
       await storage.setItem(STORAGE_KEYS.dayStartHour, 3);
       await storage.setItem(STORAGE_KEYS.animationsEnabled, true);
@@ -437,7 +412,7 @@ describe('import-export', () => {
       // Verify all data was removed
       expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.monthlyStats)).toBeNull();
+      expect(await storage.getItem(legacyMonthlyStatsKey)).toEqual(legacyMonthlyStats);
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.animationsEnabled)).toBeNull();

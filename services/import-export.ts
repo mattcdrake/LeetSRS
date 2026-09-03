@@ -4,7 +4,7 @@ import type { Settings } from '@/shared/settings';
 import type { StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
 import { exportSettings, resetSettings, updateSettings, validateSettings } from './settings';
-import type { DailyStats, MonthlyStats } from './stats';
+import type { DailyStats } from './stats';
 import { STORAGE_KEYS } from './storage-keys';
 
 export interface ExportData {
@@ -14,7 +14,6 @@ export interface ExportData {
   data: {
     cards: Record<string, StoredCard>;
     stats: Record<string, DailyStats>;
-    monthlyStats?: Record<string, MonthlyStats>;
     notes: Record<string, Note>;
     settings: Partial<Settings>;
     gistSync?: {
@@ -45,7 +44,6 @@ export async function exportData(): Promise<string> {
   // Gather all data from storage
   const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
   const stats = (await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats)) ?? {};
-  const monthlyStats = (await storage.getItem<Record<string, MonthlyStats>>(STORAGE_KEYS.monthlyStats)) ?? {};
 
   // Get all notes
   const notes: Record<string, Note> = {};
@@ -75,7 +73,6 @@ export async function exportData(): Promise<string> {
     data: {
       cards,
       stats,
-      ...(Object.keys(monthlyStats).length > 0 && { monthlyStats }),
       notes,
       settings,
       gistSync: {
@@ -144,11 +141,6 @@ export async function importData(jsonData: string): Promise<void> {
   // Import stats
   await storage.setItem(STORAGE_KEYS.stats, data.data.stats);
 
-  // Import monthly stats
-  if (data.data.monthlyStats) {
-    await storage.setItem(STORAGE_KEYS.monthlyStats, data.data.monthlyStats);
-  }
-
   // Import notes
   for (const [cardId, note] of Object.entries(data.data.notes)) {
     const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
@@ -181,7 +173,6 @@ export async function resetAllData(): Promise<void> {
   // Remove all data
   await storage.removeItem(STORAGE_KEYS.cards);
   await storage.removeItem(STORAGE_KEYS.stats);
-  await storage.removeItem(STORAGE_KEYS.monthlyStats);
   await resetSettings();
 
   // Remove gist sync settings
