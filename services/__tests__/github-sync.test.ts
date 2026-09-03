@@ -137,15 +137,8 @@ describe('github-sync', () => {
   });
 
   describe('validatePat', () => {
-    it('should return error for empty PAT', async () => {
-      const result = await validatePat('');
-
-      expect(result).toEqual({ valid: false, error: 'PAT is required' });
-    });
-
-    it('should return error for whitespace-only PAT', async () => {
-      const result = await validatePat('   ');
-
+    it.each(['', '   '])('should return an error for missing PAT input %#', async (pat) => {
+      const result = await validatePat(pat);
       expect(result).toEqual({ valid: false, error: 'PAT is required' });
     });
 
@@ -194,15 +187,8 @@ describe('github-sync', () => {
   });
 
   describe('validateGistId', () => {
-    it('should return error for empty gist ID', async () => {
-      const result = await validateGistId('', 'ghp_test');
-
-      expect(result).toEqual({ valid: false, error: 'Gist ID is required' });
-    });
-
-    it('should return error for whitespace-only gist ID', async () => {
-      const result = await validateGistId('   ', 'ghp_test');
-
+    it.each(['', '   '])('should return an error for missing gist ID input %#', async (gistId) => {
+      const result = await validateGistId(gistId, 'ghp_test');
       expect(result).toEqual({ valid: false, error: 'Gist ID is required' });
     });
 

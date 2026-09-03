@@ -1,83 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { RATING_COLORS } from '../constants';
 import { getRatingColor, isDarkMode } from '../theme';
 
 // @vitest-environment happy-dom
 
 describe('theme utilities', () => {
-  let originalDocument: Document;
-
-  beforeEach(() => {
-    originalDocument = global.document;
-  });
-
-  afterEach(() => {
-    global.document = originalDocument;
-  });
-
   describe('isDarkMode', () => {
-    it('should return true when dark class is present', () => {
-      document.documentElement.classList.add('dark');
-      expect(isDarkMode()).toBe(true);
-    });
-
-    it('should return false when dark class is not present', () => {
-      document.documentElement.classList.remove('dark');
-      expect(isDarkMode()).toBe(false);
-    });
-
-    it('should handle document being undefined gracefully', () => {
-      // This test is not applicable since isDarkMode directly accesses document
-      // and would throw an error if document is undefined. In a content script,
-      // document is always available.
-      expect(true).toBe(true);
+    it.each([
+      [false, false],
+      [true, true],
+    ])('should return %s when dark mode is %s', (expected, dark) => {
+      document.documentElement.classList.toggle('dark', dark);
+      expect(isDarkMode()).toBe(expected);
     });
   });
 
   describe('getRatingColor', () => {
-    it('should return correct colors for rating-again in light mode', () => {
-      document.documentElement.classList.remove('dark');
-      const colors = getRatingColor('again');
-      expect(colors).toEqual({
-        bg: '#c73e3e',
-        hover: '#b13636',
-      });
-    });
-
-    it('should return correct colors for rating-again in dark mode', () => {
-      document.documentElement.classList.add('dark');
-      const colors = getRatingColor('again');
-      expect(colors).toEqual({
-        bg: '#d14358',
-        hover: '#c13a4f',
-      });
-    });
-
-    it('should return correct colors for rating-hard', () => {
-      document.documentElement.classList.remove('dark');
-      const colors = getRatingColor('hard');
-      expect(colors).toEqual({
-        bg: '#d97706',
-        hover: '#c26805',
-      });
-    });
-
-    it('should return correct colors for rating-good', () => {
-      document.documentElement.classList.remove('dark');
-      const colors = getRatingColor('good');
-      expect(colors).toEqual({
-        bg: '#4271c4',
-        hover: '#3862b5',
-      });
-    });
-
-    it('should return correct colors for rating-easy', () => {
-      document.documentElement.classList.remove('dark');
-      const colors = getRatingColor('easy');
-      expect(colors).toEqual({
-        bg: '#3d9156',
-        hover: '#35804a',
-      });
+    it.each([
+      ['again', false, '#c73e3e', '#b13636'],
+      ['again', true, '#d14358', '#c13a4f'],
+      ['hard', false, '#d97706', '#c26805'],
+      ['good', false, '#4271c4', '#3862b5'],
+      ['easy', false, '#3d9156', '#35804a'],
+    ] as const)('should return the %s colors when dark mode is %s', (rating, dark, bg, hover) => {
+      document.documentElement.classList.toggle('dark', dark);
+      expect(getRatingColor(rating)).toEqual({ bg, hover });
     });
 
     it('should throw error for unknown color class', () => {

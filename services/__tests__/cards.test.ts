@@ -715,142 +715,44 @@ describe('setPauseStatus', () => {
     fakeBrowser.reset();
   });
 
-  it('should set pause status to true', async () => {
+  it.each([
+    [true, 'Easy'],
+    [false, 'Medium'],
+  ] as const)('should set and persist pause status to %s', async (paused, difficulty) => {
     await addCard({
-      slug: 'set-pause-true',
-      name: 'Set Pause True',
+      slug: 'set-pause-status',
+      name: 'Set Pause Status',
       leetcodeId: '4500',
-      difficulty: 'Easy',
+      difficulty,
       domain: 'leetcode.com',
     });
+    if (!paused) await setPauseStatus('set-pause-status', true);
 
-    const pausedCard = await setPauseStatus('set-pause-true', true);
+    const updatedCard = await setPauseStatus('set-pause-status', paused);
 
-    expect(pausedCard.paused).toBe(true);
+    expect(updatedCard.paused).toBe(paused);
 
-    // Verify persistence
     const allCards = await getAllCards();
-    const card = allCards.find((c) => c.slug === 'set-pause-true');
-    expect(card?.paused).toBe(true);
+    const card = allCards.find((c) => c.slug === 'set-pause-status');
+    expect(card?.paused).toBe(paused);
   });
 
-  it('should set pause status to false', async () => {
+  it.each([true, false])('should handle setting an existing %s status again', async (paused) => {
     await addCard({
-      slug: 'set-pause-false',
-      name: 'Set Pause False',
-      leetcodeId: '4501',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    // First pause it
-    await setPauseStatus('set-pause-false', true);
-
-    // Then unpause it
-    const unpausedCard = await setPauseStatus('set-pause-false', false);
-
-    expect(unpausedCard.paused).toBe(false);
-
-    // Verify persistence
-    const allCards = await getAllCards();
-    const card = allCards.find((c) => c.slug === 'set-pause-false');
-    expect(card?.paused).toBe(false);
-  });
-
-  it('should throw error for non-existent card', async () => {
-    await expect(setPauseStatus('non-existent', true)).rejects.toThrow('Card with slug "non-existent" not found');
-    await expect(setPauseStatus('non-existent', false)).rejects.toThrow('Card with slug "non-existent" not found');
-  });
-});
-
-describe('setPauseStatus - pausing', () => {
-  beforeEach(() => {
-    fakeBrowser.reset();
-  });
-
-  it('should pause an existing card', async () => {
-    await addCard({
-      slug: 'pause-test',
-      name: 'Pause Test',
-      leetcodeId: '5000',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-
-    const pausedCard = await setPauseStatus('pause-test', true);
-
-    expect(pausedCard.paused).toBe(true);
-    expect(pausedCard.slug).toBe('pause-test');
-
-    // Verify it's persisted
-    const allCards = await getAllCards();
-    const card = allCards.find((c) => c.slug === 'pause-test');
-    expect(card?.paused).toBe(true);
-  });
-
-  it('should throw error when pausing non-existent card', async () => {
-    await expect(setPauseStatus('non-existent', true)).rejects.toThrow('Card with slug "non-existent" not found');
-  });
-
-  it('should handle pausing already paused card', async () => {
-    await addCard({
-      slug: 'already-paused',
-      name: 'Already Paused',
+      slug: 'unchanged-status',
+      name: 'Unchanged Status',
       leetcodeId: '5001',
       difficulty: 'Medium',
       domain: 'leetcode.com',
     });
+    if (paused) await setPauseStatus('unchanged-status', true);
 
-    // Pause once
-    await setPauseStatus('already-paused', true);
-
-    // Pause again
-    const stillPausedCard = await setPauseStatus('already-paused', true);
-    expect(stillPausedCard.paused).toBe(true);
-  });
-});
-
-describe('setPauseStatus - unpausing', () => {
-  beforeEach(() => {
-    fakeBrowser.reset();
+    const card = await setPauseStatus('unchanged-status', paused);
+    expect(card.paused).toBe(paused);
   });
 
-  it('should unpause a paused card', async () => {
-    await addCard({
-      slug: 'unpause-test',
-      name: 'Unpause Test',
-      leetcodeId: '5002',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    await setPauseStatus('unpause-test', true);
-
-    const unpausedCard = await setPauseStatus('unpause-test', false);
-
-    expect(unpausedCard.paused).toBe(false);
-    expect(unpausedCard.slug).toBe('unpause-test');
-
-    // Verify it's persisted
-    const allCards = await getAllCards();
-    const card = allCards.find((c) => c.slug === 'unpause-test');
-    expect(card?.paused).toBe(false);
-  });
-
-  it('should throw error when unpausing non-existent card', async () => {
-    await expect(setPauseStatus('non-existent', false)).rejects.toThrow('Card with slug "non-existent" not found');
-  });
-
-  it('should handle unpausing already unpaused card', async () => {
-    await addCard({
-      slug: 'already-unpaused',
-      name: 'Already Unpaused',
-      leetcodeId: '5003',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-
-    // Card starts unpaused, unpause it anyway
-    const unpausedCard = await setPauseStatus('already-unpaused', false);
-    expect(unpausedCard.paused).toBe(false);
+  it.each([true, false])('should reject status %s for a non-existent card', async (paused) => {
+    await expect(setPauseStatus('non-existent', paused)).rejects.toThrow('Card with slug "non-existent" not found');
   });
 });
 
