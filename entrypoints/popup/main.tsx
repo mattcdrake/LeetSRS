@@ -37,7 +37,7 @@ ReactDOM.createRoot(root).render(
             <App />
           </I18nProvider>
         </Suspense>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </ErrorBoundary>
   </React.StrictMode>
