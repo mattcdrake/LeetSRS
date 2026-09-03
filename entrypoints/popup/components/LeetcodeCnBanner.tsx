@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FaXmark } from 'react-icons/fa6';
 import { browser } from 'wxt/browser';
+import { isLeetcodeCnUrl } from '@/shared/leetcode';
 import { useI18n } from '../contexts/I18nContext';
 
 const LEETCODE_CN_ORIGIN = '*://*.leetcode.cn/*';
@@ -22,6 +23,7 @@ export function LeetcodeCnBanner() {
 
   const check = useCallback(async () => {
     if (activeTabUrl === undefined) return;
+    if (!isLeetcodeCnUrl(activeTabUrl)) return;
     if (localStorage.getItem(DISMISS_KEY)) return;
     const granted = await browser.permissions.contains({ origins: [LEETCODE_CN_ORIGIN] });
     if (!granted) setVisible(true);
