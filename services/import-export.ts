@@ -25,7 +25,10 @@ export interface ExportData {
 
 type ImportData = Omit<ExportData, 'data'> & {
   data: Omit<ExportData['data'], 'settings'> & {
-    settings: ExportData['data']['settings'] & { autoClearLeetcode?: boolean };
+    settings: ExportData['data']['settings'] & {
+      animationsEnabled?: boolean;
+      autoClearLeetcode?: boolean;
+    };
   };
 };
 
@@ -33,7 +36,7 @@ function getImportedSettings(settings: ImportData['data']['settings'] | undefine
   if (!settings) return {};
 
   const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
-  const { autoClearLeetcode: _, ...currentSettings } = settings;
+  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
   return {
     ...currentSettings,
     ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),

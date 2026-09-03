@@ -37,12 +37,11 @@ describe('AppearanceSection', () => {
     );
   });
 
-  it('keeps the animations and badge controls unchanged', () => {
+  it('shows the badge control', () => {
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(settingsQueryKeys.all, buildSettings());
     render(<AppearanceSection />, { wrapper });
 
-    expect(screen.getByRole('switch', { name: 'Enable animations' })).toBeChecked();
     expect(screen.getByRole('switch', { name: 'Show due count on icon' })).toBeChecked();
   });
 });

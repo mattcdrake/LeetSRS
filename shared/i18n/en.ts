@@ -154,7 +154,6 @@ const en = {
       themeSystem: 'System',
       themeLight: 'Light',
       themeDark: 'Dark',
-      enableAnimations: 'Enable animations',
       showBadge: 'Show due count on icon',
     },
 

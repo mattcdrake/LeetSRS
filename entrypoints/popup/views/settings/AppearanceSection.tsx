@@ -10,10 +10,6 @@ export function AppearanceSection() {
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
 
-  const setAnimationsEnabled = (isSelected: boolean) => {
-    updateSettingsMutation.mutate({ animationsEnabled: isSelected });
-  };
-
   const setBadgeEnabled = (isSelected: boolean) => {
     updateSettingsMutation.mutate({ badgeEnabled: isSelected });
   };
@@ -58,11 +54,6 @@ export function AppearanceSection() {
             </ListBox>
           </Popover>
         </Select>
-        <SettingsSwitch
-          label={t.settings.appearance.enableAnimations}
-          isSelected={settings.animationsEnabled}
-          onChange={setAnimationsEnabled}
-        />
         <SettingsSwitch
           label={t.settings.appearance.showBadge}
           isSelected={settings.badgeEnabled}

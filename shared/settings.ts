@@ -9,7 +9,6 @@ export const SETTINGS_CONSTRAINTS = {
 export interface Settings {
   maxNewCardsPerDay: number;
   dayStartHour: number;
-  animationsEnabled: boolean;
   theme: Theme;
   resetEditorOnEveryProblem: boolean;
   resetEditorOnDueReview: boolean;

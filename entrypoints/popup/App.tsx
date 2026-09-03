@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { useSettingsQuery } from '@/hooks/queries/settings';
 import { useTheme } from '@/hooks/useTheme';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
@@ -10,16 +9,7 @@ import { StatsView } from './views/stats/StatsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
-  const { data: settings } = useSettingsQuery();
   const theme = useTheme();
-
-  useEffect(() => {
-    if (!settings.animationsEnabled) {
-      document.documentElement.classList.add('animations-disabled');
-    } else {
-      document.documentElement.classList.remove('animations-disabled');
-    }
-  }, [settings]);
 
   useEffect(() => {
     const root = document.documentElement;

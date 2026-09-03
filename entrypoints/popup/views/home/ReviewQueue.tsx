@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Grade } from 'ts-fsrs';
 import {
   useDelayCardMutation,
@@ -7,16 +7,16 @@ import {
   useRemoveCardMutation,
   useReviewQueueQuery,
 } from '@/hooks/queries/cards';
-import { useSettingsQuery } from '@/hooks/queries/settings';
 import type { Card, RateCardInput } from '@/shared/cards';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
 import { NotesSection } from './NotesSection';
 import { ReviewCard } from './ReviewCard';
 
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
 export function ReviewQueue() {
   const t = useI18n();
-  const { data: settings } = useSettingsQuery();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
@@ -25,18 +25,17 @@ export function ReviewQueue() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
-  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
-    };
-  }, []);
+  const finishCardAction = () => {
+    setSlideDirection(null);
+    setIsProcessing(false);
+    setAnimatingCard(null);
+  };
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
     options: {
-      getSlideDirection?: (result: T) => 'left' | 'right' | null;
+      getSlideDirection: (result: T) => 'left' | 'right';
       errorMessage: string;
     }
   ) => {
@@ -48,18 +47,13 @@ export function ReviewQueue() {
     try {
       const result = await action();
 
-      if (settings.animationsEnabled && options.getSlideDirection) {
-        const direction = options.getSlideDirection(result);
-        if (direction) setSlideDirection(direction);
+      if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
+        finishCardAction();
+        return;
       }
 
-      const animationDelay = settings.animationsEnabled ? 400 : 0;
-      animationTimerRef.current = setTimeout(() => {
-        animationTimerRef.current = null;
-        setSlideDirection(null);
-        setIsProcessing(false);
-        setAnimatingCard(null);
-      }, animationDelay);
+      const direction = options.getSlideDirection(result);
+      setSlideDirection(direction);
     } catch (error) {
       console.error(options.errorMessage, error);
       setSlideDirection(null);
@@ -159,8 +153,6 @@ export function ReviewQueue() {
   }
 
   const getAnimationClass = () => {
-    if (!settings.animationsEnabled) return '';
-
     const baseClasses = 'transition-all duration-300 ease-out';
 
     if (slideDirection === 'left') {
@@ -174,12 +166,17 @@ export function ReviewQueue() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={getAnimationClass()}>
+      <div
+        className={getAnimationClass()}
+        onAnimationEnd={(event) => {
+          if (slideDirection && event.currentTarget === event.target) finishCardAction();
+        }}
+      >
         {/* The key is important to ensure React re-mounts the component for a new card */}
         <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       </div>
       <NotesSection cardId={currentCard.id} />
-      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} />
+      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
     </div>
   );
 }

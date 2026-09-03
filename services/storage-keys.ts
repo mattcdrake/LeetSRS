@@ -4,7 +4,6 @@ export const STORAGE_KEYS = {
   notes: 'local:leetsrs:notes',
   maxNewCardsPerDay: 'sync:leetsrs:maxNewCardsPerDay',
   dayStartHour: 'sync:leetsrs:dayStartHour',
-  animationsEnabled: 'sync:leetsrs:animationsEnabled',
   theme: 'sync:leetsrs:theme',
   resetEditorOnEveryProblem: 'sync:leetsrs:autoClearLeetcode',
   resetEditorOnDueReview: 'sync:leetsrs:resetEditorOnDueReview',
