@@ -5,7 +5,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
-import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { cardQueryKeys } from '@/hooks/queries/cards';
 import { settingsQueryKeys } from '@/hooks/queries/settings';
 import type { Card } from '@/shared/cards';
@@ -15,20 +15,6 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
-
-// Mock localStorage to disable animations in tests
-const originalLocalStorage = window.localStorage;
-const mockLocalStorage = {
-  getItem: (key: string) => {
-    if (key === 'animationsEnabled') return 'false';
-    return null;
-  },
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-  length: 0,
-  key: () => null,
-};
 
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
@@ -122,13 +108,6 @@ describe('ReviewQueue', () => {
   const seedQueue = (cards: Card[]) => queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
 
   beforeEach(() => {
-    // Set up localStorage mock
-    Object.defineProperty(window, 'localStorage', {
-      value: mockLocalStorage,
-      writable: true,
-      configurable: true,
-    });
-
     messages
       .reset()
       .handle('rateCard', mockMutateAsync)
@@ -146,20 +125,7 @@ describe('ReviewQueue', () => {
     mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });
 
-  afterEach(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: originalLocalStorage,
-      writable: true,
-      configurable: true,
-    });
-  });
-
   describe('Empty Queue', () => {
-    it('should have animations disabled in tests', () => {
-      // Verify that localStorage mock returns false for animationsEnabled
-      expect(window.localStorage.getItem('animationsEnabled')).toBe('false');
-    });
-
     it('should show empty state when no cards to review', async () => {
       seedQueue([]);
 
