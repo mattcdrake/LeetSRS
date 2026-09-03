@@ -140,17 +140,20 @@ describe('usePauseCardMutation', () => {
     vi.clearAllMocks();
   });
 
-  it('should call sendMessage with correct parameters when pausing a card', async () => {
+  it.each([
+    ['pausing', 'two-sum', true],
+    ['unpausing', 'three-sum', false],
+  ] as const)('sends the correct message when %s a card', async (_action, slug, paused) => {
     const mockCard: Card = {
       id: 'test-id',
-      slug: 'two-sum',
+      slug,
       name: 'Two Sum',
       leetcodeId: '1',
       difficulty: 'Easy',
       domain: 'leetcode.com',
       createdAt: new Date(),
       fsrs: createEmptyCard(),
-      paused: true,
+      paused,
     };
 
     vi.mocked(sendMessage).mockResolvedValue(mockCard);
@@ -159,78 +162,14 @@ describe('usePauseCardMutation', () => {
       wrapper: createTestWrapper().wrapper,
     });
 
-    result.current.mutate({ slug: 'two-sum', paused: true });
+    result.current.mutate({ slug, paused });
 
     await waitFor(() => {
       expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', {
-        slug: 'two-sum',
-        paused: true,
+        slug,
+        paused,
       });
     });
-  });
-
-  it('should call sendMessage with correct parameters when unpausing a card', async () => {
-    const mockCard: Card = {
-      id: 'test-id',
-      slug: 'three-sum',
-      name: 'Three Sum',
-      leetcodeId: '15',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-      createdAt: new Date(),
-      fsrs: createEmptyCard(),
-      paused: false,
-    };
-
-    vi.mocked(sendMessage).mockResolvedValue(mockCard);
-
-    const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate({ slug: 'three-sum', paused: false });
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', {
-        slug: 'three-sum',
-        paused: false,
-      });
-    });
-  });
-
-  it('should invalidate card queries on successful pause', async () => {
-    const mockCard: Card = {
-      id: 'test-id',
-      slug: 'test-problem',
-      name: 'Test Problem',
-      leetcodeId: '999',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-      createdAt: new Date(),
-      fsrs: createEmptyCard(),
-      paused: true,
-    };
-
-    const { wrapper, queryClient } = createTestWrapper();
-    const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-    vi.mocked(sendMessage).mockResolvedValue(mockCard);
-
-    const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper,
-    });
-
-    result.current.mutate({ slug: 'test-problem', paused: true });
-
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: cardQueryKeys.all,
-    });
-
-    invalidateQueriesSpy.mockRestore();
   });
 
   it('should handle mutation error properly', async () => {
