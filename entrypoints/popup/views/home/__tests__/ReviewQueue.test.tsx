@@ -193,6 +193,22 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
+    it('should finish processing when the slide animation ends', async () => {
+      render(<ReviewQueue />, { wrapper });
+
+      const goodButton = await screen.findByRole('button', { name: 'Good' });
+      fireEvent.click(goodButton);
+
+      const cardContainer = screen.getByTestId('review-card').parentElement;
+      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
+      expect(goodButton).toBeDisabled();
+
+      fireEvent.animationEnd(cardContainer as HTMLElement);
+
+      await waitFor(() => expect(goodButton).not.toBeDisabled());
+      expect(cardContainer).not.toHaveClass('animate-slide-right');
+    });
+
     it('should disable rating buttons while processing', async () => {
       // Make mutateAsync never resolve
       mockMutateAsync.mockImplementation(() => new Promise(() => {}));

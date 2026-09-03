@@ -5,7 +5,7 @@
 - [x] Continue accepting older imports containing `animationsEnabled`, but ignore the field.
 - [x] Always apply the review-card animation classes.
 - [x] Make `getSlideDirection` required because every card action supplies it.
-- [ ] Replace the duplicated JavaScript timeout with animation-completion handling.
+- [x] Replace the duplicated JavaScript timeout with animation-completion handling.
 - [ ] Preserve the outgoing card and disabled action states until the animation completes.
 - [ ] Add an immediate state-cleanup path when `prefers-reduced-motion: reduce` applies, because `animation: none` does not emit `animationend`.
 - [ ] Add global reduced-motion CSS that disables nonessential animations and transitions.

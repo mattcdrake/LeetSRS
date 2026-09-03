@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Grade } from 'ts-fsrs';
 import {
   useDelayCardMutation,
@@ -23,13 +23,14 @@ export function ReviewQueue() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
-  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
-    };
-  }, []);
+  const finishAnimation = () => {
+    if (!slideDirection) return;
+
+    setSlideDirection(null);
+    setIsProcessing(false);
+    setAnimatingCard(null);
+  };
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
@@ -48,14 +49,6 @@ export function ReviewQueue() {
 
       const direction = options.getSlideDirection(result);
       setSlideDirection(direction);
-
-      const animationDelay = 400;
-      animationTimerRef.current = setTimeout(() => {
-        animationTimerRef.current = null;
-        setSlideDirection(null);
-        setIsProcessing(false);
-        setAnimatingCard(null);
-      }, animationDelay);
     } catch (error) {
       console.error(options.errorMessage, error);
       setSlideDirection(null);
@@ -168,7 +161,12 @@ export function ReviewQueue() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={getAnimationClass()}>
+      <div
+        className={getAnimationClass()}
+        onAnimationEnd={(event) => {
+          if (event.currentTarget === event.target) finishAnimation();
+        }}
+      >
         {/* The key is important to ensure React re-mounts the component for a new card */}
         <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       </div>
