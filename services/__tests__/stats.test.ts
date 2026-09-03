@@ -28,93 +28,34 @@ describe('Date key generation', () => {
   });
 
   describe('getTodayKey', () => {
-    it('should return date in YYYY-MM-DD format', async () => {
-      vi.setSystemTime(new Date('2024-03-15T10:30:00'));
-      await expect(getTodayKey()).resolves.toBe('2024-03-15');
-    });
-
-    it('should pad single digit months and days', async () => {
-      vi.setSystemTime(new Date('2024-01-05T10:30:00'));
-      await expect(getTodayKey()).resolves.toBe('2024-01-05');
-    });
-
-    it('should handle December correctly', async () => {
-      vi.setSystemTime(new Date('2024-12-25T10:30:00'));
-      await expect(getTodayKey()).resolves.toBe('2024-12-25');
-    });
-
-    it('should handle end of month', async () => {
-      vi.setSystemTime(new Date('2024-01-31T23:59:59'));
-      await expect(getTodayKey()).resolves.toBe('2024-01-31');
-    });
-
-    it('should handle leap year date', async () => {
-      vi.setSystemTime(new Date('2024-02-29T10:00:00'));
-      await expect(getTodayKey()).resolves.toBe('2024-02-29');
-    });
-
-    it('should use local timezone', async () => {
-      const date = new Date('2024-03-15T10:30:00');
-      vi.setSystemTime(date);
-      await expect(getTodayKey()).resolves.toBe('2024-03-15');
+    it.each([
+      ['2024-03-15T10:30:00', '2024-03-15'],
+      ['2024-01-05T10:30:00', '2024-01-05'],
+      ['2024-12-25T10:30:00', '2024-12-25'],
+      ['2024-01-31T23:59:59', '2024-01-31'],
+      ['2024-02-29T10:00:00', '2024-02-29'],
+    ])('should convert %s to %s', async (input, expected) => {
+      vi.setSystemTime(new Date(input));
+      await expect(getTodayKey()).resolves.toBe(expected);
     });
   });
 
   describe('getYesterdayKey', () => {
-    it('should return yesterday date in YYYY-MM-DD format', async () => {
-      vi.setSystemTime(new Date('2024-03-15T10:30:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-03-14');
-    });
-
-    it('should handle month boundary correctly', async () => {
-      vi.setSystemTime(new Date('2024-03-01T10:30:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-02-29'); // 2024 is leap year
-    });
-
-    it('should handle month boundary in non-leap year', async () => {
-      vi.setSystemTime(new Date('2023-03-01T10:30:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2023-02-28');
-    });
-
-    it('should handle year boundary correctly', async () => {
-      vi.setSystemTime(new Date('2024-01-01T00:00:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2023-12-31');
-    });
-
-    it('should handle different month lengths', async () => {
-      // May has 31 days
-      vi.setSystemTime(new Date('2024-06-01T10:00:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-05-31');
-
-      // April has 30 days
-      vi.setSystemTime(new Date('2024-05-01T10:00:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-04-30');
-    });
-
-    it('should pad single digit months and days', async () => {
-      vi.setSystemTime(new Date('2024-10-01T10:30:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-09-30');
-
-      vi.setSystemTime(new Date('2024-01-10T10:30:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-01-09');
-    });
-
-    it('should handle leap year Feb 29 to Mar 1', async () => {
-      vi.setSystemTime(new Date('2024-02-29T10:00:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-02-28');
-
-      vi.setSystemTime(new Date('2024-03-01T10:00:00'));
-      await expect(getYesterdayKey()).resolves.toBe('2024-02-29');
-    });
-
-    it('should handle DST transitions', async () => {
-      // Test spring forward (typically March)
-      vi.setSystemTime(new Date('2024-03-11T10:00:00')); // Day after DST in US
-      await expect(getYesterdayKey()).resolves.toBe('2024-03-10');
-
-      // Test fall back (typically November)
-      vi.setSystemTime(new Date('2024-11-04T10:00:00')); // Day after DST ends in US
-      await expect(getYesterdayKey()).resolves.toBe('2024-11-03');
+    it.each([
+      ['2024-03-15T10:30:00', '2024-03-14'],
+      ['2024-03-01T10:30:00', '2024-02-29'],
+      ['2023-03-01T10:30:00', '2023-02-28'],
+      ['2024-01-01T00:00:00', '2023-12-31'],
+      ['2024-06-01T10:00:00', '2024-05-31'],
+      ['2024-05-01T10:00:00', '2024-04-30'],
+      ['2024-10-01T10:30:00', '2024-09-30'],
+      ['2024-01-10T10:30:00', '2024-01-09'],
+      ['2024-02-29T10:00:00', '2024-02-28'],
+      ['2024-03-11T10:00:00', '2024-03-10'],
+      ['2024-11-04T10:00:00', '2024-11-03'],
+    ])('should convert %s to %s', async (input, expected) => {
+      vi.setSystemTime(new Date(input));
+      await expect(getYesterdayKey()).resolves.toBe(expected);
     });
   });
 

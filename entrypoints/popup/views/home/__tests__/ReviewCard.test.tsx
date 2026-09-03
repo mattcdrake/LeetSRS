@@ -42,31 +42,13 @@ describe('ReviewCard', () => {
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
     });
 
-    it('should render the difficulty badge with correct color class', () => {
-      renderWithProviders();
-      // Use getAllByText since there's a difficulty badge and a rating button both with "Easy"
-      const elements = screen.getAllByText('Easy');
-      // The first one should be the difficulty badge (appears before buttons in DOM)
-      const difficultyBadge = elements[0];
-      expect(difficultyBadge).toHaveClass('bg-difficulty-easy');
-    });
-
-    it('should render correct difficulty colors for each level', () => {
-      const { rerender } = renderWithProviders();
-
-      // Test Easy - get the first one which is the difficulty badge
-      const easyElements = screen.getAllByText('Easy');
-      expect(easyElements[0]).toHaveClass('bg-difficulty-easy');
-
-      // Test Medium
-      rerender(<ReviewCard card={{ ...mockCard, difficulty: 'Medium' }} onRate={mockOnRate} />);
-      expect(screen.getByText('Medium')).toHaveClass('bg-difficulty-medium');
-
-      // Test Hard
-      rerender(<ReviewCard card={{ ...mockCard, difficulty: 'Hard' }} onRate={mockOnRate} />);
-      // Also need to handle Hard button collision
-      const hardElements = screen.getAllByText('Hard');
-      expect(hardElements[0]).toHaveClass('bg-difficulty-hard');
+    it.each([
+      ['Easy', 'bg-difficulty-easy'],
+      ['Medium', 'bg-difficulty-medium'],
+      ['Hard', 'bg-difficulty-hard'],
+    ] as const)('should render the %s difficulty with the correct color', (difficulty, colorClass) => {
+      renderWithProviders({ ...mockCard, difficulty });
+      expect(screen.getAllByText(difficulty)[0]).toHaveClass(colorClass);
     });
 
     it('should render the external link to LeetCode problem', () => {
@@ -77,65 +59,29 @@ describe('ReviewCard', () => {
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
 
-    it('should render all four rating buttons', () => {
+    it.each([
+      ['Again', 'bg-rating-again'],
+      ['Hard', 'bg-rating-hard'],
+      ['Good', 'bg-rating-good'],
+      ['Easy', 'bg-rating-easy'],
+    ] as const)('should render the %s rating button with the correct color', (label, colorClass) => {
       renderWithProviders();
-      expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Good' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Easy' })).toBeInTheDocument();
-    });
-
-    it('should apply correct color classes to rating buttons', () => {
-      renderWithProviders();
-      expect(screen.getByRole('button', { name: 'Again' })).toHaveClass('bg-rating-again');
-      expect(screen.getByRole('button', { name: 'Hard' })).toHaveClass('bg-rating-hard');
-      expect(screen.getByRole('button', { name: 'Good' })).toHaveClass('bg-rating-good');
-      expect(screen.getByRole('button', { name: 'Easy' })).toHaveClass('bg-rating-easy');
+      expect(screen.getByRole('button', { name: label })).toHaveClass(colorClass);
     });
   });
 
   describe('Interactions', () => {
-    it('should call onRate with correct rating when Again button is clicked', async () => {
+    it.each([
+      ['Again', Rating.Again],
+      ['Hard', Rating.Hard],
+      ['Good', Rating.Good],
+      ['Easy', Rating.Easy],
+    ] as const)('should call onRate with the %s rating', async (label, rating) => {
       renderWithProviders();
-      const againButton = screen.getByRole('button', { name: 'Again' });
-
-      fireEvent.click(againButton);
+      fireEvent.click(screen.getByRole('button', { name: label }));
 
       await waitFor(() => {
-        expect(mockOnRate).toHaveBeenCalledWith(Rating.Again);
-      });
-    });
-
-    it('should call onRate with correct rating when Hard button is clicked', async () => {
-      renderWithProviders();
-      const hardButton = screen.getByRole('button', { name: 'Hard' });
-
-      fireEvent.click(hardButton);
-
-      await waitFor(() => {
-        expect(mockOnRate).toHaveBeenCalledWith(Rating.Hard);
-      });
-    });
-
-    it('should call onRate with correct rating when Good button is clicked', async () => {
-      renderWithProviders();
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-
-      fireEvent.click(goodButton);
-
-      await waitFor(() => {
-        expect(mockOnRate).toHaveBeenCalledWith(Rating.Good);
-      });
-    });
-
-    it('should call onRate with correct rating when Easy button is clicked', async () => {
-      renderWithProviders();
-      const easyButton = screen.getByRole('button', { name: 'Easy' });
-
-      fireEvent.click(easyButton);
-
-      await waitFor(() => {
-        expect(mockOnRate).toHaveBeenCalledWith(Rating.Easy);
+        expect(mockOnRate).toHaveBeenCalledWith(rating);
       });
     });
 
@@ -172,16 +118,6 @@ describe('ReviewCard', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle cards with long names gracefully', () => {
-      const longNameCard = {
-        ...mockCard,
-        name: 'This is a very long problem name that might overflow the card boundaries',
-      };
-      renderWithProviders(longNameCard);
-
-      expect(screen.getByText(longNameCard.name)).toBeInTheDocument();
-    });
-
     it('should handle cards with special characters in slug', () => {
       const specialCard = {
         ...mockCard,
@@ -191,25 +127,6 @@ describe('ReviewCard', () => {
 
       const link = screen.getByRole('link', { name: /LeetCode/i });
       expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/problem-with-special_chars-123/description/');
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('should have accessible button labels', () => {
-      renderWithProviders();
-
-      expect(screen.getByRole('button', { name: 'Again' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Hard' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Good' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Easy' })).toBeInTheDocument();
-    });
-
-    it('should have accessible link with proper attributes', () => {
-      renderWithProviders();
-      const link = screen.getByRole('link', { name: /LeetCode/i });
-
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
   });
 });

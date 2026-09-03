@@ -85,31 +85,16 @@ describe('ActionsSection', () => {
   });
 
   describe('Delay Functionality', () => {
-    it('should call onDelay with 1 when 1 Day button is clicked', () => {
+    it.each([
+      ['1 Day', 1],
+      ['5 Days', 5],
+    ] as const)('should call onDelay when the %s button for %i days is clicked', (label, days) => {
       render(<ActionsSection {...defaultProps} />);
-
-      // Expand first
       const expandButton = screen.getByRole('button', { name: /Actions/i });
       fireEvent.click(expandButton);
+      fireEvent.click(screen.getByRole('button', { name: label }));
 
-      const delay1Button = screen.getByRole('button', { name: /1 Day/i });
-      fireEvent.click(delay1Button);
-
-      expect(mockOnDelay).toHaveBeenCalledWith(1);
-      expect(mockOnDelay).toHaveBeenCalledTimes(1);
-    });
-
-    it('should call onDelay with 5 when 5 Days button is clicked', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      // Expand first
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const delay5Button = screen.getByRole('button', { name: /5 Days/i });
-      fireEvent.click(delay5Button);
-
-      expect(mockOnDelay).toHaveBeenCalledWith(5);
+      expect(mockOnDelay).toHaveBeenCalledWith(days);
       expect(mockOnDelay).toHaveBeenCalledTimes(1);
     });
 
@@ -126,15 +111,6 @@ describe('ActionsSection', () => {
   });
 
   describe('Pause Functionality', () => {
-    it('should display pause button when expanded', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      expect(screen.getByRole('button', { name: /Pause/i })).toBeInTheDocument();
-    });
-
     it('should call onPause when pause button is clicked', () => {
       render(<ActionsSection {...defaultProps} />);
 
