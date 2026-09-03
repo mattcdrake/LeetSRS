@@ -8,6 +8,8 @@ import { DISMISS_KEY, LeetcodeCnBanner } from '../LeetcodeCnBanner';
 
 const mockContains = vi.fn<() => Promise<boolean>>();
 const mockRequest = vi.fn<() => Promise<boolean>>();
+type QueriedTabs = Parameters<Parameters<typeof browser.tabs.query>[1]>[0];
+const mockQuery = vi.fn<() => Promise<QueriedTabs>>();
 
 // Mock localStorage since WXT test env doesn't provide one
 const store: Record<string, string> = {};
@@ -37,8 +39,11 @@ beforeEach(() => {
   mockLocalStorage.clear();
   browser.permissions.contains = mockContains;
   browser.permissions.request = mockRequest;
+  browser.tabs.query = mockQuery as typeof browser.tabs.query;
   mockContains.mockReset();
   mockRequest.mockReset();
+  mockQuery.mockReset();
+  mockQuery.mockResolvedValue([{ url: 'https://leetcode.cn/problems/two-sum/' } as QueriedTabs[number]]);
 });
 
 afterEach(() => {
