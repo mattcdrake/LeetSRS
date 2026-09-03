@@ -34,7 +34,7 @@ export function ReviewQueue() {
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
     options: {
-      getSlideDirection?: (result: T) => 'left' | 'right' | null;
+      getSlideDirection: (result: T) => 'left' | 'right';
       errorMessage: string;
     }
   ) => {
@@ -46,10 +46,8 @@ export function ReviewQueue() {
     try {
       const result = await action();
 
-      if (options.getSlideDirection) {
-        const direction = options.getSlideDirection(result);
-        if (direction) setSlideDirection(direction);
-      }
+      const direction = options.getSlideDirection(result);
+      setSlideDirection(direction);
 
       const animationDelay = 400;
       animationTimerRef.current = setTimeout(() => {
