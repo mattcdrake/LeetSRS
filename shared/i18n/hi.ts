@@ -134,7 +134,10 @@ const hi: Translations = {
     // Appearance section
     appearance: {
       title: 'अपीयरेंस',
-      darkMode: 'डार्क मोड',
+      theme: 'थीम',
+      themeSystem: 'सिस्टम',
+      themeLight: 'हल्का',
+      themeDark: 'गहरा',
       enableAnimations: 'एनिमेशन ऑन करें',
       showBadge: 'आइकन पर ड्यू संख्या दिखाएँ',
     },

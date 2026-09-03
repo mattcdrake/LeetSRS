@@ -134,7 +134,10 @@ const zhCN: Translations = {
 
     appearance: {
       title: '外观',
-      darkMode: '深色模式',
+      theme: '主题',
+      themeSystem: '跟随系统',
+      themeLight: '浅色',
+      themeDark: '深色',
       enableAnimations: '启用动画',
       showBadge: '在图标上显示待复习数量',
     },

@@ -150,7 +150,10 @@ const en = {
     // Appearance section
     appearance: {
       title: 'Appearance',
-      darkMode: 'Dark mode',
+      theme: 'Theme',
+      themeSystem: 'System',
+      themeLight: 'Light',
+      themeDark: 'Dark',
       enableAnimations: 'Enable animations',
       showBadge: 'Show due count on icon',
     },
