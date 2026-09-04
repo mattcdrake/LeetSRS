@@ -16,7 +16,6 @@ import hi from './hi';
 import pl from './pl';
 import zhCN from './zh-CN';
 
-// Helper type to widen literal string types to string while preserving structure and functions
 type DeepStringify<T> = T extends (...args: infer A) => infer R
   ? (...args: A) => R
   : T extends object
@@ -25,10 +24,8 @@ type DeepStringify<T> = T extends (...args: infer A) => infer R
       ? string
       : T;
 
-// Type for translations - all languages must match this structure
 export type Translations = DeepStringify<typeof en>;
 
-// All translations keyed by language code
 export const translations: Record<Language, Translations> = {
   de,
   en,

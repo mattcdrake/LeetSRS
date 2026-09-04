@@ -9,7 +9,6 @@ import { STORAGE_KEYS } from './storage-keys';
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
-// Format date as YYYY-MM-DD in local timezone for comparison
 export function formatLocalDate(date: Date, dayStartHour: number = 0): string {
   const adjustedDate = new Date(date);
   if (dayStartHour) {
@@ -92,7 +91,6 @@ export async function getAllCards(): Promise<Card[]> {
 export async function removeCard(slug: string): Promise<void> {
   const cards = await getCards();
 
-  // Delete the associated note if the card exists
   const card = cards[slug];
   if (card) {
     await deleteNote(card.id);
@@ -111,12 +109,10 @@ export async function delayCard(slug: string, days: number): Promise<Card> {
 
   const card = deserializeCard(cards[slug]);
 
-  // Add the specified number of days to the current due date
   const currentDueDate = new Date(card.fsrs.due);
   const newDueDate = new Date(currentDueDate);
   newDueDate.setDate(newDueDate.getDate() + days);
 
-  // Update and save
   card.fsrs.due = newDueDate;
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
@@ -159,7 +155,6 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   cards[slug] = serializeCard(card);
   await storage.setItem(STORAGE_KEYS.cards, cards);
 
-  // Update stats tracking
   await updateStats(rating, isNewCard);
 
   const settings = await getSettings();
@@ -171,7 +166,6 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
 export function isDueByDate(card: Card, referenceDate: Date = new Date(), dayStartHour: number = 0): boolean {
   const dueDate = new Date(card.fsrs.due);
 
-  // Compare dates in user's local timezone
   const referenceDateStr = formatLocalDate(referenceDate, dayStartHour);
   const dueStr = formatLocalDate(dueDate, dayStartHour);
   return dueStr <= referenceDateStr;
@@ -186,25 +180,19 @@ const sortByDueDateThenSlug = (a: Card, b: Card): number => {
 export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
   const settings = await getSettings();
-  // Filter out paused cards and cards not due yet
   const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card, new Date(), settings.dayStartHour));
 
-  // Separate into review cards and new cards
   const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);
   const newCards = dueCards.filter((card) => card.fsrs.state === FsrsState.New);
 
-  // Sort new cards by due date first (for stable selection), then by slug
   newCards.sort(sortByDueDateThenSlug);
 
-  // Get today's stats to determine how many new cards have already been done
   const todayStats = await getTodayStats();
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
   const remainingNewCards = Math.max(0, settings.maxNewCardsPerDay - newCardsCompletedToday);
 
-  // Limit new cards to the remaining daily allowance (after sorting for stability)
   const limitedNewCards = newCards.slice(0, remainingNewCards);
 
-  // Combine review and limited new cards, then sort everything by due date
   const allQueueCards = [...reviewCards, ...limitedNewCards];
   allQueueCards.sort(sortByDueDateThenSlug);
 

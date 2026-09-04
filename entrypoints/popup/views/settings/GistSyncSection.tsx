@@ -29,14 +29,11 @@ export function GistSyncSection() {
   const [gistId, setGistId] = useState('');
   const [patValidation, setPatValidation] = useState<{ valid: boolean; username?: string } | null>(null);
   const [gistValidation, setGistValidation] = useState<{ valid: boolean } | null>(null);
-  // Track if user explicitly validated (don't show message on initial load)
   const [showPatMessage, setShowPatMessage] = useState(false);
   const [showGistMessage, setShowGistMessage] = useState(false);
 
-  // Local state for immediate toggle feedback
   const [localEnabled, setLocalEnabled] = useState(false);
 
-  // Sync local state with stored config
   useEffect(() => {
     if (config) {
       setPat(config.pat || '');
@@ -85,7 +82,6 @@ export function GistSyncSection() {
 
   const handleToggleSync = async (newValue: boolean) => {
     if (newValue) {
-      // Enabling sync - validate requirements
       if (!pat || !patValidation?.valid) {
         alert(t.settings.gistSync.patRequired);
         return;
@@ -96,11 +92,9 @@ export function GistSyncSection() {
       }
     }
 
-    // Update local state immediately for instant feedback
     setLocalEnabled(newValue);
     await setConfigMutation.mutateAsync({ enabled: newValue });
 
-    // Sync immediately when enabling
     if (newValue) {
       await triggerSyncMutation.mutateAsync();
     }
@@ -125,7 +119,6 @@ export function GistSyncSection() {
       <p className="text-sm text-tertiary mb-4">{t.settings.gistSync.description}</p>
 
       <div className="space-y-4">
-        {/* PAT Input */}
         <TextField className="flex flex-col gap-1">
           <Label className="text-sm">{t.settings.gistSync.patLabel}</Label>
           <div className="flex gap-2">
@@ -171,7 +164,6 @@ export function GistSyncSection() {
           </div>
         </TextField>
 
-        {/* Gist Selection - only show after PAT is validated */}
         {patValidation?.valid && (
           <div className="space-y-2">
             <Label className="text-sm">{t.settings.gistSync.gistIdLabel}</Label>
@@ -215,17 +207,14 @@ export function GistSyncSection() {
           </div>
         )}
 
-        {/* Sync controls - only show after PAT and Gist are validated */}
         {patValidation?.valid && gistValidation?.valid && (
           <div className="space-y-4 pt-2 border-t border-tertiary">
-            {/* Enable Automatic Sync Toggle */}
             <SettingsSwitch
               label={t.settings.gistSync.enableSync}
               isSelected={localEnabled}
               onChange={handleToggleSync}
             />
 
-            {/* Sync Status */}
             <div className="flex items-center justify-between text-sm">
               <span className="text-tertiary">{t.settings.gistSync.lastSync}:</span>
               <span className="flex items-center gap-1">
@@ -235,7 +224,6 @@ export function GistSyncSection() {
               </span>
             </div>
 
-            {/* Manual Sync Button */}
             <Button
               onPress={handleSyncNow}
               isDisabled={triggerSyncMutation.isPending || status?.syncInProgress}

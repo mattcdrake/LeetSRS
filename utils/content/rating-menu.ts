@@ -74,7 +74,6 @@ export class RatingMenu {
       z-index: 50;
     `;
 
-    // Create rating buttons container
     const ratingButtonsContainer = document.createElement('div');
     ratingButtonsContainer.style.cssText = `
       display: flex;
@@ -82,7 +81,6 @@ export class RatingMenu {
       margin-bottom: 8px;
     `;
 
-    // Create rating buttons
     RATING_BUTTON_CONFIGS.forEach(({ rating, labelKey, colorKey }) => {
       const { bg, hover } = getRatingColor(colorKey);
       const label = t.ratings[labelKey];
@@ -120,15 +118,12 @@ export class RatingMenu {
 
     this.element.appendChild(ratingButtonsContainer);
 
-    // Add "Add without rating" button
     const addButton = this.createAddWithoutRatingButton(t);
     this.element.appendChild(addButton);
 
-    // Add menu to container
     this.container.style.position = 'relative';
     this.container.appendChild(this.element);
 
-    // Setup close on outside click
     setTimeout(() => {
       document.addEventListener('click', this.handleOutsideClick);
     }, 0);

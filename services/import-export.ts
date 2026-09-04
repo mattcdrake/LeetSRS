@@ -42,11 +42,9 @@ type PreparedImportData = {
 };
 
 export async function exportData(): Promise<string> {
-  // Gather all data from storage
   const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
   const stats = (await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats)) ?? {};
 
-  // Get all notes
   const notes: Record<string, Note> = {};
   for (const card of Object.values(cards)) {
     const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
@@ -58,11 +56,9 @@ export async function exportData(): Promise<string> {
 
   const settings = await exportSettings();
 
-  // Get gist sync settings
   const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
   const gistSyncEnabled = await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled);
 
-  // Get dataUpdatedAt for sync purposes
   const dataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
 
   const schemaVersion = await getCurrentSchemaVersion();
@@ -110,7 +106,6 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
     throw new Error('Invalid export data structure');
   }
 
-  // Check schema version compatibility
   const currentSchema = await getCurrentSchemaVersion();
   const importedSchema = data.schemaVersion ?? 0; // Legacy exports without schemaVersion = 0
 
@@ -118,7 +113,6 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
     throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
   }
 
-  // Validate data types
   if (typeof data.data.cards !== 'object' || data.data.cards === null) {
     throw new Error('Invalid cards data');
   }
@@ -131,7 +125,6 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
     throw new Error('Invalid notes data');
   }
 
-  // Validate normalized settings through the current settings registry.
   const importedSettings = getImportedSettings(data.data.settings);
   validateSettings(importedSettings);
 
@@ -149,30 +142,23 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
 
-  // Clear existing data for a clean import
   await resetAllData();
 
-  // Restore PAT if it existed
   if (existingPat) {
     await storage.setItem(STORAGE_KEYS.githubPat, existingPat);
   }
 
-  // Import cards
   await storage.setItem(STORAGE_KEYS.cards, preparedData.cards);
 
-  // Import stats
   await storage.setItem(STORAGE_KEYS.stats, preparedData.stats);
 
-  // Import notes
   for (const [cardId, note] of Object.entries(preparedData.notes)) {
     const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
     await storage.setItem(key, note);
   }
 
-  // Import settings
   await updateSettings(preparedData.settings);
 
-  // Import gist sync settings
   if (preparedData.gistSync) {
     if (preparedData.gistSync.gistId != null) {
       await storage.setItem(STORAGE_KEYS.gistId, preparedData.gistSync.gistId);
@@ -191,15 +177,12 @@ export async function importData(jsonData: string): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-  // Get all cards first to know which notes to remove
   const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
 
-  // Remove all data
   await storage.removeItem(STORAGE_KEYS.cards);
   await storage.removeItem(STORAGE_KEYS.stats);
   await resetSettings();
 
-  // Remove gist sync settings
   await storage.removeItem(STORAGE_KEYS.githubPat);
   await storage.removeItem(STORAGE_KEYS.gistId);
   await storage.removeItem(STORAGE_KEYS.gistSyncEnabled);
@@ -207,7 +190,6 @@ export async function resetAllData(): Promise<void> {
   await storage.removeItem(STORAGE_KEYS.lastSyncDirection);
   await storage.removeItem(STORAGE_KEYS.dataUpdatedAt);
 
-  // Remove all notes
   if (cards) {
     for (const card of Object.values(cards)) {
       const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
