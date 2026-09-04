@@ -41,17 +41,6 @@ type PreparedImportData = {
   dataUpdatedAt: string;
 };
 
-function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
-  if (!settings) return {};
-
-  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
-  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
-  return {
-    ...currentSettings,
-    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
-  };
-}
-
 export async function exportData(): Promise<string> {
   // Gather all data from storage
   const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
@@ -97,8 +86,18 @@ export async function exportData(): Promise<string> {
   return JSON.stringify(exportData, null, 2);
 }
 
-export async function importData(jsonData: string): Promise<void> {
-  // Parse and validate JSON
+function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
+  if (!settings) return {};
+
+  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
+  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
+  return {
+    ...currentSettings,
+    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
+  };
+}
+
+export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
   let data: ImportData;
   try {
     data = JSON.parse(jsonData);
@@ -136,7 +135,7 @@ export async function importData(jsonData: string): Promise<void> {
   const importedSettings = getImportedSettings(data.data.settings);
   validateSettings(importedSettings);
 
-  const preparedData: PreparedImportData = {
+  return {
     cards: data.data.cards,
     stats: data.data.stats,
     notes: data.data.notes,
@@ -144,6 +143,10 @@ export async function importData(jsonData: string): Promise<void> {
     gistSync: data.data.gistSync,
     dataUpdatedAt: data.dataUpdatedAt ?? new Date().toISOString(),
   };
+}
+
+export async function importData(jsonData: string): Promise<void> {
+  const preparedData = await prepareImportData(jsonData);
 
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
