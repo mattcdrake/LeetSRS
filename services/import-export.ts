@@ -131,7 +131,7 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
     throw new Error('Invalid notes data');
   }
 
-  // Validate settings before resetting existing data.
+  // Validate normalized settings through the current settings registry.
   const importedSettings = getImportedSettings(data.data.settings);
   validateSettings(importedSettings);
 
