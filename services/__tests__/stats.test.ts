@@ -3,10 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Difficulty } from '@/shared/cards';
+import type { DailyStats } from '@/shared/stats';
 import type { StoredCard } from '../cards';
 import { addCard } from '../cards';
 import {
-  type DailyStats,
   getCardStateStats,
   getLastNDaysStats,
   getNextNDaysStats,

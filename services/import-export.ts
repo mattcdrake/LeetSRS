@@ -1,10 +1,10 @@
 import { storage } from '#imports';
 import type { Note } from '@/shared/notes';
 import type { Settings } from '@/shared/settings';
+import type { DailyStats } from '@/shared/stats';
 import type { StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
 import { exportSettings, resetSettings, updateSettings, validateSettings } from './settings';
-import type { DailyStats } from './stats';
 import { STORAGE_KEYS } from './storage-keys';
 
 export interface ExportData {

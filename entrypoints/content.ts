@@ -3,9 +3,9 @@ import { getServiceTranslations } from '@/services/i18n';
 import type { ProblemDescriptor } from '@/shared/cards';
 import type { Translations } from '@/shared/i18n';
 import { sendMessage } from '@/shared/messages';
-import type { ProblemData } from '@/shared/problem-data';
 import {
   createLeetSrsButton,
+  type ExtractedProblemData,
   extractProblemData,
   getCurrentDomain,
   RatingMenu,
@@ -28,7 +28,7 @@ export default defineContentScript({
   },
 });
 
-function toProblemDescriptor(problemData: ProblemData): ProblemDescriptor {
+function toProblemDescriptor(problemData: ExtractedProblemData): ProblemDescriptor {
   return {
     slug: problemData.titleSlug,
     name: problemData.title,

@@ -3,11 +3,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/shared/notes';
+import type { DailyStats } from '@/shared/stats';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import type { StoredCard } from '../cards';
 import { exportData, importData, resetAllData } from '../import-export';
 import { migrations, runMigrations, setSchemaVersion } from '../migrations';
-import type { DailyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('import-export', () => {

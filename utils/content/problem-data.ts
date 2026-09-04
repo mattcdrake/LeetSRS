@@ -1,15 +1,22 @@
-import type { ProblemData } from '@/shared/problem-data';
+import type { Difficulty } from '@/shared/cards';
 import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
 
+export interface ExtractedProblemData {
+  difficulty: Difficulty;
+  title: string;
+  titleSlug: string;
+  questionFrontendId: string;
+}
+
 // Cache to avoid redundant requests
-let cachedData: { slug: string; data: ProblemData } | null = null;
+let cachedData: { slug: string; data: ExtractedProblemData } | null = null;
 
 // Export for testing purposes
 export function clearCache(): void {
   cachedData = null;
 }
 
-export async function extractProblemData(): Promise<ProblemData | null> {
+export async function extractProblemData(): Promise<ExtractedProblemData | null> {
   try {
     // Get the current slug from the URL or router
     const currentSlug = getCurrentProblemSlug();
@@ -39,7 +46,7 @@ export async function extractProblemData(): Promise<ProblemData | null> {
   }
 }
 
-async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData | null> {
+async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedProblemData | null> {
   try {
     // LeetCode's GraphQL endpoint
     const graphqlQuery = {
@@ -87,7 +94,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemData 
       if (question) {
         const useTranslated = getCurrentDomain() === 'leetcode.cn' && question.translatedTitle;
         return {
-          difficulty: question.difficulty as ProblemData['difficulty'],
+          difficulty: question.difficulty as ExtractedProblemData['difficulty'],
           title: useTranslated ? question.translatedTitle : question.title,
           titleSlug: question.titleSlug,
           questionFrontendId: question.questionFrontendId,

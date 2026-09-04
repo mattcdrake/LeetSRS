@@ -1,7 +1,10 @@
 import { Button } from 'react-aria-components';
-import { APP_VERSION, CHROME_STORE_REVIEWS_URL } from '@/shared/config';
-import { bounceButton } from '@/shared/styles';
+import { bounceButton } from '@/entrypoints/popup/styles';
 import { useI18n } from '../../contexts/I18nContext';
+
+const APP_VERSION = __APP_VERSION__;
+const CHROME_STORE_REVIEWS_URL =
+  'https://chromewebstore.google.com/detail/leetsrs/odgfcigkohoimpeeooifjdglncggkgko/reviews?utm_source=item-share-cb';
 
 export function AboutSection() {
   const t = useI18n();

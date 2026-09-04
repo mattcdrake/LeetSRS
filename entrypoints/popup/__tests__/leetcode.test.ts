@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLeetcodeProblemUrl, isLeetcodeCnUrl } from '@/shared/leetcode';
+import { getLeetcodeProblemUrl, isLeetcodeCnUrl } from '@/entrypoints/popup/leetcode';
 
 describe('getLeetcodeProblemUrl', () => {
   it.each([

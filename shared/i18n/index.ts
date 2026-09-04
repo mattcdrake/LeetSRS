@@ -5,7 +5,7 @@
  * 1. Add the language code to the Language type in shared/settings.ts
  * 2. Create a translation file (e.g., `shared/i18n/es.ts`) with `const es: Translations = { ... }`
  * 3. Import and add the translation to the `translations` record below
- * 4. Add language metadata to LANGUAGE_OPTIONS below
+ * 4. Add language metadata to LANGUAGE_OPTIONS in entrypoints/popup/views/settings/LanguageSection.tsx
  * 5. Run `npm run compile` - TypeScript will catch any missing keys
  */
 
@@ -36,16 +36,3 @@ export const translations: Record<Language, Translations> = {
   pl,
   'zh-CN': zhCN,
 };
-
-// Language metadata for the dropdown UI
-export const LANGUAGE_OPTIONS: Array<{
-  code: Language;
-  name: string;
-  nativeName: string;
-}> = [
-  { code: 'de', name: 'German', nativeName: 'Deutsch' },
-  { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  { code: 'pl', name: 'Polish', nativeName: 'Polski' },
-  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
-];
