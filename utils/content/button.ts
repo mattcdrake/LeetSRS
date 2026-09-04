@@ -45,7 +45,6 @@ export function createLeetSrsButton(onClick: () => void, t: Translations): HTMLD
   clickableDiv.setAttribute('title', t.app.name);
   clickableDiv.setAttribute('aria-label', t.app.name);
 
-  // Use inline style for the LeetSRS button color
   clickableDiv.style.color = LEETSRS_BUTTON_COLOR;
 
   clickableDiv.innerHTML = `

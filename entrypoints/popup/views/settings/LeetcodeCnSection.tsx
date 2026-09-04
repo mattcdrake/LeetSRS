@@ -22,7 +22,6 @@ export function LeetcodeCnSection() {
     await checkPermission();
   };
 
-  // Hide while loading or if already enabled
   if (granted === null || granted) return null;
 
   return (

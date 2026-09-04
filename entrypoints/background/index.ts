@@ -23,13 +23,11 @@ async function updateBadge() {
 }
 
 export default defineBackground(() => {
-  // Initialize async and track completion so message handlers can wait
   const readyPromise = (async () => {
     await runMigrations(migrations).catch((error) => {
       console.error('Failed to run migrations:', error);
     });
 
-    // Set up periodic sync alarm if not already scheduled
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {
       browser.alarms.create(SYNC_ALARM_NAME, {
@@ -37,7 +35,6 @@ export default defineBackground(() => {
       });
     }
 
-    // Update badge on startup
     await updateBadge();
   })();
 

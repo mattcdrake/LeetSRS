@@ -8,17 +8,14 @@ export interface ExtractedProblemData {
   questionFrontendId: string;
 }
 
-// Cache to avoid redundant requests
 let cachedData: { slug: string; data: ExtractedProblemData } | null = null;
 
-// Export for testing purposes
 export function clearCache(): void {
   cachedData = null;
 }
 
 export async function extractProblemData(): Promise<ExtractedProblemData | null> {
   try {
-    // Get the current slug from the URL or router
     const currentSlug = getCurrentProblemSlug();
     if (!currentSlug) {
       console.log('Could not extract title slug');
@@ -26,14 +23,12 @@ export async function extractProblemData(): Promise<ExtractedProblemData | null>
     }
     const titleSlug = currentSlug;
 
-    // Check cache first
     if (cachedData && cachedData.slug === titleSlug) {
       return cachedData.data;
     }
 
     const problemData = await fetchProblemDataFromPage(titleSlug);
     if (problemData) {
-      // Update cache
       cachedData = { slug: titleSlug, data: problemData };
       return problemData;
     }
@@ -48,7 +43,6 @@ export async function extractProblemData(): Promise<ExtractedProblemData | null>
 
 async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedProblemData | null> {
   try {
-    // LeetCode's GraphQL endpoint
     const graphqlQuery = {
       query: `
         query questionData($titleSlug: String!) {
@@ -67,7 +61,6 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedPro
       },
     };
 
-    // Get CSRF token from cookies
     const csrfToken = document.cookie
       .split('; ')
       .find((row) => row.startsWith('csrftoken='))

@@ -28,7 +28,6 @@ export function ReviewSettingsSection() {
     ) {
       updateSettingsMutation.mutate({ maxNewCardsPerDay: value });
     } else {
-      // Reset to current value on invalid input
       setInputValue(settings.maxNewCardsPerDay.toString());
     }
   };

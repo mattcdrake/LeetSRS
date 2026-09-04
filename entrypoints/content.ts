@@ -17,7 +17,6 @@ export default defineContentScript({
   matches: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
   runAt: 'document_idle',
   async main() {
-    // Wake up service worker so it's ready when user interacts
     try {
       await sendMessage('ping');
     } catch (error) {
@@ -58,7 +57,6 @@ function setupLeetSrsButton(t: Translations) {
   const tooltip = new Tooltip();
 
   function insertButton(buttonsContainer: Element) {
-    // Don't insert if already present
     if (buttonsContainer.querySelector(`#${BUTTON_ID}`)) {
       return;
     }
@@ -72,7 +70,6 @@ function setupLeetSrsButton(t: Translations) {
     }, t);
     buttonWrapper.id = BUTTON_ID;
 
-    // Setup rating menu
     ratingMenu = new RatingMenu(
       buttonWrapper,
       async (rating, label) => {
@@ -94,7 +91,6 @@ function setupLeetSrsButton(t: Translations) {
       getServiceTranslations
     );
 
-    // Setup tooltip
     const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
     if (clickableDiv) {
       clickableDiv.addEventListener('mouseenter', () => {
@@ -106,7 +102,6 @@ function setupLeetSrsButton(t: Translations) {
       });
     }
 
-    // Insert before the last button group (the notes button)
     const lastButtonGroup = buttonsContainer.lastElementChild;
 
     try {

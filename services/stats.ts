@@ -138,7 +138,6 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
   const today = new Date();
   const { dayStartHour } = await getSettings();
 
-  // Initialize result array with dates
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() + i);
@@ -154,7 +153,6 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
 
   const firstDate = result[0].date;
 
-  // Count cards due on each day
   for (const card of cards) {
     if (card.paused) continue;
 

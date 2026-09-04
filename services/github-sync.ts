@@ -14,7 +14,6 @@ import { STORAGE_KEYS } from './storage-keys';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
 
-// In-memory state for sync status (not persisted)
 let syncInProgress = false;
 let lastError: string | null = null;
 
@@ -84,7 +83,6 @@ export async function validateGistId(gistId: string, pat: string): Promise<GistV
     const octokit = new Octokit({ auth: pat });
     const { data } = await octokit.rest.gists.get({ gist_id: gistId });
 
-    // Check if the gist has our file
     if (!data.files?.[GIST_FILENAME]) {
       return { valid: false, error: `Gist does not contain ${GIST_FILENAME}` };
     }
@@ -126,10 +124,8 @@ export async function createNewGist(): Promise<{ gistId: string }> {
 
   const gistId = data.id;
 
-  // Save the new gist ID
   await setGistSyncConfig({ gistId });
 
-  // Update sync status
   const now = new Date().toISOString();
   await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
   await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
@@ -158,7 +154,6 @@ export async function triggerGistSync(): Promise<SyncResult> {
 
     const octokit = new Octokit({ auth: config.pat });
 
-    // Fetch remote gist
     let remoteGist: Awaited<ReturnType<typeof octokit.rest.gists.get>>['data'];
     try {
       const { data } = await octokit.rest.gists.get({ gist_id: config.gistId });
@@ -170,10 +165,8 @@ export async function triggerGistSync(): Promise<SyncResult> {
       throw error;
     }
 
-    // Get remote data
     const remoteFileContent = remoteGist.files?.[GIST_FILENAME]?.content;
     if (!remoteFileContent) {
-      // Remote gist exists but doesn't have our file - push local data
       const localExportJson = await exportData();
       return await pushToGist(octokit, config.gistId, localExportJson);
     }
@@ -182,21 +175,17 @@ export async function triggerGistSync(): Promise<SyncResult> {
     try {
       remoteData = JSON.parse(remoteFileContent);
     } catch {
-      // Invalid JSON in remote - push local
       const localExportJson = await exportData();
       return await pushToGist(octokit, config.gistId, localExportJson);
     }
 
-    // Get local and remote dataUpdatedAt timestamps
     const localDataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
 
     // Handle missing dataUpdatedAt (legacy or fresh install)
     if (!localDataUpdatedAt && remoteData.dataUpdatedAt) {
-      // Fresh install with existing remote data - pull
       return await pullFromGist(remoteFileContent);
     }
     if (!remoteData.dataUpdatedAt) {
-      // Remote is legacy - push to establish dataUpdatedAt
       if (!localDataUpdatedAt) {
         await storage.setItem(STORAGE_KEYS.dataUpdatedAt, new Date().toISOString());
       }
@@ -204,8 +193,6 @@ export async function triggerGistSync(): Promise<SyncResult> {
       return await pushToGist(octokit, config.gistId, localExportJson);
     }
 
-    // Compare dataUpdatedAt timestamps (LWW)
-    // At this point both are guaranteed non-null by the checks above
     if (!localDataUpdatedAt) {
       throw new Error('Local data update timestamp is missing');
     }
@@ -213,17 +200,14 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const remoteUpdated = new Date(remoteData.dataUpdatedAt);
 
     if (localUpdated < remoteUpdated) {
-      // Remote is newer - pull
       return await pullFromGist(remoteFileContent);
     }
 
     if (localUpdated > remoteUpdated) {
-      // Local is newer - push
       const localExportJson = await exportData();
       return await pushToGist(octokit, config.gistId, localExportJson);
     }
 
-    // Equal timestamps - no change needed
     const now = new Date().toISOString();
     await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
     return { success: true, action: 'no-change', timestamp: now };
@@ -231,7 +215,6 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
     lastError = errorMessage;
 
-    // Handle rate limiting
     if (errorMessage.includes('403') || errorMessage.includes('rate limit')) {
       return { success: false, error: 'GitHub API rate limit exceeded. Please try again later.' };
     }

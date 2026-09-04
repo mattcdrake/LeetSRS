@@ -19,7 +19,6 @@ export async function setSchemaVersion(version: number): Promise<void> {
 }
 
 export async function runMigrations(migrations: Migration[]): Promise<void> {
-  // Check for duplicate version numbers
   const seenVersions = new Set<number>();
   for (const migration of migrations) {
     if (seenVersions.has(migration.version)) {

@@ -27,7 +27,6 @@ export function useNoteEditor(cardId: string): NoteEditor {
   const saveNoteMutation = useSaveNoteMutation(cardId);
   const deleteNoteMutation = useDeleteNoteMutation(cardId);
 
-  // Sync fetched note with local state
   useEffect(() => {
     setText(note?.text ?? '');
     resetConfirmation();
@@ -38,7 +37,6 @@ export function useNoteEditor(cardId: string): NoteEditor {
       await saveNoteMutation.mutateAsync(text);
     } catch (error) {
       console.error('Failed to save note:', error);
-      // Revert to original text on error
       setText(note?.text ?? '');
     }
   };

@@ -62,7 +62,6 @@ export function DataSection() {
 
   const handleReset = () =>
     startOrConfirm(async () => {
-      // Browser confirmation dialog
       const confirmed = window.confirm(t.settings.data.resetConfirmMessage);
 
       if (!confirmed) {

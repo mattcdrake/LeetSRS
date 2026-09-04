@@ -67,7 +67,6 @@ export const RATING_COLORS = {
   },
 } as const;
 
-// Rating button config - labels are looked up dynamically from translations
 export const RATING_BUTTON_CONFIGS = [
   { rating: 1, labelKey: 'again' as const, colorKey: 'again' as const },
   { rating: 2, labelKey: 'hard' as const, colorKey: 'hard' as const },
