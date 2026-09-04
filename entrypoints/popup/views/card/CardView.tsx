@@ -11,6 +11,7 @@ import type { Translations } from '@/shared/i18n';
 import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
 import { useI18n } from '../../contexts/I18nContext';
+import { filterAndSortCards } from './card-list';
 import { CardNotes } from './components/CardNotes';
 
 // Utility functions
@@ -215,17 +216,7 @@ export function CardView() {
   const [processingCards, setProcessingCards] = useState<Set<string>>(new Set());
   const [filterText, setFilterText] = useState('');
 
-  const filteredCards = cards.filter((card) => {
-    if (!filterText) return true;
-    const searchLower = filterText.toLowerCase();
-    return card.name.toLowerCase().includes(searchLower) || card.leetcodeId.includes(filterText);
-  });
-
-  const sortedCards = [...filteredCards].sort((a, b) => {
-    const aId = parseInt(a.leetcodeId, 10);
-    const bId = parseInt(b.leetcodeId, 10);
-    return aId - bId;
-  });
+  const sortedCards = filterAndSortCards(cards, filterText);
 
   const toggleCard = (cardId: string) => {
     setExpandedCards((prev) => {
