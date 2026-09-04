@@ -1,5 +1,6 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { storage } from '#imports';
+import type { DailyStats, UpcomingReviewStats } from '@/shared/stats';
 import { formatLocalDate, getAllCards } from './cards';
 import { getSettings } from './settings';
 import { STORAGE_KEYS } from './storage-keys';
@@ -14,11 +15,6 @@ interface BaseStats {
   };
   newCards: number;
   reviewedCards: number;
-}
-
-export interface DailyStats extends BaseStats {
-  date: string; // YYYY-MM-DD format
-  streak: number;
 }
 
 function createEmptyBaseStats(): BaseStats {
@@ -133,11 +129,6 @@ export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
   }
 
   return result;
-}
-
-export interface UpcomingReviewStats {
-  date: string; // YYYY-MM-DD format
-  count: number;
 }
 
 export async function getNextNDaysStats(days: number): Promise<UpcomingReviewStats[]> {

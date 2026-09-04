@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/shared/cards';
+import type { DailyStats } from '@/shared/stats';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import {
@@ -19,7 +20,6 @@ import {
   setPauseStatus,
 } from '../cards';
 import * as notesModule from '../notes';
-import type { DailyStats } from '../stats';
 import { STORAGE_KEYS } from '../storage-keys';
 
 const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
