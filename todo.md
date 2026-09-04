@@ -1,7 +1,7 @@
 # Scope card-list mutations and presentation logic (#153)
 
 - [x] Extract pure card-list filtering and ordering logic from `entrypoints/popup/views/card/CardView.tsx` into a nearby utility. Preserve case-insensitive name matching and ID substring matching, sort fully numeric IDs numerically, place nonnumeric IDs in a documented deterministic fallback order, and add a stable tie-breaker.
-- [ ] Add focused utility tests for empty and case-insensitive filters, ID matches, numeric ordering, leading-zero/equal numeric IDs, mixed numeric and nonnumeric IDs, and deterministic ordering among nonnumeric IDs.
+- [x] Add focused utility tests for empty and case-insensitive filters, ID matches, numeric ordering, leading-zero/equal numeric IDs, mixed numeric and nonnumeric IDs, and deterministic ordering among nonnumeric IDs.
 - [ ] Extract an entity-scoped card-list item container under `entrypoints/popup/views/card/components/`. Move pause/resume and delete mutations, pending/error ownership, timed delete confirmation, card details, and item presentation into it while keeping each card's operations independent.
 - [ ] Keep `CardView` responsible only for loading/empty states, filter input, invoking the pure filter/order utility, and the list-level expanded-card set. Have the item notify `CardView` after successful deletion so removed cards are also removed from expansion state.
 - [ ] Preserve existing behavior and accessibility: multiple cards may remain expanded, disclosure buttons retain `aria-expanded`, problem links retain their accessible labels and safe new-tab attributes, action buttons disable only for their own pending operation, and failed operations become usable again with item-specific error handling.
