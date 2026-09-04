@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
-    "@tanstack/react-query": "^5.84.1",
+    "@tanstack/react-query": "^5.102.8",
     "@webext-core/messaging": "^4.0.0",
     "chart.js": "^4.5.0",
     "octokit": "^5.0.5",
