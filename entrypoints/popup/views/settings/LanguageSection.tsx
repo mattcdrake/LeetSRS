@@ -1,9 +1,20 @@
 import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/queries/settings';
-import { LANGUAGE_OPTIONS } from '@/shared/i18n';
 import type { Language } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
+
+const LANGUAGE_OPTIONS: Array<{
+  code: Language;
+  name: string;
+  nativeName: string;
+}> = [
+  { code: 'de', name: 'German', nativeName: 'Deutsch' },
+  { code: 'en', name: 'English', nativeName: 'English' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
+  { code: 'pl', name: 'Polish', nativeName: 'Polski' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
+];
 
 export function LanguageSection() {
   const t = useI18n();
