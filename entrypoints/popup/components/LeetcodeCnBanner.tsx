@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FaXmark } from 'react-icons/fa6';
 import { browser } from 'wxt/browser';
-import { isLeetcodeCnUrl } from '@/shared/leetcode';
+import { isLeetcodeCnUrl } from '@/entrypoints/popup/leetcode';
 import { useI18n } from '../contexts/I18nContext';
 
 const LEETCODE_CN_ORIGIN = '*://*.leetcode.cn/*';

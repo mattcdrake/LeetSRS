@@ -2,9 +2,9 @@ import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import { Rating } from 'ts-fsrs';
+import { getLeetcodeProblemUrl } from '@/entrypoints/popup/leetcode';
 import { bounceButton } from '@/entrypoints/popup/styles';
 import type { Card, Difficulty } from '@/shared/cards';
-import { getLeetcodeProblemUrl } from '@/shared/leetcode';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
