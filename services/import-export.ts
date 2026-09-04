@@ -32,6 +32,15 @@ type ImportData = Omit<ExportData, 'data'> & {
   };
 };
 
+type PreparedImportData = {
+  cards: Record<string, StoredCard>;
+  stats: Record<string, DailyStats>;
+  notes: Record<string, Note>;
+  settings: Partial<Settings>;
+  gistSync?: ExportData['data']['gistSync'];
+  dataUpdatedAt: string;
+};
+
 function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
   if (!settings) return {};
 
@@ -127,6 +136,15 @@ export async function importData(jsonData: string): Promise<void> {
   const importedSettings = getImportedSettings(data.data.settings);
   validateSettings(importedSettings);
 
+  const preparedData: PreparedImportData = {
+    cards: data.data.cards,
+    stats: data.data.stats,
+    notes: data.data.notes,
+    settings: importedSettings,
+    gistSync: data.data.gistSync,
+    dataUpdatedAt: data.dataUpdatedAt ?? new Date().toISOString(),
+  };
+
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
 
@@ -139,34 +157,31 @@ export async function importData(jsonData: string): Promise<void> {
   }
 
   // Import cards
-  await storage.setItem(STORAGE_KEYS.cards, data.data.cards);
+  await storage.setItem(STORAGE_KEYS.cards, preparedData.cards);
 
   // Import stats
-  await storage.setItem(STORAGE_KEYS.stats, data.data.stats);
+  await storage.setItem(STORAGE_KEYS.stats, preparedData.stats);
 
   // Import notes
-  for (const [cardId, note] of Object.entries(data.data.notes)) {
+  for (const [cardId, note] of Object.entries(preparedData.notes)) {
     const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
     await storage.setItem(key, note);
   }
 
   // Import settings
-  if (data.data.settings) {
-    await updateSettings(importedSettings);
-  }
+  await updateSettings(preparedData.settings);
 
   // Import gist sync settings
-  if (data.data.gistSync) {
-    if (data.data.gistSync.gistId != null) {
-      await storage.setItem(STORAGE_KEYS.gistId, data.data.gistSync.gistId);
+  if (preparedData.gistSync) {
+    if (preparedData.gistSync.gistId != null) {
+      await storage.setItem(STORAGE_KEYS.gistId, preparedData.gistSync.gistId);
     }
-    if (data.data.gistSync.enabled != null) {
-      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, data.data.gistSync.enabled);
+    if (preparedData.gistSync.enabled != null) {
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, preparedData.gistSync.enabled);
     }
   }
 
-  // Import dataUpdatedAt if present, otherwise set to now
-  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, data.dataUpdatedAt ?? new Date().toISOString());
+  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, preparedData.dataUpdatedAt);
 }
 
 export async function resetAllData(): Promise<void> {
