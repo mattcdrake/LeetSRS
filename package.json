@@ -45,7 +45,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
+    "@types/react-dom": "^19.2.5",
     "@vitest/ui": "^4.1.10",
     "@wxt-dev/module-react": "^1.1.3",
     "happy-dom": "^20.3.4",
