@@ -145,9 +145,7 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   };
 }
 
-export async function importData(jsonData: string): Promise<void> {
-  const preparedData = await prepareImportData(jsonData);
-
+export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
 
@@ -185,6 +183,11 @@ export async function importData(jsonData: string): Promise<void> {
   }
 
   await storage.setItem(STORAGE_KEYS.dataUpdatedAt, preparedData.dataUpdatedAt);
+}
+
+export async function importData(jsonData: string): Promise<void> {
+  const preparedData = await prepareImportData(jsonData);
+  await applyImportData(preparedData);
 }
 
 export async function resetAllData(): Promise<void> {
