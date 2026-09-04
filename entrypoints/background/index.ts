@@ -23,6 +23,7 @@ async function updateBadge() {
 }
 
 export default defineBackground(() => {
+  // Initialize async and track completion so message handlers can wait
   const readyPromise = (async () => {
     await runMigrations(migrations).catch((error) => {
       console.error('Failed to run migrations:', error);

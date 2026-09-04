@@ -14,6 +14,7 @@ import { STORAGE_KEYS } from './storage-keys';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
 
+// In-memory state for sync status (not persisted)
 let syncInProgress = false;
 let lastError: string | null = null;
 

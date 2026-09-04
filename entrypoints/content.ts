@@ -17,6 +17,7 @@ export default defineContentScript({
   matches: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
   runAt: 'document_idle',
   async main() {
+    // Wake up service worker so it's ready when user interacts
     try {
       await sendMessage('ping');
     } catch (error) {
