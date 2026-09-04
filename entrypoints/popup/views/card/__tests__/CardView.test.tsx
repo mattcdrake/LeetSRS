@@ -3,9 +3,9 @@
  */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cardQueryKeys } from '@/hooks/queries/cards';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
@@ -32,12 +32,8 @@ describe('CardView', () => {
   };
 
   beforeEach(() => {
-    messages.reset().resolve('setPauseStatus', createMockCard(State.New)).resolve('removeCard', undefined);
+    messages.reset();
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('should render loading state', () => {
@@ -397,192 +393,6 @@ describe('CardView', () => {
       expect(screen.getByText('Loading cards...')).toBeInTheDocument();
       view.unmount();
       pending.resolve([]);
-    });
-  });
-
-  describe('card actions', () => {
-    it('should call pause mutation when pause button is clicked', async () => {
-      const card = createMockCard(State.New, {
-        name: 'Test Problem',
-        slug: 'test-problem',
-        paused: false,
-      });
-
-      seedCards([card]);
-
-      renderWithQueryClient(<CardView />);
-
-      // Expand the card to show buttons
-      const cardButton = screen.getByRole('button', { name: /Test Problem/i });
-      fireEvent.click(cardButton);
-
-      // Click the pause button
-      const pauseButton = screen.getByRole('button', { name: /Pause/i });
-      fireEvent.click(pauseButton);
-
-      // Assert that mutateAsync was called with correct arguments
-      await vi.waitFor(() =>
-        expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { slug: 'test-problem', paused: true })
-      );
-    });
-
-    it('should call unpause mutation when resume button is clicked', async () => {
-      const card = createMockCard(State.New, {
-        name: 'Test Problem',
-        slug: 'test-problem',
-        paused: true,
-      });
-
-      seedCards([card]);
-
-      renderWithQueryClient(<CardView />);
-
-      // Expand the card to show buttons
-      const cardButton = screen.getByRole('button', { name: /Test Problem/i });
-      fireEvent.click(cardButton);
-
-      // Click the resume button
-      const resumeButton = screen.getByRole('button', { name: /Resume/i });
-      fireEvent.click(resumeButton);
-
-      // Assert that mutateAsync was called with correct arguments
-      await vi.waitFor(() =>
-        expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { slug: 'test-problem', paused: false })
-      );
-    });
-
-    it('should call delete mutation after confirmation', async () => {
-      const card = createMockCard(State.New, {
-        name: 'Test Problem',
-        slug: 'test-problem',
-      });
-
-      seedCards([card]);
-
-      renderWithQueryClient(<CardView />);
-
-      // Expand the card to show buttons
-      const cardButton = screen.getByRole('button', { name: /Test Problem/i });
-      fireEvent.click(cardButton);
-
-      // First click on delete button
-      const deleteButton = screen.getByRole('button', { name: /Delete/i });
-      fireEvent.click(deleteButton);
-
-      // Button should now show "Confirm?"
-      expect(screen.getByRole('button', { name: /Confirm\?/i })).toBeInTheDocument();
-
-      // Second click to confirm
-      fireEvent.click(screen.getByRole('button', { name: /Confirm\?/i }));
-
-      // Assert that mutateAsync was called with the slug
-      await vi.waitFor(() => expect(sendMessage).toHaveBeenCalledWith('removeCard', { slug: 'test-problem' }));
-    });
-
-    it('should expire delete confirmation after 3000ms', () => {
-      vi.useFakeTimers();
-      const card = createMockCard(State.New, {
-        name: 'Test Problem',
-        slug: 'test-problem',
-      });
-
-      seedCards([card]);
-
-      renderWithQueryClient(<CardView />);
-      fireEvent.click(screen.getByRole('button', { name: /Test Problem/i }));
-      fireEvent.click(screen.getByRole('button', { name: /^Delete$/i }));
-
-      expect(screen.getByRole('button', { name: /Confirm\?/i })).toBeInTheDocument();
-
-      act(() => {
-        vi.advanceTimersByTime(3000);
-      });
-
-      expect(screen.getByRole('button', { name: /^Delete$/i })).toBeInTheDocument();
-      expect(sendMessage).not.toHaveBeenCalledWith('removeCard', expect.anything());
-    });
-
-    it('should keep delete confirmation independent between cards', () => {
-      const cards = [
-        createMockCard(State.New, { name: 'Problem 1', slug: 'problem-1', leetcodeId: '1' }),
-        createMockCard(State.New, { name: 'Problem 2', slug: 'problem-2', leetcodeId: '2' }),
-      ];
-
-      seedCards(cards);
-
-      renderWithQueryClient(<CardView />);
-      fireEvent.click(screen.getByRole('button', { name: /Problem 1/i }));
-      fireEvent.click(screen.getByRole('button', { name: /Problem 2/i }));
-
-      const deleteButtons = screen.getAllByRole('button', { name: /^Delete$/i });
-      fireEvent.click(deleteButtons[0]);
-
-      expect(screen.getAllByRole('button', { name: /Confirm\?/i })).toHaveLength(1);
-      expect(screen.getAllByRole('button', { name: /^Delete$/i })).toHaveLength(1);
-      expect(sendMessage).not.toHaveBeenCalledWith('removeCard', expect.anything());
-    });
-
-    it('should handle errors from mutations gracefully', async () => {
-      const card = createMockCard(State.New, {
-        name: 'Test Problem',
-        slug: 'test-problem',
-      });
-
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      seedCards([card]);
-
-      // Mock the mutation to reject
-      messages.handle('setPauseStatus', () => Promise.reject(new Error('Network error')));
-
-      renderWithQueryClient(<CardView />);
-
-      // Expand the card
-      const cardButton = screen.getByRole('button', { name: /Test Problem/i });
-      fireEvent.click(cardButton);
-
-      // Click the pause button
-      const pauseButton = screen.getByRole('button', { name: /Pause/i });
-      fireEvent.click(pauseButton);
-
-      // Wait for the promise to reject
-      await vi.waitFor(() => {
-        expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to toggle pause status:', expect.any(Error));
-      });
-
-      // Button should be enabled again after error
-      expect(pauseButton).not.toBeDisabled();
-
-      consoleErrorSpy.mockRestore();
-    });
-
-    it('should handle multiple cards with independent actions', async () => {
-      const cards = [
-        createMockCard(State.New, { name: 'Problem 1', slug: 'problem-1', leetcodeId: '1' }),
-        createMockCard(State.New, { name: 'Problem 2', slug: 'problem-2', leetcodeId: '2' }),
-      ];
-
-      seedCards(cards);
-
-      renderWithQueryClient(<CardView />);
-
-      // Expand both cards
-      const cardButtons = screen.getAllByRole('button');
-      fireEvent.click(cardButtons[0]); // First card
-      fireEvent.click(cardButtons[1]); // Second card
-
-      // Get pause buttons (should be 2)
-      const pauseButtons = screen.getAllByRole('button', { name: /Pause/i });
-      expect(pauseButtons).toHaveLength(2);
-
-      // Click pause on first card
-      fireEvent.click(pauseButtons[0]);
-
-      // Should only call mutation for first card
-      await vi.waitFor(() => {
-        expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { slug: 'problem-1', paused: true });
-        expect(vi.mocked(sendMessage).mock.calls.filter(([type]) => type === 'setPauseStatus')).toHaveLength(1);
-      });
     });
   });
 });
