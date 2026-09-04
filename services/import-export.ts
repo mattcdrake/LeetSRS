@@ -139,6 +139,7 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
 }
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
+  // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
 
   await resetAllData();
