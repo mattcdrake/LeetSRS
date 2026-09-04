@@ -6,7 +6,7 @@ import type { Note } from '@/shared/notes';
 import type { DailyStats } from '@/shared/stats';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import type { StoredCard } from '../cards';
-import { exportData, importData, resetAllData } from '../import-export';
+import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
 import { migrations, runMigrations, setSchemaVersion } from '../migrations';
 import { STORAGE_KEYS } from '../storage-keys';
 
@@ -191,6 +191,137 @@ describe('import-export', () => {
       },
     };
 
+    describe('prepareImportData', () => {
+      it('normalizes legacy settings without mutating storage', async () => {
+        const existingCards = { existing: { id: 'existing-card-id' } };
+        await storage.setItem(STORAGE_KEYS.cards, existingCards);
+        const { resetEditorOnEveryProblem: _, ...legacySettings } = validExportData.data.settings;
+        const legacyData = {
+          ...validExportData,
+          dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+          data: {
+            ...validExportData.data,
+            settings: { ...legacySettings, animationsEnabled: false, autoClearLeetcode: true },
+          },
+        };
+
+        const serializedLegacyData = JSON.stringify(legacyData);
+        const parsedLegacyData = JSON.parse(serializedLegacyData);
+        const preparedData = await prepareImportData(serializedLegacyData);
+
+        expect(preparedData).toMatchObject({
+          cards: parsedLegacyData.data.cards,
+          stats: parsedLegacyData.data.stats,
+          notes: parsedLegacyData.data.notes,
+          settings: { ...legacySettings, resetEditorOnEveryProblem: true },
+          dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+        });
+        expect(preparedData.settings).not.toHaveProperty('animationsEnabled');
+        expect(preparedData.settings).not.toHaveProperty('autoClearLeetcode');
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(existingCards);
+      });
+
+      it.each([
+        ['invalid JSON', 'invalid json', 'Invalid JSON format'],
+        ['invalid structure', JSON.stringify({ data: {} }), 'Invalid export data structure'],
+        [
+          'newer schema',
+          JSON.stringify({ ...validExportData, schemaVersion: 999 }),
+          'Export is from a newer version (schema 999). Please update the extension.',
+        ],
+        [
+          'invalid cards',
+          JSON.stringify({ ...validExportData, data: { ...validExportData.data, cards: null } }),
+          'Invalid cards data',
+        ],
+        [
+          'invalid stats',
+          JSON.stringify({ ...validExportData, data: { ...validExportData.data, stats: null } }),
+          'Invalid stats data',
+        ],
+        [
+          'invalid notes',
+          JSON.stringify({ ...validExportData, data: { ...validExportData.data, notes: null } }),
+          'Invalid notes data',
+        ],
+        [
+          'invalid current setting',
+          JSON.stringify({
+            ...validExportData,
+            data: {
+              ...validExportData.data,
+              settings: { ...validExportData.data.settings, dayStartHour: 99 },
+            },
+          }),
+          'Day start hour must be between 0 and 23',
+        ],
+        [
+          'invalid legacy setting',
+          JSON.stringify({
+            ...validExportData,
+            data: {
+              ...validExportData.data,
+              settings: {
+                ...validExportData.data.settings,
+                resetEditorOnEveryProblem: undefined,
+                autoClearLeetcode: 'yes',
+              },
+            },
+          }),
+          'Reset editor on every problem must be a boolean',
+        ],
+      ])('rejects %s before changing existing storage', async (_name, jsonData, error) => {
+        const existingCards = { existing: { id: 'existing-card-id' } };
+        const existingStats = { '2024-02-01': { totalReviews: 7 } };
+        const existingNote = { text: 'existing note' };
+        await storage.setItem(STORAGE_KEYS.cards, existingCards);
+        await storage.setItem(STORAGE_KEYS.stats, existingStats);
+        await storage.setItem(`${STORAGE_KEYS.notes}:existing-card-id`, existingNote);
+        await storage.setItem(STORAGE_KEYS.theme, 'dark');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+
+        await expect(prepareImportData(jsonData)).rejects.toThrow(error);
+
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(existingCards);
+        expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(existingStats);
+        expect(await storage.getItem(`${STORAGE_KEYS.notes}:existing-card-id`)).toEqual(existingNote);
+        expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
+        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe('existing-gist');
+        expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBe(true);
+        expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+      });
+    });
+
+    describe('applyImportData', () => {
+      it('replaces stored data while preserving the GitHub PAT', async () => {
+        const oldCardUuid = 'old-card-uuid-1234';
+        await storage.setItem(STORAGE_KEYS.cards, { old: { id: oldCardUuid } });
+        await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        const preparedData = await prepareImportData(
+          JSON.stringify({
+            ...validExportData,
+            dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+            data: {
+              ...validExportData.data,
+              gistSync: { gistId: 'imported-gist', enabled: true },
+            },
+          })
+        );
+
+        await applyImportData(preparedData);
+
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
+        expect(await storage.getItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const)).toBeNull();
+        expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe('imported-gist');
+        expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBe(true);
+        expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-15T10:00:00.000Z');
+      });
+    });
+
     it('should import valid data successfully', async () => {
       const jsonData = JSON.stringify(validExportData);
       await importData(jsonData);
@@ -229,6 +360,20 @@ describe('import-export', () => {
       const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
       await importData(JSON.stringify({ ...validExportData, dataUpdatedAt }));
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
+    });
+
+    it('should generate a data update timestamp when the import omits it', async () => {
+      await importData(JSON.stringify(validExportData));
+
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    });
+
+    it('should preserve the existing GitHub PAT', async () => {
+      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+
+      await importData(JSON.stringify(validExportData));
+
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
     });
 
     it('should import the legacy autoClearLeetcode setting', async () => {

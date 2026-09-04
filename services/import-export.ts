@@ -32,16 +32,14 @@ type ImportData = Omit<ExportData, 'data'> & {
   };
 };
 
-function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
-  if (!settings) return {};
-
-  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
-  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
-  return {
-    ...currentSettings,
-    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
-  };
-}
+type PreparedImportData = {
+  cards: Record<string, StoredCard>;
+  stats: Record<string, DailyStats>;
+  notes: Record<string, Note>;
+  settings: Partial<Settings>;
+  gistSync?: ExportData['data']['gistSync'];
+  dataUpdatedAt: string;
+};
 
 export async function exportData(): Promise<string> {
   // Gather all data from storage
@@ -88,8 +86,18 @@ export async function exportData(): Promise<string> {
   return JSON.stringify(exportData, null, 2);
 }
 
-export async function importData(jsonData: string): Promise<void> {
-  // Parse and validate JSON
+function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
+  if (!settings) return {};
+
+  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
+  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
+  return {
+    ...currentSettings,
+    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
+  };
+}
+
+export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
   let data: ImportData;
   try {
     data = JSON.parse(jsonData);
@@ -123,10 +131,21 @@ export async function importData(jsonData: string): Promise<void> {
     throw new Error('Invalid notes data');
   }
 
-  // Validate settings before resetting existing data.
+  // Validate normalized settings through the current settings registry.
   const importedSettings = getImportedSettings(data.data.settings);
   validateSettings(importedSettings);
 
+  return {
+    cards: data.data.cards,
+    stats: data.data.stats,
+    notes: data.data.notes,
+    settings: importedSettings,
+    gistSync: data.data.gistSync,
+    dataUpdatedAt: data.dataUpdatedAt ?? new Date().toISOString(),
+  };
+}
+
+export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
 
@@ -139,34 +158,36 @@ export async function importData(jsonData: string): Promise<void> {
   }
 
   // Import cards
-  await storage.setItem(STORAGE_KEYS.cards, data.data.cards);
+  await storage.setItem(STORAGE_KEYS.cards, preparedData.cards);
 
   // Import stats
-  await storage.setItem(STORAGE_KEYS.stats, data.data.stats);
+  await storage.setItem(STORAGE_KEYS.stats, preparedData.stats);
 
   // Import notes
-  for (const [cardId, note] of Object.entries(data.data.notes)) {
+  for (const [cardId, note] of Object.entries(preparedData.notes)) {
     const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
     await storage.setItem(key, note);
   }
 
   // Import settings
-  if (data.data.settings) {
-    await updateSettings(importedSettings);
-  }
+  await updateSettings(preparedData.settings);
 
   // Import gist sync settings
-  if (data.data.gistSync) {
-    if (data.data.gistSync.gistId != null) {
-      await storage.setItem(STORAGE_KEYS.gistId, data.data.gistSync.gistId);
+  if (preparedData.gistSync) {
+    if (preparedData.gistSync.gistId != null) {
+      await storage.setItem(STORAGE_KEYS.gistId, preparedData.gistSync.gistId);
     }
-    if (data.data.gistSync.enabled != null) {
-      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, data.data.gistSync.enabled);
+    if (preparedData.gistSync.enabled != null) {
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, preparedData.gistSync.enabled);
     }
   }
 
-  // Import dataUpdatedAt if present, otherwise set to now
-  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, data.dataUpdatedAt ?? new Date().toISOString());
+  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, preparedData.dataUpdatedAt);
+}
+
+export async function importData(jsonData: string): Promise<void> {
+  const preparedData = await prepareImportData(jsonData);
+  await applyImportData(preparedData);
 }
 
 export async function resetAllData(): Promise<void> {
