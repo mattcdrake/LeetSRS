@@ -4,5 +4,6 @@ export * from './constants';
 export * from './domain';
 export * from './problem-data';
 export * from './rating-menu';
+export * from './rating-menu-coordinator';
 export * from './theme';
 export * from './tooltip';
