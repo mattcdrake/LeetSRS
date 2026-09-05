@@ -7,7 +7,7 @@
   - Translations are resolved for every open attempt, preserving language changes without a page reload.
 - [x] Extract a content-script rating-menu coordinator with a small testable interface. It loads translations, applies the interaction version checks above, and calls only synchronous menu operations.
 - [x] Refactor `RatingMenu` so it owns only synchronous visibility and event-listener state. Pass resolved `Translations` to `show`/`toggle` instead of injecting an async loader or tracking an opening request.
-- [ ] Separate DOM construction from menu visibility state by extracting the menu-element/button construction from the `RatingMenu` state transitions.
+- [x] Separate DOM construction from menu visibility state by extracting the menu-element/button construction from the `RatingMenu` state transitions.
 - [x] Update content-script setup to create and invoke the coordinator, keeping rating and add-card callbacks unchanged.
 - [ ] Rewrite `RatingMenu` tests around synchronous rendering, hiding, callbacks, positioning, outside clicks, hover behavior, and translated labels.
 - [ ] Add coordinator tests for rapid open/close/open clicks, out-of-order stale requests, closing while a request is pending, and current versus stale translation failures.
