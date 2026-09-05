@@ -1,22 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type Translations, translations } from '@/shared/i18n';
+import { createDeferred, type Deferred } from '@/test/utils/deferred';
 import { type CoordinatedRatingMenu, RatingMenuCoordinator } from '../rating-menu-coordinator';
-
-type Deferred<T> = {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (error: unknown) => void;
-};
-
-function deferred<T>(): Deferred<T> {
-  let resolve: (value: T) => void = () => undefined;
-  let reject: (error: unknown) => void = () => undefined;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return { promise, resolve, reject };
-}
 
 describe('RatingMenuCoordinator', () => {
   let visible: boolean;
@@ -38,7 +23,7 @@ describe('RatingMenuCoordinator', () => {
       }),
     };
     const getTranslations = vi.fn(() => {
-      const request = deferred<Translations>();
+      const request = createDeferred<Translations>();
       requests.push(request);
       return request.promise;
     });
