@@ -36,14 +36,14 @@ describe('RatingMenu', () => {
     return container.querySelectorAll('button');
   }
 
-  it('toggles synchronous visibility without creating duplicate menus', () => {
+  it('shows and hides synchronously without creating duplicate menus', () => {
     expect(menu.isVisible()).toBe(false);
-    menu.toggle(t);
+    menu.show(t);
     menu.show(t);
     expect(menu.isVisible()).toBe(true);
     expect(container.querySelectorAll('[style*="position: absolute"]')).toHaveLength(1);
 
-    menu.toggle(t);
+    menu.hide();
     expect(menu.isVisible()).toBe(false);
   });
 

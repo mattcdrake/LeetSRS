@@ -36,14 +36,6 @@ export class RatingMenu {
     this.position = options?.position ?? 'bottom';
   }
 
-  toggle(t: Translations): void {
-    if (this.element) {
-      this.hide();
-    } else {
-      this.show(t);
-    }
-  }
-
   show(t: Translations): void {
     if (this.element) return;
 
