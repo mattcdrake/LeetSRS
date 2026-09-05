@@ -24,7 +24,7 @@ describe('RatingMenu', () => {
     document.body.appendChild(container);
     onRate = vi.fn<RatingCallback>();
     onAddWithoutRating = vi.fn<() => void>();
-    menu = new RatingMenu(container, onRate, onAddWithoutRating, async () => t);
+    menu = new RatingMenu(container, onRate, onAddWithoutRating);
   });
 
   afterEach(() => {
@@ -35,20 +35,20 @@ describe('RatingMenu', () => {
 
   describe('toggle', () => {
     it('should show menu when hidden', async () => {
-      await menu.toggle();
+      menu.toggle(t);
       expect(container.querySelector('[style*="position: absolute"]')).toBeTruthy();
     });
 
     it('should hide menu when visible', async () => {
-      await menu.show();
-      await menu.toggle();
+      menu.show(t);
+      menu.toggle(t);
       expect(container.querySelector('[style*="position: absolute"]')).toBeFalsy();
     });
   });
 
   describe('show', () => {
     it('should create menu element with correct structure', async () => {
-      await menu.show();
+      menu.show(t);
 
       const menuElement = container.querySelector('[style*="position: absolute"]');
       expect(menuElement).toBeTruthy();
@@ -67,51 +67,31 @@ describe('RatingMenu', () => {
     });
 
     it('should not create duplicate menus', async () => {
-      await menu.show();
-      await menu.show();
-
-      const menus = container.querySelectorAll('[style*="position: absolute"]');
-      expect(menus.length).toBe(1);
-    });
-
-    it('should not create duplicate menus while translations are loading', async () => {
-      let resolveTranslations: (value: typeof t) => void = () => undefined;
-      const pendingTranslations = new Promise<typeof t>((resolve) => {
-        resolveTranslations = resolve;
-      });
-      menu = new RatingMenu(container, onRate, onAddWithoutRating, () => pendingTranslations);
-
-      const firstShow = menu.show();
-      const secondShow = menu.show();
-      resolveTranslations(t);
-      await Promise.all([firstShow, secondShow]);
+      menu.show(t);
+      menu.show(t);
 
       const menus = container.querySelectorAll('[style*="position: absolute"]');
       expect(menus.length).toBe(1);
     });
 
     it('should set container position to relative', async () => {
-      await menu.show();
+      menu.show(t);
       expect(container.style.position).toBe('relative');
     });
 
     it('should use the current translations each time it opens', async () => {
-      let currentTranslations = translations.en;
-      menu = new RatingMenu(container, onRate, onAddWithoutRating, async () => currentTranslations);
-
-      await menu.show();
+      menu.show(translations.en);
       expect(container.querySelectorAll('button')[2].textContent).toBe(translations.en.ratings.good);
 
       menu.hide();
-      currentTranslations = translations.pl;
-      await menu.show();
+      menu.show(translations.pl);
       expect(container.querySelectorAll('button')[2].textContent).toBe(translations.pl.ratings.good);
     });
   });
 
   describe('rating button clicks', () => {
     it('should call onRate with correct rating and label when rating button clicked', async () => {
-      await menu.show();
+      menu.show(t);
       const buttons = container.querySelectorAll('button');
 
       // Click "Good" button (index 2)
@@ -122,7 +102,7 @@ describe('RatingMenu', () => {
     });
 
     it('should hide menu after rating button click', async () => {
-      await menu.show();
+      menu.show(t);
       const buttons = container.querySelectorAll('button');
 
       buttons[0].click();
@@ -132,7 +112,7 @@ describe('RatingMenu', () => {
 
     it('should handle all rating buttons correctly', async () => {
       for (const [index, ratingBtn] of RATING_BUTTONS.entries()) {
-        await menu.show();
+        menu.show(t);
         const buttons = container.querySelectorAll('button');
         buttons[index].click();
 
@@ -146,7 +126,7 @@ describe('RatingMenu', () => {
 
   describe('add without rating button', () => {
     it('should call onAddWithoutRating when clicked', async () => {
-      await menu.show();
+      menu.show(t);
       const buttons = container.querySelectorAll('button');
       const addButton = buttons[buttons.length - 1];
 
@@ -156,7 +136,7 @@ describe('RatingMenu', () => {
     });
 
     it('should hide menu after add without rating click', async () => {
-      await menu.show();
+      menu.show(t);
       const buttons = container.querySelectorAll('button');
       const addButton = buttons[buttons.length - 1];
 
@@ -168,7 +148,7 @@ describe('RatingMenu', () => {
 
   describe('outside click handling', () => {
     it('should hide menu when clicking outside', async () => {
-      await menu.show();
+      menu.show(t);
 
       // Wait for event listener to be attached
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -180,7 +160,7 @@ describe('RatingMenu', () => {
     });
 
     it('should not hide menu when clicking inside', async () => {
-      await menu.show();
+      menu.show(t);
 
       // Wait for event listener to be attached
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -195,7 +175,7 @@ describe('RatingMenu', () => {
 
   describe('hover effects', () => {
     it('should change button background on hover', async () => {
-      await menu.show();
+      menu.show(t);
       const buttons = container.querySelectorAll('button');
       const button = buttons[0];
       const originalBg = button.style.backgroundColor;

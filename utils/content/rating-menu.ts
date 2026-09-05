@@ -11,45 +11,34 @@ type RatingMenuOptions = {
 
 export class RatingMenu {
   private element: HTMLDivElement | null = null;
-  private isOpening = false;
   private container: HTMLElement;
   private onRate: RatingCallback;
   private onAddWithoutRating: () => void;
   private position: RatingMenuPosition;
-  private getTranslations: () => Promise<Translations>;
 
   constructor(
     container: HTMLElement,
     onRate: RatingCallback,
     onAddWithoutRating: () => void,
-    getTranslations: () => Promise<Translations>,
     options?: RatingMenuOptions
   ) {
     this.container = container;
     this.onRate = onRate;
     this.onAddWithoutRating = onAddWithoutRating;
-    this.getTranslations = getTranslations;
     this.position = options?.position ?? 'bottom';
   }
 
-  async toggle(): Promise<void> {
+  toggle(t: Translations): void {
     if (this.element) {
       this.hide();
     } else {
-      await this.show();
+      this.show(t);
     }
   }
 
-  async show(): Promise<void> {
-    if (this.element || this.isOpening) return;
+  show(t: Translations): void {
+    if (this.element) return;
 
-    this.isOpening = true;
-    let t: Translations;
-    try {
-      t = await this.getTranslations();
-    } finally {
-      this.isOpening = false;
-    }
     this.element = document.createElement('div');
     const isDark = isDarkMode();
     const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
@@ -178,6 +167,10 @@ export class RatingMenu {
       this.element = null;
       document.removeEventListener('click', this.handleOutsideClick);
     }
+  }
+
+  isVisible(): boolean {
+    return this.element !== null;
   }
 
   private handleOutsideClick = (e: MouseEvent): void => {

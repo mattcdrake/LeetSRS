@@ -9,6 +9,7 @@ import {
   extractProblemData,
   getCurrentDomain,
   RatingMenu,
+  RatingMenuCoordinator,
   setupLeetcodeAutoReset,
   Tooltip,
 } from '@/utils/content';
@@ -62,16 +63,16 @@ function setupLeetSrsButton(t: Translations) {
       return;
     }
 
-    let ratingMenu: RatingMenu | null = null;
+    let ratingMenuCoordinator: RatingMenuCoordinator | null = null;
 
     const buttonWrapper = createLeetSrsButton(() => {
-      if (ratingMenu) {
-        void ratingMenu.toggle();
+      if (ratingMenuCoordinator) {
+        void ratingMenuCoordinator.toggle();
       }
     }, t);
     buttonWrapper.id = BUTTON_ID;
 
-    ratingMenu = new RatingMenu(
+    const ratingMenu = new RatingMenu(
       buttonWrapper,
       async (rating, label) => {
         await withProblemData(async (problem) => {
@@ -88,9 +89,14 @@ function setupLeetSrsButton(t: Translations) {
           console.log('Add without rating - Card added:', result);
           return result;
         });
-      },
-      getServiceTranslations
+      }
     );
+
+    ratingMenuCoordinator = new RatingMenuCoordinator({
+      menu: ratingMenu,
+      getTranslations: getServiceTranslations,
+      onError: (error) => console.error('Failed to load rating menu translations:', error),
+    });
 
     const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
     if (clickableDiv) {
