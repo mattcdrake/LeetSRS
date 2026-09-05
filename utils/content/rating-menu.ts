@@ -58,9 +58,7 @@ export class RatingMenu {
     this.container.style.position = 'relative';
     this.container.appendChild(this.element);
 
-    setTimeout(() => {
-      document.addEventListener('click', this.handleOutsideClick);
-    }, 0);
+    document.addEventListener('click', this.handleOutsideClick);
   }
 
   hide(): void {

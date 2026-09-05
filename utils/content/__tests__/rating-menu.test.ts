@@ -6,7 +6,6 @@ import { type RatingCallback, RatingMenu } from '../rating-menu';
 
 // @vitest-environment happy-dom
 
-// Get the labels from translations for testing
 const t = translations.en;
 const RATING_BUTTONS = RATING_BUTTON_CONFIGS.map((config) => ({
   ...config,
@@ -29,164 +28,112 @@ describe('RatingMenu', () => {
 
   afterEach(() => {
     menu.hide();
-    document.body.removeChild(container);
+    container.remove();
     vi.clearAllMocks();
   });
 
-  describe('toggle', () => {
-    it('should show menu when hidden', async () => {
-      menu.toggle(t);
-      expect(container.querySelector('[style*="position: absolute"]')).toBeTruthy();
-    });
+  function getButtons(): NodeListOf<HTMLButtonElement> {
+    return container.querySelectorAll('button');
+  }
 
-    it('should hide menu when visible', async () => {
-      menu.show(t);
-      menu.toggle(t);
-      expect(container.querySelector('[style*="position: absolute"]')).toBeFalsy();
-    });
+  it('toggles synchronous visibility without creating duplicate menus', () => {
+    expect(menu.isVisible()).toBe(false);
+    menu.toggle(t);
+    menu.show(t);
+    expect(menu.isVisible()).toBe(true);
+    expect(container.querySelectorAll('[style*="position: absolute"]')).toHaveLength(1);
+
+    menu.toggle(t);
+    expect(menu.isVisible()).toBe(false);
   });
 
-  describe('show', () => {
-    it('should create menu element with correct structure', async () => {
-      menu.show(t);
+  it('renders buttons using the provided translations', () => {
+    menu.show(t);
+    const buttons = getButtons();
 
-      const menuElement = container.querySelector('[style*="position: absolute"]');
-      expect(menuElement).toBeTruthy();
-
-      // Check rating buttons
-      const buttons = requireDefined(menuElement).querySelectorAll('button');
-      expect(buttons.length).toBe(5); // 4 rating buttons + 1 add without rating
-
-      // Verify rating buttons text
-      RATING_BUTTONS.forEach((btn, index) => {
-        expect(buttons[index].textContent).toBe(btn.label);
-      });
-
-      // Verify add without rating button
-      expect(buttons[4].innerHTML).toContain('Add to SRS (no rating)');
+    expect(buttons).toHaveLength(5);
+    RATING_BUTTONS.forEach((button, index) => {
+      expect(buttons[index].textContent).toBe(button.label);
     });
-
-    it('should not create duplicate menus', async () => {
-      menu.show(t);
-      menu.show(t);
-
-      const menus = container.querySelectorAll('[style*="position: absolute"]');
-      expect(menus.length).toBe(1);
-    });
-
-    it('should set container position to relative', async () => {
-      menu.show(t);
-      expect(container.style.position).toBe('relative');
-    });
-
-    it('should use the current translations each time it opens', async () => {
-      menu.show(translations.en);
-      expect(container.querySelectorAll('button')[2].textContent).toBe(translations.en.ratings.good);
-
-      menu.hide();
-      menu.show(translations.pl);
-      expect(container.querySelectorAll('button')[2].textContent).toBe(translations.pl.ratings.good);
-    });
+    expect(buttons[4].textContent).toContain(t.contentScript.addToSrsNoRating);
   });
 
-  describe('rating button clicks', () => {
-    it('should call onRate with correct rating and label when rating button clicked', async () => {
-      menu.show(t);
-      const buttons = container.querySelectorAll('button');
+  it('uses newly provided translations when reopened', () => {
+    menu.show(translations.en);
+    expect(getButtons()[2].textContent).toBe(translations.en.ratings.good);
+    menu.hide();
 
-      // Click "Good" button (index 2)
-      buttons[2].click();
-
-      expect(onRate).toHaveBeenCalledWith(3, 'Good');
-      expect(onRate).toHaveBeenCalledTimes(1);
-    });
-
-    it('should hide menu after rating button click', async () => {
-      menu.show(t);
-      const buttons = container.querySelectorAll('button');
-
-      buttons[0].click();
-
-      expect(container.querySelector('[style*="position: absolute"]')).toBeFalsy();
-    });
-
-    it('should handle all rating buttons correctly', async () => {
-      for (const [index, ratingBtn] of RATING_BUTTONS.entries()) {
-        menu.show(t);
-        const buttons = container.querySelectorAll('button');
-        buttons[index].click();
-
-        expect(onRate).toHaveBeenCalledWith(ratingBtn.rating, ratingBtn.label);
-        menu.hide();
-      }
-
-      expect(onRate).toHaveBeenCalledTimes(RATING_BUTTONS.length);
-    });
+    menu.show(translations.pl);
+    expect(getButtons()[2].textContent).toBe(translations.pl.ratings.good);
   });
 
-  describe('add without rating button', () => {
-    it('should call onAddWithoutRating when clicked', async () => {
-      menu.show(t);
-      const buttons = container.querySelectorAll('button');
-      const addButton = buttons[buttons.length - 1];
+  it('positions the menu below its relatively positioned container by default', () => {
+    menu.show(t);
+    const element = requireDefined(container.querySelector<HTMLElement>('[style*="position: absolute"]'));
 
-      addButton.click();
-
-      expect(onAddWithoutRating).toHaveBeenCalledTimes(1);
-    });
-
-    it('should hide menu after add without rating click', async () => {
-      menu.show(t);
-      const buttons = container.querySelectorAll('button');
-      const addButton = buttons[buttons.length - 1];
-
-      addButton.click();
-
-      expect(container.querySelector('[style*="position: absolute"]')).toBeFalsy();
-    });
+    expect(container.style.position).toBe('relative');
+    expect(element.style.top).toBe('100%');
+    expect(element.style.marginTop).toBe('8px');
   });
 
-  describe('outside click handling', () => {
-    it('should hide menu when clicking outside', async () => {
-      menu.show(t);
+  it('supports positioning the menu above its container', () => {
+    menu = new RatingMenu(container, onRate, onAddWithoutRating, { position: 'top' });
+    menu.show(t);
+    const element = requireDefined(container.querySelector<HTMLElement>('[style*="position: absolute"]'));
 
-      // Wait for event listener to be attached
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      // Click outside
-      document.body.click();
-
-      expect(container.querySelector('[style*="position: absolute"]')).toBeFalsy();
-    });
-
-    it('should not hide menu when clicking inside', async () => {
-      menu.show(t);
-
-      // Wait for event listener to be attached
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      // Click inside menu
-      const menuElement = container.querySelector('[style*="position: absolute"]');
-      requireDefined(menuElement).dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-      expect(container.querySelector('[style*="position: absolute"]')).toBeTruthy();
-    });
+    expect(element.style.bottom).toBe('100%');
+    expect(element.style.marginBottom).toBe('8px');
   });
 
-  describe('hover effects', () => {
-    it('should change button background on hover', async () => {
+  it('rates with each configured value and translated label, then hides', () => {
+    RATING_BUTTONS.forEach((ratingButton, index) => {
       menu.show(t);
-      const buttons = container.querySelectorAll('button');
-      const button = buttons[0];
-      const originalBg = button.style.backgroundColor;
-
-      button.dispatchEvent(new MouseEvent('mouseenter'));
-      const hoverBg = button.style.backgroundColor;
-
-      expect(hoverBg).not.toBe(originalBg);
-
-      button.dispatchEvent(new MouseEvent('mouseleave'));
-      expect(button.style.backgroundColor).toBe(originalBg);
+      getButtons()[index].click();
+      expect(onRate).toHaveBeenLastCalledWith(ratingButton.rating, ratingButton.label);
+      expect(menu.isVisible()).toBe(false);
     });
+    expect(onRate).toHaveBeenCalledTimes(RATING_BUTTONS.length);
+  });
+
+  it('adds without a rating, then hides', () => {
+    menu.show(t);
+    getButtons()[4].click();
+
+    expect(onAddWithoutRating).toHaveBeenCalledOnce();
+    expect(menu.isVisible()).toBe(false);
+  });
+
+  it('hides after an outside click but remains open after an inside click', () => {
+    menu.show(t);
+    const element = requireDefined(container.querySelector<HTMLElement>('[style*="position: absolute"]'));
+
+    element.click();
+    expect(menu.isVisible()).toBe(true);
+    document.body.click();
+    expect(menu.isVisible()).toBe(false);
+  });
+
+  it('applies and restores rating-button hover colors', () => {
+    menu.show(t);
+    const button = getButtons()[0];
+    const originalBackground = button.style.backgroundColor;
+
+    button.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(button.style.backgroundColor).not.toBe(originalBackground);
+    button.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(button.style.backgroundColor).toBe(originalBackground);
+  });
+
+  it('applies and restores add-button hover styles', () => {
+    menu.show(t);
+    const button = getButtons()[4];
+    const originalBackground = button.style.backgroundColor;
+
+    button.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(button.style.backgroundColor).not.toBe(originalBackground);
+    expect(button.style.textDecoration).toBe('underline');
+    button.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(button.style.backgroundColor).toBe(originalBackground);
+    expect(button.style.textDecoration).toBe('none');
   });
 });
