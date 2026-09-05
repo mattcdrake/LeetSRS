@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/mattcdrake/LeetSRS/compare/v0.6.0...v0.7.0) (2026-09-05)
+
+
+### Features
+
+* link cards to LeetCode problems ([#185](https://github.com/mattcdrake/LeetSRS/issues/185)) ([a6a3c39](https://github.com/mattcdrake/LeetSRS/commit/a6a3c397b946c6b423fdc2533795948e9f9d3832))
+
 ## [0.6.0](https://github.com/mattcdrake/LeetSRS/compare/v0.5.0...v0.6.0) (2026-09-03)
 
 
