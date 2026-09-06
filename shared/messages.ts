@@ -1,16 +1,16 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import type { Note } from '@/domain/notes';
-import type { Settings } from '@/domain/settings';
-import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
 import type {
   GistSyncConfig,
   GistSyncStatus,
   GistValidationResult,
   PatValidationResult,
   SyncResult,
-} from '@/shared/gist-sync';
+} from '@/domain/gist-sync';
+import type { Note } from '@/domain/notes';
+import type { Settings } from '@/domain/settings';
+import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
 
 export interface ExtensionMessageMap {
   ping(): 'PONG';
