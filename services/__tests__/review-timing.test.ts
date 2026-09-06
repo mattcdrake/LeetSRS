@@ -8,7 +8,7 @@ import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { getReviewQueue, isDueByDate, serializeCard } from '../cards';
 import { getSettings } from '../settings';
-import { getTodayKey, getYesterdayKey, updateStats } from '../stats';
+import { getLastNDaysStats, getNextNDaysStats, getTodayKey, getYesterdayKey, updateStats } from '../stats';
 
 vi.mock('../settings', () => ({ getSettings: vi.fn() }));
 
@@ -124,6 +124,31 @@ describe('review timing before calculation extraction', () => {
       '2024-03-15': dailyStats('2024-03-15', 0, 7),
       '2024-03-14': dailyStats('2024-03-14', 1, 8),
     });
+  });
+
+  it.each([
+    [getLastNDaysStats, STORAGE_KEYS.stats],
+    [getNextNDaysStats, STORAGE_KEYS.cards],
+  ])('%s reads data, samples the clock, then awaits settings even for zero days', async (getBuckets, dataKey) => {
+    const getItem = storage.getItem.bind(storage);
+    const events: string[] = [];
+    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
+      events.push(key);
+      vi.setSystemTime(new Date('2024-03-15T03:59:59'));
+      return getItem(key, options);
+    });
+    vi.mocked(getSettings).mockImplementation(async () => {
+      events.push('settings');
+      vi.setSystemTime(new Date('2024-03-16T12:00:00'));
+      return buildSettings({ dayStartHour: 4 });
+    });
+    vi.setSystemTime(new Date('2024-03-13T12:00:00'));
+
+    expect(await getBuckets(1)).toEqual([expect.objectContaining({ date: '2024-03-14' })]);
+    expect(events).toEqual([dataKey, 'settings']);
+    events.length = 0;
+    expect(await getBuckets(0)).toEqual([]);
+    expect(events).toEqual([dataKey, 'settings']);
   });
 
   it('does not read yesterday or settings again when today already exists', async () => {

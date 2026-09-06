@@ -341,21 +341,6 @@ describe('Stats management', () => {
   });
 
   describe('getLastNDaysStats', () => {
-    it('should return empty days when no stats exist', async () => {
-      const stats = await getLastNDaysStats(7);
-
-      expect(stats).toHaveLength(7);
-      stats.forEach((stat) => {
-        expect(stat.totalReviews).toBe(0);
-        expect(stat.newCards).toBe(0);
-        expect(stat.reviewedCards).toBe(0);
-        expect(stat.gradeBreakdown[Rating.Again]).toBe(0);
-        expect(stat.gradeBreakdown[Rating.Hard]).toBe(0);
-        expect(stat.gradeBreakdown[Rating.Good]).toBe(0);
-        expect(stat.gradeBreakdown[Rating.Easy]).toBe(0);
-      });
-    });
-
     it('should return last N days in chronological order', async () => {
       // Create stats for specific days
       vi.setSystemTime(new Date('2024-03-10T10:00:00'));
@@ -388,18 +373,6 @@ describe('Stats management', () => {
 
       expect(stats[6].totalReviews).toBe(1);
       expect(stats[6].gradeBreakdown[Rating.Hard]).toBe(1);
-    });
-
-    it('should handle large number of days', async () => {
-      const stats = await getLastNDaysStats(45);
-
-      expect(stats).toHaveLength(45);
-
-      // Check first and last dates
-      const firstDate = new Date('2024-03-15');
-      firstDate.setDate(firstDate.getDate() - 44);
-      expect(stats[0].date).toBe('2024-01-31');
-      expect(stats[44].date).toBe('2024-03-15');
     });
 
     it('should include all grade breakdowns for each day', async () => {

@@ -18,7 +18,7 @@ introduce operation snapshots (#218) or extract persistence (#241).
   Keep per-unpaused-card clock reads during eligibility checks and the later
   statistics read in services; split calculations around those existing reads.
   Move calculation tests and retain orchestration characterizations. Run checks/build.
-- [ ] 4. Extract statistics accumulation, state counts, and history/upcoming
+- [x] 4. Extract statistics accumulation, state counts, and history/upcoming
   bucket calculations with explicit inputs. Keep conditional yesterday reads,
   settings reads, clocks, and storage sequencing in services. Move calculation
   tests, update guidance and architecture checklist, run full checks/build,
@@ -46,3 +46,14 @@ three sorting tests to the domain and added limit/nonmutation and calendar-date
 cases; retained service rating, delay, eligibility, and timing coverage. Full
 checks passed (55 files, 615 tests), and production build passed. Manifest, popup,
 and content output match the original baseline; background output differs.
+
+Task 4 results: extracted statistics accumulation, state counts, and historical/
+upcoming buckets into `domain/statistics.ts`. Moved two calculation tests and
+added accumulation, boundary/bucket, and service read-order cases. All checks
+passed (56 files, 622 tests); production build passed with the existing chunk
+warning. Manifest, popup, and content output match the original baseline; the
+background bundle differs after extraction. Existing rating, storage/export,
+queue/requeue, error, and timing tests remain green. Clock/settings reads,
+conditional yesterday lookup, writes, FSRS initialization, and message/storage
+contracts retain their existing behavior. Updated repository/architecture
+guidance. No live-browser smoke test was performed. All four tasks are complete.
