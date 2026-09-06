@@ -26,5 +26,6 @@ web-ext.config.ts
 *.sw?
 devex/
 
+.agents
 docs/plans
 experiments/
