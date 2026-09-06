@@ -1,174 +1,73 @@
 # LeetSRS architecture
 
-This describes the checked-out implementation as of September 6, 2026, after
-#237–#246. Remaining refactor work is #247. The
-[refactor checklist](plans/architecture-refactor.md) records implementation and
-verification; the [roadmap](plans/roadmap.md) records subsequent work. The
-[regional identity and catalog contract](regional-problem-identity.md) describes
-planned behavior, not the current storage model.
+Popup and content scripts send typed commands to the background, which owns
+learning-data writes. Services coordinate domain rules and persistence.
 
-## Current architecture
+## Boundaries
 
-The popup and LeetCode content script send typed commands to one background
-owner of learning-data mutations. Services coordinate portable domain rules and
-storage adapters. Gist synchronization uses the GitHub transport adapter and
-shares sync metadata persistence with backup/reset and data tracking.
+| Location          | Owns                                                                        |
+| ----------------- | --------------------------------------------------------------------------- |
+| `entrypoints/`    | WXT registration, background executor, popup UI and query hooks             |
+| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.ts`  |
+| `domain/`         | Models, scheduling, review-day calculations, settings and import policy     |
+| `services/`       | Workflows, clock/settings reads, FSRS lifetime, write order, sync decisions |
+| `infrastructure/` | Storage keys/codecs/migrations, GitHub requests, browser-language detection |
+| `shared/`         | Public messages, sync contracts, translations                               |
 
-```mermaid
-flowchart TD
-  Popup[React popup] --> Queries[Colocated React Query hooks]
-  Queries --> Messages[Typed extension messages]
-  Content[Content bootstrap and helpers] --> Messages
-  Content --> Page[LeetCode DOM and GraphQL]
-  Content --> I18n[Storage-backed translation loader]
-  I18n --> Storage[WXT storage]
-  Messages --> Executor[Background message executor]
-  Alarm[Sync alarm] --> Executor
-  Executor --> Services[Learning, settings, and backup workflows]
-  Executor --> Sync[Gist sync service]
-  Services --> Domain[Portable domain rules]
-  Services --> Persistence[Storage adapters and codecs]
-  Services --> FSRS[Service-owned FSRS instance]
-  Persistence --> Storage
-  Startup[Startup and migrations] --> Storage
-  Sync --> Services
-  Sync --> Persistence
-  Sync --> Transport[GitHub transport adapter]
-  Transport --> GitHub[GitHub Gist via Octokit]
-  Executor --> Badge[Extension badge]
-```
+Dependency rules apply to runtime and type-only imports:
 
-Arrows represent runtime calls or access. Shared contracts and domain types are
-not separate processes.
+- Domain code takes explicit inputs; no browser, storage, service, or messaging
+  dependencies. Portable translation dictionaries and `ts-fsrs` are allowed.
+- Services may compose domain rules, adapters, and other services without cycles.
+  Statistics and editor reset read cards through persistence, not the card service.
+- Infrastructure and shared code must not depend on services or UI. Shared code
+  must not depend on concrete infrastructure.
+- Popup/content workflows use messages, not service or persistence imports.
+  Content's read-only `infrastructure/storage/translations.ts` adapter is the
+  exception; it resolves stored language with lazy browser fallback.
 
-| Area | Responsibility | Main files |
-| --- | --- | --- |
-| Popup | Views, forms, query hooks, cache invalidation | [popup](../entrypoints/popup/App.tsx), [queries](../entrypoints/popup/queries/cards.ts) |
-| Content | DOM integration, GraphQL problem lookup, controls, editor reset | [entrypoint](../entrypoints/content.ts), [bootstrap](../content/bootstrap.ts), [helpers](../content/index.ts) |
-| Messaging/background | Public RPC contract, readiness, write serialization, sync/badge policy, alarms | [messages](../shared/messages.ts), [executor](../entrypoints/background/messaging.ts), [registry types](../entrypoints/background/registry-types.ts) |
-| Domain | Review-day, scheduling, queue/statistics calculations, settings/note/import policy | [review queue](../domain/review-queue.ts), [settings policy](../domain/settings-policy.ts), [import policy](../domain/backup-import.ts) |
-| Services | Clock/settings reads, FSRS lifetime, multi-entity workflows | [cards](../services/cards.ts), [settings](../services/settings.ts), [import/export](../services/import-export.ts) |
-| Storage | Raw records, card/backup codecs, snapshot traversal, settings/sync metadata access, migrations | [cards](../infrastructure/storage/cards.ts), [snapshot](../infrastructure/storage/snapshot.ts), [sync metadata](../infrastructure/storage/sync-metadata.ts), [backup codec](../infrastructure/storage/backup-codec.ts), [migrations](../infrastructure/storage/migrations.ts) |
-| Language | Portable selection/dictionaries, browser detection, stored-language loading | [selection](../shared/i18n/language.ts), [browser adapter](../infrastructure/browser/language.ts), [loader](../infrastructure/storage/translations.ts) |
-| Gist sync | Whole-snapshot comparison, backup reuse, sync configuration/status, response/error policy | [sync service](../services/github-sync.ts) |
-| GitHub transport | Per-operation Octokit clients and unchanged authentication/Gist requests | [client](../infrastructure/github/client.ts) |
+[Code review](../.github/code-review-guidelines.md) enforces these boundaries;
+there is no automated boundary check.
 
-### Ownership and dependencies
+## Messages and writes
 
-- `domain/` owns portable models and rules. It must not import React, WXT, DOM
-  integration, storage, or messaging, including storage-only types.
-- `services/` owns workflows, clock/settings reads, and cross-entity side-effect
-  order. Infrastructure must not import services or UI.
-- `infrastructure/github/` owns Octokit construction and request arguments. Services
-  choose when to create each client, reuse it within the operation, and retain
-  localization reads, response/error handling, timestamps, and sync state.
-- `infrastructure/storage/` owns storage keys and persisted representations.
-  Learning workflows retain raw card records privately and decode only requested
-  cards. Stats and editor-reset projections read through card persistence, so
-  there is no cards/statistics service cycle.
-- Backup payload contracts and JSON conversion belong in
-  `infrastructure/storage/backup-codec.ts`. Structure/schema acceptance, shallow
-  validation, and legacy settings conversion belong in `domain/backup-import.ts`.
-  The domain policy passes record contents through generic parameters without
-  importing `StoredCard`. Purity or reuse alone does not determine ownership.
-- `infrastructure/storage/sync-metadata.ts` owns raw configuration/status and data
-  timestamp access for sync, backup/reset, and data tracking. Missing values stay
-  null; sync config defaults and PAT/import timestamp decisions remain in services.
-  The data tracker keeps its existing clock read and delegates the timestamp write.
-- `shared/` owns public messages, sync contracts, and translations. Background-only
-  registry policy types live beside the executor. Shared code must not import
-  services or concrete storage adapters.
-- Popup hooks and queries live beside the popup. Popup/content commands use typed
-  messages. Content language loading retains its explicit read-only storage
-  adapter; it does not go through messaging.
-- `content/bootstrap.ts` owns mounting and content orchestration; the WXT
-  entrypoint registers the script and starts it. Startup awaits ping (logging
-  failures), then translations, mounts the button and starts its observer, then
-  sets up auto-reset. Existing ignored disposers and navigation behavior remain.
+Define RPCs in `shared/messages.ts` and register handlers in
+`entrypoints/background/messaging.ts`. Background-only policy types live in
+`entrypoints/background/registry-types.ts`. Each write declares `refreshBadge`
+and `syncTrackingOwner`: the executor marks local edits, the handler manages its
+own timestamp, or `none` skips tracking.
 
-### Learning and settings flows
+Handlers wait for startup. Writes share a queue, including alarm-driven Gist sync
+and its network requests. Reads can overlap writes. Serialization is not atomicity:
+partial writes remain possible, and badge failure can reject a persisted mutation.
 
-**Rate a problem:** the executor waits for startup and preceding writes. The card
-service loads cards, runs its FSRS instance, writes the card, then updates daily
-stats and calculates `shouldRequeue`. The executor marks the local edit and
-refreshes the badge. Popup mutations then invalidate their queries.
+Services own operation timing and write order; domain calculations receive their
+inputs. The timestamp helper in `infrastructure/storage/data-tracker.ts` samples
+its own clock. Review eligibility uses `domain/review-day.ts` with explicit dates
+and `dayStartHour`, not exact due timestamps.
 
-**Review queue:** services read cards, settings, and statistics; domain rules
-partition eligibility using explicit dates and `dayStartHour`, apply the remaining
-new-card allowance, and sort. Partitioning precedes the statistics read; limiting
-and final sorting follow it. Services retain separate clock/settings reads,
-including conditional today/yesterday reads in statistics.
+## Storage, backup, and sync
 
-**Settings:** domain policy defines defaults and validation; infrastructure owns
-WXT access. The service retains concurrent reads/writes and sync timestamp
-tracking. Each invalid read resolves its fallback independently, including browser
-language detection. Export omits invalid settings instead of resolving defaults.
-Failed concurrent writes may leave partial state without marking the local edit.
+Cards are slug-keyed, notes reference card UUIDs, and stored card dates are numeric.
+`infrastructure/storage/cards.ts` retains loaded records and decodes only requested
+cards, preserving unrelated legacy fields. Schema changes require a new sequential
+migration in `infrastructure/storage/migrations.ts`.
 
-### Persistence and backup flows
+Backup ownership is split deliberately:
 
-Cards are slug-keyed records with UUID IDs; notes use those UUIDs and stats use
-date keys. Settings have individual keys. `StoredCard` encodes dates as numbers;
-learning reads restore `Date` objects. Storage schema changes use sequential
-migrations.
+- `infrastructure/storage/backup-codec.ts`: payload types and JSON conversion.
+- `domain/backup-import.ts`: acceptance, validation, and legacy settings policy;
+  record contents pass through without importing storage types.
+- `infrastructure/storage/snapshot.ts`: raw records and note traversal.
+- `services/import-export.ts`: reset/restore order, PAT preservation, and imported
+  timestamps. Snapshot helpers do not mark local edits.
 
-**Export:** the service reads raw cards, stats, and card-associated notes, then
-settings, Gist metadata, the data timestamp, and schema version. It samples the
-export clock last and serializes pretty JSON. The payload preserves raw fields
-and includes settings and some Gist configuration, but excludes the PAT and
-orphan notes.
+Sync, backup/reset, and local-edit tracking share
+`infrastructure/storage/sync-metadata.ts`. Gist sync uses whole-dataset
+`dataUpdatedAt` last-write-wins and restores pulls through backup import. Payloads
+include settings and Gist configuration, exclude the PAT, and need new synchronized
+fields added to `ExportData`. There is no per-card merge.
 
-**Import:** JSON parsing and structure validation precede the schema read.
-Compatibility and shallow record/settings validation follow it; a missing data
-timestamp is generated afterward. The service saves the existing PAT, resets,
-restores a truthy PAT, then writes cards, stats, whole notes, settings, Gist
-configuration, and the imported timestamp. Settings can write an intermediate
-local timestamp before the imported timestamp replaces it.
-
-**Reset:** the service loads cards before removing cards, stats, settings, sync
-credentials/status, and the data timestamp, then deletes notes referenced by the
-loaded cards. Schema version and orphan notes remain. Snapshot helpers perform
-raw access and sequential note traversal; services retain inclusion decisions,
-PAT handling, and cross-entity order. Helpers do not mark local edits.
-
-**Sync:** popup requests and the one-minute alarm use the same write executor.
-Gist sync compares whole-dataset `dataUpdatedAt` timestamps, pushes an export or
-pulls through import, and updates sync status. Network work stays inside the
-serialized write operation. There is no per-card merge.
-
-## Remaining refactor work
-
-The behavior-preserving refactor in #236 must finish before correctness and
-feature work resumes. Completed extractions are recorded in the
-[checklist](plans/architecture-refactor.md), rather than listed as open findings here.
-
-| Issue | Remaining work |
-| --- | --- |
-| #247 | Enforce runtime and type-only dependency boundaries, finish documentation, compare compatibility fixtures/builds, and resolve required extension smoke-test gaps. |
-
-The #245 checks passed with 68 files and 704 tests, and its production build
-passed. Four startup/mounting characterization tests passed before and after
-extraction. Mounting/action helper bodies are unchanged. Only the content bundle
-changed; manifest permissions, entrypoints, background, popup, and other assets
-were unchanged. Browser testing was not performed. This does not complete #247's
-broader compatibility verification.
-
-## Remaining behavior gaps
-
-These require behavior changes and remain outside the architectural extractions.
-The [roadmap](plans/roadmap.md) records their dependencies and acceptance criteria.
-
-| Gap in current behavior | Follow-up |
-| --- | --- |
-| Writes are serialized, but reads can observe intermediate state. Rating/import/reset can fail after partial writes; a badge failure can reject an otherwise persisted mutation. | #213; badge ownership in #163 |
-| Services sample clocks/settings at multiple points rather than using one consistent operation snapshot. | #218 |
-| Import validates containers/settings rather than individual records. Legacy imports do not share sequential startup migrations, and startup continues after migration failure. | #214 |
-| Backup and sync share settings/Gist configuration; whole-snapshot last-write-wins can discard unrelated edits. Network calls occupy the write queue. | #215 |
-| Popup invalidation follows its own mutations; content and alarm changes have no general background-to-popup notification contract. | #219 |
-| Public card message types contain `Date` values without an explicit wire codec; some consumers reconstruct dates defensively. | #220 |
-| Content bootstrap retains cleanup/navigation behavior that can leave stale operations. Extraction does not fix lifecycle behavior. | #216, after #245 |
-| Application errors are not consistently translated; GitHub requests lack explicit timeouts and uncertain-write recovery. | #248, #249 |
-
-Catalog-backed string frontend IDs, payload separation, and catalog migration are
-planned in the [identity contract](regional-problem-identity.md) and roadmap. The
-current extension still uses slug-based operations and UUID note references.
+Future changes belong in the [roadmap](plans/roadmap.md). The
+[catalog identity contract](regional-problem-identity.md) describes planned
+frontend-ID identity, not current storage.

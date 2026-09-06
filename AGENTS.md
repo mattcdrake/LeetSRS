@@ -4,6 +4,8 @@
 
 LeetSRS is a WXT, React, and TypeScript browser extension. Entry points live in `entrypoints/`; popup views and components are in `entrypoints/popup/`. Put business logic in `services/`, domain models and rules in `domain/`, storage foundations in `infrastructure/storage/`, messaging, translations, and sync contracts in `shared/`, popup React hooks in `entrypoints/popup/hooks/`, popup queries in `entrypoints/popup/queries/`, and content-script helpers in `content/`. Static extension files and locales belong in `public/`; screenshots and branding belong in `assets/`. Tests are colocated in `__tests__/`, with shared setup and mocks in `test/`.
 
+Read [docs/architecture.md](docs/architecture.md) for architecture, ownership, dependency rules, and invariants.
+
 ## Build, Test, and Development Commands
 
 Use Node.js 24+ and install dependencies with `npm install`.
@@ -23,22 +25,6 @@ Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semico
 ## Testing Guidelines
 
 Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Check `test/utils/` before adding local test helpers, and reuse an existing helper when it fits. Cover behavior changes and bug fixes. Before submitting, run `npm check`. Don't mention this in the PR description.
-
-## Architecture Invariants
-
-- Extend `ExtensionMessageMap` in `shared/messages.ts` and add the corresponding typed handler in `entrypoints/background/messaging.ts`. Keep background registry policy types in `entrypoints/background/registry-types.ts`; `shared/messages.ts` owns the public contract and transport exports.
-- Keep `StoredCard` and card codecs in `infrastructure/storage/card-codec.ts` (snapshot contracts may import the type). Learning workflows use `infrastructure/storage/cards.ts`; preserve loaded records and decode only requested cards.
-- Keep card/stat/note storage access in `infrastructure/storage/`; services retain validation, clock/settings reads, and multi-entity write order. Stored records and note keys stay inside persistence except explicit snapshot contracts.
-- Keep settings defaults/validation in `domain/settings-policy.ts` and WXT access in `infrastructure/storage/settings.ts`. Services retain concurrent I/O orchestration, per-read browser fallback, and sync timestamp tracking.
-- Keep language selection portable in `shared/i18n/language.ts` and browser detection in `infrastructure/browser/language.ts`. Content may read language directly through `infrastructure/storage/translations.ts`; preserve lazy fallback and the existing load lifecycle.
-- Keep snapshot raw-card access and note traversal in `infrastructure/storage/snapshot.ts`. Share raw sync configuration/status and data timestamp access through `infrastructure/storage/sync-metadata.ts` across sync, backup/reset, and data tracking. Reuse stats and note APIs where they preserve raw fields; keep cross-entity ordering, PAT preservation, and imported timestamp restoration in services. Snapshot helpers do not mark local edits.
-- Keep backup payload contracts and JSON serialization in `infrastructure/storage/backup-codec.ts`; keep structure/schema acceptance, shallow validation, and legacy settings conversion in `domain/backup-import.ts`. Domain policy passes record contents through without importing storage types. Import/export services retain schema reads, conditional clock reads, and reset/restore orchestration.
-- Keep Octokit construction and requests in `infrastructure/github/client.ts`. Sync services choose client lifetime and retain validation, response/error handling, localization reads, timestamps, module-level sync state, and network execution inside the write queue.
-- Keep content mounting and orchestration in `content/bootstrap.ts`; `entrypoints/content.ts` owns WXT registration and startup. Preserve ping, translation loading, mounting/observer startup, auto-reset order, and ignored disposers; lifecycle fixes remain separate.
-- Route schema changes through a new, sequential migration in `infrastructure/storage/migrations.ts`.
-- Use `formatLocalDate` and `isDueByDate` from `domain/review-day.ts` with explicit dates and `dayStartHour` for review-day comparisons; do not compare raw timestamps.
-- Keep clock/settings reads and persistence sequencing in services; domain calculations take explicit inputs. Preserve the service-owned FSRS instance and parameters.
-- Writes must declare the appropriate `syncTrackingOwner` in the background message registry, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
 
 ## Commit & Pull Request Guidelines
 
