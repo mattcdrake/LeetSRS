@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
 import { FaMagnifyingGlass, FaXmark } from 'react-icons/fa6';
-import { useCardsQuery } from '@/hooks/queries/cards';
+import { useCardsQuery } from '@/entrypoints/popup/queries/cards';
 import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
 import { useI18n } from '../../contexts/I18nContext';

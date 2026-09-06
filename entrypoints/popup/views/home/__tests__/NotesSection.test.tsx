@@ -5,7 +5,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { noteQueryKeys } from '@/hooks/queries/notes';
+import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/shared/messages';
 import type { Note } from '@/shared/notes';
 import { createDeferred } from '@/test/utils/deferred';

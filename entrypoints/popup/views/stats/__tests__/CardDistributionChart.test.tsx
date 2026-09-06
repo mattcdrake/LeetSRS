@@ -5,7 +5,7 @@
 import { render, screen } from '@testing-library/react';
 import { State as FsrsState } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { statsQueryKeys } from '@/hooks/queries/stats';
+import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/shared/messages';
 import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';

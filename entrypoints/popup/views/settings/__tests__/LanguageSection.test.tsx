@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { settingsQueryKeys } from '@/hooks/queries/settings';
+import { settingsQueryKeys } from '@/entrypoints/popup/queries/settings';
 import { sendMessage } from '@/shared/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';

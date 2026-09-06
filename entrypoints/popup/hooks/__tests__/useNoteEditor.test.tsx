@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { noteQueryKeys } from '@/hooks/queries/notes';
+import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
 import { createDeferred } from '@/test/utils/deferred';

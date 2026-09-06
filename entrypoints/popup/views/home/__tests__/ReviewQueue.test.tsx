@@ -6,7 +6,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
-import { cardQueryKeys } from '@/hooks/queries/cards';
+import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';

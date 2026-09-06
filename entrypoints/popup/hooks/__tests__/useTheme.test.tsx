@@ -6,7 +6,7 @@ import { resolveTheme, useTheme } from '../useTheme';
 
 const queryMock = vi.hoisted(() => ({ theme: 'system' as Theme }));
 
-vi.mock('../queries/settings', () => ({
+vi.mock('../../queries/settings', () => ({
   useSettingsQuery: () => ({ data: { theme: queryMock.theme } }),
 }));
 

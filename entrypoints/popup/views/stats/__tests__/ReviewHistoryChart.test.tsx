@@ -5,7 +5,7 @@
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { statsQueryKeys } from '@/hooks/queries/stats';
+import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/shared/messages';
 import type { DailyStats } from '@/shared/stats';
 import { createMessageMock } from '@/test/utils/message-mocks';

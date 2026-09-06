@@ -1,6 +1,6 @@
 import { Button, Label, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import { FaChevronDown, FaCircleHalfStroke } from 'react-icons/fa6';
-import { useSettingsQuery, useUpdateSettingsMutation } from '@/hooks/queries/settings';
+import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
 import type { Theme } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';

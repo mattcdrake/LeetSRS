@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';
