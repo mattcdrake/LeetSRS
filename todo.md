@@ -10,7 +10,7 @@ Complete mechanical moves before starting responsibility extractions.
   files. Update all consumers, test imports, and affected guidance/documentation.
   Verify the moved modules are unchanged and run `npm run check` and
   `npm run build`; compare manifest and entrypoint output with the baseline.
-- [ ] 2. Move `services/{storage-keys,migrations,data-tracker}.ts` to
+- [x] 2. Move `services/{storage-keys,migrations,data-tracker}.ts` to
   `infrastructure/storage/`, along with existing storage-key and migration tests.
   Update consumers, relative dependencies, mocks, and guidance (including the
   migration path in `AGENTS.md`). Preserve migration bodies and versions, storage
@@ -32,3 +32,11 @@ Baseline entrypoints: `background.js`, `popup.html`, and
 `content-scripts/content.js` (both LeetCode domains, `document_idle`).
 Permissions: `storage`, `alarms`, `activeTab`; host access to `*.leetcode.com`,
 with optional host access to `*.leetcode.cn`. These remain unchanged.
+
+Step 2 validation: all three storage modules and both relocated tests are
+byte-identical to the step 1 baseline. The 16 changed consumers contain only
+import path and sorting/formatting changes. Full checks passed (51 files, 592
+tests), and the production build passed with the existing large-chunk warning.
+The manifest and popup output are unchanged; generated background and content
+bundles differ after import sorting. Entrypoint bodies and runtime configuration
+are unchanged. No live-browser smoke test was performed. Both tasks are complete.

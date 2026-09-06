@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-LeetSRS is a WXT, React, and TypeScript browser extension. Entry points live in `entrypoints/`; popup views and components are in `entrypoints/popup/`. Put business logic in `services/`, domain models and rules in `domain/`, messaging, translations, and sync contracts in `shared/`, popup React hooks in `entrypoints/popup/hooks/`, popup queries in `entrypoints/popup/queries/`, and content-script helpers in `content/`. Static extension files and locales belong in `public/`; screenshots and branding belong in `assets/`. Tests are colocated in `__tests__/`, with shared setup and mocks in `test/`.
+LeetSRS is a WXT, React, and TypeScript browser extension. Entry points live in `entrypoints/`; popup views and components are in `entrypoints/popup/`. Put business logic in `services/`, domain models and rules in `domain/`, storage foundations in `infrastructure/storage/`, messaging, translations, and sync contracts in `shared/`, popup React hooks in `entrypoints/popup/hooks/`, popup queries in `entrypoints/popup/queries/`, and content-script helpers in `content/`. Static extension files and locales belong in `public/`; screenshots and branding belong in `assets/`. Tests are colocated in `__tests__/`, with shared setup and mocks in `test/`.
 
 ## Build, Test, and Development Commands
 
@@ -28,7 +28,7 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 
 - Extend `ExtensionMessageMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background/index.ts`.
 - Persist cards as `StoredCard`; serialize and deserialize at the storage boundary.
-- Route schema changes through a new, sequential migration in `services/migrations.ts`.
+- Route schema changes through a new, sequential migration in `infrastructure/storage/migrations.ts`.
 - Use `formatLocalDate` and `isDueByDate` with `dayStartHour` for review-day comparisons; do not compare raw timestamps.
 - Writes must declare the appropriate `syncTrackingOwner` in the background message registry, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
 

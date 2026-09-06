@@ -4,6 +4,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { DailyStats } from '@/domain/stats';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import {
@@ -20,7 +21,6 @@ import {
   setPauseStatus,
 } from '../cards';
 import * as notesModule from '../notes';
-import { STORAGE_KEYS } from '../storage-keys';
 
 const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
 const MOCK_MAX_NEW_CARDS_PER_DAY = buildSettings().maxNewCardsPerDay;

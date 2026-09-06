@@ -1,9 +1,9 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { storage } from '#imports';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { formatLocalDate, getAllCards } from './cards';
 import { getSettings } from './settings';
-import { STORAGE_KEYS } from './storage-keys';
 
 interface BaseStats {
   totalReviews: number;
