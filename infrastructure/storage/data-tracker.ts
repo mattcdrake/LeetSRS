@@ -1,6 +1,5 @@
-import { storage } from '#imports';
-import { STORAGE_KEYS } from './storage-keys';
+import { writeSyncMetadata } from './sync-metadata';
 
 export async function markDataUpdated(): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, new Date().toISOString());
+  await writeSyncMetadata('dataUpdatedAt', new Date().toISOString());
 }

@@ -1,7 +1,6 @@
-import { Octokit } from 'octokit';
-import { storage } from '#imports';
+import { createGitHubClient, GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import type { ExportData } from '@/infrastructure/storage/backup-codec';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type {
   GistSyncConfig,
@@ -12,38 +11,36 @@ import type {
 } from '@/shared/gist-sync';
 import { exportData, importData } from './import-export';
 
-const GIST_FILENAME = 'leetsrs-backup.json';
-
 // In-memory state for sync status (not persisted)
 let syncInProgress = false;
 let lastError: string | null = null;
 
 export async function getGistSyncConfig(): Promise<GistSyncConfig> {
-  const pat = (await storage.getItem<string>(STORAGE_KEYS.githubPat)) ?? '';
-  const gistId = (await storage.getItem<string>(STORAGE_KEYS.gistId)) ?? null;
-  const enabled = (await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled)) ?? false;
+  const pat = (await readSyncMetadata('githubPat')) ?? '';
+  const gistId = (await readSyncMetadata('gistId')) ?? null;
+  const enabled = (await readSyncMetadata('gistSyncEnabled')) ?? false;
   return { pat, gistId, enabled };
 }
 
 export async function setGistSyncConfig(config: Partial<GistSyncConfig>): Promise<void> {
   if (config.pat !== undefined) {
-    await storage.setItem(STORAGE_KEYS.githubPat, config.pat);
+    await writeSyncMetadata('githubPat', config.pat);
   }
   if (config.gistId !== undefined) {
     if (config.gistId === null) {
-      await storage.removeItem(STORAGE_KEYS.gistId);
+      await removeSyncMetadata('gistId');
     } else {
-      await storage.setItem(STORAGE_KEYS.gistId, config.gistId);
+      await writeSyncMetadata('gistId', config.gistId);
     }
   }
   if (config.enabled !== undefined) {
-    await storage.setItem(STORAGE_KEYS.gistSyncEnabled, config.enabled);
+    await writeSyncMetadata('gistSyncEnabled', config.enabled);
   }
 }
 
 export async function getGistSyncStatus(): Promise<GistSyncStatus> {
-  const lastSyncTime = (await storage.getItem<string>(STORAGE_KEYS.lastSyncTime)) ?? null;
-  const lastSyncDirection = (await storage.getItem<'push' | 'pull'>(STORAGE_KEYS.lastSyncDirection)) ?? null;
+  const lastSyncTime = (await readSyncMetadata('lastSyncTime')) ?? null;
+  const lastSyncDirection = (await readSyncMetadata('lastSyncDirection')) ?? null;
   return {
     lastSyncTime,
     lastSyncDirection,
@@ -58,8 +55,8 @@ export async function validatePat(pat: string): Promise<PatValidationResult> {
   }
 
   try {
-    const octokit = new Octokit({ auth: pat });
-    const { data } = await octokit.rest.users.getAuthenticated();
+    const github = createGitHubClient(pat);
+    const { data } = await github.getAuthenticated();
     return { valid: true, username: data.login };
   } catch (error) {
     if (error instanceof Error) {
@@ -81,8 +78,8 @@ export async function validateGistId(gistId: string, pat: string): Promise<GistV
   }
 
   try {
-    const octokit = new Octokit({ auth: pat });
-    const { data } = await octokit.rest.gists.get({ gist_id: gistId });
+    const github = createGitHubClient(pat);
+    const { data } = await github.getGist(gistId);
 
     if (!data.files?.[GIST_FILENAME]) {
       return { valid: false, error: `Gist does not contain ${GIST_FILENAME}` };
@@ -106,18 +103,13 @@ export async function createNewGist(): Promise<{ gistId: string }> {
     throw new Error('PAT is required to create a gist');
   }
 
-  const octokit = new Octokit({ auth: config.pat });
+  const github = createGitHubClient(config.pat);
   const exportJson = await exportData();
 
-  const { data } = await octokit.rest.gists.create({
-    description: (await getStoredTranslations()).settings.gistSync.gistDescription,
-    public: false,
-    files: {
-      [GIST_FILENAME]: {
-        content: exportJson,
-      },
-    },
-  });
+  const { data } = await github.createGist(
+    (await getStoredTranslations()).settings.gistSync.gistDescription,
+    exportJson
+  );
 
   if (!data.id) {
     throw new Error('Failed to create gist: no ID returned');
@@ -128,8 +120,8 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   await setGistSyncConfig({ gistId });
 
   const now = new Date().toISOString();
-  await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
-  await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+  await writeSyncMetadata('lastSyncTime', now);
+  await writeSyncMetadata('lastSyncDirection', 'push');
 
   return { gistId };
 }
@@ -153,11 +145,11 @@ export async function triggerGistSync(): Promise<SyncResult> {
       return { success: false, error: 'Gist ID is not configured' };
     }
 
-    const octokit = new Octokit({ auth: config.pat });
+    const github = createGitHubClient(config.pat);
 
-    let remoteGist: Awaited<ReturnType<typeof octokit.rest.gists.get>>['data'];
+    let remoteGist: Awaited<ReturnType<typeof github.getGist>>['data'];
     try {
-      const { data } = await octokit.rest.gists.get({ gist_id: config.gistId });
+      const { data } = await github.getGist(config.gistId);
       remoteGist = data;
     } catch (error) {
       if (error instanceof Error && error.message.includes('404')) {
@@ -169,7 +161,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const remoteFileContent = remoteGist.files?.[GIST_FILENAME]?.content;
     if (!remoteFileContent) {
       const localExportJson = await exportData();
-      return await pushToGist(octokit, config.gistId, localExportJson);
+      return await pushToGist(github, config.gistId, localExportJson);
     }
 
     let remoteData: ExportData;
@@ -177,10 +169,10 @@ export async function triggerGistSync(): Promise<SyncResult> {
       remoteData = JSON.parse(remoteFileContent);
     } catch {
       const localExportJson = await exportData();
-      return await pushToGist(octokit, config.gistId, localExportJson);
+      return await pushToGist(github, config.gistId, localExportJson);
     }
 
-    const localDataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
+    const localDataUpdatedAt = await readSyncMetadata('dataUpdatedAt');
 
     // Handle missing dataUpdatedAt (legacy or fresh install)
     if (!localDataUpdatedAt && remoteData.dataUpdatedAt) {
@@ -188,10 +180,10 @@ export async function triggerGistSync(): Promise<SyncResult> {
     }
     if (!remoteData.dataUpdatedAt) {
       if (!localDataUpdatedAt) {
-        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, new Date().toISOString());
+        await writeSyncMetadata('dataUpdatedAt', new Date().toISOString());
       }
       const localExportJson = await exportData();
-      return await pushToGist(octokit, config.gistId, localExportJson);
+      return await pushToGist(github, config.gistId, localExportJson);
     }
 
     if (!localDataUpdatedAt) {
@@ -206,11 +198,11 @@ export async function triggerGistSync(): Promise<SyncResult> {
 
     if (localUpdated > remoteUpdated) {
       const localExportJson = await exportData();
-      return await pushToGist(octokit, config.gistId, localExportJson);
+      return await pushToGist(github, config.gistId, localExportJson);
     }
 
     const now = new Date().toISOString();
-    await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
+    await writeSyncMetadata('lastSyncTime', now);
     return { success: true, action: 'no-change', timestamp: now };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
@@ -226,19 +218,12 @@ export async function triggerGistSync(): Promise<SyncResult> {
   }
 }
 
-async function pushToGist(octokit: Octokit, gistId: string, content: string): Promise<SyncResult> {
-  await octokit.rest.gists.update({
-    gist_id: gistId,
-    files: {
-      [GIST_FILENAME]: {
-        content,
-      },
-    },
-  });
+async function pushToGist(github: GitHubClient, gistId: string, content: string): Promise<SyncResult> {
+  await github.updateGist(gistId, content);
 
   const now = new Date().toISOString();
-  await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
-  await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+  await writeSyncMetadata('lastSyncTime', now);
+  await writeSyncMetadata('lastSyncDirection', 'push');
 
   return { success: true, action: 'pushed', timestamp: now };
 }
@@ -247,8 +232,8 @@ async function pullFromGist(content: string): Promise<SyncResult> {
   await importData(content);
 
   const now = new Date().toISOString();
-  await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
-  await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+  await writeSyncMetadata('lastSyncTime', now);
+  await writeSyncMetadata('lastSyncDirection', 'pull');
 
   return { success: true, action: 'pulled', timestamp: now };
 }

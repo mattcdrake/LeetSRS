@@ -41,29 +41,3 @@ export async function removeSnapshotNotes(cards: SnapshotCards): Promise<void> {
     await deleteNote(card.id);
   }
 }
-
-// Only metadata touched by backup/reset workflows. Services choose inclusion,
-// PAT preservation, and operation order; these calls do not mark local edits.
-interface SnapshotMetadata {
-  githubPat: string;
-  gistId: string;
-  gistSyncEnabled: boolean;
-  lastSyncTime: string;
-  lastSyncDirection: 'push' | 'pull';
-  dataUpdatedAt: string;
-}
-
-export function readSnapshotMetadata<K extends keyof SnapshotMetadata>(key: K): Promise<SnapshotMetadata[K] | null> {
-  return storage.getItem<SnapshotMetadata[K]>(STORAGE_KEYS[key]);
-}
-
-export function writeSnapshotMetadata<K extends keyof SnapshotMetadata>(
-  key: K,
-  value: SnapshotMetadata[K]
-): Promise<void> {
-  return storage.setItem(STORAGE_KEYS[key], value);
-}
-
-export function removeSnapshotMetadata(key: keyof SnapshotMetadata): Promise<void> {
-  return storage.removeItem(STORAGE_KEYS[key]);
-}
