@@ -1,8 +1,4 @@
 import type { Grade } from 'ts-fsrs';
-import { getServiceTranslations } from '@/services/i18n';
-import type { ProblemDescriptor } from '@/shared/cards';
-import type { Translations } from '@/shared/i18n';
-import { sendMessage } from '@/shared/messages';
 import {
   createLeetSrsButton,
   type ExtractedProblemData,
@@ -12,7 +8,11 @@ import {
   RatingMenuCoordinator,
   setupLeetcodeAutoReset,
   Tooltip,
-} from '@/utils/content';
+} from '@/content';
+import { getServiceTranslations } from '@/services/i18n';
+import type { ProblemDescriptor } from '@/shared/cards';
+import type { Translations } from '@/shared/i18n';
+import { sendMessage } from '@/shared/messages';
 
 export default defineContentScript({
   matches: ['*://*.leetcode.com/*', '*://*.leetcode.cn/*'],
