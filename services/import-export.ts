@@ -1,37 +1,36 @@
-import { storage } from '#imports';
 import { normalizeImportData, validateImportStructure } from '@/domain/backup-import';
-import type { Note } from '@/domain/notes';
-import type { DailyStats } from '@/domain/stats';
 import {
   type ExportData,
   encodeExportData,
   type PreparedImportData,
   parseImportData,
 } from '@/infrastructure/storage/backup-codec';
-import type { StoredCard } from '@/infrastructure/storage/card-codec';
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import {
+  readSnapshotCards,
+  readSnapshotMetadata,
+  readSnapshotNotes,
+  removeSnapshotCards,
+  removeSnapshotMetadata,
+  removeSnapshotNotes,
+  writeSnapshotCards,
+  writeSnapshotMetadata,
+  writeSnapshotNotes,
+} from '@/infrastructure/storage/snapshot';
+import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
-  const stats = (await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats)) ?? {};
-
-  const notes: Record<string, Note> = {};
-  for (const card of Object.values(cards)) {
-    const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
-    const note = await storage.getItem<Note>(noteKey);
-    if (note) {
-      notes[card.id] = note;
-    }
-  }
+  const cards = (await readSnapshotCards()) ?? {};
+  const stats = await getStats();
+  const notes = await readSnapshotNotes(cards);
 
   const settings = await exportSettings();
 
-  const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
-  const gistSyncEnabled = await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled);
+  const gistId = await readSnapshotMetadata('gistId');
+  const gistSyncEnabled = await readSnapshotMetadata('gistSyncEnabled');
 
-  const dataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
+  const dataUpdatedAt = await readSnapshotMetadata('dataUpdatedAt');
 
   const schemaVersion = await getCurrentSchemaVersion();
 
@@ -68,35 +67,32 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
-  const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
+  const existingPat = await readSnapshotMetadata('githubPat');
 
   await resetAllData();
 
   if (existingPat) {
-    await storage.setItem(STORAGE_KEYS.githubPat, existingPat);
+    await writeSnapshotMetadata('githubPat', existingPat);
   }
 
-  await storage.setItem(STORAGE_KEYS.cards, preparedData.cards);
+  await writeSnapshotCards(preparedData.cards);
 
-  await storage.setItem(STORAGE_KEYS.stats, preparedData.stats);
+  await saveStats(preparedData.stats);
 
-  for (const [cardId, note] of Object.entries(preparedData.notes)) {
-    const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
-    await storage.setItem(key, note);
-  }
+  await writeSnapshotNotes(preparedData.notes);
 
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
     if (preparedData.gistSync.gistId != null) {
-      await storage.setItem(STORAGE_KEYS.gistId, preparedData.gistSync.gistId);
+      await writeSnapshotMetadata('gistId', preparedData.gistSync.gistId);
     }
     if (preparedData.gistSync.enabled != null) {
-      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, preparedData.gistSync.enabled);
+      await writeSnapshotMetadata('gistSyncEnabled', preparedData.gistSync.enabled);
     }
   }
 
-  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, preparedData.dataUpdatedAt);
+  await writeSnapshotMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
 }
 
 export async function importData(jsonData: string): Promise<void> {
@@ -105,23 +101,20 @@ export async function importData(jsonData: string): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-  const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+  const cards = await readSnapshotCards();
 
-  await storage.removeItem(STORAGE_KEYS.cards);
-  await storage.removeItem(STORAGE_KEYS.stats);
+  await removeSnapshotCards();
+  await removeStats();
   await resetSettings();
 
-  await storage.removeItem(STORAGE_KEYS.githubPat);
-  await storage.removeItem(STORAGE_KEYS.gistId);
-  await storage.removeItem(STORAGE_KEYS.gistSyncEnabled);
-  await storage.removeItem(STORAGE_KEYS.lastSyncTime);
-  await storage.removeItem(STORAGE_KEYS.lastSyncDirection);
-  await storage.removeItem(STORAGE_KEYS.dataUpdatedAt);
+  await removeSnapshotMetadata('githubPat');
+  await removeSnapshotMetadata('gistId');
+  await removeSnapshotMetadata('gistSyncEnabled');
+  await removeSnapshotMetadata('lastSyncTime');
+  await removeSnapshotMetadata('lastSyncDirection');
+  await removeSnapshotMetadata('dataUpdatedAt');
 
   if (cards) {
-    for (const card of Object.values(cards)) {
-      const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
-      await storage.removeItem(noteKey);
-    }
+    await removeSnapshotNotes(cards);
   }
 }
