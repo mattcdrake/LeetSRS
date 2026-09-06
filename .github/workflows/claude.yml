@@ -40,9 +40,5 @@ jobs:
           additional_permissions: |
             actions: read
 
-          # Optional: pass CLI flags to Claude Code, e.g.
-          # claude_args: |
-          #   --model claude-opus-4-5-20251101
-          #   --max-turns 10
-          #   --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test:*)"
-          #   --append-system-prompt "Follow our coding standards. Ensure new code has tests."
+          claude_args: |
+            --append-system-prompt-file .github/code-review-guidelines.md

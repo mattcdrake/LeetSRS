@@ -1,115 +1,18 @@
-import { storage } from '#imports';
-import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/domain/settings';
+import type { Settings } from '@/domain/settings';
+import { DEFAULT_SETTINGS, getSettingDefinition, SETTING_KEYS, validateSettings } from '@/domain/settings-policy';
+import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { translations } from '@/shared/i18n';
-import { detectBrowserLanguage } from './i18n';
-
-const DEFAULT_MAX_NEW_CARDS_PER_DAY = 3;
-const DEFAULT_DAY_START_HOUR = 0;
-const DEFAULT_THEME: Theme = 'system';
-const DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM = false;
-const DEFAULT_RESET_EDITOR_ON_DUE_REVIEW = false;
-const DEFAULT_BADGE_ENABLED = true;
-
-type SettingDefinition<T> = {
-  storageKey: (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
-  defaultValue: T | (() => T);
-  validate: (value: unknown) => value is T;
-  validationError: (value: unknown) => string;
-};
-
-type SettingsRegistry = {
-  [K in keyof Settings]: SettingDefinition<Settings[K]>;
-};
-
-const SETTINGS_REGISTRY = {
-  maxNewCardsPerDay: {
-    storageKey: STORAGE_KEYS.maxNewCardsPerDay,
-    defaultValue: DEFAULT_MAX_NEW_CARDS_PER_DAY,
-    validate: (value): value is number =>
-      Number.isInteger(value) &&
-      (value as number) >= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min &&
-      (value as number) <= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max,
-    validationError: (value) =>
-      Number.isInteger(value)
-        ? `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`
-        : 'Max new cards per day must be a whole number',
-  },
-  dayStartHour: {
-    storageKey: STORAGE_KEYS.dayStartHour,
-    defaultValue: DEFAULT_DAY_START_HOUR,
-    validate: (value): value is number =>
-      Number.isInteger(value) &&
-      (value as number) >= SETTINGS_CONSTRAINTS.dayStartHour.min &&
-      (value as number) <= SETTINGS_CONSTRAINTS.dayStartHour.max,
-    validationError: (value) =>
-      Number.isInteger(value)
-        ? `Day start hour must be between ${SETTINGS_CONSTRAINTS.dayStartHour.min} and ${SETTINGS_CONSTRAINTS.dayStartHour.max}`
-        : 'Day start hour must be a whole number',
-  },
-  theme: {
-    storageKey: STORAGE_KEYS.theme,
-    defaultValue: DEFAULT_THEME,
-    validate: (value): value is Theme => value === 'system' || value === 'light' || value === 'dark',
-    validationError: () => 'Theme must be "system", "light", or "dark"',
-  },
-  resetEditorOnEveryProblem: {
-    storageKey: STORAGE_KEYS.resetEditorOnEveryProblem,
-    defaultValue: DEFAULT_RESET_EDITOR_ON_EVERY_PROBLEM,
-    validate: (value): value is boolean => typeof value === 'boolean',
-    validationError: () => 'Reset editor on every problem must be a boolean',
-  },
-  resetEditorOnDueReview: {
-    storageKey: STORAGE_KEYS.resetEditorOnDueReview,
-    defaultValue: DEFAULT_RESET_EDITOR_ON_DUE_REVIEW,
-    validate: (value): value is boolean => typeof value === 'boolean',
-    validationError: () => 'Reset editor on due review must be a boolean',
-  },
-  badgeEnabled: {
-    storageKey: STORAGE_KEYS.badgeEnabled,
-    defaultValue: DEFAULT_BADGE_ENABLED,
-    validate: (value): value is boolean => typeof value === 'boolean',
-    validationError: () => 'Badge enabled must be a boolean',
-  },
-  language: {
-    storageKey: STORAGE_KEYS.language,
-    defaultValue: detectBrowserLanguage,
-    validate: (value): value is Language => typeof value === 'string' && value in translations,
-    validationError: (value) =>
-      `Unsupported language: ${String(value)}. Supported languages: ${Object.keys(translations).join(', ')}`,
-  },
-} satisfies SettingsRegistry;
-
-function getDefaultValue<K extends keyof Settings>(definition: SettingDefinition<Settings[K]>): Settings[K] {
-  return typeof definition.defaultValue === 'function'
-    ? (definition.defaultValue as () => Settings[K])()
-    : definition.defaultValue;
-}
-
-function getSettingDefinition<K extends keyof Settings>(key: K): SettingDefinition<Settings[K]> {
-  return SETTINGS_REGISTRY[key] as SettingDefinition<Settings[K]>;
-}
-
-const SETTING_KEYS = Object.keys(SETTINGS_REGISTRY) as Array<keyof Settings>;
-
-export function validateSettings(changes: Partial<Settings>): void {
-  for (const key of SETTING_KEYS) {
-    if (!Object.hasOwn(changes, key)) continue;
-    const value: unknown = changes[key];
-    const definition = getSettingDefinition(key);
-    if (!definition.validate(value)) {
-      throw new Error(definition.validationError(value));
-    }
-  }
-}
+import { readSetting, removeSetting, writeSetting } from '@/infrastructure/storage/settings';
 
 export async function getSettings(): Promise<Settings> {
   const entries = await Promise.all(
     SETTING_KEYS.map(async (key) => {
       const definition = getSettingDefinition(key);
-      const value: unknown = await storage.getItem(definition.storageKey);
-      return [key, definition.validate(value) ? value : getDefaultValue(definition)] as const;
+      const value: unknown = await readSetting(key);
+      return [
+        key,
+        definition.validate(value) ? value : key === 'language' ? detectBrowserLanguage() : DEFAULT_SETTINGS[key],
+      ] as const;
     })
   );
   return Object.fromEntries(entries) as unknown as Settings;
@@ -123,11 +26,7 @@ export async function updateSettings(changes: Partial<Settings>): Promise<void> 
     return;
   }
 
-  await Promise.all(
-    changedKeys.map((key) =>
-      storage.setItem(getSettingDefinition(key).storageKey, changes[key] as Settings[typeof key])
-    )
-  );
+  await Promise.all(changedKeys.map((key) => writeSetting(key, changes[key] as Settings[typeof key])));
   await markDataUpdated();
 }
 
@@ -135,7 +34,7 @@ export async function exportSettings(): Promise<Partial<Settings>> {
   const entries = await Promise.all(
     SETTING_KEYS.map(async (key) => {
       const definition = getSettingDefinition(key);
-      const value: unknown = await storage.getItem(definition.storageKey);
+      const value: unknown = await readSetting(key);
       return definition.validate(value) ? ([key, value] as const) : null;
     })
   );
@@ -144,5 +43,5 @@ export async function exportSettings(): Promise<Partial<Settings>> {
 }
 
 export async function resetSettings(): Promise<void> {
-  await Promise.all(SETTING_KEYS.map((key) => storage.removeItem(getSettingDefinition(key).storageKey)));
+  await Promise.all(SETTING_KEYS.map((key) => removeSetting(key)));
 }
