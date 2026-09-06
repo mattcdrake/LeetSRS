@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Octokit } from 'octokit';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { createDeferred } from '@/test/utils/deferred';
 
 // Mock Octokit
 const mockGetAuthenticated = vi.fn();
@@ -49,6 +51,10 @@ describe('github-sync', () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
     vi.resetAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe('getGistSyncConfig', () => {
@@ -525,6 +531,207 @@ describe('github-sync', () => {
 
         expect(result.success).toBe(true);
       });
+    });
+  });
+
+  describe('extraction characterization', () => {
+    const now = '2024-02-01T12:00:00.000Z';
+    const later = '2024-02-01T12:00:01.000Z';
+
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(now));
+      await storage.setItem(STORAGE_KEYS.githubPat, 'ghp_test');
+      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+    });
+
+    it('passes untrimmed credentials and IDs to validation requests', async () => {
+      mockGetAuthenticated.mockResolvedValue({ data: { login: 'testuser' } });
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': {} } } });
+
+      expect(await validatePat(' token ')).toEqual({ valid: true, username: 'testuser' });
+      expect(await validateGistId(' gist ', ' token ')).toEqual({ valid: true });
+
+      expect(vi.mocked(Octokit).mock.calls).toEqual([[{ auth: ' token ' }], [{ auth: ' token ' }]]);
+      expect(mockGetAuthenticated).toHaveBeenCalledExactlyOnceWith();
+      expect(mockGistsGet).toHaveBeenCalledExactlyOnceWith({ gist_id: ' gist ' });
+    });
+
+    it('creates the client before export, resolves localization afterward, then saves ID before status', async () => {
+      await storage.setItem(STORAGE_KEYS.language, 'en');
+      mockExportData.mockImplementation(async () => {
+        expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
+        await storage.setItem(STORAGE_KEYS.language, 'zh-CN');
+        return '{"local":"snapshot"}';
+      });
+      mockGistsCreate.mockImplementation(async () => {
+        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe('gist123');
+        vi.setSystemTime(new Date(later));
+        return { data: { id: 'created' } };
+      });
+      const writes = vi.spyOn(storage, 'setItem');
+
+      await expect(createNewGist()).resolves.toEqual({ gistId: 'created' });
+
+      expect(mockGistsCreate).toHaveBeenCalledExactlyOnceWith({
+        description: 'LeetSRS 备份 - 间隔重复数据',
+        public: false,
+        files: { 'leetsrs-backup.json': { content: '{"local":"snapshot"}' } },
+      });
+      expect(writes.mock.calls).toEqual([
+        [STORAGE_KEYS.language, 'zh-CN'],
+        [STORAGE_KEYS.gistId, 'created'],
+        [STORAGE_KEYS.lastSyncTime, later],
+        [STORAGE_KEYS.lastSyncDirection, 'push'],
+      ]);
+    });
+
+    it('initializes a missing legacy timestamp before export and samples status after the push', async () => {
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: '{}' } } } });
+      mockExportData.mockImplementation(async () => {
+        expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(now);
+        return '{"export":"unchanged"}';
+      });
+      mockGistsUpdate.mockImplementation(async () => {
+        expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBeNull();
+        vi.setSystemTime(new Date(later));
+      });
+      const writes = vi.spyOn(storage, 'setItem');
+
+      expect(await triggerGistSync()).toEqual({ success: true, action: 'pushed', timestamp: later });
+
+      expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
+      expect(mockGistsGet).toHaveBeenCalledExactlyOnceWith({ gist_id: 'gist123' });
+      expect(mockGistsUpdate).toHaveBeenCalledExactlyOnceWith({
+        gist_id: 'gist123',
+        files: { 'leetsrs-backup.json': { content: '{"export":"unchanged"}' } },
+      });
+      expect(writes.mock.calls).toEqual([
+        [STORAGE_KEYS.dataUpdatedAt, now],
+        [STORAGE_KEYS.lastSyncTime, later],
+        [STORAGE_KEYS.lastSyncDirection, 'push'],
+      ]);
+    });
+
+    it('imports the exact remote content before sampling and writing pull status', async () => {
+      const content = '{ "dataUpdatedAt": "2024-01-01T00:00:00Z", "data": {} }';
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content } } } });
+      mockImportData.mockImplementation(async () => {
+        expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBeNull();
+        vi.setSystemTime(new Date(later));
+      });
+      const writes = vi.spyOn(storage, 'setItem');
+
+      expect(await triggerGistSync()).toEqual({ success: true, action: 'pulled', timestamp: later });
+
+      expect(mockImportData).toHaveBeenCalledExactlyOnceWith(content);
+      expect(mockExportData).not.toHaveBeenCalled();
+      expect(mockGistsUpdate).not.toHaveBeenCalled();
+      expect(writes.mock.calls).toEqual([
+        [STORAGE_KEYS.lastSyncTime, later],
+        [STORAGE_KEYS.lastSyncDirection, 'pull'],
+      ]);
+    });
+
+    it('writes only sync time when timestamps match, preserving the previous direction', async () => {
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, now);
+      await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+      mockGistsGet.mockResolvedValue({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ dataUpdatedAt: now }) } } },
+      });
+      const writes = vi.spyOn(storage, 'setItem');
+
+      expect(await triggerGistSync()).toEqual({ success: true, action: 'no-change', timestamp: now });
+
+      expect(writes.mock.calls).toEqual([[STORAGE_KEYS.lastSyncTime, now]]);
+      expect(await getGistSyncStatus()).toEqual({
+        lastSyncTime: now,
+        lastSyncDirection: 'pull',
+        syncInProgress: false,
+        lastError: null,
+      });
+      expect(mockImportData).not.toHaveBeenCalled();
+      expect(mockExportData).not.toHaveBeenCalled();
+      expect(mockGistsUpdate).not.toHaveBeenCalled();
+    });
+
+    it.each(['push', 'pull'] as const)('does not write status when %s fails', async (direction) => {
+      const failure = new Error('403 Forbidden');
+      const content = JSON.stringify({ dataUpdatedAt: now });
+      mockGistsGet.mockResolvedValue({
+        data: { files: direction === 'pull' ? { 'leetsrs-backup.json': { content } } : {} },
+      });
+      mockExportData.mockResolvedValue('{}');
+      mockGistsUpdate.mockRejectedValue(failure);
+      mockImportData.mockRejectedValue(failure);
+      const writes = vi.spyOn(storage, 'setItem');
+
+      expect(await triggerGistSync()).toEqual({
+        success: false,
+        error: 'GitHub API rate limit exceeded. Please try again later.',
+      });
+
+      expect(writes).not.toHaveBeenCalled();
+      expect(await getGistSyncStatus()).toEqual({
+        lastSyncTime: null,
+        lastSyncDirection: null,
+        syncInProgress: false,
+        lastError: '403 Forbidden',
+      });
+    });
+
+    it('retains the successful remote write and sync time if the direction write fails', async () => {
+      mockGistsGet.mockResolvedValue({ data: { files: {} } });
+      mockExportData.mockResolvedValue('{}');
+      mockGistsUpdate.mockResolvedValue({});
+      const write = storage.setItem.bind(storage);
+      const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+        if (key === STORAGE_KEYS.lastSyncDirection) throw new Error('direction write failed');
+        return write(key, value);
+      });
+
+      expect(await triggerGistSync()).toEqual({ success: false, error: 'direction write failed' });
+
+      expect(mockGistsUpdate).toHaveBeenCalledTimes(1);
+      expect(writes.mock.calls).toEqual([
+        [STORAGE_KEYS.lastSyncTime, now],
+        [STORAGE_KEYS.lastSyncDirection, 'push'],
+      ]);
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(now);
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBeNull();
+    });
+
+    it('awaits the request while exposing busy state, then clears it on failure', async () => {
+      const request = createDeferred<never>();
+      const started = createDeferred<void>();
+      mockGistsGet.mockImplementation(() => {
+        started.resolve();
+        return request.promise;
+      });
+      const syncing = triggerGistSync();
+      await started.promise;
+
+      expect((await getGistSyncStatus()).syncInProgress).toBe(true);
+      expect(await triggerGistSync()).toEqual({ success: false, error: 'Sync already in progress' });
+      request.reject('request failed');
+      expect(await syncing).toEqual({ success: false, error: 'Unknown sync error' });
+      expect(await getGistSyncStatus()).toMatchObject({ syncInProgress: false, lastError: 'Unknown sync error' });
+
+      mockGistsGet.mockRejectedValue(new Error('404 Not Found'));
+      expect(await triggerGistSync()).toEqual({ success: false, error: 'Gist not found' });
+      expect((await getGistSyncStatus()).lastError).toBeNull();
+    });
+
+    it('keeps an earlier config write when a later update fails, skipping remaining fields', async () => {
+      const remove = vi.spyOn(storage, 'removeItem').mockRejectedValue(new Error('remove failed'));
+      const writes = vi.spyOn(storage, 'setItem');
+
+      await expect(setGistSyncConfig({ pat: 'new-pat', gistId: null, enabled: true })).rejects.toThrow('remove failed');
+
+      expect(writes.mock.calls).toEqual([[STORAGE_KEYS.githubPat, 'new-pat']]);
+      expect(remove).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.gistId);
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('new-pat');
+      expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBeNull();
     });
   });
 });
