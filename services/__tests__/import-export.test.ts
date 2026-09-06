@@ -4,10 +4,10 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/stats';
+import type { StoredCard } from '@/infrastructure/storage/card-codec';
 import { migrations, runMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import type { StoredCard } from '../cards';
 import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
 
 describe('import-export', () => {

@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
+import { serializeCard } from '@/infrastructure/storage/card-codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { serializeCard } from '../cards';
 import { shouldResetEditor } from '../editor-reset';
 import { updateSettings } from '../settings';
 

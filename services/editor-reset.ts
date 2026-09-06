@@ -1,6 +1,6 @@
 import type { LeetcodeDomain } from '@/domain/cards';
 import { isDueByDate } from '@/domain/review-day';
-import { getAllCards } from './cards';
+import { getAllCards } from '@/infrastructure/storage/cards';
 import { getSettings } from './settings';
 
 export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): Promise<boolean> {

@@ -19,7 +19,7 @@ GitHub adapter extraction, commits, staging, or PR creation in this work.
 
 - [x] 1. Characterize rating/removal write ordering and partial failures using real
      storage and services. Record baseline checks/build and manifest; run full checks.
-- [ ] 2. Extract card codecs and persistence; switch cards and stats projections to
+- [x] 2. Extract card codecs and persistence; switch cards and stats projections to
      storage APIs, removing the cycle. Preserve untouched stored records and read
      timing (avoid eagerly decoding/reserializing unrelated cards). Move codec/read
      tests, update imports/mocks and guidance. Run full checks and production build.
@@ -47,5 +47,22 @@ GitHub adapter extraction, commits, staging, or PR creation in this work.
   otherwise its shared object references incorrectly persist an unwritten deletion.
 - Final `npm run check` passed (57 files / 628 tests); `git diff --check` passed.
   Production code is unchanged, so the baseline build remains applicable.
-- Browser testing has not been performed. Task 1 is complete; next is task 2,
-  card persistence/codecs and cycle removal. Tasks 2 and 3 remain unimplemented.
+- Task 2 extracted unchanged codecs/StoredCard into `infrastructure/storage/card-codec.ts`
+  and card access into `infrastructure/storage/cards.ts`. `loadCardStore` retains
+  the originally read record privately, decodes on demand, and exposes only an ID
+  projection for removal. Save/remove write that same record without re-reading.
+- Stats and editor-reset projections now import card persistence directly. The
+  card service re-exports `getAllCards` for the existing background handler; it
+  retains all scheduling, clock/settings reads, note/stats orchestration and errors.
+  Import/export is the explicit StoredCard snapshot exception pending #243.
+- Moved five codec tests and three card-read tests beside persistence; retained
+  workflow tests in services. Added two persistence tests for untouched legacy/
+  malformed records, original loaded-record writes, and ID-only removal.
+- Task 2 `npm run check` passed (59 files / 630 tests), production build passed
+  with the existing chunk-size warning, and `git diff --check` passed. Manifest
+  matches the task 1 baseline byte for byte. Code inspection confirms unchanged
+  codec bodies and clock/settings locations; timing/partial-failure tests pass.
+- Updated AGENTS.md and local architecture/checklist documents. Architecture
+  documents are excluded by the user's Git configuration; no exclusions changed.
+- Browser testing has not been performed. Task 2 is complete; next is task 3,
+  stat/note persistence extraction and final issue documentation. No commits or staging.

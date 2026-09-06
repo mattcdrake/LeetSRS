@@ -9,8 +9,8 @@ import {
   recordReview,
 } from '@/domain/statistics';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
+import { getAllCards } from '@/infrastructure/storage/cards';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { getAllCards } from './cards';
 import { getSettings } from './settings';
 
 async function getStats(): Promise<Record<string, DailyStats>> {

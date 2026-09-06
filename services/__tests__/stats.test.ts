@@ -4,8 +4,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Difficulty } from '@/domain/cards';
 import type { DailyStats } from '@/domain/stats';
+import type { StoredCard } from '@/infrastructure/storage/card-codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import type { StoredCard } from '../cards';
 import { addCard } from '../cards';
 import {
   getCardStateStats,

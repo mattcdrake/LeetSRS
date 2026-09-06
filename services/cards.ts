@@ -1,56 +1,18 @@
-import { createEmptyCard, FSRS, type Card as FsrsCard, State as FsrsState, generatorParameters } from 'ts-fsrs';
-import { storage } from '#imports';
+import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { isDueByDate as calculateIsDueByDate } from '@/domain/review-day';
 import { buildReviewQueue, partitionDueCards } from '@/domain/review-queue';
 import { calculateDelayedDueDate, scheduleReview } from '@/domain/scheduling';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards';
+
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 
+export { getAllCards } from '@/infrastructure/storage/cards';
+
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
-
-export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs' | 'domain'> {
-  domain?: Card['domain'];
-  createdAt: number;
-  fsrs: Omit<FsrsCard, 'due' | 'last_review'> & {
-    due: number;
-    last_review?: number;
-  };
-}
-
-async function getCards(): Promise<Record<string, StoredCard>> {
-  const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-  return cards ?? {};
-}
-
-export function serializeCard(card: Card): StoredCard {
-  return {
-    ...card,
-    createdAt: card.createdAt.getTime(),
-    fsrs: {
-      ...card.fsrs,
-      due: card.fsrs.due.getTime(),
-      last_review: card.fsrs.last_review?.getTime(),
-    },
-  };
-}
-
-export function deserializeCard(stored: StoredCard): Card {
-  const { due, last_review, ...rest } = stored.fsrs;
-  return {
-    ...stored,
-    domain: stored.domain ?? 'leetcode.com',
-    createdAt: new Date(stored.createdAt),
-    fsrs: {
-      ...rest,
-      due: new Date(due),
-      last_review: last_review ? new Date(last_review) : undefined,
-    },
-  };
-}
 
 function createCard(problem: ProblemDescriptor): Card {
   return {
@@ -63,77 +25,68 @@ function createCard(problem: ProblemDescriptor): Card {
 }
 
 export async function addCard(problem: ProblemDescriptor): Promise<Card> {
-  const cards = await getCards();
+  const cards = await loadCardStore();
   const { slug } = problem;
-  if (slug in cards) {
-    return deserializeCard(cards[slug]);
+  if (cards.has(slug)) {
+    return cards.get(slug);
   }
 
   const card = createCard(problem);
-  cards[slug] = serializeCard(card);
-  await storage.setItem(STORAGE_KEYS.cards, cards);
+  await cards.save(slug, card);
   return card;
 }
 
-export async function getAllCards(): Promise<Card[]> {
-  const cards = await getCards();
-  return Object.values(cards).map(deserializeCard);
-}
-
 export async function removeCard(slug: string): Promise<void> {
-  const cards = await getCards();
+  const cards = await loadCardStore();
 
-  const card = cards[slug];
+  const card = cards.getReference(slug);
   if (card) {
     await deleteNote(card.id);
   }
 
-  delete cards[slug];
-  await storage.setItem(STORAGE_KEYS.cards, cards);
+  await cards.remove(slug);
 }
 
 export async function delayCard(slug: string, days: number): Promise<Card> {
-  const cards = await getCards();
+  const cards = await loadCardStore();
 
-  if (!(slug in cards)) {
+  if (!cards.has(slug)) {
     throw new Error(`Card with slug "${slug}" not found`);
   }
 
-  const card = deserializeCard(cards[slug]);
+  const card = cards.get(slug);
 
   const newDueDate = calculateDelayedDueDate(card.fsrs.due, days);
 
   card.fsrs.due = newDueDate;
-  cards[slug] = serializeCard(card);
-  await storage.setItem(STORAGE_KEYS.cards, cards);
+  await cards.save(slug, card);
 
   return card;
 }
 
 export async function setPauseStatus(slug: string, paused: boolean): Promise<Card> {
-  const cards = await getCards();
+  const cards = await loadCardStore();
 
-  if (!(slug in cards)) {
+  if (!cards.has(slug)) {
     throw new Error(`Card with slug "${slug}" not found`);
   }
 
-  const card = deserializeCard(cards[slug]);
+  const card = cards.get(slug);
   card.paused = paused;
-  cards[slug] = serializeCard(card);
-  await storage.setItem(STORAGE_KEYS.cards, cards);
+  await cards.save(slug, card);
 
   return card;
 }
 
 export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
-  const cards = await getCards();
+  const cards = await loadCardStore();
   const { rating, ...problem } = input;
   const { slug } = problem;
 
   let card: Card;
   let isNewCard = true;
-  if (slug in cards) {
-    card = deserializeCard(cards[slug]);
+  if (cards.has(slug)) {
+    card = cards.get(slug);
     isNewCard = card.fsrs.state === FsrsState.New;
   } else {
     card = createCard(problem);
@@ -142,8 +95,7 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   const now = new Date();
   const schedulingResult = scheduleReview(fsrs, card.fsrs, now, rating);
   card.fsrs = schedulingResult.card;
-  cards[slug] = serializeCard(card);
-  await storage.setItem(STORAGE_KEYS.cards, cards);
+  await cards.save(slug, card);
 
   await updateStats(rating, isNewCard);
 
