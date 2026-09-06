@@ -29,7 +29,8 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 - Extend `ExtensionMessageMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background/index.ts`.
 - Persist cards as `StoredCard`; serialize and deserialize at the storage boundary.
 - Route schema changes through a new, sequential migration in `infrastructure/storage/migrations.ts`.
-- Use `formatLocalDate` and `isDueByDate` with `dayStartHour` for review-day comparisons; do not compare raw timestamps.
+- Use `formatLocalDate` and `isDueByDate` from `domain/review-day.ts` with explicit dates and `dayStartHour` for review-day comparisons; do not compare raw timestamps.
+- Keep clock/settings reads and persistence sequencing in services; domain calculations take explicit inputs. Preserve the service-owned FSRS instance and parameters.
 - Writes must declare the appropriate `syncTrackingOwner` in the background message registry, or Gist last-write-wins sync may miss them. Add new persisted fields to `ExportData` so sync includes them.
 
 ## Commit & Pull Request Guidelines
