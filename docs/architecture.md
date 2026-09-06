@@ -1,7 +1,7 @@
 # LeetSRS architecture
 
 This describes the checked-out implementation as of September 6, 2026, after
-#237–#244 and #246. Remaining refactor work is #245 and #247. The
+#237–#246. Remaining refactor work is #247. The
 [refactor checklist](plans/architecture-refactor.md) records implementation and
 verification; the [roadmap](plans/roadmap.md) records subsequent work. The
 [regional identity and catalog contract](regional-problem-identity.md) describes
@@ -18,7 +18,7 @@ shares sync metadata persistence with backup/reset and data tracking.
 flowchart TD
   Popup[React popup] --> Queries[Colocated React Query hooks]
   Queries --> Messages[Typed extension messages]
-  Content[Content entrypoint and helpers] --> Messages
+  Content[Content bootstrap and helpers] --> Messages
   Content --> Page[LeetCode DOM and GraphQL]
   Content --> I18n[Storage-backed translation loader]
   I18n --> Storage[WXT storage]
@@ -44,7 +44,7 @@ not separate processes.
 | Area | Responsibility | Main files |
 | --- | --- | --- |
 | Popup | Views, forms, query hooks, cache invalidation | [popup](../entrypoints/popup/App.tsx), [queries](../entrypoints/popup/queries/cards.ts) |
-| Content | DOM integration, GraphQL problem lookup, controls, editor reset | [entrypoint](../entrypoints/content.ts), [helpers](../content/index.ts) |
+| Content | DOM integration, GraphQL problem lookup, controls, editor reset | [entrypoint](../entrypoints/content.ts), [bootstrap](../content/bootstrap.ts), [helpers](../content/index.ts) |
 | Messaging/background | Public RPC contract, readiness, write serialization, sync/badge policy, alarms | [messages](../shared/messages.ts), [executor](../entrypoints/background/messaging.ts), [registry types](../entrypoints/background/registry-types.ts) |
 | Domain | Review-day, scheduling, queue/statistics calculations, settings/note/import policy | [review queue](../domain/review-queue.ts), [settings policy](../domain/settings-policy.ts), [import policy](../domain/backup-import.ts) |
 | Services | Clock/settings reads, FSRS lifetime, multi-entity workflows | [cards](../services/cards.ts), [settings](../services/settings.ts), [import/export](../services/import-export.ts) |
@@ -81,6 +81,10 @@ not separate processes.
 - Popup hooks and queries live beside the popup. Popup/content commands use typed
   messages. Content language loading retains its explicit read-only storage
   adapter; it does not go through messaging.
+- `content/bootstrap.ts` owns mounting and content orchestration; the WXT
+  entrypoint registers the script and starts it. Startup awaits ping (logging
+  failures), then translations, mounts the button and starts its observer, then
+  sets up auto-reset. Existing ignored disposers and navigation behavior remain.
 
 ### Learning and settings flows
 
@@ -140,14 +144,14 @@ feature work resumes. Completed extractions are recorded in the
 
 | Issue | Remaining work |
 | --- | --- |
-| #245 | Move content mounting/orchestration out of the WXT entrypoint, preserving calls and lifecycle. Language adapters are already separated. |
 | #247 | Enforce runtime and type-only dependency boundaries, finish documentation, compare compatibility fixtures/builds, and resolve required extension smoke-test gaps. |
 
-The #244 checks passed with 67 files and 700 tests, and its production build
-passed. Only the background bundle changed from the final extraction baseline;
-manifest permissions, entrypoints, popup, content, and other assets were unchanged.
-Browser testing was not performed for #244. This does not complete #247's broader
-compatibility verification.
+The #245 checks passed with 68 files and 704 tests, and its production build
+passed. Four startup/mounting characterization tests passed before and after
+extraction. Mounting/action helper bodies are unchanged. Only the content bundle
+changed; manifest permissions, entrypoints, background, popup, and other assets
+were unchanged. Browser testing was not performed. This does not complete #247's
+broader compatibility verification.
 
 ## Remaining behavior gaps
 
@@ -162,7 +166,7 @@ The [roadmap](plans/roadmap.md) records their dependencies and acceptance criter
 | Backup and sync share settings/Gist configuration; whole-snapshot last-write-wins can discard unrelated edits. Network calls occupy the write queue. | #215 |
 | Popup invalidation follows its own mutations; content and alarm changes have no general background-to-popup notification contract. | #219 |
 | Public card message types contain `Date` values without an explicit wire codec; some consumers reconstruct dates defensively. | #220 |
-| The content entrypoint owns mounting, and existing cleanup/navigation behavior can leave stale operations. Bootstrap extraction alone will not fix lifecycle behavior. | #216, after #245 |
+| Content bootstrap retains cleanup/navigation behavior that can leave stale operations. Extraction does not fix lifecycle behavior. | #216, after #245 |
 | Application errors are not consistently translated; GitHub requests lack explicit timeouts and uncertain-write recovery. | #248, #249 |
 
 Catalog-backed string frontend IDs, payload separation, and catalog migration are
