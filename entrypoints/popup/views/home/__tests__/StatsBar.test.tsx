@@ -4,13 +4,13 @@ import { State } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { StatsBar } from '../StatsBar';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('StatsBar', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));

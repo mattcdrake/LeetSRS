@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { GistSyncConfig } from '@/shared/gist-sync';
-import { sendMessage } from '@/shared/messages';
+import type { GistSyncConfig } from '@/domain/gist-sync';
+import { sendMessage } from '@/infrastructure/browser/messages';
 
 export const gistSyncQueryKeys = {
   all: ['gistSync'] as const,

@@ -5,24 +5,26 @@ learning-data writes. Services coordinate domain rules and persistence.
 
 ## Boundaries
 
-| Location          | Owns                                                                        |
-| ----------------- | --------------------------------------------------------------------------- |
-| `entrypoints/`    | WXT registration, background executor, popup UI and query hooks             |
-| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.ts`  |
-| `domain/`         | Models, scheduling, review-day calculations, settings and import policy     |
-| `services/`       | Workflows, clock/settings reads, FSRS lifetime, write order, sync decisions |
-| `infrastructure/` | Storage keys/codecs/migrations, GitHub requests, browser-language detection |
-| `shared/`         | Public messages, sync contracts, translations                               |
+| Location          | Owns                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `entrypoints/`    | WXT registration, background executor, popup UI and query hooks                           |
+| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.ts`                |
+| `domain/`         | Models (including sync), scheduling, review days, settings, language and import policy    |
+| `services/`       | Workflows, clock/settings reads, FSRS lifetime, write order, sync decisions               |
+| `infrastructure/` | Storage keys/codecs/migrations, GitHub requests, browser messaging and language detection |
+| `i18n/`           | Translation catalogs and the `Translations` type                                          |
 
 Dependency rules apply to runtime and type-only imports:
 
-- Domain code takes explicit inputs; no browser, storage, service, or messaging
-  dependencies. Portable translation dictionaries and `ts-fsrs` are allowed.
+- Domain code takes explicit inputs; no browser, storage, service, messaging,
+  or translation-catalog dependencies. `ts-fsrs` is allowed.
 - Services may compose domain rules, adapters, and other services without cycles.
   Statistics and editor reset read cards through persistence, not the card service.
-- Infrastructure and shared code must not depend on services or UI. Shared code
-  must not depend on concrete infrastructure.
-- Popup/content workflows use messages, not service or persistence imports.
+- Infrastructure must not depend on services or UI. The translation catalog may
+  import the domain language type, but has no browser, storage, service, or UI
+  dependencies.
+- Popup/content workflows use `infrastructure/browser/messages.ts`, not service
+  or persistence imports. This permits the messaging adapter, not arbitrary infrastructure.
   Content's read-only `infrastructure/storage/translations.ts` adapter is the
   exception; it resolves stored language with lazy browser fallback.
 
@@ -31,7 +33,7 @@ there is no automated boundary check.
 
 ## Messages and writes
 
-Define RPCs in `shared/messages.ts` and register handlers in
+Define RPCs and their transport in `infrastructure/browser/messages.ts` and register handlers in
 `entrypoints/background/messaging.ts`. Background-only policy types live in
 `entrypoints/background/registry-types.ts`. Each write declares `refreshBadge`
 and `syncTrackingOwner`: the executor marks local edits, the handler manages its
@@ -67,6 +69,23 @@ Sync, backup/reset, and local-edit tracking share
 `dataUpdatedAt` last-write-wins and restores pulls through backup import. Payloads
 include settings and Gist configuration, exclude the PAT, and need new synchronized
 fields added to `ExportData`. There is no per-card merge.
+
+Sync configuration, status, and result models live in `domain/gist-sync.ts`.
+`services/github-sync.ts` owns their workflow and transient state; the models do
+not depend on the browser messaging transport or GitHub client.
+
+## Language and translations
+
+`domain/language.ts` owns supported language codes, the `Language` type, validation,
+and preference matching. Settings policy uses this registry without loading
+translation dictionaries. `i18n/index.ts` provides the exhaustive
+`Record<Language, Translations>` catalog; React context and language display names
+remain in the popup.
+
+`infrastructure/browser/language.ts` reads browser preferences and delegates to
+domain rules. `infrastructure/storage/translations.ts` resolves a stored language
+with lazy browser fallback. Language matching preserves existing case sensitivity,
+Chinese and English fallbacks, and inherited-property matching.
 
 Future changes belong in the [roadmap](plans/roadmap.md). The
 [catalog identity contract](regional-problem-identity.md) describes planned

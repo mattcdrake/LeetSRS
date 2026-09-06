@@ -4,11 +4,11 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { noteQueryKeys, useDeleteNoteMutation, useSaveNoteMutation } from '../notes';
 
-vi.mock('@/shared/messages', () => ({
+vi.mock('@/infrastructure/browser/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
 

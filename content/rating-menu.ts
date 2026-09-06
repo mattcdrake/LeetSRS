@@ -1,4 +1,4 @@
-import type { Translations } from '@/shared/i18n';
+import type { Translations } from '@/i18n';
 import { createButton } from './button';
 import { RATING_BUTTON_CONFIGS, THEME_COLORS } from './constants';
 import { getRatingColor, isDarkMode } from './theme';

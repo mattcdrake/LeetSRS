@@ -1,6 +1,6 @@
 import type { GetDataType, GetReturnType, MaybePromise } from '@webext-core/messaging';
 import type { MockedFunction } from 'vitest';
-import type { ExtensionMessageMap, sendMessage } from '@/shared/messages';
+import type { ExtensionMessageMap, sendMessage } from '@/infrastructure/browser/messages';
 
 type MessageName = keyof ExtensionMessageMap;
 type MessageHandler<TName extends MessageName> = (

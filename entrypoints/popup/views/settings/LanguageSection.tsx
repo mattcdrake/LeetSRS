@@ -1,6 +1,6 @@
 import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
-import type { Language } from '@/domain/settings';
+import type { Language } from '@/domain/language';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
 import { useI18n } from '../../contexts/I18nContext';
 

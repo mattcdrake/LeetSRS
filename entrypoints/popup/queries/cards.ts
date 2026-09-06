@@ -1,6 +1,6 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { statsQueryKeys } from './stats';
 
 export const cardQueryKeys = {

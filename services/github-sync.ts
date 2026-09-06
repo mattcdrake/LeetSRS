@@ -1,14 +1,14 @@
-import { createGitHubClient, GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
-import type { ExportData } from '@/infrastructure/storage/backup-codec';
-import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
-import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type {
   GistSyncConfig,
   GistSyncStatus,
   GistValidationResult,
   PatValidationResult,
   SyncResult,
-} from '@/shared/gist-sync';
+} from '@/domain/gist-sync';
+import { createGitHubClient, GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
+import type { ExportData } from '@/infrastructure/storage/backup-codec';
+import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import { exportData, importData } from './import-export';
 
 // In-memory state for sync status (not persisted)

@@ -1,4 +1,4 @@
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { getCurrentDomain, getCurrentProblemSlug } from './domain';
 
 const RESET_CONFIRM_TIMEOUT_MS = 2000;
