@@ -21,13 +21,8 @@ import { exportData, importData, resetAllData } from '@/services/import-export';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
-import {
-  type BackgroundMessageRegistry,
-  type MessageData,
-  type MessageName,
-  type MessageResult,
-  onMessage,
-} from '@/shared/messages';
+import { type MessageData, type MessageName, type MessageResult, onMessage } from '@/shared/messages';
+import type { BackgroundMessageRegistry } from './registry-types';
 
 export const messages = {
   ping: { kind: 'read', handler: () => 'PONG' as const },

@@ -1,9 +1,4 @@
-import {
-  defineExtensionMessaging,
-  type GetDataType,
-  type GetReturnType,
-  type MaybePromise,
-} from '@webext-core/messaging';
+import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
@@ -51,20 +46,5 @@ export interface ExtensionMessageMap {
 export type MessageName = keyof ExtensionMessageMap;
 export type MessageData<Name extends MessageName> = GetDataType<ExtensionMessageMap[Name]>;
 export type MessageResult<Name extends MessageName> = GetReturnType<ExtensionMessageMap[Name]>;
-
-type BackgroundMessage<Name extends MessageName> = {
-  handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
-} & (
-  | { kind: 'read' }
-  | {
-      kind: 'write';
-      syncTrackingOwner: 'executor' | 'handler' | 'none';
-      refreshBadge: boolean;
-    }
-);
-
-export type BackgroundMessageRegistry = {
-  [Name in MessageName]: BackgroundMessage<Name>;
-};
 
 export const { onMessage, sendMessage } = defineExtensionMessaging<ExtensionMessageMap>();

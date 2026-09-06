@@ -26,7 +26,7 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 
 ## Architecture Invariants
 
-- Extend `ExtensionMessageMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background/index.ts`.
+- Extend `ExtensionMessageMap` in `shared/messages.ts` and add the corresponding typed handler in `entrypoints/background/messaging.ts`. Keep background registry policy types in `entrypoints/background/registry-types.ts`; `shared/messages.ts` owns the public contract and transport exports.
 - Keep `StoredCard` and card codecs in `infrastructure/storage/card-codec.ts` (snapshot contracts may import the type). Learning workflows use `infrastructure/storage/cards.ts`; preserve loaded records and decode only requested cards.
 - Keep card/stat/note storage access in `infrastructure/storage/`; services retain validation, clock/settings reads, and multi-entity write order. Stored records and note keys stay inside persistence except explicit snapshot contracts.
 - Route schema changes through a new, sequential migration in `infrastructure/storage/migrations.ts`.
