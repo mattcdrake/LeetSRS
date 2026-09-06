@@ -31,15 +31,14 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # track_progress only supports opened, synchronize, ready_for_review and
-          # reopened, so it has to be off for review_requested runs.
-          track_progress: ${{ github.event.action != 'review_requested' }}
+          # Progress tracking injects checklist and summary instructions into reviews.
+          track_progress: false
 
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Review this PR.
+            Review this PR using .github/code-review-guidelines.md.
 
           claude_args: |
             --append-system-prompt-file .github/code-review-guidelines.md
