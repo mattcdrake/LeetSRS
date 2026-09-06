@@ -8,4 +8,8 @@ Review pull requests concisely. Only mention things that actually matter:
 - Architectural issues or suggestions that materially improve the design.
 - Suggestions that meaningfully improve the code.
 
-Do not comment on naming conventions, missing comments, test coverage suggestions, or vague "could be cleaner" feedback. If the code is solid, just say "LGTM".
+Check changes against the architecture and invariants in `docs/architecture.md` and `AGENTS.md`; report concrete violations.
+
+Post inline comments only for actionable findings. Do not summarize the PR, post progress checklists, describe correct code, praise changes, or list checks performed. If there are no findings, post one PR comment containing only "LGTM".
+
+Do not comment on naming conventions, missing comments, test coverage suggestions, or vague "could be cleaner" feedback.
