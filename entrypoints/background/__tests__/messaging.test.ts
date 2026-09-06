@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BackgroundMessageRegistry } from '@/shared/messages';
 import { createDeferred } from '@/test/utils/deferred';
 import { createBackgroundMessageExecutor } from '../messaging';
+import type { BackgroundMessageRegistry } from '../registry-types';
 
 describe('background message executor', () => {
   it('waits for readiness and lets reads bypass queued writes', async () => {
