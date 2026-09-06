@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type Translations, translations } from '@/shared/i18n';
+import { type Translations, translations } from '@/i18n';
 import { createDeferred, type Deferred } from '@/test/utils/deferred';
 import { type CoordinatedRatingMenu, RatingMenuCoordinator } from '../rating-menu-coordinator';
 

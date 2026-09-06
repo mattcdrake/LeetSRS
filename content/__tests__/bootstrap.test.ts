@@ -2,9 +2,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
+import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
-import { translations } from '@/shared/i18n';
 import { createDeferred } from '@/test/utils/deferred';
 import { bootstrapContent } from '../bootstrap';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSupportedLanguage, selectLanguage } from '@/domain/language';
+import { getSupportedLanguage, selectLanguage } from '../language';
 
 describe('selectLanguage', () => {
   it('exact match', () => {

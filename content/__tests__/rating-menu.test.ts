@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { translations } from '@/shared/i18n';
+import { translations } from '@/i18n';
 import { requireDefined } from '@/test/utils/assertions';
 import { RATING_BUTTON_CONFIGS } from '../constants';
 import { type RatingCallback, RatingMenu } from '../rating-menu';

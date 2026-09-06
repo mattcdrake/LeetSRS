@@ -6,7 +6,7 @@ import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirma
 import { getLeetcodeProblemUrl } from '@/entrypoints/popup/leetcode';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/entrypoints/popup/queries/cards';
 import { bounceButton } from '@/entrypoints/popup/styles';
-import type { Translations } from '@/shared/i18n';
+import type { Translations } from '@/i18n';
 import { useI18n } from '../../../contexts/I18nContext';
 import { CardNotes } from './CardNotes';
 

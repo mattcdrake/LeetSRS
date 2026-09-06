@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { translations } from '@/shared/i18n';
+import { translations } from '@/i18n';
 import { createButton, createLeetSrsButton } from '../button';
 import { LEETSRS_BUTTON_COLOR } from '../constants';
 

@@ -1,4 +1,4 @@
-import type { Translations } from '@/shared/i18n';
+import type { Translations } from '@/i18n';
 
 export type CoordinatedRatingMenu = {
   isVisible: () => boolean;

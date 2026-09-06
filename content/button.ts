@@ -1,4 +1,4 @@
-import type { Translations } from '@/shared/i18n';
+import type { Translations } from '@/i18n';
 import { LEETSRS_BUTTON_COLOR } from './constants';
 
 export function createButton(options: {

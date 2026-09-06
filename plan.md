@@ -107,7 +107,7 @@ The catalog itself has no browser, storage, service, or UI dependencies.
 - [x] Move messaging and update all consumers and mock module paths together.
 - [x] Extract the language registry and rules; update settings policy and language
       type imports while preserving the characterized behavior.
-- [ ] Move the dictionaries and language tests, then update translation consumers
+- [x] Move the dictionaries and language tests, then update translation consumers
       and the catalog's new-language instructions.
 - [ ] Delete the empty `shared/` directory. Leave no forwarding modules or aliases.
 - [ ] Update `AGENTS.md` and `docs/architecture.md` with the ownership table and
