@@ -3,13 +3,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Theme } from '@/domain/settings';
 import { settingsQueryKeys } from '@/entrypoints/popup/queries/settings';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { AppearanceSection } from '../AppearanceSection';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('AppearanceSection', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));

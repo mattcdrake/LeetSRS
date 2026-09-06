@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 
 export const noteQueryKeys = {
   all: ['notes'] as const,

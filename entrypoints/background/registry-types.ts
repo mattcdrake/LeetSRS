@@ -1,5 +1,5 @@
 import type { MaybePromise } from '@webext-core/messaging';
-import type { MessageData, MessageName, MessageResult } from '@/shared/messages';
+import type { MessageData, MessageName, MessageResult } from '@/infrastructure/browser/messages';
 
 type BackgroundMessage<Name extends MessageName> = {
   handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;

@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { setupLeetcodeAutoReset } from '../auto-reset';
 
 // @vitest-environment happy-dom
 
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
+vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   sendMessage: vi.fn(),
 }));
 

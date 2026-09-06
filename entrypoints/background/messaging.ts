@@ -1,3 +1,4 @@
+import { type MessageData, type MessageName, type MessageResult, onMessage } from '@/infrastructure/browser/messages';
 import {
   addCard,
   delayCard,
@@ -21,7 +22,6 @@ import { exportData, importData, resetAllData } from '@/services/import-export';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
-import { type MessageData, type MessageName, type MessageResult, onMessage } from '@/shared/messages';
 import type { BackgroundMessageRegistry } from './registry-types';
 
 export const messages = {

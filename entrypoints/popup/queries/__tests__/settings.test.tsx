@@ -9,7 +9,7 @@ import { cardQueryKeys } from '../cards';
 import { settingsQueryKeys, useUpdateSettingsMutation } from '../settings';
 import { statsQueryKeys } from '../stats';
 
-vi.mock('@/shared/messages', () => ({
+vi.mock('@/infrastructure/browser/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
 

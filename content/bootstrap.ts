@@ -10,9 +10,9 @@ import {
   Tooltip,
 } from '@/content';
 import type { ProblemDescriptor } from '@/domain/cards';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type { Translations } from '@/shared/i18n';
-import { sendMessage } from '@/shared/messages';
 
 export async function bootstrapContent() {
   // Wake up service worker so it's ready when user interacts

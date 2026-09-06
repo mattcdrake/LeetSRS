@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { UpcomingReviewStats } from '@/domain/stats';
 import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
@@ -21,7 +21,7 @@ vi.mock('react-chartjs-2', () => ({
   ),
 }));
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('UpcomingReviewsChart', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));

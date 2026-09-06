@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 
 export const statsQueryKeys = {
   all: ['stats'] as const,

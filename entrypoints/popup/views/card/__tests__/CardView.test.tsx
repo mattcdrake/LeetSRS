@@ -8,14 +8,14 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { CardView } from '../CardView';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('../components/CardNotes', () => ({ CardNotes: () => null }));
 
 let queryClient: QueryClient;

@@ -7,13 +7,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { CardListItem } from '../CardListItem';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('../CardNotes', () => ({ CardNotes: () => null }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));

@@ -7,12 +7,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
-import { sendMessage } from '@/shared/messages';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardNotes } from '../CardNotes';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 /**
  * The note-editing state machine itself is covered by entrypoints/popup/hooks/__tests__/useNoteEditor.test.tsx.
