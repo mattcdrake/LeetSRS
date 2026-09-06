@@ -3,12 +3,16 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { SETTINGS_CONSTRAINTS, type Settings } from '@/domain/settings';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { createDeferred } from '@/test/utils/deferred';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { exportSettings, getSettings, resetSettings, updateSettings } from '../settings';
 
 describe('settings service', () => {
   beforeEach(() => fakeBrowser.reset());
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('returns a complete settings object with defaults', async () => {
     expect(await getSettings()).toEqual(buildSettings());
@@ -87,5 +91,102 @@ describe('settings service', () => {
 
     expect((await getSettings()).theme).toBe(theme);
     expect(await exportSettings()).toEqual({ theme });
+  });
+
+  it.each([getSettings, exportSettings])('starts all setting reads concurrently (%#)', async (readSettings) => {
+    const firstRead = createDeferred<null>();
+    const getItem = vi.spyOn(storage, 'getItem').mockReturnValueOnce(firstRead.promise);
+
+    const pending = readSettings();
+    expect(getItem.mock.calls.map(([key]) => key)).toEqual([
+      STORAGE_KEYS.maxNewCardsPerDay,
+      STORAGE_KEYS.dayStartHour,
+      STORAGE_KEYS.theme,
+      STORAGE_KEYS.resetEditorOnEveryProblem,
+      STORAGE_KEYS.resetEditorOnDueReview,
+      STORAGE_KEYS.badgeEnabled,
+      STORAGE_KEYS.language,
+    ]);
+
+    firstRead.resolve(null);
+    await pending;
+  });
+
+  it('starts changed writes together and tracks only after every write finishes', async () => {
+    const firstWrite = createDeferred<void>();
+    const setItem = vi.spyOn(storage, 'setItem').mockReturnValueOnce(firstWrite.promise);
+
+    const pending = updateSettings({ maxNewCardsPerDay: 8, theme: 'dark' });
+    expect(setItem.mock.calls).toEqual([
+      [STORAGE_KEYS.maxNewCardsPerDay, 8],
+      [STORAGE_KEYS.theme, 'dark'],
+    ]);
+    expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+
+    firstWrite.resolve();
+    await pending;
+    expect(setItem.mock.calls[2]).toEqual([STORAGE_KEYS.dataUpdatedAt, expect.any(String)]);
+    expect(setItem).toHaveBeenCalledTimes(3);
+  });
+
+  it('preserves successful concurrent writes when another fails and skips tracking', async () => {
+    const firstWrite = createDeferred<void>();
+    const failure = new Error('setting write failed');
+    vi.spyOn(storage, 'setItem').mockReturnValueOnce(firstWrite.promise);
+
+    const pending = updateSettings({ maxNewCardsPerDay: 8, theme: 'dark' });
+    const rejected = expect(pending).rejects.toBe(failure);
+    expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
+    firstWrite.reject(failure);
+    await rejected;
+
+    expect(await exportSettings()).toEqual({ theme: 'dark' });
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+  });
+
+  it('propagates tracking failure after settings have been persisted', async () => {
+    const failure = new Error('tracking write failed');
+    const setItem = storage.setItem.bind(storage);
+    vi.spyOn(storage, 'setItem').mockImplementation((key, value) =>
+      key === STORAGE_KEYS.dataUpdatedAt ? Promise.reject(failure) : setItem(key, value)
+    );
+
+    await expect(updateSettings({ theme: 'dark' })).rejects.toBe(failure);
+    expect(await exportSettings()).toEqual({ theme: 'dark' });
+  });
+
+  it('starts all reset removals concurrently without changing the data timestamp', async () => {
+    await storage.setItem(STORAGE_KEYS.dataUpdatedAt, 'existing timestamp');
+    const firstRemoval = createDeferred<void>();
+    const removeItem = vi.spyOn(storage, 'removeItem').mockReturnValueOnce(firstRemoval.promise);
+
+    const pending = resetSettings();
+    expect(removeItem.mock.calls.map(([key]) => key)).toEqual([
+      STORAGE_KEYS.maxNewCardsPerDay,
+      STORAGE_KEYS.dayStartHour,
+      STORAGE_KEYS.theme,
+      STORAGE_KEYS.resetEditorOnEveryProblem,
+      STORAGE_KEYS.resetEditorOnDueReview,
+      STORAGE_KEYS.badgeEnabled,
+      STORAGE_KEYS.language,
+    ]);
+    firstRemoval.resolve();
+    await pending;
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('existing timestamp');
+  });
+
+  it('does not detect browser language for valid stored language or settings export', async () => {
+    const languages = vi.fn(() => ['pl']);
+    vi.stubGlobal('navigator', {
+      get languages() {
+        return languages();
+      },
+    });
+    await storage.setItem(STORAGE_KEYS.language, 'de');
+    expect((await getSettings()).language).toBe('de');
+    await storage.setItem(STORAGE_KEYS.language, 'invalid');
+    expect(await exportSettings()).toEqual({});
+    expect(languages).not.toHaveBeenCalled();
   });
 });
