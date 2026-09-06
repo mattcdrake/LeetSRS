@@ -1,5 +1,4 @@
 import type { State as FsrsState, Grade } from 'ts-fsrs';
-import { storage } from '#imports';
 import { formatLocalDate } from '@/domain/review-day';
 import {
   calculateHistoryStats,
@@ -10,13 +9,10 @@ import {
 } from '@/domain/statistics';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
 import { getAllCards } from '@/infrastructure/storage/cards';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { getStats, getStatsForDate, saveStats } from '@/infrastructure/storage/stats';
 import { getSettings } from './settings';
 
-async function getStats(): Promise<Record<string, DailyStats>> {
-  const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-  return stats ?? {};
-}
+export { getStatsForDate } from '@/infrastructure/storage/stats';
 
 export async function getTodayKey(): Promise<string> {
   const now = new Date();
@@ -44,12 +40,7 @@ export async function updateStats(grade: Grade, isNewCard: boolean = false): Pro
   const todayStats = stats[todayKey];
   recordReview(todayStats, grade, isNewCard);
 
-  await storage.setItem(STORAGE_KEYS.stats, stats);
-}
-
-export async function getStatsForDate(date: string): Promise<DailyStats | null> {
-  const stats = await getStats();
-  return stats[date] ?? null;
+  await saveStats(stats);
 }
 
 export async function getTodayStats(): Promise<DailyStats | null> {
