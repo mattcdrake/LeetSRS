@@ -4,7 +4,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { statsQueryKeys } from '@/hooks/queries/stats';
+import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/shared/messages';
 import type { UpcomingReviewStats } from '@/shared/stats';
 import { createDeferred } from '@/test/utils/deferred';

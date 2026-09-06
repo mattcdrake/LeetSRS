@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import App from '../App';
 
-vi.mock('@/hooks/queries/settings', () => ({
+vi.mock('@/entrypoints/popup/queries/settings', () => ({
   useSettingsQuery: () => ({ data: buildSettings() }),
 }));
-vi.mock('@/hooks/useTheme', () => ({ useTheme: () => 'dark' }));
+vi.mock('@/entrypoints/popup/hooks/useTheme', () => ({ useTheme: () => 'dark' }));
 vi.mock('../components/BottomNav', () => ({ BottomNav: () => null }));
 vi.mock('../views/card/CardView', () => ({ CardView: () => null }));
 vi.mock('../views/home/HomeView', () => ({ HomeView: () => null }));

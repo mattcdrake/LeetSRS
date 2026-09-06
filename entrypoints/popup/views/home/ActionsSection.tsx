@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Button } from 'react-aria-components';
 import type { IconType } from 'react-icons';
 import { FaForwardFast, FaForwardStep, FaPause } from 'react-icons/fa6';
+import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { bounceButton } from '@/entrypoints/popup/styles';
-import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface ActionsSectionProps {

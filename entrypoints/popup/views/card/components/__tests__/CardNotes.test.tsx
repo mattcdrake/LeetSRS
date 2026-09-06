@@ -5,7 +5,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { noteQueryKeys } from '@/hooks/queries/notes';
+import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH, type Note } from '@/shared/notes';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -15,7 +15,7 @@ import { CardNotes } from '../CardNotes';
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 /**
- * The note-editing state machine itself is covered by hooks/__tests__/useNoteEditor.test.tsx.
+ * The note-editing state machine itself is covered by entrypoints/popup/hooks/__tests__/useNoteEditor.test.tsx.
  * These cases pin what CardNotes renders on top of it.
  */
 describe('CardNotes', () => {

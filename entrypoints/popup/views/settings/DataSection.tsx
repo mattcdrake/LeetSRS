@@ -1,8 +1,12 @@
 import { useRef } from 'react';
 import { Button } from 'react-aria-components';
+import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
+import {
+  useExportDataMutation,
+  useImportDataMutation,
+  useResetAllDataMutation,
+} from '@/entrypoints/popup/queries/data';
 import { bounceButton } from '@/entrypoints/popup/styles';
-import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/hooks/queries/data';
-import { useTimedConfirmation } from '@/hooks/useTimedConfirmation';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {

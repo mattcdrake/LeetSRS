@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cardQueryKeys } from '@/hooks/queries/cards';
+import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { requireDefined } from '@/test/utils/assertions';

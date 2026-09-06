@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { cardQueryKeys } from '@/hooks/queries/cards';
+import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { BottomNav } from '../BottomNav';
 

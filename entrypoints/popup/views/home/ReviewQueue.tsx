@@ -6,7 +6,7 @@ import {
   useRateCardMutation,
   useRemoveCardMutation,
   useReviewQueueQuery,
-} from '@/hooks/queries/cards';
+} from '@/entrypoints/popup/queries/cards';
 import type { Card, RateCardInput } from '@/shared/cards';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
