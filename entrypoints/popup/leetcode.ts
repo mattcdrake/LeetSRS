@@ -1,4 +1,4 @@
-import type { LeetcodeDomain } from '@/shared/cards';
+import type { LeetcodeDomain } from '@/domain/cards';
 
 interface LeetcodeProblemLink {
   domain: LeetcodeDomain;

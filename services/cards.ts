@@ -1,6 +1,6 @@
 import { createEmptyCard, FSRS, type Card as FsrsCard, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { storage } from '#imports';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';

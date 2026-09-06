@@ -2,8 +2,8 @@
 import { render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
+import type { Card } from '@/domain/cards';
 import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
-import type { Card } from '@/shared/cards';
 import { sendMessage } from '@/shared/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';

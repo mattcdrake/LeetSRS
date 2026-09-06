@@ -1,6 +1,6 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { storage } from '#imports';
-import type { DailyStats, UpcomingReviewStats } from '@/shared/stats';
+import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
 import { formatLocalDate, getAllCards } from './cards';
 import { getSettings } from './settings';
 import { STORAGE_KEYS } from './storage-keys';

@@ -1,4 +1,4 @@
-import type { Difficulty } from '@/shared/cards';
+import type { Difficulty } from '@/domain/cards';
 import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
 
 export interface ExtractedProblemData {

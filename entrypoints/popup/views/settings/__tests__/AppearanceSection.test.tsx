@@ -1,9 +1,9 @@
 /** @vitest-environment happy-dom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Theme } from '@/domain/settings';
 import { settingsQueryKeys } from '@/entrypoints/popup/queries/settings';
 import { sendMessage } from '@/shared/messages';
-import type { Theme } from '@/shared/settings';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';

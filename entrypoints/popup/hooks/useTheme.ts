@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Theme } from '@/shared/settings';
+import type { Theme } from '@/domain/settings';
 import { useSettingsQuery } from '../queries/settings';
 
 export type ResolvedTheme = Exclude<Theme, 'system'>;

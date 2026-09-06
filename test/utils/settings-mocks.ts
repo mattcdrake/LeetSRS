@@ -1,4 +1,4 @@
-import type { Settings } from '@/shared/settings';
+import type { Settings } from '@/domain/settings';
 
 export function buildSettings(overrides: Partial<Settings> = {}): Settings {
   return {

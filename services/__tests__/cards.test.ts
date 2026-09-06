@@ -2,8 +2,8 @@ import { createEmptyCard, State as FsrsState, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import type { Card } from '@/shared/cards';
-import type { DailyStats } from '@/shared/stats';
+import type { Card } from '@/domain/cards';
+import type { DailyStats } from '@/domain/stats';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import {

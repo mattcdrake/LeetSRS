@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Theme } from '@/shared/settings';
+import type { Theme } from '@/domain/settings';
 import { resolveTheme, useTheme } from '../useTheme';
 
 const queryMock = vi.hoisted(() => ({ theme: 'system' as Theme }));

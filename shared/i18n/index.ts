@@ -2,14 +2,14 @@
  * Centralized text strings for internationalization. All user-facing text should be defined here.
  *
  * To add a new language:
- * 1. Add the language code to the Language type in shared/settings.ts
+ * 1. Add the language code to the Language type in domain/settings.ts
  * 2. Create a translation file (e.g., `shared/i18n/es.ts`) with `const es: Translations = { ... }`
  * 3. Import and add the translation to the `translations` record below
  * 4. Add language metadata to LANGUAGE_OPTIONS in entrypoints/popup/views/settings/LanguageSection.tsx
  * 5. Run `npm run compile` - TypeScript will catch any missing keys
  */
 
-import type { Language } from '../settings';
+import type { Language } from '@/domain/settings';
 import de from './de';
 import en from './en';
 import hi from './hi';

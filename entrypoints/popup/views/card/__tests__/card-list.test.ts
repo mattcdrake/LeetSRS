@@ -1,6 +1,6 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
-import type { Card } from '@/shared/cards';
+import type { Card } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { filterAndSortCards } from '../card-list';
 

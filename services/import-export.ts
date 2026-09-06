@@ -1,7 +1,7 @@
 import { storage } from '#imports';
-import type { Note } from '@/shared/notes';
-import type { Settings } from '@/shared/settings';
-import type { DailyStats } from '@/shared/stats';
+import type { Note } from '@/domain/notes';
+import type { Settings } from '@/domain/settings';
+import type { DailyStats } from '@/domain/stats';
 import type { StoredCard } from './cards';
 import { getCurrentSchemaVersion } from './migrations';
 import { exportSettings, resetSettings, updateSettings, validateSettings } from './settings';

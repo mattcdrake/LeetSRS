@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { SETTINGS_CONSTRAINTS, type Settings } from '@/shared/settings';
+import { SETTINGS_CONSTRAINTS, type Settings } from '@/domain/settings';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { exportSettings, getSettings, resetSettings, updateSettings } from '../settings';
 import { STORAGE_KEYS } from '../storage-keys';

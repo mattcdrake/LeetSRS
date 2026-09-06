@@ -1,6 +1,6 @@
 import { storage } from '#imports';
+import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/domain/settings';
 import { translations } from '@/shared/i18n';
-import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/shared/settings';
 import { markDataUpdated } from './data-tracker';
 import { detectBrowserLanguage } from './i18n';
 import { STORAGE_KEYS } from './storage-keys';

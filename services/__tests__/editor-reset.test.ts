@@ -2,7 +2,7 @@ import { createEmptyCard, State as FsrsState } from 'ts-fsrs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import type { Card } from '@/shared/cards';
+import type { Card } from '@/domain/cards';
 import { serializeCard } from '../cards';
 import { shouldResetEditor } from '../editor-reset';
 import { updateSettings } from '../settings';

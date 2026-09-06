@@ -1,5 +1,5 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/cards';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { sendMessage } from '@/shared/messages';
 import { statsQueryKeys } from './stats';
 

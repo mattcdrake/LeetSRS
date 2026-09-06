@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-LeetSRS is a WXT, React, and TypeScript browser extension. Entry points live in `entrypoints/`; popup views and components are in `entrypoints/popup/`. Put business logic in `services/`, shared types and configuration in `shared/`, popup React hooks in `entrypoints/popup/hooks/`, popup queries in `entrypoints/popup/queries/`, and content-script helpers in `content/`. Static extension files and locales belong in `public/`; screenshots and branding belong in `assets/`. Tests are colocated in `__tests__/`, with shared setup and mocks in `test/`.
+LeetSRS is a WXT, React, and TypeScript browser extension. Entry points live in `entrypoints/`; popup views and components are in `entrypoints/popup/`. Put business logic in `services/`, domain models and rules in `domain/`, messaging, translations, and sync contracts in `shared/`, popup React hooks in `entrypoints/popup/hooks/`, popup queries in `entrypoints/popup/queries/`, and content-script helpers in `content/`. Static extension files and locales belong in `public/`; screenshots and branding belong in `assets/`. Tests are colocated in `__tests__/`, with shared setup and mocks in `test/`.
 
 ## Build, Test, and Development Commands
 

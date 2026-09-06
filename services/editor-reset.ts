@@ -1,4 +1,4 @@
-import type { LeetcodeDomain } from '@/shared/cards';
+import type { LeetcodeDomain } from '@/domain/cards';
 import { getAllCards, isDueByDate } from './cards';
 import { getSettings } from './settings';
 

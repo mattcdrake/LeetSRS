@@ -1,7 +1,7 @@
 import { Button, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import { FaChevronDown, FaGlobe } from 'react-icons/fa6';
+import type { Language } from '@/domain/settings';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
-import type { Language } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 const LANGUAGE_OPTIONS: Array<{

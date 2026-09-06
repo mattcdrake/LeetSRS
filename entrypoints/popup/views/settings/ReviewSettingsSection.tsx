@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Input, Label, TextField } from 'react-aria-components';
+import { SETTINGS_CONSTRAINTS } from '@/domain/settings';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
-import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function ReviewSettingsSection() {
