@@ -1,6 +1,7 @@
 import { createEmptyCard, FSRS, type Card as FsrsCard, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { storage } from '#imports';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
+import { isDueByDate as calculateIsDueByDate } from '@/domain/review-day';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
@@ -8,17 +9,6 @@ import { getTodayStats, updateStats } from './stats';
 
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
-
-export function formatLocalDate(date: Date, dayStartHour: number = 0): string {
-  const adjustedDate = new Date(date);
-  if (dayStartHour) {
-    adjustedDate.setHours(adjustedDate.getHours() - dayStartHour);
-  }
-  const year = adjustedDate.getFullYear();
-  const month = String(adjustedDate.getMonth() + 1).padStart(2, '0');
-  const day = String(adjustedDate.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs' | 'domain'> {
   domain?: Card['domain'];
@@ -164,11 +154,7 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
 }
 
 export function isDueByDate(card: Card, referenceDate: Date = new Date(), dayStartHour: number = 0): boolean {
-  const dueDate = new Date(card.fsrs.due);
-
-  const referenceDateStr = formatLocalDate(referenceDate, dayStartHour);
-  const dueStr = formatLocalDate(dueDate, dayStartHour);
-  return dueStr <= referenceDateStr;
+  return calculateIsDueByDate(card, referenceDate, dayStartHour);
 }
 
 const sortByDueDateThenSlug = (a: Card, b: Card): number => {

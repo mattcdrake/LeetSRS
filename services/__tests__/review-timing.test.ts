@@ -6,7 +6,7 @@ import type { DailyStats } from '@/domain/stats';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { formatLocalDate, getReviewQueue, isDueByDate, serializeCard } from '../cards';
+import { getReviewQueue, isDueByDate, serializeCard } from '../cards';
 import { getSettings } from '../settings';
 import { getTodayKey, getYesterdayKey, updateStats } from '../stats';
 
@@ -36,22 +36,13 @@ describe('review timing before calculation extraction', () => {
     vi.useRealTimers();
   });
 
-  it.each([
-    ['2024-03-15T03:59:59.999', 4, '2024-03-14', false],
-    ['2024-03-15T04:00:00.000', 4, '2024-03-15', true],
-    ['2024-01-01T03:59:59.999', 4, '2023-12-31', false],
-    ['2024-01-01T04:00:00.000', 4, '2024-01-01', true],
-    ['2024-03-01T03:59:59.999', 4, '2024-02-29', false],
-    ['2024-03-01T04:00:00.000', 4, '2024-03-01', true],
-  ])('uses the local review day at %s', (instant, dayStartHour, expectedDay, due) => {
-    const referenceDate = new Date(instant);
+  it('defaults an omitted reference date to the service clock at each call', () => {
     const card = createMockCard(State.Review);
-    card.fsrs.due = new Date(referenceDate);
-    card.fsrs.due.setHours(4, 0, 0, 0);
+    card.fsrs.due = new Date('2024-03-15T04:00:00');
 
-    expect(formatLocalDate(referenceDate, dayStartHour)).toBe(expectedDay);
-    expect(isDueByDate(card, referenceDate, dayStartHour)).toBe(due);
-    expect(referenceDate.getTime()).toBe(new Date(instant).getTime());
+    expect(isDueByDate(card, undefined, 4)).toBe(false);
+    vi.setSystemTime(new Date('2024-03-15T04:00:00'));
+    expect(isDueByDate(card, undefined, 4)).toBe(true);
   });
 
   it.each([

@@ -9,7 +9,7 @@ introduce operation snapshots (#218) or extract persistence (#241).
   the existing services before extraction. Cover queue filtering across the day
   boundary, paused-card clock behavior, and independent statistics date reads.
   Run full checks and a production build and record the baseline.
-- [ ] 2. Extract review-day helpers into `domain/review-day.ts`, moving their
+- [x] 2. Extract review-day helpers into `domain/review-day.ts`, moving their
   existing calculation tests and updating consumers. Keep implicit clock reads
   at service call sites; domain calculations take explicit reference dates.
   Preserve default behavior where callers currently omit a date. Run checks/build.
@@ -30,3 +30,10 @@ build passes with the existing large-chunk warning; output is byte-identical
 to the baseline saved at `/tmp/leetsrs-240-baseline-build`. No production code
 changed. Manifest permissions and entrypoints are unchanged. No live-browser
 smoke test was performed.
+
+Task 2 results: moved review-day calculations and 16 existing calculation/boundary
+cases into `domain/`. The service wrapper preserves the omitted-date clock read,
+with an additional regression test. Queue, statistics, and editor-reset clock
+locations are unchanged. Full checks passed (53 files, 604 tests); production
+build passed. Manifest, content script, and popup output match the baseline;
+the generated background bundle differs after extraction.
