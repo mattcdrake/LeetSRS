@@ -1,7 +1,6 @@
-import { storage } from '#imports';
 import { createGitHubClient, GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import type { ExportData } from '@/infrastructure/storage/backup-codec';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type {
   GistSyncConfig,
@@ -17,31 +16,31 @@ let syncInProgress = false;
 let lastError: string | null = null;
 
 export async function getGistSyncConfig(): Promise<GistSyncConfig> {
-  const pat = (await storage.getItem<string>(STORAGE_KEYS.githubPat)) ?? '';
-  const gistId = (await storage.getItem<string>(STORAGE_KEYS.gistId)) ?? null;
-  const enabled = (await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled)) ?? false;
+  const pat = (await readSyncMetadata('githubPat')) ?? '';
+  const gistId = (await readSyncMetadata('gistId')) ?? null;
+  const enabled = (await readSyncMetadata('gistSyncEnabled')) ?? false;
   return { pat, gistId, enabled };
 }
 
 export async function setGistSyncConfig(config: Partial<GistSyncConfig>): Promise<void> {
   if (config.pat !== undefined) {
-    await storage.setItem(STORAGE_KEYS.githubPat, config.pat);
+    await writeSyncMetadata('githubPat', config.pat);
   }
   if (config.gistId !== undefined) {
     if (config.gistId === null) {
-      await storage.removeItem(STORAGE_KEYS.gistId);
+      await removeSyncMetadata('gistId');
     } else {
-      await storage.setItem(STORAGE_KEYS.gistId, config.gistId);
+      await writeSyncMetadata('gistId', config.gistId);
     }
   }
   if (config.enabled !== undefined) {
-    await storage.setItem(STORAGE_KEYS.gistSyncEnabled, config.enabled);
+    await writeSyncMetadata('gistSyncEnabled', config.enabled);
   }
 }
 
 export async function getGistSyncStatus(): Promise<GistSyncStatus> {
-  const lastSyncTime = (await storage.getItem<string>(STORAGE_KEYS.lastSyncTime)) ?? null;
-  const lastSyncDirection = (await storage.getItem<'push' | 'pull'>(STORAGE_KEYS.lastSyncDirection)) ?? null;
+  const lastSyncTime = (await readSyncMetadata('lastSyncTime')) ?? null;
+  const lastSyncDirection = (await readSyncMetadata('lastSyncDirection')) ?? null;
   return {
     lastSyncTime,
     lastSyncDirection,
@@ -121,8 +120,8 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   await setGistSyncConfig({ gistId });
 
   const now = new Date().toISOString();
-  await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
-  await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+  await writeSyncMetadata('lastSyncTime', now);
+  await writeSyncMetadata('lastSyncDirection', 'push');
 
   return { gistId };
 }
@@ -173,7 +172,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
       return await pushToGist(github, config.gistId, localExportJson);
     }
 
-    const localDataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
+    const localDataUpdatedAt = await readSyncMetadata('dataUpdatedAt');
 
     // Handle missing dataUpdatedAt (legacy or fresh install)
     if (!localDataUpdatedAt && remoteData.dataUpdatedAt) {
@@ -181,7 +180,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
     }
     if (!remoteData.dataUpdatedAt) {
       if (!localDataUpdatedAt) {
-        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, new Date().toISOString());
+        await writeSyncMetadata('dataUpdatedAt', new Date().toISOString());
       }
       const localExportJson = await exportData();
       return await pushToGist(github, config.gistId, localExportJson);
@@ -203,7 +202,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
     }
 
     const now = new Date().toISOString();
-    await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
+    await writeSyncMetadata('lastSyncTime', now);
     return { success: true, action: 'no-change', timestamp: now };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
@@ -223,8 +222,8 @@ async function pushToGist(github: GitHubClient, gistId: string, content: string)
   await github.updateGist(gistId, content);
 
   const now = new Date().toISOString();
-  await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
-  await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+  await writeSyncMetadata('lastSyncTime', now);
+  await writeSyncMetadata('lastSyncDirection', 'push');
 
   return { success: true, action: 'pushed', timestamp: now };
 }
@@ -233,8 +232,8 @@ async function pullFromGist(content: string): Promise<SyncResult> {
   await importData(content);
 
   const now = new Date().toISOString();
-  await storage.setItem(STORAGE_KEYS.lastSyncTime, now);
-  await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+  await writeSyncMetadata('lastSyncTime', now);
+  await writeSyncMetadata('lastSyncDirection', 'pull');
 
   return { success: true, action: 'pulled', timestamp: now };
 }

@@ -24,7 +24,7 @@ storage adapters. Keep Gist workflows in services.
 - [x] 2. Extract GitHub transport, retaining client creation at existing workflow
      points and service-owned validation/error policy. Move transport-only tests as
      appropriate, retain workflow tests, run checks/build and compare output.
-- [ ] 3. Extract sync configuration/status persistence and reconcile snapshot
+- [x] 3. Extract sync configuration/status persistence and reconcile snapshot
      metadata access (including data-tracker timestamp access). Preserve raw optional
      metadata versus config defaults and service-owned ordering. Update affected
      guidance and architecture checklists; run checks/build and inspect final diff.
@@ -68,7 +68,20 @@ storage adapters. Keep Gist workflows in services.
 - Updated AGENTS.md and architecture documentation for transport ownership; #244
   remains unchecked because sync persistence is not yet extracted.
 - Temporary task 2 baseline output: `/tmp/leetsrs-244-task2-baseline`.
-- Next: task 3. Reconcile sync configuration/status keys currently accessed through
-  snapshot metadata and data-tracker; avoid competing raw-key adapters. Keep PAT
-  preservation, raw optional metadata versus config defaults, timestamp decisions,
-  and write sequencing at their current workflow points.
+- Task 3 complete: moved the raw snapshot metadata helpers into
+  `infrastructure/storage/sync-metadata.ts` and renamed them for their shared role.
+  Sync, import/export/reset, and data-tracker use this single key-access owner.
+  Snapshot now owns only raw-card access and note traversal. Config defaults,
+  partial updates, PAT preservation, status writes and timestamp decisions retain
+  their original workflow order and clock-read locations.
+- Existing tests remain at workflow boundaries: no standalone metadata tests
+  existed to move. Sync and import/reset characterization tests exercise the new
+  adapter through the same WXT mocks without changing assertions.
+- Task 3 validation: `npm run check` passed (67 files, 700 tests), production build
+  passed, and `git diff --check` passed. Only `background.js` differs from the fresh
+  task 3 baseline; manifest, popup, content script, and other assets are byte-identical.
+  No storage schema, payload, public message, or background queue changes.
+- Updated AGENTS.md, architecture documentation, refactor checklist and roadmap.
+  All #244 implementation tasks are complete. #245 and #247 remain open; no browser
+  or live GitHub testing performed. No commits, staging, PR, or GitHub mutations.
+- Temporary task 3 baseline output: `/tmp/leetsrs-244-task3-baseline`.

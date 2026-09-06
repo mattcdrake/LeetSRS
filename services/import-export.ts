@@ -8,16 +8,14 @@ import {
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
 import {
   readSnapshotCards,
-  readSnapshotMetadata,
   readSnapshotNotes,
   removeSnapshotCards,
-  removeSnapshotMetadata,
   removeSnapshotNotes,
   writeSnapshotCards,
-  writeSnapshotMetadata,
   writeSnapshotNotes,
 } from '@/infrastructure/storage/snapshot';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
+import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
@@ -27,10 +25,10 @@ export async function exportData(): Promise<string> {
 
   const settings = await exportSettings();
 
-  const gistId = await readSnapshotMetadata('gistId');
-  const gistSyncEnabled = await readSnapshotMetadata('gistSyncEnabled');
+  const gistId = await readSyncMetadata('gistId');
+  const gistSyncEnabled = await readSyncMetadata('gistSyncEnabled');
 
-  const dataUpdatedAt = await readSnapshotMetadata('dataUpdatedAt');
+  const dataUpdatedAt = await readSyncMetadata('dataUpdatedAt');
 
   const schemaVersion = await getCurrentSchemaVersion();
 
@@ -67,12 +65,12 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
-  const existingPat = await readSnapshotMetadata('githubPat');
+  const existingPat = await readSyncMetadata('githubPat');
 
   await resetAllData();
 
   if (existingPat) {
-    await writeSnapshotMetadata('githubPat', existingPat);
+    await writeSyncMetadata('githubPat', existingPat);
   }
 
   await writeSnapshotCards(preparedData.cards);
@@ -85,14 +83,14 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
 
   if (preparedData.gistSync) {
     if (preparedData.gistSync.gistId != null) {
-      await writeSnapshotMetadata('gistId', preparedData.gistSync.gistId);
+      await writeSyncMetadata('gistId', preparedData.gistSync.gistId);
     }
     if (preparedData.gistSync.enabled != null) {
-      await writeSnapshotMetadata('gistSyncEnabled', preparedData.gistSync.enabled);
+      await writeSyncMetadata('gistSyncEnabled', preparedData.gistSync.enabled);
     }
   }
 
-  await writeSnapshotMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
+  await writeSyncMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
 }
 
 export async function importData(jsonData: string): Promise<void> {
@@ -107,12 +105,12 @@ export async function resetAllData(): Promise<void> {
   await removeStats();
   await resetSettings();
 
-  await removeSnapshotMetadata('githubPat');
-  await removeSnapshotMetadata('gistId');
-  await removeSnapshotMetadata('gistSyncEnabled');
-  await removeSnapshotMetadata('lastSyncTime');
-  await removeSnapshotMetadata('lastSyncDirection');
-  await removeSnapshotMetadata('dataUpdatedAt');
+  await removeSyncMetadata('githubPat');
+  await removeSyncMetadata('gistId');
+  await removeSyncMetadata('gistSyncEnabled');
+  await removeSyncMetadata('lastSyncTime');
+  await removeSyncMetadata('lastSyncDirection');
+  await removeSyncMetadata('dataUpdatedAt');
 
   if (cards) {
     await removeSnapshotNotes(cards);
