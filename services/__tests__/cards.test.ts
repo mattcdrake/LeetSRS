@@ -1701,28 +1701,6 @@ describe('getReviewQueue', () => {
     expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
   });
 
-  it('should sort cards by due date then slug for stable ordering', async () => {
-    // Create cards with specific due dates
-    await addCard({ slug: 'card-c', name: 'Card C', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({ slug: 'card-a', name: 'Card A', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
-    await addCard({ slug: 'card-b', name: 'Card B', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
-
-    // Set same due date for all cards
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    const sameTime = new Date('2024-01-15T10:00:00').getTime();
-    requireDefined(cards)['card-c'].fsrs.due = sameTime;
-    requireDefined(cards)['card-a'].fsrs.due = sameTime;
-    requireDefined(cards)['card-b'].fsrs.due = sameTime;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should be sorted by slug when due dates are the same
-    expect(queue[0].slug).toBe('card-a');
-    expect(queue[1].slug).toBe('card-b');
-    expect(queue[2].slug).toBe('card-c');
-  });
-
   it('should maintain stable order across multiple calls', async () => {
     // Create multiple cards
     for (let i = 1; i <= 5; i++) {
@@ -1933,48 +1911,6 @@ describe('getReviewQueue', () => {
     // Cards selected should be consistent (first N alphabetically)
     expect(queue[0].slug).toBe('card-1');
     expect(queue[1].slug).toBe('card-10'); // '10' comes after '1' in string sort
-  });
-
-  it('should properly sort by due date timestamps', async () => {
-    // Create cards and rate them to get different due times
-    await addCard({ slug: 'early', name: 'Early', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({ slug: 'middle', name: 'Middle', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
-    await addCard({ slug: 'late', name: 'Late', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
-
-    // Set specific due times
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    requireDefined(cards).early.fsrs.due = new Date('2024-01-15T06:00:00').getTime();
-    requireDefined(cards).middle.fsrs.due = new Date('2024-01-15T12:00:00').getTime();
-    requireDefined(cards).late.fsrs.due = new Date('2024-01-15T18:00:00').getTime();
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should be in chronological order
-    expect(queue[0].slug).toBe('early');
-    expect(queue[1].slug).toBe('middle');
-    expect(queue[2].slug).toBe('late');
-  });
-
-  it('should handle cards with millisecond-precision due times', async () => {
-    await addCard({ slug: 'card-a', name: 'Card A', leetcodeId: '1001', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({ slug: 'card-b', name: 'Card B', leetcodeId: '1002', difficulty: 'Medium', domain: 'leetcode.com' });
-    await addCard({ slug: 'card-c', name: 'Card C', leetcodeId: '1003', difficulty: 'Hard', domain: 'leetcode.com' });
-
-    // Set due times with millisecond differences
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
-    const baseTime = new Date('2024-01-15T10:00:00').getTime();
-    requireDefined(cards)['card-a'].fsrs.due = baseTime + 100; // 100ms later
-    requireDefined(cards)['card-b'].fsrs.due = baseTime + 50; // 50ms later
-    requireDefined(cards)['card-c'].fsrs.due = baseTime + 150; // 150ms later
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should be sorted by exact millisecond times
-    expect(queue[0].slug).toBe('card-b'); // +50ms
-    expect(queue[1].slug).toBe('card-a'); // +100ms
-    expect(queue[2].slug).toBe('card-c'); // +150ms
   });
 
   it('should handle empty queue gracefully', async () => {

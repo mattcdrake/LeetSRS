@@ -13,7 +13,7 @@ introduce operation snapshots (#218) or extract persistence (#241).
   existing calculation tests and updating consumers. Keep implicit clock reads
   at service call sites; domain calculations take explicit reference dates.
   Preserve default behavior where callers currently omit a date. Run checks/build.
-- [ ] 3. Extract scheduling, delay-date, sorting, and queue calculations into
+- [x] 3. Extract scheduling, delay-date, sorting, and queue calculations into
   domain modules. Preserve the FSRS singleton and maximum interval of 1000.
   Keep per-unpaused-card clock reads during eligibility checks and the later
   statistics read in services; split calculations around those existing reads.
@@ -37,3 +37,12 @@ with an additional regression test. Queue, statistics, and editor-reset clock
 locations are unchanged. Full checks passed (53 files, 604 tests); production
 build passed. Manifest, content script, and popup output match the baseline;
 the generated background bundle differs after extraction.
+
+Task 3 results: extracted scheduling/delay helpers and queue partitioning,
+sorting, and daily-limit calculations. FSRS construction and parameters remain
+at the original service location; scheduling receives that same instance. The
+per-card clock reads and statistics/settings reads retain their order. Moved
+three sorting tests to the domain and added limit/nonmutation and calendar-date
+cases; retained service rating, delay, eligibility, and timing coverage. Full
+checks passed (55 files, 615 tests), and production build passed. Manifest, popup,
+and content output match the original baseline; background output differs.
