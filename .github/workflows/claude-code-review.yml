@@ -31,8 +31,8 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Progress tracking injects checklist and summary instructions into reviews.
-          track_progress: false
+          # Progress tracking is not supported for review_requested runs.
+          track_progress: ${{ github.event.action != 'review_requested' }}
 
           prompt: |
             REPO: ${{ github.repository }}
@@ -42,4 +42,4 @@ jobs:
 
           claude_args: |
             --append-system-prompt-file .github/code-review-guidelines.md
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
