@@ -1,7 +1,7 @@
 import { storage } from '#imports';
+import type { Language } from '@/domain/settings';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { type Translations, translations } from '@/shared/i18n';
-import type { Language } from '@/shared/settings';
-import { STORAGE_KEYS } from './storage-keys';
 
 const DEFAULT_LANGUAGE: Language = 'en';
 

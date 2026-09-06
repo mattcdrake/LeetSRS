@@ -5,7 +5,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Card } from '@/shared/cards';
+import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/shared/messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';

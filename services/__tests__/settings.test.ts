@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { SETTINGS_CONSTRAINTS, type Settings } from '@/shared/settings';
+import { SETTINGS_CONSTRAINTS, type Settings } from '@/domain/settings';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { exportSettings, getSettings, resetSettings, updateSettings } from '../settings';
-import { STORAGE_KEYS } from '../storage-keys';
 
 describe('settings service', () => {
   beforeEach(() => fakeBrowser.reset());

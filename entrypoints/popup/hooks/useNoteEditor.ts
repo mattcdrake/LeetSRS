@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import { NOTES_MAX_LENGTH } from '@/domain/notes';
 import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/entrypoints/popup/queries/notes';
-import { NOTES_MAX_LENGTH } from '@/shared/notes';
 
 export interface NoteEditor {
   text: string;

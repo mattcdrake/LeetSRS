@@ -2,7 +2,7 @@
  * Domain utilities for supporting both leetcode.com and leetcode.cn
  */
 
-import type { LeetcodeDomain } from '@/shared/cards';
+import type { LeetcodeDomain } from '@/domain/cards';
 
 type LeetCodeWindow = Window & {
   next?: {

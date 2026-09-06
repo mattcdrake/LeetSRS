@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { STORAGE_KEYS } from '../storage-keys';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 
 // Mock Octokit
 const mockGetAuthenticated = vi.fn();

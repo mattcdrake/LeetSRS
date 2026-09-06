@@ -5,7 +5,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Card } from '@/shared/cards';
+import type { Card } from '@/domain/cards';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
 

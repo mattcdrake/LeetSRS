@@ -5,7 +5,10 @@ import {
   type MaybePromise,
 } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
-import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/shared/cards';
+import type { Card, LeetcodeDomain, ProblemDescriptor, RateCardInput } from '@/domain/cards';
+import type { Note } from '@/domain/notes';
+import type { Settings } from '@/domain/settings';
+import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
 import type {
   GistSyncConfig,
   GistSyncStatus,
@@ -13,9 +16,6 @@ import type {
   PatValidationResult,
   SyncResult,
 } from '@/shared/gist-sync';
-import type { Note } from '@/shared/notes';
-import type { Settings } from '@/shared/settings';
-import type { DailyStats, UpcomingReviewStats } from '@/shared/stats';
 
 export interface ExtensionMessageMap {
   ping(): 'PONG';

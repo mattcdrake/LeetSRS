@@ -1,9 +1,9 @@
 import { storage } from '#imports';
+import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/domain/settings';
+import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { translations } from '@/shared/i18n';
-import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from '@/shared/settings';
-import { markDataUpdated } from './data-tracker';
 import { detectBrowserLanguage } from './i18n';
-import { STORAGE_KEYS } from './storage-keys';
 
 const DEFAULT_MAX_NEW_CARDS_PER_DAY = 3;
 const DEFAULT_DAY_START_HOUR = 0;

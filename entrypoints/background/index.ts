@@ -1,8 +1,8 @@
 import { browser } from 'wxt/browser';
+import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
+import { migrations, runMigrations } from '@/infrastructure/storage/migrations';
 import { getReviewQueue } from '@/services/cards';
-import { markDataUpdated } from '@/services/data-tracker';
 import { getGistSyncConfig } from '@/services/github-sync';
-import { migrations, runMigrations } from '@/services/migrations';
 import { getSettings } from '@/services/settings';
 import { messages, registerBackgroundMessages } from './messaging';
 

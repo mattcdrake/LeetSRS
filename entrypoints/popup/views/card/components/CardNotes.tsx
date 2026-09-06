@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Button, Label, TextArea, TextField } from 'react-aria-components';
+import { NOTES_MAX_LENGTH } from '@/domain/notes';
 import { useNoteEditor } from '@/entrypoints/popup/hooks/useNoteEditor';
 import { bounceButton } from '@/entrypoints/popup/styles';
-import { NOTES_MAX_LENGTH } from '@/shared/notes';
 import { useI18n } from '../../../contexts/I18nContext';
 
 const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40

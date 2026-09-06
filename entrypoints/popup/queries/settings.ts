@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import type { Settings } from '@/domain/settings';
 import { sendMessage } from '@/shared/messages';
-import type { Settings } from '@/shared/settings';
 import { cardQueryKeys } from './cards';
 import { statsQueryKeys } from './stats';
 

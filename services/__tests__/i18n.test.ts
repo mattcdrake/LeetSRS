@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { translations } from '@/shared/i18n';
 import { getServiceTranslations } from '../i18n';
-import { STORAGE_KEYS } from '../storage-keys';
 
 describe('service i18n', () => {
   beforeEach(() => {

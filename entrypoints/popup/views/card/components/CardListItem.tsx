@@ -1,11 +1,11 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
+import type { Card } from '@/domain/cards';
 import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { getLeetcodeProblemUrl } from '@/entrypoints/popup/leetcode';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/entrypoints/popup/queries/cards';
 import { bounceButton } from '@/entrypoints/popup/styles';
-import type { Card } from '@/shared/cards';
 import type { Translations } from '@/shared/i18n';
 import { useI18n } from '../../../contexts/I18nContext';
 import { CardNotes } from './CardNotes';
