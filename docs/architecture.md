@@ -11,8 +11,8 @@ planned behavior, not the current storage model.
 
 The popup and LeetCode content script send typed commands to one background
 owner of learning-data mutations. Services coordinate portable domain rules and
-storage adapters. Gist synchronization still owns its Octokit calls and direct
-configuration/status storage access pending #244.
+storage adapters. Gist synchronization uses the GitHub transport adapter; direct
+configuration/status storage access remains pending the final step of #244.
 
 ```mermaid
 flowchart TD
@@ -33,7 +33,8 @@ flowchart TD
   Startup[Startup and migrations] --> Storage
   Sync --> Services
   Sync --> Storage
-  Sync --> GitHub[GitHub Gist via Octokit]
+  Sync --> Transport[GitHub transport adapter]
+  Transport --> GitHub[GitHub Gist via Octokit]
   Executor --> Badge[Extension badge]
 ```
 
@@ -49,7 +50,8 @@ not separate processes.
 | Services | Clock/settings reads, FSRS lifetime, multi-entity workflows | [cards](../services/cards.ts), [settings](../services/settings.ts), [import/export](../services/import-export.ts) |
 | Storage | Raw records, card/backup codecs, snapshot traversal, settings access, migrations | [cards](../infrastructure/storage/cards.ts), [snapshot](../infrastructure/storage/snapshot.ts), [backup codec](../infrastructure/storage/backup-codec.ts), [migrations](../infrastructure/storage/migrations.ts) |
 | Language | Portable selection/dictionaries, browser detection, stored-language loading | [selection](../shared/i18n/language.ts), [browser adapter](../infrastructure/browser/language.ts), [loader](../infrastructure/storage/translations.ts) |
-| Gist sync | Whole-snapshot comparison, backup reuse, Octokit requests, sync configuration/status | [sync service](../services/github-sync.ts) |
+| Gist sync | Whole-snapshot comparison, backup reuse, sync configuration/status, response/error policy | [sync service](../services/github-sync.ts) |
+| GitHub transport | Per-operation Octokit clients and unchanged authentication/Gist requests | [client](../infrastructure/github/client.ts) |
 
 ### Ownership and dependencies
 
@@ -57,6 +59,9 @@ not separate processes.
   integration, storage, or messaging, including storage-only types.
 - `services/` owns workflows, clock/settings reads, and cross-entity side-effect
   order. Infrastructure must not import services or UI.
+- `infrastructure/github/` owns Octokit construction and request arguments. Services
+  choose when to create each client, reuse it within the operation, and retain
+  localization reads, response/error handling, timestamps, and sync state.
 - `infrastructure/storage/` owns storage keys and persisted representations.
   Learning workflows retain raw card records privately and decode only requested
   cards. Stats and editor-reset projections read through card persistence, so
@@ -131,7 +136,7 @@ feature work resumes. Completed extractions are recorded in the
 
 | Issue | Remaining work |
 | --- | --- |
-| #244 | Extract Octokit transport and sync configuration/status storage. Reconcile metadata access already in `snapshot.ts`; preserve service-owned PAT/timestamp policy and network queue scope. |
+| #244 | Transport is extracted; extract sync configuration/status storage. Reconcile metadata access already in `snapshot.ts`; preserve service-owned PAT/timestamp policy and network queue scope. |
 | #245 | Move content mounting/orchestration out of the WXT entrypoint, preserving calls and lifecycle. Language adapters are already separated. |
 | #247 | Enforce runtime and type-only dependency boundaries, finish documentation, compare compatibility fixtures/builds, and resolve required extension smoke-test gaps. |
 

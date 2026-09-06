@@ -21,7 +21,7 @@ storage adapters. Keep Gist workflows in services.
 - [x] 1. Characterize transport arguments and sync side-effect ordering, including
      localization, timestamp fallback, no-change, and failures. Record baseline and
      passing checks/build; leave production code unchanged for this review checkpoint.
-- [ ] 2. Extract GitHub transport, retaining client creation at existing workflow
+- [x] 2. Extract GitHub transport, retaining client creation at existing workflow
      points and service-owned validation/error policy. Move transport-only tests as
      appropriate, retain workflow tests, run checks/build and compare output.
 - [ ] 3. Extract sync configuration/status persistence and reconcile snapshot
@@ -54,7 +54,21 @@ storage adapters. Keep Gist workflows in services.
 - Manifest baseline: permissions `storage`, `alarms`, `activeTab`; host permission
   `*://*.leetcode.com/*`; optional host permission `*://*.leetcode.cn/*`.
   Runtime entrypoints: `popup.html`, `background.js`, `content-scripts/content.js`.
-- Next: task 2 (GitHub transport extraction). Keep characterization tests at the
-  service boundary where they assert workflow sequencing; move only transport-only
-  coverage. Task 3 will reconcile sync keys currently accessed through snapshot
-  metadata and data-tracker; avoid introducing competing raw-key adapters.
+- Task 2 complete: `infrastructure/github/client.ts` owns Octokit construction,
+  authentication/Gist requests, and the backup filename. Its methods return the
+  original request promises; response/error policy stays in services. Each workflow
+  creates its client at the same point and sync reuses it for fetch/update.
+- Existing tests remain unchanged at the service boundary: they exercise validation,
+  workflow sequencing, and storage outcomes through the real transport adapter and
+  mocked Octokit. There were no standalone transport-only tests to relocate.
+- Task 2 validation: `npm run check` passed (67 files, 700 tests), production build
+  passed, and `git diff --check` passed. Only `background.js` differs from the fresh
+  task 2 baseline; manifest, popup, content script and all other assets are
+  byte-identical. No browser or live GitHub testing performed.
+- Updated AGENTS.md and architecture documentation for transport ownership; #244
+  remains unchecked because sync persistence is not yet extracted.
+- Temporary task 2 baseline output: `/tmp/leetsrs-244-task2-baseline`.
+- Next: task 3. Reconcile sync configuration/status keys currently accessed through
+  snapshot metadata and data-tracker; avoid competing raw-key adapters. Keep PAT
+  preservation, raw optional metadata versus config defaults, timestamp decisions,
+  and write sequencing at their current workflow points.
