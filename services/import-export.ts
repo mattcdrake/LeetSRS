@@ -2,9 +2,9 @@ import { storage } from '#imports';
 import type { Note } from '@/domain/notes';
 import type { Settings } from '@/domain/settings';
 import type { DailyStats } from '@/domain/stats';
+import type { StoredCard } from '@/infrastructure/storage/card-codec';
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import type { StoredCard } from './cards';
 import { exportSettings, resetSettings, updateSettings, validateSettings } from './settings';
 
 export interface ExportData {

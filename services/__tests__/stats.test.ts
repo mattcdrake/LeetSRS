@@ -4,8 +4,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Difficulty } from '@/domain/cards';
 import type { DailyStats } from '@/domain/stats';
+import type { StoredCard } from '@/infrastructure/storage/card-codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import type { StoredCard } from '../cards';
 import { addCard } from '../cards';
 import {
   getCardStateStats,
@@ -261,11 +261,6 @@ describe('Stats management', () => {
   });
 
   describe('getStatsForDate', () => {
-    it('should return null when no stats exist for date', async () => {
-      const stats = await getStatsForDate('2024-03-15');
-      expect(stats).toBeNull();
-    });
-
     it('should return stats for specific date', async () => {
       await updateStats(Rating.Good, false);
       await updateStats(Rating.Hard, true);

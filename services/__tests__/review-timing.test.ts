@@ -3,10 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { DailyStats } from '@/domain/stats';
+import { serializeCard } from '@/infrastructure/storage/card-codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { getReviewQueue, isDueByDate, serializeCard } from '../cards';
+import { getReviewQueue, isDueByDate } from '../cards';
 import { getSettings } from '../settings';
 import { getLastNDaysStats, getNextNDaysStats, getTodayKey, getYesterdayKey, updateStats } from '../stats';
 

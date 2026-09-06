@@ -27,7 +27,8 @@ Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name file
 ## Architecture Invariants
 
 - Extend `ExtensionMessageMap` in `shared/messages.ts` and register the corresponding typed `onMessage` handler in `entrypoints/background/index.ts`.
-- Persist cards as `StoredCard`; serialize and deserialize at the storage boundary.
+- Keep `StoredCard` and card codecs in `infrastructure/storage/card-codec.ts` (snapshot contracts may import the type). Learning workflows use `infrastructure/storage/cards.ts`; preserve loaded records and decode only requested cards.
+- Keep card/stat/note storage access in `infrastructure/storage/`; services retain validation, clock/settings reads, and multi-entity write order. Stored records and note keys stay inside persistence except explicit snapshot contracts.
 - Route schema changes through a new, sequential migration in `infrastructure/storage/migrations.ts`.
 - Use `formatLocalDate` and `isDueByDate` from `domain/review-day.ts` with explicit dates and `dayStartHour` for review-day comparisons; do not compare raw timestamps.
 - Keep clock/settings reads and persistence sequencing in services; domain calculations take explicit inputs. Preserve the service-owned FSRS instance and parameters.

@@ -1,24 +1,10 @@
-import { storage } from '#imports';
-import { type Note, validateNoteText } from '@/domain/notes';
-import { getNoteStorageKey } from '@/infrastructure/storage/storage-keys';
+import { validateNoteText } from '@/domain/notes';
+import { saveNote as writeNote } from '@/infrastructure/storage/notes';
 
-export async function getNote(cardId: string): Promise<Note | null> {
-  const key = getNoteStorageKey(cardId);
-  const note = await storage.getItem<Note>(key);
-  return note ?? null;
-}
+export { deleteNote, getNote } from '@/infrastructure/storage/notes';
 
 export async function saveNote(cardId: string, text: string): Promise<void> {
   validateNoteText(text);
 
-  const key = getNoteStorageKey(cardId);
-  const note: Note = {
-    text,
-  };
-  await storage.setItem(key, note);
-}
-
-export async function deleteNote(cardId: string): Promise<void> {
-  const key = getNoteStorageKey(cardId);
-  await storage.removeItem(key);
+  await writeNote(cardId, text);
 }
