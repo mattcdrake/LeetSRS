@@ -1,5 +1,6 @@
+import type { Language } from './language';
+
 export type Theme = 'system' | 'light' | 'dark';
-export type Language = 'de' | 'en' | 'hi' | 'pl' | 'zh-CN';
 
 export const SETTINGS_CONSTRAINTS = {
   maxNewCardsPerDay: { min: 0, max: 100 },

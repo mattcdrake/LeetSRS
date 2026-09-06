@@ -1,8 +1,7 @@
 import { storage } from '#imports';
-import type { Language } from '@/domain/settings';
+import { getSupportedLanguage, type Language } from '@/domain/language';
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { type Translations, translations } from '@/shared/i18n';
-import { getSupportedLanguage } from '@/shared/i18n/language';
 import { STORAGE_KEYS } from './storage-keys';
 
 export async function getStoredTranslations(): Promise<Translations> {

@@ -105,7 +105,7 @@ The catalog itself has no browser, storage, service, or UI dependencies.
 
 - [x] Move sync models and update their imports.
 - [x] Move messaging and update all consumers and mock module paths together.
-- [ ] Extract the language registry and rules; update settings policy and language
+- [x] Extract the language registry and rules; update settings policy and language
       type imports while preserving the characterized behavior.
 - [ ] Move the dictionaries and language tests, then update translation consumers
       and the catalog's new-language instructions.

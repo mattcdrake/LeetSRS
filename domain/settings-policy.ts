@@ -1,5 +1,5 @@
-import { translations } from '@/shared/i18n';
-import { type Language, SETTINGS_CONSTRAINTS, type Settings, type Theme } from './settings';
+import { getSupportedLanguage, type Language, SUPPORTED_LANGUAGES } from './language';
+import { SETTINGS_CONSTRAINTS, type Settings, type Theme } from './settings';
 
 // Language defaults are resolved from browser preferences by the service.
 export const DEFAULT_SETTINGS = {
@@ -58,9 +58,9 @@ const SETTINGS_REGISTRY = {
     validationError: () => 'Badge enabled must be a boolean',
   },
   language: {
-    validate: (value): value is Language => typeof value === 'string' && value in translations,
+    validate: (value): value is Language => getSupportedLanguage(value) !== undefined,
     validationError: (value) =>
-      `Unsupported language: ${String(value)}. Supported languages: ${Object.keys(translations).join(', ')}`,
+      `Unsupported language: ${String(value)}. Supported languages: ${Object.keys(SUPPORTED_LANGUAGES).join(', ')}`,
   },
 } satisfies SettingsRegistry;
 
