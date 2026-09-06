@@ -90,30 +90,22 @@ describe('backup workflow characterization', () => {
     expect(JSON.parse(await exporting).exportDate).toBe(incomingTime);
   });
 
-  it('retains shallow validation, unknown fields, and current-setting precedence over legacy values', async () => {
-    const prepared = await prepareImportData(
-      JSON.stringify({
-        ...payload,
-        data: {
-          ...payload.data,
-          settings: {
-            resetEditorOnEveryProblem: false,
-            autoClearLeetcode: true,
-            animationsEnabled: 'ignored',
-            unknownSetting: 'retained',
-          },
-        },
-      })
-    );
-    expect(prepared).toEqual({
-      ...payload.data,
-      settings: { resetEditorOnEveryProblem: false, unknownSetting: 'retained' },
-      dataUpdatedAt: incomingTime,
-    });
-    const arrays = await prepareImportData(
-      JSON.stringify({ exportDate: 'not-validated-as-date', data: { cards: [], stats: [], notes: [] } })
-    );
-    expect(arrays).toEqual({ cards: [], stats: [], notes: [], settings: {}, dataUpdatedAt: now });
+  it('rejects malformed input before schema I/O and validates records only after it succeeds', async () => {
+    const failure = new Error('schema unavailable');
+    const read = vi.spyOn(storage, 'getItem').mockRejectedValue(failure);
+    await expect(prepareImportData('invalid json')).rejects.toThrow('Invalid JSON format');
+    await expect(prepareImportData('{}')).rejects.toThrow('Invalid export data structure');
+    expect(read).not.toHaveBeenCalled();
+
+    await expect(
+      prepareImportData(
+        JSON.stringify({
+          ...payload,
+          data: { ...payload.data, cards: null },
+        })
+      )
+    ).rejects.toBe(failure);
+    expect(read).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.schemaVersion);
   });
 
   it('generates a missing import timestamp after the schema read, preserving an empty timestamp', async () => {

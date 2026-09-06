@@ -1,5 +1,6 @@
 import { Octokit } from 'octokit';
 import { storage } from '#imports';
+import type { ExportData } from '@/infrastructure/storage/backup-codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type {
@@ -9,7 +10,6 @@ import type {
   PatValidationResult,
   SyncResult,
 } from '@/shared/gist-sync';
-import type { ExportData } from './import-export';
 import { exportData, importData } from './import-export';
 
 const GIST_FILENAME = 'leetsrs-backup.json';

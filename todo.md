@@ -18,7 +18,7 @@ or GitHub transport extraction (#244). Never commit or stage changes.
 - [x] 1. Characterize deterministic exports, permissive import preparation,
       clock timing, reset/restore ordering and failures, and PAT behavior. Run
       baseline and final checks/build; leave production code unchanged.
-- [ ] 2. Extract payload types and pure import transformations into a portable
+- [x] 2. Extract payload types and pure import transformations into a portable
       backup codec; keep schema and conditional clock reads in the service at
       their existing positions. Move calculation coverage with the codec, retain
       service sequencing tests, update consumers, and run checks/build.
@@ -41,5 +41,24 @@ or GitHub transport extraction (#244). Never commit or stage changes.
   shallow record/array acceptance and legacy-setting precedence; schema/clock
   timing; reset/restore order; intermediate settings timestamps; partial reset
   and restore failures; truthy/empty/missing PAT handling; schema/orphan retention.
-- Remaining: task 2 (codec/types), then task 3 (snapshot persistence and guidance).
+- Task 2 implementation: infrastructure/storage/backup-codec.ts owns backup
+  payload contracts and JSON serialization/parsing. domain/backup-import.ts owns
+  structure/schema acceptance, shallow validation, and legacy settings conversion.
+  Domain policy uses generic pass-through record types, with no storage imports.
+  Services retain structure validation before schema I/O, normalization after
+  schema I/O, and the conditional clock read afterward. Storage workflows unchanged.
+- User clarification: serialization and persisted payload contracts belong beside
+  the card codec; import compatibility and validation are domain policy. Keep
+  these responsibilities separate; neither sharing nor purity establishes ownership.
+- Policy characterization moved to domain tests; JSON tests remain beside the
+  codec. Service persistence/failure/timing tests remain at the workflow boundary.
+- Prior task 2 checks passed (65 files, 684 tests) and build passed with the existing
+  large-chunk warning; only background.js differed from the task 2 baseline.
+- Updated AGENTS.md and local architecture docs for the policy/codec split.
+  Snapshot extraction and the overall #243 checklist remain incomplete.
+- Policy/codec split verified: required checks passed (66 files, 686 tests);
+  production build passed with the existing large-chunk warning. Only background.js
+  differs from the pre-split build; manifest, popup, content, and assets are
+  byte-identical. Existing workflow timing and failure characterization passes.
+- Remaining: task 3 (snapshot persistence and final guidance/checklists).
   Browser testing has not been performed.

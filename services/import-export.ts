@@ -1,46 +1,17 @@
 import { storage } from '#imports';
+import { normalizeImportData, validateImportStructure } from '@/domain/backup-import';
 import type { Note } from '@/domain/notes';
-import type { Settings } from '@/domain/settings';
-import { validateSettings } from '@/domain/settings-policy';
 import type { DailyStats } from '@/domain/stats';
+import {
+  type ExportData,
+  encodeExportData,
+  type PreparedImportData,
+  parseImportData,
+} from '@/infrastructure/storage/backup-codec';
 import type { StoredCard } from '@/infrastructure/storage/card-codec';
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { exportSettings, resetSettings, updateSettings } from './settings';
-
-export interface ExportData {
-  schemaVersion: number;
-  exportDate: string;
-  dataUpdatedAt?: string;
-  data: {
-    cards: Record<string, StoredCard>;
-    stats: Record<string, DailyStats>;
-    notes: Record<string, Note>;
-    settings: Partial<Settings>;
-    gistSync?: {
-      gistId?: string;
-      enabled?: boolean;
-    };
-  };
-}
-
-type ImportData = Omit<ExportData, 'data'> & {
-  data: Omit<ExportData['data'], 'settings'> & {
-    settings: ExportData['data']['settings'] & {
-      animationsEnabled?: boolean;
-      autoClearLeetcode?: boolean;
-    };
-  };
-};
-
-type PreparedImportData = {
-  cards: Record<string, StoredCard>;
-  stats: Record<string, DailyStats>;
-  notes: Record<string, Note>;
-  settings: Partial<Settings>;
-  gistSync?: ExportData['data']['gistSync'];
-  dataUpdatedAt: string;
-};
 
 export async function exportData(): Promise<string> {
   const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
@@ -80,62 +51,18 @@ export async function exportData(): Promise<string> {
     },
   };
 
-  return JSON.stringify(exportData, null, 2);
-}
-
-function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
-  if (!settings) return {};
-
-  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
-  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
-  return {
-    ...currentSettings,
-    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
-  };
+  return encodeExportData(exportData);
 }
 
 export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
-  let data: ImportData;
-  try {
-    data = JSON.parse(jsonData);
-  } catch {
-    throw new Error('Invalid JSON format');
-  }
-
-  // Validate structure (schemaVersion is optional for backward compat with legacy exports)
-  if (!data.exportDate || !data.data) {
-    throw new Error('Invalid export data structure');
-  }
-
+  const data = parseImportData(jsonData);
+  validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
-  const importedSchema = data.schemaVersion ?? 0; // Legacy exports without schemaVersion = 0
-
-  if (importedSchema > currentSchema) {
-    throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
-  }
-
-  if (typeof data.data.cards !== 'object' || data.data.cards === null) {
-    throw new Error('Invalid cards data');
-  }
-
-  if (typeof data.data.stats !== 'object' || data.data.stats === null) {
-    throw new Error('Invalid stats data');
-  }
-
-  if (typeof data.data.notes !== 'object' || data.data.notes === null) {
-    throw new Error('Invalid notes data');
-  }
-
-  const importedSettings = getImportedSettings(data.data.settings);
-  validateSettings(importedSettings);
+  const preparedData = normalizeImportData(data, currentSchema);
 
   return {
-    cards: data.data.cards,
-    stats: data.data.stats,
-    notes: data.data.notes,
-    settings: importedSettings,
-    gistSync: data.data.gistSync,
-    dataUpdatedAt: data.dataUpdatedAt ?? new Date().toISOString(),
+    ...preparedData,
+    dataUpdatedAt: preparedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }
 
