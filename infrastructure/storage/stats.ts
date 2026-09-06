@@ -15,3 +15,7 @@ export async function getStatsForDate(date: string): Promise<DailyStats | null> 
 export async function saveStats(stats: Record<string, DailyStats>): Promise<void> {
   await storage.setItem(STORAGE_KEYS.stats, stats);
 }
+
+export function removeStats(): Promise<void> {
+  return storage.removeItem(STORAGE_KEYS.stats);
+}

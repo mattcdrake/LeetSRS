@@ -1,66 +1,36 @@
-import { storage } from '#imports';
-import type { Note } from '@/domain/notes';
-import type { Settings } from '@/domain/settings';
-import { validateSettings } from '@/domain/settings-policy';
-import type { DailyStats } from '@/domain/stats';
-import type { StoredCard } from '@/infrastructure/storage/card-codec';
+import { normalizeImportData, validateImportStructure } from '@/domain/backup-import';
+import {
+  type ExportData,
+  encodeExportData,
+  type PreparedImportData,
+  parseImportData,
+} from '@/infrastructure/storage/backup-codec';
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import {
+  readSnapshotCards,
+  readSnapshotMetadata,
+  readSnapshotNotes,
+  removeSnapshotCards,
+  removeSnapshotMetadata,
+  removeSnapshotNotes,
+  writeSnapshotCards,
+  writeSnapshotMetadata,
+  writeSnapshotNotes,
+} from '@/infrastructure/storage/snapshot';
+import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
-export interface ExportData {
-  schemaVersion: number;
-  exportDate: string;
-  dataUpdatedAt?: string;
-  data: {
-    cards: Record<string, StoredCard>;
-    stats: Record<string, DailyStats>;
-    notes: Record<string, Note>;
-    settings: Partial<Settings>;
-    gistSync?: {
-      gistId?: string;
-      enabled?: boolean;
-    };
-  };
-}
-
-type ImportData = Omit<ExportData, 'data'> & {
-  data: Omit<ExportData['data'], 'settings'> & {
-    settings: ExportData['data']['settings'] & {
-      animationsEnabled?: boolean;
-      autoClearLeetcode?: boolean;
-    };
-  };
-};
-
-type PreparedImportData = {
-  cards: Record<string, StoredCard>;
-  stats: Record<string, DailyStats>;
-  notes: Record<string, Note>;
-  settings: Partial<Settings>;
-  gistSync?: ExportData['data']['gistSync'];
-  dataUpdatedAt: string;
-};
-
 export async function exportData(): Promise<string> {
-  const cards = (await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards)) ?? {};
-  const stats = (await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats)) ?? {};
-
-  const notes: Record<string, Note> = {};
-  for (const card of Object.values(cards)) {
-    const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
-    const note = await storage.getItem<Note>(noteKey);
-    if (note) {
-      notes[card.id] = note;
-    }
-  }
+  const cards = (await readSnapshotCards()) ?? {};
+  const stats = await getStats();
+  const notes = await readSnapshotNotes(cards);
 
   const settings = await exportSettings();
 
-  const gistId = await storage.getItem<string>(STORAGE_KEYS.gistId);
-  const gistSyncEnabled = await storage.getItem<boolean>(STORAGE_KEYS.gistSyncEnabled);
+  const gistId = await readSnapshotMetadata('gistId');
+  const gistSyncEnabled = await readSnapshotMetadata('gistSyncEnabled');
 
-  const dataUpdatedAt = await storage.getItem<string>(STORAGE_KEYS.dataUpdatedAt);
+  const dataUpdatedAt = await readSnapshotMetadata('dataUpdatedAt');
 
   const schemaVersion = await getCurrentSchemaVersion();
 
@@ -80,96 +50,49 @@ export async function exportData(): Promise<string> {
     },
   };
 
-  return JSON.stringify(exportData, null, 2);
-}
-
-function getImportedSettings(settings: ImportData['data']['settings'] | undefined): Partial<Settings> {
-  if (!settings) return {};
-
-  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
-  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
-  return {
-    ...currentSettings,
-    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
-  };
+  return encodeExportData(exportData);
 }
 
 export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
-  let data: ImportData;
-  try {
-    data = JSON.parse(jsonData);
-  } catch {
-    throw new Error('Invalid JSON format');
-  }
-
-  // Validate structure (schemaVersion is optional for backward compat with legacy exports)
-  if (!data.exportDate || !data.data) {
-    throw new Error('Invalid export data structure');
-  }
-
+  const data = parseImportData(jsonData);
+  validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
-  const importedSchema = data.schemaVersion ?? 0; // Legacy exports without schemaVersion = 0
-
-  if (importedSchema > currentSchema) {
-    throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
-  }
-
-  if (typeof data.data.cards !== 'object' || data.data.cards === null) {
-    throw new Error('Invalid cards data');
-  }
-
-  if (typeof data.data.stats !== 'object' || data.data.stats === null) {
-    throw new Error('Invalid stats data');
-  }
-
-  if (typeof data.data.notes !== 'object' || data.data.notes === null) {
-    throw new Error('Invalid notes data');
-  }
-
-  const importedSettings = getImportedSettings(data.data.settings);
-  validateSettings(importedSettings);
+  const preparedData = normalizeImportData(data, currentSchema);
 
   return {
-    cards: data.data.cards,
-    stats: data.data.stats,
-    notes: data.data.notes,
-    settings: importedSettings,
-    gistSync: data.data.gistSync,
-    dataUpdatedAt: data.dataUpdatedAt ?? new Date().toISOString(),
+    ...preparedData,
+    dataUpdatedAt: preparedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
-  const existingPat = await storage.getItem<string>(STORAGE_KEYS.githubPat);
+  const existingPat = await readSnapshotMetadata('githubPat');
 
   await resetAllData();
 
   if (existingPat) {
-    await storage.setItem(STORAGE_KEYS.githubPat, existingPat);
+    await writeSnapshotMetadata('githubPat', existingPat);
   }
 
-  await storage.setItem(STORAGE_KEYS.cards, preparedData.cards);
+  await writeSnapshotCards(preparedData.cards);
 
-  await storage.setItem(STORAGE_KEYS.stats, preparedData.stats);
+  await saveStats(preparedData.stats);
 
-  for (const [cardId, note] of Object.entries(preparedData.notes)) {
-    const key = `${STORAGE_KEYS.notes}:${cardId}` as const;
-    await storage.setItem(key, note);
-  }
+  await writeSnapshotNotes(preparedData.notes);
 
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
     if (preparedData.gistSync.gistId != null) {
-      await storage.setItem(STORAGE_KEYS.gistId, preparedData.gistSync.gistId);
+      await writeSnapshotMetadata('gistId', preparedData.gistSync.gistId);
     }
     if (preparedData.gistSync.enabled != null) {
-      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, preparedData.gistSync.enabled);
+      await writeSnapshotMetadata('gistSyncEnabled', preparedData.gistSync.enabled);
     }
   }
 
-  await storage.setItem(STORAGE_KEYS.dataUpdatedAt, preparedData.dataUpdatedAt);
+  await writeSnapshotMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
 }
 
 export async function importData(jsonData: string): Promise<void> {
@@ -178,23 +101,20 @@ export async function importData(jsonData: string): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-  const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+  const cards = await readSnapshotCards();
 
-  await storage.removeItem(STORAGE_KEYS.cards);
-  await storage.removeItem(STORAGE_KEYS.stats);
+  await removeSnapshotCards();
+  await removeStats();
   await resetSettings();
 
-  await storage.removeItem(STORAGE_KEYS.githubPat);
-  await storage.removeItem(STORAGE_KEYS.gistId);
-  await storage.removeItem(STORAGE_KEYS.gistSyncEnabled);
-  await storage.removeItem(STORAGE_KEYS.lastSyncTime);
-  await storage.removeItem(STORAGE_KEYS.lastSyncDirection);
-  await storage.removeItem(STORAGE_KEYS.dataUpdatedAt);
+  await removeSnapshotMetadata('githubPat');
+  await removeSnapshotMetadata('gistId');
+  await removeSnapshotMetadata('gistSyncEnabled');
+  await removeSnapshotMetadata('lastSyncTime');
+  await removeSnapshotMetadata('lastSyncDirection');
+  await removeSnapshotMetadata('dataUpdatedAt');
 
   if (cards) {
-    for (const card of Object.values(cards)) {
-      const noteKey = `${STORAGE_KEYS.notes}:${card.id}` as const;
-      await storage.removeItem(noteKey);
-    }
+    await removeSnapshotNotes(cards);
   }
 }
