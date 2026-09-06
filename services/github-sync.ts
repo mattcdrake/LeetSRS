@@ -1,6 +1,7 @@
 import { Octokit } from 'octokit';
 import { storage } from '#imports';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type {
   GistSyncConfig,
   GistSyncStatus,
@@ -8,7 +9,6 @@ import type {
   PatValidationResult,
   SyncResult,
 } from '@/shared/gist-sync';
-import { getServiceTranslations } from './i18n';
 import type { ExportData } from './import-export';
 import { exportData, importData } from './import-export';
 
@@ -110,7 +110,7 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   const exportJson = await exportData();
 
   const { data } = await octokit.rest.gists.create({
-    description: (await getServiceTranslations()).settings.gistSync.gistDescription,
+    description: (await getStoredTranslations()).settings.gistSync.gistDescription,
     public: false,
     files: {
       [GIST_FILENAME]: {

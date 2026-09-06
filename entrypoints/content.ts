@@ -10,7 +10,7 @@ import {
   Tooltip,
 } from '@/content';
 import type { ProblemDescriptor } from '@/domain/cards';
-import { getServiceTranslations } from '@/services/i18n';
+import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import type { Translations } from '@/shared/i18n';
 import { sendMessage } from '@/shared/messages';
 
@@ -24,7 +24,7 @@ export default defineContentScript({
     } catch (error) {
       console.error('Failed to ping service worker:', error);
     }
-    setupLeetSrsButton(await getServiceTranslations());
+    setupLeetSrsButton(await getStoredTranslations());
     setupLeetcodeAutoReset();
   },
 });
@@ -94,7 +94,7 @@ function setupLeetSrsButton(t: Translations) {
 
     ratingMenuCoordinator = new RatingMenuCoordinator({
       menu: ratingMenu,
-      getTranslations: getServiceTranslations,
+      getTranslations: getStoredTranslations,
       onError: (error) => console.error('Failed to load rating menu translations:', error),
     });
 

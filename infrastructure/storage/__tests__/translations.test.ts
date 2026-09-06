@@ -4,9 +4,9 @@ import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { translations } from '@/shared/i18n';
 import { createDeferred } from '@/test/utils/deferred';
-import { getServiceTranslations } from '../i18n';
+import { getStoredTranslations } from '../translations';
 
-describe('service i18n', () => {
+describe('stored translations', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
@@ -18,15 +18,15 @@ describe('service i18n', () => {
     fakeBrowser.reset();
   });
 
-  describe('getServiceTranslations', () => {
+  describe('getStoredTranslations', () => {
     it('should return translations object', async () => {
-      const t = await getServiceTranslations();
+      const t = await getStoredTranslations();
       expect(t).toBeDefined();
       expect(t.app.name).toBe('LeetSRS');
     });
 
     it('should have all required translation keys', async () => {
-      const t = await getServiceTranslations();
+      const t = await getStoredTranslations();
       expect(t.settings.gistSync.gistDescription).toBeDefined();
       expect(typeof t.settings.gistSync.gistDescription).toBe('string');
     });
@@ -35,14 +35,14 @@ describe('service i18n', () => {
   describe('stored language', () => {
     it('should use the current stored language', async () => {
       await storage.setItem(STORAGE_KEYS.language, 'en');
-      const t = await getServiceTranslations();
+      const t = await getStoredTranslations();
       expect(t).toBe(translations.en);
     });
 
     it('should fall back to default language for invalid storage values', async () => {
       // Simulate corrupted/invalid language in storage
       await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID');
-      expect(await getServiceTranslations()).toBe(translations.en);
+      expect(await getStoredTranslations()).toBe(translations.en);
     });
   });
 
@@ -56,7 +56,7 @@ describe('service i18n', () => {
       },
     });
 
-    const pending = getServiceTranslations();
+    const pending = getStoredTranslations();
     expect(getItem.mock.calls).toEqual([[STORAGE_KEYS.language]]);
     expect(languages).not.toHaveBeenCalled();
     languageRead.resolve(null);
@@ -73,7 +73,7 @@ describe('service i18n', () => {
       },
     });
 
-    expect(await getServiceTranslations()).toBe(translations.de);
+    expect(await getStoredTranslations()).toBe(translations.de);
     expect(languages).not.toHaveBeenCalled();
   });
 
@@ -87,7 +87,7 @@ describe('service i18n', () => {
       },
     });
 
-    await expect(getServiceTranslations()).rejects.toBe(failure);
+    await expect(getStoredTranslations()).rejects.toBe(failure);
     expect(languages).not.toHaveBeenCalled();
   });
 });
