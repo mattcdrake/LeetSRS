@@ -189,4 +189,22 @@ describe('settings service', () => {
     expect(await exportSettings()).toEqual({});
     expect(languages).not.toHaveBeenCalled();
   });
+
+  it('resolves language fallback when its own read finishes without waiting for other settings', async () => {
+    const firstRead = createDeferred<null>();
+    const detected = createDeferred<void>();
+    vi.spyOn(storage, 'getItem').mockReturnValueOnce(firstRead.promise);
+    vi.stubGlobal('navigator', {
+      get languages() {
+        detected.resolve();
+        return ['pl'];
+      },
+    });
+
+    const pending = getSettings();
+    await detected.promise;
+    vi.stubGlobal('navigator', { languages: ['de'] });
+    firstRead.resolve(null);
+    expect((await pending).language).toBe('pl');
+  });
 });
