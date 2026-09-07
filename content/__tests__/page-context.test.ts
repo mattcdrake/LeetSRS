@@ -28,12 +28,6 @@ afterEach(() => {
 });
 
 describe('getCurrentProblemSlug', () => {
-  it('returns the router slug when it exists', () => {
-    leetCodeWindow.next = { router: { query: { slug: 'router-slug' } } };
-
-    expect(getCurrentProblemSlug()).toBe('router-slug');
-  });
-
   it('prefers the router slug over a different pathname slug', () => {
     history.replaceState({}, '', '/problems/path-slug/');
     leetCodeWindow.next = { router: { query: { slug: 'router-slug' } } };

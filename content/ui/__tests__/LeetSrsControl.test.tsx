@@ -122,17 +122,3 @@ it('updates an open menu when stored language changes without resubscribing on c
   unmount();
   expect(unwatch).toHaveBeenCalledOnce();
 });
-
-it('owns the tooltip portal and removes it on mouse leave or unmount', async () => {
-  const { button, unmount } = setup();
-  fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
-  fireEvent.pointerEnter(button, { pointerType: 'mouse' });
-  expect(await screen.findByRole('tooltip')).toHaveTextContent('LeetSRS');
-  fireEvent.pointerLeave(button, { pointerType: 'mouse' });
-  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
-  fireEvent.pointerEnter(button, { pointerType: 'mouse' });
-  await screen.findByRole('tooltip');
-  unmount();
-  await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
-});

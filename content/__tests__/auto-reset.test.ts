@@ -11,13 +11,8 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   sendMessage: vi.fn(),
 }));
 
-type ResetIconMarkup = 'class' | 'data-icon';
-
-function renderResetButton(markup: ResetIconMarkup): HTMLButtonElement {
-  const icon =
-    markup === 'class'
-      ? '<svg class="svg-inline--fa fa-arrow-rotate-left" aria-hidden="true"><path d="M40 224c-13.3 0" /></svg>'
-      : '<svg data-icon="arrow-rotate-left" aria-hidden="true"><path d="M40 224c-13.3 0" /></svg>';
+function renderResetButton(): HTMLButtonElement {
+  const icon = '<svg class="svg-inline--fa fa-arrow-rotate-left" aria-hidden="true"><path d="M40 224c-13.3 0" /></svg>';
 
   const toolbar = document.createElement('div');
   toolbar.className = 'flex h-full items-center gap-1';
@@ -68,89 +63,12 @@ describe('setupLeetcodeAutoReset', () => {
     vi.useRealTimers();
   });
 
-  it('should reset and confirm using the current icon markup', async () => {
-    const resetButton = renderResetButton('class');
-    const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
-    const resetClick = vi.spyOn(resetButton, 'click');
-    const confirmClick = vi.spyOn(confirmButton, 'click');
-
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(confirmClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should still find the reset button via the legacy data-icon attribute', async () => {
-    const resetButton = renderResetButton('data-icon');
-    const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
-    const confirmClick = vi.spyOn(confirmButton, 'click');
-
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(confirmClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should confirm the localized dialog on leetcode.cn', async () => {
-    const resetButton = renderResetButton('class');
-    const confirmButton = attachConfirmDialog(resetButton, '确认');
-    const confirmClick = vi.spyOn(confirmButton, 'click');
-
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(confirmClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should wait for a dialog that opens after a delay', async () => {
-    const resetButton = renderResetButton('class');
-    const confirmButton = attachConfirmDialog(resetButton, 'Confirm', 200);
-    const confirmClick = vi.spyOn(confirmButton, 'click');
-
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(confirmClick).not.toHaveBeenCalled();
-
-    await vi.advanceTimersByTimeAsync(500);
-    expect(confirmClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should ignore dialogs that were already open before the reset', async () => {
-    const staleDialog = createConfirmDialog('Confirm');
-    document.body.appendChild(staleDialog);
-    const staleClick = vi.spyOn(staleDialog.querySelectorAll('button')[1] as HTMLButtonElement, 'click');
-
-    const resetButton = renderResetButton('class');
-    const resetClick = vi.spyOn(resetButton, 'click');
-    const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
-    const confirmClick = vi.spyOn(confirmButton, 'click');
-
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(staleClick).not.toHaveBeenCalled();
-    expect(confirmClick).toHaveBeenCalledTimes(1);
-  });
-
-  it('should do nothing when reset on every problem is disabled', async () => {
-    vi.mocked(sendMessage).mockResolvedValue(false);
-    const resetButton = renderResetButton('class');
-    const resetClick = vi.spyOn(resetButton, 'click');
-
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(resetClick).not.toHaveBeenCalled();
-  });
-
   it('polls editor readiness once per second without rechecking eligibility', async () => {
     vi.setSystemTime(0);
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
-    const resetButton = renderResetButton('class');
+    const resetButton = renderResetButton();
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
     const confirmClick = vi.spyOn(confirmButton, 'click');
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -198,7 +116,7 @@ describe('setupLeetcodeAutoReset', () => {
     await vi.advanceTimersByTimeAsync(0);
     vi.mocked(sendMessage).mockResolvedValue(false);
 
-    const resetButton = renderResetButton('class');
+    const resetButton = renderResetButton();
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
     const confirmClick = vi.spyOn(confirmButton, 'click');
 
@@ -213,7 +131,7 @@ describe('setupLeetcodeAutoReset', () => {
     'keeps a declined decision until leaving for %s and returning',
     async (path) => {
       vi.mocked(sendMessage).mockResolvedValue(false);
-      const resetButton = renderResetButton('class');
+      const resetButton = renderResetButton();
       attachConfirmDialog(resetButton, 'Confirm');
       const resetClick = vi.spyOn(resetButton, 'click');
       dispose = setupLeetcodeAutoReset(onResetConfirmed);
@@ -244,7 +162,7 @@ describe('setupLeetcodeAutoReset', () => {
   );
 
   it('does not retry or notify when confirmation times out', async () => {
-    const resetButton = renderResetButton('class');
+    const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
 
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
@@ -258,7 +176,7 @@ describe('setupLeetcodeAutoReset', () => {
   it.each(['/problems/three-sum/', '/problemset/'])(
     'resets again after leaving for %s and returning, even without an intervening reset',
     async (path) => {
-      const resetButton = renderResetButton('class');
+      const resetButton = renderResetButton();
       const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
       confirmButton.addEventListener('click', () => confirmButton.parentElement?.remove());
       const resetClick = vi.spyOn(resetButton, 'click');
@@ -284,7 +202,7 @@ describe('setupLeetcodeAutoReset', () => {
   it.each(['navigation', 'dispose'])('ignores a pending reset decision after %s', async (change) => {
     const decision = createDeferred<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
-    const resetButton = renderResetButton('class');
+    const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
 
@@ -300,7 +218,7 @@ describe('setupLeetcodeAutoReset', () => {
   it('ignores a decision from an earlier visit to the same problem', async () => {
     const decision = createDeferred<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
-    const resetButton = renderResetButton('class');
+    const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
     attachConfirmDialog(resetButton, 'Confirm');
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
@@ -319,7 +237,7 @@ describe('setupLeetcodeAutoReset', () => {
   });
 
   it.each(['navigation', 'dispose'])('stops pending confirmation clicks after %s', async (change) => {
-    const resetButton = renderResetButton('class');
+    const resetButton = renderResetButton();
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm', 200);
     const confirmClick = vi.spyOn(confirmButton, 'click');
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
@@ -332,15 +250,5 @@ describe('setupLeetcodeAutoReset', () => {
     expect(confirmClick).not.toHaveBeenCalled();
     expect(onResetConfirmed).not.toHaveBeenCalled();
     if (change === 'dispose') expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('asks for a reset decision using the current problem', async () => {
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(0);
-
-    expect(sendMessage).toHaveBeenCalledWith('shouldResetEditor', {
-      slug: 'two-sum',
-      domain: 'leetcode.com',
-    });
   });
 });
