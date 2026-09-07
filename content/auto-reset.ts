@@ -18,8 +18,7 @@ export function setupLeetcodeAutoReset(): () => void {
   let lastSlug: string | null = null;
   let lastResetSlug: string | null = null;
   let isResetting = false;
-  let lastAttemptedSlug: string | null = null;
-  let lastAttemptAt = 0;
+  let lastAttemptAt: number | null = null;
 
   const checkForNavigation = () => {
     const slug = getCurrentProblemSlug();
@@ -31,23 +30,21 @@ export function setupLeetcodeAutoReset(): () => void {
     const now = Date.now();
     if (slug !== lastSlug) {
       lastSlug = slug;
-      lastAttemptedSlug = null;
-      lastAttemptAt = 0;
+      lastAttemptAt = null;
     }
 
-    if (slug !== lastResetSlug) {
-      if (lastAttemptedSlug === slug && now - lastAttemptAt < SLUG_CHECK_INTERVAL_MS) {
-        return;
-      }
+    if (slug === lastResetSlug) return;
 
-      lastAttemptedSlug = slug;
-      lastAttemptAt = now;
-      void tryAutoReset(slug);
+    if (lastAttemptAt !== null && now - lastAttemptAt < SLUG_CHECK_INTERVAL_MS) {
+      return;
     }
+
+    lastAttemptAt = now;
+    void tryAutoReset(slug);
   };
 
   const tryAutoReset = async (slug: string) => {
-    if (isResetting || slug === lastResetSlug) {
+    if (isResetting) {
       return;
     }
 
@@ -84,9 +81,7 @@ export function setupLeetcodeAutoReset(): () => void {
 
   checkForNavigation();
 
-  const observer = new MutationObserver(() => {
-    checkForNavigation();
-  });
+  const observer = new MutationObserver(checkForNavigation);
   observer.observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('popstate', checkForNavigation);

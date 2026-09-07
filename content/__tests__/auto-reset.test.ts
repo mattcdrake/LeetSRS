@@ -143,6 +143,43 @@ describe('setupLeetcodeAutoReset', () => {
     expect(resetClick).not.toHaveBeenCalled();
   });
 
+  it('throttles repeated checks and retries after one second', async () => {
+    vi.setSystemTime(0);
+    dispose = setupLeetcodeAutoReset();
+    await vi.advanceTimersByTimeAsync(0);
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await vi.advanceTimersByTimeAsync(999);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['/problems/three-sum/', 'three-sum'],
+    ['/problemset/', 'two-sum'],
+  ])('resets the retry throttle after visiting %s', async (path, expectedSlug) => {
+    dispose = setupLeetcodeAutoReset();
+    await vi.advanceTimersByTimeAsync(100);
+
+    history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    if (path === '/problemset/') {
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      history.pushState({}, '', '/problems/two-sum/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage).toHaveBeenLastCalledWith('shouldResetEditor', {
+      slug: expectedSlug,
+      domain: 'leetcode.com',
+    });
+  });
+
   it('asks for a reset decision using the current problem', async () => {
     dispose = setupLeetcodeAutoReset();
     await vi.advanceTimersByTimeAsync(0);
