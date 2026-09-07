@@ -5,6 +5,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider } from './contexts/I18nContext';
+import { useLeetcodeCnPermissionEvents } from './queries/leetcode-cn';
+
+function PopupPermissionObserver() {
+  useLeetcodeCnPermissionEvents();
+  return null;
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,6 +32,7 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <PopupPermissionObserver />
         <Suspense
           fallback={
             <div className="popup-loading" role="status" aria-label="Loading">
