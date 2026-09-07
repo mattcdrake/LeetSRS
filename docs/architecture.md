@@ -8,7 +8,7 @@ learning-data writes. Services coordinate domain rules and persistence.
 | Location          | Owns                                                                                      |
 | ----------------- | ----------------------------------------------------------------------------------------- |
 | `entrypoints/`    | WXT registration, background executor, popup UI and query hooks                           |
-| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.ts`                |
+| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.tsx`               |
 | `domain/`         | Models (including sync), scheduling, review days, settings, language and import policy    |
 | `services/`       | Workflows, clock/settings reads, FSRS lifetime, write order, sync decisions               |
 | `infrastructure/` | Storage keys/codecs/migrations, GitHub requests, browser messaging and language detection |
@@ -32,6 +32,18 @@ Dependency rules apply to runtime and type-only imports:
 
 [Code review](../.github/code-review-guidelines.md) enforces these boundaries;
 there is no automated boundary check.
+
+## Content UI
+
+`content/ui/` owns React/React Aria presentation and Tailwind styles;
+`content/rating-actions.ts` owns problem lookup and background RPC orchestration.
+`bootstrap.tsx` mounts controls and toasts with WXT `createShadowRootUi` and
+`cssInjectionMode: 'ui'`. Portals stay inside the shadow root, using the top layer
+to avoid toolbar clipping. Theme detection follows LeetCode's page classes.
+
+WXT removal unmounts React; context invalidation also disconnects the toolbar
+observer and disposes auto-reset, which stays outside React. Components clean up
+their subscriptions and timers on unmount.
 
 ## Messages and writes
 
@@ -69,7 +81,7 @@ fields added to `ExportData`. There is no per-card merge.
 ## Language and translations
 
 Domain owns language policy; infrastructure detects browser preferences and resolves
-stored language. `i18n/` owns dictionaries, and the popup owns presentation. Settings
+stored language. `i18n/` owns dictionaries; popup and content UI own presentation. Settings
 policy uses the domain language registry without loading dictionaries.
 
 Future changes belong in the [roadmap](plans/roadmap.md). The

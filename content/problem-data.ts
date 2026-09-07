@@ -1,53 +1,18 @@
-import type { Difficulty } from '@/domain/cards';
-import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
+import type { ProblemDescriptor } from '@/domain/cards';
+import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
 
-export interface ExtractedProblemData {
-  difficulty: Difficulty;
-  title: string;
-  titleSlug: string;
-  questionFrontendId: string;
+export async function getCurrentProblem(): Promise<ProblemDescriptor | null> {
+  const slug = getCurrentProblemSlug();
+  if (!slug) throw new Error('Expected a problem slug on the current page');
+  return fetchProblemData(slug);
 }
 
-let cachedData: { slug: string; data: ExtractedProblemData } | null = null;
-
-export function clearCache(): void {
-  cachedData = null;
-}
-
-export async function extractProblemData(): Promise<ExtractedProblemData | null> {
-  try {
-    const currentSlug = getCurrentProblemSlug();
-    if (!currentSlug) {
-      console.log('Could not extract title slug');
-      return null;
-    }
-    const titleSlug = currentSlug;
-
-    if (cachedData && cachedData.slug === titleSlug) {
-      return cachedData.data;
-    }
-
-    const problemData = await fetchProblemDataFromPage(titleSlug);
-    if (problemData) {
-      cachedData = { slug: titleSlug, data: problemData };
-      return problemData;
-    }
-
-    console.log('Problem data not found');
-    return null;
-  } catch (error) {
-    console.error('Error extracting problem data:', error);
-    return null;
-  }
-}
-
-async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedProblemData | null> {
+async function fetchProblemData(titleSlug: string): Promise<ProblemDescriptor | null> {
   try {
     const graphqlQuery = {
       query: `
         query questionData($titleSlug: String!) {
           question(titleSlug: $titleSlug) {
-            questionId
             questionFrontendId
             title
             translatedTitle
@@ -56,9 +21,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedPro
           }
         }
       `,
-      variables: {
-        titleSlug: titleSlug,
-      },
+      variables: { titleSlug },
     };
 
     const csrfToken = document.cookie
@@ -74,30 +37,28 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedPro
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(getGraphQLUrl(), {
+    const domain = getCurrentDomain();
+    const response = await fetch(`https://${domain}/graphql`, {
       method: 'POST',
       headers,
       body: JSON.stringify(graphqlQuery),
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      const question = data?.data?.question;
+    if (!response.ok) return null;
 
-      if (question) {
-        const useTranslated = getCurrentDomain() === 'leetcode.cn' && question.translatedTitle;
-        return {
-          difficulty: question.difficulty as ExtractedProblemData['difficulty'],
-          title: useTranslated ? question.translatedTitle : question.title,
-          titleSlug: question.titleSlug,
-          questionFrontendId: question.questionFrontendId,
-        };
-      }
-    }
+    const data = await response.json();
+    const question = data?.data?.question;
+    if (!question) return null;
 
-    return null;
-  } catch (error) {
-    console.error('Error fetching problem data:', error);
+    const useTranslated = domain === 'leetcode.cn' && question.translatedTitle;
+    return {
+      difficulty: question.difficulty as ProblemDescriptor['difficulty'],
+      name: useTranslated ? question.translatedTitle : question.title,
+      slug: question.titleSlug,
+      leetcodeId: question.questionFrontendId,
+      domain,
+    };
+  } catch {
     return null;
   }
 }

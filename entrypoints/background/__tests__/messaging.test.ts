@@ -15,11 +15,11 @@ describe('background message executor', () => {
       markDataUpdated,
       refreshBadge,
     });
-    const readHandler = vi.fn(() => 'PONG' as const);
+    const readHandler = vi.fn(() => []);
     const read = {
       kind: 'read',
       handler: readHandler,
-    } satisfies BackgroundMessageRegistry['ping'];
+    } satisfies BackgroundMessageRegistry['getAllCards'];
     const write = {
       kind: 'write',
       syncTrackingOwner: 'handler',
@@ -36,7 +36,7 @@ describe('background message executor', () => {
 
     ready.resolve();
     await writeStarted.promise;
-    await expect(pendingRead).resolves.toBe('PONG');
+    await expect(pendingRead).resolves.toEqual([]);
     expect(readHandler).toHaveBeenCalledOnce();
 
     releaseWrite.resolve();
