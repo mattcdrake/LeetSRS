@@ -3,13 +3,13 @@ import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { isDueByDate as calculateIsDueByDate } from '@/domain/review-day';
 import { buildReviewQueue, partitionDueCards } from '@/domain/review-queue';
 import { calculateDelayedDueDate, scheduleReview } from '@/domain/scheduling';
-import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards';
+import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards/store';
 
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 
-export { getAllCards } from '@/infrastructure/storage/cards';
+export { getAllCards } from '@/infrastructure/storage/cards/store';
 
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);

@@ -9,7 +9,7 @@ import {
   recordReview,
   type UpcomingReviewStats,
 } from '@/domain/statistics';
-import { getAllCards } from '@/infrastructure/storage/cards';
+import { getAllCards } from '@/infrastructure/storage/cards/store';
 import { getStats, getStatsForDate, saveStats } from '@/infrastructure/storage/stats';
 import { getSettings } from './settings';
 
