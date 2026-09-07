@@ -145,11 +145,12 @@ describe('setupLeetcodeAutoReset', () => {
     expect(resetClick).not.toHaveBeenCalled();
   });
 
-  it('throttles repeated checks and retries after one second', async () => {
+  it('checks initially and once per second, ignoring DOM mutations and popstate', async () => {
     vi.setSystemTime(0);
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
+    document.body.appendChild(document.createElement('div'));
     window.dispatchEvent(new PopStateEvent('popstate'));
     await vi.advanceTimersByTimeAsync(999);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -164,7 +165,7 @@ describe('setupLeetcodeAutoReset', () => {
     ['two-sum', 'reject'],
     ['three-sum', 'resolve'],
     ['three-sum', 'reject'],
-  ])('does not throttle skipped checks for %s while an active request waits to %s', async (slug, outcome) => {
+  ])('skips overlapping requests and retries %s on the next poll after %s', async (slug, outcome) => {
     const decision = createDeferred<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
@@ -176,9 +177,9 @@ describe('setupLeetcodeAutoReset', () => {
 
     if (outcome === 'resolve') decision.resolve(false);
     else decision.reject(new Error('Background unavailable'));
-    await vi.advanceTimersByTimeAsync(0);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(899);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
 
     expect(sendMessage).toHaveBeenCalledTimes(2);
     expect(sendMessage).toHaveBeenLastCalledWith('shouldResetEditor', { slug, domain: 'leetcode.com' });
@@ -213,27 +214,83 @@ describe('setupLeetcodeAutoReset', () => {
     expect(onResetConfirmed).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ['/problems/three-sum/', 'three-sum'],
-    ['/problemset/', 'two-sum'],
-  ])('resets the retry throttle after visiting %s', async (path, expectedSlug) => {
-    dispose = setupLeetcodeAutoReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
+  it.each(['/problems/three-sum/', '/problemset/'])(
+    'resets again after leaving for %s and returning, even without an intervening reset',
+    async (path) => {
+      const resetButton = renderResetButton('class');
+      const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
+      confirmButton.addEventListener('click', () => confirmButton.parentElement?.remove());
+      const resetClick = vi.spyOn(resetButton, 'click');
+      dispose = setupLeetcodeAutoReset(onResetConfirmed);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(resetClick).toHaveBeenCalledTimes(1);
 
-    history.pushState({}, '', path);
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    if (path === '/problemset/') {
-      expect(sendMessage).toHaveBeenCalledTimes(1);
+      vi.mocked(sendMessage).mockResolvedValue(false);
+      history.pushState({}, '', path);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(resetClick).toHaveBeenCalledTimes(1);
+
+      vi.mocked(sendMessage).mockResolvedValue(true);
       history.pushState({}, '', '/problems/two-sum/');
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(resetClick).toHaveBeenCalledTimes(2);
+      expect(onResetConfirmed).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(resetClick).toHaveBeenCalledTimes(2);
     }
+  );
+
+  it.each(['navigation', 'dispose'])('ignores a pending reset decision after %s', async (change) => {
+    const decision = createDeferred<boolean>();
+    vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
+    const resetButton = renderResetButton('class');
+    const resetClick = vi.spyOn(resetButton, 'click');
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
+
+    if (change === 'navigation') history.pushState({}, '', '/problems/three-sum/');
+    else dispose();
+    decision.resolve(true);
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(sendMessage).toHaveBeenCalledTimes(2);
-    expect(sendMessage).toHaveBeenLastCalledWith('shouldResetEditor', {
-      slug: expectedSlug,
-      domain: 'leetcode.com',
-    });
+    expect(resetClick).not.toHaveBeenCalled();
+    expect(onResetConfirmed).not.toHaveBeenCalled();
+  });
+
+  it('ignores a decision from an earlier visit to the same problem', async () => {
+    const decision = createDeferred<boolean>();
+    vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
+    const resetButton = renderResetButton('class');
+    const resetClick = vi.spyOn(resetButton, 'click');
+    attachConfirmDialog(resetButton, 'Confirm');
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
+
+    history.pushState({}, '', '/problemset/');
+    await vi.advanceTimersByTimeAsync(1000);
+    history.pushState({}, '', '/problems/two-sum/');
+    await vi.advanceTimersByTimeAsync(1000);
+    decision.resolve(true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(resetClick).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(resetClick).toHaveBeenCalledTimes(1);
+    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['navigation', 'dispose'])('stops pending confirmation clicks after %s', async (change) => {
+    const resetButton = renderResetButton('class');
+    const confirmButton = attachConfirmDialog(resetButton, 'Confirm', 200);
+    const confirmClick = vi.spyOn(confirmButton, 'click');
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
+    await vi.advanceTimersByTimeAsync(0);
+
+    if (change === 'navigation') history.pushState({}, '', '/problemset/');
+    else dispose();
+    await vi.advanceTimersByTimeAsync(500);
+
+    expect(confirmClick).not.toHaveBeenCalled();
+    expect(onResetConfirmed).not.toHaveBeenCalled();
+    if (change === 'dispose') expect(vi.getTimerCount()).toBe(0);
   });
 
   it('asks for a reset decision using the current problem', async () => {

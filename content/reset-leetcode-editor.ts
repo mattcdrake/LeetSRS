@@ -9,7 +9,10 @@ const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]
 // The dialog is rendered by LeetCode, so match their labels rather than ours.
 const CONFIRM_LABELS = ['confirm', '确认', '确定'];
 
-export async function resetLeetcodeEditor(): Promise<'unavailable' | 'confirmed' | 'confirmation-timeout'> {
+export async function resetLeetcodeEditor(
+  isCurrent: () => boolean = () => true
+): Promise<'unavailable' | 'confirmed' | 'confirmation-timeout' | 'cancelled'> {
+  if (!isCurrent()) return 'cancelled';
   const resetButton = findResetButton();
   if (!resetButton) {
     return 'unavailable';
@@ -18,11 +21,13 @@ export async function resetLeetcodeEditor(): Promise<'unavailable' | 'confirmed'
   // Exclude dialogs that were already on the page before our reset click.
   const openModals = new Set(findModals());
   resetButton.click();
-  const confirmed = await waitForConfirmClick(openModals);
-  return confirmed ? 'confirmed' : 'confirmation-timeout';
+  return waitForConfirmClick(openModals, isCurrent);
 }
 
-function waitForConfirmClick(openModals: Set<Element>): Promise<boolean> {
+function waitForConfirmClick(
+  openModals: Set<Element>,
+  isCurrent: () => boolean
+): Promise<'confirmed' | 'confirmation-timeout' | 'cancelled'> {
   return new Promise((resolve) => {
     const clickConfirm = () => {
       const button = findConfirmButton(openModals);
@@ -34,22 +39,33 @@ function waitForConfirmClick(openModals: Set<Element>): Promise<boolean> {
       return true;
     };
 
+    if (!isCurrent()) {
+      resolve('cancelled');
+      return;
+    }
+
     if (clickConfirm()) {
-      resolve(true);
+      resolve('confirmed');
       return;
     }
 
     const start = Date.now();
     const interval = window.setInterval(() => {
+      if (!isCurrent()) {
+        window.clearInterval(interval);
+        resolve('cancelled');
+        return;
+      }
+
       if (clickConfirm()) {
         window.clearInterval(interval);
-        resolve(true);
+        resolve('confirmed');
         return;
       }
 
       if (Date.now() - start >= RESET_CONFIRM_TIMEOUT_MS) {
         window.clearInterval(interval);
-        resolve(false);
+        resolve('confirmation-timeout');
       }
     }, RESET_CONFIRM_POLL_MS);
   });

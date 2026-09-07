@@ -2,75 +2,41 @@ import { sendMessage } from '@/infrastructure/browser/messages';
 import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
 import { resetLeetcodeEditor } from './reset-leetcode-editor';
 
-const SLUG_CHECK_INTERVAL_MS = 1000;
+const RESET_CHECK_INTERVAL_MS = 1000;
 
 export function setupLeetcodeAutoReset(onResetConfirmed: () => void): () => void {
-  let lastSlug: string | null = null;
-  let lastResetSlug: string | null = null;
+  let visit: { slug: string | null; handled: boolean } = { slug: null, handled: false };
   let isResetting = false;
-  let lastAttemptAt: number | null = null;
+  let disposed = false;
 
-  const checkForAutoReset = () => {
+  const checkForAutoReset = async () => {
     const slug = getCurrentProblemSlug();
-    if (!slug) {
-      lastSlug = null;
-      return;
-    }
+    if (slug !== visit.slug) visit = { slug, handled: false };
+    if (disposed || !slug || visit.handled || isResetting) return;
 
-    const now = Date.now();
-    if (slug !== lastSlug) {
-      lastSlug = slug;
-      lastAttemptAt = null;
-    }
-
-    if (isResetting || slug === lastResetSlug) return;
-
-    if (lastAttemptAt !== null && now - lastAttemptAt < SLUG_CHECK_INTERVAL_MS) {
-      return;
-    }
-
-    lastAttemptAt = now;
+    const currentVisit = visit;
+    const isCurrent = () => !disposed && visit === currentVisit && getCurrentProblemSlug() === slug;
     isResetting = true;
-    void performAutoReset(slug);
-  };
-
-  const performAutoReset = async (slug: string) => {
     try {
-      const shouldReset = await sendMessage('shouldResetEditor', {
-        slug,
-        domain: getCurrentDomain(),
-      });
-      if (!shouldReset) {
-        return;
-      }
+      const shouldReset = await sendMessage('shouldResetEditor', { slug, domain: getCurrentDomain() });
+      if (!shouldReset || !isCurrent()) return;
 
-      const result = await resetLeetcodeEditor();
-      if (result === 'unavailable') {
-        return;
-      }
+      const result = await resetLeetcodeEditor(isCurrent);
+      if (!isCurrent() || result === 'unavailable' || result === 'cancelled') return;
 
-      if (result === 'confirmed') {
-        onResetConfirmed();
-      }
-      lastResetSlug = slug;
+      currentVisit.handled = true;
+      if (result === 'confirmed') onResetConfirmed();
     } catch {
-      // Leave this slug eligible for a retry on the next check.
+      // Leave this visit eligible for a retry on the next poll.
     } finally {
       isResetting = false;
     }
   };
 
-  checkForAutoReset();
-
-  const observer = new MutationObserver(checkForAutoReset);
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  window.addEventListener('popstate', checkForAutoReset);
-  const intervalId = window.setInterval(checkForAutoReset, SLUG_CHECK_INTERVAL_MS);
-
+  void checkForAutoReset();
+  const intervalId = window.setInterval(checkForAutoReset, RESET_CHECK_INTERVAL_MS);
   return () => {
-    observer.disconnect();
-    window.removeEventListener('popstate', checkForAutoReset);
+    disposed = true;
     window.clearInterval(intervalId);
   };
 }

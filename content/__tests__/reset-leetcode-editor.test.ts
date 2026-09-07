@@ -156,4 +156,25 @@ describe('resetLeetcodeEditor', () => {
 
     for (const click of clicks) expect(click).not.toHaveBeenCalled();
   });
+
+  it('does not click reset when the visit is no longer current', async () => {
+    const resetClick = vi.spyOn(renderResetButton(), 'click');
+    await expect(resetLeetcodeEditor(() => false)).resolves.toBe('cancelled');
+    expect(resetClick).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('cancels confirmation polling when the visit becomes stale', async () => {
+    renderResetButton();
+    let current = true;
+    const result = resetLeetcodeEditor(() => current);
+    current = false;
+    const { dialog, clicks } = createDialog();
+    document.body.appendChild(dialog);
+
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(result).resolves.toBe('cancelled');
+    for (const click of clicks) expect(click).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
 });
