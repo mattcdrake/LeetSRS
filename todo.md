@@ -14,10 +14,10 @@ retry behavior is implicit in several flags.
 - [x] Move the toast into presentation code, using a callback such as
   `onResetConfirmed`. Let the UI own styling and timers while automation stays
   outside React, consistent with #284.
-- [ ] Consolidate scheduling guards. Navigation detection, throttling, and concurrency
-  checks are split between two functions. Record `lastAttemptAt` only when an
-  attempt starts; currently it advances even when `isResetting` prevents an attempt.
-  Rename `checkForNavigation` to reflect same-page retries.
+- [x] Consolidate navigation, throttling, and concurrency guards in
+  `checkForAutoReset`, whose name also reflects same-page retries. Record
+  `lastAttemptAt` only when an attempt starts, so checks skipped during an active
+  reset do not delay the next eligible attempt.
 - [ ] Give pending work a lifecycle under #216. Cleanup stops future checks but
   outstanding RPCs and confirmation polls can still click afterward. Navigation
   during an RPC can apply the previous problem's decision to the new page.

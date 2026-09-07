@@ -10,7 +10,7 @@ export function setupLeetcodeAutoReset(onResetConfirmed: () => void): () => void
   let isResetting = false;
   let lastAttemptAt: number | null = null;
 
-  const checkForNavigation = () => {
+  const checkForAutoReset = () => {
     const slug = getCurrentProblemSlug();
     if (!slug) {
       lastSlug = null;
@@ -23,22 +23,18 @@ export function setupLeetcodeAutoReset(onResetConfirmed: () => void): () => void
       lastAttemptAt = null;
     }
 
-    if (slug === lastResetSlug) return;
+    if (isResetting || slug === lastResetSlug) return;
 
     if (lastAttemptAt !== null && now - lastAttemptAt < SLUG_CHECK_INTERVAL_MS) {
       return;
     }
 
     lastAttemptAt = now;
-    void tryAutoReset(slug);
+    isResetting = true;
+    void performAutoReset(slug);
   };
 
-  const tryAutoReset = async (slug: string) => {
-    if (isResetting) {
-      return;
-    }
-
-    isResetting = true;
+  const performAutoReset = async (slug: string) => {
     try {
       const shouldReset = await sendMessage('shouldResetEditor', {
         slug,
@@ -64,17 +60,17 @@ export function setupLeetcodeAutoReset(onResetConfirmed: () => void): () => void
     }
   };
 
-  checkForNavigation();
+  checkForAutoReset();
 
-  const observer = new MutationObserver(checkForNavigation);
+  const observer = new MutationObserver(checkForAutoReset);
   observer.observe(document.body, { childList: true, subtree: true });
 
-  window.addEventListener('popstate', checkForNavigation);
-  const intervalId = window.setInterval(checkForNavigation, SLUG_CHECK_INTERVAL_MS);
+  window.addEventListener('popstate', checkForAutoReset);
+  const intervalId = window.setInterval(checkForAutoReset, SLUG_CHECK_INTERVAL_MS);
 
   return () => {
     observer.disconnect();
-    window.removeEventListener('popstate', checkForNavigation);
+    window.removeEventListener('popstate', checkForAutoReset);
     window.clearInterval(intervalId);
   };
 }

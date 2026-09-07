@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
+import { createDeferred } from '@/test/utils/deferred';
 import { setupLeetcodeAutoReset } from '../auto-reset';
 
 // @vitest-environment happy-dom
@@ -155,6 +156,34 @@ describe('setupLeetcodeAutoReset', () => {
     expect(sendMessage).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(1);
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['two-sum', 'resolve'],
+    ['two-sum', 'reject'],
+    ['three-sum', 'resolve'],
+    ['three-sum', 'reject'],
+  ])('does not throttle skipped checks for %s while an active request waits to %s', async (slug, outcome) => {
+    const decision = createDeferred<boolean>();
+    vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
+
+    await vi.advanceTimersByTimeAsync(1100);
+    history.pushState({}, '', `/problems/${slug}/`);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+
+    if (outcome === 'resolve') decision.resolve(false);
+    else decision.reject(new Error('Background unavailable'));
+    await vi.advanceTimersByTimeAsync(0);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage).toHaveBeenLastCalledWith('shouldResetEditor', { slug, domain: 'leetcode.com' });
+
+    window.dispatchEvent(new PopStateEvent('popstate'));
     expect(sendMessage).toHaveBeenCalledTimes(2);
   });
 
