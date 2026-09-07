@@ -22,12 +22,17 @@ recommendations here are my application of those principles to this repository.
 
 ## Decisions after review
 
-The immediate local pass is tracked in [todo.md](../todo.md): consolidate domain
-statistics (#266), replace bootstrap's internal barrel import with direct sibling
-imports, and remove the `scheduleReview` forwarding function in favor of a direct
-service-owned `fsrs.next` call. Retain the delayed-date domain calculation and
-preserve behavior. Statistics consolidation is implemented locally; bootstrap and
-scheduling changes remain pending.
+Remaining minor refactors are tracked under
+[#271](https://github.com/mattcdrake/LeetSRS/issues/271), including the barrel audit
+(#272), scheduling wrapper removal (#273), settings consolidation (#274), review
+and calendar organization (#275), card/backup storage grouping (#276/#277),
+reference reconciliation (#278), and passthrough-code audit (#279). The local TODO
+was removed after its remaining work moved to issues; each implementation owns
+its verification.
+
+Statistics consolidation (#266) and direct sibling imports in bootstrap are
+implemented. Scheduling wrapper removal remains pending; preserve FSRS lifetime,
+parameters, timing, and write order when implementing it.
 
 All six recommendations now have issues. Gist setup work is explicitly renewed
 in #269 despite #152 having been closed as not planned. Unfinished #155 work is
@@ -52,8 +57,7 @@ are coordination links, not additional blockers. Catalog generation stays indepe
 while keeping session orchestration and the asynchronous coordinator outside it.
 
 The grouping recommendations below revise the original blanket preference for a
-flat domain directory. They are proposals for discussion, not additional approved
-implementation tasks.
+flat domain directory. The selected changes are now tracked in #274–#277.
 
 ## Recommended preparation
 
