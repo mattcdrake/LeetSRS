@@ -21,10 +21,13 @@ beforeEach(() => {
   vi.stubGlobal(
     'MutationObserver',
     class {
-      constructor(callback: () => void) {
-        notifyMutation = callback;
+      constructor(private readonly callback: () => void) {}
+      observe(target: Node, options: MutationObserverInit) {
+        if (options.childList) {
+          notifyMutation = this.callback;
+          observe(target, options);
+        }
       }
-      observe = observe;
       disconnect = disconnect;
     }
   );

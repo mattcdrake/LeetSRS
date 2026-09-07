@@ -4,12 +4,10 @@ import type { Translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import { setupLeetcodeAutoReset } from './auto-reset';
-import { createLeetSrsButton } from './button';
 import { getCurrentDomain } from './domain';
 import { type ExtractedProblemData, extractProblemData } from './problem-data';
-import { RatingMenu } from './rating-menu';
 import { RatingMenuCoordinator } from './rating-menu-coordinator';
-import { Tooltip } from './tooltip';
+import { mountLeetSrsButton, RatingMenu, Tooltip } from './ui/mount';
 
 export async function bootstrapContent() {
   // Wake up service worker so it's ready when user interacts
@@ -50,6 +48,7 @@ async function withProblemData<T>(action: (problem: ProblemDescriptor) => Promis
 function setupLeetSrsButton(t: Translations) {
   const BUTTON_ID = 'leetsrs-button-wrapper';
   const tooltip = new Tooltip();
+  let mountedButton: { element: HTMLElement; dispose: () => void } | null = null;
 
   function insertButton(buttonsContainer: Element) {
     if (buttonsContainer.querySelector(`#${BUTTON_ID}`)) {
@@ -58,11 +57,12 @@ function setupLeetSrsButton(t: Translations) {
 
     let ratingMenuCoordinator: RatingMenuCoordinator | null = null;
 
-    const buttonWrapper = createLeetSrsButton(() => {
+    const buttonMount = mountLeetSrsButton(() => {
       if (ratingMenuCoordinator) {
         void ratingMenuCoordinator.toggle();
       }
     }, t);
+    const buttonWrapper = buttonMount.element;
     buttonWrapper.id = BUTTON_ID;
 
     const ratingMenu = new RatingMenu(
@@ -102,16 +102,31 @@ function setupLeetSrsButton(t: Translations) {
       });
     }
 
+    mountedButton = {
+      element: buttonWrapper,
+      dispose: () => {
+        ratingMenuCoordinator?.close();
+        tooltip.hide();
+        buttonMount.unmount();
+      },
+    };
+
     const lastButtonGroup = buttonsContainer.lastElementChild;
 
     try {
       buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
     } catch (error) {
+      mountedButton?.dispose();
+      mountedButton = null;
       console.error('Error adding LeetSRS button:', error);
     }
   }
 
   const tryInsertButton = () => {
+    if (mountedButton && !mountedButton.element.isConnected) {
+      mountedButton.dispose();
+      mountedButton = null;
+    }
     const buttonsContainer = document.querySelector('#ide-top-btns');
     if (buttonsContainer) {
       insertButton(buttonsContainer);

@@ -1,8 +1,10 @@
+import { act, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
 import { requireDefined } from '@/test/utils/assertions';
 import { RATING_BUTTON_CONFIGS } from '../constants';
-import { type RatingCallback, RatingMenu } from '../rating-menu';
+import { RatingMenu } from '../mount';
+import type { RatingCallback } from '../RatingMenu';
 
 // @vitest-environment happy-dom
 
@@ -27,7 +29,7 @@ describe('RatingMenu', () => {
   });
 
   afterEach(() => {
-    menu.hide();
+    act(() => menu.hide());
     container.remove();
     vi.clearAllMocks();
   });
@@ -38,17 +40,17 @@ describe('RatingMenu', () => {
 
   it('shows and hides synchronously without creating duplicate menus', () => {
     expect(menu.isVisible()).toBe(false);
-    menu.show(t);
-    menu.show(t);
+    act(() => menu.show(t));
+    act(() => menu.show(t));
     expect(menu.isVisible()).toBe(true);
     expect(container.querySelectorAll('[style*="position: absolute"]')).toHaveLength(1);
 
-    menu.hide();
+    act(() => menu.hide());
     expect(menu.isVisible()).toBe(false);
   });
 
   it('renders buttons using the provided translations', () => {
-    menu.show(t);
+    act(() => menu.show(t));
     const buttons = getButtons();
 
     expect(buttons).toHaveLength(5);
@@ -59,16 +61,16 @@ describe('RatingMenu', () => {
   });
 
   it('uses newly provided translations when reopened', () => {
-    menu.show(translations.en);
+    act(() => menu.show(translations.en));
     expect(getButtons()[2].textContent).toBe(translations.en.ratings.good);
-    menu.hide();
+    act(() => menu.hide());
 
-    menu.show(translations.pl);
+    act(() => menu.show(translations.pl));
     expect(getButtons()[2].textContent).toBe(translations.pl.ratings.good);
   });
 
   it('positions the menu below its relatively positioned container by default', () => {
-    menu.show(t);
+    act(() => menu.show(t));
     const element = requireDefined(container.querySelector<HTMLElement>('[style*="position: absolute"]'));
 
     expect(container.style.position).toBe('relative');
@@ -78,7 +80,7 @@ describe('RatingMenu', () => {
 
   it('supports positioning the menu above its container', () => {
     menu = new RatingMenu(container, onRate, onAddWithoutRating, { position: 'top' });
-    menu.show(t);
+    act(() => menu.show(t));
     const element = requireDefined(container.querySelector<HTMLElement>('[style*="position: absolute"]'));
 
     expect(element.style.bottom).toBe('100%');
@@ -87,8 +89,8 @@ describe('RatingMenu', () => {
 
   it('rates with each configured value and translated label, then hides', () => {
     RATING_BUTTONS.forEach((ratingButton, index) => {
-      menu.show(t);
-      getButtons()[index].click();
+      act(() => menu.show(t));
+      fireEvent.click(getButtons()[index]);
       expect(onRate).toHaveBeenLastCalledWith(ratingButton.rating, ratingButton.label);
       expect(menu.isVisible()).toBe(false);
     });
@@ -96,43 +98,43 @@ describe('RatingMenu', () => {
   });
 
   it('adds without a rating, then hides', () => {
-    menu.show(t);
-    getButtons()[4].click();
+    act(() => menu.show(t));
+    fireEvent.click(getButtons()[4]);
 
     expect(onAddWithoutRating).toHaveBeenCalledOnce();
     expect(menu.isVisible()).toBe(false);
   });
 
   it('hides after an outside click but remains open after an inside click', () => {
-    menu.show(t);
+    act(() => menu.show(t));
     const element = requireDefined(container.querySelector<HTMLElement>('[style*="position: absolute"]'));
 
-    element.click();
+    fireEvent.click(element);
     expect(menu.isVisible()).toBe(true);
-    document.body.click();
+    fireEvent.click(document.body);
     expect(menu.isVisible()).toBe(false);
   });
 
   it('applies and restores rating-button hover colors', () => {
-    menu.show(t);
+    act(() => menu.show(t));
     const button = getButtons()[0];
     const originalBackground = button.style.backgroundColor;
 
-    button.dispatchEvent(new MouseEvent('mouseenter'));
+    fireEvent.mouseEnter(button);
     expect(button.style.backgroundColor).not.toBe(originalBackground);
-    button.dispatchEvent(new MouseEvent('mouseleave'));
+    fireEvent.mouseLeave(button);
     expect(button.style.backgroundColor).toBe(originalBackground);
   });
 
   it('applies and restores add-button hover styles', () => {
-    menu.show(t);
+    act(() => menu.show(t));
     const button = getButtons()[4];
     const originalBackground = button.style.backgroundColor;
 
-    button.dispatchEvent(new MouseEvent('mouseenter'));
+    fireEvent.mouseEnter(button);
     expect(button.style.backgroundColor).not.toBe(originalBackground);
     expect(button.style.textDecoration).toBe('underline');
-    button.dispatchEvent(new MouseEvent('mouseleave'));
+    fireEvent.mouseLeave(button);
     expect(button.style.backgroundColor).toBe(originalBackground);
     expect(button.style.textDecoration).toBe('none');
   });
