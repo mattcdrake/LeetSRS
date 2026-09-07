@@ -10,7 +10,7 @@ import type {
 } from '@/domain/gist-sync';
 import type { Note } from '@/domain/notes';
 import type { Settings } from '@/domain/settings';
-import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
+import type { DailyStats, UpcomingReviewStats } from '@/domain/statistics';
 
 export interface ExtensionMessageMap {
   ping(): 'PONG';

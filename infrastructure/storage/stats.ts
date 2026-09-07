@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import type { DailyStats } from '@/domain/stats';
+import type { DailyStats } from '@/domain/statistics';
 import { STORAGE_KEYS } from './storage-keys';
 
 export async function getStats(): Promise<Record<string, DailyStats>> {

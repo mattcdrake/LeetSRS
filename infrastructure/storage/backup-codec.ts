@@ -1,6 +1,6 @@
 import type { Note } from '@/domain/notes';
 import type { Settings } from '@/domain/settings';
-import type { DailyStats } from '@/domain/stats';
+import type { DailyStats } from '@/domain/statistics';
 import type { StoredCard } from '@/infrastructure/storage/card-codec';
 
 export interface ExportData {

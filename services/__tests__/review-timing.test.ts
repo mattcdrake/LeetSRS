@@ -2,7 +2,7 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import type { DailyStats } from '@/domain/stats';
+import type { DailyStats } from '@/domain/statistics';
 import { serializeCard } from '@/infrastructure/storage/card-codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';

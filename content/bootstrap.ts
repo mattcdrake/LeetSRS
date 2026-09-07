@@ -1,18 +1,15 @@
 import type { Grade } from 'ts-fsrs';
-import {
-  createLeetSrsButton,
-  type ExtractedProblemData,
-  extractProblemData,
-  getCurrentDomain,
-  RatingMenu,
-  RatingMenuCoordinator,
-  setupLeetcodeAutoReset,
-  Tooltip,
-} from '@/content';
 import type { ProblemDescriptor } from '@/domain/cards';
 import type { Translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
+import { setupLeetcodeAutoReset } from './auto-reset';
+import { createLeetSrsButton } from './button';
+import { getCurrentDomain } from './domain';
+import { type ExtractedProblemData, extractProblemData } from './problem-data';
+import { RatingMenu } from './rating-menu';
+import { RatingMenuCoordinator } from './rating-menu-coordinator';
+import { Tooltip } from './tooltip';
 
 export async function bootstrapContent() {
   // Wake up service worker so it's ready when user interacts
