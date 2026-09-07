@@ -4,8 +4,7 @@ import {
   encodeExportData,
   type PreparedImportData,
   parseImportData,
-} from '@/infrastructure/storage/backup-codec';
-import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
+} from '@/infrastructure/storage/backup/codec';
 import {
   readSnapshotCards,
   readSnapshotNotes,
@@ -13,7 +12,8 @@ import {
   removeSnapshotNotes,
   writeSnapshotCards,
   writeSnapshotNotes,
-} from '@/infrastructure/storage/snapshot';
+} from '@/infrastructure/storage/backup/snapshot';
+import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { exportSettings, resetSettings, updateSettings } from './settings';

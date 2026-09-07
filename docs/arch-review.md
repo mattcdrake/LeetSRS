@@ -3,8 +3,8 @@
 Reviewed September 6, 2026, against commit `3922402`, the current
 [architecture](architecture.md), the local [roadmap](plans/roadmap.md), and the
 repository's open issues and relevant closed issue bodies. This is a design
-review, not an implementation pass. The decisions below were updated after review;
-implementation remains pending and proposed paths do not exist yet.
+review. Completion notes below reflect the implemented refactors; the remaining
+recommendations retain their issue owners.
 
 The next pass should improve a few module interfaces rather than repeat the
 repository-wide relocation. The major correctness work already has owners in the
@@ -22,17 +22,14 @@ recommendations here are my application of those principles to this repository.
 
 ## Decisions after review
 
-Remaining minor refactors are tracked under
-[#271](https://github.com/mattcdrake/LeetSRS/issues/271), including the barrel audit
-(#272), scheduling wrapper removal (#273), settings consolidation (#274), review
-and calendar organization (#275), card/backup storage grouping (#276/#277),
-reference reconciliation (#278), and passthrough-code audit (#279). The local TODO
-was removed after its remaining work moved to issues; each implementation owns
-its verification.
+The minor refactors under [#271](https://github.com/mattcdrake/LeetSRS/issues/271)
+are implemented: barrel and passthrough audits (#272/#279), direct FSRS calls
+(#273), settings consolidation (#274), review/calendar organization (#275), and
+card/backup storage grouping (#276/#277). References are reconciled in #278.
+Each implementation passed the repository checks.
 
-Statistics consolidation (#266) and direct sibling imports in bootstrap are
-implemented. Scheduling wrapper removal remains pending; preserve FSRS lifetime,
-parameters, timing, and write order when implementing it.
+Statistics consolidation (#266) is also implemented. Queue API encapsulation
+remains #264; the review/calendar move preserved the existing two-step API.
 
 All six recommendations now have issues. Gist setup work is explicitly renewed
 in #269 despite #152 having been closed as not planned. Unfinished #155 work is
@@ -57,7 +54,7 @@ are coordination links, not additional blockers. Catalog generation stays indepe
 while keeping session orchestration and the asynchronous coordinator outside it.
 
 The grouping recommendations below revise the original blanket preference for a
-flat domain directory. The selected changes are now tracked in #274–#277.
+flat domain directory. The selected changes in #274–#277 are implemented.
 
 ## Recommended preparation
 
@@ -66,13 +63,12 @@ flat domain directory. The selected changes are now tracked in #274–#277.
 | 1     | Separate background executor from concrete registry | Makes #213/#215/#219 easier to implement and test independently of service wiring. |
 | 2     | Hide queue partitioning inside queue construction   | Removes a caller sequencing requirement before queue/filter features.              |
 | 3     | Consolidate note-editor presentation                | Gives #221/#248 one place to implement controls and feedback.                      |
-| 4     | Merge statistics types and calculations             | Removes duplicate model knowledge before topic statistics.                         |
 | 5     | Own regional permissions in one popup module        | Gives catalog-related UI one consistent permission capability.                     |
 | 6     | Consolidate rating definitions                      | Prevents rating semantics and presentation from drifting across surfaces.          |
 
-These are bounded changes, not six new hard blockers for catalog generation.
-Items 1–3 prepare subsequent issues; item 4 has been selected for immediate local
-implementation. Items 5–6 remain separately tracked. None requires changing
+These are bounded changes, not new hard blockers for catalog generation.
+Items 1–3 prepare subsequent issues; statistics consolidation is complete.
+Items 5–6 remain separately tracked. None requires changing
 storage or message formats.
 
 ### 1. Separate background execution from application wiring
@@ -110,14 +106,14 @@ change badge failure behavior; those remain #213, #215, and #163.
 
 ### 2. Make queue construction one operation
 
-[The queue domain module](../domain/review-queue.ts) exports
+[The queue domain module](../domain/review.ts) exports
 `partitionDueCards` and `buildReviewQueue`. The latter accepts separate review and
 new-card arrays and relies on the former to sort new cards before the daily-limit
 slice. A caller can pass an unsorted array and select the wrong new cards even
 though the final result is sorted correctly.
 
 [The card service](../services/cards.ts) must know this assembly sequence. Even
-the [domain tests](../domain/__tests__/review-queue.test.ts) define a `queueFor`
+the [domain tests](../domain/__tests__/review.test.ts) define a `queueFor`
 helper to reconstruct it. That helper is a useful signal that the public operation
 is missing.
 
@@ -295,16 +291,19 @@ is violated.
   owner, and #219 already owns improving those dependencies.
 - Add popup subdirectories when they expose a coherent capability, as with notes
   and permissions. Avoid a new catch-all `shared/` or `utils/` directory.
-- In content code, `bootstrap.ts` imports its own subsystem's `index.ts`, which
-  re-exports every helper. Switch to direct sibling imports in the immediate pass;
-  the internal barrel adds no useful boundary. Moving renderers under `content/ui/`
-  is now part of #216, together with lifecycle ownership. Do not redesign the coordinator/renderer separation already addressed
-  by #165 merely to reduce the file count.
-- `domain/scheduling.ts::scheduleReview` currently only forwards to `fsrs.next`.
-  It hides neither parameters nor scheduling policy. The selected immediate change
-  removes it and calls the library directly from the service, which already owns
-  FSRS lifetime. Keep `calculateDelayedDueDate` in domain; #218 later changes
-  snapshot behavior. Do not invent a scheduler plugin interface for this wrapper.
+- Content bootstrap uses direct sibling imports; the unused content barrel was
+  removed. Moving renderers under `content/ui/` remains #216, together with
+  lifecycle ownership. Preserve the coordinator/renderer separation from #165.
+- The card service calls `fsrs.next` directly and retains FSRS lifetime, parameters,
+  timing, and write order. Delayed-date calculation lives in `domain/review.ts`;
+  snapshot changes remain #218.
+- Retained abstractions have specific responsibilities: the translation catalog
+  owns dictionaries and their shared type; card/note service exports expose their
+  operations; storage adapters own keys and raw records; query hooks own caching;
+  the GitHub client shapes requests and retains authentication per operation.
+  The service due-date helper supplies a clock default, and content coordinators
+  own asynchronous interaction state. The audits removed convenience forwarding,
+  including a test-only statistics re-export, without flattening these boundaries.
 - Leave the backup codec, import policy, and snapshot storage separate. Their
   apparently similar types reflect genuinely different trust and persistence
   boundaries. #214/#215/#231 should deepen these contracts without undoing the
@@ -319,45 +318,29 @@ anything from callers. Merge small files that express one concept; retain separa
 files when each can hide a useful, independently consumed responsibility. A shared
 prefix or frequent imports alone does not settle that choice.
 
-**Review:** combining queue selection and eligibility in `domain/review.ts` is
-reasonable at the current size. The due predicate and queue builder can remain
-separate public operations inside that file, so filters and editor reset do not
-need to construct a queue. The delayed-date operation also fits there. Keep local
-calendar bucketing in a separate `domain/calendar.ts`: statistics/streaks use it,
-and #126 intentionally makes exact-time eligibility independent of calendar days.
-Thus, simply merging all of `review-day.ts` into queue code would obscure a real
-boundary. If review policy grows, `domain/review/` with focused eligibility and
-queue files is a sensible next shape; there is no need for both that directory and
-multiple tiny files today. Preserve existing clock reads in any structural move;
-#218 and #126 own behavioral changes. This proposal is not added to #264's scope.
+**Review:** `domain/review.ts` now owns eligibility, queue selection, and
+delayed-date calculation. Eligibility remains independently callable. Shared
+calendar bucketing lives in `domain/calendar.ts`, so statistics and streaks do
+not depend on queue construction. #264 will encapsulate the existing queue
+assembly sequence; #218 and #126 own snapshot and exact-time behavior changes.
 
-**Settings:** merge `domain/settings.ts` and `domain/settings-policy.ts` into
-`domain/settings.ts`. Types, constraints, defaults, registry, and validation describe
-one small concept. Unlike the storage pair below, neither side introduces browser
-I/O. Type-only consumers can still import just the types. Keep browser language
-resolution in the service/adapter and dictionaries in `i18n/`. A two-file
-`domain/settings/` directory would organize the existing split without providing
-much benefit over merging it.
+**Settings:** `domain/settings.ts` now owns types, constraints, defaults, registry,
+and validation. Browser language resolution stays in services/adapters and
+translation dictionaries stay in `i18n/`. Type-only consumers import only types.
 
-**Stored cards:** colocate `infrastructure/storage/cards.ts` and `card-codec.ts`
-as `infrastructure/storage/cards/store.ts` and `codec.ts`, with nearby tests, when
-that area is next changed. Keep conversion separate from storage I/O: the codec
-is pure, while the store imports WXT storage, retains a mutable loaded snapshot,
-and persists writes. #220 requires conversion to be reusable at the browser client
-boundary, and imports/migrations need representation knowledge without loading the
-store. This is a useful internal seam, not a reason for the files to remain distant
-siblings. Callers needing conversion should import the codec directly; do not force
-it through a barrel that also loads storage. A future shared JSON representation
-may justify a neutral codec location under #220; avoid locking in a move ahead of
-that contract decision.
+**Stored cards:** `infrastructure/storage/cards/` contains `store.ts`, `codec.ts`,
+and nearby tests. The store retains loaded records for writes; the codec remains
+independently importable without WXT storage. #220 owns the shared storage/message
+JSON representation and any further conversion-boundary changes.
 
-**Other combinations:** merge statistics as selected. Keep `domain/notes.ts` as a
-single model-and-validation module; it is already an example of the desired shape.
-Keep background registry types beside the executor rather than create a global
-`types/` folder. A storage `backup/` directory for the codec and snapshot adapter
-could improve navigation as #214/#231 grow, but keep them as distinct files and
-keep domain acceptance policy in domain. Do not group services with storage merely
-because they share a noun: their dependency boundary is meaningful.
+**Backup:** `infrastructure/storage/backup/` contains `codec.ts`, `snapshot.ts`,
+and nearby tests. Conversion and storage I/O remain separate. Import acceptance
+stays in domain; reset/restore order, PAT preservation, and imported timestamps
+stay in services. #214/#215/#231 own the subsequent behavior changes.
+
+Statistics types and calculations share `domain/statistics.ts`. Keep
+`domain/notes.ts` as a model-and-validation module and background registry types
+beside the executor. Shared nouns do not justify merging services with storage.
 
 ## Existing work deliberately excluded
 

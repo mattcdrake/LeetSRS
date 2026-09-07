@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createDeferred } from '@/test/utils/deferred';
-import { parseImportData } from '../backup-codec';
+import { getNoteStorageKey, STORAGE_KEYS } from '../../storage-keys';
+import { parseImportData } from '../codec';
 import {
   readSnapshotCards,
   readSnapshotNotes,
@@ -11,7 +12,6 @@ import {
   writeSnapshotCards,
   writeSnapshotNotes,
 } from '../snapshot';
-import { getNoteStorageKey, STORAGE_KEYS } from '../storage-keys';
 
 const rawCards = {
   first: { id: 'first', legacyField: true },

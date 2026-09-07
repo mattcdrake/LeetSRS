@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ExportData, encodeExportData, parseImportData } from '../backup-codec';
+import { type ExportData, encodeExportData, parseImportData } from '../codec';
 
 describe('backup codec', () => {
   it('preserves pretty JSON serialization and payload fields', () => {

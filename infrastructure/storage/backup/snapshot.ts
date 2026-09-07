@@ -1,8 +1,8 @@
 import { storage } from '#imports';
 import type { Note } from '@/domain/notes';
-import type { ExportData } from './backup-codec';
-import { deleteNote, getNote } from './notes';
-import { getNoteStorageKey, STORAGE_KEYS } from './storage-keys';
+import { deleteNote, getNote } from '../notes';
+import { getNoteStorageKey, STORAGE_KEYS } from '../storage-keys';
+import type { ExportData } from './codec';
 
 type SnapshotCards = ExportData['data']['cards'];
 
