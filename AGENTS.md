@@ -2,6 +2,8 @@
 
 Read [docs/architecture.md](docs/architecture.md) for architecture, ownership, dependency rules, and invariants.
 
+Only update `docs/architecture.md` when the user explicitly asks you to.
+
 ## Build, Test, and Development Commands
 
 Use Node.js 24+ and install dependencies with `npm install`.

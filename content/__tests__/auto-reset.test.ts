@@ -145,19 +145,23 @@ describe('setupLeetcodeAutoReset', () => {
     expect(resetClick).not.toHaveBeenCalled();
   });
 
-  it('checks initially and once per second, ignoring DOM mutations and popstate', async () => {
+  it('polls editor readiness once per second without rechecking eligibility', async () => {
     vi.setSystemTime(0);
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
-    document.body.appendChild(document.createElement('div'));
+    const resetButton = renderResetButton('class');
+    const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
+    const confirmClick = vi.spyOn(confirmButton, 'click');
     window.dispatchEvent(new PopStateEvent('popstate'));
     await vi.advanceTimersByTimeAsync(999);
     window.dispatchEvent(new PopStateEvent('popstate'));
     expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(confirmClick).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1);
-    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(confirmClick).toHaveBeenCalledTimes(1);
   });
 
   it.each([
@@ -165,7 +169,7 @@ describe('setupLeetcodeAutoReset', () => {
     ['two-sum', 'reject'],
     ['three-sum', 'resolve'],
     ['three-sum', 'reject'],
-  ])('skips overlapping requests and retries %s on the next poll after %s', async (slug, outcome) => {
+  ])('skips overlapping requests and retains the decision for %s after %s', async (slug, outcome) => {
     const decision = createDeferred<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
@@ -181,16 +185,18 @@ describe('setupLeetcodeAutoReset', () => {
     expect(sendMessage).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
 
-    expect(sendMessage).toHaveBeenCalledTimes(2);
+    const expectedCalls = slug === 'two-sum' && outcome === 'resolve' ? 1 : 2;
+    expect(sendMessage).toHaveBeenCalledTimes(expectedCalls);
     expect(sendMessage).toHaveBeenLastCalledWith('shouldResetEditor', { slug, domain: 'leetcode.com' });
 
     window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(sendMessage).toHaveBeenCalledTimes(expectedCalls);
   });
 
-  it('retries when the reset button becomes available', async () => {
+  it('retains an approved decision while waiting for the reset button', async () => {
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
+    vi.mocked(sendMessage).mockResolvedValue(false);
 
     const resetButton = renderResetButton('class');
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
@@ -200,7 +206,42 @@ describe('setupLeetcodeAutoReset', () => {
 
     expect(confirmClick).toHaveBeenCalledTimes(1);
     expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
   });
+
+  it.each(['/problems/three-sum/', '/problemset/'])(
+    'keeps a declined decision until leaving for %s and returning',
+    async (path) => {
+      vi.mocked(sendMessage).mockResolvedValue(false);
+      const resetButton = renderResetButton('class');
+      attachConfirmDialog(resetButton, 'Confirm');
+      const resetClick = vi.spyOn(resetButton, 'click');
+      dispose = setupLeetcodeAutoReset(onResetConfirmed);
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Becoming due or enabling auto-reset must not reset an already-open visit.
+      vi.mocked(sendMessage).mockResolvedValue(true);
+      vi.setSystemTime(Date.now() + 24 * 60 * 60 * 1000);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(resetClick).not.toHaveBeenCalled();
+      expect(onResetConfirmed).not.toHaveBeenCalled();
+
+      vi.mocked(sendMessage).mockResolvedValue(false);
+      history.pushState({}, '', path);
+      await vi.advanceTimersByTimeAsync(1000);
+      vi.mocked(sendMessage).mockResolvedValue(true);
+      history.pushState({}, '', '/problems/two-sum/');
+      await vi.advanceTimersByTimeAsync(1000);
+
+      expect(resetClick).toHaveBeenCalledTimes(1);
+      expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenLastCalledWith('shouldResetEditor', {
+        slug: 'two-sum',
+        domain: 'leetcode.com',
+      });
+    }
+  );
 
   it('does not retry or notify when confirmation times out', async () => {
     const resetButton = renderResetButton('class');
