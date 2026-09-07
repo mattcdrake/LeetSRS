@@ -1,28 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
-import { browser } from 'wxt/browser';
 import { useI18n } from '../../contexts/I18nContext';
-
-const LEETCODE_CN_ORIGIN = '*://*.leetcode.cn/*';
+import { useLeetcodeCnCapability } from '../../queries/leetcode-cn';
 
 export function LeetcodeCnSection() {
   const t = useI18n();
-  const [granted, setGranted] = useState<boolean | null>(null);
+  const { granted, enable, isEnabling } = useLeetcodeCnCapability();
 
-  const checkPermission = useCallback(async () => {
-    const result = await browser.permissions.contains({ origins: [LEETCODE_CN_ORIGIN] });
-    setGranted(result);
-  }, []);
-
-  useEffect(() => {
-    checkPermission();
-  }, [checkPermission]);
-
-  const enable = async () => {
-    await browser.permissions.request({ origins: [LEETCODE_CN_ORIGIN] });
-    await checkPermission();
-  };
-
-  if (granted === null || granted) return null;
+  if (granted !== false) return null;
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
@@ -31,6 +14,7 @@ export function LeetcodeCnSection() {
       <button
         type="button"
         onClick={enable}
+        disabled={isEnabling}
         className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
       >
         {t.settings.leetcodeCn.enable}
