@@ -1,20 +1,10 @@
 import type { ProblemDescriptor } from '@/domain/cards';
 import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
 
-let cachedData: { slug: string; data: ProblemDescriptor } | null = null;
-
-export function clearCache(): void {
-  cachedData = null;
-}
-
 export async function getCurrentProblem(): Promise<ProblemDescriptor | null> {
   const slug = getCurrentProblemSlug();
-  if (!slug) return null;
-  if (cachedData?.slug === slug) return cachedData.data;
-
-  const problem = await fetchProblemDataFromPage(slug);
-  if (problem) cachedData = { slug, data: problem };
-  return problem;
+  if (!slug) throw new Error('Expected a problem slug on the current page');
+  return fetchProblemDataFromPage(slug);
 }
 
 async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescriptor | null> {
@@ -23,7 +13,6 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
       query: `
         query questionData($titleSlug: String!) {
           question(titleSlug: $titleSlug) {
-            questionId
             questionFrontendId
             title
             translatedTitle
@@ -32,9 +21,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
           }
         }
       `,
-      variables: {
-        titleSlug,
-      },
+      variables: { titleSlug },
     };
 
     const csrfToken = document.cookie
@@ -56,23 +43,21 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
       body: JSON.stringify(graphqlQuery),
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      const question = data?.data?.question;
+    if (!response.ok) return null;
 
-      if (question) {
-        const useTranslated = getCurrentDomain() === 'leetcode.cn' && question.translatedTitle;
-        return {
-          difficulty: question.difficulty as ProblemDescriptor['difficulty'],
-          name: useTranslated ? question.translatedTitle : question.title,
-          slug: question.titleSlug,
-          leetcodeId: question.questionFrontendId,
-          domain: getCurrentDomain(),
-        };
-      }
-    }
+    const data = await response.json();
+    const question = data?.data?.question;
+    if (!question) return null;
 
-    return null;
+    const domain = getCurrentDomain();
+    const useTranslated = domain === 'leetcode.cn' && question.translatedTitle;
+    return {
+      difficulty: question.difficulty as ProblemDescriptor['difficulty'],
+      name: useTranslated ? question.translatedTitle : question.title,
+      slug: question.titleSlug,
+      leetcodeId: question.questionFrontendId,
+      domain,
+    };
   } catch {
     return null;
   }

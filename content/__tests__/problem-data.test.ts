@@ -1,11 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearCache, getCurrentProblem } from '../problem-data';
+import { getCurrentProblem } from '../problem-data';
 
 // @vitest-environment happy-dom
 
 describe('getCurrentProblem', () => {
   beforeEach(() => {
-    clearCache();
     global.fetch = vi.fn();
   });
 
@@ -13,14 +12,14 @@ describe('getCurrentProblem', () => {
     vi.restoreAllMocks();
   });
 
-  it('should return null when no slug in URL', async () => {
+  it('rejects when no problem slug exists', async () => {
     Object.defineProperty(window, 'location', {
       value: { pathname: '/home' },
       writable: true,
     });
 
-    const result = await getCurrentProblem();
-    expect(result).toBeNull();
+    await expect(getCurrentProblem()).rejects.toThrow('Expected a problem slug on the current page');
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('should fetch problem data successfully', async () => {
@@ -52,34 +51,6 @@ describe('getCurrentProblem', () => {
       leetcodeId: '1',
       domain: 'leetcode.com',
     });
-  });
-
-  it('should return cached data for same slug', async () => {
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
-      writable: true,
-    });
-
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        data: {
-          question: {
-            questionId: '1',
-            questionFrontendId: '1',
-            title: 'Two Sum',
-            titleSlug: 'two-sum',
-            difficulty: 'Easy',
-          },
-        },
-      }),
-    } as Response);
-
-    const result1 = await getCurrentProblem();
-    const result2 = await getCurrentProblem();
-
-    expect(result1).toEqual(result2);
-    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('should handle fetch errors gracefully', async () => {

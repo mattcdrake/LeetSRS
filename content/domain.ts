@@ -11,24 +11,14 @@ type LeetCodeWindow = Window & {
 };
 
 export function getCurrentDomain(): LeetcodeDomain {
-  const hostname = window.location.hostname;
-  if (hostname.includes('leetcode.cn')) {
-    return 'leetcode.cn';
-  }
-  return 'leetcode.com';
+  return window.location.hostname.includes('leetcode.cn') ? 'leetcode.cn' : 'leetcode.com';
 }
 
 export function getGraphQLUrl(): string {
-  const domain = getCurrentDomain();
-  return `https://${domain}/graphql`;
+  return `https://${getCurrentDomain()}/graphql`;
 }
 
 export function getCurrentProblemSlug(): string | null {
   const routerSlug = (window as LeetCodeWindow).next?.router?.query?.slug;
-  if (routerSlug) {
-    return routerSlug;
-  }
-
-  const pathMatch = window.location.pathname.match(/\/problems\/([^/]+)/);
-  return pathMatch ? pathMatch[1] : null;
+  return routerSlug || window.location.pathname.match(/\/problems\/([^/]+)/)?.[1] || null;
 }
