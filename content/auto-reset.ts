@@ -14,10 +14,6 @@ const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]
 // The dialog is rendered by LeetCode, so match their labels rather than ours.
 const CONFIRM_LABELS = ['confirm', '确认', '确定'];
 
-/**
- * Watches for problem navigation and resets the editor to the default code.
- * Returns a disposer that stops watching.
- */
 export function setupLeetcodeAutoReset(): () => void {
   let lastSlug: string | null = null;
   let lastResetSlug: string | null = null;
@@ -79,8 +75,8 @@ export function setupLeetcodeAutoReset(): () => void {
         showToast('Code reset to default');
       }
       lastResetSlug = slug;
-    } catch (error) {
-      console.error('Failed to auto reset LeetCode editor:', error);
+    } catch {
+      // Leave this slug eligible for a retry on the next check.
     } finally {
       isResetting = false;
     }

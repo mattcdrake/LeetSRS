@@ -10,7 +10,7 @@ export async function getStoredTranslations(): Promise<Translations> {
 }
 
 // Subscribe before reading so a concurrent setting change wins over the initial read.
-export function watchStoredTranslations(onChange: (t: Translations) => void, onError: (error: unknown) => void) {
+export function watchStoredTranslations(onChange: (t: Translations) => void, onError?: (error: unknown) => void) {
   let changed = false;
   let stopped = false;
   const unwatch = storage.watch<Language>(STORAGE_KEYS.language, (language) => {
@@ -22,7 +22,7 @@ export function watchStoredTranslations(onChange: (t: Translations) => void, onE
       if (!stopped && !changed) onChange(t);
     },
     (error) => {
-      if (!stopped && !changed) onError(error);
+      if (!stopped && !changed) onError?.(error);
     }
   );
   return () => {

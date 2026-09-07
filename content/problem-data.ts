@@ -8,30 +8,13 @@ export function clearCache(): void {
 }
 
 export async function getCurrentProblem(): Promise<ProblemDescriptor | null> {
-  try {
-    const currentSlug = getCurrentProblemSlug();
-    if (!currentSlug) {
-      console.log('Could not extract title slug');
-      return null;
-    }
-    const titleSlug = currentSlug;
+  const slug = getCurrentProblemSlug();
+  if (!slug) return null;
+  if (cachedData?.slug === slug) return cachedData.data;
 
-    if (cachedData && cachedData.slug === titleSlug) {
-      return cachedData.data;
-    }
-
-    const problemData = await fetchProblemDataFromPage(titleSlug);
-    if (problemData) {
-      cachedData = { slug: titleSlug, data: problemData };
-      return problemData;
-    }
-
-    console.log('Problem data not found');
-    return null;
-  } catch (error) {
-    console.error('Error extracting problem data:', error);
-    return null;
-  }
+  const problem = await fetchProblemDataFromPage(slug);
+  if (problem) cachedData = { slug, data: problem };
+  return problem;
 }
 
 async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescriptor | null> {
@@ -50,7 +33,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
         }
       `,
       variables: {
-        titleSlug: titleSlug,
+        titleSlug,
       },
     };
 
@@ -90,8 +73,7 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
     }
 
     return null;
-  } catch (error) {
-    console.error('Error fetching problem data:', error);
+  } catch {
     return null;
   }
 }

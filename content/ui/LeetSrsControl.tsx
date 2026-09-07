@@ -16,13 +16,7 @@ export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(
-    () =>
-      watchStoredTranslations(setTranslations, (error) => {
-        console.error('Failed to load content translations:', error);
-      }),
-    []
-  );
+  useEffect(() => watchStoredTranslations(setTranslations), []);
 
   useEffect(() => {
     const dismiss = (event: MouseEvent) => {

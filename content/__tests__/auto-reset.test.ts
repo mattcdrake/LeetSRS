@@ -12,10 +12,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
 
 type ResetIconMarkup = 'class' | 'data-icon';
 
-/**
- * LeetCode inlines FontAwesome icons into the editor toolbar. Current markup only
- * carries the icon name in the class list, older markup also set data-icon.
- */
 function renderResetButton(markup: ResetIconMarkup): HTMLButtonElement {
   const icon =
     markup === 'class'
@@ -39,7 +35,6 @@ function createConfirmDialog(confirmLabel: string): HTMLElement {
   return dialog;
 }
 
-/** Opens the confirm dialog when the reset button is clicked, as LeetCode does. */
 function attachConfirmDialog(resetButton: HTMLButtonElement, confirmLabel: string, delayMs = 0): HTMLButtonElement {
   const dialog = createConfirmDialog(confirmLabel);
 

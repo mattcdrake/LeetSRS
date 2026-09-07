@@ -4,29 +4,16 @@ import { clearCache, getCurrentProblem } from '../problem-data';
 // @vitest-environment happy-dom
 
 describe('getCurrentProblem', () => {
-  let consoleLogSpy: ReturnType<typeof vi.spyOn>;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
-    // Clear cache before each test
     clearCache();
-
-    // Suppress console logs
-    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    // Mock fetch
     global.fetch = vi.fn();
   });
 
   afterEach(() => {
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
     vi.restoreAllMocks();
   });
 
   it('should return null when no slug in URL', async () => {
-    // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { pathname: '/home' },
       writable: true,
@@ -37,13 +24,11 @@ describe('getCurrentProblem', () => {
   });
 
   it('should fetch problem data successfully', async () => {
-    // Mock window.location with a problem URL
     Object.defineProperty(window, 'location', {
       value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
-    // Mock successful fetch response
     vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -70,13 +55,11 @@ describe('getCurrentProblem', () => {
   });
 
   it('should return cached data for same slug', async () => {
-    // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
-    // Mock fetch - should only be called once due to caching
     vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -92,9 +75,7 @@ describe('getCurrentProblem', () => {
       }),
     } as Response);
 
-    // First call
     const result1 = await getCurrentProblem();
-    // Second call - should use cache
     const result2 = await getCurrentProblem();
 
     expect(result1).toEqual(result2);
@@ -102,13 +83,11 @@ describe('getCurrentProblem', () => {
   });
 
   it('should handle fetch errors gracefully', async () => {
-    // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
-    // Mock fetch failure
     vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'));
 
     const result = await getCurrentProblem();
@@ -116,13 +95,11 @@ describe('getCurrentProblem', () => {
   });
 
   it('should handle non-ok response', async () => {
-    // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
       writable: true,
     });
 
-    // Mock non-ok response
     vi.mocked(global.fetch).mockResolvedValueOnce({
       ok: false,
       status: 404,

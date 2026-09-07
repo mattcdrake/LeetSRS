@@ -18,6 +18,7 @@ function setupLeetSrsButton() {
 
     const buttonWrapper = document.createElement('div');
     buttonWrapper.id = BUTTON_ID;
+    buttonsContainer.insertBefore(buttonWrapper, buttonsContainer.lastElementChild);
     const root = createRoot(buttonWrapper);
     root.render(<LeetSrsControl />);
 
@@ -28,16 +29,6 @@ function setupLeetSrsButton() {
         buttonWrapper.remove();
       },
     };
-
-    const lastButtonGroup = buttonsContainer.lastElementChild;
-
-    try {
-      buttonsContainer.insertBefore(buttonWrapper, lastButtonGroup);
-    } catch (error) {
-      mountedButton?.dispose();
-      mountedButton = null;
-      console.error('Error adding LeetSRS button:', error);
-    }
   }
 
   const tryInsertButton = () => {
