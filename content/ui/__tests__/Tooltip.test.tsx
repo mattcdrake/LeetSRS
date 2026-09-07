@@ -1,51 +1,56 @@
 // @vitest-environment happy-dom
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { Button, TooltipTrigger } from 'react-aria-components';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Tooltip } from '../Tooltip';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
+  cleanup();
   vi.useRealTimers();
   document.documentElement.classList.remove('dark');
 });
 
-function anchor() {
-  const target = document.createElement('button');
-  vi.spyOn(target, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 100, 50, 20));
-  return target;
+function setup() {
+  return render(
+    <TooltipTrigger delay={300} closeDelay={0}>
+      <Button>Trigger</Button>
+      <Tooltip text="LeetSRS" />
+    </TooltipTrigger>
+  );
 }
 
-it('waits 300ms and positions below the center of the target', () => {
-  render(<Tooltip target={anchor()} text="LeetSRS" />);
+it('waits 300ms on hover and associates the tooltip with its trigger', () => {
+  setup();
+  const button = screen.getByRole('button');
+  fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
+  fireEvent.pointerEnter(button, { pointerType: 'mouse' });
+  fireEvent.pointerMove(button, { pointerType: 'mouse' });
   act(() => vi.advanceTimersByTime(299));
   expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
   act(() => vi.advanceTimersByTime(1));
   expect(screen.getByRole('tooltip')).toHaveTextContent('LeetSRS');
-  expect(screen.getByRole('tooltip')).toHaveStyle({
-    left: '125px',
-    top: '128px',
-    backgroundColor: 'white',
-  });
+  expect(button).toHaveAttribute('aria-describedby', screen.getByRole('tooltip').id);
+  expect(screen.getByRole('tooltip')).toHaveStyle({ backgroundColor: 'white' });
+  fireEvent.pointerLeave(button, { pointerType: 'mouse' });
+  act(() => vi.runOnlyPendingTimers());
+  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
 });
 
 it('cancels pending display on unmount', () => {
-  const target = anchor();
-  const { unmount } = render(<Tooltip target={target} text="LeetSRS" />);
+  const { unmount } = setup();
+  fireEvent.mouseEnter(screen.getByRole('button'));
+  fireEvent.mouseMove(screen.getByRole('button'));
   unmount();
   act(() => vi.advanceTimersByTime(300));
-  expect(target.getBoundingClientRect).not.toHaveBeenCalled();
   expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
 });
 
-it('restarts the delay when content changes and applies the dark theme', () => {
+it('supports keyboard focus and the dark theme', () => {
   document.documentElement.classList.add('dark');
-  const target = anchor();
-  const { rerender } = render(<Tooltip target={target} text="First" />);
-  act(() => vi.advanceTimersByTime(300));
-  rerender(<Tooltip target={target} text="Second" />);
-  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-  act(() => vi.advanceTimersByTime(300));
-  expect(screen.getAllByRole('tooltip')).toHaveLength(1);
-  expect(screen.getByRole('tooltip')).toHaveTextContent('Second');
+  setup();
+  fireEvent.keyDown(document.body, { key: 'Tab' });
+  act(() => screen.getByRole('button').focus());
+  act(() => vi.runOnlyPendingTimers());
   expect(screen.getByRole('tooltip')).toHaveStyle({ backgroundColor: 'rgb(40, 40, 40)' });
 });

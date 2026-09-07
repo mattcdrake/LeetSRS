@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { Button, TooltipTrigger } from 'react-aria-components';
 import { afterEach, expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
 import { LeetSrsButton } from '../LeetSrsControl';
@@ -18,12 +19,14 @@ it.each([
   ['body', 'dark'],
   ['body', 'dark-theme'],
 ])('updates mounted surfaces when %s toggles %s', async (element, className) => {
-  const target = document.createElement('button');
   render(
     <>
       <LeetSrsButton t={translations.en} onClick={vi.fn()} />
       <RatingMenu t={translations.en} onRate={vi.fn()} onAddWithoutRating={vi.fn()} onSelect={vi.fn()} />
-      <Tooltip target={target} text="Theme tooltip" delay={0} />
+      <TooltipTrigger isOpen>
+        <Button>Tooltip trigger</Button>
+        <Tooltip text="Theme tooltip" />
+      </TooltipTrigger>
     </>
   );
   const tooltip = await screen.findByRole('tooltip');

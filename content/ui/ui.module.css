@@ -11,16 +11,17 @@ button.toolbarButton:hover {
   background: var(--button-hover);
 }
 
+.popover {
+  z-index: 50;
+}
+
 .menu {
-  position: absolute;
-  right: 0;
   min-width: 160px;
   border: 1px solid var(--menu-border);
   border-radius: 8px;
   padding: 12px;
   background: var(--menu-bg);
   box-shadow: var(--menu-shadow);
-  z-index: 50;
 }
 
 .ratings {
@@ -64,7 +65,6 @@ button.add:hover {
 }
 
 .tooltip {
-  position: fixed;
   pointer-events: none;
   overflow: hidden;
   border-radius: 6px;
@@ -72,7 +72,7 @@ button.add:hover {
   font-size: 12px;
   box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
   opacity: 0;
-  transform: translateX(-50%) translateY(-4px) scale(0.95);
+  transform: translateY(-4px) scale(0.95);
   animation: tooltip-enter 100ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   z-index: 50;
 }
@@ -80,6 +80,17 @@ button.add:hover {
 @keyframes tooltip-enter {
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
+}
+
+button.toolbarButton[data-focus-visible] {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+button.rating[data-focused],
+button.add[data-focused] {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

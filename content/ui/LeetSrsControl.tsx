@@ -1,5 +1,5 @@
-import { type CSSProperties, type MouseEventHandler, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { type CSSProperties, useEffect, useState } from 'react';
+import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
 import { getCurrentProblem } from '@/content/problem-data';
 import type { Translations } from '@/i18n';
@@ -11,20 +11,10 @@ import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 import styles from './ui.module.css';
 
 export function LeetSrsControl() {
-  const container = useRef<HTMLDivElement>(null);
-  const [tooltipTarget, setTooltipTarget] = useState<HTMLButtonElement | null>(null);
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => watchStoredTranslations(setTranslations), []);
-
-  useEffect(() => {
-    const dismiss = (event: MouseEvent) => {
-      if (container.current && !event.composedPath().includes(container.current)) setMenuOpen(false);
-    };
-    document.addEventListener('click', dismiss);
-    return () => document.removeEventListener('click', dismiss);
-  }, []);
 
   async function handleRate(rating: number) {
     const problem = await getCurrentProblem();
@@ -45,51 +35,33 @@ export function LeetSrsControl() {
   if (!t) return null;
 
   return (
-    <div ref={container} style={{ position: 'relative', display: 'flex' }}>
-      <LeetSrsButton
-        t={t}
-        onClick={() => setMenuOpen((open) => !open)}
-        expanded={menuOpen}
-        onMouseEnter={(event) => setTooltipTarget(event.currentTarget)}
-        onMouseLeave={() => setTooltipTarget(null)}
-      />
-      {menuOpen && (
-        <RatingMenu
-          t={t}
-          onRate={handleRate}
-          onAddWithoutRating={handleAddWithoutRating}
-          onSelect={() => setMenuOpen(false)}
-        />
-      )}
-      {tooltipTarget && createPortal(<Tooltip target={tooltipTarget} text={t.app.name} />, document.body)}
-    </div>
+    <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
+      <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
+        <LeetSrsButton t={t} />
+        <Tooltip text={t.app.name} />
+      </TooltipTrigger>
+      <Popover placement="bottom end" offset={8} className={styles.popover}>
+        <Dialog aria-label={t.app.name}>
+          <RatingMenu
+            t={t}
+            onRate={handleRate}
+            onAddWithoutRating={handleAddWithoutRating}
+            onSelect={() => setMenuOpen(false)}
+          />
+        </Dialog>
+      </Popover>
+    </DialogTrigger>
   );
 }
 
-export function LeetSrsButton({
-  onClick,
-  t,
-  expanded = false,
-  onMouseEnter,
-  onMouseLeave,
-}: {
-  onClick: () => void;
-  t: Translations;
-  expanded?: boolean;
-  onMouseEnter?: MouseEventHandler<HTMLButtonElement>;
-  onMouseLeave?: MouseEventHandler<HTMLButtonElement>;
-}) {
+export function LeetSrsButton({ t, ...props }: { t: Translations } & ButtonProps) {
   const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
-    <button
+    <Button
+      {...props}
       type="button"
       className={styles.toolbarButton}
-      title={t.app.name}
       aria-label={t.app.name}
-      aria-expanded={expanded}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       style={
         {
           color: LEETSRS_BUTTON_COLOR,
@@ -120,6 +92,6 @@ export function LeetSrsButton({
         <path d="M7.16 18.37l0 .01" />
         <path d="M11 19.94l0 .01" />
       </svg>
-    </button>
+    </Button>
   );
 }

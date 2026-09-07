@@ -1,20 +1,18 @@
 import type { CSSProperties } from 'react';
+import { Button } from 'react-aria-components';
 import type { Translations } from '@/i18n';
 import { getRatingColor, RATING_BUTTON_CONFIGS, THEME_COLORS, useDarkMode } from './theme';
 import styles from './ui.module.css';
 
 export type RatingCallback = (rating: number) => void;
-export type RatingMenuPosition = 'top' | 'bottom';
 
 export function RatingMenu({
   t,
-  position = 'bottom',
   onRate,
   onAddWithoutRating,
   onSelect,
 }: {
   t: Translations;
-  position?: RatingMenuPosition;
   onRate: RatingCallback;
   onAddWithoutRating: () => void;
   onSelect: () => void;
@@ -26,8 +24,8 @@ export function RatingMenu({
       className={styles.menu}
       style={
         {
-          ...(position === 'top' ? { bottom: '100%', marginBottom: 8 } : { top: '100%', marginTop: 8 }),
           '--menu-bg': colors.bgSecondary,
+          '--focus-ring': isDark ? '#93c5fd' : '#2563eb',
           '--menu-border': isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.15)',
           '--menu-shadow': isDark
             ? '0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3)'
@@ -40,22 +38,22 @@ export function RatingMenu({
           const { bg, hover } = getRatingColor(colorKey, isDark);
           const label = t.ratings[labelKey];
           return (
-            <button
+            <Button
               key={rating}
               type="button"
               className={styles.rating}
               style={{ '--button-bg': bg, '--button-hover': hover } as CSSProperties & Record<`--${string}`, string>}
-              onClick={() => {
+              onPress={() => {
                 onRate(rating);
                 onSelect();
               }}
             >
               {label}
-            </button>
+            </Button>
           );
         })}
       </div>
-      <button
+      <Button
         type="button"
         className={styles.add}
         style={
@@ -66,7 +64,7 @@ export function RatingMenu({
             border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
           } as CSSProperties & Record<`--${string}`, string>
         }
-        onClick={() => {
+        onPress={() => {
           onAddWithoutRating();
           onSelect();
         }}
@@ -75,7 +73,7 @@ export function RatingMenu({
           ➕
         </span>{' '}
         {t.contentScript.addToSrsNoRating}
-      </button>
+      </Button>
     </div>
   );
 }
