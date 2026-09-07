@@ -294,6 +294,21 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
 }
 
 describe('review queue calculations', () => {
+  it('returns an empty queue for an empty readonly collection', () => {
+    expect(buildReviewQueue(Object.freeze([]), 3, 0)).toEqual([]);
+  });
+
+  it('retains only non-new cards when the daily new-card limit is zero', () => {
+    const cards = [
+      dueCard('new', '2024-01-15T07:00:00'),
+      dueCard('review', '2024-01-15T10:00:00', State.Review),
+      dueCard('learning', '2024-01-15T08:00:00', State.Learning),
+      dueCard('relearning', '2024-01-15T09:00:00', State.Relearning),
+    ];
+
+    expect(buildReviewQueue(cards, 0, 0).map((card) => card.slug)).toEqual(['learning', 'relearning', 'review']);
+  });
+
   it('should sort cards by due date then slug for stable ordering', () => {
     const cards = ['card-c', 'card-a', 'card-b'].map((slug) => dueCard(slug, '2024-01-15T10:00:00'));
     const queue = queueFor(cards);
@@ -328,19 +343,19 @@ describe('review queue calculations', () => {
   });
 
   it.each([
-    [0, ['review', 'learning', 'relearning', 'new-a', 'new-b']],
-    [1, ['review', 'learning', 'relearning', 'new-a']],
+    [0, ['review', 'new-a', 'new-b', 'learning', 'relearning']],
+    [1, ['review', 'new-a', 'learning', 'relearning']],
     [2, ['review', 'learning', 'relearning']],
     [4, ['review', 'learning', 'relearning']],
   ])('limits only new cards after %i completions without modifying inputs', (completed, expected) => {
-    const cards = [
+    const cards: readonly Card[] = Object.freeze([
       dueCard('new-c', '2024-01-15T12:00:00'),
       dueCard('new-b', '2024-01-15T11:00:00'),
       dueCard('new-a', '2024-01-15T11:00:00'),
-      dueCard('relearning', '2024-01-15T10:00:00', State.Relearning),
-      dueCard('learning', '2024-01-15T09:00:00', State.Learning),
+      dueCard('relearning', '2024-01-15T13:00:00', State.Relearning),
+      dueCard('learning', '2024-01-15T11:30:00', State.Learning),
       dueCard('review', '2024-01-15T08:00:00', State.Review),
-    ];
+    ]);
     const before = structuredClone(cards);
 
     expect(queueFor(cards, 2, completed).map((card) => card.slug)).toEqual(expected);
