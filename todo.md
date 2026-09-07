@@ -1,0 +1,14 @@
+# Centralize LeetCode China permission state
+
+Issue: [#267](https://github.com/mattcdrake/LeetSRS/issues/267)
+
+- [x] Add popup-owned `entrypoints/popup/queries/leetcode-cn.ts` in the existing React Query layer with one origin pattern (`*://*.leetcode.cn/*`), shared permission state (including initial loading), and an enable action.
+- [ ] Initialize state with `browser.permissions.contains`; observe `permissions.onAdded` and `permissions.onRemoved` to refresh browser authorization for both consumers. Clean up subscriptions with the popup lifecycle and prevent stale async checks from overwriting newer state.
+- [ ] Call `browser.permissions.request` directly from the Enable interaction, before any asynchronous work; refresh shared state afterward. Denial must leave the relevant prompts visible and allow retrying.
+- [ ] Refactor `LeetcodeCnBanner` and `LeetcodeCnSection` to consume the shared permission hook from `queries/leetcode-cn.ts`, removing their duplicate origin constants, permission checks, requests, and permission state. Keep prompts hidden until permission state is known.
+- [ ] Preserve [#157](https://github.com/mattcdrake/LeetSRS/issues/157): show the banner only when the popup opens on a LeetCode China tab, permission is missing, and the banner has not been dismissed. Keep active-tab relevance and dismissal separate from permission state; settings remains available regardless of tab or dismissal.
+- [ ] Preserve the existing `leetsrs:leetcodeCnBannerDismissed` localStorage preference across popup reopenings. Document popup ownership in `docs/architecture.md`: dismissal is a local presentation preference, not browser authorization or synchronized learning data. Keep catalog source availability in #217/#229 separate from authorization.
+- [ ] Extend `entrypoints/popup/queries/__tests__/leetcode-cn.test.tsx` and update both consumers' tests, reusing `test/utils/` helpers where appropriate. Cover initial loading/granted/missing states, grant and denial from either consumer, shared updates, external grants/removals, listener cleanup, and stale checks. Verify requests occur only on Enable and originate synchronously from its handler.
+- [ ] Retain active-tab and dismissal regression coverage: unrelated/missing/invalid URLs hide the banner; dismissal survives reopening and permission changes without suppressing settings or changing authorization. Replace assertions tied to component-local permission checks with behavior assertions where needed.
+- [ ] Run `npm run check` and `npm run build`; manually verify grant, denial, external permission changes, and dismissal in the extension. Capture UI screenshots of the relevant banner and settings states for the PR.
+- [ ] Mark #267 complete in `docs/plans/roadmap.md` once implementation and verification are finished.
