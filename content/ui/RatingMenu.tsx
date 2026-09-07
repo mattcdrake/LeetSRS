@@ -2,7 +2,6 @@ import type { CSSProperties } from 'react';
 import { Button } from 'react-aria-components';
 import type { Translations } from '@/i18n';
 import { getRatingColor, RATING_BUTTON_CONFIGS, THEME_COLORS, useDarkMode } from './theme';
-import styles from './ui.module.css';
 
 export type RatingCallback = (rating: number) => void;
 
@@ -21,7 +20,7 @@ export function RatingMenu({
   const colors = isDark ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
     <div
-      className={styles.menu}
+      className="min-w-40 rounded-lg border border-(--menu-border) bg-(--menu-bg) p-3 shadow-(--menu-shadow)"
       style={
         {
           '--menu-bg': colors.bgSecondary,
@@ -33,7 +32,7 @@ export function RatingMenu({
         } as CSSProperties & Record<`--${string}`, string>
       }
     >
-      <div className={styles.ratings}>
+      <div className="mb-2 flex gap-1">
         {RATING_BUTTON_CONFIGS.map(({ rating, labelKey, colorKey }) => {
           const { bg, hover } = getRatingColor(colorKey, isDark);
           const label = t.ratings[labelKey];
@@ -41,7 +40,7 @@ export function RatingMenu({
             <Button
               key={rating}
               type="button"
-              className={styles.rating}
+              className="h-8 w-16 cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 text-[13px] text-white transition-[background-color] duration-200 ease-[ease] hover:bg-(--button-hover) data-focused:outline-2 data-focused:outline-solid data-focused:outline-(--focus-ring) data-focused:outline-offset-2"
               style={{ '--button-bg': bg, '--button-hover': hover } as CSSProperties & Record<`--${string}`, string>}
               onPress={() => {
                 onRate(rating);
@@ -55,7 +54,7 @@ export function RatingMenu({
       </div>
       <Button
         type="button"
-        className={styles.add}
+        className="block h-8 w-full cursor-pointer rounded-sm bg-(--button-bg) px-3 py-1.5 text-[13px] leading-5 no-underline transition-[background-color] duration-200 ease-[ease] hover:bg-(--button-hover) hover:underline data-focused:outline-2 data-focused:outline-solid data-focused:outline-(--focus-ring) data-focused:outline-offset-2"
         style={
           {
             '--button-bg': colors.bgAddButton,

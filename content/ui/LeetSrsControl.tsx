@@ -6,7 +6,6 @@ import { watchStoredTranslations } from '@/infrastructure/storage/translations';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
-import styles from './ui.module.css';
 
 export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
@@ -31,7 +30,7 @@ export function LeetSrsControl() {
         <LeetSrsButton t={t} ref={buttonRef} />
         <Tooltip text={t.app.name} />
       </TooltipTrigger>
-      <Popover placement="bottom end" offset={8} className={styles.popover}>
+      <Popover placement="bottom end" offset={8} className="z-50">
         <Dialog aria-label={t.app.name}>
           <RatingMenu
             t={t}
@@ -51,7 +50,7 @@ export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTML
     <Button
       {...props}
       type="button"
-      className={styles.toolbarButton}
+      className="flex cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 hover:bg-(--button-hover) data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-current data-focus-visible:outline-offset-2"
       aria-label={t.app.name}
       style={
         {
@@ -73,7 +72,7 @@ export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTML
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        style={{ width: 16, height: 16 }}
+        className="size-4"
         role="img"
       >
         <path d="M9 4.55a8 8 0 0 1 6 14.9m0 -4.45v5h5" />

@@ -10,7 +10,8 @@ export function createContentRoot(uiContainer: HTMLElement) {
   const portals = document.createElement('div');
 
   // The top layer prevents toolbar overflow from clipping portalled surfaces.
-  portals.className = 'leetsrs-portals';
+  portals.className =
+    'pointer-events-none fixed inset-0 m-0 size-full overflow-visible border-0 bg-transparent p-0 text-inherit backdrop:hidden [&>*]:pointer-events-auto';
   portals.setAttribute('popover', 'manual');
   uiContainer.append(container, portals);
   portals.showPopover?.();

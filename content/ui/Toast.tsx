@@ -20,19 +20,10 @@ export function Toast({ message, onDismiss }: { message: string; onDismiss: () =
   return (
     <div
       role="status"
+      className="fixed right-5 bottom-5 z-9999 rounded-lg bg-[#323232] px-4 py-3 text-[14px] text-white shadow-[0_2px_8px_rgb(0_0_0/20%)] transition-opacity ease-in-out"
       style={{
-        position: 'fixed',
-        bottom: '20px',
-        right: '20px',
-        background: '#323232',
-        color: '#fff',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        fontSize: '14px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-        zIndex: '9999',
         opacity: visible ? 1 : 0,
-        transition: `opacity ${FADE_DURATION_MS}ms ease-in-out`,
+        transitionDuration: `${FADE_DURATION_MS}ms`,
       }}
     >
       {message}
