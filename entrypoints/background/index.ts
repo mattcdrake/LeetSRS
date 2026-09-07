@@ -4,7 +4,7 @@ import { migrations, runMigrations } from '@/infrastructure/storage/migrations';
 import { getReviewQueue } from '@/services/cards';
 import { getGistSyncConfig } from '@/services/github-sync';
 import { getSettings } from '@/services/settings';
-import { messages, registerBackgroundMessages } from './messaging';
+import { messages, registerBackgroundMessages } from './message-handlers';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -39,7 +39,7 @@ export default defineBackground(() => {
     await updateBadge();
   })();
 
-  const messageExecutor = registerBackgroundMessages(messages, {
+  const messageRunner = registerBackgroundMessages(messages, {
     ready: readyPromise,
     markDataUpdated,
     refreshBadge: updateBadge,
@@ -54,7 +54,7 @@ export default defineBackground(() => {
 
     const config = await getGistSyncConfig();
     if (config.enabled && config.pat && config.gistId) {
-      await messageExecutor.execute(messages.triggerGistSync, undefined);
+      await messageRunner.execute(messages.triggerGistSync, undefined);
     } else {
       await updateBadge();
     }

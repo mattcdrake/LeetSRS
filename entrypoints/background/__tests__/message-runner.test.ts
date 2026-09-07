@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDeferred } from '@/test/utils/deferred';
-import { createBackgroundMessageExecutor } from '../messaging';
-import type { BackgroundMessageRegistry } from '../registry-types';
+import type { BackgroundMessageRegistry } from '../message-runner';
+import { createBackgroundMessageRunner } from '../message-runner';
 
-describe('background message executor', () => {
+describe('background message runner', () => {
   it('waits for readiness and lets reads bypass queued writes', async () => {
     const ready = createDeferred<void>();
     const releaseWrite = createDeferred<void>();
     const writeStarted = createDeferred<void>();
     const markDataUpdated = vi.fn(async () => {});
     const refreshBadge = vi.fn(async () => {});
-    const executor = createBackgroundMessageExecutor({
+    const runner = createBackgroundMessageRunner({
       ready: ready.promise,
       markDataUpdated,
       refreshBadge,
@@ -30,8 +30,8 @@ describe('background message executor', () => {
       },
     } satisfies BackgroundMessageRegistry['deleteNote'];
 
-    const pendingWrite = executor.execute(write, { cardId: 'one' });
-    const pendingRead = executor.execute(read, undefined);
+    const pendingWrite = runner.execute(write, { cardId: 'one' });
+    const pendingRead = runner.execute(read, undefined);
     expect(readHandler).not.toHaveBeenCalled();
 
     ready.resolve();
@@ -49,7 +49,7 @@ describe('background message executor', () => {
     const releaseFirst = createDeferred<void>();
     const firstStarted = createDeferred<void>();
     const events: string[] = [];
-    const executor = createBackgroundMessageExecutor({
+    const runner = createBackgroundMessageRunner({
       ready: Promise.resolve(),
       markDataUpdated: async () => {
         events.push('mark');
@@ -72,8 +72,8 @@ describe('background message executor', () => {
       },
     } satisfies BackgroundMessageRegistry['deleteNote'];
 
-    const first = executor.execute(write, { cardId: 'first' });
-    const second = executor.execute(write, { cardId: 'second' });
+    const first = runner.execute(write, { cardId: 'first' });
+    const second = runner.execute(write, { cardId: 'second' });
     await firstStarted.promise;
     expect(events).toEqual(['first:start']);
 
@@ -94,7 +94,7 @@ describe('background message executor', () => {
   it('skips effects after handler failure and continues the queue', async () => {
     const markDataUpdated = vi.fn(async () => {});
     const refreshBadge = vi.fn(async () => {});
-    const executor = createBackgroundMessageExecutor({
+    const runner = createBackgroundMessageRunner({
       ready: Promise.resolve(),
       markDataUpdated,
       refreshBadge,
@@ -116,18 +116,18 @@ describe('background message executor', () => {
       handler: nextHandler,
     } satisfies BackgroundMessageRegistry['resetAllData'];
 
-    await expect(executor.execute(failingWrite, undefined)).rejects.toBe(failure);
+    await expect(runner.execute(failingWrite, undefined)).rejects.toBe(failure);
     expect(markDataUpdated).not.toHaveBeenCalled();
     expect(refreshBadge).not.toHaveBeenCalled();
 
-    await expect(executor.execute(nextWrite, undefined)).resolves.toBeUndefined();
+    await expect(runner.execute(nextWrite, undefined)).resolves.toBeUndefined();
     expect(nextHandler).toHaveBeenCalledOnce();
   });
 
   it('continues the queue after a side effect fails', async () => {
     const failure = new Error('tracking failed');
     const markDataUpdated = vi.fn().mockRejectedValueOnce(failure).mockResolvedValue(undefined);
-    const executor = createBackgroundMessageExecutor({
+    const runner = createBackgroundMessageRunner({
       ready: Promise.resolve(),
       markDataUpdated,
       refreshBadge: async () => {},
@@ -140,8 +140,8 @@ describe('background message executor', () => {
       handler,
     } satisfies BackgroundMessageRegistry['resetAllData'];
 
-    await expect(executor.execute(write, undefined)).rejects.toBe(failure);
-    await expect(executor.execute(write, undefined)).resolves.toBeUndefined();
+    await expect(runner.execute(write, undefined)).rejects.toBe(failure);
+    await expect(runner.execute(write, undefined)).resolves.toBeUndefined();
     expect(handler).toHaveBeenCalledTimes(2);
     expect(markDataUpdated).toHaveBeenCalledTimes(2);
   });

@@ -7,7 +7,7 @@ learning-data writes. Services coordinate domain rules and persistence.
 
 | Location          | Owns                                                                                      |
 | ----------------- | ----------------------------------------------------------------------------------------- |
-| `entrypoints/`    | WXT registration, background executor, popup UI and query hooks                           |
+| `entrypoints/`    | WXT registration, background message runner, popup UI and query hooks                     |
 | `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.tsx`               |
 | `domain/`         | Models (including sync), scheduling, review days, settings, language and import policy    |
 | `services/`       | Workflows, clock/settings reads, FSRS lifetime, write order, sync decisions               |
@@ -47,14 +47,13 @@ their subscriptions and timers on unmount.
 
 ## Messages and writes
 
-Define RPCs and their transport in `infrastructure/browser/messages.ts` and register
-handlers in `entrypoints/background/messaging.ts`. Each write declares `refreshBadge`
-and `syncTrackingOwner`: the executor marks local edits, the handler manages its
-own timestamp, or `none` skips tracking.
+RPC contracts and transport live in `infrastructure/browser/messages.ts`.
+Under `entrypoints/background/`, `message-handlers.ts` wires services and registers
+listeners synchronously; `message-runner.ts` owns shared types and execution,
+without service imports.
 
-Handlers wait for startup. Writes share a queue, including alarm-driven Gist sync
-and its network requests. Reads can overlap writes. Serialization is not atomicity:
-partial writes remain possible.
+Handlers wait for startup. Writes share one queue, including alarm-driven Gist
+sync and its network requests. Reads can overlap writes; partial writes remain possible.
 
 Services own clocks, settings reads, and write order; domain calculations receive
 explicit inputs.
