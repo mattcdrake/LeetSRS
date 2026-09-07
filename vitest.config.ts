@@ -7,6 +7,5 @@ export default defineConfig({
     restoreMocks: true,
     setupFiles: './test/setup.ts',
   },
-
   plugins: [WxtVitest()],
 });
