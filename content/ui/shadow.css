@@ -1,0 +1,42 @@
+/* Supply the base styles previously inherited from LeetCode's page reset. */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1a1a1a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0;
+  font: inherit;
+  text-transform: none;
+}
+
+.leetsrs-portals {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  color: inherit;
+  pointer-events: none;
+}
+
+.leetsrs-portals::backdrop {
+  display: none;
+}
+
+.leetsrs-portals > * {
+  pointer-events: auto;
+}

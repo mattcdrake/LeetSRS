@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useState } from 'react';
+import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
 import { getCurrentProblem } from '@/content/problem-data';
@@ -13,8 +13,17 @@ import styles from './ui.module.css';
 export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const wasMenuOpen = useRef(false);
 
   useEffect(() => watchStoredTranslations(setTranslations), []);
+
+  useEffect(() => {
+    // React Aria's restore-focus guard only checks document.activeElement,
+    // which points to the shadow host after the focused menu is removed.
+    if (wasMenuOpen.current && !menuOpen) buttonRef.current?.focus();
+    wasMenuOpen.current = menuOpen;
+  }, [menuOpen]);
 
   async function handleRate(rating: number) {
     const problem = await getCurrentProblem();
@@ -37,7 +46,7 @@ export function LeetSrsControl() {
   return (
     <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
       <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
-        <LeetSrsButton t={t} />
+        <LeetSrsButton t={t} ref={buttonRef} />
         <Tooltip text={t.app.name} />
       </TooltipTrigger>
       <Popover placement="bottom end" offset={8} className={styles.popover}>
@@ -54,7 +63,7 @@ export function LeetSrsControl() {
   );
 }
 
-export function LeetSrsButton({ t, ...props }: { t: Translations } & ButtonProps) {
+export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTMLButtonElement> } & ButtonProps) {
   const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
     <Button

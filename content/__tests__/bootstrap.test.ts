@@ -2,6 +2,7 @@
 
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
@@ -13,6 +14,7 @@ vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
 vi.mock('@/infrastructure/storage/translations', () => ({ watchStoredTranslations: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
+let ctx: ContentScriptContext;
 let notifyMutation: () => void;
 const observe = vi.fn();
 const disconnect = vi.fn();
@@ -20,6 +22,7 @@ const disposeReset = vi.fn();
 const unwatchTranslations = vi.fn();
 
 beforeEach(() => {
+  ctx = new ContentScriptContext('test');
   vi.stubGlobal(
     'MutationObserver',
     class {
@@ -44,8 +47,8 @@ beforeEach(() => {
 
 afterEach(() => {
   act(() => {
+    ctx.notifyInvalidated();
     document.body.innerHTML = '';
-    notifyMutation();
   });
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -54,14 +57,14 @@ afterEach(() => {
 describe('content startup', () => {
   it('shows a toast only after auto-reset reports confirmation', async () => {
     vi.useFakeTimers();
-    await act(() => bootstrapContent());
+    await act(() => bootstrapContent(ctx));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
     const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeAutoReset).mock.calls[0]);
-    act(() => onResetConfirmed());
+    await act(async () => onResetConfirmed());
 
-    const toast = screen.getByRole('status');
-    const container = requireDefined(toast.parentElement);
+    const container = requireDefined(document.querySelector('leetsrs-toast'));
+    const toast = requireDefined(container.shadowRoot?.querySelector('[role="status"]'));
     expect(toast).toHaveTextContent('Code reset to default');
     act(() => vi.advanceTimersByTime(2800));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -70,7 +73,7 @@ describe('content startup', () => {
   });
 
   it('mounts, observes, and sets up auto-reset without messaging the worker', async () => {
-    await act(() => bootstrapContent());
+    await act(() => bootstrapContent(ctx));
 
     expect(sendMessage).not.toHaveBeenCalled();
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
@@ -82,7 +85,7 @@ describe('content startup', () => {
 
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
     document.body.innerHTML = '';
-    await act(() => bootstrapContent());
+    await act(() => bootstrapContent(ctx));
     expect(document.querySelector('#leetsrs-control')).toBeNull();
 
     document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
@@ -96,7 +99,7 @@ describe('content startup', () => {
   });
 
   it('replaces the tracked mount when the old toolbar stays connected', async () => {
-    await act(() => bootstrapContent());
+    await act(() => bootstrapContent(ctx));
     const oldToolbar = requireDefined(document.querySelector('#ide-top-btns'));
     oldToolbar.removeAttribute('id');
     document.body.insertAdjacentHTML('beforeend', '<div id="ide-top-btns"><div id="last-group"></div></div>');
@@ -112,7 +115,7 @@ describe('content startup', () => {
   });
 
   it('unmounts when the toolbar disappears', async () => {
-    await act(() => bootstrapContent());
+    await act(() => bootstrapContent(ctx));
     const toolbar = requireDefined(document.querySelector('#ide-top-btns'));
     toolbar.remove();
 
