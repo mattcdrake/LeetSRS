@@ -16,28 +16,23 @@ const sortByDueDateThenSlug = (a: Card, b: Card): number => {
   return a.slug.localeCompare(b.slug);
 };
 
-export function partitionDueCards(dueCards: Card[]): { reviewCards: Card[]; newCards: Card[] } {
+function partitionDueCards(dueCards: readonly Card[]): { reviewCards: Card[]; newCards: Card[] } {
   const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);
   const newCards = dueCards.filter((card) => card.fsrs.state === FsrsState.New);
-
   newCards.sort(sortByDueDateThenSlug);
-
   return { reviewCards, newCards };
 }
 
 export function buildReviewQueue(
-  reviewCards: Card[],
-  newCards: Card[],
+  eligibleCards: readonly Card[],
   maxNewCardsPerDay: number,
   newCardsCompletedToday: number
 ): Card[] {
+  const { reviewCards, newCards } = partitionDueCards(eligibleCards);
   const remainingNewCards = Math.max(0, maxNewCardsPerDay - newCardsCompletedToday);
-
   const limitedNewCards = newCards.slice(0, remainingNewCards);
-
   const allQueueCards = [...reviewCards, ...limitedNewCards];
   allQueueCards.sort(sortByDueDateThenSlug);
-
   return allQueueCards;
 }
 

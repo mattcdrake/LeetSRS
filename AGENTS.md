@@ -20,6 +20,8 @@ Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semico
 
 ## Testing Guidelines
 
+In Codex, run `npm test` (including focused tests) and `npm run check` with `sandbox_permissions: "require_escalated"` from the first attempt. WXT's Vitest plugin requires a localhost port that the sandbox blocks. Use the normal tool approval flow; do not repeat the known sandbox failure or report it as a new issue each task.
+
 Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Check `test/utils/` before adding local test helpers, and reuse an existing helper when it fits. Cover behavior changes and bug fixes. Before submitting, run `npm check`. Don't mention this in the PR description.
 
 ## Commit & Pull Request Guidelines
