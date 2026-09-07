@@ -1,49 +1,52 @@
 import { type CSSProperties, type MouseEventHandler, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Translations } from '@/i18n';
-import { useRatingMenu } from '../useRatingMenu';
+import { watchStoredTranslations } from '@/infrastructure/storage/translations';
 import { type RatingCallback, RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 import styles from './ui.module.css';
 
 export type LeetSrsControlProps = {
-  t: Translations;
-  getTranslations: () => Promise<Translations>;
-  onError: (error: unknown) => void;
   onRate: RatingCallback;
   onAddWithoutRating: () => void;
 };
 
-export function LeetSrsControl({ t, getTranslations, onError, onRate, onAddWithoutRating }: LeetSrsControlProps) {
+export function LeetSrsControl({ onRate, onAddWithoutRating }: LeetSrsControlProps) {
   const container = useRef<HTMLDivElement>(null);
   const [tooltipTarget, setTooltipTarget] = useState<HTMLButtonElement | null>(null);
-  const menu = useRatingMenu(getTranslations, onError);
+  const [t, setTranslations] = useState<Translations | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(
+    () =>
+      watchStoredTranslations(setTranslations, (error) => {
+        console.error('Failed to load content translations:', error);
+      }),
+    []
+  );
 
   useEffect(() => {
     const dismiss = (event: MouseEvent) => {
-      if (container.current && !event.composedPath().includes(container.current)) menu.close();
+      if (container.current && !event.composedPath().includes(container.current)) setMenuOpen(false);
     };
     document.addEventListener('click', dismiss);
     return () => document.removeEventListener('click', dismiss);
-  }, [menu.close]);
+  }, []);
+
+  if (!t) return null;
 
   return (
     <div ref={container} style={{ position: 'relative', display: 'flex' }}>
       <LeetSrsButton
         t={t}
-        onClick={() => void menu.toggle()}
-        expanded={menu.translations !== null}
+        onClick={() => setMenuOpen((open) => !open)}
+        expanded={menuOpen}
         onMouseEnter={(event) => setTooltipTarget(event.currentTarget)}
         onMouseLeave={() => setTooltipTarget(null)}
       />
-      {menu.translations && (
-        <RatingMenu
-          t={menu.translations}
-          onRate={onRate}
-          onAddWithoutRating={onAddWithoutRating}
-          onSelect={menu.close}
-        />
+      {menuOpen && (
+        <RatingMenu t={t} onRate={onRate} onAddWithoutRating={onAddWithoutRating} onSelect={() => setMenuOpen(false)} />
       )}
       {tooltipTarget && createPortal(<Tooltip target={tooltipTarget} text={t.app.name} />, document.body)}
     </div>

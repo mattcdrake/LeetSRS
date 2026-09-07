@@ -2,9 +2,7 @@ import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Grade } from 'ts-fsrs';
 import type { ProblemDescriptor } from '@/domain/cards';
-import type { Translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { getCurrentDomain } from './domain';
 import { type ExtractedProblemData, extractProblemData } from './problem-data';
@@ -17,7 +15,7 @@ export async function bootstrapContent() {
   } catch (error) {
     console.error('Failed to ping service worker:', error);
   }
-  setupLeetSrsButton(await getStoredTranslations());
+  setupLeetSrsButton();
   setupLeetcodeAutoReset();
 }
 
@@ -46,7 +44,7 @@ async function withProblemData<T>(action: (problem: ProblemDescriptor) => Promis
   }
 }
 
-function setupLeetSrsButton(t: Translations) {
+function setupLeetSrsButton() {
   const BUTTON_ID = 'leetsrs-button-wrapper';
   let mountedButton: { element: HTMLElement; dispose: () => void } | null = null;
 
@@ -60,9 +58,6 @@ function setupLeetSrsButton(t: Translations) {
     const root = createRoot(buttonWrapper);
     root.render(
       createElement(LeetSrsControl, {
-        t,
-        getTranslations: getStoredTranslations,
-        onError: (error) => console.error('Failed to load rating menu translations:', error),
         onRate: async (rating, label) => {
           await withProblemData(async (problem) => {
             const result = await sendMessage('rateCard', {

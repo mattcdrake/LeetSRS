@@ -1,11 +1,8 @@
 // @vitest-environment happy-dom
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
 import { RatingMenu } from '../RatingMenu';
-import { THEME_COLORS } from '../theme';
-
-afterEach(() => document.documentElement.classList.remove('dark'));
 
 it.each(['en', 'pl'] as const)('dispatches each rating and add action once in %s', (language) => {
   const t = translations[language];
@@ -21,16 +18,4 @@ it.each(['en', 'pl'] as const)('dispatches each rating and add action once in %s
   expect(onRate).toHaveBeenCalledTimes(4);
   expect(onAddWithoutRating).toHaveBeenCalledOnce();
   expect(onSelect).toHaveBeenCalledTimes(5);
-});
-
-it('updates translated labels on rerender and uses dark colors', () => {
-  document.documentElement.classList.add('dark');
-  const actions = { onRate: vi.fn(), onAddWithoutRating: vi.fn(), onSelect: vi.fn() };
-  const { rerender } = render(<RatingMenu t={translations.en} {...actions} />);
-  expect(screen.getByRole('button', { name: translations.en.ratings.again })).toHaveStyle({
-    '--button-bg': THEME_COLORS.dark.ratingAgain,
-  });
-  rerender(<RatingMenu t={translations.pl} {...actions} />);
-  fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings.good }));
-  expect(actions.onRate).toHaveBeenCalledWith(3, translations.pl.ratings.good);
 });

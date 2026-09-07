@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { getStoredTranslations } from '@/infrastructure/storage/translations';
+import { watchStoredTranslations } from '@/infrastructure/storage/translations';
 import { createDeferred } from '@/test/utils/deferred';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
-vi.mock('@/infrastructure/storage/translations', () => ({ getStoredTranslations: vi.fn() }));
+vi.mock('@/infrastructure/storage/translations', () => ({ watchStoredTranslations: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 let notifyMutation: () => void;
@@ -33,7 +33,10 @@ beforeEach(() => {
   );
   document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
   vi.mocked(sendMessage).mockResolvedValue(undefined);
-  vi.mocked(getStoredTranslations).mockResolvedValue(translations.en);
+  vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
+    onChange(translations.en);
+    return vi.fn();
+  });
   vi.mocked(setupLeetcodeAutoReset).mockReturnValue(disposeReset);
 });
 
@@ -43,11 +46,9 @@ afterEach(() => {
 });
 
 describe('content startup', () => {
-  it('waits for ping and translations before mounting, observing, and setting up auto-reset', async () => {
+  it('waits for ping before mounting, observing, and setting up auto-reset', async () => {
     const ping = createDeferred<void>();
-    const language = createDeferred<typeof translations.en>();
     vi.mocked(sendMessage).mockReturnValue(ping.promise);
-    vi.mocked(getStoredTranslations).mockReturnValue(language.promise);
     observe.mockImplementation(() => {
       expect(document.querySelector('#leetsrs-button-wrapper')).not.toBeNull();
       expect(setupLeetcodeAutoReset).not.toHaveBeenCalled();
@@ -55,13 +56,8 @@ describe('content startup', () => {
 
     const startup = bootstrapContent();
     expect(sendMessage).toHaveBeenCalledWith('ping');
-    expect(getStoredTranslations).not.toHaveBeenCalled();
-    ping.resolve();
-    await ping.promise;
-    expect(getStoredTranslations).toHaveBeenCalledOnce();
     expect(document.querySelector('#leetsrs-button-wrapper')).toBeNull();
-    expect(observe).not.toHaveBeenCalled();
-    language.resolve(translations.en);
+    ping.resolve();
 
     await expect(startup).resolves.toBeUndefined();
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
@@ -83,17 +79,6 @@ describe('content startup', () => {
     expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
   });
 
-  it('propagates translation failure before mounting or auto-reset', async () => {
-    const error = new Error('storage unavailable');
-    vi.mocked(getStoredTranslations).mockRejectedValue(error);
-
-    await expect(bootstrapContent()).rejects.toThrow(error);
-
-    expect(document.querySelector('#leetsrs-button-wrapper')).toBeNull();
-    expect(observe).not.toHaveBeenCalled();
-    expect(setupLeetcodeAutoReset).not.toHaveBeenCalled();
-  });
-
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
     document.body.innerHTML = '';
     await bootstrapContent();
@@ -107,6 +92,5 @@ describe('content startup', () => {
     document.querySelector('#leetsrs-button-wrapper')?.remove();
     notifyMutation();
     expect(document.querySelectorAll('#leetsrs-button-wrapper')).toHaveLength(1);
-    expect(getStoredTranslations).toHaveBeenCalledOnce();
   });
 });

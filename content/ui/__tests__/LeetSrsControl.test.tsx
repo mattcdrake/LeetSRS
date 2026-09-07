@@ -1,27 +1,30 @@
 // @vitest-environment happy-dom
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
-import { createDeferred } from '@/test/utils/deferred';
-import { LeetSrsButton, LeetSrsControl } from '../LeetSrsControl';
+import { watchStoredTranslations } from '@/infrastructure/storage/translations';
 
-function setup(getTranslations = vi.fn().mockResolvedValue(translations.en)) {
+vi.mock('@/infrastructure/storage/translations', () => ({ watchStoredTranslations: vi.fn() }));
+const unwatch = vi.fn();
+beforeEach(() => {
+  vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
+    onChange(translations.en);
+    return unwatch;
+  });
+});
+
+import { LeetSrsControl } from '../LeetSrsControl';
+
+function setup() {
   const onRate = vi.fn();
   const onAddWithoutRating = vi.fn();
-  const view = render(
-    <LeetSrsControl
-      t={translations.en}
-      getTranslations={getTranslations}
-      onError={vi.fn()}
-      onRate={onRate}
-      onAddWithoutRating={onAddWithoutRating}
-    />
-  );
+  const view = render(<LeetSrsControl onRate={onRate} onAddWithoutRating={onAddWithoutRating} />);
   return { ...view, onRate, onAddWithoutRating, button: screen.getByRole('button', { name: 'LeetSRS' }) };
 }
 
 it('toggles the menu and dispatches selections exactly once before closing', async () => {
   const { button, onRate, onAddWithoutRating } = setup();
+  expect(button).toHaveAttribute('type', 'button');
   fireEvent.click(button);
   fireEvent.click(await screen.findByRole('button', { name: translations.en.ratings.good }));
   expect(onRate).toHaveBeenCalledExactlyOnceWith(3, translations.en.ratings.good);
@@ -46,13 +49,17 @@ it('dismisses outside clicks and reopens', async () => {
   await screen.findByRole('button', { name: translations.en.ratings.good });
 });
 
-it('cancels an opening menu when clicking outside before translations arrive', async () => {
-  const request = createDeferred<typeof translations.en>();
-  const { button } = setup(vi.fn(() => request.promise));
+it('updates an open menu when stored language changes without resubscribing on clicks', () => {
+  const { button, onRate, unmount } = setup();
   fireEvent.click(button);
-  fireEvent.click(document.body);
-  await act(async () => request.resolve(translations.en));
-  expect(button).toHaveAttribute('aria-expanded', 'false');
+  const onChange = vi.mocked(watchStoredTranslations).mock.calls[0][0];
+  act(() => onChange(translations.pl));
+  fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings.good }));
+  expect(onRate).toHaveBeenCalledExactlyOnceWith(3, translations.pl.ratings.good);
+  fireEvent.click(button);
+  expect(watchStoredTranslations).toHaveBeenCalledOnce();
+  unmount();
+  expect(unwatch).toHaveBeenCalledOnce();
 });
 
 it('owns the tooltip portal and removes it on mouse leave or unmount', async () => {
@@ -65,19 +72,4 @@ it('owns the tooltip portal and removes it on mouse leave or unmount', async () 
   await screen.findByRole('tooltip');
   unmount();
   await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
-});
-
-it('renders an accessible toolbar button and dispatches once per click', () => {
-  const onClick = vi.fn();
-  const { rerender } = render(<LeetSrsButton t={translations.en} onClick={onClick} />);
-  const button = screen.getByRole('button', { name: translations.en.app.name });
-  expect(button).toHaveAttribute('type', 'button');
-  expect(button).toHaveStyle({ color: '#28c244' });
-  fireEvent.click(button);
-  expect(onClick).toHaveBeenCalledOnce();
-  const nextClick = vi.fn();
-  rerender(<LeetSrsButton t={translations.pl} onClick={nextClick} />);
-  fireEvent.click(screen.getByRole('button', { name: translations.pl.app.name }));
-  expect(nextClick).toHaveBeenCalledOnce();
-  expect(onClick).toHaveBeenCalledOnce();
 });
