@@ -1,10 +1,11 @@
 import { createRoot, type Root } from 'react-dom/client';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { LeetSrsControl } from './ui/LeetSrsControl';
+import { Toast } from './ui/Toast';
 
 export function bootstrapContent() {
   setupLeetSrsControl();
-  setupLeetcodeAutoReset();
+  setupLeetcodeAutoReset(showResetToast);
 }
 
 function setupLeetSrsControl() {
@@ -39,4 +40,15 @@ function setupLeetSrsControl() {
     childList: true,
     subtree: true,
   });
+}
+
+function showResetToast() {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  const dismiss = () => {
+    root.unmount();
+    container.remove();
+  };
+  root.render(<Toast message="Code reset to default" onDismiss={dismiss} />);
 }

@@ -11,7 +11,7 @@ retry behavior is implicit in several flags.
   `confirmed`, and `confirmation-timeout`. Preserve current behavior: a missing
   reset button remains retryable; a confirmation timeout marks the slug handled.
   Automatically retrying a timeout needs care because the first dialog may remain open.
-- [ ] Move the toast into presentation code, using a callback such as
+- [x] Move the toast into presentation code, using a callback such as
   `onResetConfirmed`. Let the UI own styling and timers while automation stays
   outside React, consistent with #284.
 - [ ] Consolidate scheduling guards. Navigation detection, throttling, and concurrency

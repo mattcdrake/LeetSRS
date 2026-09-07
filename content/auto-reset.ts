@@ -2,10 +2,9 @@ import { sendMessage } from '@/infrastructure/browser/messages';
 import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
 import { resetLeetcodeEditor } from './reset-leetcode-editor';
 
-const RESET_TOAST_DURATION_MS = 2500;
 const SLUG_CHECK_INTERVAL_MS = 1000;
 
-export function setupLeetcodeAutoReset(): () => void {
+export function setupLeetcodeAutoReset(onResetConfirmed: () => void): () => void {
   let lastSlug: string | null = null;
   let lastResetSlug: string | null = null;
   let isResetting = false;
@@ -55,7 +54,7 @@ export function setupLeetcodeAutoReset(): () => void {
       }
 
       if (result === 'confirmed') {
-        showToast('Code reset to default');
+        onResetConfirmed();
       }
       lastResetSlug = slug;
     } catch {
@@ -78,34 +77,4 @@ export function setupLeetcodeAutoReset(): () => void {
     window.removeEventListener('popstate', checkForNavigation);
     window.clearInterval(intervalId);
   };
-}
-
-function showToast(message: string): void {
-  const toast = document.createElement('div');
-  toast.textContent = message;
-  Object.assign(toast.style, {
-    position: 'fixed',
-    bottom: '20px',
-    right: '20px',
-    background: '#323232',
-    color: '#fff',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    fontSize: '14px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-    zIndex: '9999',
-    opacity: '0',
-    transition: 'opacity 0.3s ease-in-out',
-  } as Partial<CSSStyleDeclaration>);
-
-  document.body.appendChild(toast);
-
-  requestAnimationFrame(() => {
-    toast.style.opacity = '1';
-  });
-
-  window.setTimeout(() => {
-    toast.style.opacity = '0';
-    window.setTimeout(() => toast.remove(), 300);
-  }, RESET_TOAST_DURATION_MS);
 }

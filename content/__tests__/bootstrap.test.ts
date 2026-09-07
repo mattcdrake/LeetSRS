@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
@@ -47,10 +47,28 @@ afterEach(() => {
     document.body.innerHTML = '';
     notifyMutation();
   });
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
 describe('content startup', () => {
+  it('shows a toast only after auto-reset reports confirmation', async () => {
+    vi.useFakeTimers();
+    await act(() => bootstrapContent());
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+    const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeAutoReset).mock.calls[0]);
+    act(() => onResetConfirmed());
+
+    const toast = screen.getByRole('status');
+    const container = requireDefined(toast.parentElement);
+    expect(toast).toHaveTextContent('Code reset to default');
+    act(() => vi.advanceTimersByTime(2800));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(container.isConnected).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('mounts, observes, and sets up auto-reset without messaging the worker', async () => {
     await act(() => bootstrapContent());
 

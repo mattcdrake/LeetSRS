@@ -51,6 +51,7 @@ function attachConfirmDialog(resetButton: HTMLButtonElement, confirmLabel: strin
 
 describe('setupLeetcodeAutoReset', () => {
   let dispose: (() => void) | undefined;
+  const onResetConfirmed = vi.fn();
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -72,7 +73,7 @@ describe('setupLeetcodeAutoReset', () => {
     const resetClick = vi.spyOn(resetButton, 'click');
     const confirmClick = vi.spyOn(confirmButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(resetClick).toHaveBeenCalledTimes(1);
@@ -84,7 +85,7 @@ describe('setupLeetcodeAutoReset', () => {
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
     const confirmClick = vi.spyOn(confirmButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(confirmClick).toHaveBeenCalledTimes(1);
@@ -95,7 +96,7 @@ describe('setupLeetcodeAutoReset', () => {
     const confirmButton = attachConfirmDialog(resetButton, '确认');
     const confirmClick = vi.spyOn(confirmButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(confirmClick).toHaveBeenCalledTimes(1);
@@ -106,7 +107,7 @@ describe('setupLeetcodeAutoReset', () => {
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm', 200);
     const confirmClick = vi.spyOn(confirmButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
     expect(confirmClick).not.toHaveBeenCalled();
 
@@ -124,7 +125,7 @@ describe('setupLeetcodeAutoReset', () => {
     const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
     const confirmClick = vi.spyOn(confirmButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(resetClick).toHaveBeenCalledTimes(1);
@@ -137,7 +138,7 @@ describe('setupLeetcodeAutoReset', () => {
     const resetButton = renderResetButton('class');
     const resetClick = vi.spyOn(resetButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(resetClick).not.toHaveBeenCalled();
@@ -145,7 +146,7 @@ describe('setupLeetcodeAutoReset', () => {
 
   it('throttles repeated checks and retries after one second', async () => {
     vi.setSystemTime(0);
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -158,7 +159,7 @@ describe('setupLeetcodeAutoReset', () => {
   });
 
   it('retries when the reset button becomes available', async () => {
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     const resetButton = renderResetButton('class');
@@ -168,26 +169,26 @@ describe('setupLeetcodeAutoReset', () => {
     await vi.advanceTimersByTimeAsync(1000);
 
     expect(confirmClick).toHaveBeenCalledTimes(1);
-    expect(document.body.textContent).toContain('Code reset to default');
+    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
   });
 
-  it('does not retry or show a toast when confirmation times out', async () => {
+  it('does not retry or notify when confirmation times out', async () => {
     const resetButton = renderResetButton('class');
     const resetClick = vi.spyOn(resetButton, 'click');
 
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(5000);
 
     expect(resetClick).toHaveBeenCalledTimes(1);
     expect(sendMessage).toHaveBeenCalledTimes(1);
-    expect(document.body.textContent).not.toContain('Code reset to default');
+    expect(onResetConfirmed).not.toHaveBeenCalled();
   });
 
   it.each([
     ['/problems/three-sum/', 'three-sum'],
     ['/problemset/', 'two-sum'],
   ])('resets the retry throttle after visiting %s', async (path, expectedSlug) => {
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(100);
 
     history.pushState({}, '', path);
@@ -207,7 +208,7 @@ describe('setupLeetcodeAutoReset', () => {
   });
 
   it('asks for a reset decision using the current problem', async () => {
-    dispose = setupLeetcodeAutoReset();
+    dispose = setupLeetcodeAutoReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(sendMessage).toHaveBeenCalledWith('shouldResetEditor', {
