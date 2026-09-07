@@ -1,9 +1,5 @@
-import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { Grade } from 'ts-fsrs';
-import { sendMessage } from '@/infrastructure/browser/messages';
 import { setupLeetcodeAutoReset } from './auto-reset';
-import { getCurrentProblem } from './problem-data';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 
 export function bootstrapContent() {
@@ -23,34 +19,7 @@ function setupLeetSrsButton() {
     const buttonWrapper = document.createElement('div');
     buttonWrapper.id = BUTTON_ID;
     const root = createRoot(buttonWrapper);
-    root.render(
-      createElement(LeetSrsControl, {
-        onRate: async (rating, label) => {
-          try {
-            const problem = await getCurrentProblem();
-            if (!problem) return;
-
-            const result = await sendMessage('rateCard', {
-              input: { ...problem, rating: rating as Grade },
-            });
-            console.log(`${label} - Card rated:`, result);
-          } catch (error) {
-            console.error('Error rating card:', error);
-          }
-        },
-        onAddWithoutRating: async () => {
-          try {
-            const problem = await getCurrentProblem();
-            if (!problem) return;
-
-            const result = await sendMessage('addCard', { problem });
-            console.log('Add without rating - Card added:', result);
-          } catch (error) {
-            console.error('Error adding card:', error);
-          }
-        },
-      })
-    );
+    root.render(<LeetSrsControl />);
 
     mountedButton = {
       element: buttonWrapper,

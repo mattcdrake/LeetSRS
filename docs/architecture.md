@@ -8,7 +8,7 @@ learning-data writes. Services coordinate domain rules and persistence.
 | Location          | Owns                                                                                      |
 | ----------------- | ----------------------------------------------------------------------------------------- |
 | `entrypoints/`    | WXT registration, background executor, popup UI and query hooks                           |
-| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.ts`                |
+| `content/`        | LeetCode DOM/GraphQL integration; mounting and lifecycle in `bootstrap.tsx`               |
 | `domain/`         | Models (including sync), scheduling, review days, settings, language and import policy    |
 | `services/`       | Workflows, clock/settings reads, FSRS lifetime, write order, sync decisions               |
 | `infrastructure/` | Storage keys/codecs/migrations, GitHub requests, browser messaging and language detection |

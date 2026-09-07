@@ -3,7 +3,7 @@ import type { Translations } from '@/i18n';
 import { getRatingColor, RATING_BUTTON_CONFIGS, THEME_COLORS, useDarkMode } from './theme';
 import styles from './ui.module.css';
 
-export type RatingCallback = (rating: number, label: string) => void;
+export type RatingCallback = (rating: number) => void;
 export type RatingMenuPosition = 'top' | 'bottom';
 
 export function RatingMenu({
@@ -46,7 +46,7 @@ export function RatingMenu({
               className={styles.rating}
               style={{ '--button-bg': bg, '--button-hover': hover } as CSSProperties & Record<`--${string}`, string>}
               onClick={() => {
-                onRate(rating, label);
+                onRate(rating);
                 onSelect();
               }}
             >

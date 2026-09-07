@@ -1,18 +1,16 @@
 import { type CSSProperties, type MouseEventHandler, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import type { Grade } from 'ts-fsrs';
+import { getCurrentProblem } from '@/content/problem-data';
 import type { Translations } from '@/i18n';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { watchStoredTranslations } from '@/infrastructure/storage/translations';
-import { type RatingCallback, RatingMenu } from './RatingMenu';
+import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 import styles from './ui.module.css';
 
-export type LeetSrsControlProps = {
-  onRate: RatingCallback;
-  onAddWithoutRating: () => void;
-};
-
-export function LeetSrsControl({ onRate, onAddWithoutRating }: LeetSrsControlProps) {
+export function LeetSrsControl() {
   const container = useRef<HTMLDivElement>(null);
   const [tooltipTarget, setTooltipTarget] = useState<HTMLButtonElement | null>(null);
   const [t, setTranslations] = useState<Translations | null>(null);
@@ -34,6 +32,22 @@ export function LeetSrsControl({ onRate, onAddWithoutRating }: LeetSrsControlPro
     return () => document.removeEventListener('click', dismiss);
   }, []);
 
+  async function handleRate(rating: number) {
+    const problem = await getCurrentProblem();
+    if (!problem) return;
+
+    await sendMessage('rateCard', {
+      input: { ...problem, rating: rating as Grade },
+    });
+  }
+
+  async function handleAddWithoutRating() {
+    const problem = await getCurrentProblem();
+    if (!problem) return;
+
+    await sendMessage('addCard', { problem });
+  }
+
   if (!t) return null;
 
   return (
@@ -46,7 +60,12 @@ export function LeetSrsControl({ onRate, onAddWithoutRating }: LeetSrsControlPro
         onMouseLeave={() => setTooltipTarget(null)}
       />
       {menuOpen && (
-        <RatingMenu t={t} onRate={onRate} onAddWithoutRating={onAddWithoutRating} onSelect={() => setMenuOpen(false)} />
+        <RatingMenu
+          t={t}
+          onRate={handleRate}
+          onAddWithoutRating={handleAddWithoutRating}
+          onSelect={() => setMenuOpen(false)}
+        />
       )}
       {tooltipTarget && createPortal(<Tooltip target={tooltipTarget} text={t.app.name} />, document.body)}
     </div>
