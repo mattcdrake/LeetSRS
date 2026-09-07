@@ -6,13 +6,7 @@ import { setupLeetcodeAutoReset } from './auto-reset';
 import { getCurrentProblem } from './problem-data';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 
-export async function bootstrapContent() {
-  // Wake up service worker so it's ready when user interacts
-  try {
-    await sendMessage('ping');
-  } catch (error) {
-    console.error('Failed to ping service worker:', error);
-  }
+export function bootstrapContent() {
   setupLeetSrsButton();
   setupLeetcodeAutoReset();
 }

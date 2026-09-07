@@ -6,7 +6,6 @@ import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { watchStoredTranslations } from '@/infrastructure/storage/translations';
-import { createDeferred } from '@/test/utils/deferred';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
@@ -44,45 +43,21 @@ beforeEach(() => {
 afterEach(() => {
   act(() => {
     document.body.innerHTML = '';
-    act(() => notifyMutation());
+    notifyMutation();
   });
   vi.unstubAllGlobals();
 });
 
 describe('content startup', () => {
-  it('waits for ping before mounting, observing, and setting up auto-reset', async () => {
-    const ping = createDeferred<void>();
-    vi.mocked(sendMessage).mockReturnValue(ping.promise);
-    observe.mockImplementation(() => {
-      expect(document.querySelector('#leetsrs-button-wrapper')).not.toBeNull();
-      expect(setupLeetcodeAutoReset).not.toHaveBeenCalled();
-    });
+  it('mounts, observes, and sets up auto-reset without messaging the worker', async () => {
+    await act(() => bootstrapContent());
 
-    const startup = bootstrapContent();
-    expect(sendMessage).toHaveBeenCalledWith('ping');
-    expect(document.querySelector('#leetsrs-button-wrapper')).toBeNull();
-    ping.resolve();
-
-    await act(async () => {
-      await expect(startup).resolves.toBeUndefined();
-    });
+    expect(sendMessage).not.toHaveBeenCalled();
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
     expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
     expect(disposeReset).not.toHaveBeenCalled();
     expect(disconnect).not.toHaveBeenCalled();
     expect(document.querySelector('#last-group')?.previousElementSibling?.id).toBe('leetsrs-button-wrapper');
-  });
-
-  it('logs a failed ping and continues startup', async () => {
-    const error = new Error('worker unavailable');
-    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.mocked(sendMessage).mockRejectedValue(error);
-
-    await act(() => bootstrapContent());
-
-    expect(log).toHaveBeenCalledWith('Failed to ping service worker:', error);
-    expect(document.querySelector('#leetsrs-button-wrapper')).not.toBeNull();
-    expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
   });
 
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {

@@ -25,7 +25,6 @@ import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats 
 import type { BackgroundMessageRegistry } from './registry-types';
 
 export const messages = {
-  ping: { kind: 'read', handler: () => 'PONG' as const },
   addCard: {
     kind: 'write',
     syncTrackingOwner: 'executor',

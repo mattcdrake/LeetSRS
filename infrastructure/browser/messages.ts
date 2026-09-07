@@ -13,7 +13,6 @@ import type { Settings } from '@/domain/settings';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/statistics';
 
 export interface ExtensionMessageMap {
-  ping(): 'PONG';
   addCard(data: { problem: ProblemDescriptor }): Card;
   getAllCards(): Card[];
   removeCard(data: { slug: string }): void;
