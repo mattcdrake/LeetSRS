@@ -1,20 +1,13 @@
-import type { Difficulty } from '@/domain/cards';
+import type { ProblemDescriptor } from '@/domain/cards';
 import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
 
-export interface ExtractedProblemData {
-  difficulty: Difficulty;
-  title: string;
-  titleSlug: string;
-  questionFrontendId: string;
-}
-
-let cachedData: { slug: string; data: ExtractedProblemData } | null = null;
+let cachedData: { slug: string; data: ProblemDescriptor } | null = null;
 
 export function clearCache(): void {
   cachedData = null;
 }
 
-export async function extractProblemData(): Promise<ExtractedProblemData | null> {
+export async function getCurrentProblem(): Promise<ProblemDescriptor | null> {
   try {
     const currentSlug = getCurrentProblemSlug();
     if (!currentSlug) {
@@ -41,7 +34,7 @@ export async function extractProblemData(): Promise<ExtractedProblemData | null>
   }
 }
 
-async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedProblemData | null> {
+async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescriptor | null> {
   try {
     const graphqlQuery = {
       query: `
@@ -87,10 +80,11 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ExtractedPro
       if (question) {
         const useTranslated = getCurrentDomain() === 'leetcode.cn' && question.translatedTitle;
         return {
-          difficulty: question.difficulty as ExtractedProblemData['difficulty'],
-          title: useTranslated ? question.translatedTitle : question.title,
-          titleSlug: question.titleSlug,
-          questionFrontendId: question.questionFrontendId,
+          difficulty: question.difficulty as ProblemDescriptor['difficulty'],
+          name: useTranslated ? question.translatedTitle : question.title,
+          slug: question.titleSlug,
+          leetcodeId: question.questionFrontendId,
+          domain: getCurrentDomain(),
         };
       }
     }

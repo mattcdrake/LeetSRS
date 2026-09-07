@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import { act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
@@ -41,7 +42,10 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  document.body.innerHTML = '';
+  act(() => {
+    document.body.innerHTML = '';
+    act(() => notifyMutation());
+  });
   vi.unstubAllGlobals();
 });
 
@@ -59,7 +63,9 @@ describe('content startup', () => {
     expect(document.querySelector('#leetsrs-button-wrapper')).toBeNull();
     ping.resolve();
 
-    await expect(startup).resolves.toBeUndefined();
+    await act(async () => {
+      await expect(startup).resolves.toBeUndefined();
+    });
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
     expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
     expect(disposeReset).not.toHaveBeenCalled();
@@ -72,7 +78,7 @@ describe('content startup', () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(sendMessage).mockRejectedValue(error);
 
-    await bootstrapContent();
+    await act(() => bootstrapContent());
 
     expect(log).toHaveBeenCalledWith('Failed to ping service worker:', error);
     expect(document.querySelector('#leetsrs-button-wrapper')).not.toBeNull();
@@ -81,16 +87,16 @@ describe('content startup', () => {
 
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
     document.body.innerHTML = '';
-    await bootstrapContent();
+    await act(() => bootstrapContent());
     expect(document.querySelector('#leetsrs-button-wrapper')).toBeNull();
 
     document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
-    notifyMutation();
-    notifyMutation();
+    act(() => notifyMutation());
+    act(() => notifyMutation());
 
     expect(document.querySelectorAll('#leetsrs-button-wrapper')).toHaveLength(1);
     document.querySelector('#leetsrs-button-wrapper')?.remove();
-    notifyMutation();
+    act(() => notifyMutation());
     expect(document.querySelectorAll('#leetsrs-button-wrapper')).toHaveLength(1);
   });
 });

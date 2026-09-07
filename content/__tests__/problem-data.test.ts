@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearCache, extractProblemData } from '../problem-data';
+import { clearCache, getCurrentProblem } from '../problem-data';
 
 // @vitest-environment happy-dom
 
-describe('extractProblemData', () => {
+describe('getCurrentProblem', () => {
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -32,7 +32,7 @@ describe('extractProblemData', () => {
       writable: true,
     });
 
-    const result = await extractProblemData();
+    const result = await getCurrentProblem();
     expect(result).toBeNull();
   });
 
@@ -59,12 +59,13 @@ describe('extractProblemData', () => {
       }),
     } as Response);
 
-    const result = await extractProblemData();
+    const result = await getCurrentProblem();
     expect(result).toEqual({
       difficulty: 'Easy',
-      title: 'Two Sum',
-      titleSlug: 'two-sum',
-      questionFrontendId: '1',
+      name: 'Two Sum',
+      slug: 'two-sum',
+      leetcodeId: '1',
+      domain: 'leetcode.com',
     });
   });
 
@@ -92,9 +93,9 @@ describe('extractProblemData', () => {
     } as Response);
 
     // First call
-    const result1 = await extractProblemData();
+    const result1 = await getCurrentProblem();
     // Second call - should use cache
-    const result2 = await extractProblemData();
+    const result2 = await getCurrentProblem();
 
     expect(result1).toEqual(result2);
     expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -110,7 +111,7 @@ describe('extractProblemData', () => {
     // Mock fetch failure
     vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'));
 
-    const result = await extractProblemData();
+    const result = await getCurrentProblem();
     expect(result).toBeNull();
   });
 
@@ -127,7 +128,7 @@ describe('extractProblemData', () => {
       status: 404,
     } as Response);
 
-    const result = await extractProblemData();
+    const result = await getCurrentProblem();
     expect(result).toBeNull();
   });
 });

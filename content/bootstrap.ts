@@ -1,11 +1,9 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Grade } from 'ts-fsrs';
-import type { ProblemDescriptor } from '@/domain/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { setupLeetcodeAutoReset } from './auto-reset';
-import { getCurrentDomain } from './domain';
-import { type ExtractedProblemData, extractProblemData } from './problem-data';
+import { getCurrentProblem } from './problem-data';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 
 export async function bootstrapContent() {
@@ -17,31 +15,6 @@ export async function bootstrapContent() {
   }
   setupLeetSrsButton();
   setupLeetcodeAutoReset();
-}
-
-function toProblemDescriptor(problemData: ExtractedProblemData): ProblemDescriptor {
-  return {
-    slug: problemData.titleSlug,
-    name: problemData.title,
-    leetcodeId: problemData.questionFrontendId,
-    difficulty: problemData.difficulty,
-    domain: getCurrentDomain(),
-  };
-}
-
-async function withProblemData<T>(action: (problem: ProblemDescriptor) => Promise<T>): Promise<T | undefined> {
-  const problemData = await extractProblemData();
-  if (!problemData) {
-    console.error('Could not extract problem data');
-    return undefined;
-  }
-
-  try {
-    return await action(toProblemDescriptor(problemData));
-  } catch (error) {
-    console.error('Error processing action:', error);
-    return undefined;
-  }
 }
 
 function setupLeetSrsButton() {
@@ -59,20 +32,28 @@ function setupLeetSrsButton() {
     root.render(
       createElement(LeetSrsControl, {
         onRate: async (rating, label) => {
-          await withProblemData(async (problem) => {
+          try {
+            const problem = await getCurrentProblem();
+            if (!problem) return;
+
             const result = await sendMessage('rateCard', {
               input: { ...problem, rating: rating as Grade },
             });
             console.log(`${label} - Card rated:`, result);
-            return result;
-          });
+          } catch (error) {
+            console.error('Error rating card:', error);
+          }
         },
         onAddWithoutRating: async () => {
-          await withProblemData(async (problem) => {
+          try {
+            const problem = await getCurrentProblem();
+            if (!problem) return;
+
             const result = await sendMessage('addCard', { problem });
             console.log('Add without rating - Card added:', result);
-            return result;
-          });
+          } catch (error) {
+            console.error('Error adding card:', error);
+          }
         },
       })
     );
