@@ -24,7 +24,6 @@ it('waits 300ms and positions below the center of the target', () => {
   expect(screen.getByRole('tooltip')).toHaveStyle({
     left: '125px',
     top: '128px',
-    pointerEvents: 'none',
     backgroundColor: 'white',
   });
 });

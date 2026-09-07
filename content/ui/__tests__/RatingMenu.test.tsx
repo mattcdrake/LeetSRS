@@ -28,7 +28,7 @@ it('updates translated labels on rerender and uses dark colors', () => {
   const actions = { onRate: vi.fn(), onAddWithoutRating: vi.fn(), onSelect: vi.fn() };
   const { rerender } = render(<RatingMenu t={translations.en} {...actions} />);
   expect(screen.getByRole('button', { name: translations.en.ratings.again })).toHaveStyle({
-    backgroundColor: THEME_COLORS.dark.ratingAgain,
+    '--button-bg': THEME_COLORS.dark.ratingAgain,
   });
   rerender(<RatingMenu t={translations.pl} {...actions} />);
   fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings.good }));

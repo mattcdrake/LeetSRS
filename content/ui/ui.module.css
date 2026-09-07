@@ -1,0 +1,83 @@
+button.toolbarButton {
+  display: flex;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  background: var(--button-bg);
+  cursor: pointer;
+}
+
+button.toolbarButton:hover {
+  background: var(--button-hover);
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  min-width: 160px;
+  border: 1px solid var(--menu-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--menu-bg);
+  box-shadow: var(--menu-shadow);
+  z-index: 50;
+}
+
+.ratings {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+button.rating,
+button.add {
+  height: 32px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--button-bg);
+  transition: background-color 0.2s;
+}
+
+button.rating {
+  width: 64px;
+  padding: 8px;
+  color: white;
+  border: none;
+}
+
+button.add {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  line-height: 20px;
+  text-decoration: none;
+}
+
+button.rating:hover,
+button.add:hover {
+  background: var(--button-hover);
+}
+
+button.add:hover {
+  text-decoration: underline;
+}
+
+.tooltip {
+  position: fixed;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  box-shadow: 0 4px 6px rgb(0 0 0 / 10%);
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px) scale(0.95);
+  transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 50;
+}
+
+.tooltip[data-visible="true"] {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}

@@ -1,6 +1,7 @@
 // Theme colors from App.css
 export const THEME_COLORS = {
   light: {
+    bgToolbarButton: 'rgba(0, 0, 0, 0.04)',
     bgPrimary: '#ffffff',
     bgSecondary: '#f5f5f5',
     bgTertiary: '#e8e8e8',
@@ -19,6 +20,7 @@ export const THEME_COLORS = {
     ratingEasy: '#3d9156',
   },
   dark: {
+    bgToolbarButton: 'rgba(255, 255, 255, 0.08)',
     bgPrimary: '#1a1a1a',
     bgSecondary: '#242424',
     bgTertiary: '#2a2a2a',

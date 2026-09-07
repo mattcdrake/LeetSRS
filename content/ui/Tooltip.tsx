@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { THEME_COLORS } from './constants';
+import styles from './ui.module.css';
 import { useDarkMode } from './useDarkMode';
 
 export function Tooltip({ target, text, delay = 300 }: { target: HTMLElement; text: string; delay?: number }) {
@@ -25,16 +26,9 @@ export function Tooltip({ target, text, delay = 300 }: { target: HTMLElement; te
   return (
     <div
       role="tooltip"
-      className="z-50 overflow-hidden rounded-md px-3 py-1.5 text-xs shadow-md"
+      className={styles.tooltip}
+      data-visible={animated}
       style={{
-        position: 'fixed',
-        pointerEvents: 'none',
-        opacity: animated ? 1 : 0,
-        transform: animated
-          ? 'translateX(-50%) translateY(0) scale(1)'
-          : 'translateX(-50%) translateY(-4px) scale(0.95)',
-        transition: 'all 100ms cubic-bezier(0.16, 1, 0.3, 1)',
-        zIndex: 50,
         backgroundColor: colors.bgTooltip,
         border: `1px solid ${colors.borderTooltip}`,
         color: colors.textTooltip,

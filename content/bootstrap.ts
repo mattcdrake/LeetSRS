@@ -1,3 +1,5 @@
+import { createElement } from 'react';
+import { createRoot } from 'react-dom/client';
 import type { Grade } from 'ts-fsrs';
 import type { ProblemDescriptor } from '@/domain/cards';
 import type { Translations } from '@/i18n';
@@ -6,8 +8,7 @@ import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { getCurrentDomain } from './domain';
 import { type ExtractedProblemData, extractProblemData } from './problem-data';
-import { RatingMenuCoordinator } from './rating-menu-coordinator';
-import { mountLeetSrsButton, RatingMenu, Tooltip } from './ui/mount';
+import { LeetSrsControl } from './ui/LeetSrsControl';
 
 export async function bootstrapContent() {
   // Wake up service worker so it's ready when user interacts
@@ -47,7 +48,6 @@ async function withProblemData<T>(action: (problem: ProblemDescriptor) => Promis
 
 function setupLeetSrsButton(t: Translations) {
   const BUTTON_ID = 'leetsrs-button-wrapper';
-  const tooltip = new Tooltip();
   let mountedButton: { element: HTMLElement; dispose: () => void } | null = null;
 
   function insertButton(buttonsContainer: Element) {
@@ -55,59 +55,38 @@ function setupLeetSrsButton(t: Translations) {
       return;
     }
 
-    let ratingMenuCoordinator: RatingMenuCoordinator | null = null;
-
-    const buttonMount = mountLeetSrsButton(() => {
-      if (ratingMenuCoordinator) {
-        void ratingMenuCoordinator.toggle();
-      }
-    }, t);
-    const buttonWrapper = buttonMount.element;
+    const buttonWrapper = document.createElement('div');
     buttonWrapper.id = BUTTON_ID;
-
-    const ratingMenu = new RatingMenu(
-      buttonWrapper,
-      async (rating, label) => {
-        await withProblemData(async (problem) => {
-          const result = await sendMessage('rateCard', {
-            input: { ...problem, rating: rating as Grade },
+    const root = createRoot(buttonWrapper);
+    root.render(
+      createElement(LeetSrsControl, {
+        t,
+        getTranslations: getStoredTranslations,
+        onError: (error) => console.error('Failed to load rating menu translations:', error),
+        onRate: async (rating, label) => {
+          await withProblemData(async (problem) => {
+            const result = await sendMessage('rateCard', {
+              input: { ...problem, rating: rating as Grade },
+            });
+            console.log(`${label} - Card rated:`, result);
+            return result;
           });
-          console.log(`${label} - Card rated:`, result);
-          return result;
-        });
-      },
-      async () => {
-        await withProblemData(async (problem) => {
-          const result = await sendMessage('addCard', { problem });
-          console.log('Add without rating - Card added:', result);
-          return result;
-        });
-      }
+        },
+        onAddWithoutRating: async () => {
+          await withProblemData(async (problem) => {
+            const result = await sendMessage('addCard', { problem });
+            console.log('Add without rating - Card added:', result);
+            return result;
+          });
+        },
+      })
     );
-
-    ratingMenuCoordinator = new RatingMenuCoordinator({
-      menu: ratingMenu,
-      getTranslations: getStoredTranslations,
-      onError: (error) => console.error('Failed to load rating menu translations:', error),
-    });
-
-    const clickableDiv = buttonWrapper.querySelector('[data-state="closed"]') as HTMLElement;
-    if (clickableDiv) {
-      clickableDiv.addEventListener('mouseenter', () => {
-        tooltip.show(clickableDiv, t.app.name);
-      });
-
-      clickableDiv.addEventListener('mouseleave', () => {
-        tooltip.hide();
-      });
-    }
 
     mountedButton = {
       element: buttonWrapper,
       dispose: () => {
-        ratingMenuCoordinator?.close();
-        tooltip.hide();
-        buttonMount.unmount();
+        root.unmount();
+        buttonWrapper.remove();
       },
     };
 
