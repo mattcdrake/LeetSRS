@@ -1,15 +1,18 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import { isDueByDate as calculateIsDueByDate } from '@/domain/review-day';
-import { buildReviewQueue, partitionDueCards } from '@/domain/review-queue';
-import { calculateDelayedDueDate, scheduleReview } from '@/domain/scheduling';
-import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards';
+import {
+  buildReviewQueue,
+  calculateDelayedDueDate,
+  isDueByDate as calculateIsDueByDate,
+  partitionDueCards,
+} from '@/domain/review';
+import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards/store';
 
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 
-export { getAllCards } from '@/infrastructure/storage/cards';
+export { getAllCards } from '@/infrastructure/storage/cards/store';
 
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
@@ -93,7 +96,7 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   }
 
   const now = new Date();
-  const schedulingResult = scheduleReview(fsrs, card.fsrs, now, rating);
+  const schedulingResult = fsrs.next(card.fsrs, now, rating);
   card.fsrs = schedulingResult.card;
   await cards.save(slug, card);
 

@@ -1,7 +1,7 @@
 import { storage } from '#imports';
 import type { Card } from '@/domain/cards';
-import { deserializeCard, type StoredCard, serializeCard } from './card-codec';
-import { STORAGE_KEYS } from './storage-keys';
+import { STORAGE_KEYS } from '../storage-keys';
+import { deserializeCard, type StoredCard, serializeCard } from './codec';
 
 async function getCards(): Promise<Record<string, StoredCard>> {
   const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);

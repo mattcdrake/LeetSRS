@@ -1,5 +1,10 @@
-import type { Settings } from '@/domain/settings';
-import { DEFAULT_SETTINGS, getSettingDefinition, SETTING_KEYS, validateSettings } from '@/domain/settings-policy';
+import {
+  DEFAULT_SETTINGS,
+  getSettingDefinition,
+  SETTING_KEYS,
+  type Settings,
+  validateSettings,
+} from '@/domain/settings';
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
 import { readSetting, removeSetting, writeSetting } from '@/infrastructure/storage/settings';

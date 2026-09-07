@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { SETTING_KEYS } from '@/domain/settings-policy';
+import { SETTING_KEYS } from '@/domain/settings';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createDeferred } from '@/test/utils/deferred';
 import { exportData, importData, prepareImportData, resetAllData } from '../import-export';

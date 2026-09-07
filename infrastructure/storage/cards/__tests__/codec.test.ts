@@ -1,7 +1,7 @@
 import { createEmptyCard } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '@/domain/cards';
-import { deserializeCard, type StoredCard, serializeCard } from '../card-codec';
+import { deserializeCard, type StoredCard, serializeCard } from '../codec';
 
 describe('Card serialization', () => {
   describe('serializeCard', () => {

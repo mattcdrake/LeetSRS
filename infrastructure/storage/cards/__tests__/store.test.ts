@@ -4,9 +4,9 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { ProblemDescriptor } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { type StoredCard, serializeCard } from '../card-codec';
-import { getAllCards, loadCardStore } from '../cards';
-import { STORAGE_KEYS } from '../storage-keys';
+import { STORAGE_KEYS } from '../../storage-keys';
+import { type StoredCard, serializeCard } from '../codec';
+import { getAllCards, loadCardStore } from '../store';
 
 async function addFixture(problem: ProblemDescriptor): Promise<void> {
   const cards = await loadCardStore();

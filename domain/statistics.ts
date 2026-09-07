@@ -1,6 +1,6 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
+import { formatLocalDate } from './calendar';
 import type { Card } from './cards';
-import { formatLocalDate } from './review-day';
 
 interface BaseStats {
   totalReviews: number;
