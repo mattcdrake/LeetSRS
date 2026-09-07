@@ -6,7 +6,6 @@ import {
   isDueByDate as calculateIsDueByDate,
   partitionDueCards,
 } from '@/domain/review';
-import { scheduleReview } from '@/domain/scheduling';
 import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards/store';
 
 import { deleteNote } from './notes';
@@ -97,7 +96,7 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   }
 
   const now = new Date();
-  const schedulingResult = scheduleReview(fsrs, card.fsrs, now, rating);
+  const schedulingResult = fsrs.next(card.fsrs, now, rating);
   card.fsrs = schedulingResult.card;
   await cards.save(slug, card);
 
