@@ -6,6 +6,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDeferred } from '@/test/utils/deferred';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { useLeetcodeCnPermissionEvents } from '../../queries/leetcode-cn';
 import { LeetcodeCnSection } from '../../views/settings/LeetcodeCnSection';
 import { DISMISS_KEY, LeetcodeCnBanner } from '../LeetcodeCnBanner';
 
@@ -60,7 +61,12 @@ afterEach(() => {
 });
 
 describe('LeetcodeCnBanner', () => {
-  it.each([0, 1])('updates both consumers when Enable button %s grants permission', async (buttonIndex) => {
+  it.each([
+    { buttonIndex: 0, granted: true },
+    { buttonIndex: 1, granted: true },
+    { buttonIndex: 0, granted: false },
+    { buttonIndex: 1, granted: false },
+  ])('shares granted=$granted after Enable button $buttonIndex is clicked', async ({ buttonIndex, granted }) => {
     const request = createDeferred<boolean>();
     mockRequest.mockReturnValue(request.promise);
     render(
@@ -71,15 +77,23 @@ describe('LeetcodeCnBanner', () => {
       createTestWrapper()
     );
     await waitFor(() => expect(screen.getAllByRole('button', { name: /enable/i })).toHaveLength(2));
+    expect(mockRequest).not.toHaveBeenCalled();
     const button = screen.getAllByRole('button', { name: /enable/i })[buttonIndex];
     act(() => {
       button.click();
       expect(mockRequest).toHaveBeenCalledExactlyOnceWith({ origins: ['*://*.leetcode.cn/*'] });
     });
     await waitFor(() => expect(button).toBeDisabled());
-    mockContains.mockResolvedValue(true);
-    await act(async () => request.resolve(true));
-    await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(0));
+    mockContains.mockResolvedValue(granted);
+    await act(async () => request.resolve(granted));
+    await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(granted ? 0 : 2));
+    if (!granted) {
+      await waitFor(() => expect(button).toBeEnabled());
+      mockRequest.mockResolvedValue(true);
+      mockContains.mockResolvedValue(true);
+      act(() => button.click());
+      await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(0));
+    }
   });
 
   it('keeps settings available after dismissing the banner', async () => {
@@ -96,6 +110,51 @@ describe('LeetcodeCnBanner', () => {
     expect(screen.getByText('LeetCode China')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])('preserves dismissed=%s across reopenings and permission events', async (dismissed) => {
+    const added = vi.spyOn(browser.permissions.onAdded, 'addListener').mockImplementation(() => {});
+    const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener').mockImplementation(() => {});
+    vi.spyOn(browser.permissions.onAdded, 'removeListener').mockImplementation(() => {});
+    vi.spyOn(browser.permissions.onRemoved, 'removeListener').mockImplementation(() => {});
+    const removePermission = vi.spyOn(browser.permissions, 'remove');
+    function PermissionObserver() {
+      useLeetcodeCnPermissionEvents();
+      return null;
+    }
+    const openPopup = () =>
+      render(
+        <>
+          <PermissionObserver />
+          <LeetcodeCnBanner />
+          <LeetcodeCnSection />
+        </>,
+        createTestWrapper()
+      );
+
+    const popup = openPopup();
+    const dismiss = await screen.findByRole('button', { name: 'Dismiss' });
+    if (dismissed) act(() => dismiss.click());
+    popup.unmount();
+
+    openPopup();
+    expect(await screen.findByText('LeetCode China')).toBeInTheDocument();
+    expect(screen.queryAllByRole('button', { name: 'Dismiss' })).toHaveLength(dismissed ? 0 : 1);
+
+    mockContains.mockResolvedValue(true);
+    await act(async () => added.mock.calls[1][0]({ origins: ['*://*.leetcode.cn/*'] }));
+    await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(0));
+
+    mockContains.mockResolvedValue(false);
+    await act(async () => removed.mock.calls[1][0]({ origins: ['*://*.leetcode.cn/*'] }));
+    expect(await screen.findByText('LeetCode China')).toBeInTheDocument();
+    const buttons = screen.getAllByRole('button', { name: /enable/i });
+    expect(buttons).toHaveLength(dismissed ? 1 : 2);
+    for (const button of buttons) expect(button).toBeEnabled();
+    expect(screen.queryAllByRole('button', { name: 'Dismiss' })).toHaveLength(dismissed ? 0 : 1);
+    expect(store[DISMISS_KEY]).toBe(dismissed ? '1' : undefined);
+    expect(mockRequest).not.toHaveBeenCalled();
+    expect(removePermission).not.toHaveBeenCalled();
   });
 
   it.each([
