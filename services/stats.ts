@@ -5,9 +5,10 @@ import {
   calculateUpcomingStats,
   countCardStates,
   createDailyStats,
+  type DailyStats,
   recordReview,
+  type UpcomingReviewStats,
 } from '@/domain/statistics';
-import type { DailyStats, UpcomingReviewStats } from '@/domain/stats';
 import { getAllCards } from '@/infrastructure/storage/cards';
 import { getStats, getStatsForDate, saveStats } from '@/infrastructure/storage/stats';
 import { getSettings } from './settings';

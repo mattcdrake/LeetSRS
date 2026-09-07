@@ -2,7 +2,7 @@
 
 Immediate implementation:
 
-- [ ] [#266](https://github.com/mattcdrake/LeetSRS/issues/266): consolidate `domain/stats.ts` and `domain/statistics.ts` into `domain/statistics.ts`; preserve public data shapes and behavior.
+- [x] [#266](https://github.com/mattcdrake/LeetSRS/issues/266): consolidate `domain/stats.ts` and `domain/statistics.ts` into `domain/statistics.ts`; preserve public data shapes and behavior.
 - [ ] Change `content/bootstrap.ts` to direct sibling imports instead of importing `content/index.ts`.
 - [ ] Remove the pass-through `scheduleReview` function; call `fsrs.next` from `services/cards.ts`, preserving FSRS lifetime, parameters, timing, and write order. Keep the meaningful delayed-date calculation in domain.
 - [ ] Merge `domain/settings-policy.ts` into `domain/settings.ts`, keeping settings types, constraints, defaults, and validation together.

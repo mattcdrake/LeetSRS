@@ -26,7 +26,8 @@ The immediate local pass is tracked in [todo.md](../todo.md): consolidate domain
 statistics (#266), replace bootstrap's internal barrel import with direct sibling
 imports, and remove the `scheduleReview` forwarding function in favor of a direct
 service-owned `fsrs.next` call. Retain the delayed-date domain calculation and
-preserve behavior. These implementation tasks are still pending.
+preserve behavior. Statistics consolidation is implemented locally; bootstrap and
+scheduling changes remain pending.
 
 All six recommendations now have issues. Gist setup work is explicitly renewed
 in #269 despite #152 having been closed as not planned. Unfinished #155 work is
@@ -183,11 +184,14 @@ without creating a competing draft-state solution.
 
 ### 4. Give statistics one domain owner
 
-[domain/stats.ts](../domain/stats.ts) defines `DailyStats`, `UpcomingReviewStats`,
-and a private `BaseStats`. [domain/statistics.ts](../domain/statistics.ts) defines
-another identical `BaseStats`, constructs those records, and calculates their
-projections. The two nearly synonymous files separate a modest model from the
-operations that explain it, while duplicating the model's central fields.
+Implemented locally: types and calculations now share `domain/statistics.ts`, with
+one `BaseStats` definition. Consumers use the consolidated module; storage and
+service responsibilities remain separate. The original rationale follows.
+
+`domain/stats.ts` previously defined `DailyStats`, `UpcomingReviewStats`,
+and a private `BaseStats`. [domain/statistics.ts](../domain/statistics.ts) duplicated
+that base shape alongside construction and projection calculations. The two nearly
+synonymous files separated a modest model from the operations that explain it.
 
 Merge the domain types into `domain/statistics.ts` and keep one internal base
 shape. Update consumers to use type-only imports where appropriate. This keeps

@@ -24,9 +24,9 @@ Dependency rules apply to runtime and type-only imports:
   import the domain language type, but has no browser, storage, service, or UI
   dependencies.
 - Popup/content workflows use `infrastructure/browser/messages.ts`, not service
-  or persistence imports. This permits the messaging adapter, not arbitrary infrastructure.
+  or persistence imports.
   Content's read-only `infrastructure/storage/translations.ts` adapter is the
-  exception; it resolves stored language with lazy browser fallback.
+  exception.
 - The popup owns permissions, active-tab inspection, and banner dismissal state.
   Permission requests originate from user interactions.
 
@@ -35,36 +35,30 @@ there is no automated boundary check.
 
 ## Messages and writes
 
-Define RPCs and their transport in `infrastructure/browser/messages.ts` and register handlers in
-`entrypoints/background/messaging.ts`. Background-only policy types live in
-`entrypoints/background/registry-types.ts`. Each write declares `refreshBadge`
+Define RPCs and their transport in `infrastructure/browser/messages.ts` and register
+handlers in `entrypoints/background/messaging.ts`. Each write declares `refreshBadge`
 and `syncTrackingOwner`: the executor marks local edits, the handler manages its
 own timestamp, or `none` skips tracking.
 
 Handlers wait for startup. Writes share a queue, including alarm-driven Gist sync
 and its network requests. Reads can overlap writes. Serialization is not atomicity:
-partial writes remain possible, and badge failure can reject a persisted mutation.
+partial writes remain possible.
 
-Services own operation timing and write order; domain calculations receive their
-inputs. The timestamp helper in `infrastructure/storage/data-tracker.ts` samples
-its own clock. Review eligibility uses `domain/review-day.ts` with explicit dates
-and `dayStartHour`, not exact due timestamps.
+Services own clocks, settings reads, and write order; domain calculations receive
+explicit inputs.
 
 ## Storage, backup, and sync
 
 Cards are slug-keyed, notes reference card UUIDs, and stored card dates are numeric.
-`infrastructure/storage/cards.ts` retains loaded records and decodes only requested
-cards, preserving unrelated legacy fields. Schema changes require a new sequential
+Card mutations preserve unrelated legacy fields. Schema changes require a new sequential
 migration in `infrastructure/storage/migrations.ts`.
 
 Backup ownership is split deliberately:
 
-- `infrastructure/storage/backup-codec.ts`: payload types and JSON conversion.
-- `domain/backup-import.ts`: acceptance, validation, and legacy settings policy;
-  record contents pass through without importing storage types.
-- `infrastructure/storage/snapshot.ts`: raw records and note traversal.
-- `services/import-export.ts`: reset/restore order, PAT preservation, and imported
-  timestamps. Snapshot helpers do not mark local edits.
+- Infrastructure owns payload conversion and snapshot persistence; snapshot helpers
+  do not mark local edits.
+- Domain owns import acceptance policy without depending on storage types.
+- Services orchestrate reset/restore, preserve the PAT, and apply imported timestamps.
 
 Sync, backup/reset, and local-edit tracking share
 `infrastructure/storage/sync-metadata.ts`. Gist sync uses whole-dataset
@@ -72,22 +66,11 @@ Sync, backup/reset, and local-edit tracking share
 include settings and Gist configuration, exclude the PAT, and need new synchronized
 fields added to `ExportData`. There is no per-card merge.
 
-Sync configuration, status, and result models live in `domain/gist-sync.ts`.
-`services/github-sync.ts` owns their workflow and transient state; the models do
-not depend on the browser messaging transport or GitHub client.
-
 ## Language and translations
 
-`domain/language.ts` owns supported language codes, the `Language` type, validation,
-and preference matching. Settings policy uses this registry without loading
-translation dictionaries. `i18n/index.ts` provides the exhaustive
-`Record<Language, Translations>` catalog; React context and language display names
-remain in the popup.
-
-`infrastructure/browser/language.ts` reads browser preferences and delegates to
-domain rules. `infrastructure/storage/translations.ts` resolves a stored language
-with lazy browser fallback. Language matching preserves existing case sensitivity,
-Chinese and English fallbacks, and inherited-property matching.
+Domain owns language policy; infrastructure detects browser preferences and resolves
+stored language. `i18n/` owns dictionaries, and the popup owns presentation. Settings
+policy uses the domain language registry without loading dictionaries.
 
 Future changes belong in the [roadmap](plans/roadmap.md). The
 [catalog identity contract](regional-problem-identity.md) describes planned

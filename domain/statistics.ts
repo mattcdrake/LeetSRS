@@ -1,7 +1,6 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import type { Card } from './cards';
 import { formatLocalDate } from './review-day';
-import type { DailyStats, UpcomingReviewStats } from './stats';
 
 interface BaseStats {
   totalReviews: number;
@@ -13,6 +12,16 @@ interface BaseStats {
   };
   newCards: number;
   reviewedCards: number;
+}
+
+export interface DailyStats extends BaseStats {
+  date: string;
+  streak: number;
+}
+
+export interface UpcomingReviewStats {
+  date: string;
+  count: number;
 }
 
 function createEmptyBaseStats(): BaseStats {
