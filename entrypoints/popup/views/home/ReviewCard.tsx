@@ -36,10 +36,6 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
   const t = useI18n();
   const difficultyColor = difficultyColorMap[card.difficulty] || 'bg-difficulty-medium';
 
-  const handleRating = (rating: Grade) => {
-    onRate(rating);
-  };
-
   return (
     <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -64,7 +60,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
         {ratingButtonConfigs.map(({ rating, labelKey, colorClass }) => (
           <Button
             key={labelKey}
-            onPress={() => handleRating(rating)}
+            onPress={() => onRate(rating)}
             isDisabled={isProcessing}
             className={`w-20 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
