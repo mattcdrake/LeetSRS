@@ -1,54 +1,42 @@
-import {
-  type CSSProperties,
-  type MouseEventHandler,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { createPortal } from "react-dom";
-import type { Grade } from "ts-fsrs";
-import { getCurrentProblem } from "@/content/problem-data";
-import type { Translations } from "@/i18n";
-import { sendMessage } from "@/infrastructure/browser/messages";
-import { watchStoredTranslations } from "@/infrastructure/storage/translations";
-import { RatingMenu } from "./RatingMenu";
-import { Tooltip } from "./Tooltip";
-import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from "./theme";
-import styles from "./ui.module.css";
+import { type CSSProperties, type MouseEventHandler, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import type { Grade } from 'ts-fsrs';
+import { getCurrentProblem } from '@/content/problem-data';
+import type { Translations } from '@/i18n';
+import { sendMessage } from '@/infrastructure/browser/messages';
+import { watchStoredTranslations } from '@/infrastructure/storage/translations';
+import { RatingMenu } from './RatingMenu';
+import { Tooltip } from './Tooltip';
+import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
+import styles from './ui.module.css';
 
 export function LeetSrsControl() {
   const container = useRef<HTMLDivElement>(null);
-  const [tooltipTarget, setTooltipTarget] = useState<HTMLButtonElement | null>(
-    null,
-  );
+  const [tooltipTarget, setTooltipTarget] = useState<HTMLButtonElement | null>(null);
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(
     () =>
       watchStoredTranslations(setTranslations, (error) => {
-        console.error("Failed to load content translations:", error);
+        console.error('Failed to load content translations:', error);
       }),
-    [],
+    []
   );
 
   useEffect(() => {
     const dismiss = (event: MouseEvent) => {
-      if (
-        container.current &&
-        !event.composedPath().includes(container.current)
-      )
-        setMenuOpen(false);
+      if (container.current && !event.composedPath().includes(container.current)) setMenuOpen(false);
     };
-    document.addEventListener("click", dismiss);
-    return () => document.removeEventListener("click", dismiss);
+    document.addEventListener('click', dismiss);
+    return () => document.removeEventListener('click', dismiss);
   }, []);
 
   async function handleRate(rating: number) {
     const problem = await getCurrentProblem();
     if (!problem) return;
 
-    await sendMessage("rateCard", {
+    await sendMessage('rateCard', {
       input: { ...problem, rating: rating as Grade },
     });
   }
@@ -57,13 +45,13 @@ export function LeetSrsControl() {
     const problem = await getCurrentProblem();
     if (!problem) return;
 
-    await sendMessage("addCard", { problem });
+    await sendMessage('addCard', { problem });
   }
 
   if (!t) return null;
 
   return (
-    <div ref={container} style={{ position: "relative", display: "flex" }}>
+    <div ref={container} style={{ position: 'relative', display: 'flex' }}>
       <LeetSrsButton
         t={t}
         onClick={() => setMenuOpen((open) => !open)}
@@ -79,11 +67,7 @@ export function LeetSrsControl() {
           onSelect={() => setMenuOpen(false)}
         />
       )}
-      {tooltipTarget &&
-        createPortal(
-          <Tooltip target={tooltipTarget} text={t.app.name} />,
-          document.body,
-        )}
+      {tooltipTarget && createPortal(<Tooltip target={tooltipTarget} text={t.app.name} />, document.body)}
     </div>
   );
 }
@@ -115,8 +99,8 @@ export function LeetSrsButton({
       style={
         {
           color: LEETSRS_BUTTON_COLOR,
-          "--button-bg": colors.bgToolbarButton,
-          "--button-hover": colors.bgAddButtonHover,
+          '--button-bg': colors.bgToolbarButton,
+          '--button-hover': colors.bgAddButtonHover,
         } as CSSProperties & Record<`--${string}`, string>
       }
     >
