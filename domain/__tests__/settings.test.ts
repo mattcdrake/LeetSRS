@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Settings } from '../settings';
-import { validateSettings } from '../settings-policy';
+import { type Settings, validateSettings } from '../settings';
 
 describe('settings validation', () => {
   it('reports the first invalid setting in policy order regardless of input order', () => {

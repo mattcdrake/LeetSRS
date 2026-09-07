@@ -1,5 +1,4 @@
-import type { Settings } from './settings';
-import { validateSettings } from './settings-policy';
+import { type Settings, validateSettings } from './settings';
 
 // Record contents pass through untouched; persistence owns their representation.
 interface BackupImportData<Cards, Stats, Notes> {
