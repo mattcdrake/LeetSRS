@@ -13,8 +13,6 @@ import { getAllCards } from '@/infrastructure/storage/cards';
 import { getStats, getStatsForDate, saveStats } from '@/infrastructure/storage/stats';
 import { getSettings } from './settings';
 
-export { getStatsForDate } from '@/infrastructure/storage/stats';
-
 export async function getTodayKey(): Promise<string> {
   const now = new Date();
   const settings = await getSettings();
