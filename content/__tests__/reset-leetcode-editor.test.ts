@@ -69,15 +69,17 @@ describe('resetLeetcodeEditor', () => {
     expect(clicks[1]).not.toHaveBeenCalled();
   });
 
-  it('uses the last button in an unknown-locale cancel/confirm pair', async () => {
+  it('times out without clicking an unknown-locale cancel/confirm pair', async () => {
     const resetButton = renderResetButton();
     const { dialog, clicks } = createDialog(['Abbrechen', 'Bestätigen']);
     resetButton.addEventListener('click', () => document.body.appendChild(dialog));
 
-    await expect(resetLeetcodeEditor()).resolves.toBe('confirmed');
+    const result = resetLeetcodeEditor();
+    await vi.advanceTimersByTimeAsync(2000);
 
-    expect(clicks[0]).not.toHaveBeenCalled();
-    expect(clicks[1]).toHaveBeenCalledTimes(1);
+    await expect(result).resolves.toBe('confirmation-timeout');
+    for (const click of clicks) expect(click).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('supports alert dialogs', async () => {
