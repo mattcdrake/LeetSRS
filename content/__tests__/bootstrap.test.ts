@@ -57,21 +57,21 @@ describe('content startup', () => {
     expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
     expect(disposeReset).not.toHaveBeenCalled();
     expect(disconnect).not.toHaveBeenCalled();
-    expect(document.querySelector('#last-group')?.previousElementSibling?.id).toBe('leetsrs-button-wrapper');
+    expect(document.querySelector('#last-group')?.previousElementSibling?.id).toBe('leetsrs-control');
   });
 
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
     document.body.innerHTML = '';
     await act(() => bootstrapContent());
-    expect(document.querySelector('#leetsrs-button-wrapper')).toBeNull();
+    expect(document.querySelector('#leetsrs-control')).toBeNull();
 
     document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
     act(() => notifyMutation());
     act(() => notifyMutation());
 
-    expect(document.querySelectorAll('#leetsrs-button-wrapper')).toHaveLength(1);
-    document.querySelector('#leetsrs-button-wrapper')?.remove();
+    expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
+    document.querySelector('#leetsrs-control')?.remove();
     act(() => notifyMutation());
-    expect(document.querySelectorAll('#leetsrs-button-wrapper')).toHaveLength(1);
+    expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
   });
 });

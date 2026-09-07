@@ -1,50 +1,37 @@
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 
 export function bootstrapContent() {
-  setupLeetSrsButton();
+  setupLeetSrsControl();
   setupLeetcodeAutoReset();
 }
 
-function setupLeetSrsButton() {
-  const BUTTON_ID = 'leetsrs-button-wrapper';
-  let mountedButton: { element: HTMLElement; dispose: () => void } | null = null;
+function setupLeetSrsControl() {
+  const CONTROL_ID = 'leetsrs-control';
+  let mountedControl: { element: HTMLElement; root: Root } | null = null;
 
-  function insertButton(buttonsContainer: Element) {
-    if (buttonsContainer.querySelector(`#${BUTTON_ID}`)) {
-      return;
+  function mountControl() {
+    if (mountedControl && !mountedControl.element.isConnected) {
+      mountedControl.root.unmount();
+      mountedControl = null;
     }
 
-    const buttonWrapper = document.createElement('div');
-    buttonWrapper.id = BUTTON_ID;
-    buttonsContainer.insertBefore(buttonWrapper, buttonsContainer.lastElementChild);
-    const root = createRoot(buttonWrapper);
+    const toolbar = document.querySelector('#ide-top-btns');
+    if (!toolbar || toolbar.querySelector(`#${CONTROL_ID}`)) return;
+
+    const container = document.createElement('div');
+    container.id = CONTROL_ID;
+    toolbar.insertBefore(container, toolbar.lastElementChild);
+    const root = createRoot(container);
     root.render(<LeetSrsControl />);
 
-    mountedButton = {
-      element: buttonWrapper,
-      dispose: () => {
-        root.unmount();
-        buttonWrapper.remove();
-      },
-    };
+    mountedControl = { element: container, root };
   }
 
-  const tryInsertButton = () => {
-    if (mountedButton && !mountedButton.element.isConnected) {
-      mountedButton.dispose();
-      mountedButton = null;
-    }
-    const buttonsContainer = document.querySelector('#ide-top-btns');
-    if (buttonsContainer) {
-      insertButton(buttonsContainer);
-    }
-  };
-  tryInsertButton();
+  mountControl();
 
-  // Use MutationObserver to handle SPA navigation and React re-renders.
-  const observer = new MutationObserver(tryInsertButton);
+  const observer = new MutationObserver(mountControl);
   observer.observe(document.body, {
     childList: true,
     subtree: true,
