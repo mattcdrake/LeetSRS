@@ -2,7 +2,7 @@ import { createEmptyCard, State as FsrsState, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { buildReviewQueue, calculateDelayedDueDate, isDueByDate, partitionDueCards } from '../review';
+import { buildReviewQueue, calculateDelayedDueDate, isDueByDate } from '../review';
 
 describe('isDueByDate', () => {
   beforeEach(() => {
@@ -289,9 +289,8 @@ function dueCard(slug: string, due: string, state = State.New) {
   return card;
 }
 
-function queueFor(cards: ReturnType<typeof dueCard>[], limit = 3, completed = 0) {
-  const { reviewCards, newCards } = partitionDueCards(cards);
-  return buildReviewQueue(reviewCards, newCards, limit, completed);
+function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
+  return buildReviewQueue(cards, limit, completed);
 }
 
 describe('review queue calculations', () => {

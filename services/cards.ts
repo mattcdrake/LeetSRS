@@ -1,11 +1,6 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import {
-  buildReviewQueue,
-  calculateDelayedDueDate,
-  isDueByDate as calculateIsDueByDate,
-  partitionDueCards,
-} from '@/domain/review';
+import { buildReviewQueue, calculateDelayedDueDate, isDueByDate as calculateIsDueByDate } from '@/domain/review';
 import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards/store';
 
 import { deleteNote } from './notes';
@@ -99,12 +94,9 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   const schedulingResult = fsrs.next(card.fsrs, now, rating);
   card.fsrs = schedulingResult.card;
   await cards.save(slug, card);
-
   await updateStats(rating, isNewCard);
-
   const settings = await getSettings();
   const shouldRequeue = isDueByDate(card, now, settings.dayStartHour);
-
   return { card, shouldRequeue };
 }
 
@@ -116,10 +108,7 @@ export async function getReviewQueue(): Promise<Card[]> {
   const allCards = await getAllCards();
   const settings = await getSettings();
   const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card, new Date(), settings.dayStartHour));
-
-  const { reviewCards, newCards } = partitionDueCards(dueCards);
-
   const todayStats = await getTodayStats();
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
-  return buildReviewQueue(reviewCards, newCards, settings.maxNewCardsPerDay, newCardsCompletedToday);
+  return buildReviewQueue(dueCards, settings.maxNewCardsPerDay, newCardsCompletedToday);
 }
