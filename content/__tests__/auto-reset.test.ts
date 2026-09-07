@@ -157,6 +157,32 @@ describe('setupLeetcodeAutoReset', () => {
     expect(sendMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('retries when the reset button becomes available', async () => {
+    dispose = setupLeetcodeAutoReset();
+    await vi.advanceTimersByTimeAsync(0);
+
+    const resetButton = renderResetButton('class');
+    const confirmButton = attachConfirmDialog(resetButton, 'Confirm');
+    const confirmClick = vi.spyOn(confirmButton, 'click');
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(confirmClick).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).toContain('Code reset to default');
+  });
+
+  it('does not retry or show a toast when confirmation times out', async () => {
+    const resetButton = renderResetButton('class');
+    const resetClick = vi.spyOn(resetButton, 'click');
+
+    dispose = setupLeetcodeAutoReset();
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(resetClick).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).not.toContain('Code reset to default');
+  });
+
   it.each([
     ['/problems/three-sum/', 'three-sum'],
     ['/problemset/', 'two-sum'],

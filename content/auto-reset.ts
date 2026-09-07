@@ -1,18 +1,9 @@
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
+import { resetLeetcodeEditor } from './reset-leetcode-editor';
 
-const RESET_CONFIRM_TIMEOUT_MS = 2000;
-const RESET_CONFIRM_POLL_MS = 50;
 const RESET_TOAST_DURATION_MS = 2500;
 const SLUG_CHECK_INTERVAL_MS = 1000;
-
-// LeetCode inlines FontAwesome icons. Current markup only carries the icon name
-// in the class list; older markup also set data-icon.
-const RESET_ICON_SELECTOR = 'svg.fa-arrow-rotate-left, svg[data-icon="arrow-rotate-left"]';
-const CLICKABLE_SELECTOR = 'button, [role="button"]';
-const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]';
-// The dialog is rendered by LeetCode, so match their labels rather than ours.
-const CONFIRM_LABELS = ['confirm', '确认', '确定'];
 
 export function setupLeetcodeAutoReset(): () => void {
   let lastSlug: string | null = null;
@@ -58,17 +49,12 @@ export function setupLeetcodeAutoReset(): () => void {
         return;
       }
 
-      const resetButton = findResetButton();
-      if (!resetButton) {
+      const result = await resetLeetcodeEditor();
+      if (result === 'unavailable') {
         return;
       }
 
-      // Snapshot the dialogs already on the page so we only ever confirm the one
-      // our own click opens.
-      const openModals = new Set(findModals());
-      resetButton.click();
-      const confirmed = await waitForConfirmClick(openModals);
-      if (confirmed) {
+      if (result === 'confirmed') {
         showToast('Code reset to default');
       }
       lastResetSlug = slug;
@@ -92,73 +78,6 @@ export function setupLeetcodeAutoReset(): () => void {
     window.removeEventListener('popstate', checkForNavigation);
     window.clearInterval(intervalId);
   };
-}
-
-function waitForConfirmClick(openModals: Set<Element>): Promise<boolean> {
-  return new Promise((resolve) => {
-    const clickConfirm = () => {
-      const button = findConfirmButton(openModals);
-      if (!button) {
-        return false;
-      }
-
-      button.click();
-      return true;
-    };
-
-    if (clickConfirm()) {
-      resolve(true);
-      return;
-    }
-
-    const start = Date.now();
-    const interval = window.setInterval(() => {
-      if (clickConfirm()) {
-        window.clearInterval(interval);
-        resolve(true);
-        return;
-      }
-
-      if (Date.now() - start >= RESET_CONFIRM_TIMEOUT_MS) {
-        window.clearInterval(interval);
-        resolve(false);
-      }
-    }, RESET_CONFIRM_POLL_MS);
-  });
-}
-
-function findResetButton(): HTMLElement | null {
-  for (const icon of document.querySelectorAll(RESET_ICON_SELECTOR)) {
-    const button = icon.closest(CLICKABLE_SELECTOR);
-    if (button instanceof HTMLElement) {
-      return button;
-    }
-  }
-  return null;
-}
-
-function findModals(): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR));
-}
-
-function findConfirmButton(openModals: Set<Element>): HTMLElement | null {
-  for (const modal of findModals()) {
-    if (openModals.has(modal)) {
-      continue;
-    }
-
-    const buttons = Array.from(modal.querySelectorAll('button'));
-    const labelled = buttons.find((button) => CONFIRM_LABELS.includes(button.textContent?.trim().toLowerCase() ?? ''));
-    if (labelled) {
-      return labelled;
-    }
-
-    // Unknown locale: the dialog is a plain cancel/confirm pair, confirm last.
-    if (buttons.length === 2) {
-      return buttons[1];
-    }
-  }
-  return null;
 }
 
 function showToast(message: string): void {
