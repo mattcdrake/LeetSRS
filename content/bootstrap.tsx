@@ -12,13 +12,16 @@ function setupLeetSrsControl() {
   let mountedControl: { element: HTMLElement; root: Root } | null = null;
 
   function mountControl() {
-    if (mountedControl && !mountedControl.element.isConnected) {
+    const toolbar = document.querySelector('#ide-top-btns');
+    if (toolbar && mountedControl?.element.parentElement === toolbar) return;
+
+    if (mountedControl) {
       mountedControl.root.unmount();
+      mountedControl.element.remove();
       mountedControl = null;
     }
 
-    const toolbar = document.querySelector('#ide-top-btns');
-    if (!toolbar || toolbar.querySelector(`#${CONTROL_ID}`)) return;
+    if (!toolbar) return;
 
     const container = document.createElement('div');
     container.id = CONTROL_ID;

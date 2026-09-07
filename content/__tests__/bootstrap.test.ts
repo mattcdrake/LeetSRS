@@ -6,6 +6,7 @@ import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { watchStoredTranslations } from '@/infrastructure/storage/translations';
+import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
@@ -16,6 +17,7 @@ let notifyMutation: () => void;
 const observe = vi.fn();
 const disconnect = vi.fn();
 const disposeReset = vi.fn();
+const unwatchTranslations = vi.fn();
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -35,7 +37,7 @@ beforeEach(() => {
   vi.mocked(sendMessage).mockResolvedValue(undefined);
   vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
-    return vi.fn();
+    return unwatchTranslations;
   });
   vi.mocked(setupLeetcodeAutoReset).mockReturnValue(disposeReset);
 });
@@ -73,5 +75,32 @@ describe('content startup', () => {
     document.querySelector('#leetsrs-control')?.remove();
     act(() => notifyMutation());
     expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
+  });
+
+  it('replaces the tracked mount when the old toolbar stays connected', async () => {
+    await act(() => bootstrapContent());
+    const oldToolbar = requireDefined(document.querySelector('#ide-top-btns'));
+    oldToolbar.removeAttribute('id');
+    document.body.insertAdjacentHTML('beforeend', '<div id="ide-top-btns"><div id="last-group"></div></div>');
+
+    act(() => notifyMutation());
+    act(() => notifyMutation());
+
+    expect(oldToolbar.isConnected).toBe(true);
+    expect(oldToolbar.querySelector('#leetsrs-control')).toBeNull();
+    expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
+    expect(document.querySelector('#ide-top-btns #leetsrs-control')).not.toBeNull();
+    expect(unwatchTranslations).toHaveBeenCalledOnce();
+  });
+
+  it('unmounts when the toolbar disappears', async () => {
+    await act(() => bootstrapContent());
+    const toolbar = requireDefined(document.querySelector('#ide-top-btns'));
+    toolbar.remove();
+
+    act(() => notifyMutation());
+
+    expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
+    expect(unwatchTranslations).toHaveBeenCalledOnce();
   });
 });
