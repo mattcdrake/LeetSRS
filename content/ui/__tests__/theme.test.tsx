@@ -32,17 +32,17 @@ it.each([
   const tooltip = await screen.findByRole('tooltip');
   const rating = screen.getByRole('button', { name: translations.en.ratings.again });
   const toolbarBackground = screen.getByRole('button', { name: translations.en.app.name });
-  expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.light.ratingAgain });
+  expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.light.ratings.again.bg });
   const host = element === 'html' ? document.documentElement : document.body;
   act(() => host.classList.add(className));
   await waitFor(() => {
-    expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.dark.ratingAgain });
+    expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.dark.ratings.again.bg });
     expect(tooltip).toHaveStyle({ backgroundColor: THEME_COLORS.dark.bgTooltip });
     expect(toolbarBackground).toHaveStyle({ '--button-bg': THEME_COLORS.dark.bgToolbarButton });
   });
   act(() => host.classList.remove(className));
   await waitFor(() => {
-    expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.light.ratingAgain });
+    expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.light.ratings.again.bg });
     expect(tooltip).toHaveStyle({ backgroundColor: THEME_COLORS.light.bgTooltip });
     expect(toolbarBackground).toHaveStyle({ '--button-bg': THEME_COLORS.light.bgToolbarButton });
   });
