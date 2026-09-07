@@ -1,21 +1,16 @@
 // @vitest-environment happy-dom
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { getCurrentProblem } from '@/content/problem-data';
+import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { translations } from '@/i18n';
-import { sendMessage } from '@/infrastructure/browser/messages';
 import { watchStoredTranslations } from '@/infrastructure/storage/translations';
-import { buildProblem } from '@/test/utils/card-mocks';
 
 vi.mock('@/infrastructure/storage/translations', () => ({
   watchStoredTranslations: vi.fn(),
 }));
-vi.mock('@/content/problem-data', () => ({ getCurrentProblem: vi.fn() }));
-vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
-const problem = buildProblem();
+vi.mock('@/content/rating-actions', () => ({ addCurrentProblem: vi.fn(), rateCurrentProblem: vi.fn() }));
 const unwatch = vi.fn();
 beforeEach(() => {
-  vi.mocked(getCurrentProblem).mockResolvedValue(problem);
   vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
     return unwatch;
@@ -34,11 +29,8 @@ it('toggles the menu and dispatches selections exactly once before closing', asy
   expect(button).toHaveAttribute('type', 'button');
   fireEvent.click(button);
   fireEvent.click(await screen.findByRole('button', { name: translations.en.ratings.good }));
-  await waitFor(() =>
-    expect(sendMessage).toHaveBeenCalledExactlyOnceWith('rateCard', {
-      input: { ...problem, rating: 3 },
-    })
-  );
+  expect(rateCurrentProblem).toHaveBeenCalledExactlyOnceWith(3);
+  expect(addCurrentProblem).not.toHaveBeenCalled();
   expect(button).toHaveAttribute('aria-expanded', 'false');
   fireEvent.click(button);
   fireEvent.click(
@@ -46,8 +38,8 @@ it('toggles the menu and dispatches selections exactly once before closing', asy
       name: translations.en.contentScript.addToSrsNoRating,
     })
   );
-  await waitFor(() => expect(sendMessage).toHaveBeenNthCalledWith(2, 'addCard', { problem }));
-  expect(sendMessage).toHaveBeenCalledTimes(2);
+  expect(addCurrentProblem).toHaveBeenCalledExactlyOnceWith();
+  expect(rateCurrentProblem).toHaveBeenCalledOnce();
   expect(button).toHaveAttribute('aria-expanded', 'false');
   fireEvent.click(button);
   await screen.findByRole('button', { name: translations.en.ratings.good });
@@ -79,7 +71,8 @@ it.each(['Enter', ' '])('opens with %s, dismisses with Escape, and returns focus
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   await waitFor(() => expect(button).toHaveFocus());
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(rateCurrentProblem).not.toHaveBeenCalled();
+  expect(addCurrentProblem).not.toHaveBeenCalled();
 });
 
 it('keeps inside interactions open and removes the popover on unmount', async () => {
@@ -92,7 +85,8 @@ it('keeps inside interactions open and removes the popover on unmount', async ()
 
   unmount();
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(rateCurrentProblem).not.toHaveBeenCalled();
+  expect(addCurrentProblem).not.toHaveBeenCalled();
 });
 
 it('cycles focus through every choice with Tab after opening with the mouse', async () => {
@@ -113,7 +107,8 @@ it('cycles focus through every choice with Tab after opening with the mouse', as
     expect(choice).toHaveFocus();
     expect(choice).toHaveAttribute('data-focused', 'true');
   }
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(rateCurrentProblem).not.toHaveBeenCalled();
+  expect(addCurrentProblem).not.toHaveBeenCalled();
 });
 
 it('updates an open menu when stored language changes without resubscribing on clicks', () => {

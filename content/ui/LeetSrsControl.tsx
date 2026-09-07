@@ -1,9 +1,7 @@
 import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
-import type { Grade } from 'ts-fsrs';
-import { getCurrentProblem } from '@/content/problem-data';
+import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import type { Translations } from '@/i18n';
-import { sendMessage } from '@/infrastructure/browser/messages';
 import { watchStoredTranslations } from '@/infrastructure/storage/translations';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
@@ -25,22 +23,6 @@ export function LeetSrsControl() {
     wasMenuOpen.current = menuOpen;
   }, [menuOpen]);
 
-  async function handleRate(rating: number) {
-    const problem = await getCurrentProblem();
-    if (!problem) return;
-
-    await sendMessage('rateCard', {
-      input: { ...problem, rating: rating as Grade },
-    });
-  }
-
-  async function handleAddWithoutRating() {
-    const problem = await getCurrentProblem();
-    if (!problem) return;
-
-    await sendMessage('addCard', { problem });
-  }
-
   if (!t) return null;
 
   return (
@@ -53,8 +35,8 @@ export function LeetSrsControl() {
         <Dialog aria-label={t.app.name}>
           <RatingMenu
             t={t}
-            onRate={handleRate}
-            onAddWithoutRating={handleAddWithoutRating}
+            onRate={rateCurrentProblem}
+            onAddWithoutRating={addCurrentProblem}
             onSelect={() => setMenuOpen(false)}
           />
         </Dialog>
