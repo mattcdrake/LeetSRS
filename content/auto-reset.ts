@@ -1,5 +1,5 @@
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { getCurrentDomain, getCurrentProblemSlug } from './domain';
+import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
 
 const RESET_CONFIRM_TIMEOUT_MS = 2000;
 const RESET_CONFIRM_POLL_MS = 50;

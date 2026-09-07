@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getCurrentProblemSlug } from '../domain';
+import { getCurrentProblemSlug } from '../page-context';
 
 // @vitest-environment happy-dom
 

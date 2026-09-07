@@ -1,13 +1,13 @@
 import type { ProblemDescriptor } from '@/domain/cards';
-import { getCurrentDomain, getCurrentProblemSlug, getGraphQLUrl } from './domain';
+import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
 
 export async function getCurrentProblem(): Promise<ProblemDescriptor | null> {
   const slug = getCurrentProblemSlug();
   if (!slug) throw new Error('Expected a problem slug on the current page');
-  return fetchProblemDataFromPage(slug);
+  return fetchProblemData(slug);
 }
 
-async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescriptor | null> {
+async function fetchProblemData(titleSlug: string): Promise<ProblemDescriptor | null> {
   try {
     const graphqlQuery = {
       query: `
@@ -37,7 +37,8 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(getGraphQLUrl(), {
+    const domain = getCurrentDomain();
+    const response = await fetch(`https://${domain}/graphql`, {
       method: 'POST',
       headers,
       body: JSON.stringify(graphqlQuery),
@@ -49,7 +50,6 @@ async function fetchProblemDataFromPage(titleSlug: string): Promise<ProblemDescr
     const question = data?.data?.question;
     if (!question) return null;
 
-    const domain = getCurrentDomain();
     const useTranslated = domain === 'leetcode.cn' && question.translatedTitle;
     return {
       difficulty: question.difficulty as ProblemDescriptor['difficulty'],
