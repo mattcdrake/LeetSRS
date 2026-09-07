@@ -1,5 +1,5 @@
 import type { LeetcodeDomain } from '@/domain/cards';
-import { isDueByDate } from '@/domain/review-day';
+import { isDueByDate } from '@/domain/review';
 import { getAllCards } from '@/infrastructure/storage/cards/store';
 import { getSettings } from './settings';
 

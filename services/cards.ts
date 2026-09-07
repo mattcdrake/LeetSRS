@@ -1,8 +1,12 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import { isDueByDate as calculateIsDueByDate } from '@/domain/review-day';
-import { buildReviewQueue, partitionDueCards } from '@/domain/review-queue';
-import { calculateDelayedDueDate, scheduleReview } from '@/domain/scheduling';
+import {
+  buildReviewQueue,
+  calculateDelayedDueDate,
+  isDueByDate as calculateIsDueByDate,
+  partitionDueCards,
+} from '@/domain/review';
+import { scheduleReview } from '@/domain/scheduling';
 import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards/store';
 
 import { deleteNote } from './notes';

@@ -1,5 +1,5 @@
 import type { State as FsrsState, Grade } from 'ts-fsrs';
-import { formatLocalDate } from '@/domain/review-day';
+import { formatLocalDate } from '@/domain/calendar';
 import {
   calculateHistoryStats,
   calculateUpcomingStats,
