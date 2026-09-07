@@ -1,9 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Translations } from '@/i18n';
-import { RATING_BUTTON_CONFIGS, THEME_COLORS } from './constants';
-import { getRatingColor } from './theme';
+import { getRatingColor, RATING_BUTTON_CONFIGS, THEME_COLORS, useDarkMode } from './theme';
 import styles from './ui.module.css';
-import { useDarkMode } from './useDarkMode';
 
 export type RatingCallback = (rating: number, label: string) => void;
 export type RatingMenuPosition = 'top' | 'bottom';

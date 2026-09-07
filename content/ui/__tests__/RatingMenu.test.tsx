@@ -2,8 +2,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
-import { THEME_COLORS } from '../constants';
 import { RatingMenu } from '../RatingMenu';
+import { THEME_COLORS } from '../theme';
 
 afterEach(() => document.documentElement.classList.remove('dark'));
 

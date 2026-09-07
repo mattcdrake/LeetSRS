@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
-import { LeetSrsButton } from '../LeetSrsButton';
+import { LeetSrsButton } from '../LeetSrsControl';
 import { RatingMenu } from '../RatingMenu';
 import styles from '../ui.module.css';
 

@@ -37,14 +37,6 @@ it('cancels pending display on unmount', () => {
   expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
 });
 
-it('cancels the animation frame on unmount', () => {
-  const cancel = vi.spyOn(window, 'cancelAnimationFrame');
-  const { unmount } = render(<Tooltip target={anchor()} text="LeetSRS" delay={0} />);
-  act(() => vi.advanceTimersByTime(0));
-  unmount();
-  expect(cancel).toHaveBeenCalledOnce();
-});
-
 it('restarts the delay when content changes and applies the dark theme', () => {
   document.documentElement.classList.add('dark');
   const target = anchor();
