@@ -13,62 +13,40 @@ export async function resetLeetcodeEditor(
   isCurrent: () => boolean = () => true
 ): Promise<'unavailable' | 'confirmed' | 'confirmation-timeout' | 'cancelled'> {
   if (!isCurrent()) return 'cancelled';
+
   const resetButton = findResetButton();
   if (!resetButton) {
     return 'unavailable';
   }
 
-  // Exclude dialogs that were already on the page before our reset click.
   const openModals = new Set(findModals());
   resetButton.click();
   return waitForConfirmClick(openModals, isCurrent);
 }
 
-function waitForConfirmClick(
+async function waitForConfirmClick(
   openModals: Set<Element>,
   isCurrent: () => boolean
 ): Promise<'confirmed' | 'confirmation-timeout' | 'cancelled'> {
-  return new Promise((resolve) => {
-    const clickConfirm = () => {
-      const button = findConfirmButton(openModals);
-      if (!button) {
-        return false;
-      }
+  const start = Date.now();
 
+  while (true) {
+    if (!isCurrent()) return 'cancelled';
+
+    const button = findConfirmButton(openModals);
+    if (button) {
       button.click();
-      return true;
-    };
-
-    if (!isCurrent()) {
-      resolve('cancelled');
-      return;
+      return 'confirmed';
     }
 
-    if (clickConfirm()) {
-      resolve('confirmed');
-      return;
+    if (Date.now() - start >= RESET_CONFIRM_TIMEOUT_MS) {
+      return 'confirmation-timeout';
     }
 
-    const start = Date.now();
-    const interval = window.setInterval(() => {
-      if (!isCurrent()) {
-        window.clearInterval(interval);
-        resolve('cancelled');
-        return;
-      }
-
-      if (clickConfirm()) {
-        window.clearInterval(interval);
-        resolve('confirmed');
-        return;
-      }
-
-      if (Date.now() - start >= RESET_CONFIRM_TIMEOUT_MS) {
-        window.clearInterval(interval);
-        resolve('confirmation-timeout');
-      }
-    }, RESET_CONFIRM_POLL_MS);
-  });
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, RESET_CONFIRM_POLL_MS);
+    });
+  }
 }
 
 function findResetButton(): HTMLElement | null {
@@ -81,8 +59,8 @@ function findResetButton(): HTMLElement | null {
   return null;
 }
 
-function findModals(): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>(MODAL_SELECTOR));
+function findModals(): NodeListOf<Element> {
+  return document.querySelectorAll(MODAL_SELECTOR);
 }
 
 function findConfirmButton(openModals: Set<Element>): HTMLElement | null {
