@@ -27,6 +27,8 @@ Dependency rules apply to runtime and type-only imports:
   or persistence imports. This permits the messaging adapter, not arbitrary infrastructure.
   Content's read-only `infrastructure/storage/translations.ts` adapter is the
   exception; it resolves stored language with lazy browser fallback.
+- The popup owns permissions, active-tab inspection, and banner dismissal state.
+  Permission requests originate from user interactions.
 
 [Code review](../.github/code-review-guidelines.md) enforces these boundaries;
 there is no automated boundary check.
