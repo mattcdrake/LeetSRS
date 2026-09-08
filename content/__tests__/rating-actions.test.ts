@@ -1,4 +1,4 @@
-import { State } from 'ts-fsrs';
+import { Rating, State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -18,14 +18,17 @@ beforeEach(() => {
   vi.mocked(getCurrentProblem).mockResolvedValue(problem);
 });
 
-it.each([1, 2, 3, 4])('rates the current problem with grade %i', async (rating) => {
-  await rateCurrentProblem(rating);
+it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
+  'rates the current problem with grade %i',
+  async (rating) => {
+    await rateCurrentProblem(rating);
 
-  expect(getCurrentProblem).toHaveBeenCalledOnce();
-  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('rateCard', {
-    input: { ...problem, rating },
-  });
-});
+    expect(getCurrentProblem).toHaveBeenCalledOnce();
+    expect(sendMessage).toHaveBeenCalledExactlyOnceWith('rateCard', {
+      input: { ...problem, rating },
+    });
+  }
+);
 
 it('adds the current problem without a rating', async () => {
   await addCurrentProblem();

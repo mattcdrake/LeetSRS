@@ -45,13 +45,6 @@ export const THEME_COLORS = {
   },
 } as const;
 
-export const RATING_BUTTON_CONFIGS = [
-  { rating: 1, key: 'again' },
-  { rating: 2, key: 'hard' },
-  { rating: 3, key: 'good' },
-  { rating: 4, key: 'easy' },
-] as const;
-
 export const LEETSRS_BUTTON_COLOR = '#28c244';
 
 export function isDarkMode(): boolean {
