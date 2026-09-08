@@ -16,10 +16,12 @@ let syncInProgress = false;
 let lastError: string | null = null;
 
 export async function getGistSyncConfig(): Promise<GistSyncConfig> {
-  const pat = (await readSyncMetadata('githubPat')) ?? '';
-  const gistId = (await readSyncMetadata('gistId')) ?? null;
-  const enabled = (await readSyncMetadata('gistSyncEnabled')) ?? false;
-  return { pat, gistId, enabled };
+  const [pat, gistId, enabled] = await Promise.all([
+    readSyncMetadata('githubPat'),
+    readSyncMetadata('gistId'),
+    readSyncMetadata('gistSyncEnabled'),
+  ]);
+  return { pat: pat ?? '', gistId: gistId ?? null, enabled: enabled ?? false };
 }
 
 export async function setGistSyncConfig(config: Partial<GistSyncConfig>): Promise<void> {

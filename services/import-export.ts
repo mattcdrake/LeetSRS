@@ -19,18 +19,17 @@ import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infra
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const cards = (await readSnapshotCards()) ?? {};
-  const stats = await getStats();
-  const notes = await readSnapshotNotes(cards);
-
-  const settings = await exportSettings();
-
-  const gistId = await readSyncMetadata('gistId');
-  const gistSyncEnabled = await readSyncMetadata('gistSyncEnabled');
-
-  const dataUpdatedAt = await readSyncMetadata('dataUpdatedAt');
-
-  const schemaVersion = await getCurrentSchemaVersion();
+  const cardsPromise = readSnapshotCards().then((cards) => cards ?? {});
+  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt, schemaVersion] = await Promise.all([
+    cardsPromise,
+    getStats(),
+    cardsPromise.then((cards) => readSnapshotNotes(cards)),
+    exportSettings(),
+    readSyncMetadata('gistId'),
+    readSyncMetadata('gistSyncEnabled'),
+    readSyncMetadata('dataUpdatedAt'),
+    getCurrentSchemaVersion(),
+  ]);
 
   const exportData: ExportData = {
     schemaVersion,
