@@ -9,7 +9,7 @@ import type { Card } from '@/domain/cards';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
 
-// No longer need to mock useRateCardMutation since we're using onRate prop
+vi.mock('@/entrypoints/popup/hooks/useTheme', () => ({ useTheme: () => 'light' }));
 
 describe('ReviewCard', () => {
   const mockOnRate = vi.fn();
@@ -32,6 +32,17 @@ describe('ReviewCard', () => {
   });
 
   describe('Rendering', () => {
+    it('renders rating buttons in FSRS grade order', () => {
+      renderWithProviders();
+
+      expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
+        'Again',
+        'Hard',
+        'Good',
+        'Easy',
+      ]);
+    });
+
     it('should render the problem ID', () => {
       renderWithProviders();
       expect(screen.getByText('#1')).toBeInTheDocument();
