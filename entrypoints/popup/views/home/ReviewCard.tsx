@@ -1,10 +1,13 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
-import { Rating } from 'ts-fsrs';
-import type { Card, Difficulty } from '@/domain/cards';
+import type { Card } from '@/domain/cards';
+import { RATINGS } from '@/domain/ratings';
+import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { getLeetcodeProblemUrl } from '@/entrypoints/popup/leetcode';
 import { bounceButton } from '@/entrypoints/popup/styles';
+import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
+import { RATING_COLORS } from '@/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
@@ -13,34 +16,18 @@ type ReviewCardProps = {
   isProcessing?: boolean;
 };
 
-type RatingButtonConfig = {
-  rating: Grade;
-  labelKey: 'again' | 'hard' | 'good' | 'easy';
-  colorClass: string;
-};
-
-const difficultyColorMap: Record<Difficulty, string> = {
-  Easy: 'bg-difficulty-easy',
-  Medium: 'bg-difficulty-medium',
-  Hard: 'bg-difficulty-hard',
-};
-
-const ratingButtonConfigs: RatingButtonConfig[] = [
-  { rating: Rating.Again, labelKey: 'again', colorClass: 'bg-rating-again' },
-  { rating: Rating.Hard, labelKey: 'hard', colorClass: 'bg-rating-hard' },
-  { rating: Rating.Good, labelKey: 'good', colorClass: 'bg-rating-good' },
-  { rating: Rating.Easy, labelKey: 'easy', colorClass: 'bg-rating-easy' },
-];
-
 export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardProps) {
   const t = useI18n();
-  const difficultyColor = difficultyColorMap[card.difficulty] || 'bg-difficulty-medium';
+  const colors = RATING_COLORS[useTheme()];
+  const difficultyColor = DIFFICULTY_COLORS[card.difficulty] ?? DIFFICULTY_COLORS.Medium;
 
   return (
     <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-secondary">#{card.leetcodeId}</span>
-        <span className={`text-xs px-2 py-1 rounded text-white ${difficultyColor}`}>{card.difficulty}</span>
+        <span className="text-xs px-2 py-1 rounded text-white" style={{ backgroundColor: difficultyColor }}>
+          {card.difficulty}
+        </span>
       </div>
 
       <div className="flex justify-center pb-3 -mt-1 text-center">
@@ -57,14 +44,15 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
       </div>
 
       <div className="flex gap-2 justify-center">
-        {ratingButtonConfigs.map(({ rating, labelKey, colorClass }) => (
+        {RATINGS.map(({ rating, key }) => (
           <Button
-            key={labelKey}
+            key={key}
             onPress={() => onRate(rating)}
             isDisabled={isProcessing}
-            className={`w-20 py-1.5 rounded text-sm ${colorClass} text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+            style={{ backgroundColor: colors[key] }}
+            className={`w-20 py-1.5 rounded text-sm text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {t.ratings[labelKey]}
+            {t.ratings[key]}
           </Button>
         ))}
       </div>

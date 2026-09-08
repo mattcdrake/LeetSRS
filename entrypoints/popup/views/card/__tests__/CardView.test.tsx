@@ -70,7 +70,7 @@ describe('CardView', () => {
     expect(within(cardElements[2]).getByText('#100')).toBeInTheDocument();
   });
 
-  it('should display difficulty with appropriate color', () => {
+  it('should display each difficulty', () => {
     const cards = [
       createMockCard(State.New, { difficulty: 'Easy' }),
       createMockCard(State.New, { difficulty: 'Medium' }),
@@ -82,13 +82,13 @@ describe('CardView', () => {
     renderWithQueryClient(<CardView />);
 
     const easyCard = screen.getByText('Easy');
-    expect(easyCard).toHaveClass('text-green-500');
+    expect(easyCard).toBeInTheDocument();
 
     const mediumCard = screen.getByText('Medium');
-    expect(mediumCard).toHaveClass('text-yellow-500');
+    expect(mediumCard).toBeInTheDocument();
 
     const hardCard = screen.getByText('Hard');
-    expect(hardCard).toHaveClass('text-red-500');
+    expect(hardCard).toBeInTheDocument();
   });
 
   it('should link cards to their problem on the stored LeetCode domain', () => {

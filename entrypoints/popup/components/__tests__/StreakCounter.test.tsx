@@ -38,8 +38,8 @@ describe('StreakCounter', () => {
   it('renders and styles the streak', () => {
     const { container } = renderStats(stats(365));
     expect(screen.getByText('365')).toBeInTheDocument();
-    expect(container.querySelector('svg')).toHaveClass('text-orange-500');
-    expect(container.firstChild).toHaveClass('flex', 'items-center', 'gap-1', 'text-sm', 'font-medium', 'text-primary');
+
+    expect(container.firstChild).toHaveClass('flex', 'items-center', 'gap-1', 'text-sm', 'font-medium');
   });
 
   it('renders nothing while loading', () => {

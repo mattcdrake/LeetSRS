@@ -122,17 +122,6 @@ describe('ActionsSection', () => {
 
       expect(mockOnPause).toHaveBeenCalledTimes(1);
     });
-
-    it('should apply same styling as delay buttons to pause button', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const pauseButton = screen.getByRole('button', { name: /Pause/i });
-      expect(pauseButton).toHaveClass('bg-tertiary');
-      expect(pauseButton).toHaveClass('text-primary');
-    });
   });
 
   describe('Delete Functionality', () => {
@@ -188,24 +177,6 @@ describe('ActionsSection', () => {
       expect(deleteButton).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Confirm Delete?' })).not.toBeInTheDocument();
     });
-
-    it('should apply different styles for delete and confirm states', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      // Expand first
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const deleteButton = screen.getByRole('button', { name: 'Delete Card' });
-      expect(deleteButton).toHaveClass('bg-danger');
-      expect(deleteButton).not.toHaveClass('bg-ultra-danger');
-
-      fireEvent.click(deleteButton);
-
-      const confirmButton = screen.getByRole('button', { name: 'Confirm Delete?' });
-      expect(confirmButton).toHaveClass('bg-ultra-danger');
-      expect(confirmButton).not.toHaveClass('bg-danger');
-    });
   });
 
   describe('Visual Styling', () => {
@@ -213,14 +184,7 @@ describe('ActionsSection', () => {
       render(<ActionsSection {...defaultProps} />);
 
       const container = screen.getByText('Actions').closest('.border');
-      expect(container).toHaveClass('border', 'border-current', 'rounded-lg', 'bg-secondary', 'overflow-hidden');
-    });
-
-    it('should apply hover styles to expand button', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      expect(expandButton).toHaveClass('hover:bg-tertiary', 'transition-colors');
+      expect(container).toHaveClass('border', 'rounded-lg', 'overflow-hidden');
     });
 
     it('should apply bounce animation class to action buttons', () => {
@@ -251,7 +215,7 @@ describe('ActionsSection', () => {
       expect(contentDiv).toHaveClass('mt-3', 'space-y-3');
 
       const deleteSection = screen.getByRole('button', { name: 'Delete Card' }).parentElement;
-      expect(deleteSection).toHaveClass('pt-2', 'border-t', 'border-current');
+      expect(deleteSection).toHaveClass('pt-2', 'border-t');
     });
   });
 

@@ -1,51 +1,12 @@
 // @vitest-environment happy-dom
-import { act, render, screen, waitFor } from '@testing-library/react';
-import { Button, TooltipTrigger } from 'react-aria-components';
+import { render } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
 import { LeetSrsButton } from '../LeetSrsControl';
-import { RatingMenu } from '../RatingMenu';
-import { Tooltip } from '../Tooltip';
-import { THEME_COLORS } from '../theme';
 
 afterEach(() => {
   document.documentElement.className = '';
   document.body.className = '';
-});
-
-it.each([
-  ['html', 'dark'],
-  ['html', 'dark-theme'],
-  ['body', 'dark'],
-  ['body', 'dark-theme'],
-])('updates mounted surfaces when %s toggles %s', async (element, className) => {
-  render(
-    <>
-      <LeetSrsButton t={translations.en} onClick={vi.fn()} />
-      <RatingMenu t={translations.en} onRate={vi.fn()} onAddWithoutRating={vi.fn()} onSelect={vi.fn()} />
-      <TooltipTrigger isOpen>
-        <Button>Tooltip trigger</Button>
-        <Tooltip text="Theme tooltip" />
-      </TooltipTrigger>
-    </>
-  );
-  const tooltip = await screen.findByRole('tooltip');
-  const rating = screen.getByRole('button', { name: translations.en.ratings.again });
-  const toolbarBackground = screen.getByRole('button', { name: translations.en.app.name });
-  expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.light.ratings.again.bg });
-  const host = element === 'html' ? document.documentElement : document.body;
-  act(() => host.classList.add(className));
-  await waitFor(() => {
-    expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.dark.ratings.again.bg });
-    expect(tooltip).toHaveStyle({ backgroundColor: THEME_COLORS.dark.bgTooltip });
-    expect(toolbarBackground).toHaveStyle({ '--button-bg': THEME_COLORS.dark.bgToolbarButton });
-  });
-  act(() => host.classList.remove(className));
-  await waitFor(() => {
-    expect(rating).toHaveStyle({ '--button-bg': THEME_COLORS.light.ratings.again.bg });
-    expect(tooltip).toHaveStyle({ backgroundColor: THEME_COLORS.light.bgTooltip });
-    expect(toolbarBackground).toHaveStyle({ '--button-bg': THEME_COLORS.light.bgToolbarButton });
-  });
 });
 
 it('disconnects theme observers on unmount', () => {

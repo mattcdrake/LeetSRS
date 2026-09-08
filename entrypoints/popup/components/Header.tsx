@@ -13,7 +13,7 @@ export function Header({ title, children }: HeaderProps) {
         {title === t.app.name ? (
           <>
             {t.app.namePart1}
-            <span className="text-rating-easy">{t.app.namePart2}</span>
+            <span className="text-brand">{t.app.namePart2}</span>
           </>
         ) : (
           title

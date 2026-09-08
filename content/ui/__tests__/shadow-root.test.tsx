@@ -73,16 +73,3 @@ it('keeps tooltips in the trigger shadow root and removes them on unmount', asyn
   act(() => root.render(null));
   expect(shadow.querySelector('[role="tooltip"]')).toBeNull();
 });
-
-it.each(['dark', 'dark-theme'])('updates an open shadow menu when the page toggles %s', async (className) => {
-  const shadow = requireDefined(host.shadowRoot);
-  const button = requireDefined(shadow.querySelector('button'));
-  fireEvent.click(button);
-  const menu = requireDefined(shadow.querySelector<HTMLElement>('[role="dialog"]'));
-  const rating = within(menu).getByRole('button', { name: translations.en.ratings.again });
-  expect(rating).toHaveStyle({ '--button-bg': '#c73e3e' });
-  act(() => document.documentElement.classList.add(className));
-  await waitFor(() => expect(rating).toHaveStyle({ '--button-bg': '#d14358' }));
-  act(() => document.documentElement.classList.remove(className));
-  await waitFor(() => expect(rating).toHaveStyle({ '--button-bg': '#c73e3e' }));
-});

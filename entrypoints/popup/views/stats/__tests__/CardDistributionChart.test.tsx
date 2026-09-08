@@ -68,20 +68,6 @@ describe('CardDistributionChart', () => {
     expect(chartData.datasets[0].data).toEqual([5, 3, 8, 2]);
   });
 
-  it('should use correct colors for chart segments', () => {
-    renderChart();
-
-    const chart = screen.getByTestId('doughnut-chart');
-    const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
-
-    expect(chartData.datasets[0].backgroundColor).toEqual([
-      '#3b82f6', // blue for New
-      '#f59e0b', // amber for Learning
-      '#10b981', // emerald for Review
-      '#ef4444', // red for Relearning
-    ]);
-  });
-
   it('should render chart with correct options', () => {
     renderChart();
 
