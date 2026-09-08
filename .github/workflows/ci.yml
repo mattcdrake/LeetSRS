@@ -44,6 +44,9 @@ jobs:
       - name: Check formatting and linting
         run: npx biome check --error-on-warnings .
 
+      - name: Check Markdown formatting
+        run: npm run format:markdown:check
+
       - name: Type check
         run: npm run compile
 

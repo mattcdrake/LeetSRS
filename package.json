@@ -17,11 +17,13 @@
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
+    "format:markdown": "prettier --write \"**/*.md\"",
+    "format:markdown:check": "prettier --check \"**/*.md\"",
     "format:check": "biome format .",
     "test": "vitest --run",
     "test:ui": "vitest --ui",
     "test:verbose": "vitest --run --reporter=verbose",
-    "check": "biome check --error-on-warnings . && npm run compile && npm test",
+    "check": "biome check --error-on-warnings . && npm run format:markdown:check && npm run compile && npm test",
     "postinstall": "wxt prepare"
   },
   "dependencies": {
@@ -51,6 +53,7 @@
     "@vitest/ui": "^4.1.11",
     "@wxt-dev/module-react": "^1.1.3",
     "happy-dom": "^20.12.2",
+    "prettier": "^3.9.6",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.10",
