@@ -19,6 +19,30 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('enables saving only for a nonempty changed note within the limit', () => {
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
+    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+    const save = screen.getByRole('button', { name: 'Save' });
+    expect(save).toBeDisabled();
+
+    fireEvent.change(textarea, { target: { value: 'Changed note' } });
+    expect(save).toBeEnabled();
+    fireEvent.change(textarea, { target: { value: '' } });
+    expect(save).toBeDisabled();
+    expect(screen.getByText('0/500')).toBeInTheDocument();
+    fireEvent.change(textarea, { target: { value: 'a'.repeat(NOTES_MAX_LENGTH) } });
+    expect(save).toBeEnabled();
+    expect(screen.getByText('500/500')).toBeInTheDocument();
+    fireEvent.change(textarea, { target: { value: 'Stored note' } });
+    expect(save).toBeDisabled();
+  });
+
   it('loads a note and saves edits with pending feedback', async () => {
     const save = createDeferred<void>();
     messages.resolve('getNote', { text: 'Stored note' }).resolve('saveNote', save.promise);
@@ -57,11 +81,11 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('confirms deletion of a stored empty note and shows pending feedback', async () => {
+  it.each(['', 'Stored note'])('confirms deletion of stored text "%s" and shows pending feedback', async (text) => {
     const remove = createDeferred<void>();
     messages.resolve('deleteNote', remove.promise);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: '' });
+    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text });
     render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -73,6 +97,40 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
     await act(async () => remove.resolve());
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Deleting...' })).not.toBeInTheDocument());
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('');
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('restores stored text after a failed save', async () => {
+    const error = new Error('Save failed');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    messages.handle('saveNote', () => Promise.reject(error));
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
+    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+
+    fireEvent.change(textarea, { target: { value: 'Failed draft' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to save note:', error));
+    await waitFor(() => expect(textarea).toHaveValue('Stored note'));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('retains text and resets confirmation after a failed deletion', async () => {
+    const error = new Error('Delete failed');
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    messages.handle('deleteNote', () => Promise.reject(error));
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
+    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
+    await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to delete note:', error));
+    expect(await screen.findByRole('button', { name: 'Delete' })).toBeEnabled();
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Stored note');
   });
 });
 
