@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, review_requested]
+    types: [opened, reopened, review_requested]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
@@ -25,6 +25,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+
+      # Work around the native installer failing when its launcher directory is absent.
+      - name: Prepare Claude launcher directory
+        run: mkdir -p "$HOME/.local/bin"
 
       - name: Run Claude Code Review
         id: claude-review

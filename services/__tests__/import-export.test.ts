@@ -1,5 +1,5 @@
 import { createEmptyCard, Rating } from 'ts-fsrs';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/domain/notes';
@@ -8,6 +8,7 @@ import type { StoredCard } from '@/infrastructure/storage/cards/codec';
 import { migrations, runMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildSettings } from '@/test/utils/settings-mocks';
+import * as auth from '../github-auth';
 import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
 
 describe('import-export', () => {
@@ -296,6 +297,9 @@ describe('import-export', () => {
 
     describe('applyImportData', () => {
       it('replaces stored data while preserving the GitHub PAT', async () => {
+        const readPat = vi.spyOn(auth, 'getGitHubPat');
+        const removePat = vi.spyOn(auth, 'removeGitHubPat');
+        const writePat = vi.spyOn(auth, 'setGitHubPat');
         const oldCardUuid = 'old-card-uuid-1234';
         await storage.setItem(STORAGE_KEYS.cards, { old: { id: oldCardUuid } });
         await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
@@ -313,6 +317,9 @@ describe('import-export', () => {
 
         await applyImportData(preparedData);
 
+        expect(readPat).toHaveBeenCalledExactlyOnceWith();
+        expect(removePat).toHaveBeenCalledExactlyOnceWith();
+        expect(writePat).toHaveBeenCalledExactlyOnceWith('existing-pat');
         expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
         expect(await storage.getItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const)).toBeNull();
         expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');

@@ -2,7 +2,8 @@ import { browser } from 'wxt/browser';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
 import { migrations, runMigrations } from '@/infrastructure/storage/migrations';
 import { getReviewQueue } from '@/services/cards';
-import { getGistSyncConfig } from '@/services/github-sync';
+import { getGistDestinationConfig } from '@/services/gist-setup';
+import { hasGitHubCredentials } from '@/services/github-auth';
 import { getSettings } from '@/services/settings';
 import { messages, registerBackgroundMessages } from './message-handlers';
 
@@ -52,8 +53,8 @@ export default defineBackground(() => {
 
     await readyPromise;
 
-    const config = await getGistSyncConfig();
-    if (config.enabled && config.pat && config.gistId) {
+    const [config, hasCredentials] = await Promise.all([getGistDestinationConfig(), hasGitHubCredentials()]);
+    if (config.enabled && hasCredentials && config.gistId) {
       await messageRunner.execute(messages.triggerGistSync, undefined);
     } else {
       await updateBadge();

@@ -16,6 +16,7 @@ import {
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
@@ -64,12 +65,12 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
-  const existingPat = await readSyncMetadata('githubPat');
+  const existingPat = await getGitHubPat();
 
   await resetAllData();
 
   if (existingPat) {
-    await writeSyncMetadata('githubPat', existingPat);
+    await setGitHubPat(existingPat);
   }
 
   await writeSnapshotCards(preparedData.cards);
@@ -104,7 +105,7 @@ export async function resetAllData(): Promise<void> {
   await removeStats();
   await resetSettings();
 
-  await removeSyncMetadata('githubPat');
+  await removeGitHubPat();
   await removeSyncMetadata('gistId');
   await removeSyncMetadata('gistSyncEnabled');
   await removeSyncMetadata('lastSyncTime');
