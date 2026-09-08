@@ -53,7 +53,7 @@ export function decideGistSync(
   const localUpdated = new Date(localDataUpdatedAt);
   const remoteUpdated = new Date(remote.dataUpdatedAt);
   if (localUpdated < remoteUpdated) {
-    return { action: 'pull', initializeDataUpdatedAt: false };
+    return { action: 'push', initializeDataUpdatedAt: false };
   }
   if (localUpdated > remoteUpdated) {
     return { action: 'push', initializeDataUpdatedAt: false };
