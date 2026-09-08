@@ -3,7 +3,7 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
@@ -13,7 +13,6 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
-// Mock the hooks
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('NotesSection', () => {
@@ -35,7 +34,9 @@ describe('NotesSection', () => {
 
     expect(screen.getByText('Notes')).toBeInTheDocument();
     expect(screen.getByRole('button', { expanded: false })).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText(/add your notes/i)).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/add your notes/i)).not.toBeVisible();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
   it('should expand when clicked', async () => {
@@ -50,395 +51,63 @@ describe('NotesSection', () => {
     });
   });
 
-  it('should display character count', async () => {
+  it('retains the draft and delete confirmation across collapse and reopen', async () => {
+    seedNote({ text: 'Stored note' });
     render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('0/500')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: 'Test note' } });
-
-    expect(screen.getByText('9/500')).toBeInTheDocument();
-  });
-
-  it('should show error state when over character limit', async () => {
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    const longText = 'a'.repeat(501);
-    fireEvent.change(textarea, { target: { value: longText } });
-
-    const charCount = screen.getByText('501/500');
-    expect(charCount).toBeInTheDocument();
-    expect(charCount).toHaveClass('text-danger');
-  });
-
-  it('should disable save button when no changes', async () => {
-    const mockNote: Note = {
-      text: 'Existing note',
-    };
-
-    seedNote(mockNote);
-
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      const saveButton = screen.getByRole('button', { name: 'Save' });
-      expect(saveButton).toBeDisabled();
-    });
-  });
-
-  it('should enable save button when text changes', async () => {
-    const mockNote: Note = {
-      text: 'Existing note',
-    };
-
-    seedNote(mockNote);
-
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: 'Updated note' } });
-
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    expect(saveButton).not.toBeDisabled();
-  });
-
-  it('should save note when save button clicked', async () => {
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: 'New note text' } });
-
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId: mockCardId, text: 'New note text' });
-    });
-  });
-
-  it('should disable save button when text is over limit', async () => {
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    const longText = 'a'.repeat(501);
-    fireEvent.change(textarea, { target: { value: longText } });
-
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    expect(saveButton).toBeDisabled();
-  });
-
-  it('should load existing note', async () => {
-    const existingNote: Note = {
-      text: 'This is an existing note',
-    };
-
-    seedNote(existingNote);
-
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    // Force a re-render to trigger useEffect
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-      expect(textarea.value).toBe('This is an existing note');
-    });
-  });
-
-  it('should call mutateAsync when save button is clicked', async () => {
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: 'New note to save' } });
-
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId: mockCardId, text: 'New note to save' });
-    });
-  });
-
-  it('should handle save error gracefully', async () => {
-    const originalNote: Note = {
-      text: 'Original note content',
-    };
-
-    // Setup mock to return original note
-    seedNote(originalNote);
-
-    // Setup save mutation to reject
-    messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
-
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    // Force a re-render to trigger useEffect
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    // Wait for the original note to be loaded in the textarea
-    await waitFor(() => {
-      const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-      expect(textarea.value).toBe('Original note content');
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-
-    // Change the text to something new
-    fireEvent.change(textarea, { target: { value: 'New note that will fail to save' } });
-    expect(textarea.value).toBe('New note that will fail to save');
-
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    fireEvent.click(saveButton);
-
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to save note:', expect.any(Error));
-    });
-
-    // Text should revert to the original note content after save error
-    await waitFor(() => {
-      const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-      expect(textarea.value).toBe('Original note content');
-    });
-
-    consoleSpy.mockRestore();
-  });
-
-  it('should handle empty note correctly', async () => {
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-
-    // Type some text first
-    fireEvent.change(textarea, { target: { value: 'Some text' } });
-
-    // Then clear it
-    fireEvent.change(textarea, { target: { value: '' } });
-
-    const saveButton = screen.getByRole('button', { name: 'Save' });
-    expect(saveButton).toBeDisabled(); // Should be disabled for empty text
-  });
-
-  it('should not show delete button when no existing note', async () => {
-    render(<NotesSection cardId={mockCardId} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-
-    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
-  });
-
-  it('should show delete button when there is an existing note', async () => {
-    const existingNote: Note = {
-      text: 'This is an existing note',
-    };
-
-    seedNote(existingNote);
-
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    });
-  });
-
-  it('should require confirmation before delete', async () => {
-    const existingNote: Note = {
-      text: 'Note to be deleted',
-    };
-
-    seedNote(existingNote);
-
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    });
-
-    const deleteButton = screen.getByRole('button', { name: 'Delete' });
-
-    // First click should show confirmation
-    fireEvent.click(deleteButton);
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
-    });
+    const toggle = screen.getByRole('button', { expanded: false });
+    fireEvent.click(toggle);
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+    fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await screen.findByRole('button', { name: 'Confirm?' });
+
+    fireEvent.click(toggle);
+    expect(textarea).not.toBeVisible();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm?' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Unsaved draft');
+    expect(screen.getByRole('button', { name: 'Confirm?' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
-
-    // Second click should actually delete
-    const confirmButton = screen.getByRole('button', { name: 'Confirm?' });
-    fireEvent.click(confirmButton);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId: mockCardId });
-    });
   });
 
-  it('should clear text area after successful delete', async () => {
-    const existingNote: Note = {
-      text: 'Note to be deleted',
-    };
+  it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {
+    const save = createDeferred<void>();
+    messages.resolve('saveNote', save.promise).resolve('getNote', { text: 'Saved draft' });
+    render(<NotesSection cardId={mockCardId} />, { wrapper });
+    const toggle = screen.getByRole('button', { expanded: false });
+    fireEvent.click(toggle);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Saved draft' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByRole('button', { name: 'Saving...' })).toBeDisabled();
 
-    seedNote(existingNote);
+    fireEvent.click(toggle);
+    await act(async () => save.resolve());
+    await waitFor(() =>
+      expect(queryClient.getQueryData(noteQueryKeys.detail(mockCardId))).toEqual({ text: 'Saved draft' })
+    );
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-      expect(textarea.value).toBe('Note to be deleted');
-    });
-
-    const deleteButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(deleteButton);
-
-    // Click confirm
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
-    });
-    const confirmButton = screen.getByRole('button', { name: 'Confirm?' });
-    fireEvent.click(confirmButton);
-
-    await waitFor(() => {
-      const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-      expect(textarea.value).toBe('');
-    });
+    fireEvent.click(toggle);
+    expect(screen.getByRole('textbox')).toHaveValue('Saved draft');
+    expect(screen.getByRole('textbox')).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId: mockCardId, text: 'Saved draft' });
   });
 
-  it('should disable delete button while deletion is pending', async () => {
-    const existingNote: Note = {
-      text: 'Note being deleted',
-    };
+  it('loads the supplied card while collapsed and saves edits to that card', async () => {
+    const cardId = 'another-home-card';
+    messages.resolve('getNote', { text: 'This card note' });
+    render(<NotesSection cardId={cardId} />, { wrapper });
 
-    seedNote(existingNote);
-
-    const deletion = createDeferred<void>();
-    messages.resolve('deleteNote', deletion.promise);
-
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Deleting...' })).toBeDisabled());
-    deletion.resolve();
-    await deletion.promise;
-  });
-
-  it('should handle delete error gracefully', async () => {
-    const existingNote: Note = {
-      text: 'Note that fails to delete',
-    };
-
-    seedNote(existingNote);
-    messages.handle('deleteNote', () => Promise.reject(new Error('Delete failed')));
-
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    const { rerender } = render(<NotesSection cardId={mockCardId} />, { wrapper });
-    rerender(<NotesSection cardId={mockCardId} />);
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    });
-
-    const deleteButton = screen.getByRole('button', { name: 'Delete' });
-    fireEvent.click(deleteButton);
-
-    // Click confirm
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
-    });
-    const confirmButton = screen.getByRole('button', { name: 'Confirm?' });
-    fireEvent.click(confirmButton);
-
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to delete note:', expect.any(Error));
-    });
-
-    // Text should remain unchanged after delete error
-    const textarea = screen.getByPlaceholderText('Add your notes here...') as HTMLTextAreaElement;
-    expect(textarea.value).toBe('Note that fails to delete');
-
-    consoleSpy.mockRestore();
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('getNote', { cardId }));
+    await waitFor(() => expect(screen.getByRole('textbox', { hidden: true })).toHaveValue('This card note'));
+    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Note text' }), { target: { value: 'Edited card note' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId, text: 'Edited card note' }));
   });
 });
