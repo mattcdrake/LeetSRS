@@ -1,0 +1,6 @@
+.wxt/
+.output/
+dist/
+coverage/
+experiments/
+CHANGELOG.md
