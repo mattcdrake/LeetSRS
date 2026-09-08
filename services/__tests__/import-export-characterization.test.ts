@@ -56,6 +56,7 @@ describe('backup workflow characterization', () => {
     await storage.setItem(STORAGE_KEYS.theme, 'invalid-theme');
     await storage.setItem(STORAGE_KEYS.gistSyncEnabled, false);
     await storage.setItem(STORAGE_KEYS.lastSyncTime, 'private-sync-time');
+    const reads = vi.spyOn(storage, 'getItem');
 
     expect(await exportData()).toBe(
       JSON.stringify(
@@ -75,6 +76,7 @@ describe('backup workflow characterization', () => {
         2
       )
     );
+    expect(reads.mock.calls.map(([key]) => key)).not.toContain(STORAGE_KEYS.githubPat);
   });
 
   it('samples export time only after the final schema read completes', async () => {
@@ -124,6 +126,11 @@ describe('backup workflow characterization', () => {
   it('resets before restoration and overwrites the settings timestamp with the imported timestamp', async () => {
     await seedExistingData();
     const events: string[] = [];
+    const read = storage.getItem.bind(storage);
+    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
+      if (key === STORAGE_KEYS.githubPat) events.push(`read:${key}`);
+      return read(key, options);
+    });
     const remove = storage.removeItem.bind(storage);
     const write = storage.setItem.bind(storage);
     vi.spyOn(storage, 'removeItem').mockImplementation(async (key, options) => {
@@ -138,6 +145,7 @@ describe('backup workflow characterization', () => {
     await importData(JSON.stringify(payload));
 
     expect(events).toEqual([
+      `read:${STORAGE_KEYS.githubPat}`,
       `remove:${STORAGE_KEYS.cards}`,
       `remove:${STORAGE_KEYS.stats}`,
       ...SETTING_KEYS.map((key) => `remove:${STORAGE_KEYS[key]}`),
@@ -159,8 +167,26 @@ describe('backup workflow characterization', () => {
     expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
   });
 
+  it('leaves existing data untouched when reading the credential fails', async () => {
+    await seedExistingData();
+    const failure = new Error('credential read failed');
+    const read = storage.getItem.bind(storage);
+    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
+      if (key === STORAGE_KEYS.githubPat) return Promise.reject(failure);
+      return read(key, options);
+    });
+    const remove = vi.spyOn(storage, 'removeItem');
+    const write = vi.spyOn(storage, 'setItem');
+
+    await expect(importData(JSON.stringify(payload))).rejects.toBe(failure);
+
+    expect(remove).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
   it.each([
     [STORAGE_KEYS.stats, 'existing-pat', 'old-time'],
+    [STORAGE_KEYS.githubPat, 'existing-pat', 'old-time'],
     [oldNoteKey, null, null],
   ] as const)('retains partial reset state when removing %s fails', async (failedKey, pat, timestamp) => {
     await seedExistingData();
@@ -206,7 +232,7 @@ describe('backup workflow characterization', () => {
     }
   );
 
-  it.each([null, '', 'existing-pat'])(
+  it.each([null, '', 'existing-pat', '   '])(
     'preserves only a truthy local PAT (%s), ignoring imported credentials',
     async (pat) => {
       if (pat !== null) await storage.setItem(STORAGE_KEYS.githubPat, pat);
