@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
 import { migrations, runMigrations } from '@/infrastructure/storage/migrations';
 import { getReviewQueue } from '@/services/cards';
-import { getGistSyncConfig } from '@/services/github-sync';
+import { getGistSyncConfig } from '@/services/gist-setup';
 import { getSettings } from '@/services/settings';
 import { messages, registerBackgroundMessages } from './message-handlers';
 

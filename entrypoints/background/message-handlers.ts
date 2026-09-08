@@ -9,15 +9,9 @@ import {
   setPauseStatus,
 } from '@/services/cards';
 import { shouldResetEditor } from '@/services/editor-reset';
+import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
 import { validatePat } from '@/services/github-auth';
-import {
-  createNewGist,
-  getGistSyncConfig,
-  getGistSyncStatus,
-  setGistSyncConfig,
-  triggerGistSync,
-  validateGistId,
-} from '@/services/github-sync';
+import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';

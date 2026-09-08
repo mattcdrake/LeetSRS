@@ -35,16 +35,10 @@ vi.mock('../import-export', () => ({
   importData: (...args: unknown[]) => mockImportData(...args),
 }));
 
+import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '../gist-setup';
 // Import after mocks are set up
 import { validatePat } from '../github-auth';
-import {
-  createNewGist,
-  getGistSyncConfig,
-  getGistSyncStatus,
-  setGistSyncConfig,
-  triggerGistSync,
-  validateGistId,
-} from '../github-sync';
+import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
 describe('github-sync', () => {
   beforeEach(() => {
