@@ -1,23 +1,28 @@
 import type { GistSyncConfig, GistValidationResult } from '@/domain/gist-sync';
-import { createGitHubClient, GIST_FILENAME } from '@/infrastructure/github/client';
+import { GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
-import { getGitHubPat, setGitHubPat } from './github-auth';
+import { getAuthenticatedGitHubClient, getGitHubPat, setGitHubPat } from './github-auth';
 import { exportData } from './import-export';
 
 export async function getGistSyncConfig(): Promise<GistSyncConfig> {
-  const [pat, gistId, enabled] = await Promise.all([
-    getGitHubPat(),
-    readSyncMetadata('gistId'),
-    readSyncMetadata('gistSyncEnabled'),
-  ]);
-  return { pat: pat ?? '', gistId: gistId ?? null, enabled: enabled ?? false };
+  const [pat, destination] = await Promise.all([getGitHubPat(), getGistDestinationConfig()]);
+  return { pat: pat ?? '', ...destination };
 }
 
 export async function setGistSyncConfig(config: Partial<GistSyncConfig>): Promise<void> {
   if (config.pat !== undefined) {
     await setGitHubPat(config.pat);
   }
+  await setGistDestinationConfig(config);
+}
+
+export async function getGistDestinationConfig(): Promise<Omit<GistSyncConfig, 'pat'>> {
+  const [gistId, enabled] = await Promise.all([readSyncMetadata('gistId'), readSyncMetadata('gistSyncEnabled')]);
+  return { gistId: gistId ?? null, enabled: enabled ?? false };
+}
+
+export async function setGistDestinationConfig(config: Partial<Omit<GistSyncConfig, 'pat'>>): Promise<void> {
   if (config.gistId !== undefined) {
     if (config.gistId === null) {
       await removeSyncMetadata('gistId');
@@ -36,7 +41,17 @@ export async function validateGistId(gistId: string, pat: string): Promise<GistV
   }
 
   try {
-    const github = createGitHubClient(pat);
+    const github = await getAuthenticatedGitHubClient(pat);
+    return await validateGist(gistId, github);
+  } catch (error) {
+    return gistValidationError(error);
+  }
+}
+
+export async function validateGist(gistId: string, github: GitHubClient): Promise<GistValidationResult> {
+  if (!gistId.trim()) return { valid: false, error: 'Gist ID is required' };
+
+  try {
     const { data } = await github.getGist(gistId);
 
     if (!data.files?.[GIST_FILENAME]) {
@@ -45,14 +60,14 @@ export async function validateGistId(gistId: string, pat: string): Promise<GistV
 
     return { valid: true };
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes('404')) {
-        return { valid: false, error: 'Gist not found' };
-      }
-      return { valid: false, error: error.message };
-    }
-    return { valid: false, error: 'Unknown error validating Gist ID' };
+    return gistValidationError(error);
   }
+}
+
+function gistValidationError(error: unknown): GistValidationResult {
+  if (!(error instanceof Error)) return { valid: false, error: 'Unknown error validating Gist ID' };
+  if (error.message.includes('404')) return { valid: false, error: 'Gist not found' };
+  return { valid: false, error: error.message };
 }
 
 export async function createNewGist(): Promise<{ gistId: string }> {
@@ -61,7 +76,11 @@ export async function createNewGist(): Promise<{ gistId: string }> {
     throw new Error('PAT is required to create a gist');
   }
 
-  const github = createGitHubClient(config.pat);
+  const github = await getAuthenticatedGitHubClient(config.pat);
+  return createGist(github);
+}
+
+export async function createGist(github: GitHubClient): Promise<{ gistId: string }> {
   const exportJson = await exportData();
 
   const { data } = await github.createGist(
@@ -75,7 +94,7 @@ export async function createNewGist(): Promise<{ gistId: string }> {
 
   const gistId = data.id;
 
-  await setGistSyncConfig({ gistId });
+  await setGistDestinationConfig({ gistId });
 
   const now = new Date().toISOString();
   await writeSyncMetadata('lastSyncTime', now);
