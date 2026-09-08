@@ -3,7 +3,6 @@ import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { RATING_COLORS } from '@/ui/rating-colors';
 import App from '../App';
 
 vi.mock('@/entrypoints/popup/queries/settings', () => ({
@@ -22,9 +21,6 @@ describe('App theme', () => {
   });
 
   afterEach(() => {
-    for (const key of Object.keys(RATING_COLORS.light)) {
-      document.documentElement.style.removeProperty(`--current-rating-${key}`);
-    }
     document.documentElement.classList.remove('light', 'dark');
     document.body.classList.remove('light', 'dark');
     document.documentElement.style.colorScheme = '';

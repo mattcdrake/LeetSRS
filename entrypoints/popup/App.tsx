@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
-import { RATING_COLORS } from '@/ui/rating-colors';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';
@@ -19,9 +18,6 @@ function App() {
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.style.colorScheme = theme;
-    for (const [key, color] of Object.entries(RATING_COLORS[theme])) {
-      root.style.setProperty(`--current-rating-${key}`, color);
-    }
 
     body.classList.remove('light', 'dark');
     body.classList.add(theme);

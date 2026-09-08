@@ -50,6 +50,7 @@ body {
   --current-text-tertiary: #999999;
   --current-border: #d4d4d4;
   --current-accent: #40a635;
+  --current-brand: #3d9156;
   --current-danger: #dc2626;
   --current-ultra-danger: #991b1b;
   --current-info: #2563eb;
@@ -69,6 +70,7 @@ body {
   --current-text-tertiary: #666666;
   --current-border: #333333;
   --current-accent: #54bc4a;
+  --current-brand: #52b169;
   --current-danger: #bc4a4a;
   --current-ultra-danger: #8b2222;
   --current-info: #4a9fbc;
@@ -138,21 +140,8 @@ body {
     background-color: var(--current-difficulty-hard);
   }
 
-  /* Rating colors are supplied by App from ui/rating-colors.ts. */
-  .bg-rating-again {
-    background-color: var(--current-rating-again);
-  }
-  .bg-rating-hard {
-    background-color: var(--current-rating-hard);
-  }
-  .bg-rating-good {
-    background-color: var(--current-rating-good);
-  }
-  .bg-rating-easy {
-    background-color: var(--current-rating-easy);
-  }
-  .text-rating-easy {
-    color: var(--current-rating-easy);
+  .text-brand {
+    color: var(--current-brand);
   }
 
   /* Font utilities */
