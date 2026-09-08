@@ -161,8 +161,75 @@ describe('github-sync', () => {
       });
     });
 
-    it('initializes a missing legacy timestamp before export and samples status after the push', async () => {
-      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: '{}' } } } });
+    it.each([
+      { name: 'missing file', files: {} },
+      { name: 'missing content', files: { 'leetsrs-backup.json': {} } },
+      { name: 'empty content', files: { 'leetsrs-backup.json': { content: '' } } },
+      { name: 'invalid JSON', files: { 'leetsrs-backup.json': { content: '{' } } },
+    ])('pushes $name without reading or initializing local metadata', async ({ files }) => {
+      mockGistsGet.mockResolvedValue({ data: { files } });
+      mockExportData.mockResolvedValue('local backup');
+      const reads = vi.spyOn(storage, 'getItem');
+      const writes = vi.spyOn(storage, 'setItem');
+
+      expect(await triggerGistSync()).toEqual({ success: true, action: 'pushed', timestamp: now });
+      expect(reads).not.toHaveBeenCalledWith(STORAGE_KEYS.dataUpdatedAt);
+      expect(writes.mock.calls).toEqual([
+        [STORAGE_KEYS.lastSyncTime, now],
+        [STORAGE_KEYS.lastSyncDirection, 'push'],
+      ]);
+      expect(mockGistsUpdate).toHaveBeenCalledExactlyOnceWith({
+        gist_id: 'gist123',
+        files: { 'leetsrs-backup.json': { content: 'local backup' } },
+      });
+      expect(mockImportData).not.toHaveBeenCalled();
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    });
+
+    it('reads local metadata after the remote response before rejecting parsed null', async () => {
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: 'null' } } } });
+      const reads = vi.spyOn(storage, 'getItem');
+      const writes = vi.spyOn(storage, 'setItem');
+      const result = await triggerGistSync();
+      expect(result).toEqual({ success: false, error: expect.stringContaining('null') });
+      expect(reads).toHaveBeenCalledWith(STORAGE_KEYS.dataUpdatedAt);
+      expect(mockExportData).not.toHaveBeenCalled();
+      expect(mockImportData).not.toHaveBeenCalled();
+      expect(writes).not.toHaveBeenCalled();
+      expect((await getGistSyncStatus()).syncInProgress).toBe(false);
+    });
+
+    it('uses local metadata changed while the remote read is pending', async () => {
+      const request = createDeferred<{ data: { files: Record<string, { content: string }> } }>();
+      const started = createDeferred<void>();
+      mockGistsGet.mockImplementation(() => {
+        started.resolve();
+        return request.promise;
+      });
+      const reads = vi.spyOn(storage, 'getItem');
+      const syncing = triggerGistSync();
+      await started.promise;
+      expect(reads).not.toHaveBeenCalledWith(STORAGE_KEYS.dataUpdatedAt);
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, later);
+      request.resolve({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ dataUpdatedAt: now }) } } },
+      });
+      mockExportData.mockResolvedValue('{}');
+      expect(await syncing).toMatchObject({ success: true, action: 'pushed' });
+      expect(mockImportData).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      '{}',
+      '[]',
+      'false',
+      '42',
+      '"text"',
+      '{"dataUpdatedAt":null}',
+      '{"dataUpdatedAt":0}',
+      '{"dataUpdatedAt":""}',
+    ])('initializes a missing legacy timestamp before exporting parsed %s', async (content) => {
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content } } } });
       mockExportData.mockImplementation(async () => {
         expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(now);
         return '{"export":"unchanged"}';
@@ -188,11 +255,15 @@ describe('github-sync', () => {
       ]);
     });
 
-    it.each([null, '2023-12-01T00:00:00Z'])(
-      'pulls newer remote data with local timestamp %s',
-      async (localTimestamp) => {
+    it.each([
+      { localTimestamp: null, remoteTimestamp: '2024-01-01T00:00:00Z' },
+      { localTimestamp: '2023-12-01T00:00:00Z', remoteTimestamp: '2024-01-01T00:00:00Z' },
+      { localTimestamp: null, remoteTimestamp: 'invalid' },
+    ])(
+      'pulls remote $remoteTimestamp with local timestamp $localTimestamp',
+      async ({ localTimestamp, remoteTimestamp }) => {
         if (localTimestamp) await storage.setItem(STORAGE_KEYS.dataUpdatedAt, localTimestamp);
-        const content = '{ "dataUpdatedAt": "2024-01-01T00:00:00Z", "data": {} }';
+        const content = `{ "dataUpdatedAt": "${remoteTimestamp}", "data": {} }`;
         mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content } } } });
         mockImportData.mockImplementation(async () => {
           expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBeNull();
@@ -212,11 +283,17 @@ describe('github-sync', () => {
       }
     );
 
-    it('writes only sync time when timestamps match, preserving the previous direction', async () => {
-      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, now);
+    it.each([
+      { local: now, remote: now },
+      { local: now, remote: 'invalid' },
+      { local: 'invalid', remote: now },
+      { local: 'invalid', remote: 'invalid' },
+      { local: now, remote: {} },
+    ])('writes only sync time for local $local and remote $remote', async ({ local, remote }) => {
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, local);
       await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
       mockGistsGet.mockResolvedValue({
-        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ dataUpdatedAt: now }) } } },
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ dataUpdatedAt: remote }) } } },
       });
       const writes = vi.spyOn(storage, 'setItem');
 
@@ -234,51 +311,95 @@ describe('github-sync', () => {
       expect(mockGistsUpdate).not.toHaveBeenCalled();
     });
 
-    it.each(['push', 'pull'] as const)('does not write status when %s fails', async (direction) => {
-      const failure = new Error('403 Forbidden');
-      const content = JSON.stringify({ dataUpdatedAt: now });
-      mockGistsGet.mockResolvedValue({
-        data: { files: direction === 'pull' ? { 'leetsrs-backup.json': { content } } : {} },
-      });
-      mockExportData.mockResolvedValue('{}');
-      mockGistsUpdate.mockRejectedValue(failure);
-      mockImportData.mockRejectedValue(failure);
-      const writes = vi.spyOn(storage, 'setItem');
+    it.each(['export', 'push', 'pull'] as const)(
+      'does not write status when %s fails and permits retry',
+      async (direction) => {
+        const failure = new Error('403 Forbidden');
+        const content = JSON.stringify({ dataUpdatedAt: now });
+        mockGistsGet.mockResolvedValue({
+          data: { files: direction === 'pull' ? { 'leetsrs-backup.json': { content } } : {} },
+        });
+        mockExportData.mockResolvedValue('{}');
+        if (direction === 'export') mockExportData.mockRejectedValueOnce(failure);
+        if (direction === 'push') mockGistsUpdate.mockRejectedValueOnce(failure);
+        if (direction === 'pull') mockImportData.mockRejectedValueOnce(failure);
+        const writes = vi.spyOn(storage, 'setItem');
 
-      expect(await triggerGistSync()).toEqual({
-        success: false,
-        error: 'GitHub API rate limit exceeded. Please try again later.',
-      });
+        expect(await triggerGistSync()).toEqual({
+          success: false,
+          error: 'GitHub API rate limit exceeded. Please try again later.',
+        });
 
-      expect(writes).not.toHaveBeenCalled();
-      expect(await getGistSyncStatus()).toEqual({
-        lastSyncTime: null,
-        lastSyncDirection: null,
-        syncInProgress: false,
-        lastError: '403 Forbidden',
-      });
-    });
+        expect(writes).not.toHaveBeenCalled();
+        expect(await getGistSyncStatus()).toEqual({
+          lastSyncTime: null,
+          lastSyncDirection: null,
+          syncInProgress: false,
+          lastError: '403 Forbidden',
+        });
+        if (direction === 'export') expect(mockGistsUpdate).not.toHaveBeenCalled();
+        expect(await triggerGistSync()).toMatchObject({
+          success: true,
+          action: direction === 'pull' ? 'pulled' : 'pushed',
+        });
+        expect((await getGistSyncStatus()).lastError).toBeNull();
+      }
+    );
 
-    it('retains the successful remote write and sync time if the direction write fails', async () => {
-      mockGistsGet.mockResolvedValue({ data: { files: {} } });
-      mockExportData.mockResolvedValue('{}');
-      mockGistsUpdate.mockResolvedValue({});
-      const write = storage.setItem.bind(storage);
-      const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
-        if (key === STORAGE_KEYS.lastSyncDirection) throw new Error('direction write failed');
-        return write(key, value);
-      });
+    it.each([
+      { direction: 'push', failedKey: STORAGE_KEYS.lastSyncTime },
+      { direction: 'push', failedKey: STORAGE_KEYS.lastSyncDirection },
+      { direction: 'pull', failedKey: STORAGE_KEYS.lastSyncTime },
+      { direction: 'pull', failedKey: STORAGE_KEYS.lastSyncDirection },
+      { direction: 'no-change', failedKey: STORAGE_KEYS.lastSyncTime },
+    ])(
+      'preserves partial writes when $direction fails at $failedKey and permits retry',
+      async ({ direction, failedKey }) => {
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-time');
+        await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+        if (direction === 'no-change') await storage.setItem(STORAGE_KEYS.dataUpdatedAt, now);
+        const content = JSON.stringify({ dataUpdatedAt: now });
+        mockGistsGet.mockResolvedValue({
+          data: { files: direction === 'push' ? {} : { 'leetsrs-backup.json': { content } } },
+        });
+        mockExportData.mockResolvedValue('{}');
+        let transferred = false;
+        const transfer = async () => {
+          transferred = true;
+          vi.setSystemTime(new Date(later));
+        };
+        mockGistsUpdate.mockImplementation(transfer);
+        mockImportData.mockImplementation(transfer);
+        const write = storage.setItem.bind(storage);
+        const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+          expect(transferred).toBe(direction !== 'no-change');
+          if (key === failedKey) throw new Error('status write failed');
+          return write(key, value);
+        });
 
-      expect(await triggerGistSync()).toEqual({ success: false, error: 'direction write failed' });
-
-      expect(mockGistsUpdate).toHaveBeenCalledTimes(1);
-      expect(writes.mock.calls).toEqual([
-        [STORAGE_KEYS.lastSyncTime, now],
-        [STORAGE_KEYS.lastSyncDirection, 'push'],
-      ]);
-      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(now);
-      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBeNull();
-    });
+        expect(await triggerGistSync()).toEqual({ success: false, error: 'status write failed' });
+        const completionTime = direction === 'no-change' ? now : later;
+        expect(writes.mock.calls).toEqual(
+          failedKey === STORAGE_KEYS.lastSyncTime
+            ? [[STORAGE_KEYS.lastSyncTime, completionTime]]
+            : [
+                [STORAGE_KEYS.lastSyncTime, completionTime],
+                [STORAGE_KEYS.lastSyncDirection, direction],
+              ]
+        );
+        expect(mockGistsUpdate).toHaveBeenCalledTimes(direction === 'push' ? 1 : 0);
+        expect(mockImportData).toHaveBeenCalledTimes(direction === 'pull' ? 1 : 0);
+        expect(await getGistSyncStatus()).toEqual({
+          lastSyncTime: failedKey === STORAGE_KEYS.lastSyncTime ? 'previous-time' : completionTime,
+          lastSyncDirection: 'push',
+          syncInProgress: false,
+          lastError: 'status write failed',
+        });
+        writes.mockRestore();
+        expect(await triggerGistSync()).toMatchObject({ success: true });
+        expect((await getGistSyncStatus()).lastError).toBeNull();
+      }
+    );
 
     it('awaits the request while exposing busy state, then clears it on failure', async () => {
       const request = createDeferred<never>();
