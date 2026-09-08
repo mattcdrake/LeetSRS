@@ -7,6 +7,7 @@ import { getLeetcodeProblemUrl } from '@/entrypoints/popup/leetcode';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/entrypoints/popup/queries/cards';
 import { bounceButton } from '@/entrypoints/popup/styles';
 import type { Translations } from '@/i18n';
+import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
 import { useI18n } from '../../../contexts/I18nContext';
 import { CardNotes } from './CardNotes';
 
@@ -31,19 +32,6 @@ const formatDate = (date: Date) =>
     day: 'numeric',
     year: 'numeric',
   });
-
-const getDifficultyColor = (difficulty: string) => {
-  switch (difficulty) {
-    case 'Easy':
-      return 'text-green-500';
-    case 'Medium':
-      return 'text-yellow-500';
-    case 'Hard':
-      return 'text-red-500';
-    default:
-      return 'text-secondary';
-  }
-};
 
 interface StatRowProps {
   label: string;
@@ -103,7 +91,9 @@ export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardList
             <span className={`text-sm ${card.paused ? 'opacity-60' : ''}`}>{card.name}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs ${getDifficultyColor(card.difficulty)}`}>{card.difficulty}</span>
+            <span className="text-xs text-secondary" style={{ color: DIFFICULTY_COLORS[card.difficulty] }}>
+              {card.difficulty}
+            </span>
             <span
               className={`text-xs text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
             >

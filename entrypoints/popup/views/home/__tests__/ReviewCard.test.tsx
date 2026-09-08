@@ -6,10 +6,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { useI18n } from '@/entrypoints/popup/contexts/I18nContext';
+import { translations } from '@/i18n';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
 
 vi.mock('@/entrypoints/popup/hooks/useTheme', () => ({ useTheme: () => 'light' }));
+vi.mock('@/entrypoints/popup/contexts/I18nContext', () => ({ useI18n: vi.fn() }));
 
 describe('ReviewCard', () => {
   const mockOnRate = vi.fn();
@@ -29,19 +32,30 @@ describe('ReviewCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(useI18n).mockReturnValue(translations.en);
   });
 
   describe('Rendering', () => {
-    it('renders rating buttons in FSRS grade order', () => {
-      renderWithProviders();
+    it.each(['en', 'pl'] as const)(
+      'renders ordered localized ratings and submits each grade once in %s',
+      (language) => {
+        const t = translations[language];
+        vi.mocked(useI18n).mockReturnValue(t);
+        renderWithProviders();
 
-      expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
-        'Again',
-        'Hard',
-        'Good',
-        'Easy',
-      ]);
-    });
+        expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
+          t.ratings.again,
+          t.ratings.hard,
+          t.ratings.good,
+          t.ratings.easy,
+        ]);
+        screen.getAllByRole('button').forEach((button, index) => {
+          fireEvent.click(button);
+          expect(mockOnRate).toHaveBeenCalledTimes(index + 1);
+          expect(mockOnRate).toHaveBeenLastCalledWith(index + 1);
+        });
+      }
+    );
 
     it('should render the problem ID', () => {
       renderWithProviders();
