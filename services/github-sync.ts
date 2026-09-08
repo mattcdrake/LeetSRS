@@ -1,5 +1,5 @@
-import type { GistSyncStatus, SyncResult } from '@/domain/gist-sync';
-import { GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
+import { decideGistSync, type GistSyncDecision, type GistSyncStatus, type SyncResult } from '@/domain/gist-sync';
+import { GIST_FILENAME } from '@/infrastructure/github/client';
 import type { ExportData } from '@/infrastructure/storage/backup/codec';
 import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getGistDestinationConfig } from './gist-setup';
@@ -53,52 +53,27 @@ export async function triggerGistSync(): Promise<SyncResult> {
       throw error;
     }
 
-    const remoteFileContent = remoteGist.files?.[GIST_FILENAME]?.content;
-    if (!remoteFileContent) {
+    const remoteFileContent = remoteGist.files?.[GIST_FILENAME]?.content ?? '';
+    const decision = await getSyncDecision(remoteFileContent);
+
+    if (decision.initializeDataUpdatedAt) {
+      await writeSyncMetadata('dataUpdatedAt', new Date().toISOString());
+    }
+
+    if (decision.action === 'push') {
       const localExportJson = await exportData();
-      return await pushToGist(github, config.gistId, localExportJson);
-    }
-
-    let remoteData: ExportData;
-    try {
-      remoteData = JSON.parse(remoteFileContent);
-    } catch {
-      const localExportJson = await exportData();
-      return await pushToGist(github, config.gistId, localExportJson);
-    }
-
-    const localDataUpdatedAt = await readSyncMetadata('dataUpdatedAt');
-
-    // Handle missing dataUpdatedAt (legacy or fresh install)
-    if (!localDataUpdatedAt && remoteData.dataUpdatedAt) {
-      return await pullFromGist(remoteFileContent);
-    }
-    if (!remoteData.dataUpdatedAt) {
-      if (!localDataUpdatedAt) {
-        await writeSyncMetadata('dataUpdatedAt', new Date().toISOString());
-      }
-      const localExportJson = await exportData();
-      return await pushToGist(github, config.gistId, localExportJson);
-    }
-
-    if (!localDataUpdatedAt) {
-      throw new Error('Local data update timestamp is missing');
-    }
-    const localUpdated = new Date(localDataUpdatedAt);
-    const remoteUpdated = new Date(remoteData.dataUpdatedAt);
-
-    if (localUpdated < remoteUpdated) {
-      return await pullFromGist(remoteFileContent);
-    }
-
-    if (localUpdated > remoteUpdated) {
-      const localExportJson = await exportData();
-      return await pushToGist(github, config.gistId, localExportJson);
+      await github.updateGist(config.gistId, localExportJson);
+    } else if (decision.action === 'pull') {
+      await importData(remoteFileContent);
     }
 
     const now = new Date().toISOString();
     await writeSyncMetadata('lastSyncTime', now);
-    return { success: true, action: 'no-change', timestamp: now };
+    if (decision.action !== 'no-change') {
+      await writeSyncMetadata('lastSyncDirection', decision.action);
+    }
+    const action = decision.action === 'push' ? 'pushed' : decision.action === 'pull' ? 'pulled' : 'no-change';
+    return { success: true, action, timestamp: now };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
     lastError = errorMessage;
@@ -113,22 +88,19 @@ export async function triggerGistSync(): Promise<SyncResult> {
   }
 }
 
-async function pushToGist(github: GitHubClient, gistId: string, content: string): Promise<SyncResult> {
-  await github.updateGist(gistId, content);
+async function getSyncDecision(remoteFileContent: string): Promise<GistSyncDecision> {
+  if (!remoteFileContent) {
+    return decideGistSync({ state: 'missing' }, undefined);
+  }
 
-  const now = new Date().toISOString();
-  await writeSyncMetadata('lastSyncTime', now);
-  await writeSyncMetadata('lastSyncDirection', 'push');
+  let remoteData: ExportData;
+  try {
+    remoteData = JSON.parse(remoteFileContent);
+  } catch {
+    return decideGistSync({ state: 'invalid-json' }, undefined);
+  }
 
-  return { success: true, action: 'pushed', timestamp: now };
-}
-
-async function pullFromGist(content: string): Promise<SyncResult> {
-  await importData(content);
-
-  const now = new Date().toISOString();
-  await writeSyncMetadata('lastSyncTime', now);
-  await writeSyncMetadata('lastSyncDirection', 'pull');
-
-  return { success: true, action: 'pulled', timestamp: now };
+  // Read only after parsing succeeds, before accessing the remote timestamp.
+  const localDataUpdatedAt = await readSyncMetadata('dataUpdatedAt');
+  return decideGistSync({ state: 'parsed', dataUpdatedAt: remoteData.dataUpdatedAt }, localDataUpdatedAt);
 }
