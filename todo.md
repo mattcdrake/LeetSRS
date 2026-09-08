@@ -13,13 +13,13 @@ Extract the duplicated note controls from `NotesSection` and `CardNotes` into
   `variant: 'regular' | 'compact'` props. Have it call `useNoteEditor` and render
   the shared React Aria field, label, placeholder, character counter, save/delete
   controls, confirmation styling, and pending states.
-- [ ] Implement variant styles: four rows and regular buttons for regular;
+- [x] Implement variant styles: four rows and regular buttons for regular;
   one row, smaller text/buttons, and compact spacing for compact. Move compact
   textarea autosizing into this component, including height reset and the 160px cap.
-- [ ] Replace the duplicated editor in `views/home/NotesSection.tsx` with the
+- [x] Replace the duplicated editor in `views/home/NotesSection.tsx` with the
   regular component. Change the accordion body to an always-mounted container
   toggled with `hidden` so collapsing it retains the editor's hook state.
-- [ ] Replace the duplicated editor in `views/card/components/CardNotes.tsx` with
+- [x] Replace the duplicated editor in `views/card/components/CardNotes.tsx` with
   the compact component; remove the wrapper's textarea ref and autosizing effect.
 
 ## Verification
@@ -28,7 +28,7 @@ Extract the duplicated note controls from `NotesSection` and `CardNotes` into
   `components/notes/__tests__/NoteEditor.test.tsx`, using `test/utils/` helpers.
   Cover loading, stored text, character limits, save eligibility and payload,
   delete visibility, two-step confirmation, and pending states in both variants.
-- [ ] Add home regression tests for unsaved text and confirmation across
+- [x] Add home regression tests for unsaved text and confirmation across
   collapse/reopen, mutation completion while collapsed, and hidden controls being
   inaccessible. Update assertions that previously expected DOM removal.
 - [ ] Update both wrapper suites to exercise the shared editor and verify the

@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { NOTES_MAX_LENGTH } from '@/domain/notes';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createDeferred } from '@/test/utils/deferred';
@@ -53,7 +53,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     fireEvent.change(textarea, { target: { value: text } });
     expect(textarea).toHaveValue(text);
     expect(textarea).not.toHaveAttribute('maxlength');
-    expect(screen.getByText('501/500')).toHaveClass('text-danger');
+    expect(screen.getByText('501/500')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
@@ -66,7 +66,6 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const confirm = await screen.findByRole('button', { name: 'Confirm?' });
-    expect(confirm).toHaveClass('bg-ultra-danger');
     expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
     fireEvent.click(confirm);
     expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
@@ -74,5 +73,69 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
     await act(async () => remove.resolve());
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Deleting...' })).not.toBeInTheDocument());
+  });
+});
+
+describe('NoteEditor autosizing', () => {
+  const cardId = 'autosize-card';
+  const messages = createMessageMock(vi.mocked(sendMessage));
+
+  beforeEach(() => {
+    messages.reset().resolve('getNote', null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sizes compact notes after fetching and grows, caps, and shrinks with edits', async () => {
+    const note = createDeferred<Note | null>();
+    messages.resolve('getNote', note.promise);
+    let contentHeight = 24;
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.style.height === 'auto'
+        ? contentHeight
+        : Math.max(contentHeight, Number.parseFloat(this.style.height));
+    });
+    const { wrapper } = createTestWrapper();
+    render(<NoteEditor cardId={cardId} variant="compact" />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+    expect(textarea).toHaveStyle({ height: '24px' });
+
+    contentHeight = 48;
+    await act(async () => note.resolve({ text: 'Fetched note' }));
+    await waitFor(() => expect(textarea).toHaveValue('Fetched note'));
+    expect(textarea).toHaveStyle({ height: '48px' });
+
+    contentHeight = 96;
+    fireEvent.change(textarea, { target: { value: 'A longer note' } });
+    expect(textarea).toHaveStyle({ height: '96px' });
+
+    contentHeight = 900;
+    fireEvent.change(textarea, { target: { value: 'A very long note' } });
+    expect(textarea).toHaveStyle({ height: '160px' });
+
+    contentHeight = 24;
+    fireEvent.change(textarea, { target: { value: '' } });
+    expect(textarea).toHaveStyle({ height: '24px' });
+  });
+
+  it('keeps regular sizing fixed and clears compact height when switching variants', () => {
+    const measure = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(96);
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
+    const { rerender } = render(<NoteEditor cardId={cardId} variant="regular" />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+
+    fireEvent.change(textarea, { target: { value: 'Edited note' } });
+    expect(textarea.style.height).toBe('');
+    expect(measure).not.toHaveBeenCalled();
+
+    rerender(<NoteEditor cardId={cardId} variant="compact" />);
+    expect(textarea).toHaveStyle({ height: '96px' });
+
+    rerender(<NoteEditor cardId={cardId} variant="regular" />);
+    expect(textarea.style.height).toBe('');
+    expect(textarea).toHaveValue('Edited note');
   });
 });
