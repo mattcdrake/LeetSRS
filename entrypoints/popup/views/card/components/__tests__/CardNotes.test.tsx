@@ -14,10 +14,6 @@ import { CardNotes } from '../CardNotes';
 
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
-/**
- * The note-editing state machine itself is covered by entrypoints/popup/hooks/__tests__/useNoteEditor.test.tsx.
- * These cases pin what CardNotes renders on top of it.
- */
 describe('CardNotes', () => {
   const mockCardId = 'test-card-123';
   const messages = createMessageMock(vi.mocked(sendMessage));

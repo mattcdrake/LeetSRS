@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Button, Label, TextArea, TextField } from 'react-aria-components';
 import { NOTES_MAX_LENGTH } from '@/domain/notes';
-import { useNoteEditor } from '@/entrypoints/popup/hooks/useNoteEditor';
+import { useNoteEditor } from '@/entrypoints/popup/components/notes/useNoteEditor';
 import { bounceButton } from '@/entrypoints/popup/styles';
 import { useI18n } from '../../../contexts/I18nContext';
 
