@@ -36,6 +36,7 @@ vi.mock('../import-export', () => ({
 }));
 
 // Import after mocks are set up
+import { validatePat } from '../github-auth';
 import {
   createNewGist,
   getGistSyncConfig,
@@ -43,7 +44,6 @@ import {
   setGistSyncConfig,
   triggerGistSync,
   validateGistId,
-  validatePat,
 } from '../github-sync';
 
 describe('github-sync', () => {

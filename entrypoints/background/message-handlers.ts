@@ -9,6 +9,7 @@ import {
   setPauseStatus,
 } from '@/services/cards';
 import { shouldResetEditor } from '@/services/editor-reset';
+import { validatePat } from '@/services/github-auth';
 import {
   createNewGist,
   getGistSyncConfig,
@@ -16,7 +17,6 @@ import {
   setGistSyncConfig,
   triggerGistSync,
   validateGistId,
-  validatePat,
 } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { deleteNote, getNote, saveNote } from '@/services/notes';

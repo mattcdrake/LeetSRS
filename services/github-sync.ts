@@ -1,14 +1,9 @@
-import type {
-  GistSyncConfig,
-  GistSyncStatus,
-  GistValidationResult,
-  PatValidationResult,
-  SyncResult,
-} from '@/domain/gist-sync';
+import type { GistSyncConfig, GistSyncStatus, GistValidationResult, SyncResult } from '@/domain/gist-sync';
 import { createGitHubClient, GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import type { ExportData } from '@/infrastructure/storage/backup/codec';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
+import { getGitHubPat, setGitHubPat } from './github-auth';
 import { exportData, importData } from './import-export';
 
 // In-memory state for sync status (not persisted)
@@ -17,7 +12,7 @@ let lastError: string | null = null;
 
 export async function getGistSyncConfig(): Promise<GistSyncConfig> {
   const [pat, gistId, enabled] = await Promise.all([
-    readSyncMetadata('githubPat'),
+    getGitHubPat(),
     readSyncMetadata('gistId'),
     readSyncMetadata('gistSyncEnabled'),
   ]);
@@ -26,7 +21,7 @@ export async function getGistSyncConfig(): Promise<GistSyncConfig> {
 
 export async function setGistSyncConfig(config: Partial<GistSyncConfig>): Promise<void> {
   if (config.pat !== undefined) {
-    await writeSyncMetadata('githubPat', config.pat);
+    await setGitHubPat(config.pat);
   }
   if (config.gistId !== undefined) {
     if (config.gistId === null) {
@@ -49,29 +44,6 @@ export async function getGistSyncStatus(): Promise<GistSyncStatus> {
     syncInProgress,
     lastError,
   };
-}
-
-export async function validatePat(pat: string): Promise<PatValidationResult> {
-  if (!pat.trim()) {
-    return { valid: false, error: 'PAT is required' };
-  }
-
-  try {
-    const github = createGitHubClient(pat);
-    const { data } = await github.getAuthenticated();
-    return { valid: true, username: data.login };
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes('401')) {
-        return { valid: false, error: 'Invalid token' };
-      }
-      if (error.message.includes('403')) {
-        return { valid: false, error: 'Token lacks required permissions (needs gist scope)' };
-      }
-      return { valid: false, error: error.message };
-    }
-    return { valid: false, error: 'Unknown error validating token' };
-  }
 }
 
 export async function validateGistId(gistId: string, pat: string): Promise<GistValidationResult> {
