@@ -24,6 +24,7 @@ web-ext.config.ts
 *.sw?
 devex/
 
+# Super secret stuff
 .agents
 docs/plans
 experiments/
