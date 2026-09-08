@@ -56,10 +56,6 @@ body {
   --current-difficulty-easy: #22c55e;
   --current-difficulty-medium: #f59e0b;
   --current-difficulty-hard: #ef4444;
-  --current-rating-again: #c73e3e;
-  --current-rating-hard: #d97706;
-  --current-rating-good: #4271c4;
-  --current-rating-easy: #3d9156;
 }
 
 /* Dark theme overrides */
@@ -79,10 +75,6 @@ body {
   --current-difficulty-easy: #22c55e;
   --current-difficulty-medium: #f59e0b;
   --current-difficulty-hard: #ef4444;
-  --current-rating-again: #d14358;
-  --current-rating-hard: #e88c3a;
-  --current-rating-good: #5b8fd9;
-  --current-rating-easy: #52b169;
 }
 
 /* Theme-aware utility classes */
@@ -146,7 +138,7 @@ body {
     background-color: var(--current-difficulty-hard);
   }
 
-  /* Rating colors */
+  /* Rating colors are supplied by App from ui/rating-colors.ts. */
   .bg-rating-again {
     background-color: var(--current-rating-again);
   }

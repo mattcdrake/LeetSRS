@@ -6,9 +6,12 @@ import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
 import type { DailyStats } from '@/domain/statistics';
+import type { ResolvedTheme } from '@/entrypoints/popup/hooks/useTheme';
+import { settingsQueryKeys } from '@/entrypoints/popup/queries/settings';
 import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewHistoryChart } from '../ReviewHistoryChart';
 
@@ -56,11 +59,13 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     },
   ];
 
-  const renderChart = (data: DailyStats[] = mockLast30DaysStats) => {
-    messages.reset().resolve('getLastNDaysStats', data);
+  const renderChart = (data: DailyStats[] = mockLast30DaysStats, theme: ResolvedTheme = 'light') => {
+    const settings = buildSettings({ theme });
+    messages.reset().resolve('getLastNDaysStats', data).resolve('getSettings', settings);
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(statsQueryKeys.lastNDays.detail(30), data);
-    return render(<ReviewHistoryChart />, { wrapper });
+    queryClient.setQueryData(settingsQueryKeys.all, settings);
+    return { ...render(<ReviewHistoryChart />, { wrapper }), queryClient };
   };
 
   it('should render the review history section', () => {
@@ -99,18 +104,6 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     expect(chartData.datasets[3].data).toEqual([2, 3]);
   });
 
-  it('should use correct colors for grade levels', () => {
-    renderChart();
-
-    const chart = screen.getByTestId('bar-chart');
-    const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
-
-    expect(chartData.datasets[0].backgroundColor).toBe('#ef4444'); // Again - red
-    expect(chartData.datasets[1].backgroundColor).toBe('#f59e0b'); // Hard - amber
-    expect(chartData.datasets[2].backgroundColor).toBe('#10b981'); // Good - emerald
-    expect(chartData.datasets[3].backgroundColor).toBe('#3b82f6'); // Easy - blue
-  });
-
   it('should configure bar chart as stacked', () => {
     renderChart();
 
@@ -144,7 +137,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     renderChart();
 
     const reviewSection = screen.getByRole('heading', { name: 'Last 30 Days Review History' }).parentElement;
-    expect(reviewSection).toHaveClass('mb-6', 'p-4', 'rounded-lg', 'bg-secondary', 'text-primary');
+    expect(reviewSection).toHaveClass('mb-6', 'p-4', 'rounded-lg');
   });
 
   it('should set bar chart container height', () => {

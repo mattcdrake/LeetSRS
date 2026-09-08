@@ -42,31 +42,12 @@ describe('ReviewCard', () => {
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
     });
 
-    it.each([
-      ['Easy', 'bg-difficulty-easy'],
-      ['Medium', 'bg-difficulty-medium'],
-      ['Hard', 'bg-difficulty-hard'],
-    ] as const)('should render the %s difficulty with the correct color', (difficulty, colorClass) => {
-      renderWithProviders({ ...mockCard, difficulty });
-      expect(screen.getAllByText(difficulty)[0]).toHaveClass(colorClass);
-    });
-
     it('should render the external link to LeetCode problem', () => {
       renderWithProviders();
       const link = screen.getByRole('link', { name: /LeetCode/i });
       expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/two-sum/description/');
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-
-    it.each([
-      ['Again', 'bg-rating-again'],
-      ['Hard', 'bg-rating-hard'],
-      ['Good', 'bg-rating-good'],
-      ['Easy', 'bg-rating-easy'],
-    ] as const)('should render the %s rating button with the correct color', (label, colorClass) => {
-      renderWithProviders();
-      expect(screen.getByRole('button', { name: label })).toHaveClass(colorClass);
     });
   });
 

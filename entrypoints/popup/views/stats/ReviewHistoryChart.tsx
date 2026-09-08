@@ -1,13 +1,16 @@
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { Rating } from 'ts-fsrs';
+import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { useLastNDaysStatsQuery } from '@/entrypoints/popup/queries/stats';
+import { RATING_COLORS } from '@/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export function ReviewHistoryChart() {
   const t = useI18n();
+  const colors = RATING_COLORS[useTheme()];
   const { data: last30DaysStats } = useLastNDaysStatsQuery(30);
 
   const chartData = {
@@ -21,22 +24,22 @@ export function ReviewHistoryChart() {
       {
         label: t.ratings.again,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Again]) || [],
-        backgroundColor: '#ef4444',
+        backgroundColor: colors.again,
       },
       {
         label: t.ratings.hard,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Hard]) || [],
-        backgroundColor: '#f59e0b',
+        backgroundColor: colors.hard,
       },
       {
         label: t.ratings.good,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Good]) || [],
-        backgroundColor: '#10b981',
+        backgroundColor: colors.good,
       },
       {
         label: t.ratings.easy,
         data: last30DaysStats?.map((stat) => stat.gradeBreakdown[Rating.Easy]) || [],
-        backgroundColor: '#3b82f6',
+        backgroundColor: colors.easy,
       },
     ],
   };
