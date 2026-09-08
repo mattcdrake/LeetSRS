@@ -4,6 +4,9 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createDeferred } from '@/test/utils/deferred';
+import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '../gist-setup';
+import { validatePat } from '../github-auth';
+import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
 // Mock Octokit
 const mockGetAuthenticated = vi.fn();
@@ -34,11 +37,6 @@ vi.mock('../import-export', () => ({
   exportData: (...args: unknown[]) => mockExportData(...args),
   importData: (...args: unknown[]) => mockImportData(...args),
 }));
-
-import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '../gist-setup';
-// Import after mocks are set up
-import { validatePat } from '../github-auth';
-import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
 describe('github-sync', () => {
   beforeEach(() => {
