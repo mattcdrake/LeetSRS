@@ -9,7 +9,7 @@ Extract the duplicated note controls from `NotesSection` and `CardNotes` into
 
 - [x] Move `hooks/useNoteEditor.ts` and its tests into `components/notes/` and
   `components/notes/__tests__/`; update imports and test references.
-- [ ] Create `components/notes/NoteEditor.tsx` with `cardId: string` and
+- [x] Create `components/notes/NoteEditor.tsx` with `cardId: string` and
   `variant: 'regular' | 'compact'` props. Have it call `useNoteEditor` and render
   the shared React Aria field, label, placeholder, character counter, save/delete
   controls, confirmation styling, and pending states.
