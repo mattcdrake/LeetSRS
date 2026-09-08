@@ -1,10 +1,99 @@
 import { describe, expect, it, vi } from 'vitest';
 import { onMessage } from '@/infrastructure/browser/messages';
+import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
+import { validatePat } from '@/services/github-auth';
+import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { createDeferred } from '@/test/utils/deferred';
 import { messages, registerBackgroundMessages } from '../message-handlers';
 import type { BackgroundMessageRegistry } from '../message-runner';
 
 vi.mock('@/infrastructure/browser/messages', () => ({ onMessage: vi.fn() }));
+vi.mock('@/services/gist-setup', () => ({
+  createNewGist: vi.fn(),
+  getGistSyncConfig: vi.fn(),
+  setGistSyncConfig: vi.fn(),
+  validateGistId: vi.fn(),
+}));
+vi.mock('@/services/github-auth', () => ({ validatePat: vi.fn() }));
+vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
+
+describe('GitHub message contracts', () => {
+  it('returns combined configuration and forwards partial updates unchanged', async () => {
+    const config = { pat: ' token ', gistId: 'gist', enabled: false };
+    vi.mocked(getGistSyncConfig).mockResolvedValue(config);
+    expect(await messages.getGistSyncConfig.handler()).toEqual(config);
+
+    await messages.setGistSyncConfig.handler({ config: { gistId: null } });
+    expect(setGistSyncConfig).toHaveBeenCalledExactlyOnceWith({ gistId: null });
+  });
+
+  it.each([
+    {
+      name: 'PAT',
+      service: vi.mocked(validatePat),
+      invoke: () => messages.validatePat.handler({ pat: ' token ' }),
+      args: [' token '],
+      result: { valid: true, username: 'user' },
+    },
+    {
+      name: 'Gist',
+      service: vi.mocked(validateGistId),
+      invoke: () => messages.validateGistId.handler({ gistId: ' gist ', pat: ' supplied ' }),
+      args: [' gist ', ' supplied '],
+      result: { valid: false, error: 'Gist not found' },
+    },
+  ])('forwards $name validation inputs and results unchanged', async ({ service, invoke, args, result }) => {
+    service.mockResolvedValue(result);
+    expect(await invoke()).toEqual(result);
+    expect(service).toHaveBeenCalledExactlyOnceWith(...args);
+  });
+
+  it('returns creation results and failures without marking local edits or refreshing the badge', async () => {
+    const markDataUpdated = vi.fn();
+    const refreshBadge = vi.fn();
+    const runner = registerBackgroundMessages(messages, {
+      ready: Promise.resolve(),
+      markDataUpdated,
+      refreshBadge,
+    });
+    vi.mocked(createNewGist).mockResolvedValueOnce({ gistId: 'created' });
+    expect(await runner.execute(messages.createNewGist, undefined)).toEqual({ gistId: 'created' });
+    expect(createNewGist).toHaveBeenCalledExactlyOnceWith(undefined);
+
+    const failure = new Error('save failed');
+    vi.mocked(createNewGist).mockRejectedValueOnce(failure);
+    await expect(runner.execute(messages.createNewGist, undefined)).rejects.toBe(failure);
+    expect(markDataUpdated).not.toHaveBeenCalled();
+    expect(refreshBadge).not.toHaveBeenCalled();
+  });
+
+  it('returns sync status and preserves sync results through the write runner', async () => {
+    const status = {
+      lastSyncTime: null,
+      lastSyncDirection: null,
+      syncInProgress: false,
+      lastError: 'previous failure',
+    };
+    vi.mocked(getGistSyncStatus).mockResolvedValue(status);
+    expect(await messages.getGistSyncStatus.handler()).toEqual(status);
+
+    vi.mocked(triggerGistSync).mockResolvedValue({ success: false, error: 'Gist not found' });
+    const markDataUpdated = vi.fn();
+    const refreshBadge = vi.fn();
+    const runner = registerBackgroundMessages(messages, {
+      ready: Promise.resolve(),
+      markDataUpdated,
+      refreshBadge,
+    });
+    expect(await runner.execute(messages.triggerGistSync, undefined)).toEqual({
+      success: false,
+      error: 'Gist not found',
+    });
+    expect(triggerGistSync).toHaveBeenCalledExactlyOnceWith(undefined);
+    expect(markDataUpdated).not.toHaveBeenCalled();
+    expect(refreshBadge).toHaveBeenCalledOnce();
+  });
+});
 
 describe('background message registration', () => {
   it('registers every handler synchronously and shares its queue with direct execution', async () => {

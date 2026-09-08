@@ -29,6 +29,8 @@ In Codex, run `npm test` (including focused tests) and `npm run check` with `san
 
 Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Check `test/utils/` before adding local test helpers, and reuse an existing helper when it fits. Cover behavior changes and bug fixes. Before submitting, run `npm check`. Don't mention this in the PR description.
 
+Prefer meaningful behavior coverage over test count. Parameterize scenarios that share setup and assertions, and merge overlapping tests when one clear scenario covers the same behavior. Extend existing coverage before adding another test; keep distinct failure paths and invariants explicit, and avoid tables or helpers that make tests harder to read.
+
 ## Commit & Pull Request Guidelines
 
 Use Conventional Commits for commit subjects and pull request titles, such as `fix: clean up animation timeout`. Use standard lowercase types including `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, and `revert`; add an optional scope in parentheses. Mark breaking changes with `!` and explain them in a `BREAKING CHANGE:` footer. Keep subjects concise and imperative. For most pull requests, use concise bullet points followed by linked or closing issues; omit section headings such as `Summary` and `Testing` unless the change is genuinely complex. Include screenshots for UI changes. Do not commit generated `.output/` or `.wxt/` content.

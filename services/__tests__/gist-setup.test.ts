@@ -1,5 +1,5 @@
 import { Octokit } from 'octokit';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createGitHubClient } from '@/infrastructure/github/client';
@@ -8,6 +8,7 @@ import {
   createGist,
   createNewGist,
   getGistDestinationConfig,
+  getGistSyncConfig,
   setGistSyncConfig,
   validateGist,
   validateGistId,
@@ -34,13 +35,19 @@ describe('gist-setup boundaries', () => {
     fakeBrowser.runtime.id = 'test';
   });
 
-  it('reads destination defaults and saved values without reading credentials', async () => {
+  it.each([
+    { name: 'empty storage', saved: false, expected: { pat: '', gistId: null, enabled: false } },
+    { name: 'saved configuration', saved: true, expected: { pat: 'token', gistId: 'gist', enabled: true } },
+  ])('reads $name through destination and combined configuration', async ({ saved, expected }) => {
+    if (saved) {
+      await storage.setItem(STORAGE_KEYS.githubPat, expected.pat);
+      await storage.setItem(STORAGE_KEYS.gistId, expected.gistId);
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, expected.enabled);
+    }
     const reads = vi.spyOn(storage, 'getItem');
-    expect(await getGistDestinationConfig()).toEqual({ gistId: null, enabled: false });
-    await storage.setItem(STORAGE_KEYS.gistId, 'saved');
-    await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
-    expect(await getGistDestinationConfig()).toEqual({ gistId: 'saved', enabled: true });
+    expect(await getGistDestinationConfig()).toEqual({ gistId: expected.gistId, enabled: expected.enabled });
     expect(reads.mock.calls.map(([key]) => key)).not.toContain(STORAGE_KEYS.githubPat);
+    expect(await getGistSyncConfig()).toEqual(expected);
   });
 
   it('writes credentials, destination, and enabled in order', async () => {
@@ -107,13 +114,17 @@ describe('gist-setup boundaries', () => {
   });
 
   it.each([
-    [new Error('404 Not Found'), 'Gist not found'],
-    [new Error('Network error'), 'Network error'],
-    ['failure', 'Unknown error validating Gist ID'],
-  ])('preserves validation results when client acquisition fails: %j', async (failure, error) => {
-    vi.spyOn(auth, 'getAuthenticatedGitHubClient').mockRejectedValue(failure);
+    { stage: 'acquisition', failure: new Error('404 Not Found'), error: 'Gist not found' },
+    { stage: 'acquisition', failure: new Error('Network error'), error: 'Network error' },
+    { stage: 'acquisition', failure: 'failure', error: 'Unknown error validating Gist ID' },
+    { stage: 'request', failure: new Error('404 Not Found'), error: 'Gist not found' },
+    { stage: 'request', failure: new Error('Network error'), error: 'Network error' },
+  ])('maps $stage failure to "$error"', async ({ stage, failure, error }) => {
+    if (stage === 'acquisition') vi.spyOn(auth, 'getAuthenticatedGitHubClient').mockRejectedValue(failure);
+    else getGist.mockRejectedValue(failure);
+
     expect(await validateGistId('gist', 'token')).toEqual({ valid: false, error });
-    expect(getGist).not.toHaveBeenCalled();
+    expect(getGist).toHaveBeenCalledTimes(stage === 'acquisition' ? 0 : 1);
   });
 
   it('preserves configuration-read failures before creation acquires its client', async () => {
@@ -147,4 +158,141 @@ describe('gist-setup boundaries', () => {
       if (stage === 'export') expect(create).not.toHaveBeenCalled();
     }
   );
+  it.each([{ pat: 'replacement' }, { gistId: 'replacement-gist' }, { gistId: null }, { enabled: true }])(
+    'applies partial update %j while preserving other fields',
+    async (update) => {
+      const original = { pat: 'original', gistId: 'original-gist', enabled: false };
+      await storage.setItem(STORAGE_KEYS.githubPat, original.pat);
+      await storage.setItem(STORAGE_KEYS.gistId, original.gistId);
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, original.enabled);
+
+      await setGistSyncConfig(update);
+
+      expect(await getGistSyncConfig()).toEqual({ ...original, ...update });
+      if (update.gistId === null) expect(await storage.getItem(STORAGE_KEYS.gistId)).toBeNull();
+    }
+  );
+
+  describe('validateGistId', () => {
+    it('should return error when gist exists but missing backup file', async () => {
+      getGist.mockResolvedValue({
+        data: {
+          files: {
+            'other-file.txt': { content: 'hello' },
+          },
+        },
+      });
+
+      const result = await validateGistId('abc123', 'ghp_test');
+
+      expect(result).toEqual({
+        valid: false,
+        error: 'Gist does not contain leetsrs-backup.json',
+      });
+    });
+  });
+
+  describe('createNewGist', () => {
+    it('should throw error when PAT not configured', async () => {
+      await expect(createNewGist()).rejects.toThrow('PAT is required to create a gist');
+    });
+
+    it('should throw when gist creation fails with no ID', async () => {
+      await storage.setItem(STORAGE_KEYS.githubPat, 'ghp_test');
+      exportData.mockResolvedValue('{}');
+      create.mockResolvedValue({ data: {} });
+
+      await expect(createNewGist()).rejects.toThrow('Failed to create gist: no ID returned');
+    });
+  });
+
+  describe('creation and configuration persistence', () => {
+    const now = '2024-02-01T12:00:00.000Z';
+    const later = '2024-02-01T12:00:01.000Z';
+
+    beforeEach(async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(now));
+      await storage.setItem(STORAGE_KEYS.githubPat, 'ghp_test');
+      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+    });
+
+    afterEach(() => vi.useRealTimers());
+
+    it.each([STORAGE_KEYS.lastSyncTime, STORAGE_KEYS.lastSyncDirection])(
+      'retains the created destination when writing %s fails',
+      async (failedKey) => {
+        exportData.mockResolvedValue('{}');
+        create.mockResolvedValue({ data: { id: 'created' } });
+        const write = storage.setItem.bind(storage);
+        const writes = vi.spyOn(storage, 'setItem').mockImplementation((key, value) => {
+          if (key === failedKey) return Promise.reject(new Error('status failed'));
+          return write(key, value);
+        });
+
+        await expect(createNewGist()).rejects.toThrow('status failed');
+
+        expect(create).toHaveBeenCalledOnce();
+        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe('created');
+        expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(
+          failedKey === STORAGE_KEYS.lastSyncTime ? null : now
+        );
+        expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBeNull();
+        const expectedWrites: unknown[][] = [
+          [STORAGE_KEYS.gistId, 'created'],
+          [STORAGE_KEYS.lastSyncTime, now],
+        ];
+        if (failedKey === STORAGE_KEYS.lastSyncDirection) expectedWrites.push([STORAGE_KEYS.lastSyncDirection, 'push']);
+        expect(writes.mock.calls).toEqual(expectedWrites);
+      }
+    );
+
+    it('creates the client before export, resolves localization afterward, then saves ID before status', async () => {
+      await storage.setItem(STORAGE_KEYS.language, 'en');
+      exportData.mockImplementation(async () => {
+        expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
+        await storage.setItem(STORAGE_KEYS.language, 'zh-CN');
+        await storage.setItem(STORAGE_KEYS.githubPat, 'replacement');
+        return '{"local":"snapshot"}';
+      });
+      create.mockImplementation(async () => {
+        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe('gist123');
+        vi.setSystemTime(new Date(later));
+        return { data: { id: 'created' } };
+      });
+      const writes = vi.spyOn(storage, 'setItem');
+
+      await expect(createNewGist()).resolves.toEqual({ gistId: 'created' });
+
+      expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
+      expect(getAuthenticated).not.toHaveBeenCalled();
+      expect(create).toHaveBeenCalledExactlyOnceWith({
+        description: 'LeetSRS 备份 - 间隔重复数据',
+        public: false,
+        files: { 'leetsrs-backup.json': { content: '{"local":"snapshot"}' } },
+      });
+      expect(writes.mock.calls).toEqual([
+        [STORAGE_KEYS.language, 'zh-CN'],
+        [STORAGE_KEYS.githubPat, 'replacement'],
+        [STORAGE_KEYS.gistId, 'created'],
+        [STORAGE_KEYS.lastSyncTime, later],
+        [STORAGE_KEYS.lastSyncDirection, 'push'],
+      ]);
+      expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe('created');
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(later);
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('push');
+    });
+
+    it('keeps an earlier config write when a later update fails, skipping remaining fields', async () => {
+      const remove = vi.spyOn(storage, 'removeItem').mockRejectedValue(new Error('remove failed'));
+      const writes = vi.spyOn(storage, 'setItem');
+
+      await expect(setGistSyncConfig({ pat: 'new-pat', gistId: null, enabled: true })).rejects.toThrow('remove failed');
+
+      expect(writes.mock.calls).toEqual([[STORAGE_KEYS.githubPat, 'new-pat']]);
+      expect(remove).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.gistId);
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('new-pat');
+      expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBeNull();
+    });
+  });
 });
