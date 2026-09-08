@@ -10,6 +10,7 @@ import type { Card } from '@/domain/cards';
 import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
+import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -301,10 +302,8 @@ describe('ReviewQueue', () => {
     });
 
     it('should prevent multiple ratings while processing', async () => {
-      // Make mutateAsync take some time
-      mockMutateAsync.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve({ card: mockCards[0], shouldRequeue: false }), 100))
-      );
+      const mutation = createDeferred<{ card: Card; shouldRequeue: boolean }>();
+      mockMutateAsync.mockReturnValue(mutation.promise);
 
       render(<ReviewQueue />, { wrapper });
 
@@ -323,6 +322,10 @@ describe('ReviewQueue', () => {
 
       // Should only have called mutateAsync once
       await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
+
+      mutation.resolve({ card: mockCards[0], shouldRequeue: false });
+      const cardContainer = screen.getByTestId('review-card').parentElement;
+      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
     });
   });
 
@@ -479,10 +482,8 @@ describe('ReviewQueue', () => {
     });
 
     it('should handle rapid delete clicks correctly', async () => {
-      // Make deletion take some time
-      mockRemoveMutateAsync.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(undefined), 100))
-      );
+      const mutation = createDeferred<void>();
+      mockRemoveMutateAsync.mockReturnValue(mutation.promise);
 
       render(<ReviewQueue />, { wrapper });
 
@@ -500,6 +501,10 @@ describe('ReviewQueue', () => {
 
       // Should only have called remove mutation once
       await waitFor(() => expect(mockRemoveMutateAsync).toHaveBeenCalledTimes(1));
+
+      mutation.resolve(undefined);
+      const cardContainer = screen.getByTestId('review-card').parentElement;
+      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-left'));
     });
   });
 
@@ -605,10 +610,8 @@ describe('ReviewQueue', () => {
     });
 
     it('should handle rapid delay clicks correctly', async () => {
-      // Make delay take some time
-      mockDelayMutateAsync.mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockCards[0]), 100))
-      );
+      const mutation = createDeferred<Card>();
+      mockDelayMutateAsync.mockReturnValue(mutation.promise);
 
       render(<ReviewQueue />, { wrapper });
 
@@ -627,6 +630,10 @@ describe('ReviewQueue', () => {
 
       // Should only have called delay mutation once
       await waitFor(() => expect(mockDelayMutateAsync).toHaveBeenCalledTimes(1));
+
+      mutation.resolve(mockCards[0]);
+      const cardContainer = screen.getByTestId('review-card').parentElement;
+      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
     });
   });
 
