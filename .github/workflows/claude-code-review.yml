@@ -26,6 +26,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Work around the native installer failing when its launcher directory is absent.
+      - name: Prepare Claude launcher directory
+        run: mkdir -p "$HOME/.local/bin"
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
