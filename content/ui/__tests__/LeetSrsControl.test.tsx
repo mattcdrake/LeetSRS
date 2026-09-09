@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
+
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { translations } from '@/i18n';
@@ -28,7 +30,7 @@ it('toggles the menu and dispatches selections exactly once before closing', asy
   const { button } = setup();
   expect(button).toHaveAttribute('type', 'button');
   fireEvent.click(button);
-  fireEvent.click(await screen.findByRole('button', { name: translations.en.ratings.good }));
+  fireEvent.click(await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] }));
   expect(rateCurrentProblem).toHaveBeenCalledExactlyOnceWith(3);
   expect(addCurrentProblem).not.toHaveBeenCalled();
   expect(button).toHaveAttribute('aria-expanded', 'false');
@@ -42,7 +44,7 @@ it('toggles the menu and dispatches selections exactly once before closing', asy
   expect(rateCurrentProblem).toHaveBeenCalledOnce();
   expect(button).toHaveAttribute('aria-expanded', 'false');
   fireEvent.click(button);
-  await screen.findByRole('button', { name: translations.en.ratings.good });
+  await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] });
   fireEvent.click(button);
   expect(button).toHaveAttribute('aria-expanded', 'false');
 });
@@ -50,13 +52,13 @@ it('toggles the menu and dispatches selections exactly once before closing', asy
 it('dismisses outside clicks and reopens', async () => {
   const { button } = setup();
   fireEvent.click(button);
-  await screen.findByRole('button', { name: translations.en.ratings.good });
+  await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] });
   fireEvent.pointerDown(document.body, { pointerType: 'mouse', button: 0 });
   fireEvent.pointerUp(document.body, { pointerType: 'mouse', button: 0 });
   fireEvent.click(document.body);
   expect(button).toHaveAttribute('aria-expanded', 'false');
   fireEvent.click(button);
-  await screen.findByRole('button', { name: translations.en.ratings.good });
+  await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] });
 });
 
 it.each(['Enter', ' '])('opens with %s, dismisses with Escape, and returns focus to the trigger', async (key) => {
@@ -116,7 +118,7 @@ it('updates an open menu when stored language changes without resubscribing on c
   fireEvent.click(button);
   const onChange = vi.mocked(watchStoredTranslations).mock.calls[0][0];
   act(() => onChange(translations.pl));
-  fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings.good }));
+  fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings[Rating.Good] }));
   fireEvent.click(button);
   expect(watchStoredTranslations).toHaveBeenCalledOnce();
   unmount();

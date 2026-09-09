@@ -1,3 +1,5 @@
+import { Rating } from 'ts-fsrs';
+
 // English translations (base language - all other translations must match this structure)
 const en = {
   // App branding
@@ -47,10 +49,10 @@ const en = {
 
   // Rating buttons
   ratings: {
-    again: 'Again',
-    hard: 'Hard',
-    good: 'Good',
-    easy: 'Easy',
+    [Rating.Again]: 'Again',
+    [Rating.Hard]: 'Hard',
+    [Rating.Good]: 'Good',
+    [Rating.Easy]: 'Easy',
   },
 
   // Error boundary

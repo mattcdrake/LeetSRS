@@ -1,3 +1,4 @@
+import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
 
 // Polish translations
@@ -49,10 +50,10 @@ const pl: Translations = {
 
   // Rating buttons
   ratings: {
-    again: 'Ponownie',
-    hard: 'Trudne',
-    good: 'Dobre',
-    easy: 'Łatwe',
+    [Rating.Again]: 'Ponownie',
+    [Rating.Hard]: 'Trudne',
+    [Rating.Good]: 'Dobre',
+    [Rating.Easy]: 'Łatwe',
   },
 
   // Error boundary

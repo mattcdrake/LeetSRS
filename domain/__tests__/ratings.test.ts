@@ -1,15 +1,6 @@
 import type { Grade } from 'ts-fsrs';
 import { expect, expectTypeOf, it } from 'vitest';
-import { RATINGS, type ReviewRating, ratingSchema } from '../ratings';
-
-it('defines the four review grades in FSRS order with stable semantic keys', () => {
-  expect(RATINGS).toEqual([
-    { rating: 1, key: 'again' },
-    { rating: 2, key: 'hard' },
-    { rating: 3, key: 'good' },
-    { rating: 4, key: 'easy' },
-  ]);
-});
+import { type ReviewRating, ratingSchema } from '../ratings';
 
 it.each([1, 2, 3, 4])('accepts review rating %s', (rating) => {
   expectTypeOf<ReviewRating>().toEqualTypeOf<Grade>();

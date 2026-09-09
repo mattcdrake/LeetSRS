@@ -1,3 +1,4 @@
+import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
 
 // Simplified Chinese translations
@@ -43,10 +44,10 @@ const zhCN: Translations = {
   },
 
   ratings: {
-    again: '重来',
-    hard: '困难',
-    good: '良好',
-    easy: '简单',
+    [Rating.Again]: '重来',
+    [Rating.Hard]: '困难',
+    [Rating.Good]: '良好',
+    [Rating.Easy]: '简单',
   },
 
   errors: {

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { Rating } from 'ts-fsrs';
 import { RATING_COLORS } from '@/ui/rating-colors';
 
 export const THEME_COLORS = {
@@ -17,10 +18,10 @@ export const THEME_COLORS = {
     borderAddButton: 'rgba(0, 0, 0, 0.1)',
     addIconFilter: 'grayscale(1) brightness(0.3)',
     ratings: {
-      again: { bg: RATING_COLORS.light.again, hover: '#b13636' },
-      hard: { bg: RATING_COLORS.light.hard, hover: '#c26805' },
-      good: { bg: RATING_COLORS.light.good, hover: '#3862b5' },
-      easy: { bg: RATING_COLORS.light.easy, hover: '#35804a' },
+      [Rating.Again]: { bg: RATING_COLORS.light[Rating.Again], hover: '#b13636' },
+      [Rating.Hard]: { bg: RATING_COLORS.light[Rating.Hard], hover: '#c26805' },
+      [Rating.Good]: { bg: RATING_COLORS.light[Rating.Good], hover: '#3862b5' },
+      [Rating.Easy]: { bg: RATING_COLORS.light[Rating.Easy], hover: '#35804a' },
     },
   },
   dark: {
@@ -38,10 +39,10 @@ export const THEME_COLORS = {
     borderAddButton: 'rgba(255, 255, 255, 0.1)',
     addIconFilter: 'grayscale(1) brightness(2)',
     ratings: {
-      again: { bg: RATING_COLORS.dark.again, hover: '#c13a4f' },
-      hard: { bg: RATING_COLORS.dark.hard, hover: '#d97d2e' },
-      good: { bg: RATING_COLORS.dark.good, hover: '#4c7ec8' },
-      easy: { bg: RATING_COLORS.dark.easy, hover: '#47a05d' },
+      [Rating.Again]: { bg: RATING_COLORS.dark[Rating.Again], hover: '#c13a4f' },
+      [Rating.Hard]: { bg: RATING_COLORS.dark[Rating.Hard], hover: '#d97d2e' },
+      [Rating.Good]: { bg: RATING_COLORS.dark[Rating.Good], hover: '#4c7ec8' },
+      [Rating.Easy]: { bg: RATING_COLORS.dark[Rating.Easy], hover: '#47a05d' },
     },
   },
 } as const;

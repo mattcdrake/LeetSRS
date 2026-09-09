@@ -44,12 +44,13 @@ describe('ReviewCard', () => {
         renderWithProviders();
 
         expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
-          t.ratings.again,
-          t.ratings.hard,
-          t.ratings.good,
-          t.ratings.easy,
+          t.ratings[Rating.Again],
+          t.ratings[Rating.Hard],
+          t.ratings[Rating.Good],
+          t.ratings[Rating.Easy],
         ]);
         screen.getAllByRole('button').forEach((button, index) => {
+          expect(button).toHaveStyle({ backgroundColor: ['#c73e3e', '#d97706', '#4271c4', '#3d9156'][index] });
           fireEvent.click(button);
           expect(mockOnRate).toHaveBeenCalledTimes(index + 1);
           expect(mockOnRate).toHaveBeenLastCalledWith(index + 1);
