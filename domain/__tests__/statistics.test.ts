@@ -68,10 +68,10 @@ describe('statistics calculations', () => {
 
   it('includes paused cards in state counts but excludes them from upcoming buckets', () => {
     const cards = [State.New, State.Learning, State.Review, State.Relearning].map((state) => createMockCard(state));
-    cards[0].fsrs.due = new Date('2024-03-10T12:00:00');
-    cards[1].fsrs.due = new Date('2024-03-15T03:59:59');
-    cards[2].fsrs.due = new Date('2024-03-15T04:00:00');
-    cards[3].fsrs.due = new Date('2024-03-15T04:00:00');
+    cards[0].fsrs.due = new Date('2024-03-10T12:00:00').getTime();
+    cards[1].fsrs.due = new Date('2024-03-15T03:59:59').getTime();
+    cards[2].fsrs.due = new Date('2024-03-15T04:00:00').getTime();
+    cards[3].fsrs.due = new Date('2024-03-15T04:00:00').getTime();
     cards[3].paused = true;
     expect(countCardStates(cards)).toEqual({
       [State.New]: 1,

@@ -39,6 +39,30 @@ describe('CardListItem', () => {
     vi.restoreAllMocks();
   });
 
+  it.each([0, undefined])('renders numeric dates with last_review=%s', (lastReview) => {
+    const card = createMockCard(State.Review, { createdAt: 0 });
+    card.fsrs.due = 0;
+    if (lastReview === undefined) {
+      delete card.fsrs.last_review;
+    } else {
+      card.fsrs.last_review = lastReview;
+    }
+    renderItem(card);
+
+    const epochDate = new Date(0).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    expect(screen.getByText('Due:').parentElement).toHaveTextContent(`Due:${epochDate}`);
+    expect(screen.getByText('Added:').parentElement).toHaveTextContent(`Added:${epochDate}`);
+    if (lastReview === undefined) {
+      expect(screen.queryByText('Last:')).not.toBeInTheDocument();
+    } else {
+      expect(screen.getByText('Last:').parentElement).toHaveTextContent(`Last:${epochDate}`);
+    }
+  });
+
   it.each([
     { paused: false, action: 'Pause', nextPaused: true },
     { paused: true, action: 'Resume', nextPaused: false },

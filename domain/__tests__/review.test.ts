@@ -37,8 +37,7 @@ describe('review-day boundaries', () => {
   ])('uses the local review day at %s', (instant, dayStartHour, due) => {
     const referenceDate = new Date(instant);
     const card = createMockCard(State.Review);
-    card.fsrs.due = new Date(referenceDate);
-    card.fsrs.due.setHours(4, 0, 0, 0);
+    card.fsrs.due = new Date(referenceDate).setHours(4, 0, 0, 0);
 
     expect(isDueByDate(card, referenceDate, dayStartHour)).toBe(due);
     expect(referenceDate.getTime()).toBe(new Date(instant).getTime());
@@ -47,7 +46,7 @@ describe('review-day boundaries', () => {
 
 function dueCard(slug: string, due: string, state = State.New) {
   const card = createMockCard(state, { slug });
-  card.fsrs.due = new Date(due);
+  card.fsrs.due = new Date(due).getTime();
   return card;
 }
 
@@ -71,8 +70,12 @@ describe('review queue calculations', () => {
     expect(buildReviewQueue(cards, 0, 0).map((card) => card.slug)).toEqual(['learning', 'relearning', 'review']);
   });
 
-  it('should sort cards by due date then slug for stable ordering', () => {
-    const cards = ['card-c', 'card-a', 'card-b'].map((slug) => dueCard(slug, '2024-01-15T10:00:00'));
+  it.each([0, 1705312800000])('sorts equal due timestamps %i by slug', (timestamp) => {
+    const cards = ['card-c', 'card-a', 'card-b'].map((slug) => {
+      const card = createMockCard(State.New, { slug });
+      card.fsrs.due = timestamp;
+      return card;
+    });
     const queue = queueFor(cards);
 
     expect(queue[0].slug).toBe('card-a');
@@ -134,12 +137,10 @@ describe('delayed due date', () => {
     ['2024-11-02T10:30:00', 1, '2024-11-03T10:30:00'],
     ['2024-03-15T10:30:00', 0, '2024-03-15T10:30:00'],
     ['2024-03-15T10:30:00', -1, '2024-03-14T10:30:00'],
-  ])('shifts %s by %i calendar days without modifying the original', (input, days, expected) => {
-    const due = new Date(input);
+  ])('shifts %s by %i local calendar days', (input, days, expected) => {
+    const due = new Date(input).getTime();
     const result = calculateDelayedDueDate(due, days);
 
-    expect(result).toEqual(new Date(expected));
-    expect(result).not.toBe(due);
-    expect(due).toEqual(new Date(input));
+    expect(result).toBe(new Date(expected).getTime());
   });
 });

@@ -1,15 +1,15 @@
 import { z } from 'zod';
+import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { Settings } from '@/domain/settings';
 import type { DailyStats } from '@/domain/statistics';
-import type { StoredCard } from '@/infrastructure/storage/cards/codec';
 
 export interface ExportData {
   schemaVersion: number;
   exportDate: string;
   dataUpdatedAt?: string;
   data: {
-    cards: Record<string, StoredCard>;
+    cards: Record<string, Card>;
     stats: Record<string, DailyStats>;
     notes: Record<string, Note>;
     settings: Partial<Settings>;
@@ -21,7 +21,7 @@ export interface ExportData {
 }
 
 export type PreparedImportData = {
-  cards: Record<string, StoredCard>;
+  cards: Record<string, Card>;
   stats: Record<string, DailyStats>;
   notes: Record<string, Note>;
   settings: Partial<Settings>;
@@ -61,7 +61,7 @@ const cardSchema = z.object({
     lapses: count,
     learning_steps: count,
   }),
-}) satisfies z.ZodType<StoredCard>;
+}) satisfies z.ZodType<Card>;
 
 const statsSchema = z.object({
   date: calendarDate,

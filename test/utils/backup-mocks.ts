@@ -50,7 +50,7 @@ export function mixedRecordBackup() {
   const card = createMockCard(State.Review, {
     id: 'valid-com',
     slug: 'two-sum',
-    createdAt: date,
+    createdAt: date.getTime(),
     paused: true,
   });
   const validCard = {

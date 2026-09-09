@@ -1,23 +1,24 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { buildReviewQueue, calculateDelayedDueDate, isDueByDate as calculateIsDueByDate } from '@/domain/review';
-import { getAllCards, saveCards } from '@/infrastructure/storage/cards/store';
+import { getAllCards, saveCards } from '@/infrastructure/storage/cards';
 
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 
-export { getAllCards } from '@/infrastructure/storage/cards/store';
+export { getAllCards } from '@/infrastructure/storage/cards';
 
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
 function createCard(problem: ProblemDescriptor): Card {
+  const initialFsrs = createEmptyCard();
   return {
     id: crypto.randomUUID(),
     ...problem,
-    createdAt: new Date(),
-    fsrs: createEmptyCard(),
+    createdAt: Date.now(),
+    fsrs: { ...initialFsrs, due: initialFsrs.due.getTime(), last_review: initialFsrs.last_review?.getTime() },
     paused: false,
   };
 }
@@ -90,7 +91,11 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
 
   const now = new Date();
   const schedulingResult = fsrs.next(card.fsrs, now, rating);
-  card.fsrs = schedulingResult.card;
+  card.fsrs = {
+    ...schedulingResult.card,
+    due: schedulingResult.card.due.getTime(),
+    last_review: schedulingResult.card.last_review?.getTime(),
+  };
   await saveCards(cards);
   await updateStats(rating, isNewCard);
   const settings = await getSettings();
