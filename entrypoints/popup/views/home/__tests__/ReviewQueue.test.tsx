@@ -170,7 +170,7 @@ describe('ReviewQueue', () => {
   describe('Card Rating', () => {
     it('should call mutation with correct parameters when rated', async () => {
       mockMutateAsync.mockResolvedValue({
-        card: { ...mockCards[0], fsrs: { ...mockCards[0].fsrs, due: new Date(Date.now() + 86400000).toISOString() } },
+        card: { ...mockCards[0], fsrs: { ...mockCards[0].fsrs, due: Date.now() + 86400000 } },
         shouldRequeue: false,
       });
 

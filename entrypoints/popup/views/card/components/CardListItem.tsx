@@ -121,7 +121,9 @@ export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardList
             <StatRow label={t.cardStats.lapses} value={card.fsrs.lapses} />
             <StatRow label={t.cardStats.difficulty} value={card.fsrs.difficulty.toFixed(2)} />
             <StatRow label={t.cardStats.due} value={formatDate(card.fsrs.due)} />
-            {card.fsrs.last_review && <StatRow label={t.cardStats.last} value={formatDate(card.fsrs.last_review)} />}
+            {card.fsrs.last_review !== undefined && (
+              <StatRow label={t.cardStats.last} value={formatDate(card.fsrs.last_review)} />
+            )}
             <StatRow label={t.cardStats.added} value={formatDate(card.createdAt)} />
           </div>
 
