@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { ZodError } from 'zod';
 import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
 import { getNoteStorageKey } from '@/infrastructure/storage/storage-keys';
 import { deleteNote, getNote, saveNote } from '../notes';
@@ -50,11 +51,11 @@ describe('Note persistence', () => {
     });
   });
 
-  it.each([{ text: 'a'.repeat(NOTES_MAX_LENGTH + 1) }, { text: 42 }, {}])(
+  it.each([{ text: 'a'.repeat(NOTES_MAX_LENGTH + 1) }, { text: 42 }, {}, [], false])(
     'rejects invalid stored note %j',
     async (note) => {
       await storage.setItem(getNoteStorageKey('invalid'), note);
-      await expect(getNote('invalid')).rejects.toThrow();
+      await expect(getNote('invalid')).rejects.toBeInstanceOf(ZodError);
     }
   );
 

@@ -2,6 +2,7 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { ZodError } from 'zod';
 import type { ProblemDescriptor } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { getAllCards, saveCards } from '../cards';
@@ -70,6 +71,42 @@ describe('getAllCards', () => {
 
     expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({ [card.slug]: card });
     expect(await getAllCards()).toEqual([card]);
+  });
+
+  it.each([[], false, 'cards', { invalid: null }, { invalid: {} }])(
+    'rejects malformed stored cards %j',
+    async (value) => {
+      await storage.setItem(STORAGE_KEYS.cards, value);
+      await expect(getAllCards()).rejects.toBeInstanceOf(ZodError);
+    }
+  );
+
+  it.each([
+    { slug: '' },
+    { domain: 'example.com' },
+    { paused: 'false' },
+    { createdAt: '2024-01-01' },
+    { fsrs: { due: null } },
+    { fsrs: { reps: -1 } },
+    { fsrs: { state: 99 } },
+    { fsrs: { last_review: '2024-01-01' } },
+  ])('rejects malformed card fields without changing storage: %j', async (overrides) => {
+    const card = createMockCard(State.Review);
+    const records = {
+      valid: card,
+      invalid: { ...card, ...overrides, fsrs: { ...card.fsrs, ...overrides.fsrs } },
+    };
+    await storage.setItem(STORAGE_KEYS.cards, records);
+    await expect(getAllCards()).rejects.toBeInstanceOf(ZodError);
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(records);
+  });
+
+  it('strips unknown card and FSRS fields on reads without rewriting storage', async () => {
+    const card = createMockCard(State.Review, { name: '  Two Sum  ' });
+    const records = { [card.slug]: { ...card, extra: true, fsrs: { ...card.fsrs, extra: true } } };
+    await storage.setItem(STORAGE_KEYS.cards, records);
+    expect(await getAllCards()).toEqual([card]);
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(records);
   });
 });
 

@@ -13,12 +13,8 @@ import { readSetting, removeSetting, writeSetting } from '@/infrastructure/stora
 export async function getSettings(): Promise<Settings> {
   const entries = await Promise.all(
     SETTING_KEYS.map(async (key) => {
-      const value: unknown = await readSetting(key);
-      const result = settingsSchema.shape[key].safeParse(value);
-      return [
-        key,
-        result.success ? result.data : key === 'language' ? detectBrowserLanguage() : DEFAULT_SETTINGS[key],
-      ] as const;
+      const value = await readSetting(key);
+      return [key, value ?? (key === 'language' ? detectBrowserLanguage() : DEFAULT_SETTINGS[key])] as const;
     })
   );
   return settingsSchema.parse(Object.fromEntries(entries));
@@ -39,9 +35,8 @@ export async function updateSettings(changes: SettingsUpdate): Promise<void> {
 export async function exportSettings(): Promise<Partial<Settings>> {
   const entries = await Promise.all(
     SETTING_KEYS.map(async (key) => {
-      const value: unknown = await readSetting(key);
-      const result = settingsSchema.shape[key].safeParse(value);
-      return result.success ? ([key, result.data] as const) : null;
+      const value = await readSetting(key);
+      return value !== null ? ([key, value] as const) : null;
     })
   );
 

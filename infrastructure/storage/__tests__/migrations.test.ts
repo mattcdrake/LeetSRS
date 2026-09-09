@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
+import { getAllCards } from '../cards';
 import {
   getCurrentSchemaVersion,
   type Migration,
@@ -242,6 +243,7 @@ describe('migrations', () => {
 
       await runStartupMigrations();
 
+      expect(await getAllCards()).toEqual([{ ...legacyCard, domain: 'leetcode.com' }, cards['add-two-numbers']]);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...before,
         [STORAGE_KEYS.cards.slice('local:'.length)]: {

@@ -1,10 +1,13 @@
+import { z } from 'zod';
 import { storage } from '#imports';
-import type { Card } from '@/domain/cards';
+import { type Card, cardSchema } from '@/domain/cards';
 import { STORAGE_KEYS } from './storage-keys';
 
+const cardsSchema = z.record(z.string(), cardSchema);
+
 export async function getAllCards(): Promise<Card[]> {
-  const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-  return Object.values(cards ?? {});
+  const cards = await storage.getItem<unknown>(STORAGE_KEYS.cards);
+  return Object.values(cardsSchema.parse(cards ?? {}));
 }
 
 export async function saveCards(cards: Card[]): Promise<void> {
