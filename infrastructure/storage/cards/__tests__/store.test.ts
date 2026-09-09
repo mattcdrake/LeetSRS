@@ -6,11 +6,10 @@ import type { ProblemDescriptor } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { STORAGE_KEYS } from '../../storage-keys';
 import { type StoredCard, serializeCard } from '../codec';
-import { getAllCards, loadCardStore } from '../store';
+import { getAllCards, saveCards } from '../store';
 
 async function addFixture(problem: ProblemDescriptor): Promise<void> {
-  const cards = await loadCardStore();
-  await cards.save(problem.slug, createMockCard(State.New, problem));
+  await saveCards([...(await getAllCards()), createMockCard(State.New, problem)]);
 }
 
 describe('getAllCards', () => {
@@ -98,31 +97,23 @@ describe('getAllCards', () => {
   });
 });
 
-describe('loaded card store', () => {
+describe('saveCards', () => {
   beforeEach(() => fakeBrowser.reset());
 
-  it('preserves unrelated legacy and undecodable records without another read', async () => {
-    const legacy = { ...serializeCard(createMockCard(State.New)), domain: undefined };
-    delete legacy.domain;
-    const broken = { id: 'broken', fsrs: null };
-    await storage.setItem(STORAGE_KEYS.cards, { legacy, broken });
-    const cards = await loadCardStore();
-    // A later write must use the record originally loaded by the workflow.
-    await storage.setItem(STORAGE_KEYS.cards, {});
-    const added = createMockCard(State.New);
-    await cards.save(added.slug, added);
-    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({
-      legacy,
-      broken,
-      [added.slug]: serializeCard(added),
-    });
-  });
+  it('replaces stored cards with the supplied supported cards', async () => {
+    const removed = createMockCard(State.New, { slug: 'removed' });
+    const reviewed = createMockCard(State.Review, { slug: 'reviewed', domain: 'leetcode.cn', paused: true });
+    const added = createMockCard(State.New, { slug: 'added' });
+    await saveCards([removed, reviewed]);
+    await saveCards([reviewed, added]);
 
-  it('removes a record using only its ID without decoding malformed scheduling data', async () => {
-    await storage.setItem(STORAGE_KEYS.cards, { broken: { id: 'note-owner', fsrs: null } });
-    const cards = await loadCardStore();
-    expect(cards.getReference('broken')).toEqual({ id: 'note-owner' });
-    await cards.remove('broken');
-    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({});
+    expect(await getAllCards()).toEqual([reviewed, added]);
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({
+      reviewed: serializeCard(reviewed),
+      added: serializeCard(added),
+    });
+
+    await saveCards([]);
+    expect(await getAllCards()).toEqual([]);
   });
 });

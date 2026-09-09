@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { DailyStats } from '@/domain/statistics';
-import type { StoredCard } from '@/infrastructure/storage/cards/codec';
+import { type StoredCard, serializeCard } from '@/infrastructure/storage/cards/codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { requireDefined } from '@/test/utils/assertions';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, delayCard, getAllCards, getReviewQueue, rateCard, removeCard, setPauseStatus } from '../cards';
 import * as notesModule from '../notes';
@@ -25,6 +26,59 @@ vi.mock('../settings', () => ({
 
 beforeEach(() => {
   mockGetSettings.mockResolvedValue(buildSettings());
+});
+
+describe('card mutations', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+    vi.clearAllMocks();
+  });
+
+  it.each(['add', 'rate new', 'rate existing', 'delay', 'pause', 'resume', 'remove'])(
+    '%s retains other supported cards and their learning data',
+    async (operation) => {
+      const others = [
+        createMockCard(FsrsState.Review, { slug: 'reviewed', domain: 'leetcode.cn', paused: true }),
+        createMockCard(FsrsState.Relearning, { slug: 'relearning' }),
+      ];
+      const problem = buildProblem();
+      const target = createMockCard(FsrsState.Review, { ...problem, paused: operation === 'resume' });
+      const initial = operation === 'add' || operation === 'rate new' ? others : [...others, target];
+      await storage.setItem(
+        STORAGE_KEYS.cards,
+        Object.fromEntries(initial.map((card) => [card.slug, serializeCard(card)]))
+      );
+
+      switch (operation) {
+        case 'add':
+          await addCard(problem);
+          break;
+        case 'rate new':
+        case 'rate existing':
+          await rateCard({ ...problem, rating: Rating.Good });
+          break;
+        case 'delay':
+          await delayCard(problem.slug, 3);
+          break;
+        case 'pause':
+        case 'resume':
+          await setPauseStatus(problem.slug, operation === 'pause');
+          break;
+        case 'remove':
+          await removeCard(problem.slug);
+          break;
+      }
+
+      const reloaded = await getAllCards();
+      expect(reloaded.filter((card) => card.slug !== problem.slug)).toEqual(others);
+      expect(reloaded).toHaveLength(operation === 'remove' ? 2 : 3);
+      if (operation === 'remove') {
+        expect(notesModule.deleteNote).toHaveBeenCalledExactlyOnceWith(target.id);
+      } else {
+        expect(notesModule.deleteNote).not.toHaveBeenCalled();
+      }
+    }
+  );
 });
 
 describe('addCard', () => {

@@ -23,15 +23,14 @@ export function serializeCard(card: Card): StoredCard {
 }
 
 export function deserializeCard(stored: StoredCard): Card {
-  const { due, last_review, ...rest } = stored.fsrs;
   return {
     ...stored,
     domain: stored.domain ?? 'leetcode.com',
     createdAt: new Date(stored.createdAt),
     fsrs: {
-      ...rest,
-      due: new Date(due),
-      last_review: last_review ? new Date(last_review) : undefined,
+      ...stored.fsrs,
+      due: new Date(stored.fsrs.due),
+      last_review: stored.fsrs.last_review === undefined ? undefined : new Date(stored.fsrs.last_review),
     },
   };
 }

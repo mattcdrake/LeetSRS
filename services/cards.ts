@@ -1,7 +1,7 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { buildReviewQueue, calculateDelayedDueDate, isDueByDate as calculateIsDueByDate } from '@/domain/review';
-import { getAllCards, loadCardStore } from '@/infrastructure/storage/cards/store';
+import { getAllCards, saveCards } from '@/infrastructure/storage/cards/store';
 
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
@@ -23,77 +23,75 @@ function createCard(problem: ProblemDescriptor): Card {
 }
 
 export async function addCard(problem: ProblemDescriptor): Promise<Card> {
-  const cards = await loadCardStore();
+  const cards = await getAllCards();
   const { slug } = problem;
-  if (cards.has(slug)) {
-    return cards.get(slug);
+  const existing = cards.find((card) => card.slug === slug);
+  if (existing) {
+    return existing;
   }
 
   const card = createCard(problem);
-  await cards.save(slug, card);
+  await saveCards([...cards, card]);
   return card;
 }
 
 export async function removeCard(slug: string): Promise<void> {
-  const cards = await loadCardStore();
+  const cards = await getAllCards();
 
-  const card = cards.getReference(slug);
+  const card = cards.find((card) => card.slug === slug);
   if (card) {
     await deleteNote(card.id);
   }
 
-  await cards.remove(slug);
+  await saveCards(cards.filter((card) => card.slug !== slug));
 }
 
 export async function delayCard(slug: string, days: number): Promise<Card> {
-  const cards = await loadCardStore();
+  const cards = await getAllCards();
 
-  if (!cards.has(slug)) {
+  const card = cards.find((card) => card.slug === slug);
+  if (!card) {
     throw new Error(`Card with slug "${slug}" not found`);
   }
-
-  const card = cards.get(slug);
 
   const newDueDate = calculateDelayedDueDate(card.fsrs.due, days);
 
   card.fsrs.due = newDueDate;
-  await cards.save(slug, card);
+  await saveCards(cards);
 
   return card;
 }
 
 export async function setPauseStatus(slug: string, paused: boolean): Promise<Card> {
-  const cards = await loadCardStore();
+  const cards = await getAllCards();
 
-  if (!cards.has(slug)) {
+  const card = cards.find((card) => card.slug === slug);
+  if (!card) {
     throw new Error(`Card with slug "${slug}" not found`);
   }
 
-  const card = cards.get(slug);
   card.paused = paused;
-  await cards.save(slug, card);
+  await saveCards(cards);
 
   return card;
 }
 
 export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
-  const cards = await loadCardStore();
+  const cards = await getAllCards();
   const { rating, ...problem } = input;
   const { slug } = problem;
 
-  let card: Card;
-  let isNewCard = true;
-  if (cards.has(slug)) {
-    card = cards.get(slug);
-    isNewCard = card.fsrs.state === FsrsState.New;
-  } else {
+  let card = cards.find((card) => card.slug === slug);
+  if (!card) {
     card = createCard(problem);
+    cards.push(card);
   }
+  const isNewCard = card.fsrs.state === FsrsState.New;
 
   const now = new Date();
   const schedulingResult = fsrs.next(card.fsrs, now, rating);
   card.fsrs = schedulingResult.card;
-  await cards.save(slug, card);
+  await saveCards(cards);
   await updateStats(rating, isNewCard);
   const settings = await getSettings();
   const shouldRequeue = isDueByDate(card, now, settings.dayStartHour);
