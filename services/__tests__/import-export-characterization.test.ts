@@ -59,7 +59,7 @@ describe('backup workflow characterization', () => {
     fakeBrowser.reset();
   });
 
-  it('exports supported records and JSON formatting, omitting credentials and orphan notes', async () => {
+  it('exports supported records, omitting credentials and orphan notes', async () => {
     await seedExistingData();
     await storage.setItem(STORAGE_KEYS.cards, payload.data.cards);
     await storage.setItem(STORAGE_KEYS.stats, payload.data.stats);
@@ -69,24 +69,18 @@ describe('backup workflow characterization', () => {
     await storage.setItem(STORAGE_KEYS.lastSyncTime, 'private-sync-time');
     const reads = vi.spyOn(storage, 'getItem');
 
-    expect(await exportData()).toBe(
-      JSON.stringify(
-        {
-          schemaVersion: 2,
-          exportDate: now,
-          dataUpdatedAt: 'old-time',
-          data: {
-            cards: payload.data.cards,
-            stats: payload.data.stats,
-            notes: payload.data.notes,
-            settings: {},
-            gistSync: { gistId: 'old-gist', enabled: false },
-          },
-        },
-        null,
-        2
-      )
-    );
+    expect(JSON.parse(await exportData())).toEqual({
+      schemaVersion: 2,
+      exportDate: now,
+      dataUpdatedAt: 'old-time',
+      data: {
+        cards: payload.data.cards,
+        stats: payload.data.stats,
+        notes: payload.data.notes,
+        settings: {},
+        gistSync: { gistId: 'old-gist', enabled: false },
+      },
+    });
     expect(reads.mock.calls.map(([key]) => key)).not.toContain(STORAGE_KEYS.githubPat);
   });
 

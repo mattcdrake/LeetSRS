@@ -53,15 +53,19 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
   const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
-  const preparedData = migrateBackupData(normalizedData, schemaVersion);
-  const validRecords = validateBackupRecords(preparedData);
+  const migrated = migrateBackupData({ cards: normalizedData.cards }, schemaVersion);
+  const validRecords = validateBackupRecords({
+    cards: migrated.cards,
+    stats: normalizedData.stats,
+    notes: normalizedData.notes,
+  });
   validateImportRelationships(validRecords);
 
   return {
     ...validRecords,
-    settings: preparedData.settings,
-    gistSync: preparedData.gistSync,
-    dataUpdatedAt: preparedData.dataUpdatedAt ?? new Date().toISOString(),
+    settings: normalizedData.settings,
+    gistSync: normalizedData.gistSync,
+    dataUpdatedAt: normalizedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }
 

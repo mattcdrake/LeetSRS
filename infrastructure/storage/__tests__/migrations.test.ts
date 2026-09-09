@@ -2,7 +2,6 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { serializeCard } from '../cards/codec';
 import {
@@ -21,11 +20,12 @@ describe('migrations', () => {
 
   describe('migrateBackupData', () => {
     it('migrates frozen input without changing the input or writing storage', async () => {
-      const card = Object.freeze({ id: 'legacy-id', paused: true });
+      const { domain: _domain, ...legacyCard } = serializeCard(
+        createMockCard(State.Review, { slug: 'two-sum', paused: true })
+      );
+      const card = Object.freeze(legacyCard);
       const data = Object.freeze({
         cards: Object.freeze({ 'two-sum': card }),
-        notes: { 'legacy-id': { text: 'Keep this note' } },
-        settings: { theme: 'dark' },
       });
       const before = await fakeBrowser.storage.local.get(null);
       const migrated = migrateBackupData(data, 0);
@@ -39,7 +39,7 @@ describe('migrations', () => {
     });
 
     it.each([1, 2])('does not reapply the domain migration to schema %s', (schemaVersion) => {
-      const data = { cards: { 'two-sum': { id: 'existing-id' } }, settings: { theme: 'dark' } };
+      const data = { cards: { 'two-sum': serializeCard(createMockCard(State.Review, { slug: 'two-sum' })) } };
       expect(migrateBackupData(data, schemaVersion)).toEqual(data);
     });
 
@@ -184,16 +184,18 @@ describe('migrations', () => {
 
     it('persists each step before advancing its version and starting the next step', async () => {
       const versions: number[] = [];
+      const first = serializeCard(createMockCard(State.New, { slug: 'first' }));
+      const second = serializeCard(createMockCard(State.New, { slug: 'second' }));
       const steps: Migration[] = [
         {
           description: 'First',
-          migrate: (data) => ({ ...data, cards: { first: { id: 'first' } } }),
+          migrate: () => ({ cards: { first } }),
         },
         {
           description: 'Second',
           migrate: (data) => {
-            expect(data.cards).toEqual({ first: { id: 'first' } });
-            return { ...data, cards: { ...data.cards, second: { id: 'second' } } };
+            expect(data.cards).toEqual({ first });
+            return { cards: { ...data.cards, second } };
           },
         },
       ];
@@ -225,7 +227,7 @@ describe('migrations', () => {
         createMockCard(State.Review, { id: 'legacy-id', slug: 'two-sum', paused: true })
       );
       const cards = {
-        'two-sum': { ...legacyCard, legacyMetadata: { source: 'manual' } },
+        'two-sum': legacyCard,
         'add-two-numbers': serializeCard(
           createMockCard(State.Learning, { id: 'cn-id', slug: 'add-two-numbers', domain: 'leetcode.cn' })
         ),
@@ -250,7 +252,7 @@ describe('migrations', () => {
     });
 
     it('does not advance the schema when migrated cards cannot be persisted', async () => {
-      const cards = { 'two-sum': { slug: 'two-sum' } };
+      const cards = { 'two-sum': serializeCard(createMockCard(State.New, { slug: 'two-sum' })) };
       await storage.setItem(STORAGE_KEYS.cards, cards);
       const write = storage.setItem.bind(storage);
       const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
@@ -271,7 +273,7 @@ describe('migrations', () => {
         createMockCard(State.Review, { id: 'legacy-id', slug: 'two-sum', paused: true })
       );
       const cards = {
-        'two-sum': { ...legacyCard, legacyMetadata: { source: 'manual' } },
+        'two-sum': legacyCard,
         'add-two-numbers': serializeCard(
           createMockCard(State.Learning, { id: 'cn-id', slug: 'add-two-numbers', domain: 'leetcode.cn' })
         ),
@@ -309,31 +311,6 @@ describe('migrations', () => {
         ...expectedAfterCardWrite,
         [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 2,
       });
-    });
-
-    it('should add domain to cards that are missing it', async () => {
-      // Set up cards without domain field (pre-migration state)
-      await storage.setItem(STORAGE_KEYS.cards, {
-        'two-sum': { slug: 'two-sum', name: 'Two Sum' },
-        'add-two-numbers': { slug: 'add-two-numbers', name: 'Add Two Numbers' },
-      });
-
-      await runStartupMigrations();
-
-      const cards = await storage.getItem<Record<string, { domain?: string }>>(STORAGE_KEYS.cards);
-      expect(requireDefined(cards)['two-sum'].domain).toBe('leetcode.com');
-      expect(requireDefined(cards)['add-two-numbers'].domain).toBe('leetcode.com');
-    });
-
-    it('should not overwrite existing domain values', async () => {
-      await storage.setItem(STORAGE_KEYS.cards, {
-        'two-sum': { slug: 'two-sum', domain: 'leetcode.cn' },
-      });
-
-      await runStartupMigrations();
-
-      const cards = await storage.getItem<Record<string, { domain?: string }>>(STORAGE_KEYS.cards);
-      expect(requireDefined(cards)['two-sum'].domain).toBe('leetcode.cn');
     });
 
     it('should handle empty or missing cards storage', async () => {
