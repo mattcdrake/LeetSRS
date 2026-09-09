@@ -1,23 +1,32 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
+import { z } from 'zod';
 import { formatLocalDate } from './calendar';
 import type { Card } from './cards';
 
-interface BaseStats {
-  totalReviews: number;
-  gradeBreakdown: {
-    [Rating.Again]: number;
-    [Rating.Hard]: number;
-    [Rating.Good]: number;
-    [Rating.Easy]: number;
-  };
-  newCards: number;
-  reviewedCards: number;
-}
+const count = z.int().nonnegative();
+const calendarDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  });
 
-export interface DailyStats extends BaseStats {
-  date: string;
-  streak: number;
-}
+export const dailyStatsSchema = z.object({
+  date: calendarDate,
+  totalReviews: count,
+  newCards: count,
+  reviewedCards: count,
+  streak: count,
+  gradeBreakdown: z.object({
+    [Rating.Again]: count,
+    [Rating.Hard]: count,
+    [Rating.Good]: count,
+    [Rating.Easy]: count,
+  }),
+});
+export type DailyStats = z.infer<typeof dailyStatsSchema>;
+type BaseStats = Omit<DailyStats, 'date' | 'streak'>;
 
 export interface UpcomingReviewStats {
   date: string;

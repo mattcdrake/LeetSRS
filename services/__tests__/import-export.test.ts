@@ -370,6 +370,19 @@ describe('import-export', () => {
       });
     });
 
+    it('rejects notes over 500 characters before replacing any local data', async () => {
+      await storage.setItem(STORAGE_KEYS.theme, 'dark');
+      await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}`, { text: 'existing note' });
+      const before = await fakeBrowser.storage.local.get(null);
+      const json = JSON.stringify({
+        ...validExportData,
+        data: { ...validExportData.data, notes: { [cardUuid]: { text: 'a'.repeat(501) } } },
+      });
+      await expect(prepareImportData(json)).rejects.toThrow('Note exceeds maximum length of 500 characters');
+      await expect(importData(json)).rejects.toThrow('Note exceeds maximum length of 500 characters');
+      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    });
+
     it.each(malformedBackupCases(validExportData))(
       'rejects %s during preparation and import without changing storage',
       async (_name, json) => {

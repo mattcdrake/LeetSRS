@@ -1,4 +1,9 @@
-import type { GistSyncConfig, GistValidationResult } from '@/domain/gist-sync';
+import {
+  type GistSyncConfig,
+  type GistSyncConfigUpdate,
+  type GistValidationResult,
+  gistSyncConfigUpdateSchema,
+} from '@/domain/gist-sync';
 import { GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
@@ -10,11 +15,12 @@ export async function getGistSyncConfig(): Promise<GistSyncConfig> {
   return { pat: pat ?? '', ...destination };
 }
 
-export async function setGistSyncConfig(config: Partial<GistSyncConfig>): Promise<void> {
-  if (config.pat !== undefined) {
-    await setGitHubPat(config.pat);
+export async function setGistSyncConfig(config: GistSyncConfigUpdate): Promise<void> {
+  const parsed = gistSyncConfigUpdateSchema.parse(config);
+  if (parsed.pat !== undefined) {
+    await setGitHubPat(parsed.pat);
   }
-  await setGistDestinationConfig(config);
+  await setGistDestinationConfig(parsed);
 }
 
 export async function getGistDestinationConfig(): Promise<Omit<GistSyncConfig, 'pat'>> {

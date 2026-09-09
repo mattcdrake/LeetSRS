@@ -3,7 +3,7 @@ import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { buildReviewQueue, calculateDelayedDueDate, isDueByDate as calculateIsDueByDate } from '@/domain/review';
 import { getAllCards, saveCards } from '@/infrastructure/storage/cards';
 
-import { deleteNote } from './notes';
+import { deleteNote } from '@/infrastructure/storage/notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 

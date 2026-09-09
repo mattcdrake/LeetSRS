@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Card } from './cards';
+import { gistSyncBackupSchema } from './gist-sync';
 import { SETTING_KEYS, type Settings, settingsUpdateSchema } from './settings';
 import type { DailyStats } from './statistics';
 
@@ -23,12 +24,6 @@ const schemaVersionSchema = z
   .optional();
 // Preserve legacy timestamp formats accepted by Date.parse.
 const timestampSchema = z.string().refine((value) => Number.isFinite(Date.parse(value)));
-const gistSyncSchema = z
-  .object({
-    gistId: z.string().optional(),
-    enabled: z.boolean().optional(),
-  })
-  .optional();
 
 function parseImportField<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
   const result = schema.safeParse(value);
@@ -69,7 +64,7 @@ export function normalizeImportData(data: BackupImportEnvelope, currentSchema: n
     stats: parseImportField(objectMapSchema, data.data.stats, 'Invalid stats data'),
     notes: parseImportField(objectMapSchema, data.data.notes, 'Invalid notes data'),
     settings: getImportedSettings(data.data.settings),
-    gistSync: parseImportField(gistSyncSchema, data.data.gistSync, 'Invalid Gist sync configuration'),
+    gistSync: parseImportField(gistSyncBackupSchema.optional(), data.data.gistSync, 'Invalid Gist sync configuration'),
     dataUpdatedAt,
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideGistSync } from '../gist-sync';
+import { decideGistSync, gistSyncBackupSchema, gistSyncConfigSchema, gistSyncConfigUpdateSchema } from '../gist-sync';
 
 const earlier = '2024-01-15T10:00:00Z';
 const later = '2024-01-16T10:00:00Z';
@@ -46,4 +46,35 @@ describe('decideGistSync', () => {
       });
     }
   });
+});
+
+describe('Gist configuration schemas', () => {
+  it.each(['', ' gist ', null])('accepts application Gist ID %j without normalization', (gistId) => {
+    const config = { pat: ' token ', gistId, enabled: false };
+    expect(gistSyncConfigSchema.parse({ ...config, extra: true })).toEqual(config);
+    expect(gistSyncConfigUpdateSchema.parse({ gistId })).toEqual({ gistId });
+    expect(gistSyncBackupSchema.safeParse({ gistId }).success).toBe(gistId !== null);
+  });
+
+  it('keeps backup fields optional and removes credentials and unknown fields', () => {
+    expect(gistSyncBackupSchema.parse({ pat: 'secret', githubPat: 'secret', extra: true })).toEqual({});
+    expect(gistSyncBackupSchema.parse({ gistId: 'gist', enabled: false, pat: 'secret' })).toEqual({
+      gistId: 'gist',
+      enabled: false,
+    });
+    expect(gistSyncConfigUpdateSchema.parse({})).toEqual({});
+    expect(gistSyncConfigUpdateSchema.parse({ pat: undefined, gistId: undefined, enabled: undefined })).toEqual({
+      pat: undefined,
+      gistId: undefined,
+      enabled: undefined,
+    });
+    expect(gistSyncConfigSchema.safeParse({}).success).toBe(false);
+  });
+
+  it.each([{ pat: null }, { gistId: 42 }, { enabled: null }, { enabled: 'true' }])(
+    'rejects malformed update %j',
+    (update) => {
+      expect(gistSyncConfigUpdateSchema.safeParse(update).success).toBe(false);
+    }
+  );
 });

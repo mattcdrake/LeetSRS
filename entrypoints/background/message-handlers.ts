@@ -1,4 +1,5 @@
 import { type MessageName, onMessage } from '@/infrastructure/browser/messages';
+import { deleteNote, getNote, saveNote } from '@/infrastructure/storage/notes';
 import {
   addCard,
   delayCard,
@@ -13,7 +14,6 @@ import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } f
 import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
-import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
 import type { BackgroundMessageRegistry } from './message-runner';

@@ -4,18 +4,18 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { DailyStats } from '@/domain/statistics';
+import * as notesModule from '@/infrastructure/storage/notes';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, delayCard, getAllCards, getReviewQueue, rateCard, removeCard, setPauseStatus } from '../cards';
-import * as notesModule from '../notes';
 
 const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
 const MOCK_MAX_NEW_CARDS_PER_DAY = buildSettings().maxNewCardsPerDay;
 
 // Mock the notes module
-vi.mock('../notes', () => ({
+vi.mock('@/infrastructure/storage/notes', () => ({
   deleteNote: vi.fn(),
 }));
 

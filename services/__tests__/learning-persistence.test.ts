@@ -2,12 +2,12 @@ import { Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { getNote, saveNote } from '@/infrastructure/storage/notes';
 import { getNoteStorageKey, STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, getAllCards, rateCard, removeCard } from '../cards';
-import { getNote, saveNote } from '../notes';
 import { getSettings } from '../settings';
 
 vi.mock('../settings', () => ({ getSettings: vi.fn() }));
