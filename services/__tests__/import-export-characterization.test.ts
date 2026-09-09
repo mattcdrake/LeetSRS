@@ -1,8 +1,11 @@
+import { createEmptyCard } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { SETTING_KEYS } from '@/domain/settings';
+import { createDailyStats } from '@/domain/statistics';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { exportData, importData, prepareImportData, resetAllData } from '../import-export';
 
@@ -15,8 +18,17 @@ const payload = {
   exportDate: incomingTime,
   dataUpdatedAt: incomingTime,
   data: {
-    cards: { imported: { id: 'new', domain: 'leetcode.com', unknownField: 'retained' } },
-    stats: { arbitrary: { unknownField: 42 } },
+    cards: {
+      imported: {
+        ...buildProblem({ slug: 'imported' }),
+        id: 'new',
+        createdAt: Date.parse(incomingTime),
+        paused: false,
+        fsrs: { ...createEmptyCard(new Date(incomingTime)), due: Date.parse(incomingTime) },
+        unknownField: 'retained',
+      },
+    },
+    stats: { '2024-01-01': { ...createDailyStats('2024-01-01', undefined), unknownField: 42 } },
     notes: { new: { text: 'new note', unknownField: true } },
     settings: { theme: 'dark' },
     gistSync: { gistId: 'incoming-gist', enabled: false },

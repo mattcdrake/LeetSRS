@@ -7,7 +7,7 @@ import type { DailyStats } from '@/domain/statistics';
 import type { StoredCard } from '@/infrastructure/storage/cards/codec';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { malformedBackupCases } from '@/test/utils/backup-mocks';
+import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import * as auth from '../github-auth';
 import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
@@ -142,6 +142,66 @@ describe('import-export', () => {
   });
 
   describe('importData', () => {
+    it.each(['cards', 'stats', 'notes'] as const)(
+      'rejects mixed invalid %s during preparation and import without changing storage',
+      async (collection) => {
+        await setSchemaVersion(2);
+        const { payload, accepted } = mixedRecordBackup();
+        await importData(JSON.stringify({ ...payload, data: accepted }));
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
+        const before = await fakeBrowser.storage.local.get(null);
+        const json = JSON.stringify({ ...payload, data: { ...accepted, [collection]: payload.data[collection] } });
+        await expect(prepareImportData(json)).rejects.toThrow();
+        await expect(importData(json)).rejects.toThrow();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      }
+    );
+
+    it.each([0, undefined])('rejects invalid legacy schema %s records after migration', async (schemaVersion) => {
+      await setSchemaVersion(2);
+      const { payload, accepted } = mixedRecordBackup();
+      await importData(JSON.stringify({ ...payload, data: accepted }));
+      const before = await fakeBrowser.storage.local.get(null);
+      const { domain: _domain, ...legacyCard } = accepted.cards['two-sum'];
+      const json = JSON.stringify({
+        ...payload,
+        schemaVersion,
+        data: { ...accepted, cards: { 'two-sum': { ...legacyCard, paused: 'false' } } },
+      });
+      await expect(importData(json)).rejects.toThrow();
+      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    });
+
+    it.each(['slug', 'duplicate', 'date', 'orphan'] as const)(
+      'rejects invalid %s relationships before replacement',
+      async (kind) => {
+        await setSchemaVersion(2);
+        const { payload, accepted } = mixedRecordBackup();
+        await importData(JSON.stringify({ ...payload, data: accepted }));
+        const before = await fakeBrowser.storage.local.get(null);
+        if (kind === 'slug') accepted.cards['two-sum'].slug = 'different';
+        if (kind === 'duplicate') accepted.cards['cn-problem'].id = 'valid-com';
+        if (kind === 'date') accepted.stats['2024-01-01'].date = '2024-01-02';
+        if (kind === 'orphan') delete (accepted.cards as Record<string, unknown>)['two-sum'];
+        await expect(importData(JSON.stringify({ ...payload, data: accepted }))).rejects.toThrow();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      }
+    );
+
+    it('round-trips valid current records with schedules, domains, pause state and notes intact', async () => {
+      await setSchemaVersion(2);
+      const { payload, accepted } = mixedRecordBackup();
+      await importData(JSON.stringify({ ...payload, data: accepted }));
+      const exported = await exportData();
+      await resetAllData();
+      await importData(exported);
+      const restored = JSON.parse(await exportData());
+      expect(restored.data).toMatchObject(accepted);
+      expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
+    });
+
     const cardUuid = 'b2c3d4e5-f6a7-8901-bcde-f23456789012';
     const validExportData = {
       schemaVersion: 0,

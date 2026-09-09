@@ -1,10 +1,11 @@
-import { normalizeImportData, validateImportStructure } from '@/domain/backup-import';
+import { normalizeImportData, validateImportRelationships, validateImportStructure } from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import {
   readSnapshotCards,
   readSnapshotNotes,
   removeSnapshotCards,
   removeSnapshotNotes,
+  validateBackupRecords,
   writeSnapshotCards,
   writeSnapshotNotes,
 } from '@/infrastructure/storage/backup';
@@ -58,13 +59,12 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   const currentSchema = await getCurrentSchemaVersion();
   const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
   const preparedData = migrateBackupData(normalizedData, schemaVersion);
+  const validRecords = validateBackupRecords(preparedData);
+  validateImportRelationships(validRecords);
 
   return {
     ...preparedData,
-    // Only collection shapes are validated here; Record filtering — Step 2 in todo.md will validate their records.
-    cards: preparedData.cards as PreparedImportData['cards'],
-    stats: preparedData.stats as PreparedImportData['stats'],
-    notes: preparedData.notes as PreparedImportData['notes'],
+    ...validRecords,
     dataUpdatedAt: preparedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }

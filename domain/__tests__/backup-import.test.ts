@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { malformedBackupCases } from '@/test/utils/backup-mocks';
-import { normalizeImportData, validateImportStructure } from '../backup-import';
+import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { normalizeImportData, validateImportRelationships, validateImportStructure } from '../backup-import';
 
 const incomingTime = '2024-01-01T00:00:00.000Z';
 const payload = {
@@ -16,6 +16,31 @@ const payload = {
 };
 
 describe('backup import policy', () => {
+  it('accepts valid relationships', () => {
+    expect(() => validateImportRelationships(mixedRecordBackup().accepted)).not.toThrow();
+  });
+
+  it.each(['slug', 'duplicate', 'date', 'orphan'] as const)('rejects an invalid %s relationship', (kind) => {
+    const { accepted } = mixedRecordBackup();
+    const records = {
+      cards: { ...accepted.cards },
+      stats: { ...accepted.stats },
+      notes: { ...accepted.notes },
+    };
+    if (kind === 'slug') records.cards['two-sum'].slug = 'different';
+    if (kind === 'duplicate') records.cards['cn-problem'].id = records.cards['two-sum'].id;
+    if (kind === 'date') records.stats['2024-01-01'].date = '2024-01-02';
+    if (kind === 'orphan') delete (records.cards as Record<string, unknown>)['two-sum'];
+    expect(() => validateImportRelationships(records)).toThrow(
+      {
+        slug: 'Card slug does not match key: two-sum',
+        duplicate: 'Duplicate card ID: valid-com',
+        date: 'Stats date does not match key: 2024-01-01',
+        orphan: 'Note has no owning card: valid-com',
+      }[kind]
+    );
+  });
+
   it('retains unknown fields and current-setting precedence over legacy values', () => {
     const prepared = normalizeImportData(
       JSON.parse(
