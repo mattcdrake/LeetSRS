@@ -11,26 +11,13 @@ export interface StoredCard extends Omit<Card, 'createdAt' | 'fsrs' | 'domain'> 
 }
 
 export function serializeCard(card: Card): StoredCard {
-  return {
-    ...card,
-    createdAt: card.createdAt.getTime(),
-    fsrs: {
-      ...card.fsrs,
-      due: card.fsrs.due.getTime(),
-      last_review: card.fsrs.last_review?.getTime(),
-    },
-  };
+  return { ...card, fsrs: { ...card.fsrs } };
 }
 
 export function deserializeCard(stored: StoredCard): Card {
   return {
     ...stored,
     domain: stored.domain ?? 'leetcode.com',
-    createdAt: new Date(stored.createdAt),
-    fsrs: {
-      ...stored.fsrs,
-      due: new Date(stored.fsrs.due),
-      last_review: stored.fsrs.last_review === undefined ? undefined : new Date(stored.fsrs.last_review),
-    },
+    fsrs: { ...stored.fsrs },
   };
 }

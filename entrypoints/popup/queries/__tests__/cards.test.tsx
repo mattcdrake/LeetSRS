@@ -3,11 +3,11 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { createEmptyCard, type Grade, Rating } from 'ts-fsrs';
+import { type Grade, Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { buildProblem } from '@/test/utils/card-mocks';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import {
   cardQueryKeys,
@@ -60,8 +60,8 @@ describe('useRateCardMutation', () => {
       leetcodeId: mockCard.leetcodeId,
       difficulty: mockCard.difficulty,
       domain: 'leetcode.com',
-      createdAt: new Date(),
-      fsrs: createEmptyCard(),
+      createdAt: Date.now(),
+      fsrs: createMockCard(State.New).fsrs,
       paused: false,
     };
 
@@ -148,8 +148,8 @@ describe('usePauseCardMutation', () => {
       leetcodeId: '1',
       difficulty: 'Easy',
       domain: 'leetcode.com',
-      createdAt: new Date(),
-      fsrs: createEmptyCard(),
+      createdAt: Date.now(),
+      fsrs: createMockCard(State.New).fsrs,
       paused,
     };
 

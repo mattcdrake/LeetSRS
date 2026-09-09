@@ -140,14 +140,14 @@ describe('CardView', () => {
       name: 'Test Problem',
       fsrs: {
         state: State.Learning,
-        due: new Date('2024-01-01'),
+        due: new Date('2024-01-01').getTime(),
         stability: 2.5,
         difficulty: 1.3,
         elapsed_days: 0,
         scheduled_days: 0,
         reps: 5,
         lapses: 1,
-        last_review: new Date('2023-12-31'),
+        last_review: new Date('2023-12-31').getTime(),
         learning_steps: 0,
       },
     });
@@ -208,17 +208,17 @@ describe('CardView', () => {
 
   it('should format dates correctly', () => {
     const card = createMockCard(State.Review, {
-      createdAt: new Date('2024-01-15T12:00:00Z'),
+      createdAt: new Date('2024-01-15T12:00:00Z').getTime(),
       fsrs: {
         state: State.Review,
-        due: new Date('2024-02-01T12:00:00Z'),
+        due: new Date('2024-02-01T12:00:00Z').getTime(),
         stability: 1,
         difficulty: 1,
         elapsed_days: 0,
         scheduled_days: 0,
         reps: 1,
         lapses: 0,
-        last_review: new Date('2024-01-20T12:00:00Z'),
+        last_review: new Date('2024-01-20T12:00:00Z').getTime(),
         learning_steps: 0,
       },
     });

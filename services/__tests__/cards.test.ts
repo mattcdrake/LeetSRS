@@ -1,4 +1,4 @@
-import { State as FsrsState, Rating } from 'ts-fsrs';
+import { FSRS, State as FsrsState, generatorParameters, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
@@ -102,11 +102,11 @@ describe('addCard', () => {
     expect(card.name).toBe('Two Sum');
     expect(card.difficulty).toBe('Easy');
     expect(card.domain).toBe('leetcode.com');
-    expect(card.createdAt).toBeInstanceOf(Date);
+    expect(card.createdAt).toEqual(expect.any(Number));
 
     // Verify FSRS card is created
     expect(card.fsrs).toBeDefined();
-    expect(card.fsrs.due).toBeInstanceOf(Date);
+    expect(card.fsrs.due).toEqual(expect.any(Number));
     expect(card.fsrs.stability).toBeDefined();
     expect(card.fsrs.difficulty).toBeDefined();
     expect(card.fsrs.reps).toBe(0);
@@ -149,7 +149,7 @@ describe('addCard', () => {
     // Should return the same card
     expect(secondCard.id).toBe(firstId);
     expect(secondCard.slug).toBe('valid-parentheses');
-    expect(secondCard.createdAt.getTime()).toBe(firstCreatedAt.getTime());
+    expect(secondCard.createdAt).toBe(firstCreatedAt);
     expect(secondCard.name).toBe('Valid Parentheses');
     expect(secondCard.difficulty).toBe('Medium');
     expect(secondCard.domain).toBe('leetcode.com');
@@ -200,9 +200,9 @@ describe('addCard', () => {
     });
     const afterTime = new Date();
 
-    expect(card.createdAt).toBeInstanceOf(Date);
-    expect(card.createdAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
-    expect(card.createdAt.getTime()).toBeLessThanOrEqual(afterTime.getTime());
+    expect(card.createdAt).toEqual(expect.any(Number));
+    expect(card.createdAt).toBeGreaterThanOrEqual(beforeTime.getTime());
+    expect(card.createdAt).toBeLessThanOrEqual(afterTime.getTime());
   });
 
   it('should properly serialize card when storing', async () => {
@@ -391,8 +391,8 @@ describe('delayCard', () => {
     const expectedDueDate = new Date(originalDueDate);
     expectedDueDate.setDate(expectedDueDate.getDate() + 5);
 
-    expect(delayedCard.fsrs.due).toBeInstanceOf(Date);
-    expect(delayedCard.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+    expect(delayedCard.fsrs.due).toEqual(expect.any(Number));
+    expect(delayedCard.fsrs.due).toBe(expectedDueDate.getTime());
 
     // Verify it was persisted to storage
     const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
@@ -415,7 +415,7 @@ describe('delayCard', () => {
     const expectedDueDate = new Date(originalDueDate);
     expectedDueDate.setDate(expectedDueDate.getDate() + 1);
 
-    expect(delayedCard.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+    expect(delayedCard.fsrs.due).toBe(expectedDueDate.getTime());
   });
 
   it('should handle delaying by large number of days', async () => {
@@ -433,7 +433,7 @@ describe('delayCard', () => {
     const expectedDueDate = new Date(originalDueDate);
     expectedDueDate.setDate(expectedDueDate.getDate() + 30);
 
-    expect(delayedCard.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+    expect(delayedCard.fsrs.due).toBe(expectedDueDate.getTime());
   });
 
   it('should throw error when card does not exist', async () => {
@@ -472,7 +472,7 @@ describe('delayCard', () => {
     expect(delayedCard.name).toBe(ratedCard.name);
     expect(delayedCard.leetcodeId).toBe(ratedCard.leetcodeId);
     expect(delayedCard.difficulty).toBe(ratedCard.difficulty);
-    expect(delayedCard.createdAt.getTime()).toBe(ratedCard.createdAt.getTime());
+    expect(delayedCard.createdAt).toBe(ratedCard.createdAt);
 
     // FSRS properties except due should be preserved
     expect(delayedCard.fsrs.state).toBe(ratedCard.fsrs.state);
@@ -480,10 +480,10 @@ describe('delayCard', () => {
     expect(delayedCard.fsrs.lapses).toBe(ratedCard.fsrs.lapses);
     expect(delayedCard.fsrs.stability).toBe(ratedCard.fsrs.stability);
     expect(delayedCard.fsrs.difficulty).toBe(ratedCard.fsrs.difficulty);
-    expect(delayedCard.fsrs.last_review?.getTime()).toBe(ratedCard.fsrs.last_review?.getTime());
+    expect(delayedCard.fsrs.last_review).toBe(ratedCard.fsrs.last_review);
 
     // Only due date should be different
-    expect(delayedCard.fsrs.due.getTime()).not.toBe(ratedCard.fsrs.due.getTime());
+    expect(delayedCard.fsrs.due).not.toBe(ratedCard.fsrs.due);
   });
 
   it('should handle multiple delays on the same card', async () => {
@@ -506,7 +506,7 @@ describe('delayCard', () => {
     const expectedDueDate = new Date(firstDueDate);
     expectedDueDate.setDate(expectedDueDate.getDate() + 3);
 
-    expect(secondDelay.fsrs.due.getTime()).toBe(expectedDueDate.getTime());
+    expect(secondDelay.fsrs.due).toBe(expectedDueDate.getTime());
   });
 
   it('should work with cards in different states', async () => {
@@ -585,6 +585,26 @@ describe('setPauseStatus', () => {
 });
 
 describe('rateCard', () => {
+  it('FSRS schedules numeric card dates identically to Date objects', () => {
+    const scheduler = new FSRS(generatorParameters({ maximum_interval: 1000, enable_fuzz: false }));
+    const numericCard = createMockCard(FsrsState.Review).fsrs;
+    numericCard.due = Date.parse('2024-03-14T10:00:00Z');
+    numericCard.last_review = Date.parse('2024-03-13T10:00:00Z');
+    const dateCard = {
+      ...numericCard,
+      due: new Date(numericCard.due),
+      last_review: new Date(numericCard.last_review),
+    };
+    const now = new Date('2024-03-15T10:00:00Z');
+
+    const numericResult = scheduler.next(numericCard, now, Rating.Good);
+    const dateResult = scheduler.next(dateCard, now, Rating.Good);
+
+    expect(numericResult).toEqual(dateResult);
+    expect(numericResult.card.last_review).toEqual(now);
+    expect(numericResult.card.due.getTime()).toBeGreaterThan(now.getTime());
+  });
+
   beforeEach(() => {
     // Reset the fake browser state before each test
     fakeBrowser.reset();
@@ -608,7 +628,7 @@ describe('rateCard', () => {
 
     expect(result.card.slug).toBe('new-problem');
     expect(result.card.name).toBe('New Problem');
-    expect(result.card.createdAt).toBeInstanceOf(Date);
+    expect(result.card.createdAt).toEqual(expect.any(Number));
     expect(result.card.fsrs).toBeDefined();
 
     // Verify the card was stored
@@ -616,35 +636,27 @@ describe('rateCard', () => {
     expect(requireDefined(cards)['new-problem']).toBeDefined();
   });
 
-  it('should update existing card when rating', async () => {
-    // First create a card
-    const initialCard = await addCard({
-      slug: 'two-sum',
-      name: 'Two Sum',
-      leetcodeId: '1',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    const initialReps = initialCard.fsrs.reps;
-    const initialStability = initialCard.fsrs.stability;
+  it.each([0, 1710496800000])('schedules numeric dates from %i through repeated ratings', async (timestamp) => {
+    vi.setSystemTime(timestamp);
+    const problem = buildProblem();
+    const initialCard = await addCard(problem);
+    expect(initialCard.createdAt).toBe(timestamp);
+    expect(initialCard.fsrs.due).toBe(timestamp);
+    expect(initialCard.fsrs.last_review).toBeUndefined();
 
-    // Rate the card as Good
-    const result = await rateCard({
-      slug: 'two-sum',
-      name: 'Two Sum',
-      rating: Rating.Good,
-      leetcodeId: '1',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
+    const first = await rateCard({ ...problem, rating: Rating.Good });
+    expect(first.card.fsrs.reps).toBe(initialCard.fsrs.reps + 1);
+    expect(first.card.fsrs.stability).not.toBe(initialCard.fsrs.stability);
+    expect(first.card.fsrs.last_review).toBe(timestamp);
+    expect(first.card.fsrs.due).toBeGreaterThan(timestamp);
 
-    expect(result.card.slug).toBe('two-sum');
-    expect(result.card.name).toBe('Two Sum');
-
-    // FSRS should update the card
-    expect(result.card.fsrs.reps).toBeGreaterThan(initialReps);
-    expect(result.card.fsrs.stability).not.toBe(initialStability);
-    expect(result.card.fsrs.last_review).toBeInstanceOf(Date);
+    vi.setSystemTime(first.card.fsrs.due);
+    const second = await rateCard({ ...problem, rating: Rating.Good });
+    expect(second.card.createdAt).toBe(timestamp);
+    expect(second.card.fsrs.last_review).toBe(first.card.fsrs.due);
+    expect(second.card.fsrs.due).toBeGreaterThan(first.card.fsrs.due);
+    expect(second.card.fsrs.reps).toBe(first.card.fsrs.reps + 1);
+    expect(await getAllCards()).toEqual([second.card]);
   });
 
   it('should handle different grades correctly', async () => {
@@ -700,8 +712,8 @@ describe('rateCard', () => {
       domain: 'leetcode.com',
     });
 
-    expect(result.card.fsrs.due).toBeInstanceOf(Date);
-    expect(result.card.fsrs.due.getTime()).toBeGreaterThan(initialDue.getTime());
+    expect(result.card.fsrs.due).toEqual(expect.any(Number));
+    expect(result.card.fsrs.due).toBeGreaterThan(initialDue);
   });
 
   it('should persist card updates to storage', async () => {

@@ -55,12 +55,12 @@ function makeCard(overrides: Partial<{ due: Date; state: FsrsState; paused: bool
     leetcodeId: '1',
     difficulty: 'Easy',
     domain: 'leetcode.com',
-    createdAt: new Date('2024-01-01'),
+    createdAt: new Date('2024-01-01').getTime(),
     fsrs: {
       ...createEmptyCard(),
       state,
-      due: overrides.due ?? new Date('2025-01-01'),
-      last_review: state === FsrsState.New ? undefined : new Date('2024-01-01'),
+      due: (overrides.due ?? new Date('2025-01-01')).getTime(),
+      last_review: state === FsrsState.New ? undefined : new Date('2024-01-01').getTime(),
     },
     paused: overrides.paused ?? false,
   };

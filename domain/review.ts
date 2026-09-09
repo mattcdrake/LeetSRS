@@ -11,7 +11,7 @@ export function isDueByDate(card: Card, referenceDate: Date, dayStartHour: numbe
 }
 
 const sortByDueDateThenSlug = (a: Card, b: Card): number => {
-  const dueDiff = a.fsrs.due.getTime() - b.fsrs.due.getTime();
+  const dueDiff = a.fsrs.due - b.fsrs.due;
   if (dueDiff !== 0) return dueDiff;
   return a.slug.localeCompare(b.slug);
 };
@@ -36,9 +36,8 @@ export function buildReviewQueue(
   return allQueueCards;
 }
 
-export function calculateDelayedDueDate(due: Date, days: number): Date {
-  const currentDueDate = new Date(due);
-  const newDueDate = new Date(currentDueDate);
+export function calculateDelayedDueDate(due: number, days: number): number {
+  const newDueDate = new Date(due);
   newDueDate.setDate(newDueDate.getDate() + days);
-  return newDueDate;
+  return newDueDate.getTime();
 }

@@ -19,7 +19,7 @@ export function buildProblem(overrides: Partial<ProblemDescriptor> = {}): Proble
  * @returns A complete Card object with sensible defaults
  */
 export const createMockCard = (state: State, overrides: Partial<Card> = {}): Card => {
-  const now = new Date();
+  const now = Date.now();
 
   return {
     id: `mock-id-${Math.random()}`,

@@ -17,7 +17,10 @@ export type RateCardInput = ProblemDescriptor & {
 
 export interface Card extends ProblemDescriptor {
   id: string;
-  createdAt: Date;
-  fsrs: FsrsCard;
+  createdAt: number;
+  fsrs: Omit<FsrsCard, 'due' | 'last_review'> & {
+    due: number;
+    last_review?: number;
+  };
   paused: boolean;
 }

@@ -26,7 +26,7 @@ const getStateLabel = (state: FsrsState, t: Translations) => {
   }
 };
 
-const formatDate = (date: Date) =>
+const formatDate = (date: number) =>
   new Date(date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

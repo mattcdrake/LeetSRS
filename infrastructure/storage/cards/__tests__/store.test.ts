@@ -1,11 +1,11 @@
-import { createEmptyCard, State } from 'ts-fsrs';
+import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { ProblemDescriptor } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { STORAGE_KEYS } from '../../storage-keys';
-import { type StoredCard, serializeCard } from '../codec';
+import { serializeCard } from '../codec';
 import { getAllCards, saveCards } from '../store';
 
 async function addFixture(problem: ProblemDescriptor): Promise<void> {
@@ -63,37 +63,21 @@ describe('getAllCards', () => {
     expect(foundCard3?.name).toBe('Merge Intervals');
   });
 
-  it('should properly deserialize stored cards', async () => {
-    const testDate = new Date('2024-01-15T10:30:00Z');
+  it.each([undefined, 0, 1705222800000])('preserves numeric dates and last_review %s', async (lastReview) => {
+    const card = createMockCard(State.Review, { createdAt: 0 });
+    card.fsrs.due = 0;
+    card.fsrs.last_review = lastReview;
+    await saveCards([card]);
 
-    // Manually add a serialized card to storage
-    const emptyFsrs = createEmptyCard();
-    const storedCard: StoredCard = {
-      id: 'test-id-deserialize',
-      slug: 'test-problem',
-      name: 'Test Problem',
-      leetcodeId: '999',
-      difficulty: 'Medium',
-      createdAt: testDate.getTime(),
-      fsrs: {
-        ...emptyFsrs,
-        due: emptyFsrs.due.getTime(),
-        last_review: emptyFsrs.last_review?.getTime(),
-      },
-      paused: false,
-      domain: 'leetcode.com',
-    };
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({ [card.slug]: card });
+    expect(await getAllCards()).toEqual([card]);
+  });
 
-    await storage.setItem(STORAGE_KEYS.cards, { 'test-problem': storedCard });
+  it('defaults a legacy missing domain to leetcode.com', async () => {
+    const { domain: _domain, ...legacyCard } = createMockCard(State.New);
+    await storage.setItem(STORAGE_KEYS.cards, { [legacyCard.slug]: legacyCard });
 
-    // Get all cards
-    const allCards = await getAllCards();
-
-    expect(allCards).toHaveLength(1);
-    expect(allCards[0].slug).toBe('test-problem');
-    expect(allCards[0].name).toBe('Test Problem');
-    expect(allCards[0].createdAt).toBeInstanceOf(Date);
-    expect(allCards[0].createdAt.getTime()).toBe(testDate.getTime());
+    expect(await getAllCards()).toEqual([{ ...legacyCard, domain: 'leetcode.com' }]);
   });
 });
 

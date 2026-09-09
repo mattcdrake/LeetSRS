@@ -521,7 +521,7 @@ describe('ReviewQueue', () => {
         ...mockCards[0],
         fsrs: {
           ...mockCards[0].fsrs,
-          due: new Date(Date.now() + 86400000),
+          due: new Date(Date.now() + 86400000).getTime(),
         },
       };
       mockDelayMutateAsync.mockResolvedValue(delayedCard);

@@ -13,11 +13,12 @@ const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
 function createCard(problem: ProblemDescriptor): Card {
+  const initialFsrs = createEmptyCard();
   return {
     id: crypto.randomUUID(),
     ...problem,
-    createdAt: new Date(),
-    fsrs: createEmptyCard(),
+    createdAt: Date.now(),
+    fsrs: { ...initialFsrs, due: initialFsrs.due.getTime(), last_review: initialFsrs.last_review?.getTime() },
     paused: false,
   };
 }
@@ -90,7 +91,11 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
 
   const now = new Date();
   const schedulingResult = fsrs.next(card.fsrs, now, rating);
-  card.fsrs = schedulingResult.card;
+  card.fsrs = {
+    ...schedulingResult.card,
+    due: schedulingResult.card.due.getTime(),
+    last_review: schedulingResult.card.last_review?.getTime(),
+  };
   await saveCards(cards);
   await updateStats(rating, isNewCard);
   const settings = await getSettings();
