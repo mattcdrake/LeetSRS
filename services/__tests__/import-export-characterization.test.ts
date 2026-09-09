@@ -110,7 +110,7 @@ describe('backup workflow characterization', () => {
     expect(read).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.schemaVersion);
   });
 
-  it('generates a missing import timestamp after the schema read, preserving an empty timestamp', async () => {
+  it('generates a missing import timestamp after the schema read, rejecting an empty timestamp', async () => {
     const schema = createDeferred<number>();
     const read = storage.getItem.bind(storage);
     vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
@@ -120,7 +120,9 @@ describe('backup workflow characterization', () => {
     vi.setSystemTime(new Date(incomingTime));
     schema.resolve(2);
     expect((await preparing).dataUpdatedAt).toBe(incomingTime);
-    expect((await prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: '' }))).dataUpdatedAt).toBe('');
+    await expect(prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: '' }))).rejects.toThrow(
+      'Invalid update timestamp'
+    );
   });
 
   it('resets before restoration and overwrites the settings timestamp with the imported timestamp', async () => {

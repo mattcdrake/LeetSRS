@@ -1,10 +1,5 @@
 import { normalizeImportData, validateImportStructure } from '@/domain/backup-import';
-import {
-  type ExportData,
-  encodeExportData,
-  type PreparedImportData,
-  parseImportData,
-} from '@/infrastructure/storage/backup/codec';
+import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import {
   readSnapshotCards,
   readSnapshotNotes,
@@ -12,7 +7,7 @@ import {
   removeSnapshotNotes,
   writeSnapshotCards,
   writeSnapshotNotes,
-} from '@/infrastructure/storage/backup/snapshot';
+} from '@/infrastructure/storage/backup';
 import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
@@ -48,17 +43,27 @@ export async function exportData(): Promise<string> {
     },
   };
 
-  return encodeExportData(exportData);
+  return JSON.stringify(exportData, null, 2);
 }
 
 export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
-  const data = parseImportData(jsonData);
+  let data: unknown;
+  try {
+    data = JSON.parse(jsonData);
+  } catch {
+    throw new Error('Invalid JSON format');
+  }
+
   validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
   const preparedData = normalizeImportData(data, currentSchema);
 
   return {
     ...preparedData,
+    // Only collection shapes are validated here; Record filtering — Step 2 in todo.md will validate their records.
+    cards: preparedData.cards as PreparedImportData['cards'],
+    stats: preparedData.stats as PreparedImportData['stats'],
+    notes: preparedData.notes as PreparedImportData['notes'],
     dataUpdatedAt: preparedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }
@@ -66,7 +71,6 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await getGitHubPat();
-
   await resetAllData();
 
   if (existingPat) {
@@ -74,11 +78,8 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
   }
 
   await writeSnapshotCards(preparedData.cards);
-
   await saveStats(preparedData.stats);
-
   await writeSnapshotNotes(preparedData.notes);
-
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
@@ -100,11 +101,9 @@ export async function importData(jsonData: string): Promise<void> {
 
 export async function resetAllData(): Promise<void> {
   const cards = await readSnapshotCards();
-
   await removeSnapshotCards();
   await removeStats();
   await resetSettings();
-
   await removeGitHubPat();
   await removeSyncMetadata('gistId');
   await removeSyncMetadata('gistSyncEnabled');

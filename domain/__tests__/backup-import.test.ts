@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { malformedBackupCases } from '@/test/utils/backup-mocks';
 import { normalizeImportData, validateImportStructure } from '../backup-import';
 
 const incomingTime = '2024-01-01T00:00:00.000Z';
@@ -15,7 +16,7 @@ const payload = {
 };
 
 describe('backup import policy', () => {
-  it('retains shallow validation, unknown fields, and current-setting precedence over legacy values', () => {
+  it('retains unknown fields and current-setting precedence over legacy values', () => {
     const prepared = normalizeImportData(
       JSON.parse(
         JSON.stringify({
@@ -38,19 +39,29 @@ describe('backup import policy', () => {
       settings: { resetEditorOnEveryProblem: false, unknownSetting: 'retained' },
       dataUpdatedAt: incomingTime,
     });
-    const arrays = normalizeImportData(
-      JSON.parse(JSON.stringify({ exportDate: 'not-validated-as-date', data: { cards: [], stats: [], notes: [] } })),
-      0
-    );
-    expect(arrays).toEqual({
-      cards: [],
-      stats: [],
-      notes: [],
+  });
+
+  it.each(malformedBackupCases(payload))('rejects malformed envelope: %s', (_name, json) => {
+    expect(() => {
+      const data = JSON.parse(json);
+      validateImportStructure(data);
+      normalizeImportData(data, 2);
+    }).toThrow();
+  });
+
+  it('accepts empty object maps and omitted optional configuration and schema', () => {
+    const data = JSON.parse(JSON.stringify({ exportDate: incomingTime, data: { cards: {}, stats: {}, notes: {} } }));
+    validateImportStructure(data);
+    expect(normalizeImportData(data, 2)).toEqual({
+      cards: {},
+      stats: {},
+      notes: {},
       settings: {},
       gistSync: undefined,
       dataUpdatedAt: undefined,
     });
   });
+
   it.each([
     ['missing export date', JSON.stringify({ data: {} }), 'Invalid export data structure'],
     [
@@ -82,7 +93,7 @@ describe('backup import policy', () => {
     }).toThrow(message);
   });
 
-  it('preserves the native error for a null JSON root', () => {
-    expect(() => validateImportStructure(JSON.parse('null'))).toThrow(TypeError);
+  it('rejects a null JSON root with a structure error', () => {
+    expect(() => validateImportStructure(JSON.parse('null'))).toThrow('Invalid export data structure');
   });
 });

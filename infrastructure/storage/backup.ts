@@ -1,8 +1,36 @@
 import { storage } from '#imports';
 import type { Note } from '@/domain/notes';
-import { deleteNote, getNote } from '../notes';
-import { getNoteStorageKey, STORAGE_KEYS } from '../storage-keys';
-import type { ExportData } from './codec';
+import type { Settings } from '@/domain/settings';
+import type { DailyStats } from '@/domain/statistics';
+import type { StoredCard } from '@/infrastructure/storage/cards/codec';
+
+import { deleteNote, getNote } from './notes';
+import { getNoteStorageKey, STORAGE_KEYS } from './storage-keys';
+
+export interface ExportData {
+  schemaVersion: number;
+  exportDate: string;
+  dataUpdatedAt?: string;
+  data: {
+    cards: Record<string, StoredCard>;
+    stats: Record<string, DailyStats>;
+    notes: Record<string, Note>;
+    settings: Partial<Settings>;
+    gistSync?: {
+      gistId?: string;
+      enabled?: boolean;
+    };
+  };
+}
+
+export type PreparedImportData = {
+  cards: Record<string, StoredCard>;
+  stats: Record<string, DailyStats>;
+  notes: Record<string, Note>;
+  settings: Partial<Settings>;
+  gistSync?: ExportData['data']['gistSync'];
+  dataUpdatedAt: string;
+};
 
 type SnapshotCards = ExportData['data']['cards'];
 

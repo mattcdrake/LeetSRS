@@ -2,8 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createDeferred } from '@/test/utils/deferred';
-import { getNoteStorageKey, STORAGE_KEYS } from '../../storage-keys';
-import { parseImportData } from '../codec';
 import {
   readSnapshotCards,
   readSnapshotNotes,
@@ -11,7 +9,8 @@ import {
   removeSnapshotNotes,
   writeSnapshotCards,
   writeSnapshotNotes,
-} from '../snapshot';
+} from '../backup';
+import { getNoteStorageKey, STORAGE_KEYS } from '../storage-keys';
 
 const rawCards = {
   first: { id: 'first', legacyField: true },
@@ -81,7 +80,7 @@ describe('snapshot storage', () => {
   });
 
   it('retains partial note writes and never starts later writes after a failure', async () => {
-    const notes = parseImportData(
+    const notes = JSON.parse(
       JSON.stringify({ data: { notes: { first: { text: 'first' }, second: null, third: { text: 'third' } } } })
     ).data.notes;
     const failure = new Error('note write failed');

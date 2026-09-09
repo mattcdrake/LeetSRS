@@ -7,6 +7,7 @@ import type { DailyStats } from '@/domain/statistics';
 import type { StoredCard } from '@/infrastructure/storage/cards/codec';
 import { migrations, runMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { malformedBackupCases } from '@/test/utils/backup-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import * as auth from '../github-auth';
 import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
@@ -191,6 +192,31 @@ describe('import-export', () => {
         }),
       },
     };
+
+    it.each(malformedBackupCases(validExportData))(
+      'rejects %s during preparation and import without changing storage',
+      async (_name, json) => {
+        await setSchemaVersion(2);
+        await storage.setItem(STORAGE_KEYS.cards, validExportData.data.cards);
+        await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
+        await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}`, { text: 'existing note' });
+        for (const [key, value] of Object.entries(validExportData.data.settings)) {
+          await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
+        }
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-02-01T00:00:00.000Z');
+        await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-02-02T00:00:00.000Z');
+        const before = await fakeBrowser.storage.local.get(null);
+
+        await expect.soft(prepareImportData(json)).rejects.toThrow();
+        expect.soft(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        await expect.soft(importData(json)).rejects.toThrow();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      }
+    );
 
     describe('prepareImportData', () => {
       it('normalizes legacy settings without mutating storage', async () => {
