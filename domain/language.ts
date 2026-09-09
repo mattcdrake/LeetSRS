@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const SUPPORTED_LANGUAGES = {
   de: true,
   en: true,
@@ -6,20 +8,22 @@ export const SUPPORTED_LANGUAGES = {
   'zh-CN': true,
 } as const;
 
-export type Language = keyof typeof SUPPORTED_LANGUAGES;
+export const languageSchema = z.enum(Object.keys(SUPPORTED_LANGUAGES) as Array<keyof typeof SUPPORTED_LANGUAGES>, {
+  error: (issue) =>
+    `Unsupported language: ${String(issue.input)}. Supported languages: ${Object.keys(SUPPORTED_LANGUAGES).join(', ')}`,
+});
+export type Language = z.infer<typeof languageSchema>;
 
 const DEFAULT_LANGUAGE: Language = 'en';
 
 export function selectLanguage(browserLanguages: readonly string[]): Language {
   for (const browserLanguage of browserLanguages) {
-    if (browserLanguage in SUPPORTED_LANGUAGES) {
-      return browserLanguage as Language;
-    }
+    const exactMatch = getSupportedLanguage(browserLanguage);
+    if (exactMatch) return exactMatch;
 
     const baseLanguage = browserLanguage.split('-')[0];
-    if (baseLanguage in SUPPORTED_LANGUAGES) {
-      return baseLanguage as Language;
-    }
+    const baseMatch = getSupportedLanguage(baseLanguage);
+    if (baseMatch) return baseMatch;
     if (baseLanguage === 'zh') {
       return 'zh-CN';
     }
@@ -29,5 +33,5 @@ export function selectLanguage(browserLanguages: readonly string[]): Language {
 }
 
 export function getSupportedLanguage(language: unknown): Language | undefined {
-  return typeof language === 'string' && language in SUPPORTED_LANGUAGES ? (language as Language) : undefined;
+  return languageSchema.safeParse(language).data;
 }

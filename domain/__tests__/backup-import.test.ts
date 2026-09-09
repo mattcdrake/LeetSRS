@@ -89,6 +89,19 @@ describe('backup import policy', () => {
     ).toEqual(settings);
   });
 
+  it.each(['toString', 'constructor', '__proto__'])('rejects imported prototype language %s', (language) => {
+    expect(() => normalizeImportData({ ...payload, data: { ...payload.data, settings: { language } } }, 2)).toThrow(
+      `Unsupported language: ${language}. Supported languages: de, en, hi, pl, zh-CN`
+    );
+  });
+
+  it('omits undefined settings and inherited settings on import', () => {
+    const settings = Object.assign(Object.create({ badgeEnabled: false }), { theme: undefined, dayStartHour: 5 });
+    expect(normalizeImportData({ ...payload, data: { ...payload.data, settings } }, 2).settings).toEqual({
+      dayStartHour: 5,
+    });
+  });
+
   it.each([true, false])('maps legacy autoClearLeetcode %s to the current setting', (value) => {
     expect(
       normalizeImportData({ ...payload, data: { ...payload.data, settings: { autoClearLeetcode: value } } }, 2).settings

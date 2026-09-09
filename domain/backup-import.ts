@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Card } from './cards';
-import { SETTING_KEYS, type Settings, validateSettings } from './settings';
+import { SETTING_KEYS, type Settings, settingsUpdateSchema } from './settings';
 import type { DailyStats } from './statistics';
 
 const objectMapSchema = z.record(z.string(), z.unknown());
@@ -52,8 +52,7 @@ function getImportedSettings(settings: unknown): Partial<Settings> {
   if (resetEditorOnEveryProblem !== undefined) {
     importedSettings.resetEditorOnEveryProblem = resetEditorOnEveryProblem;
   }
-  validateSettings(importedSettings as Partial<Settings>);
-  return importedSettings as Partial<Settings>;
+  return settingsUpdateSchema.parse(importedSettings);
 }
 
 export function normalizeImportData(data: BackupImportEnvelope, currentSchema: number) {

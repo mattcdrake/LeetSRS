@@ -33,17 +33,19 @@ describe('stored translations', () => {
   });
 
   describe('stored language', () => {
-    it('should use the current stored language', async () => {
-      await storage.setItem(STORAGE_KEYS.language, 'en');
-      const t = await getStoredTranslations();
-      expect(t).toBe(translations.en);
+    it.each(['de', 'en', 'hi', 'pl', 'zh-CN'] as const)('uses stored language %s', async (language) => {
+      await storage.setItem(STORAGE_KEYS.language, language);
+      expect(await getStoredTranslations()).toBe(translations[language]);
     });
 
-    it('should fall back to default language for invalid storage values', async () => {
-      // Simulate corrupted/invalid language in storage
-      await storage.setItem(STORAGE_KEYS.language, 'xx-INVALID');
-      expect(await getStoredTranslations()).toBe(translations.en);
-    });
+    it.each(['xx-INVALID', 'toString', 'constructor', '__proto__', 42, null])(
+      'falls back to browser language for %s',
+      async (language) => {
+        vi.stubGlobal('navigator', { languages: ['pl'] });
+        await storage.setItem(STORAGE_KEYS.language, language);
+        expect(await getStoredTranslations()).toBe(translations.pl);
+      }
+    );
   });
 
   it('reads only language and detects fallback after the storage read resolves', async () => {
@@ -102,6 +104,8 @@ describe('stored translations', () => {
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.en));
       await storage.setItem(STORAGE_KEYS.language, 'pl');
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.pl));
+      await storage.setItem(STORAGE_KEYS.language, 'toString');
+      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
       await storage.removeItem(STORAGE_KEYS.language);
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
       expect(getItem).toHaveBeenCalledOnce();
