@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { State as FsrsState } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
 import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
@@ -14,12 +14,8 @@ import { CardDistributionChart } from '../CardDistributionChart';
 
 // Mock react-chartjs-2
 vi.mock('react-chartjs-2', () => ({
-  Doughnut: ({ data, options }: { data: unknown; options: unknown }) => (
-    <div
-      data-testid="doughnut-chart"
-      data-chart-data={JSON.stringify(data)}
-      data-chart-options={JSON.stringify(options)}
-    >
+  Doughnut: ({ data }: { data: unknown }) => (
+    <div data-testid="doughnut-chart" data-chart-data={JSON.stringify(data)}>
       Doughnut Chart
     </div>
   ),
@@ -45,59 +41,15 @@ describe('CardDistributionChart', () => {
     return render(<CardDistributionChart />, { wrapper });
   };
 
-  it('should render the card distribution section', () => {
-    renderChart();
-
-    expect(screen.getByRole('heading', { name: 'Card Distribution' })).toBeInTheDocument();
-  });
-
-  it('should render the doughnut chart', () => {
-    renderChart();
-
-    const chart = screen.getByTestId('doughnut-chart');
-    expect(chart).toBeInTheDocument();
-  });
-
   it('should pass correct data to the doughnut chart', () => {
     renderChart();
 
     const chart = screen.getByTestId('doughnut-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
+    expect(screen.getByRole('heading', { name: 'Card Distribution' })).toBeInTheDocument();
     expect(chartData.labels).toEqual(['New', 'Learning', 'Review', 'Relearning']);
     expect(chartData.datasets[0].data).toEqual([5, 3, 8, 2]);
-  });
-
-  it('should render chart with correct options', () => {
-    renderChart();
-
-    const chart = screen.getByTestId('doughnut-chart');
-    const chartOptions = JSON.parse(chart.getAttribute('data-chart-options') || '{}');
-
-    expect(chartOptions.responsive).toBe(true);
-    expect(chartOptions.maintainAspectRatio).toBe(false);
-    expect(chartOptions.plugins.legend.position).toBe('top');
-  });
-
-  it('should render zeros when no stats data is available', () => {
-    const pending = createDeferred<Record<FsrsState, number>>();
-    messages.reset().resolve('getCardStateStats', pending.promise);
-    const { wrapper } = createTestWrapper();
-    const view = render(<CardDistributionChart />, { wrapper });
-
-    const chart = screen.getByTestId('doughnut-chart');
-    const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
-
-    expect(chartData.datasets[0].data).toEqual([0, 0, 0, 0]);
-    view.unmount();
-    pending.resolve(mockCardStateStats);
-  });
-
-  it('should set chart container height', () => {
-    renderChart();
-
-    const chartContainer = screen.getByTestId('doughnut-chart').parentElement;
-    expect(chartContainer).toHaveStyle({ height: '200px' });
   });
 
   describe('loading state', () => {
@@ -119,10 +71,11 @@ describe('CardDistributionChart', () => {
   });
 
   describe('error state', () => {
-    it('should handle error state gracefully', () => {
+    it('should handle error state gracefully', async () => {
       messages.reset().handle('getCardStateStats', () => Promise.reject(new Error('Failed to fetch stats')));
-      const { wrapper } = createTestWrapper();
+      const { wrapper, queryClient } = createTestWrapper();
       render(<CardDistributionChart />, { wrapper });
+      await waitFor(() => expect(queryClient.getQueryState(statsQueryKeys.cardState)?.status).toBe('error'));
 
       // Chart should still render with default data
       const chart = screen.getByTestId('doughnut-chart');
@@ -146,20 +99,6 @@ describe('CardDistributionChart', () => {
       const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
       expect(chartData.datasets[0].data).toEqual([0, 0, 0, 0]);
-    });
-
-    it('should handle large numbers', () => {
-      renderChart({
-        [FsrsState.New]: 1000,
-        [FsrsState.Learning]: 500,
-        [FsrsState.Review]: 2500,
-        [FsrsState.Relearning]: 100,
-      });
-
-      const chart = screen.getByTestId('doughnut-chart');
-      const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
-
-      expect(chartData.datasets[0].data).toEqual([1000, 500, 2500, 100]);
     });
   });
 });

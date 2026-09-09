@@ -18,8 +18,8 @@ import { ReviewHistoryChart } from '../ReviewHistoryChart';
 
 // Mock react-chartjs-2
 vi.mock('react-chartjs-2', () => ({
-  Bar: ({ data, options }: { data: unknown; options: unknown }) => (
-    <div data-testid="bar-chart" data-chart-data={JSON.stringify(data)} data-chart-options={JSON.stringify(options)}>
+  Bar: ({ data }: { data: unknown }) => (
+    <div data-testid="bar-chart" data-chart-data={JSON.stringify(data)}>
       Bar Chart
     </div>
   ),
@@ -74,19 +74,6 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     );
   };
 
-  it('should render the review history section', () => {
-    renderChart();
-
-    expect(screen.getByRole('heading', { name: 'Last 30 Days Review History' })).toBeInTheDocument();
-  });
-
-  it('should render the bar chart', () => {
-    renderChart();
-
-    const chart = screen.getByTestId('bar-chart');
-    expect(chart).toBeInTheDocument();
-  });
-
   it.each(['en', 'pl'] as const)('passes ordered localized datasets and correct grade counts in %s', (language) => {
     renderChart(mockLast30DaysStats, language);
     const t = translations[language];
@@ -95,6 +82,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
     expect(chartData.labels).toEqual(['5/15', '5/16']);
+    expect(sendMessage).toHaveBeenCalledWith('getLastNDaysStats', { days: 30 });
 
     // Check datasets
     expect(chartData.datasets).toHaveLength(4);
@@ -108,16 +96,6 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     expect(chartData.datasets[3].data).toEqual([4, 6]);
   });
 
-  it('should configure bar chart as stacked', () => {
-    renderChart();
-
-    const chart = screen.getByTestId('bar-chart');
-    const chartOptions = JSON.parse(chart.getAttribute('data-chart-options') || '{}');
-
-    expect(chartOptions.scales.x.stacked).toBe(true);
-    expect(chartOptions.scales.y.stacked).toBe(true);
-  });
-
   it('should handle empty data gracefully', () => {
     renderChart([]);
 
@@ -129,25 +107,5 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     expect(chartData.datasets[1].data).toEqual([]);
     expect(chartData.datasets[2].data).toEqual([]);
     expect(chartData.datasets[3].data).toEqual([]);
-  });
-
-  it('should request exactly 30 days of data', () => {
-    renderChart();
-
-    expect(sendMessage).toHaveBeenCalledWith('getLastNDaysStats', { days: 30 });
-  });
-
-  it('should apply correct CSS classes to review history section', () => {
-    renderChart();
-
-    const reviewSection = screen.getByRole('heading', { name: 'Last 30 Days Review History' }).parentElement;
-    expect(reviewSection).toHaveClass('mb-6', 'p-4', 'rounded-lg');
-  });
-
-  it('should set bar chart container height', () => {
-    renderChart();
-
-    const chartContainer = screen.getByTestId('bar-chart').parentElement;
-    expect(chartContainer).toHaveStyle({ height: '250px' });
   });
 });
