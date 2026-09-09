@@ -5,7 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
 import type { StoredCard } from '@/infrastructure/storage/cards/codec';
-import { migrations, runMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases } from '@/test/utils/backup-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
@@ -127,7 +127,7 @@ describe('import-export', () => {
     });
 
     it('should export schema version 2 after migrations run', async () => {
-      await runMigrations(migrations);
+      await runStartupMigrations();
       const parsed = JSON.parse(await exportData());
       expect(parsed.schemaVersion).toBe(2);
     });
@@ -192,6 +192,106 @@ describe('import-export', () => {
         }),
       },
     };
+
+    describe('schema migrations', () => {
+      const { domain: _domain, ...legacyCard } = validExportData.data.cards['two-sum'];
+      const legacyCards = {
+        'two-sum': {
+          ...legacyCard,
+          paused: true,
+          fsrs: { ...legacyCard.fsrs, last_review: 1704067200000, scheduled_days: 7, reps: 4 },
+          legacyMetadata: { source: 'manual' },
+        },
+        'add-two-numbers': {
+          ...legacyCard,
+          id: 'cn-card-id',
+          slug: 'add-two-numbers',
+          name: 'Add Two Numbers',
+          leetcodeId: '2',
+          domain: 'leetcode.cn',
+        },
+      };
+      const currentCards = {
+        ...legacyCards,
+        'two-sum': { ...legacyCards['two-sum'], domain: 'leetcode.com' },
+      };
+      const notes = { ...validExportData.data.notes, 'cn-card-id': { text: 'Keep the carry' } };
+      const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
+
+      it.each([0, undefined, 2])(
+        'prepares and imports schema %s cards identically to startup migration',
+        async (schemaVersion) => {
+          await storage.setItem(STORAGE_KEYS.cards, legacyCards);
+          await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
+          for (const [id, note] of Object.entries(notes)) {
+            await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
+          }
+          await storage.setItem(STORAGE_KEYS.theme, 'light');
+          await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+          await runStartupMigrations();
+          const startupCards = await storage.getItem(STORAGE_KEYS.cards);
+          expect(startupCards).toEqual(currentCards);
+          const before = await fakeBrowser.storage.local.get(null);
+          const json = JSON.stringify({
+            ...validExportData,
+            schemaVersion,
+            dataUpdatedAt,
+            data: {
+              ...validExportData.data,
+              cards: schemaVersion === 2 ? currentCards : legacyCards,
+              notes,
+            },
+          });
+
+          const prepared = await prepareImportData(json);
+
+          expect.soft(prepared.cards).toEqual(startupCards);
+          expect(prepared.notes).toEqual(notes);
+          expect(prepared.stats).toEqual(validExportData.data.stats);
+          expect(prepared.settings).toEqual(validExportData.data.settings);
+          expect(prepared.dataUpdatedAt).toBe(dataUpdatedAt);
+          expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+
+          await importData(json);
+
+          expect.soft(await storage.getItem(STORAGE_KEYS.cards)).toEqual(startupCards);
+          expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
+          for (const [id, note] of Object.entries(notes)) {
+            expect(await storage.getItem(`${STORAGE_KEYS.notes}:${id}`)).toEqual(note);
+          }
+          expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
+          expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+          expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
+          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+        }
+      );
+
+      it('leaves storage untouched when preparing a legacy import fails', async () => {
+        await setSchemaVersion(2);
+        await storage.setItem(STORAGE_KEYS.cards, currentCards);
+        await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
+        for (const [id, note] of Object.entries(notes)) {
+          await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
+        }
+        await storage.setItem(STORAGE_KEYS.theme, 'dark');
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, dataUpdatedAt);
+        await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, dataUpdatedAt);
+        const before = await fakeBrowser.storage.local.get(null);
+        const json = JSON.stringify({
+          ...validExportData,
+          data: { ...validExportData.data, cards: legacyCards, notes, settings: { theme: 'invalid' } },
+        });
+
+        await expect(prepareImportData(json)).rejects.toThrow('Theme must be');
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        await expect(importData(json)).rejects.toThrow('Theme must be');
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      });
+    });
 
     it.each(malformedBackupCases(validExportData))(
       'rejects %s during preparation and import without changing storage',

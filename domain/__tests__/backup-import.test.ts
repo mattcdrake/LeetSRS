@@ -36,6 +36,7 @@ describe('backup import policy', () => {
     );
     expect(prepared).toEqual({
       ...payload.data,
+      schemaVersion: 0,
       settings: { resetEditorOnEveryProblem: false, unknownSetting: 'retained' },
       dataUpdatedAt: incomingTime,
     });
@@ -53,6 +54,7 @@ describe('backup import policy', () => {
     const data = JSON.parse(JSON.stringify({ exportDate: incomingTime, data: { cards: {}, stats: {}, notes: {} } }));
     validateImportStructure(data);
     expect(normalizeImportData(data, 2)).toEqual({
+      schemaVersion: 0,
       cards: {},
       stats: {},
       notes: {},

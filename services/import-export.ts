@@ -8,7 +8,7 @@ import {
   writeSnapshotCards,
   writeSnapshotNotes,
 } from '@/infrastructure/storage/backup';
-import { getCurrentSchemaVersion } from '@/infrastructure/storage/migrations';
+import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
@@ -56,7 +56,8 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
 
   validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
-  const preparedData = normalizeImportData(data, currentSchema);
+  const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
+  const preparedData = migrateBackupData(normalizedData, schemaVersion);
 
   return {
     ...preparedData,

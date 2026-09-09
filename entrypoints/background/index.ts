@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
-import { migrations, runMigrations } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations } from '@/infrastructure/storage/migrations';
 import { getReviewQueue } from '@/services/cards';
 import { getGistDestinationConfig } from '@/services/gist-setup';
 import { hasGitHubCredentials } from '@/services/github-auth';
@@ -24,9 +24,9 @@ async function updateBadge() {
 }
 
 export default defineBackground(() => {
-  // Initialize async and track completion so message handlers can wait
+  // Keep message and alarm handlers from accessing storage while startup migrations are running.
   const readyPromise = (async () => {
-    await runMigrations(migrations).catch((error) => {
+    await runStartupMigrations().catch((error) => {
       console.error('Failed to run migrations:', error);
     });
 

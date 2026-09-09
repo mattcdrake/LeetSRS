@@ -15,7 +15,7 @@ const payload = {
   exportDate: incomingTime,
   dataUpdatedAt: incomingTime,
   data: {
-    cards: { imported: { id: 'new', unknownField: 'retained' } },
+    cards: { imported: { id: 'new', domain: 'leetcode.com', unknownField: 'retained' } },
     stats: { arbitrary: { unknownField: 42 } },
     notes: { new: { text: 'new note', unknownField: true } },
     settings: { theme: 'dark' },

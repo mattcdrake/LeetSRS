@@ -4,7 +4,7 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { onMessage } from '@/infrastructure/browser/messages';
-import { runMigrations } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
@@ -18,7 +18,7 @@ import { messages } from '../message-handlers';
 
 vi.mock('octokit', () => ({ Octokit: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', () => ({ onMessage: vi.fn() }));
-vi.mock('@/infrastructure/storage/migrations', () => ({ migrations: [], runMigrations: vi.fn() }));
+vi.mock('@/infrastructure/storage/migrations', () => ({ runStartupMigrations: vi.fn() }));
 vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
 vi.mock('@/services/settings', () => ({ getSettings: vi.fn(), updateSettings: vi.fn() }));
 
@@ -34,7 +34,7 @@ describe('background sync alarm', () => {
   beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
-    vi.mocked(runMigrations).mockResolvedValue(undefined);
+    vi.mocked(runStartupMigrations).mockResolvedValue(undefined);
     vi.mocked(getSettings).mockResolvedValue(buildSettings());
     vi.spyOn(cards, 'getReviewQueue').mockResolvedValue([]);
     vi.mocked(triggerGistSync).mockResolvedValue({ success: true, action: 'no-change', timestamp: 'now' });
@@ -76,7 +76,7 @@ describe('background sync alarm', () => {
 
   it('registers synchronously but waits for startup before checking readiness', async () => {
     const migrations = createDeferred<void>();
-    vi.mocked(runMigrations).mockReturnValue(migrations.promise);
+    vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
     const credentials = vi.spyOn(auth, 'hasGitHubCredentials');
     const destination = vi.spyOn(setup, 'getGistDestinationConfig');
     const fireAlarm = startBackground();

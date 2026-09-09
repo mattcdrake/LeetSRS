@@ -70,6 +70,7 @@ export function normalizeImportData(data: BackupImportEnvelope, currentSchema: n
   if (!isObjectMap(data.data.notes)) throw new Error('Invalid notes data');
 
   return {
+    schemaVersion: importedSchema,
     cards: data.data.cards,
     stats: data.data.stats,
     notes: data.data.notes,
