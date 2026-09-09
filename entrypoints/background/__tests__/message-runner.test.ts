@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ZodError } from 'zod';
+import { messagePayloadSchemas } from '@/infrastructure/browser/messages';
 import { createDeferred } from '@/test/utils/deferred';
 import type { BackgroundMessageRegistry } from '../message-runner';
 import { createBackgroundMessageRunner } from '../message-runner';
@@ -17,10 +19,12 @@ describe('background message runner', () => {
     });
     const readHandler = vi.fn(() => []);
     const read = {
+      schema: messagePayloadSchemas.getAllCards,
       kind: 'read',
       handler: readHandler,
     } satisfies BackgroundMessageRegistry['getAllCards'];
     const write = {
+      schema: messagePayloadSchemas.deleteNote,
       kind: 'write',
       syncTrackingOwner: 'handler',
       refreshBadge: false,
@@ -59,6 +63,7 @@ describe('background message runner', () => {
       },
     });
     const write = {
+      schema: messagePayloadSchemas.deleteNote,
       kind: 'write',
       syncTrackingOwner: 'executor',
       refreshBadge: true,
@@ -73,12 +78,13 @@ describe('background message runner', () => {
     } satisfies BackgroundMessageRegistry['deleteNote'];
 
     const first = runner.execute(write, { cardId: 'first' });
+    const rejected = expect(runner.execute(write, { cardId: '' })).rejects.toBeInstanceOf(ZodError);
     const second = runner.execute(write, { cardId: 'second' });
     await firstStarted.promise;
     expect(events).toEqual(['first:start']);
 
     releaseFirst.resolve();
-    await Promise.all([first, second]);
+    await Promise.all([first, rejected, second]);
     expect(events).toEqual([
       'first:start',
       'first:end',
@@ -101,6 +107,7 @@ describe('background message runner', () => {
     });
     const failure = new Error('write failed');
     const failingWrite = {
+      schema: messagePayloadSchemas.resetAllData,
       kind: 'write',
       syncTrackingOwner: 'executor',
       refreshBadge: true,
@@ -110,6 +117,7 @@ describe('background message runner', () => {
     } satisfies BackgroundMessageRegistry['resetAllData'];
     const nextHandler = vi.fn(async () => {});
     const nextWrite = {
+      schema: messagePayloadSchemas.resetAllData,
       kind: 'write',
       syncTrackingOwner: 'none',
       refreshBadge: false,
@@ -134,6 +142,7 @@ describe('background message runner', () => {
     });
     const handler = vi.fn(async () => {});
     const write = {
+      schema: messagePayloadSchemas.resetAllData,
       kind: 'write',
       syncTrackingOwner: 'executor',
       refreshBadge: false,

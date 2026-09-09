@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
-import { onMessage } from '@/infrastructure/browser/messages';
+import { ZodError } from 'zod';
+import { type MessageData, type MessageName, onMessage } from '@/infrastructure/browser/messages';
 import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
 import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { messages, registerBackgroundMessages } from '../message-handlers';
 import type { BackgroundMessageRegistry } from '../message-runner';
 
-vi.mock('@/infrastructure/browser/messages', () => ({ onMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
+  onMessage: vi.fn(),
+}));
 vi.mock('@/services/gist-setup', () => ({
   createNewGist: vi.fn(),
   getGistSyncConfig: vi.fn(),
@@ -142,4 +147,51 @@ describe('background message registration', () => {
     await Promise.all([pendingMessage, pendingDirect]);
     expect(events).toEqual(['message', 'mark', 'direct', 'mark']);
   });
+});
+
+const problem = buildProblem();
+const payloadCases: [MessageName, Record<string, unknown>, unknown][] = [
+  ['addCard', { problem }, { problem: { ...problem, difficulty: 'Impossible' } }],
+  ['removeCard', { slug: problem.slug }, { slug: '' }],
+  ['delayCard', { slug: problem.slug, days: 1 }, { slug: problem.slug, days: 0.5 }],
+  ['setPauseStatus', { slug: problem.slug, paused: false }, { slug: problem.slug, paused: 'false' }],
+  ['rateCard', { input: { ...problem, rating: 4 } }, { input: { ...problem, rating: 0 } }],
+  ['getNote', { cardId: 'card' }, { cardId: '' }],
+  ['saveNote', { cardId: 'card', text: 'a'.repeat(500) }, { cardId: 'card', text: 'a'.repeat(501) }],
+  ['deleteNote', { cardId: 'card' }, { cardId: 42 }],
+  ['updateSettings', { changes: { badgeEnabled: false } }, { changes: { language: 'constructor' } }],
+  ['shouldResetEditor', { slug: problem.slug, domain: 'leetcode.cn' }, { slug: problem.slug, domain: 'example.com' }],
+  ['getLastNDaysStats', { days: 0 }, { days: -1 }],
+  ['getNextNDaysStats', { days: 14 }, { days: '14' }],
+  ['importData', { jsonData: '{}' }, { jsonData: {} }],
+  ['setGistSyncConfig', { config: { gistId: null, pat: '', enabled: false } }, { config: { gistId: 42 } }],
+  ['validatePat', { pat: '' }, { pat: null }],
+  ['validateGistId', { gistId: '', pat: ' token ' }, { gistId: 'gist', pat: 42 }],
+];
+
+// Deliberately bypass the sender's TypeScript contract to exercise untrusted RPC input.
+function dispatchRaw(name: MessageName, data: unknown) {
+  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
+  if (!listener) throw new Error(`Missing listener for ${name}`);
+  return listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} });
+}
+
+describe('background payload validation', () => {
+  it.each(payloadCases)(
+    'validates %s before handlers and effects, then forwards parsed input',
+    async (name, data, invalid) => {
+      const handler = vi.spyOn(messages[name], 'handler').mockResolvedValue(undefined);
+      const markDataUpdated = vi.fn();
+      const refreshBadge = vi.fn();
+      registerBackgroundMessages(messages, { ready: Promise.resolve(), markDataUpdated, refreshBadge });
+
+      await expect(dispatchRaw(name, invalid)).rejects.toBeInstanceOf(ZodError);
+      expect(handler).not.toHaveBeenCalled();
+      expect(markDataUpdated).not.toHaveBeenCalled();
+      expect(refreshBadge).not.toHaveBeenCalled();
+
+      await dispatchRaw(name, { ...data, extra: true });
+      expect(handler).toHaveBeenCalledExactlyOnceWith(data);
+    }
+  );
 });

@@ -86,14 +86,18 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
 
     // Check datasets
     expect(chartData.datasets).toHaveLength(4);
-    expect(chartData.datasets[0].label).toBe(t.ratings.again);
+    expect(chartData.datasets[0].label).toBe(t.ratings[Rating.Again]);
     expect(chartData.datasets[0].data).toEqual([1, 2]);
-    expect(chartData.datasets[1].label).toBe(t.ratings.hard);
+    expect(chartData.datasets[0].backgroundColor).toBe('#c73e3e');
+    expect(chartData.datasets[1].label).toBe(t.ratings[Rating.Hard]);
     expect(chartData.datasets[1].data).toEqual([2, 3]);
-    expect(chartData.datasets[2].label).toBe(t.ratings.good);
+    expect(chartData.datasets[1].backgroundColor).toBe('#d97706');
+    expect(chartData.datasets[2].label).toBe(t.ratings[Rating.Good]);
     expect(chartData.datasets[2].data).toEqual([5, 7]);
-    expect(chartData.datasets[3].label).toBe(t.ratings.easy);
+    expect(chartData.datasets[2].backgroundColor).toBe('#4271c4');
+    expect(chartData.datasets[3].label).toBe(t.ratings[Rating.Easy]);
     expect(chartData.datasets[3].data).toEqual([4, 6]);
+    expect(chartData.datasets[3].backgroundColor).toBe('#3d9156');
   });
 
   it('should handle empty data gracefully', () => {

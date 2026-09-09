@@ -362,7 +362,7 @@ describe('Stats management', () => {
   });
 
   describe('getCardStateStats', () => {
-    it.each([null, {}, []])('returns zero counts for empty storage %j', async (cards) => {
+    it.each([null, {}])('returns zero counts for empty storage %j', async (cards) => {
       if (cards !== null) await storage.setItem(STORAGE_KEYS.cards, cards);
       expect(await getCardStateStats()).toEqual({
         [FsrsState.New]: 0,

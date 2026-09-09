@@ -2,7 +2,7 @@ import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import type { Card } from '@/domain/cards';
-import { RATINGS } from '@/domain/ratings';
+import { ratingSchema } from '@/domain/ratings';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { getLeetcodeProblemUrl } from '@/entrypoints/popup/leetcode';
 import { bounceButton } from '@/entrypoints/popup/styles';
@@ -44,15 +44,15 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
       </div>
 
       <div className="flex gap-2 justify-center">
-        {RATINGS.map(({ rating, key }) => (
+        {[...ratingSchema.values].map((rating) => (
           <Button
-            key={key}
+            key={rating}
             onPress={() => onRate(rating)}
             isDisabled={isProcessing}
-            style={{ backgroundColor: colors[key] }}
+            style={{ backgroundColor: colors[rating] }}
             className={`w-20 py-1.5 rounded text-sm text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {t.ratings[key]}
+            {t.ratings[rating]}
           </Button>
         ))}
       </div>

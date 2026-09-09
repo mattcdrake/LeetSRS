@@ -1,5 +1,18 @@
-import type { ProblemDescriptor } from '@/domain/cards';
+import { z } from 'zod';
+import { type ProblemDescriptor, problemDescriptorSchema } from '@/domain/cards';
 import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
+
+const questionResponseSchema = z.object({
+  data: z.object({
+    question: z.object({
+      questionFrontendId: problemDescriptorSchema.shape.leetcodeId,
+      title: problemDescriptorSchema.shape.name,
+      translatedTitle: problemDescriptorSchema.shape.name.or(z.literal('')).nullish(),
+      titleSlug: problemDescriptorSchema.shape.slug,
+      difficulty: problemDescriptorSchema.shape.difficulty,
+    }),
+  }),
+});
 
 export async function getCurrentProblem(): Promise<ProblemDescriptor | null> {
   const slug = getCurrentProblemSlug();
@@ -46,14 +59,13 @@ async function fetchProblemData(titleSlug: string): Promise<ProblemDescriptor | 
 
     if (!response.ok) return null;
 
-    const data = await response.json();
-    const question = data?.data?.question;
-    if (!question) return null;
+    const {
+      data: { question },
+    } = questionResponseSchema.parse(await response.json());
 
-    const useTranslated = domain === 'leetcode.cn' && question.translatedTitle;
     return {
-      difficulty: question.difficulty as ProblemDescriptor['difficulty'],
-      name: useTranslated ? question.translatedTitle : question.title,
+      difficulty: question.difficulty,
+      name: domain === 'leetcode.cn' ? question.translatedTitle || question.title : question.title,
       slug: question.titleSlug,
       leetcodeId: question.questionFrontendId,
       domain,

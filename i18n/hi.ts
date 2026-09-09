@@ -1,3 +1,4 @@
+import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
 
 const hi: Translations = {
@@ -43,10 +44,10 @@ const hi: Translations = {
   },
   // Rating buttons
   ratings: {
-    again: 'फिर से',
-    hard: 'हार्ड',
-    good: 'गुड',
-    easy: 'इज़ी',
+    [Rating.Again]: 'फिर से',
+    [Rating.Hard]: 'हार्ड',
+    [Rating.Good]: 'गुड',
+    [Rating.Easy]: 'इज़ी',
   },
   // Error boundary
   errors: {

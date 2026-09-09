@@ -1,9 +1,11 @@
 import { storage } from '#imports';
-import type { Settings } from '@/domain/settings';
+import { type Settings, settingsSchema } from '@/domain/settings';
 import { STORAGE_KEYS } from './storage-keys';
 
-export function readSetting(key: keyof Settings): Promise<unknown> {
-  return storage.getItem(STORAGE_KEYS[key]);
+export async function readSetting(key: keyof Settings): Promise<Settings[keyof Settings] | null> {
+  const value = await storage.getItem<unknown>(STORAGE_KEYS[key]);
+  const result = settingsSchema.shape[key].safeParse(value);
+  return result.success ? result.data : null;
 }
 
 export function writeSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {

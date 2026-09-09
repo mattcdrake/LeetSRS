@@ -6,6 +6,7 @@ import {
   calculateUpcomingStats,
   countCardStates,
   createDailyStats,
+  dailyStatsSchema,
   recordReview,
 } from '../statistics';
 
@@ -89,5 +90,30 @@ describe('statistics calculations', () => {
     const today = new Date('2024-03-15T10:00:00');
     expect(calculateHistoryStats({}, days, today, 4)).toEqual([]);
     expect(calculateUpcomingStats([], days, today, 4)).toEqual([]);
+  });
+});
+
+describe('daily statistics schema', () => {
+  it('accepts leap days and zero counts while stripping nested unknown fields', () => {
+    const stats = createDailyStats('2024-02-29', undefined);
+    expect(
+      dailyStatsSchema.parse({ ...stats, extra: true, gradeBreakdown: { ...stats.gradeBreakdown, extra: 1 } })
+    ).toEqual(stats);
+  });
+
+  it.each([
+    { date: '2023-02-29' },
+    { date: '2024-02-30' },
+    { date: '2024-2-01' },
+    { totalReviews: -1 },
+    { newCards: 0.5 },
+    { reviewedCards: Number.POSITIVE_INFINITY },
+    { streak: -1 },
+    { gradeBreakdown: { 1: 0, 2: 0, 3: 0 } },
+    { gradeBreakdown: { 1: 0, 2: 0, 3: -1, 4: 0 } },
+  ])('rejects malformed statistics %j', (overrides) => {
+    expect(dailyStatsSchema.safeParse({ ...createDailyStats('2024-01-01', undefined), ...overrides }).success).toBe(
+      false
+    );
   });
 });

@@ -1,8 +1,17 @@
-export interface GistSyncConfig {
-  pat: string;
-  gistId: string | null;
-  enabled: boolean;
-}
+import { z } from 'zod';
+
+export const gistSyncConfigSchema = z.object({
+  pat: z.string(),
+  gistId: z.string().nullable(),
+  enabled: z.boolean(),
+});
+export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
+
+export const gistSyncConfigUpdateSchema = gistSyncConfigSchema.partial();
+export type GistSyncConfigUpdate = z.infer<typeof gistSyncConfigUpdateSchema>;
+
+export const gistSyncBackupSchema = gistSyncConfigSchema.omit({ pat: true }).extend({ gistId: z.string() }).partial();
+export type GistSyncBackup = z.infer<typeof gistSyncBackupSchema>;
 
 export interface GistSyncStatus {
   lastSyncTime: string | null;

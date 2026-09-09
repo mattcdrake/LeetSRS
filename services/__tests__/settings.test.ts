@@ -32,6 +32,51 @@ describe('settings service', () => {
     expect((await getSettings()).language).toBe('pl');
   });
 
+  it('persists and exports all seven settings', async () => {
+    const settings = buildSettings({
+      maxNewCardsPerDay: 0,
+      dayStartHour: 0,
+      theme: 'dark',
+      resetEditorOnEveryProblem: true,
+      resetEditorOnDueReview: true,
+      badgeEnabled: false,
+      language: 'zh-CN',
+    });
+    await updateSettings(settings);
+    expect(await getSettings()).toEqual(settings);
+    expect(await exportSettings()).toEqual(settings);
+  });
+
+  it.each([
+    ['maxNewCardsPerDay', -1],
+    ['dayStartHour', 24],
+    ['theme', 'blue'],
+    ['resetEditorOnEveryProblem', 1],
+    ['resetEditorOnDueReview', 'true'],
+    ['badgeEnabled', 0],
+    ['language', 'toString'],
+    ['language', 'constructor'],
+    ['language', '__proto__'],
+  ] as const)('defaults and omits invalid stored %s: %s', async (key, value) => {
+    vi.stubGlobal('navigator', { languages: ['pl'] });
+    await storage.setItem(STORAGE_KEYS[key], value);
+    expect(await getSettings()).toEqual(buildSettings({ language: 'pl' }));
+    expect(await exportSettings()).toEqual({});
+    expect(await storage.getItem(STORAGE_KEYS[key])).toEqual(value);
+  });
+
+  it('ignores undefined, unknown, and inherited updates without writes or tracking', async () => {
+    await updateSettings({ theme: 'dark' });
+    const setItem = vi.spyOn(storage, 'setItem');
+    const changes = Object.assign(Object.create({ badgeEnabled: false }), { theme: undefined, unknown: 1 });
+    await updateSettings(changes);
+    expect(setItem).not.toHaveBeenCalled();
+    expect(await exportSettings()).toEqual({ theme: 'dark' });
+
+    await updateSettings({ theme: undefined, dayStartHour: 5 });
+    expect(await exportSettings()).toEqual({ theme: 'dark', dayStartHour: 5 });
+  });
+
   it('validates and persists partial changes', async () => {
     await updateSettings({ maxNewCardsPerDay: 8, theme: 'system' });
 
@@ -61,7 +106,9 @@ describe('settings service', () => {
     [{ badgeEnabled: 'yes' }, 'Badge enabled must be a boolean'],
     [{ language: 'fr' }, 'Unsupported language: fr'],
   ])('rejects invalid update %#', async (changes, error) => {
-    await expect(updateSettings(changes as Partial<Settings>)).rejects.toThrow(error as string);
+    await expect(updateSettings(changes as Partial<Settings>)).rejects.toMatchObject({
+      issues: expect.arrayContaining([expect.objectContaining({ message: expect.stringContaining(error as string) })]),
+    });
     expect(await exportSettings()).toEqual({});
   });
 

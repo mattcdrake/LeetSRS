@@ -1,31 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import { type Settings, validateSettings } from '../settings';
+import { buildSettings } from '@/test/utils/settings-mocks';
+import { SETTING_KEYS, settingsSchema, settingsUpdateSchema } from '../settings';
 
 describe('settings validation', () => {
-  it('reports the first invalid setting in policy order regardless of input order', () => {
-    expect(() => validateSettings({ dayStartHour: -1, maxNewCardsPerDay: -1 })).toThrow(
-      'Max new cards per day must be between 0 and 100'
-    );
+  it('parses all seven settings and strips unknown fields', () => {
+    const settings = buildSettings();
+    expect(settingsSchema.parse({ ...settings, unknown: 'ignored' })).toEqual(settings);
+    expect(settingsUpdateSchema.parse({ ...settings, unknown: 'ignored' })).toEqual(settings);
   });
 
-  it('validates explicit undefined but ignores inherited and unknown settings', () => {
-    expect(() => validateSettings({ theme: undefined })).toThrow('Theme must be "system", "light", or "dark"');
-    const changes = Object.create({ theme: 'invalid' }) as Partial<Settings>;
-    Object.assign(changes, { unknown: 'ignored' });
-    expect(() => validateSettings(changes)).not.toThrow();
+  it.each(SETTING_KEYS)('requires %s in full settings but treats undefined as omitted in updates', (key) => {
+    const settings = { ...buildSettings(), [key]: undefined };
+    expect(settingsSchema.safeParse(settings).success).toBe(false);
+    expect(settingsUpdateSchema.parse({ [key]: undefined })).toEqual({});
+  });
+
+  it('ignores inherited and unknown settings while retaining own settings', () => {
+    const changes = Object.create({ theme: 'invalid', badgeEnabled: false });
+    Object.defineProperty(changes, 'dayStartHour', { value: 5 });
+    Object.assign(changes, { maxNewCardsPerDay: 8, unknown: 'ignored' });
+    expect(settingsUpdateSchema.parse(changes)).toEqual({ maxNewCardsPerDay: 8, dayStartHour: 5 });
   });
 
   it.each([
     { maxNewCardsPerDay: 0, dayStartHour: 0 },
     { maxNewCardsPerDay: 100, dayStartHour: 23 },
   ])('accepts inclusive numeric boundaries %j', (changes) => {
-    expect(() => validateSettings(changes)).not.toThrow();
+    expect(settingsUpdateSchema.parse(changes)).toEqual(changes);
   });
 
-  it('preserves language validation and the full English error', () => {
-    expect(() => validateSettings({ language: 'toString' as Settings['language'] })).not.toThrow();
-    expect(() => validateSettings({ language: 'EN' as Settings['language'] })).toThrow(
-      'Unsupported language: EN. Supported languages: de, en, hi, pl, zh-CN'
-    );
+  it.each(['EN', 'toString', 'constructor', '__proto__'])(
+    'rejects unsupported language %s with the full error',
+    (language) => {
+      expect(() => settingsUpdateSchema.parse({ language })).toThrow(
+        `Unsupported language: ${language}. Supported languages: de, en, hi, pl, zh-CN`
+      );
+    }
+  );
+
+  it.each([null, [], 'settings'])('rejects non-object updates: %j', (changes) => {
+    expect(settingsUpdateSchema.safeParse(changes).success).toBe(false);
   });
 });

@@ -1,82 +1,105 @@
+// @vitest-environment happy-dom
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { getCurrentProblem } from '../problem-data';
 
-// @vitest-environment happy-dom
+const problem = buildProblem();
+const question = {
+  questionFrontendId: problem.leetcodeId,
+  title: problem.name,
+  titleSlug: problem.slug,
+  difficulty: problem.difficulty,
+};
 
 describe('getCurrentProblem', () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
+    vi.stubGlobal('fetch', vi.fn());
+    Object.defineProperty(window, 'location', {
+      value: { pathname: `/problems/${problem.slug}/`, hostname: 'leetcode.com' },
+      writable: true,
+    });
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   it('rejects when no problem slug exists', async () => {
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/home' },
-      writable: true,
-    });
+    window.location.pathname = '/home';
 
     await expect(getCurrentProblem()).rejects.toThrow('Expected a problem slug on the current page');
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('should fetch problem data successfully', async () => {
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
-      writable: true,
-    });
+  it.each([
+    ['leetcode.com', problem.name],
+    ['leetcode.cn', '两数之和'],
+  ])('fetches and validates a problem on %s', async (domain, name) => {
+    window.location.hostname = domain;
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({
+        data: { question: { ...question, translatedTitle: '两数之和', questionId: 'internal-id', extra: true } },
+        extensions: { extra: true },
+      })
+    );
 
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        data: {
-          question: {
-            questionId: '1',
-            questionFrontendId: '1',
-            title: 'Two Sum',
-            titleSlug: 'two-sum',
-            difficulty: 'Easy',
-          },
-        },
-      }),
-    } as Response);
-
-    const result = await getCurrentProblem();
-    expect(result).toEqual({
-      difficulty: 'Easy',
-      name: 'Two Sum',
-      slug: 'two-sum',
-      leetcodeId: '1',
-      domain: 'leetcode.com',
+    expect(await getCurrentProblem()).toEqual({ ...problem, domain, name });
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(`https://${domain}/graphql`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: expect.any(String),
     });
+    const request = vi.mocked(fetch).mock.calls[0][1];
+    expect(JSON.parse(String(request?.body))).toMatchObject({ variables: { titleSlug: problem.slug } });
   });
 
-  it('should handle fetch errors gracefully', async () => {
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
-      writable: true,
-    });
+  it.each([undefined, null, ''])(
+    'falls back to the original Chinese-site title when translatedTitle is %j',
+    async (translatedTitle) => {
+      window.location.hostname = 'leetcode.cn';
+      vi.mocked(fetch).mockResolvedValueOnce(Response.json({ data: { question: { ...question, translatedTitle } } }));
 
-    vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'));
+      expect(await getCurrentProblem()).toEqual({ ...problem, domain: 'leetcode.cn' });
+    }
+  );
 
-    const result = await getCurrentProblem();
-    expect(result).toBeNull();
+  it.each([
+    ['null root', null],
+    ['null data', { data: null }],
+    ['missing question', { data: {} }],
+    ['null question', { data: { question: null } }],
+    ['GraphQL error', { errors: [{ message: 'Question unavailable' }] }],
+  ])('returns null for %s', async (_name, response) => {
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(response));
+    expect(await getCurrentProblem()).toBeNull();
   });
 
-  it('should handle non-ok response', async () => {
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
-      writable: true,
-    });
+  it.each([
+    { field: 'questionFrontendId', value: undefined },
+    { field: 'title', value: null },
+    { field: 'titleSlug', value: '' },
+    { field: 'difficulty', value: 'easy' },
+    { field: 'translatedTitle', value: 42 },
+    { field: 'translatedTitle', value: ' ' },
+  ])('returns null for malformed $field: $value', async ({ field, value }) => {
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json({ data: { question: { ...question, [field]: value } } }));
+    expect(await getCurrentProblem()).toBeNull();
+  });
 
-    vi.mocked(global.fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-    } as Response);
+  it('handles fetch errors gracefully', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('Network error'));
+    expect(await getCurrentProblem()).toBeNull();
+  });
 
-    const result = await getCurrentProblem();
-    expect(result).toBeNull();
+  it('returns null for invalid JSON', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('invalid json'));
+    expect(await getCurrentProblem()).toBeNull();
+  });
+
+  it('handles non-ok responses', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }));
+    expect(await getCurrentProblem()).toBeNull();
   });
 });

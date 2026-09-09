@@ -48,8 +48,9 @@ describe('getSupportedLanguage', () => {
     expect(getSupportedLanguage(language)).toBeUndefined();
   });
 
-  it('preserves inherited dictionary property matching', () => {
-    expect(getSupportedLanguage('toString')).toBe('toString');
-    expect(selectLanguage(['toString'])).toBe('toString');
+  it.each(['toString', 'constructor', '__proto__'])('rejects prototype name %s', (language) => {
+    expect(getSupportedLanguage(language)).toBeUndefined();
+    expect(selectLanguage([language])).toBe('en');
+    expect(selectLanguage([`${language}-US`, 'pl'])).toBe('pl');
   });
 });

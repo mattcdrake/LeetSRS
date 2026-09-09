@@ -18,7 +18,10 @@ import background from '../index';
 import { messages } from '../message-handlers';
 
 vi.mock('octokit', () => ({ Octokit: vi.fn() }));
-vi.mock('@/infrastructure/browser/messages', () => ({ onMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
+  onMessage: vi.fn(),
+}));
 vi.mock('@/infrastructure/storage/migrations', () => ({ runStartupMigrations: vi.fn() }));
 vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
 vi.mock('@/services/settings', () => ({ getSettings: vi.fn(), updateSettings: vi.fn() }));

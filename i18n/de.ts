@@ -1,3 +1,4 @@
+import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
 
 const de: Translations = {
@@ -37,10 +38,10 @@ const de: Translations = {
     hard: 'Schwer',
   },
   ratings: {
-    again: 'Nochmal',
-    hard: 'Schwer',
-    good: 'Gut',
-    easy: 'Einfach',
+    [Rating.Again]: 'Nochmal',
+    [Rating.Hard]: 'Schwer',
+    [Rating.Good]: 'Gut',
+    [Rating.Easy]: 'Einfach',
   },
   errors: {
     somethingWentWrong: 'Etwas ist schiefgelaufen',

@@ -2,6 +2,7 @@ import { Octokit } from 'octokit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import type { GistSyncConfigUpdate } from '@/domain/gist-sync';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '../gist-setup';
 import * as auth from '../github-auth';
@@ -43,6 +44,24 @@ describe('gist-setup boundaries', () => {
     await setGistSyncConfig(config);
     expect(await getGistSyncConfig()).toEqual(config);
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+  });
+
+  it.each([
+    { pat: 'replacement', gistId: 42 },
+    { pat: 'replacement', enabled: 'yes' },
+  ])('rejects malformed configuration before any writes: %j', async (config) => {
+    const writes = vi.spyOn(storage, 'setItem');
+    await expect(setGistSyncConfig(config as unknown as GistSyncConfigUpdate)).rejects.toThrow();
+    expect(writes).not.toHaveBeenCalled();
+    expect(await getGistSyncConfig()).toEqual({ pat: '', gistId: null, enabled: false });
+  });
+
+  it('ignores undefined configuration fields', async () => {
+    await setGistSyncConfig({ pat: 'token', gistId: 'gist', enabled: true });
+    const writes = vi.spyOn(storage, 'setItem');
+    await setGistSyncConfig({ pat: undefined, gistId: undefined, enabled: undefined });
+    expect(writes).not.toHaveBeenCalled();
+    expect(await getGistSyncConfig()).toEqual({ pat: 'token', gistId: 'gist', enabled: true });
   });
 
   it.each(['', ' \t\n'])('rejects blank Gist ID %j without acquiring a client or requesting a Gist', async (gistId) => {

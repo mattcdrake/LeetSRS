@@ -2,9 +2,7 @@ import { State } from 'ts-fsrs';
 import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from './card-mocks';
 
-// Change one envelope field at a time in an otherwise valid backup. Sharing these
-// JSON inputs lets domain tests check rejection and service tests verify that the
-// same rejection happens before existing storage is changed.
+// Change one envelope field at a time to verify rejection before storage is changed.
 export function malformedBackupCases(payload: { data: object }): [string, string][] {
   return [
     ...(['cards', 'stats', 'notes'] as const).map((key): [string, string] => [
