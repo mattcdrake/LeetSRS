@@ -5,9 +5,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { type Grade, Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { Card } from '@/domain/cards';
+import { messages as backgroundMessages } from '@/entrypoints/background/message-handlers';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { saveCards } from '@/infrastructure/storage/cards';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import {
   cardQueryKeys,
@@ -182,6 +186,40 @@ describe('usePauseCardMutation', () => {
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
       expect(result.current.error?.message).toBe(errorMessage);
+    });
+  });
+});
+
+describe('card queries through JSON messaging and background handlers', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+    createMessageMock(vi.mocked(sendMessage))
+      .reset()
+      .handle('getAllCards', backgroundMessages.getAllCards.handler)
+      .handle('rateCard', backgroundMessages.rateCard.handler);
+  });
+
+  it.each([0, undefined])('preserves numeric dates and last_review=%s in query results', async (lastReview) => {
+    const card = createMockCard(State.Review, { createdAt: 0 });
+    card.fsrs.due = 0;
+    if (lastReview === undefined) delete card.fsrs.last_review;
+    else card.fsrs.last_review = lastReview;
+    await saveCards([card]);
+
+    const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toStrictEqual([card]);
+  });
+
+  it('returns numeric dates from scheduling through a mutation', async () => {
+    const { result } = renderHook(() => useRateCardMutation(), { wrapper: createTestWrapper().wrapper });
+
+    await act(async () => {
+      const { card } = await result.current.mutateAsync({ ...buildProblem(), rating: Rating.Good });
+      expect(card.createdAt).toEqual(expect.any(Number));
+      expect(card.fsrs.due).toEqual(expect.any(Number));
+      expect(card.fsrs.last_review).toEqual(expect.any(Number));
     });
   });
 });

@@ -8,19 +8,20 @@ type MessageHandler<TName extends MessageName> = (
 ) => MaybePromise<GetReturnType<ExtensionMessageMap[TName]>>;
 
 /**
- * Configures a mocked `sendMessage` as a typed protocol dispatcher.
+ * Configures a mocked `sendMessage` as a typed, JSON-serialized protocol dispatcher.
  *
  * Call `reset` in `beforeEach`. Every message used by a test must have an
  * explicit handler, so unexpected extension traffic fails the test.
  */
 export function createMessageMock(mock: MockedFunction<typeof sendMessage>) {
   const handlers = new Map<MessageName, (data: unknown) => unknown>();
+  const roundTrip = (value: unknown): unknown => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
 
   const install = () => {
     const dispatch = async (type: MessageName, data?: unknown) => {
       const handler = handlers.get(type);
       if (!handler) throw new Error(`Unexpected extension message: ${String(type)}`);
-      return handler(data);
+      return roundTrip(await handler(roundTrip(data)));
     };
 
     // The library exposes `sendMessage` as generic overloads. The dispatcher
