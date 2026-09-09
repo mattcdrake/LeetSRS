@@ -1,13 +1,14 @@
-import { createEmptyCard, Rating } from 'ts-fsrs';
+import { createEmptyCard, Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
-import type { StoredCard } from '@/infrastructure/storage/cards/codec';
+import { type StoredCard, serializeCard } from '@/infrastructure/storage/cards/codec';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import * as auth from '../github-auth';
 import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
@@ -486,7 +487,9 @@ describe('import-export', () => {
         const removePat = vi.spyOn(auth, 'removeGitHubPat');
         const writePat = vi.spyOn(auth, 'setGitHubPat');
         const oldCardUuid = 'old-card-uuid-1234';
-        await storage.setItem(STORAGE_KEYS.cards, { old: { id: oldCardUuid } });
+        await storage.setItem(STORAGE_KEYS.cards, {
+          old: serializeCard(createMockCard(State.New, { id: oldCardUuid, slug: 'old' })),
+        });
         await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
         await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
         const preparedData = await prepareImportData(
@@ -600,7 +603,9 @@ describe('import-export', () => {
     it('should clear existing data before importing', async () => {
       // Set up existing data
       const oldCardUuid = 'old-card-uuid-1234';
-      await storage.setItem(STORAGE_KEYS.cards, { 'old-slug': { id: oldCardUuid } });
+      await storage.setItem(STORAGE_KEYS.cards, {
+        'old-slug': serializeCard(createMockCard(State.New, { id: oldCardUuid, slug: 'old-slug' })),
+      });
       await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 10 } });
       await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
 
@@ -709,7 +714,9 @@ describe('import-export', () => {
 
     it('should handle empty data sections by clearing existing data', async () => {
       // Set up some existing data first
-      await storage.setItem(STORAGE_KEYS.cards, { 'existing-card': {} });
+      await storage.setItem(STORAGE_KEYS.cards, {
+        'existing-card': serializeCard(createMockCard(State.New, { slug: 'existing-card' })),
+      });
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });
 
       const emptyData = {
@@ -736,8 +743,8 @@ describe('import-export', () => {
       const uuid1 = 'c3d4e5f6-a7b8-9012-cdef-345678901234';
       const uuid2 = 'd4e5f6a7-b8c9-0123-defa-456789012345';
       const mockCards = {
-        'two-sum': { id: uuid1 },
-        'three-sum': { id: uuid2 },
+        'two-sum': serializeCard(createMockCard(State.New, { id: uuid1, slug: 'two-sum' })),
+        'three-sum': serializeCard(createMockCard(State.New, { id: uuid2, slug: 'three-sum' })),
       };
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });

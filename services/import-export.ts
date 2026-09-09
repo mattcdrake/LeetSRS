@@ -1,26 +1,21 @@
 import { normalizeImportData, validateImportRelationships, validateImportStructure } from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
-import {
-  readSnapshotCards,
-  readSnapshotNotes,
-  removeSnapshotCards,
-  removeSnapshotNotes,
-  validateBackupRecords,
-  writeSnapshotCards,
-  writeSnapshotNotes,
-} from '@/infrastructure/storage/backup';
+import { validateBackupRecords } from '@/infrastructure/storage/backup';
+import { deserializeCard, serializeCard } from '@/infrastructure/storage/cards/codec';
+import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards/store';
 import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
+import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const cardsPromise = readSnapshotCards().then((cards) => cards ?? {});
+  const cardsPromise = getAllCards();
   const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt, schemaVersion] = await Promise.all([
     cardsPromise,
     getStats(),
-    cardsPromise.then((cards) => readSnapshotNotes(cards)),
+    cardsPromise.then((cards) => getNotesForCards(cards)),
     exportSettings(),
     readSyncMetadata('gistId'),
     readSyncMetadata('gistSyncEnabled'),
@@ -33,7 +28,7 @@ export async function exportData(): Promise<string> {
     exportDate: new Date().toISOString(),
     dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
-      cards,
+      cards: Object.fromEntries(cards.map((card) => [card.slug, serializeCard(card)])),
       stats,
       notes,
       settings,
@@ -63,8 +58,9 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   validateImportRelationships(validRecords);
 
   return {
-    ...preparedData,
     ...validRecords,
+    settings: preparedData.settings,
+    gistSync: preparedData.gistSync,
     dataUpdatedAt: preparedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }
@@ -78,9 +74,11 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
     await setGitHubPat(existingPat);
   }
 
-  await writeSnapshotCards(preparedData.cards);
+  await saveCards(Object.values(preparedData.cards).map(deserializeCard));
   await saveStats(preparedData.stats);
-  await writeSnapshotNotes(preparedData.notes);
+  for (const [cardId, note] of Object.entries(preparedData.notes)) {
+    await saveNote(cardId, note.text);
+  }
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
@@ -101,8 +99,8 @@ export async function importData(jsonData: string): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-  const cards = await readSnapshotCards();
-  await removeSnapshotCards();
+  const cards = await getAllCards();
+  await removeCards();
   await removeStats();
   await resetSettings();
   await removeGitHubPat();
@@ -112,7 +110,7 @@ export async function resetAllData(): Promise<void> {
   await removeSyncMetadata('lastSyncDirection');
   await removeSyncMetadata('dataUpdatedAt');
 
-  if (cards) {
-    await removeSnapshotNotes(cards);
+  for (const card of cards) {
+    await deleteNote(card.id);
   }
 }

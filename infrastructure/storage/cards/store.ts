@@ -11,3 +11,7 @@ export async function getAllCards(): Promise<Card[]> {
 export async function saveCards(cards: Card[]): Promise<void> {
   await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, serializeCard(card)])));
 }
+
+export function removeCards(): Promise<void> {
+  return storage.removeItem(STORAGE_KEYS.cards);
+}

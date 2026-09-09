@@ -35,8 +35,8 @@ const payload = {
 };
 
 async function seedExistingData(pat = 'existing-pat') {
-  await storage.setItem(STORAGE_KEYS.cards, { old: { id: 'old' } });
-  await storage.setItem(STORAGE_KEYS.stats, { old: {} });
+  await storage.setItem(STORAGE_KEYS.cards, { old: { ...payload.data.cards.imported, id: 'old', slug: 'old' } });
+  await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': createDailyStats('2024-01-01', undefined) });
   await storage.setItem(oldNoteKey, { text: 'old note' });
   await storage.setItem(orphanNoteKey, { text: 'orphan note' });
   await storage.setItem(STORAGE_KEYS.githubPat, pat);
