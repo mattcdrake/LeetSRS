@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ZodError } from 'zod';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { normalizeImportData, validateImportRelationships, validateImportStructure } from '../backup-import';
@@ -130,17 +131,17 @@ describe('backup import policy', () => {
     });
   });
 
-  it.each([
-    ['missing export date', JSON.stringify({ data: {} }), 'Invalid export data structure'],
+  it.each<[string, string, string | typeof ZodError]>([
+    ['missing export date', JSON.stringify({ data: {} }), ZodError],
     [
       'newer schema',
       JSON.stringify({ ...payload, schemaVersion: 3 }),
       'Export is from a newer version (schema 3). Please update the extension.',
     ],
-    ...(['cards', 'stats', 'notes'] as const).map((key) => [
+    ...(['cards', 'stats', 'notes'] as const).map((key): [string, string, typeof ZodError] => [
       `null ${key}`,
       JSON.stringify({ ...payload, data: { ...payload.data, [key]: null } }),
-      `Invalid ${key} data`,
+      ZodError,
     ]),
     [
       'invalid legacy setting',
@@ -153,7 +154,7 @@ describe('backup import policy', () => {
       }),
       'Reset editor on every problem must be a boolean',
     ],
-  ])('preserves the error for %s', (_name, json, message) => {
+  ])('reports the error for %s', (_name, json, message) => {
     expect(() => {
       const data = JSON.parse(json);
       validateImportStructure(data);
@@ -162,6 +163,6 @@ describe('backup import policy', () => {
   });
 
   it('rejects a null JSON root with a structure error', () => {
-    expect(() => validateImportStructure(JSON.parse('null'))).toThrow('Invalid export data structure');
+    expect(() => validateImportStructure(JSON.parse('null'))).toThrow(ZodError);
   });
 });

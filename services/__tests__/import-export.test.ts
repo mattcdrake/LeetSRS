@@ -2,6 +2,7 @@ import { createEmptyCard, Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { ZodError } from 'zod';
 import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
@@ -22,6 +23,8 @@ describe('import-export', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
     fakeBrowser.reset();
   });
 
@@ -87,6 +90,13 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
       await storage.setItem(STORAGE_KEYS.language, mockSettings.language);
 
+      await storage.setItem(`${STORAGE_KEYS.notes}:orphan`, { text: 'orphan note' });
+      await storage.setItem(STORAGE_KEYS.githubPat, 'private-pat');
+      await storage.setItem(STORAGE_KEYS.gistId, 'exported-gist');
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, false);
+      await storage.setItem(STORAGE_KEYS.lastSyncTime, 'private-sync-time');
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
+
       const result = await exportData();
       const parsed = JSON.parse(result);
 
@@ -95,6 +105,10 @@ describe('import-export', () => {
       expect(parsed.data.stats).toEqual(mockStats);
       expect(parsed.data.notes).toEqual(mockNotes);
       expect(parsed.data.settings).toEqual(mockSettings);
+      expect(parsed.data.gistSync).toEqual({ gistId: 'exported-gist', enabled: false });
+      expect(parsed.dataUpdatedAt).toBe('2024-01-01T00:00:00.000Z');
+      expect(result).not.toContain('private-pat');
+      expect(result).not.toContain('private-sync-time');
 
       // Check cards separately since FSRS properties might differ
       expect(Object.keys(parsed.data.cards)).toEqual(['two-sum']);
@@ -110,7 +124,7 @@ describe('import-export', () => {
     });
 
     it('should handle empty data gracefully', async () => {
-      // Storage is already empty from beforeEach
+      await storage.setItem(STORAGE_KEYS.theme, 'invalid-theme');
       const result = await exportData();
       const parsed = JSON.parse(result);
 
@@ -270,6 +284,141 @@ describe('import-export', () => {
         }),
       },
     };
+
+    async function seedExistingData() {
+      await storage.setItem(STORAGE_KEYS.cards, {
+        old: createMockCard(State.New, { id: 'old', slug: 'old' }),
+      });
+      await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 7 } });
+      await storage.setItem(`${STORAGE_KEYS.notes}:old`, { text: 'old note' });
+      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+      await storage.setItem(STORAGE_KEYS.gistId, 'old-gist');
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-12-31T00:00:00.000Z');
+      await setSchemaVersion(2);
+    }
+
+    it('propagates schema-read failures without changing existing data', async () => {
+      await seedExistingData();
+      const failure = new Error('schema unavailable');
+      const read = storage.getItem.bind(storage);
+      vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
+        key === STORAGE_KEYS.schemaVersion ? Promise.reject(failure) : read(key, options)
+      );
+      const before = await fakeBrowser.storage.local.get(null);
+
+      await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
+      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    });
+
+    it.each(['2024-01-01T00:00:00.000Z', '2024-01-01T05:30:00+05:30', '2024-01-01', 'Mon, 01 Jan 2024 00:00:00 GMT'])(
+      'accepts and preserves the timestamp format %s',
+      async (timestamp) => {
+        await importData(JSON.stringify({ ...validExportData, exportDate: timestamp, dataUpdatedAt: timestamp }));
+        expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
+        expect(JSON.parse(await exportData()).dataUpdatedAt).toBe(timestamp);
+      }
+    );
+
+    it.each([undefined, {}, { enabled: false }, { gistId: 'incoming-gist' }])(
+      'imports omitted settings and optional Gist fields: %j',
+      async (gistSync) => {
+        await seedExistingData();
+        await storage.setItem(STORAGE_KEYS.theme, 'light');
+        await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
+        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await importData(
+          JSON.stringify({ ...validExportData, data: { ...validExportData.data, settings: undefined, gistSync } })
+        );
+        expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
+        expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
+        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe(gistSync?.gistId ?? null);
+        expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBe(gistSync?.enabled ?? null);
+        expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
+      }
+    );
+
+    it('replaces supported fields, strips unknown fields, and preserves the local PAT and schema', async () => {
+      await seedExistingData();
+      await storage.setItem(STORAGE_KEYS.theme, 'dark');
+      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
+
+      const card = validExportData.data.cards['two-sum'];
+      const stats = validExportData.data.stats['2024-01-01'];
+      await importData(
+        JSON.stringify({
+          ...validExportData,
+          dataUpdatedAt: '2024-01-01T00:00:00.000Z',
+          extra: true,
+          data: {
+            ...validExportData.data,
+            extra: true,
+            cards: { 'two-sum': { ...card, extra: true, fsrs: { ...card.fsrs, extra: true } } },
+            stats: {
+              '2024-01-01': { ...stats, extra: true, gradeBreakdown: { ...stats.gradeBreakdown, extra: true } },
+            },
+            notes: { [cardUuid]: { ...validExportData.data.notes[cardUuid], extra: true } },
+            settings: { ...validExportData.data.settings, extra: true },
+            gistSync: { gistId: 'incoming-gist', enabled: false, pat: 'untrusted-pat', extra: true },
+          },
+        })
+      );
+
+      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
+      expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${cardUuid}`)).toEqual(validExportData.data.notes[cardUuid]);
+      expect(await storage.getItem(`${STORAGE_KEYS.notes}:old`)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe(validExportData.data.settings.theme);
+      expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBe(
+        validExportData.data.settings.maxNewCardsPerDay
+      );
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-01T00:00:00.000Z');
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+      expect(JSON.parse(await exportData()).data).toEqual({
+        ...validExportData.data,
+        gistSync: { gistId: 'incoming-gist', enabled: false },
+      });
+    });
+
+    it('reports a failure to remove the previous dataset', async () => {
+      await seedExistingData();
+      const failure = new Error('reset failed');
+      const remove = storage.removeItem.bind(storage);
+      vi.spyOn(storage, 'removeItem').mockImplementation((key, options) =>
+        key === STORAGE_KEYS.cards ? Promise.reject(failure) : remove(key, options)
+      );
+
+      await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
+    });
+
+    it.each([
+      STORAGE_KEYS.cards,
+      STORAGE_KEYS.stats,
+      `${STORAGE_KEYS.notes}:${cardUuid}`,
+      STORAGE_KEYS.theme,
+      STORAGE_KEYS.dataUpdatedAt,
+    ])('reports a failed import write to %s', async (failedKey) => {
+      await seedExistingData();
+      const failure = new Error('import write failed');
+      const write = storage.setItem.bind(storage);
+      vi.spyOn(storage, 'setItem').mockImplementation((key, value) =>
+        key === failedKey ? Promise.reject(failure) : write(key, value)
+      );
+
+      await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
+    });
+
+    it.each([null, 'existing-pat'])('ignores imported credentials when the local PAT is %s', async (pat) => {
+      if (pat !== null) await storage.setItem(STORAGE_KEYS.githubPat, pat);
+      await importData(
+        JSON.stringify({
+          ...validExportData,
+          data: { ...validExportData.data, gistSync: { pat: 'untrusted-pat', githubPat: 'untrusted-legacy-pat' } },
+        })
+      );
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(pat || null);
+    });
 
     describe('schema migrations', () => {
       const { domain: _domain, ...legacyCard } = validExportData.data.cards['two-sum'];
@@ -438,9 +587,9 @@ describe('import-export', () => {
         expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(existingCards);
       });
 
-      it.each([
+      it.each<[string, string, string | typeof ZodError]>([
         ['invalid JSON', 'invalid json', 'Invalid JSON format'],
-        ['invalid structure', JSON.stringify({ data: {} }), 'Invalid export data structure'],
+        ['invalid structure', JSON.stringify({ data: {} }), ZodError],
         [
           'newer schema',
           JSON.stringify({ ...validExportData, schemaVersion: 999 }),
@@ -449,17 +598,17 @@ describe('import-export', () => {
         [
           'invalid cards',
           JSON.stringify({ ...validExportData, data: { ...validExportData.data, cards: null } }),
-          'Invalid cards data',
+          ZodError,
         ],
         [
           'invalid stats',
           JSON.stringify({ ...validExportData, data: { ...validExportData.data, stats: null } }),
-          'Invalid stats data',
+          ZodError,
         ],
         [
           'invalid notes',
           JSON.stringify({ ...validExportData, data: { ...validExportData.data, notes: null } }),
-          'Invalid notes data',
+          ZodError,
         ],
         [
           'invalid current setting',
@@ -581,24 +730,12 @@ describe('import-export', () => {
       expect(JSON.parse(await exportData()).data.settings.theme).toBe(theme);
     });
 
-    it('should preserve the imported data update timestamp', async () => {
-      const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
-      await importData(JSON.stringify({ ...validExportData, dataUpdatedAt }));
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
-    });
-
     it('should generate a data update timestamp when the import omits it', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-06T12:00:00.000Z'));
       await importData(JSON.stringify(validExportData));
 
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-    });
-
-    it('should preserve the existing GitHub PAT', async () => {
-      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
-
-      await importData(JSON.stringify(validExportData));
-
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2026-09-06T12:00:00.000Z');
     });
 
     it('should import the legacy autoClearLeetcode setting', async () => {
@@ -628,26 +765,6 @@ describe('import-export', () => {
       await importData(JSON.stringify(legacyData));
 
       expect(JSON.parse(await exportData()).data.settings).toEqual(validExportData.data.settings);
-    });
-
-    it('should clear existing data before importing', async () => {
-      // Set up existing data
-      const oldCardUuid = 'old-card-uuid-1234';
-      await storage.setItem(STORAGE_KEYS.cards, {
-        'old-slug': createMockCard(State.New, { id: oldCardUuid, slug: 'old-slug' }),
-      });
-      await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 10 } });
-      await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
-
-      const jsonData = JSON.stringify(validExportData);
-      await importData(jsonData);
-
-      // Verify old data was cleared
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const)).toBeNull();
-
-      // Verify only new data exists
-      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
-      expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
     });
 
     it('should leave existing data unchanged when imported settings are invalid', async () => {
@@ -682,7 +799,7 @@ describe('import-export', () => {
 
     it('should throw error for missing required fields', async () => {
       const invalidData = { data: {} };
-      await expect(importData(JSON.stringify(invalidData))).rejects.toThrow('Invalid export data structure');
+      await expect(importData(JSON.stringify(invalidData))).rejects.toThrow(ZodError);
     });
 
     it('should throw error for newer schema version', async () => {
@@ -726,7 +843,7 @@ describe('import-export', () => {
 
     it('should throw error for invalid data types', async () => {
       const invalidCards = { ...validExportData, data: { ...validExportData.data, cards: null } };
-      await expect(importData(JSON.stringify(invalidCards))).rejects.toThrow('Invalid cards data');
+      await expect(importData(JSON.stringify(invalidCards))).rejects.toThrow(ZodError);
     });
 
     it('accepts and ignores legacy monthly stats', async () => {
@@ -790,7 +907,15 @@ describe('import-export', () => {
       await storage.setItem(`${STORAGE_KEYS.notes}:${uuid1}` as const, { text: 'note 1' });
       await storage.setItem(`${STORAGE_KEYS.notes}:${uuid2}` as const, { text: 'note 2' });
 
+      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
+      await setSchemaVersion(2);
+
       await resetAllData();
+
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
 
       // Verify all data was removed
       expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();

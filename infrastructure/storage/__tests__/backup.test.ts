@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
-import { validateBackupRecords } from '../backup';
+import { exportDataSchema, validateBackupRecords } from '../backup';
 
 describe('backup record validation', () => {
   it.each([
@@ -38,6 +38,27 @@ describe('backup record validation', () => {
       cards: { 'two-sum': card },
       stats: { '2024-01-01': stats },
       notes: { 'valid-com': { text: '  Keep this note  ' } },
+    });
+    const metadata = { schemaVersion: 2, exportDate: '2024-01-01T00:00:00.000Z' };
+    expect(
+      exportDataSchema.parse({
+        ...metadata,
+        extra: true,
+        data: {
+          ...records,
+          settings: { theme: 'dark', extra: true },
+          gistSync: { enabled: false, pat: 'secret', githubPat: 'legacy-secret', extra: true },
+        },
+      })
+    ).toEqual({
+      ...metadata,
+      data: {
+        cards: { 'two-sum': card },
+        stats: { '2024-01-01': stats },
+        notes: { 'valid-com': { text: '  Keep this note  ' } },
+        settings: { theme: 'dark' },
+        gistSync: { enabled: false },
+      },
     });
   });
 

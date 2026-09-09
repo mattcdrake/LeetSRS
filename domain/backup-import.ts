@@ -18,26 +18,24 @@ const structureSchema = z.object({
   }),
 });
 type BackupImportEnvelope = z.infer<typeof structureSchema>;
-const schemaVersionSchema = z
-  .number()
-  .refine((value) => Number.isInteger(value) && value >= 0)
-  .optional();
+
+const schemaVersionSchema = z.number().refine((value) => Number.isInteger(value) && value >= 0);
 // Preserve legacy timestamp formats accepted by Date.parse.
 const timestampSchema = z.string().refine((value) => Number.isFinite(Date.parse(value)));
 
-function parseImportField<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
-  const result = schema.safeParse(value);
-  if (!result.success) throw new Error(message);
-  return result.data;
-}
+export const backupMetadataSchema = z.object({
+  schemaVersion: schemaVersionSchema,
+  exportDate: timestampSchema,
+  dataUpdatedAt: timestampSchema.optional(),
+});
 
 export function validateImportStructure(data: unknown): asserts data is BackupImportEnvelope {
-  parseImportField(structureSchema, data, 'Invalid export data structure');
+  structureSchema.parse(data);
 }
 
 function getImportedSettings(settings: unknown): Partial<Settings> {
   if (settings === undefined) return {};
-  const values = parseImportField(objectMapSchema, settings, 'Invalid settings data');
+  const values = objectMapSchema.parse(settings);
 
   const resetEditorOnEveryProblem =
     values.resetEditorOnEveryProblem !== undefined ? values.resetEditorOnEveryProblem : values.autoClearLeetcode;
@@ -51,20 +49,20 @@ function getImportedSettings(settings: unknown): Partial<Settings> {
 }
 
 export function normalizeImportData(data: BackupImportEnvelope, currentSchema: number) {
-  const importedSchema = parseImportField(schemaVersionSchema, data.schemaVersion, 'Invalid schema version') ?? 0;
+  const importedSchema = schemaVersionSchema.optional().parse(data.schemaVersion) ?? 0;
   if (importedSchema > currentSchema) {
     throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
   }
-  parseImportField(timestampSchema, data.exportDate, 'Invalid export timestamp');
-  const dataUpdatedAt = parseImportField(timestampSchema.optional(), data.dataUpdatedAt, 'Invalid update timestamp');
+  timestampSchema.parse(data.exportDate);
+  const dataUpdatedAt = timestampSchema.optional().parse(data.dataUpdatedAt);
 
   return {
     schemaVersion: importedSchema,
-    cards: parseImportField(objectMapSchema, data.data.cards, 'Invalid cards data'),
-    stats: parseImportField(objectMapSchema, data.data.stats, 'Invalid stats data'),
-    notes: parseImportField(objectMapSchema, data.data.notes, 'Invalid notes data'),
+    cards: objectMapSchema.parse(data.data.cards),
+    stats: objectMapSchema.parse(data.data.stats),
+    notes: objectMapSchema.parse(data.data.notes),
     settings: getImportedSettings(data.data.settings),
-    gistSync: parseImportField(gistSyncBackupSchema.optional(), data.data.gistSync, 'Invalid Gist sync configuration'),
+    gistSync: gistSyncBackupSchema.optional().parse(data.data.gistSync),
     dataUpdatedAt,
   };
 }
