@@ -61,15 +61,25 @@ explicit inputs.
 ## Storage, backup, and sync
 
 Cards are slug-keyed, notes reference card UUIDs, and stored card dates are numeric.
-Card mutations preserve unrelated legacy fields. Schema changes require a new sequential
-migration in `infrastructure/storage/migrations.ts`.
+Persistence guarantees supported card fields, FSRS schedules, notes, stats, settings,
+and Gist configuration. Unrecognized fields may be discarded; unrelated undecodable
+records need not survive mutations. Schema changes require a new sequential migration
+in `infrastructure/storage/migrations.ts`.
 
 Backup ownership is split deliberately:
 
-- Infrastructure owns payload conversion and snapshot persistence; snapshot helpers
-  do not mark local edits.
-- Domain owns import acceptance policy without depending on storage types.
-- Services orchestrate reset/restore, preserve the PAT, and apply imported timestamps.
+- Infrastructure owns card date codecs, stored-record validation, migrations, and
+  card/note/stat persistence. Persistence adapters do not mark local edits.
+- Domain owns import envelope/configuration validation, settings compatibility, and
+  relationship checks without depending on storage types.
+- Services prepare imports by migrating and validating before replacement, then
+  orchestrate reset/restore through the shared persistence adapters, preserve the
+  local PAT, and apply imported timestamps after settings writes.
+
+Imports discard extra record and configuration fields while validating supported
+fields and relationships. Legacy imports default missing card domains to
+`leetcode.com` and map `autoClearLeetcode` to `resetEditorOnEveryProblem`, with the
+current setting taking precedence.
 
 Sync, backup/reset, and local-edit tracking share
 `infrastructure/storage/sync-metadata.ts`. Gist sync uses whole-dataset
