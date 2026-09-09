@@ -2,8 +2,8 @@ import { FSRS, State as FsrsState, generatorParameters, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import type { Card } from '@/domain/cards';
 import type { DailyStats } from '@/domain/statistics';
-import { type StoredCard, serializeCard } from '@/infrastructure/storage/cards/codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -44,10 +44,7 @@ describe('card mutations', () => {
       const problem = buildProblem();
       const target = createMockCard(FsrsState.Review, { ...problem, paused: operation === 'resume' });
       const initial = operation === 'add' || operation === 'rate new' ? others : [...others, target];
-      await storage.setItem(
-        STORAGE_KEYS.cards,
-        Object.fromEntries(initial.map((card) => [card.slug, serializeCard(card)]))
-      );
+      await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(initial.map((card) => [card.slug, card])));
 
       switch (operation) {
         case 'add':
@@ -113,7 +110,7 @@ describe('addCard', () => {
     expect(card.fsrs.lapses).toBe(0);
 
     // Verify the card was actually stored using WXT storage
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
 
     expect(cards).toBeDefined();
     expect(requireDefined(cards)['two-sum']).toBeDefined();
@@ -155,7 +152,7 @@ describe('addCard', () => {
     expect(secondCard.domain).toBe('leetcode.com');
 
     // Verify only one card exists in storage
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
 
     expect(Object.keys(cards || {}).length).toBe(1);
   });
@@ -179,7 +176,7 @@ describe('addCard', () => {
     });
 
     // Verify all cards are stored
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
 
     expect(Object.keys(cards || {}).length).toBe(3);
 
@@ -214,7 +211,7 @@ describe('addCard', () => {
       domain: 'leetcode.com',
     });
 
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const storedCard = requireDefined(cards)[card.slug];
 
     expect(typeof storedCard.createdAt).toBe('number');
@@ -234,14 +231,14 @@ describe('removeCard', () => {
     await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
 
     // Verify it exists
-    let cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    let cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(requireDefined(cards)['two-sum']).toBeDefined();
 
     // Remove the card
     await removeCard('two-sum');
 
     // Verify it's removed
-    cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(requireDefined(cards)['two-sum']).toBeUndefined();
   });
 
@@ -250,7 +247,7 @@ describe('removeCard', () => {
     await expect(removeCard('non-existent-slug')).resolves.toBeUndefined();
 
     // Verify storage is still empty/unchanged
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(cards || {}).toEqual({});
   });
 
@@ -276,7 +273,7 @@ describe('removeCard', () => {
     await removeCard('valid-parentheses');
 
     // Verify only the specified card is removed
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
 
     expect(Object.keys(cards || {}).length).toBe(2);
 
@@ -345,7 +342,7 @@ describe('removeCard', () => {
     expect(notesModule.deleteNote).toHaveBeenCalledWith(cardId);
 
     // Verify the card is actually removed
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(requireDefined(cards)['test-with-note']).toBeUndefined();
   });
 
@@ -395,7 +392,7 @@ describe('delayCard', () => {
     expect(delayedCard.fsrs.due).toBe(expectedDueDate.getTime());
 
     // Verify it was persisted to storage
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const storedCard = requireDefined(cards)['two-sum'];
     expect(storedCard.fsrs.due).toBe(expectedDueDate.getTime());
   });
@@ -632,7 +629,7 @@ describe('rateCard', () => {
     expect(result.card.fsrs).toBeDefined();
 
     // Verify the card was stored
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(requireDefined(cards)['new-problem']).toBeDefined();
   });
 
@@ -736,7 +733,7 @@ describe('rateCard', () => {
     });
 
     // Verify the updated card is in storage
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const storedCard = requireDefined(cards)['binary-search'];
 
     expect(storedCard).toBeDefined();
@@ -1016,7 +1013,7 @@ describe('getReviewQueue', () => {
     });
 
     // Manually update their due dates to be in the past
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     requireDefined(cards).problem1.fsrs.due = pastTime;
     requireDefined(cards).problem2.fsrs.due = pastTime;
@@ -1073,7 +1070,7 @@ describe('getReviewQueue', () => {
     });
 
     // Set their due dates to the past
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     requireDefined(cards).review1.fsrs.due = pastTime;
     requireDefined(cards).review2.fsrs.due = pastTime;
@@ -1112,7 +1109,7 @@ describe('getReviewQueue', () => {
     });
 
     // Set due date to future
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
     requireDefined(cards).future1.fsrs.due = futureTime;
     await storage.setItem(STORAGE_KEYS.cards, cards);
@@ -1173,7 +1170,7 @@ describe('getReviewQueue', () => {
     });
 
     // Set due times to various times today
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     requireDefined(cards).morning.fsrs.due = new Date('2024-01-15T06:00:00Z').getTime(); // 6 AM today
     requireDefined(cards).evening.fsrs.due = new Date('2024-01-15T20:00:00Z').getTime(); // 8 PM today
     requireDefined(cards).midnight.fsrs.due = new Date('2024-01-15T23:59:59Z').getTime(); // End of today
@@ -1211,7 +1208,7 @@ describe('getReviewQueue', () => {
     // Set due to one second after midnight tomorrow in local timezone
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     requireDefined(cards).tomorrow.fsrs.due = tomorrow.getTime();
     await storage.setItem(STORAGE_KEYS.cards, cards);
 
@@ -1258,7 +1255,7 @@ describe('getReviewQueue', () => {
     });
 
     // Manually set due dates
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
     requireDefined(cards).due1.fsrs.due = pastTime;
@@ -1319,7 +1316,7 @@ describe('getReviewQueue', () => {
     }
 
     // Set all to be due
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     for (let i = 1; i <= 10; i++) {
       requireDefined(cards)[`review${i}`].fsrs.due = pastTime;
@@ -1452,7 +1449,7 @@ describe('getReviewQueue', () => {
     });
 
     // Set review cards to be due
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
     requireDefined(cards).review1.fsrs.due = pastTime;
     requireDefined(cards).review2.fsrs.due = pastTime;
@@ -1622,7 +1619,7 @@ describe('getReviewQueue', () => {
     }
 
     // Set all cards to have the same due date for predictable ordering
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const sameTime = new Date('2024-01-15T10:00:00').getTime();
     for (const slug of cardSlugs) {
       requireDefined(cards)[slug].fsrs.due = sameTime;
@@ -1673,7 +1670,7 @@ describe('getReviewQueue', () => {
     });
 
     // Set specific due dates
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     requireDefined(cards)['new-early'].fsrs.due = new Date('2024-01-15T08:00:00').getTime();
     requireDefined(cards)['review-middle'].fsrs.due = new Date('2024-01-15T10:00:00').getTime();
     requireDefined(cards)['new-late'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
@@ -1794,7 +1791,7 @@ describe('getReviewQueue', () => {
     });
 
     // Set due dates to tomorrow
-    const cards = await storage.getItem<Record<string, StoredCard>>(STORAGE_KEYS.cards);
+    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const tomorrow = new Date('2024-01-16T10:00:00').getTime();
     requireDefined(cards)['future-1'].fsrs.due = tomorrow;
     requireDefined(cards)['future-2'].fsrs.due = tomorrow;

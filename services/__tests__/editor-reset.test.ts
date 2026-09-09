@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
-import { serializeCard } from '@/infrastructure/storage/cards/codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { shouldResetEditor } from '../editor-reset';
 import { updateSettings } from '../settings';
@@ -43,7 +42,7 @@ describe('shouldResetEditor', () => {
 });
 
 async function storeCard(card: Card): Promise<void> {
-  await storage.setItem(STORAGE_KEYS.cards, { [card.slug]: serializeCard(card) });
+  await storage.setItem(STORAGE_KEYS.cards, { [card.slug]: card });
 }
 
 function makeCard(overrides: Partial<{ due: Date; state: FsrsState; paused: boolean }> = {}): Card {

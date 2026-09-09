@@ -2,8 +2,8 @@ import { State as FsrsState, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import type { Card } from '@/domain/cards';
 import type { DailyStats } from '@/domain/statistics';
-import { type StoredCard, serializeCard } from '@/infrastructure/storage/cards/codec';
 import { getStatsForDate } from '@/infrastructure/storage/stats';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -377,10 +377,7 @@ describe('Stats management', () => {
       const cards = states.map((state, index) =>
         createMockCard(state, { slug: `problem-${index}`, paused: index === 3 })
       );
-      await storage.setItem(
-        STORAGE_KEYS.cards,
-        Object.fromEntries(cards.map((card) => [card.slug, serializeCard(card)]))
-      );
+      await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, card])));
 
       expect(await getCardStateStats()).toEqual({
         [FsrsState.New]: 1,
@@ -411,7 +408,7 @@ describe('Stats management', () => {
     it('should count cards due today', async () => {
       // Add a card that's due today
       await addCard(buildProblem({ slug: 'problem-1' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       // Manually set the card to be due today
       cards['problem-1'].fsrs.due = new Date('2024-03-15T12:00:00').getTime();
@@ -430,7 +427,7 @@ describe('Stats management', () => {
       await addCard(buildProblem({ slug: 'problem-2' }));
       await addCard(buildProblem({ slug: 'problem-3' }));
 
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       // Set different due dates
       cards['problem-1'].fsrs.due = new Date('2024-03-15T12:00:00').getTime(); // Today
@@ -454,7 +451,7 @@ describe('Stats management', () => {
       await addCard(buildProblem({ slug: 'problem-1' }));
       await addCard(buildProblem({ slug: 'problem-2' }));
 
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       // Both due today, but one is paused
       cards['problem-1'].fsrs.due = new Date('2024-03-15T12:00:00').getTime();
@@ -473,7 +470,7 @@ describe('Stats management', () => {
       await addCard(buildProblem({ slug: 'problem-1' }));
       await addCard(buildProblem({ slug: 'problem-2' }));
 
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-10T12:00:00').getTime(); // 5 days ago
       cards['problem-2'].fsrs.due = new Date('2024-03-14T12:00:00').getTime(); // Yesterday
@@ -496,7 +493,7 @@ describe('Stats management', () => {
 
     it('should exclude cards due immediately after the requested window', async () => {
       await addCard(buildProblem({ slug: 'problem-1' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-22T12:00:00').getTime();
       await storage.setItem(STORAGE_KEYS.cards, cards);
@@ -516,7 +513,7 @@ describe('Stats management', () => {
     it('should respect the configured day start hour', async () => {
       await storage.setItem(STORAGE_KEYS.dayStartHour, 4);
       await addCard(buildProblem({ slug: 'problem-1' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-16T01:00:00').getTime();
       await storage.setItem(STORAGE_KEYS.cards, cards);
@@ -532,7 +529,7 @@ describe('Stats management', () => {
     it('should accumulate active cards due on the same review day', async () => {
       await addCard(buildProblem({ slug: 'problem-1' }));
       await addCard(buildProblem({ slug: 'problem-2' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
+      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-17T09:00:00').getTime();
       cards['problem-2'].fsrs.due = new Date('2024-03-17T18:00:00').getTime();

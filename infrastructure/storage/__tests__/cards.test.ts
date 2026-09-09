@@ -4,9 +4,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { ProblemDescriptor } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { STORAGE_KEYS } from '../../storage-keys';
-import { serializeCard } from '../codec';
-import { getAllCards, saveCards } from '../store';
+import { getAllCards, saveCards } from '../cards';
+import { STORAGE_KEYS } from '../storage-keys';
 
 async function addFixture(problem: ProblemDescriptor): Promise<void> {
   await saveCards([...(await getAllCards()), createMockCard(State.New, problem)]);
@@ -72,13 +71,6 @@ describe('getAllCards', () => {
     expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({ [card.slug]: card });
     expect(await getAllCards()).toEqual([card]);
   });
-
-  it('defaults a legacy missing domain to leetcode.com', async () => {
-    const { domain: _domain, ...legacyCard } = createMockCard(State.New);
-    await storage.setItem(STORAGE_KEYS.cards, { [legacyCard.slug]: legacyCard });
-
-    expect(await getAllCards()).toEqual([{ ...legacyCard, domain: 'leetcode.com' }]);
-  });
 });
 
 describe('saveCards', () => {
@@ -93,8 +85,8 @@ describe('saveCards', () => {
 
     expect(await getAllCards()).toEqual([reviewed, added]);
     expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({
-      reviewed: serializeCard(reviewed),
-      added: serializeCard(added),
+      reviewed,
+      added,
     });
 
     await saveCards([]);

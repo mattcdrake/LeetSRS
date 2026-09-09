@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { serializeCard } from '../cards/codec';
 import {
   getCurrentSchemaVersion,
   type Migration,
@@ -20,9 +19,7 @@ describe('migrations', () => {
 
   describe('migrateBackupData', () => {
     it('migrates frozen input without changing the input or writing storage', async () => {
-      const { domain: _domain, ...legacyCard } = serializeCard(
-        createMockCard(State.Review, { slug: 'two-sum', paused: true })
-      );
+      const { domain: _domain, ...legacyCard } = createMockCard(State.Review, { slug: 'two-sum', paused: true });
       const card = Object.freeze(legacyCard);
       const data = Object.freeze({
         cards: Object.freeze({ 'two-sum': card }),
@@ -39,7 +36,7 @@ describe('migrations', () => {
     });
 
     it.each([1, 2])('does not reapply the domain migration to schema %s', (schemaVersion) => {
-      const data = { cards: { 'two-sum': serializeCard(createMockCard(State.Review, { slug: 'two-sum' })) } };
+      const data = { cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum' }) } };
       expect(migrateBackupData(data, schemaVersion)).toEqual(data);
     });
 
@@ -184,8 +181,8 @@ describe('migrations', () => {
 
     it('persists each step before advancing its version and starting the next step', async () => {
       const versions: number[] = [];
-      const first = serializeCard(createMockCard(State.New, { slug: 'first' }));
-      const second = serializeCard(createMockCard(State.New, { slug: 'second' }));
+      const first = createMockCard(State.New, { slug: 'first' });
+      const second = createMockCard(State.New, { slug: 'second' });
       const steps: Migration[] = [
         {
           description: 'First',
@@ -223,14 +220,18 @@ describe('migrations', () => {
 
   describe('migration v1: add domain to cards', () => {
     it('changes only missing domains while preserving schedules, pause state, notes, and unrelated storage', async () => {
-      const { domain: _domain, ...legacyCard } = serializeCard(
-        createMockCard(State.Review, { id: 'legacy-id', slug: 'two-sum', paused: true })
-      );
+      const { domain: _domain, ...legacyCard } = createMockCard(State.Review, {
+        id: 'legacy-id',
+        slug: 'two-sum',
+        paused: true,
+      });
       const cards = {
         'two-sum': legacyCard,
-        'add-two-numbers': serializeCard(
-          createMockCard(State.Learning, { id: 'cn-id', slug: 'add-two-numbers', domain: 'leetcode.cn' })
-        ),
+        'add-two-numbers': createMockCard(State.Learning, {
+          id: 'cn-id',
+          slug: 'add-two-numbers',
+          domain: 'leetcode.cn',
+        }),
       };
       await storage.setItem(STORAGE_KEYS.cards, cards);
       await storage.setItem(`${STORAGE_KEYS.notes}:legacy-id`, { text: 'Keep this note' });
@@ -252,7 +253,7 @@ describe('migrations', () => {
     });
 
     it('does not advance the schema when migrated cards cannot be persisted', async () => {
-      const cards = { 'two-sum': serializeCard(createMockCard(State.New, { slug: 'two-sum' })) };
+      const cards = { 'two-sum': createMockCard(State.New, { slug: 'two-sum' }) };
       await storage.setItem(STORAGE_KEYS.cards, cards);
       const write = storage.setItem.bind(storage);
       const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
@@ -269,14 +270,18 @@ describe('migrations', () => {
     });
 
     it('safely retries startup after cards are saved but the schema version write fails', async () => {
-      const { domain: _domain, ...legacyCard } = serializeCard(
-        createMockCard(State.Review, { id: 'legacy-id', slug: 'two-sum', paused: true })
-      );
+      const { domain: _domain, ...legacyCard } = createMockCard(State.Review, {
+        id: 'legacy-id',
+        slug: 'two-sum',
+        paused: true,
+      });
       const cards = {
         'two-sum': legacyCard,
-        'add-two-numbers': serializeCard(
-          createMockCard(State.Learning, { id: 'cn-id', slug: 'add-two-numbers', domain: 'leetcode.cn' })
-        ),
+        'add-two-numbers': createMockCard(State.Learning, {
+          id: 'cn-id',
+          slug: 'add-two-numbers',
+          domain: 'leetcode.cn',
+        }),
       };
       await storage.setItem(STORAGE_KEYS.cards, cards);
       await storage.setItem(`${STORAGE_KEYS.notes}:legacy-id`, { text: 'Keep this note' });

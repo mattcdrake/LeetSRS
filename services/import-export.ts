@@ -1,8 +1,7 @@
 import { normalizeImportData, validateImportRelationships, validateImportStructure } from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import { validateBackupRecords } from '@/infrastructure/storage/backup';
-import { deserializeCard, serializeCard } from '@/infrastructure/storage/cards/codec';
-import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards/store';
+import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
 import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
 import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
@@ -28,7 +27,7 @@ export async function exportData(): Promise<string> {
     exportDate: new Date().toISOString(),
     dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
-      cards: Object.fromEntries(cards.map((card) => [card.slug, serializeCard(card)])),
+      cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
       stats,
       notes,
       settings,
@@ -78,7 +77,7 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
     await setGitHubPat(existingPat);
   }
 
-  await saveCards(Object.values(preparedData.cards).map(deserializeCard));
+  await saveCards(Object.values(preparedData.cards));
   await saveStats(preparedData.stats);
   for (const [cardId, note] of Object.entries(preparedData.notes)) {
     await saveNote(cardId, note.text);

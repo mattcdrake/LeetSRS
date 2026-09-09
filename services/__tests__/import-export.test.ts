@@ -2,9 +2,9 @@ import { createEmptyCard, Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
-import { type StoredCard, serializeCard } from '@/infrastructure/storage/cards/codec';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
@@ -28,7 +28,7 @@ describe('import-export', () => {
   describe('exportData', () => {
     it('should export all data with correct structure', async () => {
       const cardUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-      const mockCards: Record<string, StoredCard> = {
+      const mockCards: Record<string, Card> = {
         'two-sum': {
           id: cardUuid,
           slug: 'two-sum',
@@ -191,17 +191,34 @@ describe('import-export', () => {
       }
     );
 
-    it('round-trips valid current records with schedules, domains, pause state and notes intact', async () => {
-      await setSchemaVersion(2);
-      const { payload, accepted } = mixedRecordBackup();
-      await importData(JSON.stringify({ ...payload, data: accepted }));
-      const exported = await exportData();
-      await resetAllData();
-      await importData(exported);
-      const restored = JSON.parse(await exportData());
-      expect(restored.data).toMatchObject(accepted);
-      expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
-    });
+    it.each([undefined, 0, 1705222800000])(
+      'round-trips supported records with numeric dates and last_review %s',
+      async (lastReview) => {
+        await setSchemaVersion(2);
+        const { payload, accepted } = mixedRecordBackup();
+        const originalCard = accepted.cards['two-sum'];
+        const data = {
+          ...accepted,
+          cards: {
+            ...accepted.cards,
+            'two-sum': {
+              ...originalCard,
+              createdAt: 0,
+              fsrs: { ...originalCard.fsrs, due: 0, last_review: lastReview },
+            },
+          },
+        };
+        await importData(JSON.stringify({ ...payload, data }));
+        const exported = await exportData();
+        await resetAllData();
+        await importData(exported);
+        const restored = JSON.parse(await exportData());
+        expect(restored.data).toMatchObject(JSON.parse(JSON.stringify(data)));
+        expect(restored.data.cards).toEqual(JSON.parse(JSON.stringify(data.cards)));
+        expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
+        expect(restored.schemaVersion).toBe(2);
+      }
+    );
 
     const cardUuid = 'b2c3d4e5-f6a7-8901-bcde-f23456789012';
     const validExportData = {
@@ -488,7 +505,7 @@ describe('import-export', () => {
         const writePat = vi.spyOn(auth, 'setGitHubPat');
         const oldCardUuid = 'old-card-uuid-1234';
         await storage.setItem(STORAGE_KEYS.cards, {
-          old: serializeCard(createMockCard(State.New, { id: oldCardUuid, slug: 'old' })),
+          old: createMockCard(State.New, { id: oldCardUuid, slug: 'old' }),
         });
         await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
         await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
@@ -604,7 +621,7 @@ describe('import-export', () => {
       // Set up existing data
       const oldCardUuid = 'old-card-uuid-1234';
       await storage.setItem(STORAGE_KEYS.cards, {
-        'old-slug': serializeCard(createMockCard(State.New, { id: oldCardUuid, slug: 'old-slug' })),
+        'old-slug': createMockCard(State.New, { id: oldCardUuid, slug: 'old-slug' }),
       });
       await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 10 } });
       await storage.setItem(`${STORAGE_KEYS.notes}:${oldCardUuid}` as const, { text: 'old note' });
@@ -715,7 +732,7 @@ describe('import-export', () => {
     it('should handle empty data sections by clearing existing data', async () => {
       // Set up some existing data first
       await storage.setItem(STORAGE_KEYS.cards, {
-        'existing-card': serializeCard(createMockCard(State.New, { slug: 'existing-card' })),
+        'existing-card': createMockCard(State.New, { slug: 'existing-card' }),
       });
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });
 
@@ -743,8 +760,8 @@ describe('import-export', () => {
       const uuid1 = 'c3d4e5f6-a7b8-9012-cdef-345678901234';
       const uuid2 = 'd4e5f6a7-b8c9-0123-defa-456789012345';
       const mockCards = {
-        'two-sum': serializeCard(createMockCard(State.New, { id: uuid1, slug: 'two-sum' })),
-        'three-sum': serializeCard(createMockCard(State.New, { id: uuid2, slug: 'three-sum' })),
+        'two-sum': createMockCard(State.New, { id: uuid1, slug: 'two-sum' }),
+        'three-sum': createMockCard(State.New, { id: uuid2, slug: 'three-sum' }),
       };
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': {} });

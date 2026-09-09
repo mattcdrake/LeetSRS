@@ -1,13 +1,13 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { buildReviewQueue, calculateDelayedDueDate, isDueByDate as calculateIsDueByDate } from '@/domain/review';
-import { getAllCards, saveCards } from '@/infrastructure/storage/cards/store';
+import { getAllCards, saveCards } from '@/infrastructure/storage/cards';
 
 import { deleteNote } from './notes';
 import { getSettings } from './settings';
 import { getTodayStats, updateStats } from './stats';
 
-export { getAllCards } from '@/infrastructure/storage/cards/store';
+export { getAllCards } from '@/infrastructure/storage/cards';
 
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);

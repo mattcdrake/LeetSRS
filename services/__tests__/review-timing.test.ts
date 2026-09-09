@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { DailyStats } from '@/domain/statistics';
-import { serializeCard } from '@/infrastructure/storage/cards/codec';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
@@ -58,10 +57,7 @@ describe('review-day service integration', () => {
       card.fsrs.due = new Date(slug === 'future' ? '2024-03-15T04:00:00' : '2024-03-14T12:00:00').getTime();
       return card;
     });
-    await storage.setItem(
-      STORAGE_KEYS.cards,
-      Object.fromEntries(cards.map((card) => [card.slug, serializeCard(card)]))
-    );
+    await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, card])));
     await storage.setItem(STORAGE_KEYS.stats, {
       '2024-03-14': dailyStats('2024-03-14', 1),
       '2024-03-15': dailyStats('2024-03-15', 0),
