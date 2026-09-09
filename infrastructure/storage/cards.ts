@@ -4,17 +4,11 @@ import { STORAGE_KEYS } from './storage-keys';
 
 export async function getAllCards(): Promise<Card[]> {
   const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-  return Object.values(cards ?? {}).map((card) => ({
-    ...card,
-    fsrs: { ...card.fsrs },
-  }));
+  return Object.values(cards ?? {});
 }
 
 export async function saveCards(cards: Card[]): Promise<void> {
-  await storage.setItem(
-    STORAGE_KEYS.cards,
-    Object.fromEntries(cards.map((card) => [card.slug, { ...card, fsrs: { ...card.fsrs } }]))
-  );
+  await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, card])));
 }
 
 export function removeCards(): Promise<void> {
