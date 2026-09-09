@@ -8,7 +8,6 @@ interface MigrationData {
 }
 
 export interface Migration {
-  version: number;
   description: string;
   migrate: (data: MigrationData) => MigrationData;
 }
@@ -21,9 +20,9 @@ export async function setSchemaVersion(version: number): Promise<void> {
   await storage.setItem(STORAGE_KEYS.schemaVersion, version);
 }
 
-const migrations: Migration[] = [
+// Append only: index + 1 is the schema version. Never reorder or remove entries.
+const migrations: readonly Migration[] = [
   {
-    version: 1,
     description: 'Add domain field to existing cards, defaulting to leetcode.com',
     migrate: (data: MigrationData): MigrationData => {
       if (!data.cards) return data;
@@ -39,31 +38,17 @@ const migrations: Migration[] = [
     },
   },
   {
-    version: 2,
     description: 'Add system theme preference',
     migrate: (data: MigrationData): MigrationData => data,
   },
 ];
 
-const supportedSchemaVersion = Math.max(0, ...migrations.map(({ version }) => version));
-
-function pendingMigrations(steps: readonly Migration[], schemaVersion: number): Migration[] {
-  const seenVersions = new Set<number>();
-  for (const step of steps) {
-    if (seenVersions.has(step.version)) {
-      throw new Error(`Duplicate migration version detected: ${step.version}`);
-    }
-    seenVersions.add(step.version);
-  }
-  return steps.filter(({ version }) => version > schemaVersion).sort((a, b) => a.version - b.version);
-}
-
 export function migrateBackupData<T extends MigrationData>(data: T, schemaVersion: number): T {
-  if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > supportedSchemaVersion) {
+  if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {
     throw new Error(`Unsupported schema version: ${schemaVersion}`);
   }
   let migrated = data;
-  for (const migration of pendingMigrations(migrations, schemaVersion)) {
+  for (const migration of migrations.slice(schemaVersion)) {
     migrated = { ...migrated, ...migration.migrate(migrated) };
   }
   return migrated;
@@ -71,7 +56,8 @@ export function migrateBackupData<T extends MigrationData>(data: T, schemaVersio
 
 export async function runStartupMigrations(steps: readonly Migration[] = migrations): Promise<void> {
   const currentVersion = await getCurrentSchemaVersion();
-  for (const migration of pendingMigrations(steps, currentVersion)) {
+  for (const [index, migration] of steps.slice(currentVersion).entries()) {
+    const version = currentVersion + index + 1;
     try {
       const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
       const data = { cards: cards ?? undefined };
@@ -79,9 +65,9 @@ export async function runStartupMigrations(steps: readonly Migration[] = migrati
       if (migrated.cards !== undefined) {
         await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
       }
-      await setSchemaVersion(migration.version);
+      await setSchemaVersion(version);
     } catch (error) {
-      throw new Error(`Failed to run migration ${migration.version}: ${error}`);
+      throw new Error(`Failed to run migration ${version}: ${error}`);
     }
   }
 }

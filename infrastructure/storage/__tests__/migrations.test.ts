@@ -70,39 +70,19 @@ describe('migrations', () => {
   });
 
   describe('runStartupMigrations', () => {
-    it('should run migrations in order', async () => {
-      const executionOrder: number[] = [];
-
-      const migrations: Migration[] = [
-        {
-          version: 3,
-          description: 'Third migration',
-          migrate: (data) => {
-            executionOrder.push(3);
-            return data;
-          },
+    it('runs migrations in array order', async () => {
+      const executionOrder: string[] = [];
+      const steps: Migration[] = ['add domain', 'add theme', 'next migration'].map((description) => ({
+        description,
+        migrate: (data) => {
+          executionOrder.push(description);
+          return data;
         },
-        {
-          version: 1,
-          description: 'First migration',
-          migrate: (data) => {
-            executionOrder.push(1);
-            return data;
-          },
-        },
-        {
-          version: 2,
-          description: 'Second migration',
-          migrate: (data) => {
-            executionOrder.push(2);
-            return data;
-          },
-        },
-      ];
+      }));
 
-      await runStartupMigrations(migrations);
+      await runStartupMigrations(steps);
 
-      expect(executionOrder).toEqual([1, 2, 3]);
+      expect(executionOrder).toEqual(['add domain', 'add theme', 'next migration']);
       expect(await getCurrentSchemaVersion()).toBe(3);
     });
 
@@ -112,7 +92,6 @@ describe('migrations', () => {
       const executionOrder: number[] = [];
       const migrations: Migration[] = [
         {
-          version: 1,
           description: 'Old migration',
           migrate: (data) => {
             executionOrder.push(1);
@@ -120,7 +99,6 @@ describe('migrations', () => {
           },
         },
         {
-          version: 2,
           description: 'Current migration',
           migrate: (data) => {
             executionOrder.push(2);
@@ -128,7 +106,6 @@ describe('migrations', () => {
           },
         },
         {
-          version: 3,
           description: 'New migration',
           migrate: (data) => {
             executionOrder.push(3);
@@ -136,7 +113,6 @@ describe('migrations', () => {
           },
         },
         {
-          version: 4,
           description: 'Newer migration',
           migrate: (data) => {
             executionOrder.push(4);
@@ -156,26 +132,21 @@ describe('migrations', () => {
       expect(await getCurrentSchemaVersion()).toBe(0);
     });
 
-    it('should throw error for duplicate migration versions', async () => {
-      const migrations: Migration[] = [
-        {
-          version: 1,
-          description: 'First migration',
-          migrate: (data) => data,
-        },
-        {
-          version: 2,
-          description: 'Second migration',
-          migrate: (data) => data,
-        },
-        {
-          version: 1,
-          description: 'Duplicate version',
-          migrate: (data) => data,
-        },
-      ];
+    it('derives persisted versions from array positions after skipping completed steps', async () => {
+      await setSchemaVersion(1);
+      const step: Migration = { description: 'No-op', migrate: (data) => data };
+      const writes = vi.spyOn(storage, 'setItem');
+      try {
+        await runStartupMigrations([step, step, step]);
 
-      await expect(runStartupMigrations(migrations)).rejects.toThrow('Duplicate migration version detected: 1');
+        expect(writes.mock.calls.filter(([key]) => key === STORAGE_KEYS.schemaVersion)).toEqual([
+          [STORAGE_KEYS.schemaVersion, 2],
+          [STORAGE_KEYS.schemaVersion, 3],
+        ]);
+        expect(await getCurrentSchemaVersion()).toBe(3);
+      } finally {
+        writes.mockRestore();
+      }
     });
 
     it('should stop and throw error if migration fails', async () => {
@@ -183,7 +154,6 @@ describe('migrations', () => {
 
       const migrations: Migration[] = [
         {
-          version: 1,
           description: 'Success migration',
           migrate: (data) => {
             executionOrder.push(1);
@@ -191,7 +161,6 @@ describe('migrations', () => {
           },
         },
         {
-          version: 2,
           description: 'Failing migration',
           migrate: () => {
             executionOrder.push(2);
@@ -199,7 +168,6 @@ describe('migrations', () => {
           },
         },
         {
-          version: 3,
           description: 'Should not run',
           migrate: (data) => {
             executionOrder.push(3);
@@ -218,12 +186,10 @@ describe('migrations', () => {
       const versions: number[] = [];
       const steps: Migration[] = [
         {
-          version: 1,
           description: 'First',
           migrate: (data) => ({ ...data, cards: { first: { id: 'first' } } }),
         },
         {
-          version: 2,
           description: 'Second',
           migrate: (data) => {
             expect(data.cards).toEqual({ first: { id: 'first' } });
