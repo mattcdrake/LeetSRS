@@ -126,19 +126,21 @@ describe('backup record validation', () => {
     ).toThrow();
   });
 
-  it('preserves unknown nested fields without coercing accepted values', () => {
+  it('removes extra nested fields without coercing supported values', () => {
     const { accepted } = mixedRecordBackup();
-    const card = {
-      ...accepted.cards['two-sum'],
-      name: '  Two Sum  ',
-      fsrs: { ...accepted.cards['two-sum'].fsrs, extra: { source: 'legacy' } },
+    const card = { ...accepted.cards['two-sum'], name: '  Two Sum  ' };
+    const stats = accepted.stats['2024-01-01'];
+    const records = {
+      cards: { 'two-sum': { ...card, extra: true, fsrs: { ...card.fsrs, extra: { source: 'legacy' } } } },
+      stats: { '2024-01-01': { ...stats, extra: true, gradeBreakdown: { ...stats.gradeBreakdown, extra: 42 } } },
+      notes: { 'valid-com': { text: '  Keep this note  ', extra: true } },
+      extra: true,
     };
-    const stats = {
-      ...accepted.stats['2024-01-01'],
-      gradeBreakdown: { ...accepted.stats['2024-01-01'].gradeBreakdown, extra: 42 },
-    };
-    const records = { cards: { 'two-sum': card }, stats: { '2024-01-01': stats }, notes: {} };
-    expect(validateBackupRecords(records)).toEqual(records);
+    expect(validateBackupRecords(records)).toEqual({
+      cards: { 'two-sum': card },
+      stats: { '2024-01-01': stats },
+      notes: { 'valid-com': { text: '  Keep this note  ' } },
+    });
   });
 
   it('accepts an unreviewed card with zero FSRS values and no last review', () => {

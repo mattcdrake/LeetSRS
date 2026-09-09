@@ -82,7 +82,7 @@ const calendarDate = z
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
   });
 
-const cardSchema = z.looseObject({
+const cardSchema = z.object({
   id: nonemptyString,
   slug: nonemptyString,
   name: nonemptyString,
@@ -91,7 +91,7 @@ const cardSchema = z.looseObject({
   domain: z.enum(['leetcode.com', 'leetcode.cn']),
   paused: z.boolean(),
   createdAt: storedDate,
-  fsrs: z.looseObject({
+  fsrs: z.object({
     due: storedDate,
     last_review: storedDate.optional(),
     state: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
@@ -105,16 +105,16 @@ const cardSchema = z.looseObject({
   }),
 }) satisfies z.ZodType<StoredCard>;
 
-const statsSchema = z.looseObject({
+const statsSchema = z.object({
   date: calendarDate,
   totalReviews: count,
   newCards: count,
   reviewedCards: count,
   streak: count,
-  gradeBreakdown: z.looseObject({ 1: count, 2: count, 3: count, 4: count }),
+  gradeBreakdown: z.object({ 1: count, 2: count, 3: count, 4: count }),
 }) satisfies z.ZodType<DailyStats>;
 
-const noteSchema = z.looseObject({ text: z.string() }) satisfies z.ZodType<Note>;
+const noteSchema = z.object({ text: z.string() }) satisfies z.ZodType<Note>;
 
 const backupRecordsSchema = z.object({
   cards: z.record(z.string(), cardSchema),

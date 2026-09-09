@@ -25,11 +25,10 @@ const payload = {
         createdAt: Date.parse(incomingTime),
         paused: false,
         fsrs: { ...createEmptyCard(new Date(incomingTime)), due: Date.parse(incomingTime) },
-        unknownField: 'retained',
       },
     },
-    stats: { '2024-01-01': { ...createDailyStats('2024-01-01', undefined), unknownField: 42 } },
-    notes: { new: { text: 'new note', unknownField: true } },
+    stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+    notes: { new: { text: 'new note' } },
     settings: { theme: 'dark' },
     gistSync: { gistId: 'incoming-gist', enabled: false },
   },
@@ -60,7 +59,7 @@ describe('backup workflow characterization', () => {
     fakeBrowser.reset();
   });
 
-  it('exports exact raw records and JSON formatting, omitting credentials and orphan notes', async () => {
+  it('exports supported records and JSON formatting, omitting credentials and orphan notes', async () => {
     await seedExistingData();
     await storage.setItem(STORAGE_KEYS.cards, payload.data.cards);
     await storage.setItem(STORAGE_KEYS.stats, payload.data.stats);

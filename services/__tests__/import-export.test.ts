@@ -260,7 +260,6 @@ describe('import-export', () => {
           ...legacyCard,
           paused: true,
           fsrs: { ...legacyCard.fsrs, last_review: 1704067200000, scheduled_days: 7, reps: 4 },
-          legacyMetadata: { source: 'manual' },
         },
         'add-two-numbers': {
           ...legacyCard,

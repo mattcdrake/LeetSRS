@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import { normalizeImportData, validateImportRelationships, validateImportStructure } from '../backup-import';
 
 const incomingTime = '2024-01-01T00:00:00.000Z';
@@ -41,18 +42,21 @@ describe('backup import policy', () => {
     );
   });
 
-  it('retains unknown fields and current-setting precedence over legacy values', () => {
+  it('drops extra configuration fields and gives current settings precedence over legacy values', () => {
     const prepared = normalizeImportData(
       JSON.parse(
         JSON.stringify({
           ...payload,
+          extra: true,
           data: {
             ...payload.data,
+            extra: true,
+            gistSync: { ...payload.data.gistSync, extra: { nested: true }, githubPat: 'ignored' },
             settings: {
               resetEditorOnEveryProblem: false,
               autoClearLeetcode: true,
               animationsEnabled: 'ignored',
-              unknownSetting: 'retained',
+              unknownSetting: { nested: true },
             },
           },
         })
@@ -62,9 +66,33 @@ describe('backup import policy', () => {
     expect(prepared).toEqual({
       ...payload.data,
       schemaVersion: 0,
-      settings: { resetEditorOnEveryProblem: false, unknownSetting: 'retained' },
+      settings: { resetEditorOnEveryProblem: false },
       dataUpdatedAt: incomingTime,
     });
+  });
+
+  it('retains every supported setting while discarding extra settings', () => {
+    const settings = buildSettings({
+      maxNewCardsPerDay: 7,
+      dayStartHour: 4,
+      theme: 'dark',
+      resetEditorOnEveryProblem: true,
+      resetEditorOnDueReview: true,
+      badgeEnabled: false,
+      language: 'zh-CN',
+    });
+    expect(
+      normalizeImportData(
+        { ...payload, data: { ...payload.data, settings: { ...settings, extra: { nested: true } } } },
+        2
+      ).settings
+    ).toEqual(settings);
+  });
+
+  it.each([true, false])('maps legacy autoClearLeetcode %s to the current setting', (value) => {
+    expect(
+      normalizeImportData({ ...payload, data: { ...payload.data, settings: { autoClearLeetcode: value } } }, 2).settings
+    ).toEqual({ resetEditorOnEveryProblem: value });
   });
 
   it.each(malformedBackupCases(payload))('rejects malformed envelope: %s', (_name, json) => {

@@ -1,12 +1,20 @@
 import { z } from 'zod';
 import type { Card } from './cards';
-import { type Settings, validateSettings } from './settings';
+import { SETTING_KEYS, type Settings, validateSettings } from './settings';
 import type { DailyStats } from './statistics';
 
 const objectMapSchema = z.record(z.string(), z.unknown());
-const structureSchema = z.looseObject({
+const structureSchema = z.object({
+  schemaVersion: z.unknown().optional(),
   exportDate: z.unknown().refine(Boolean),
-  data: objectMapSchema,
+  dataUpdatedAt: z.unknown().optional(),
+  data: z.object({
+    cards: z.unknown().optional(),
+    stats: z.unknown().optional(),
+    notes: z.unknown().optional(),
+    settings: z.unknown().optional(),
+    gistSync: z.unknown().optional(),
+  }),
 });
 type BackupImportEnvelope = z.infer<typeof structureSchema>;
 const schemaVersionSchema = z
@@ -16,7 +24,7 @@ const schemaVersionSchema = z
 // Preserve legacy timestamp formats accepted by Date.parse.
 const timestampSchema = z.string().refine((value) => Number.isFinite(Date.parse(value)));
 const gistSyncSchema = z
-  .looseObject({
+  .object({
     gistId: z.string().optional(),
     enabled: z.boolean().optional(),
   })
@@ -38,12 +46,12 @@ function getImportedSettings(settings: unknown): Partial<Settings> {
 
   const resetEditorOnEveryProblem =
     values.resetEditorOnEveryProblem !== undefined ? values.resetEditorOnEveryProblem : values.autoClearLeetcode;
-  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = values;
-  const importedSettings = {
-    ...currentSettings,
-    ...(resetEditorOnEveryProblem !== undefined && { resetEditorOnEveryProblem }),
-  };
-  // Validate known settings while retaining unrelated fields for compatibility.
+  const importedSettings = Object.fromEntries(
+    SETTING_KEYS.filter((key) => Object.hasOwn(values, key)).map((key) => [key, values[key]])
+  );
+  if (resetEditorOnEveryProblem !== undefined) {
+    importedSettings.resetEditorOnEveryProblem = resetEditorOnEveryProblem;
+  }
   validateSettings(importedSettings as Partial<Settings>);
   return importedSettings as Partial<Settings>;
 }
