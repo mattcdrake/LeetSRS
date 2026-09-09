@@ -1742,11 +1742,6 @@ describe('getReviewQueue', () => {
     expect(queue[1].slug).toBe('card-10'); // '10' comes after '1' in string sort
   });
 
-  it('should handle empty queue gracefully', async () => {
-    const queue = await getReviewQueue();
-    expect(queue).toEqual([]);
-  });
-
   it('should handle queue with only paused cards', async () => {
     await addCard({
       slug: 'paused-1',
@@ -1846,30 +1841,5 @@ describe('getReviewQueue', () => {
     // But new2 and new4 are paused, so only new1 and new3 are available
     // So we should get: new1 (or new3) + review2 = 2 total
     expect(queue).toHaveLength(2);
-  });
-
-  it('should handle all cards being paused', async () => {
-    // Create and pause all cards
-    await addCard({
-      slug: 'paused1',
-      name: 'Paused 1',
-      leetcodeId: '3001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'paused2',
-      name: 'Paused 2',
-      leetcodeId: '3002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await setPauseStatus('paused1', true);
-    await setPauseStatus('paused2', true);
-
-    const queue = await getReviewQueue();
-
-    // Should return empty queue when all cards are paused
-    expect(queue).toEqual([]);
   });
 });

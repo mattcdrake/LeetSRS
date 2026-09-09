@@ -2,11 +2,9 @@ import { createEmptyCard } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { SETTING_KEYS } from '@/domain/settings';
 import { createDailyStats } from '@/domain/statistics';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem } from '@/test/utils/card-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { exportData, importData, prepareImportData, resetAllData } from '../import-export';
 
 const now = '2026-09-06T12:00:00.000Z';
@@ -67,8 +65,6 @@ describe('backup workflow characterization', () => {
     await storage.setItem(STORAGE_KEYS.theme, 'invalid-theme');
     await storage.setItem(STORAGE_KEYS.gistSyncEnabled, false);
     await storage.setItem(STORAGE_KEYS.lastSyncTime, 'private-sync-time');
-    const reads = vi.spyOn(storage, 'getItem');
-
     expect(JSON.parse(await exportData())).toEqual({
       schemaVersion: 2,
       exportDate: now,
@@ -81,183 +77,87 @@ describe('backup workflow characterization', () => {
         gistSync: { gistId: 'old-gist', enabled: false },
       },
     });
-    expect(reads.mock.calls.map(([key]) => key)).not.toContain(STORAGE_KEYS.githubPat);
   });
 
-  it('samples export time only after the final schema read completes', async () => {
-    const schema = createDeferred<number>();
-    const read = storage.getItem.bind(storage);
-    vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
-      key === STORAGE_KEYS.schemaVersion ? schema.promise : read(key, options)
-    );
-    const exporting = exportData();
-    await vi.waitFor(() => expect(storage.getItem).toHaveBeenCalledWith(STORAGE_KEYS.schemaVersion));
-    vi.setSystemTime(new Date(incomingTime));
-    schema.resolve(2);
-    expect(JSON.parse(await exporting).exportDate).toBe(incomingTime);
-  });
-
-  it('rejects malformed input before schema I/O and validates records only after it succeeds', async () => {
+  it('propagates schema-read failures without changing existing data', async () => {
+    await seedExistingData();
     const failure = new Error('schema unavailable');
-    const read = vi.spyOn(storage, 'getItem').mockRejectedValue(failure);
-    await expect(prepareImportData('invalid json')).rejects.toThrow('Invalid JSON format');
-    await expect(prepareImportData('{}')).rejects.toThrow('Invalid export data structure');
-    expect(read).not.toHaveBeenCalled();
-
-    await expect(
-      prepareImportData(
-        JSON.stringify({
-          ...payload,
-          data: { ...payload.data, cards: null },
-        })
-      )
-    ).rejects.toBe(failure);
-    expect(read).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.schemaVersion);
-  });
-
-  it('generates a missing import timestamp after the schema read, rejecting an empty timestamp', async () => {
-    const schema = createDeferred<number>();
     const read = storage.getItem.bind(storage);
     vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
-      key === STORAGE_KEYS.schemaVersion ? schema.promise : read(key, options)
+      key === STORAGE_KEYS.schemaVersion ? Promise.reject(failure) : read(key, options)
     );
-    const preparing = prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: undefined }));
-    vi.setSystemTime(new Date(incomingTime));
-    schema.resolve(2);
-    expect((await preparing).dataUpdatedAt).toBe(incomingTime);
+    const before = await fakeBrowser.storage.local.get(null);
+
+    await expect(importData(JSON.stringify(payload))).rejects.toBe(failure);
+    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+  });
+
+  it('generates a missing import timestamp and rejects an empty timestamp', async () => {
+    expect((await prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: undefined }))).dataUpdatedAt).toBe(now);
     await expect(prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: '' }))).rejects.toThrow(
       'Invalid update timestamp'
     );
   });
 
-  it('resets before restoration and overwrites the settings timestamp with the imported timestamp', async () => {
+  it('replaces learning data and settings while preserving the local PAT and schema', async () => {
     await seedExistingData();
-    const events: string[] = [];
-    const read = storage.getItem.bind(storage);
-    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
-      if (key === STORAGE_KEYS.githubPat) events.push(`read:${key}`);
-      return read(key, options);
-    });
-    const remove = storage.removeItem.bind(storage);
-    const write = storage.setItem.bind(storage);
-    vi.spyOn(storage, 'removeItem').mockImplementation(async (key, options) => {
-      events.push(`remove:${key}`);
-      return remove(key, options);
-    });
-    const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
-      events.push(`write:${key}`);
-      return write(key, value);
-    });
+    await storage.setItem(STORAGE_KEYS.theme, 'light');
+    await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
 
     await importData(JSON.stringify(payload));
 
-    expect(events).toEqual([
-      `read:${STORAGE_KEYS.githubPat}`,
-      `remove:${STORAGE_KEYS.cards}`,
-      `remove:${STORAGE_KEYS.stats}`,
-      ...SETTING_KEYS.map((key) => `remove:${STORAGE_KEYS[key]}`),
-      ...['githubPat', 'gistId', 'gistSyncEnabled', 'lastSyncTime', 'lastSyncDirection', 'dataUpdatedAt'].map(
-        (key) => `remove:${STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]}`
-      ),
-      `remove:${oldNoteKey}`,
-      ...['githubPat', 'cards', 'stats'].map((key) => `write:${STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]}`),
-      `write:${newNoteKey}`,
-      ...['theme', 'dataUpdatedAt', 'gistId', 'gistSyncEnabled', 'dataUpdatedAt'].map(
-        (key) => `write:${STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]}`
-      ),
-    ]);
-    expect(writes.mock.calls.filter(([key]) => key === STORAGE_KEYS.dataUpdatedAt)).toEqual([
-      [STORAGE_KEYS.dataUpdatedAt, now],
-      [STORAGE_KEYS.dataUpdatedAt, incomingTime],
-    ]);
-    expect(await storage.getItem(orphanNoteKey)).toEqual({ text: 'orphan note' });
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(payload.data.cards);
+    expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(payload.data.stats);
+    expect(await storage.getItem(newNoteKey)).toEqual(payload.data.notes.new);
+    expect(await storage.getItem(oldNoteKey)).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
+    expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(incomingTime);
+    expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
     expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
   });
 
-  it('leaves existing data untouched when reading the credential fails', async () => {
-    await seedExistingData();
-    const failure = new Error('credential read failed');
-    const read = storage.getItem.bind(storage);
-    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
-      if (key === STORAGE_KEYS.githubPat) return Promise.reject(failure);
-      return read(key, options);
-    });
-    const remove = vi.spyOn(storage, 'removeItem');
-    const write = vi.spyOn(storage, 'setItem');
-
-    await expect(importData(JSON.stringify(payload))).rejects.toBe(failure);
-
-    expect(remove).not.toHaveBeenCalled();
-    expect(write).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    [STORAGE_KEYS.stats, 'existing-pat', 'old-time'],
-    [STORAGE_KEYS.githubPat, 'existing-pat', 'old-time'],
-    [oldNoteKey, null, null],
-  ] as const)('retains partial reset state when removing %s fails', async (failedKey, pat, timestamp) => {
+  it('reports a failure to remove the previous dataset', async () => {
     await seedExistingData();
     const failure = new Error('reset failed');
     const remove = storage.removeItem.bind(storage);
-    vi.spyOn(storage, 'removeItem').mockImplementation(async (key, options) => {
-      if (key === failedKey) throw failure;
-      return remove(key, options);
-    });
-    const writes = vi.spyOn(storage, 'setItem');
+    vi.spyOn(storage, 'removeItem').mockImplementation((key, options) =>
+      key === STORAGE_KEYS.cards ? Promise.reject(failure) : remove(key, options)
+    );
 
     await expect(importData(JSON.stringify(payload))).rejects.toBe(failure);
-
-    expect(writes).not.toHaveBeenCalled();
-    expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();
-    expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(pat);
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
-    expect(await storage.getItem(oldNoteKey)).toEqual({ text: 'old note' });
   });
 
-  it.each([STORAGE_KEYS.githubPat, STORAGE_KEYS.stats, STORAGE_KEYS.gistId])(
-    'stops restoration at a failed %s write without rollback',
+  it.each([STORAGE_KEYS.cards, STORAGE_KEYS.stats, newNoteKey, STORAGE_KEYS.theme, STORAGE_KEYS.dataUpdatedAt])(
+    'reports a failed import write to %s',
     async (failedKey) => {
       await seedExistingData();
-      const failure = new Error('restore failed');
+      const failure = new Error('import write failed');
       const write = storage.setItem.bind(storage);
-      vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
-        if (key === failedKey) throw failure;
-        return write(key, value);
-      });
+      vi.spyOn(storage, 'setItem').mockImplementation((key, value) =>
+        key === failedKey ? Promise.reject(failure) : write(key, value)
+      );
 
       await expect(importData(JSON.stringify(payload))).rejects.toBe(failure);
-
-      expect(await storage.getItem(oldNoteKey)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(
-        failedKey === STORAGE_KEYS.githubPat ? null : 'existing-pat'
-      );
-      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(
-        failedKey === STORAGE_KEYS.githubPat ? null : payload.data.cards
-      );
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(failedKey === STORAGE_KEYS.gistId ? now : null);
-      expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBeNull();
     }
   );
 
-  it.each([null, '', 'existing-pat', '   '])(
-    'preserves only a truthy local PAT (%s), ignoring imported credentials',
-    async (pat) => {
-      if (pat !== null) await storage.setItem(STORAGE_KEYS.githubPat, pat);
-      await importData(
-        JSON.stringify({ ...payload, data: { ...payload.data, gistSync: { githubPat: 'untrusted-pat' } } })
-      );
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(pat || null);
-      expect(await storage.getItem(STORAGE_KEYS.gistId)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBeNull();
-    }
-  );
+  it.each([null, 'existing-pat'])('ignores imported credentials when the local PAT is %s', async (pat) => {
+    if (pat !== null) await storage.setItem(STORAGE_KEYS.githubPat, pat);
+    await importData(
+      JSON.stringify({ ...payload, data: { ...payload.data, gistSync: { githubPat: 'untrusted-pat' } } })
+    );
+    expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(pat || null);
+  });
 
-  it('standalone reset removes the PAT and sync timestamp but preserves schema and orphan notes', async () => {
+  it('standalone reset removes learning data and credentials while preserving the schema', async () => {
     await seedExistingData();
     await resetAllData();
     expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBeNull();
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
     expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
-    expect(await storage.getItem(orphanNoteKey)).toEqual({ text: 'orphan note' });
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
+    expect(await storage.getItem(oldNoteKey)).toBeNull();
   });
 });

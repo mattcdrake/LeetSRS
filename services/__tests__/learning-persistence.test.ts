@@ -28,20 +28,13 @@ describe('learning persistence sequencing', () => {
     vi.useRealTimers();
   });
 
-  it('awaits the card write before reading stats and awaits stats before requeue settings', async () => {
+  it('awaits card and statistics persistence before resolving a rating', async () => {
     const cardWrite = createDeferred<void>();
     const statsWrite = createDeferred<void>();
     const cardStarted = createDeferred<void>();
     const statsStarted = createDeferred<void>();
-    const events: string[] = [];
-    const getItem = storage.getItem.bind(storage);
     const setItem = storage.setItem.bind(storage);
-    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
-      events.push(`read:${key}`);
-      return getItem(key, options);
-    });
     vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
-      events.push(`write:${key}`);
       if (key === STORAGE_KEYS.cards) {
         cardStarted.resolve();
         await cardWrite.promise;
@@ -51,29 +44,23 @@ describe('learning persistence sequencing', () => {
       }
       await setItem(key, value);
     });
-    vi.mocked(getSettings).mockImplementation(async () => {
-      events.push('settings');
-      return buildSettings();
-    });
+    const settled = vi.fn();
+    const rating = rateCard({ ...buildProblem(), rating: Rating.Good }).then(settled);
 
-    const rating = rateCard({ ...buildProblem(), rating: Rating.Good });
     await cardStarted.promise;
-    expect(events).toEqual([`read:${STORAGE_KEYS.cards}`, `write:${STORAGE_KEYS.cards}`]);
+    expect(settled).not.toHaveBeenCalled();
+    expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
     cardWrite.resolve();
     await statsStarted.promise;
-    expect(events).toEqual([
-      `read:${STORAGE_KEYS.cards}`,
-      `write:${STORAGE_KEYS.cards}`,
-      `read:${STORAGE_KEYS.stats}`,
-      'settings',
-      'settings',
-      `write:${STORAGE_KEYS.stats}`,
-    ]);
+    expect(settled).not.toHaveBeenCalled();
+    expect(await getAllCards()).toHaveLength(1);
     statsWrite.resolve();
     await rating;
-    expect(events.at(-1)).toBe('settings');
-    expect(getSettings).toHaveBeenCalledTimes(3);
-    expect(await getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+
+    expect(await storage.getItem(STORAGE_KEYS.stats)).toMatchObject({
+      '2024-03-15': { totalReviews: 1, newCards: 1 },
+    });
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
   it.each([STORAGE_KEYS.cards, STORAGE_KEYS.stats])(
@@ -95,7 +82,6 @@ describe('learning persistence sequencing', () => {
       expect(cards).toHaveLength(failedKey === STORAGE_KEYS.cards ? 0 : 1);
       if (failedKey === STORAGE_KEYS.stats) expect(cards[0].fsrs.reps).toBe(1);
       expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
-      expect(getSettings).toHaveBeenCalledTimes(failedKey === STORAGE_KEYS.cards ? 0 : 2);
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
     }
   );

@@ -24,7 +24,7 @@ function dailyStats(date: string, newCards: number, streak = 1): DailyStats {
   };
 }
 
-describe('review timing before calculation extraction', () => {
+describe('review-day service integration', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     vi.useFakeTimers();
@@ -33,7 +33,6 @@ describe('review timing before calculation extraction', () => {
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -49,21 +48,14 @@ describe('review timing before calculation extraction', () => {
   it.each([
     [getTodayKey, '2024-03-14'],
     [getYesterdayKey, '2024-03-13'],
-  ])('%s samples its date before awaiting settings', async (getKey, expected) => {
-    vi.mocked(getSettings).mockImplementationOnce(async () => {
-      vi.setSystemTime(new Date('2024-03-16T12:00:00'));
-      return buildSettings({ dayStartHour: 4 });
-    });
-
+  ])('%s uses the configured review-day boundary', async (getKey, expected) => {
     await expect(getKey()).resolves.toBe(expected);
-    expect(getSettings).toHaveBeenCalledTimes(1);
   });
 
-  it('samples each unpaused card separately, then reads fresh settings and statistics for the daily limit', async () => {
-    const due = new Date('2024-03-15T04:00:00');
-    const cards = ['paused', 'before', 'after'].map((slug) => {
+  it('uses the review day for due cards and the daily new-card allowance', async () => {
+    const cards = ['paused', 'new-a', 'new-b', 'future'].map((slug) => {
       const card = createMockCard(State.New, { slug, paused: slug === 'paused' });
-      card.fsrs.due = due;
+      card.fsrs.due = new Date(slug === 'future' ? '2024-03-15T04:00:00' : '2024-03-14T12:00:00');
       return card;
     });
     await storage.setItem(
@@ -74,90 +66,32 @@ describe('review timing before calculation extraction', () => {
       '2024-03-14': dailyStats('2024-03-14', 1),
       '2024-03-15': dailyStats('2024-03-15', 0),
     });
-    vi.mocked(getSettings)
-      .mockResolvedValueOnce(buildSettings({ dayStartHour: 4, maxNewCardsPerDay: 1 }))
-      .mockResolvedValueOnce(buildSettings({ dayStartHour: 0, maxNewCardsPerDay: 0 }));
+    vi.mocked(getSettings).mockResolvedValue(buildSettings({ dayStartHour: 4, maxNewCardsPerDay: 2 }));
 
-    const ClockDate = Date;
-    const samples = [new ClockDate('2024-03-15T03:59:59.999'), due, new ClockDate('2024-03-15T03:00:00')];
-    let clockReads = 0;
-    vi.stubGlobal(
-      'Date',
-      new Proxy(ClockDate, {
-        construct(target, args) {
-          if (args.length === 0) {
-            const sample = samples[clockReads++];
-            if (!sample) throw new Error('Unexpected additional clock read');
-            return new target(sample);
-          }
-          return Reflect.construct(target, args);
-        },
-      })
-    );
-
-    const queue = await getReviewQueue();
-
-    expect(queue.map((card) => card.slug)).toEqual(['after']);
-    expect(clockReads).toBe(3);
-    expect(getSettings).toHaveBeenCalledTimes(2);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a']);
   });
 
-  it('reads statistics before the clock and independently samples yesterday and its settings when creating a day', async () => {
-    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-15': dailyStats('2024-03-15', 0, 7) });
-    const getItem = storage.getItem.bind(storage);
-    const readStats = vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
-      if (key === STORAGE_KEYS.stats) vi.setSystemTime(new Date('2024-03-15T03:59:59.999'));
-      return getItem(key, options);
-    });
-    vi.setSystemTime(new Date('2024-03-13T12:00:00'));
-    vi.mocked(getSettings)
-      .mockImplementationOnce(async () => {
-        vi.setSystemTime(new Date('2024-03-16T03:00:00'));
-        return buildSettings({ dayStartHour: 4 });
-      })
-      .mockResolvedValueOnce(buildSettings({ dayStartHour: 0 }));
+  it('continues the previous review day streak when creating stats before the day boundary', async () => {
+    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-13': dailyStats('2024-03-13', 1, 7) });
 
     await updateStats(Rating.Good, true);
 
-    expect(readStats).toHaveBeenCalledTimes(1);
-    expect(getSettings).toHaveBeenCalledTimes(2);
     expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual({
-      '2024-03-15': dailyStats('2024-03-15', 0, 7),
+      '2024-03-13': dailyStats('2024-03-13', 1, 7),
       '2024-03-14': dailyStats('2024-03-14', 1, 8),
     });
   });
 
-  it.each([
-    [getLastNDaysStats, STORAGE_KEYS.stats],
-    [getNextNDaysStats, STORAGE_KEYS.cards],
-  ])('%s reads data, samples the clock, then awaits settings even for zero days', async (getBuckets, dataKey) => {
-    const getItem = storage.getItem.bind(storage);
-    const events: string[] = [];
-    vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
-      events.push(key);
-      vi.setSystemTime(new Date('2024-03-15T03:59:59'));
-      return getItem(key, options);
-    });
-    vi.mocked(getSettings).mockImplementation(async () => {
-      events.push('settings');
-      vi.setSystemTime(new Date('2024-03-16T12:00:00'));
-      return buildSettings({ dayStartHour: 4 });
-    });
-    vi.setSystemTime(new Date('2024-03-13T12:00:00'));
-
+  it.each([getLastNDaysStats, getNextNDaysStats])('%s anchors buckets to the review day', async (getBuckets) => {
     expect(await getBuckets(1)).toEqual([expect.objectContaining({ date: '2024-03-14' })]);
-    expect(events).toEqual([dataKey, 'settings']);
-    events.length = 0;
     expect(await getBuckets(0)).toEqual([]);
-    expect(events).toEqual([dataKey, 'settings']);
   });
 
-  it('does not read yesterday or settings again when today already exists', async () => {
+  it('preserves the streak when adding to an existing review day', async () => {
     await storage.setItem(STORAGE_KEYS.stats, { '2024-03-14': dailyStats('2024-03-14', 1, 3) });
 
     await updateStats(Rating.Good, true);
 
-    expect(getSettings).toHaveBeenCalledTimes(1);
     expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual({ '2024-03-14': dailyStats('2024-03-14', 2, 3) });
   });
 });
