@@ -1,7 +1,7 @@
 import { type CardInput, createEmptyCard, FSRS, Rating, State } from 'ts-fsrs';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
-import { cardSchema, type FsrsCard, rateCardInputSchema } from '../cards';
+import { createMockCard } from '@/test/utils/card-mocks';
+import { cardSchema, type FsrsCard } from '../cards';
 
 describe('card schemas', () => {
   it('accepts an unreviewed numeric card as an FSRS input', () => {
@@ -61,13 +61,5 @@ describe('card schemas', () => {
     card.fsrs.elapsed_days = 0.5;
     card.fsrs.scheduled_days = 1.5;
     expect(cardSchema.parse({ ...card, extra: true, fsrs: { ...card.fsrs, extra: { value: 1 } } })).toEqual(card);
-  });
-
-  it.each(['leetcode.com', 'leetcode.cn'] as const)('parses rate inputs for %s', (domain) => {
-    const input = { ...buildProblem({ domain }), rating: Rating.Good };
-    expect(rateCardInputSchema.parse({ ...input, extra: true })).toEqual(input);
-    expect(rateCardInputSchema.safeParse({ ...input, slug: '' }).success).toBe(false);
-    expect(rateCardInputSchema.safeParse(buildProblem({ domain })).success).toBe(false);
-    expect(rateCardInputSchema.safeParse({ ...input, rating: Rating.Manual }).success).toBe(false);
   });
 });

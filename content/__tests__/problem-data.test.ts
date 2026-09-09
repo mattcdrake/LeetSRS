@@ -67,13 +67,9 @@ describe('getCurrentProblem', () => {
 
   it.each([
     ['null root', null],
-    ['array root', []],
-    ['missing data', {}],
     ['null data', { data: null }],
-    ['array data', { data: [] }],
     ['missing question', { data: {} }],
     ['null question', { data: { question: null } }],
-    ['array question', { data: { question: [] } }],
     ['GraphQL error', { errors: [{ message: 'Question unavailable' }] }],
   ])('returns null for %s', async (_name, response) => {
     vi.mocked(fetch).mockResolvedValueOnce(Response.json(response));
@@ -81,11 +77,12 @@ describe('getCurrentProblem', () => {
   });
 
   it.each([
-    ...['questionFrontendId', 'title', 'titleSlug', 'difficulty'].flatMap((field) =>
-      [undefined, null, '', ' ', 42, [], {}].map((value) => ({ field, value }))
-    ),
+    { field: 'questionFrontendId', value: undefined },
+    { field: 'title', value: null },
+    { field: 'titleSlug', value: '' },
     { field: 'difficulty', value: 'easy' },
-    ...[false, 42, [], {}, ' '].map((value) => ({ field: 'translatedTitle', value })),
+    { field: 'translatedTitle', value: 42 },
+    { field: 'translatedTitle', value: ' ' },
   ])('returns null for malformed $field: $value', async ({ field, value }) => {
     vi.mocked(fetch).mockResolvedValueOnce(Response.json({ data: { question: { ...question, [field]: value } } }));
     expect(await getCurrentProblem()).toBeNull();

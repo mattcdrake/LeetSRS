@@ -34,8 +34,8 @@ describe('settings service', () => {
 
   it('persists and exports all seven settings', async () => {
     const settings = buildSettings({
-      maxNewCardsPerDay: 9,
-      dayStartHour: 4,
+      maxNewCardsPerDay: 0,
+      dayStartHour: 0,
       theme: 'dark',
       resetEditorOnEveryProblem: true,
       resetEditorOnDueReview: true,
@@ -62,6 +62,7 @@ describe('settings service', () => {
     await storage.setItem(STORAGE_KEYS[key], value);
     expect(await getSettings()).toEqual(buildSettings({ language: 'pl' }));
     expect(await exportSettings()).toEqual({});
+    expect(await storage.getItem(STORAGE_KEYS[key])).toEqual(value);
   });
 
   it('ignores undefined, unknown, and inherited updates without writes or tracking', async () => {

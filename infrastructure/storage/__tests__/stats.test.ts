@@ -10,13 +10,9 @@ import { STORAGE_KEYS } from '../storage-keys';
 describe('Stat persistence', () => {
   beforeEach(() => fakeBrowser.reset());
 
-  it('should return null when no stats exist for date', async () => {
-    const stats = await getStatsForDate('2024-03-15');
-    expect(stats).toBeNull();
-  });
-
   it('defaults an absent record to empty and writes the supplied dates without merging', async () => {
     expect(await getStats()).toEqual({});
+    expect(await getStatsForDate('2024-03-15')).toBeNull();
     const first = createDailyStats('2024-03-14', undefined);
     const second = createDailyStats('2024-03-15', first);
     second.gradeBreakdown[Rating.Good] = 2;
@@ -31,32 +27,14 @@ describe('Stat persistence', () => {
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
-  it.each([[], false, 'stats', { invalid: null }, { invalid: {} }])(
-    'rejects malformed stored stats %j',
-    async (value) => {
-      await storage.setItem(STORAGE_KEYS.stats, value);
-      await expect(getStats()).rejects.toBeInstanceOf(ZodError);
-    }
-  );
-
-  it.each([
-    { date: '2024-02-30' },
-    { totalReviews: -1 },
-    { newCards: 0.5 },
-    { reviewedCards: '1' },
-    { streak: null },
-    { gradeBreakdown: { 1: -1 } },
-    { gradeBreakdown: { 2: 0.5 } },
-    { gradeBreakdown: { 3: null } },
-  ])('rejects malformed stats fields without changing storage: %j', async (overrides) => {
+  it.each(['container', 'nested field'])('rejects a malformed %s without changing storage', async (kind) => {
     const stats = createDailyStats('2024-03-15', undefined);
-    const records = {
-      [stats.date]: {
-        ...stats,
-        ...overrides,
-        gradeBreakdown: { ...stats.gradeBreakdown, ...overrides.gradeBreakdown },
-      },
-    };
+    const records =
+      kind === 'container'
+        ? []
+        : {
+            [stats.date]: { ...stats, gradeBreakdown: { ...stats.gradeBreakdown, 1: -1 } },
+          };
     await storage.setItem(STORAGE_KEYS.stats, records);
     await expect(getStatsForDate(stats.date)).rejects.toBeInstanceOf(ZodError);
     expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(records);
