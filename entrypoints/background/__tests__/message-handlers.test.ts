@@ -1,13 +1,20 @@
-import { describe, expect, it, vi } from 'vitest';
-import { onMessage } from '@/infrastructure/browser/messages';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { storage } from 'wxt/utils/storage';
+import { ZodError } from 'zod';
+import { type MessageData, type MessageName, onMessage } from '@/infrastructure/browser/messages';
 import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
 import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { messages, registerBackgroundMessages } from '../message-handlers';
 import type { BackgroundMessageRegistry } from '../message-runner';
 
-vi.mock('@/infrastructure/browser/messages', () => ({ onMessage: vi.fn() }));
+vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
+  onMessage: vi.fn(),
+}));
 vi.mock('@/services/gist-setup', () => ({
   createNewGist: vi.fn(),
   getGistSyncConfig: vi.fn(),
@@ -141,5 +148,157 @@ describe('background message registration', () => {
     release.resolve();
     await Promise.all([pendingMessage, pendingDirect]);
     expect(events).toEqual(['message', 'mark', 'direct', 'mark']);
+  });
+});
+
+const problem = buildProblem();
+const payloadCases: [MessageName, Record<string, unknown>, unknown[]][] = [
+  [
+    'addCard',
+    { problem },
+    [
+      { problem: null },
+      { problem: { ...problem, slug: '' } },
+      { problem: { ...problem, difficulty: 'Impossible' } },
+      { problem: { ...problem, domain: 'example.com' } },
+    ],
+  ],
+  ['removeCard', { slug: problem.slug }, [{ slug: '' }, { slug: 42 }]],
+  [
+    'delayCard',
+    { slug: problem.slug, days: 1 },
+    [
+      { slug: problem.slug, days: -1 },
+      { slug: problem.slug, days: 0.5 },
+      { slug: problem.slug, days: '1' },
+      { slug: problem.slug, days: Infinity },
+    ],
+  ],
+  ['setPauseStatus', { slug: problem.slug, paused: false }, [{ slug: problem.slug, paused: 'false' }]],
+  [
+    'rateCard',
+    { input: { ...problem, rating: 4 } },
+    [
+      { input: { ...problem, rating: 0 } },
+      { input: { ...problem, rating: 5 } },
+      { input: { ...problem, rating: '3' } },
+      { input: { ...problem, rating: 2.5 } },
+    ],
+  ],
+  ['getNote', { cardId: 'card' }, [{ cardId: '' }, { cardId: null }]],
+  [
+    'saveNote',
+    { cardId: 'card', text: 'a'.repeat(500) },
+    [
+      { cardId: 'card', text: 'a'.repeat(501) },
+      { cardId: 'card', text: 42 },
+      { cardId: ' ', text: '' },
+    ],
+  ],
+  ['deleteNote', { cardId: 'card' }, [{ cardId: '' }, { cardId: 42 }]],
+  [
+    'updateSettings',
+    { changes: { theme: 'dark', badgeEnabled: false } },
+    [{ changes: null }, { changes: [] }, { changes: { language: 'constructor' } }, { changes: { dayStartHour: 24 } }],
+  ],
+  [
+    'shouldResetEditor',
+    { slug: problem.slug, domain: 'leetcode.cn' },
+    [
+      { slug: problem.slug, domain: 'example.com' },
+      { slug: '', domain: 'leetcode.com' },
+    ],
+  ],
+  ['getLastNDaysStats', { days: 0 }, [{ days: -1 }, { days: 0.5 }, { days: '30' }, { days: NaN }]],
+  ['getNextNDaysStats', { days: 14 }, [{ days: -1 }, { days: 0.5 }, { days: '14' }, { days: Infinity }]],
+  ['importData', { jsonData: '{}' }, [{ jsonData: {} }, { jsonData: null }]],
+  [
+    'setGistSyncConfig',
+    { config: { gistId: null, pat: '', enabled: false } },
+    [
+      { config: null },
+      { config: [] },
+      { config: { gistId: 42 } },
+      { config: { pat: null } },
+      { config: { enabled: 'false' } },
+    ],
+  ],
+  ['validatePat', { pat: '' }, [{ pat: null }, { pat: 42 }]],
+  [
+    'validateGistId',
+    { gistId: '', pat: ' token ' },
+    [
+      { gistId: null, pat: 'token' },
+      { gistId: 'gist', pat: 42 },
+    ],
+  ],
+];
+
+// Deliberately bypass the sender's TypeScript contract to exercise untrusted RPC input.
+function dispatchRaw(name: MessageName, data: unknown) {
+  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
+  if (!listener) throw new Error(`Missing listener for ${name}`);
+  return listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} });
+}
+
+describe('background payload validation', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+    fakeBrowser.runtime.id = 'test';
+  });
+
+  it.each(
+    payloadCases.flatMap(([name, _valid, invalid]) =>
+      [undefined, null, [], {}, ...invalid].map((data): [MessageName, unknown] => [name, data])
+    )
+  )('rejects %s payload %j before handlers or effects', async (name, data) => {
+    const handler = vi.spyOn(messages[name], 'handler');
+    const writes = vi.spyOn(storage, 'setItem');
+    const removals = vi.spyOn(storage, 'removeItem');
+    const markDataUpdated = vi.fn();
+    const refreshBadge = vi.fn();
+    registerBackgroundMessages(messages, { ready: Promise.resolve(), markDataUpdated, refreshBadge });
+    const before = await fakeBrowser.storage.local.get(null);
+
+    await expect(dispatchRaw(name, data)).rejects.toBeInstanceOf(ZodError);
+    expect(handler).not.toHaveBeenCalled();
+    expect(writes).not.toHaveBeenCalled();
+    expect(removals).not.toHaveBeenCalled();
+    expect(markDataUpdated).not.toHaveBeenCalled();
+    expect(refreshBadge).not.toHaveBeenCalled();
+    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+  });
+
+  it.each(payloadCases)('forwards valid %s payloads after stripping unknown envelope fields', async (name, data) => {
+    const handler = vi.spyOn(messages[name], 'handler').mockResolvedValue(undefined);
+    registerBackgroundMessages(messages, {
+      ready: Promise.resolve(),
+      markDataUpdated: vi.fn(),
+      refreshBadge: vi.fn(),
+    });
+    await dispatchRaw(name, { ...data, extra: true });
+    expect(handler).toHaveBeenCalledExactlyOnceWith(data);
+  });
+
+  it.each([
+    ['addCard', { problem: { ...problem, extra: true } }, { problem }],
+    ['rateCard', { input: { ...problem, rating: 1, extra: true } }, { input: { ...problem, rating: 1 } }],
+    [
+      'updateSettings',
+      {
+        changes: Object.assign(Object.create({ badgeEnabled: false }), {
+          theme: undefined,
+          dayStartHour: 4,
+          extra: true,
+        }),
+      },
+      { changes: { dayStartHour: 4 } },
+    ],
+    ['setGistSyncConfig', { config: { extra: true } }, { config: {} }],
+  ] satisfies [MessageName, unknown, unknown][])('strips unknown nested %s fields', async (name, data, expected) => {
+    const handler = vi.spyOn(messages[name], 'handler').mockResolvedValue(undefined);
+    registerBackgroundMessages(messages, { ready: Promise.resolve(), markDataUpdated: vi.fn(), refreshBadge: vi.fn() });
+    await dispatchRaw(name, data);
+    expect(handler).toHaveBeenCalledExactlyOnceWith(expected);
   });
 });
