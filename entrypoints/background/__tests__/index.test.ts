@@ -4,7 +4,8 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { onMessage } from '@/infrastructure/browser/messages';
-import { runMigrations } from '@/infrastructure/storage/migrations';
+import * as tracker from '@/infrastructure/storage/data-tracker';
+import { runStartupMigrations } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
@@ -18,7 +19,7 @@ import { messages } from '../message-handlers';
 
 vi.mock('octokit', () => ({ Octokit: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', () => ({ onMessage: vi.fn() }));
-vi.mock('@/infrastructure/storage/migrations', () => ({ migrations: [], runMigrations: vi.fn() }));
+vi.mock('@/infrastructure/storage/migrations', () => ({ runStartupMigrations: vi.fn() }));
 vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
 vi.mock('@/services/settings', () => ({ getSettings: vi.fn(), updateSettings: vi.fn() }));
 
@@ -34,7 +35,7 @@ describe('background sync alarm', () => {
   beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
-    vi.mocked(runMigrations).mockResolvedValue(undefined);
+    vi.mocked(runStartupMigrations).mockResolvedValue(undefined);
     vi.mocked(getSettings).mockResolvedValue(buildSettings());
     vi.spyOn(cards, 'getReviewQueue').mockResolvedValue([]);
     vi.mocked(triggerGistSync).mockResolvedValue({ success: true, action: 'no-change', timestamp: 'now' });
@@ -76,7 +77,7 @@ describe('background sync alarm', () => {
 
   it('registers synchronously but waits for startup before checking readiness', async () => {
     const migrations = createDeferred<void>();
-    vi.mocked(runMigrations).mockReturnValue(migrations.promise);
+    vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
     const credentials = vi.spyOn(auth, 'hasGitHubCredentials');
     const destination = vi.spyOn(setup, 'getGistDestinationConfig');
     const fireAlarm = startBackground();
@@ -90,6 +91,61 @@ describe('background sync alarm', () => {
     await pending;
     expect(triggerGistSync).toHaveBeenCalledOnce();
   });
+
+  it.each(['pending', 'failed'] as const)(
+    'blocks RPCs and sync alarms when migration fails (submitted while %s)',
+    async (startupState) => {
+      const migrations = createDeferred<void>();
+      const failure = new Error('migration failed');
+      vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
+      const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const readHandler = vi.spyOn(messages.getAllCards, 'handler').mockResolvedValue([]);
+      const writeHandler = vi.spyOn(messages.removeCard, 'handler').mockResolvedValue(undefined);
+      const tracking = vi.spyOn(tracker, 'markDataUpdated');
+      const writes = vi.spyOn(storage, 'setItem');
+      const credentials = vi.spyOn(auth, 'hasGitHubCredentials');
+      const destination = vi.spyOn(setup, 'getGistDestinationConfig');
+      const alarmRead = vi.spyOn(browser.alarms, 'get');
+      const alarmCreate = vi.spyOn(browser.alarms, 'create');
+      const badgeText = vi.spyOn(browser.action, 'setBadgeText');
+      const badgeColor = vi.spyOn(browser.action, 'setBadgeBackgroundColor');
+      const fireAlarm = startBackground();
+      const readListener = vi.mocked(onMessage).mock.calls.find(([name]) => name === 'getAllCards')?.[1];
+      const writeListener = vi.mocked(onMessage).mock.calls.find(([name]) => name === 'removeCard')?.[1];
+      if (!readListener || !writeListener) throw new Error('RPC listeners were not registered synchronously');
+
+      if (startupState === 'failed') {
+        migrations.reject(failure);
+        await vi.waitFor(() => expect(report).toHaveBeenCalled());
+      }
+      const results = Promise.allSettled([
+        readListener({ id: 1, type: 'getAllCards', data: undefined, timestamp: 0, sender: {} }),
+        writeListener({ id: 2, type: 'removeCard', data: { slug: 'two-sum' }, timestamp: 0, sender: {} }),
+        fireAlarm(),
+      ]);
+      if (startupState === 'pending') migrations.reject(failure);
+      const [read, write, alarm] = await results;
+
+      expect.soft(read).toEqual({ status: 'rejected', reason: failure });
+      expect.soft(write).toEqual({ status: 'rejected', reason: failure });
+      expect.soft(alarm).toEqual({ status: 'fulfilled', value: undefined });
+      expect.soft(readHandler).not.toHaveBeenCalled();
+      expect.soft(writeHandler).not.toHaveBeenCalled();
+      expect.soft(triggerGistSync).not.toHaveBeenCalled();
+      expect.soft(Octokit).not.toHaveBeenCalled();
+      expect.soft(tracking).not.toHaveBeenCalled();
+      expect.soft(writes).not.toHaveBeenCalled();
+      expect.soft(credentials).not.toHaveBeenCalled();
+      expect.soft(destination).not.toHaveBeenCalled();
+      expect.soft(alarmRead).not.toHaveBeenCalled();
+      expect.soft(alarmCreate).not.toHaveBeenCalled();
+      expect.soft(getSettings).not.toHaveBeenCalled();
+      expect.soft(cards.getReviewQueue).not.toHaveBeenCalled();
+      expect.soft(badgeText).not.toHaveBeenCalled();
+      expect.soft(badgeColor).not.toHaveBeenCalled();
+      expect(report).toHaveBeenCalledExactlyOnceWith('Failed to initialize background:', failure);
+    }
+  );
 
   it('keeps alarm sync behind writes submitted through messaging', async () => {
     const writeStarted = createDeferred<void>();

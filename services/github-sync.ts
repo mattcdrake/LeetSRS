@@ -1,6 +1,6 @@
 import { decideGistSync, type GistSyncDecision, type GistSyncStatus, type SyncResult } from '@/domain/gist-sync';
 import { GIST_FILENAME } from '@/infrastructure/github/client';
-import type { ExportData } from '@/infrastructure/storage/backup/codec';
+import type { ExportData } from '@/infrastructure/storage/backup';
 import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getGistDestinationConfig } from './gist-setup';
 import { getAuthenticatedGitHubClient, getGitHubPat } from './github-auth';

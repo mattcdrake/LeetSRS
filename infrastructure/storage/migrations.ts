@@ -1,66 +1,73 @@
 import { storage } from '#imports';
 import { STORAGE_KEYS } from './storage-keys';
 
-export interface Migration {
-  version: number;
-  description: string;
-  migrate: () => Promise<void>;
+// Fields the migrations currently touch; other backup fields pass through unchanged.
+// Cards may be absent in storage, and legacy records have not yet been validated.
+interface MigrationData {
+  cards?: Record<string, unknown>;
 }
 
-const SCHEMA_VERSION_KEY = STORAGE_KEYS.schemaVersion;
+export interface Migration {
+  description: string;
+  migrate: (data: MigrationData) => MigrationData;
+}
 
 export async function getCurrentSchemaVersion(): Promise<number> {
-  const version = await storage.getItem<number>(SCHEMA_VERSION_KEY);
-  return version ?? 0;
+  return (await storage.getItem<number>(STORAGE_KEYS.schemaVersion)) ?? 0;
 }
 
 export async function setSchemaVersion(version: number): Promise<void> {
-  await storage.setItem(SCHEMA_VERSION_KEY, version);
+  await storage.setItem(STORAGE_KEYS.schemaVersion, version);
 }
 
-export async function runMigrations(migrations: Migration[]): Promise<void> {
-  const seenVersions = new Set<number>();
-  for (const migration of migrations) {
-    if (seenVersions.has(migration.version)) {
-      throw new Error(`Duplicate migration version detected: ${migration.version}`);
-    }
-    seenVersions.add(migration.version);
-  }
-
-  const currentVersion = await getCurrentSchemaVersion();
-  const sortedMigrations = [...migrations].sort((a, b) => a.version - b.version);
-
-  for (const migration of sortedMigrations) {
-    if (migration.version > currentVersion) {
-      try {
-        await migration.migrate();
-        await setSchemaVersion(migration.version);
-      } catch (error) {
-        throw new Error(`Failed to run migration ${migration.version}: ${error}`);
-      }
-    }
-  }
-}
-
-export const migrations: Migration[] = [
+// Append only: index + 1 is the schema version. Never reorder or remove entries.
+const migrations: readonly Migration[] = [
   {
-    version: 1,
     description: 'Add domain field to existing cards, defaulting to leetcode.com',
-    migrate: async () => {
-      const cards = await storage.getItem<Record<string, { domain?: string }>>(STORAGE_KEYS.cards);
-      if (cards) {
-        for (const slug in cards) {
-          if (!cards[slug].domain) {
-            cards[slug].domain = 'leetcode.com';
-          }
-        }
-        await storage.setItem(STORAGE_KEYS.cards, cards);
-      }
+    migrate: (data: MigrationData): MigrationData => {
+      if (!data.cards) return data;
+      const cards = Object.fromEntries(
+        Object.entries(data.cards).map(([slug, card]) => {
+          // Leave malformed records for record validation after migration.
+          if (typeof card !== 'object' || card === null || Array.isArray(card)) return [slug, card];
+          if ('domain' in card && card.domain) return [slug, card];
+          return [slug, { ...card, domain: 'leetcode.com' }];
+        })
+      );
+      return { ...data, cards };
     },
   },
   {
-    version: 2,
     description: 'Add system theme preference',
-    migrate: async () => {},
+    migrate: (data: MigrationData): MigrationData => data,
   },
 ];
+
+export function migrateBackupData<T extends MigrationData>(data: T, schemaVersion: number): T {
+  if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {
+    throw new Error(`Unsupported schema version: ${schemaVersion}`);
+  }
+  let migrated = data;
+  for (const migration of migrations.slice(schemaVersion)) {
+    migrated = { ...migrated, ...migration.migrate(migrated) };
+  }
+  return migrated;
+}
+
+export async function runStartupMigrations(steps: readonly Migration[] = migrations): Promise<void> {
+  const currentVersion = await getCurrentSchemaVersion();
+  for (const [index, migration] of steps.slice(currentVersion).entries()) {
+    const version = currentVersion + index + 1;
+    try {
+      const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
+      const data = { cards: cards ?? undefined };
+      const migrated = migration.migrate(data);
+      if (migrated.cards !== undefined) {
+        await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
+      }
+      await setSchemaVersion(version);
+    } catch (error) {
+      throw new Error(`Failed to run migration ${version}: ${error}`);
+    }
+  }
+}

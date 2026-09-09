@@ -1,17 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createDeferred } from '@/test/utils/deferred';
-import { getNoteStorageKey, STORAGE_KEYS } from '../../storage-keys';
-import { parseImportData } from '../codec';
 import {
   readSnapshotCards,
   readSnapshotNotes,
   removeSnapshotCards,
   removeSnapshotNotes,
+  validateBackupRecords,
   writeSnapshotCards,
   writeSnapshotNotes,
-} from '../snapshot';
+} from '../backup';
+import { getNoteStorageKey, STORAGE_KEYS } from '../storage-keys';
 
 const rawCards = {
   first: { id: 'first', legacyField: true },
@@ -81,7 +82,7 @@ describe('snapshot storage', () => {
   });
 
   it('retains partial note writes and never starts later writes after a failure', async () => {
-    const notes = parseImportData(
+    const notes = JSON.parse(
       JSON.stringify({ data: { notes: { first: { text: 'first' }, second: null, third: { text: 'third' } } } })
     ).data.notes;
     const failure = new Error('note write failed');
@@ -100,5 +101,64 @@ describe('snapshot storage', () => {
     expect(await storage.getItem(getNoteStorageKey('first'))).toEqual({ text: 'first' });
     expect(await storage.getItem(getNoteStorageKey('third'))).toBeNull();
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+  });
+});
+
+describe('backup record validation', () => {
+  it.each([
+    { createdAt: 1e100 },
+    { createdAt: null },
+    { difficulty: ['Easy'] },
+    { fsrs: { due: 1e100 } },
+    { fsrs: { stability: -1 } },
+    { fsrs: { difficulty: Number.POSITIVE_INFINITY } },
+    { fsrs: { reps: 0.5 } },
+    { fsrs: { state: 1.5 } },
+  ])('rejects malformed card fields: %j', (overrides) => {
+    const { accepted } = mixedRecordBackup();
+    const card = accepted.cards['two-sum'];
+    expect(() =>
+      validateBackupRecords({
+        cards: { invalid: { ...card, ...overrides, fsrs: { ...card.fsrs, ...overrides.fsrs } } },
+        stats: {},
+        notes: {},
+      })
+    ).toThrow();
+  });
+
+  it('preserves unknown nested fields without coercing accepted values', () => {
+    const { accepted } = mixedRecordBackup();
+    const card = {
+      ...accepted.cards['two-sum'],
+      name: '  Two Sum  ',
+      fsrs: { ...accepted.cards['two-sum'].fsrs, extra: { source: 'legacy' } },
+    };
+    const stats = {
+      ...accepted.stats['2024-01-01'],
+      gradeBreakdown: { ...accepted.stats['2024-01-01'].gradeBreakdown, extra: 42 },
+    };
+    const records = { cards: { 'two-sum': card }, stats: { '2024-01-01': stats }, notes: {} };
+    expect(validateBackupRecords(records)).toEqual(records);
+  });
+
+  it('accepts an unreviewed card with zero FSRS values and no last review', () => {
+    const { accepted } = mixedRecordBackup();
+    const card = {
+      ...accepted.cards['two-sum'],
+      fsrs: {
+        due: 0,
+        state: 0,
+        stability: 0,
+        difficulty: 0,
+        elapsed_days: 0,
+        scheduled_days: 0,
+        reps: 0,
+        lapses: 0,
+        learning_steps: 0,
+      },
+    };
+    expect(validateBackupRecords({ cards: { 'two-sum': card }, stats: {}, notes: {} }).cards).toEqual({
+      'two-sum': card,
+    });
   });
 });

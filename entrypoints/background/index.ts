@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
-import { migrations, runMigrations } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations } from '@/infrastructure/storage/migrations';
 import { getReviewQueue } from '@/services/cards';
 import { getGistDestinationConfig } from '@/services/gist-setup';
 import { hasGitHubCredentials } from '@/services/github-auth';
@@ -24,11 +24,9 @@ async function updateBadge() {
 }
 
 export default defineBackground(() => {
-  // Initialize async and track completion so message handlers can wait
+  // Keep message and alarm handlers from accessing storage while startup migrations are running.
   const readyPromise = (async () => {
-    await runMigrations(migrations).catch((error) => {
-      console.error('Failed to run migrations:', error);
-    });
+    await runStartupMigrations();
 
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {
@@ -39,6 +37,11 @@ export default defineBackground(() => {
 
     await updateBadge();
   })();
+
+  // Report startup failure without replacing the rejected readiness promise.
+  void readyPromise.catch((error) => {
+    console.error('Failed to initialize background:', error);
+  });
 
   const messageRunner = registerBackgroundMessages(messages, {
     ready: readyPromise,
@@ -51,7 +54,12 @@ export default defineBackground(() => {
   browser.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name !== SYNC_ALARM_NAME) return;
 
-    await readyPromise;
+    try {
+      await readyPromise;
+    } catch {
+      // Startup already reported the failure; alarms have no caller to receive it.
+      return;
+    }
 
     const [config, hasCredentials] = await Promise.all([getGistDestinationConfig(), hasGitHubCredentials()]);
     if (config.enabled && hasCredentials && config.gistId) {

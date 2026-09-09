@@ -2,7 +2,9 @@ import { Octokit } from 'octokit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
@@ -57,6 +59,23 @@ describe('github-sync', () => {
   });
 
   describe('triggerGistSync', () => {
+    it('rejects an invalid pull without changing local data or sync metadata', async () => {
+      await setSchemaVersion(2);
+      const { payload, accepted } = mixedRecordBackup();
+      const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
+      await actual.importData(JSON.stringify({ ...payload, data: accepted }));
+      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-01-01T00:00:00.000Z');
+      const before = await fakeBrowser.storage.local.get(null);
+      mockImportData.mockImplementation(actual.importData);
+      mockGistsGet.mockResolvedValue({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(payload) } } },
+      });
+      expect(await triggerGistSync()).toMatchObject({ success: false, error: expect.any(String) });
+      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      expect(mockGistsUpdate).not.toHaveBeenCalled();
+    });
+
     beforeEach(async () => {
       await storage.setItem(STORAGE_KEYS.githubPat, 'ghp_test');
       await storage.setItem(STORAGE_KEYS.gistId, 'gist123');

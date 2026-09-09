@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeImportData, validateImportStructure } from '../backup-import';
+import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { normalizeImportData, validateImportRelationships, validateImportStructure } from '../backup-import';
 
 const incomingTime = '2024-01-01T00:00:00.000Z';
 const payload = {
@@ -15,7 +16,32 @@ const payload = {
 };
 
 describe('backup import policy', () => {
-  it('retains shallow validation, unknown fields, and current-setting precedence over legacy values', () => {
+  it('accepts valid relationships', () => {
+    expect(() => validateImportRelationships(mixedRecordBackup().accepted)).not.toThrow();
+  });
+
+  it.each(['slug', 'duplicate', 'date', 'orphan'] as const)('rejects an invalid %s relationship', (kind) => {
+    const { accepted } = mixedRecordBackup();
+    const records = {
+      cards: { ...accepted.cards },
+      stats: { ...accepted.stats },
+      notes: { ...accepted.notes },
+    };
+    if (kind === 'slug') records.cards['two-sum'].slug = 'different';
+    if (kind === 'duplicate') records.cards['cn-problem'].id = records.cards['two-sum'].id;
+    if (kind === 'date') records.stats['2024-01-01'].date = '2024-01-02';
+    if (kind === 'orphan') delete (records.cards as Record<string, unknown>)['two-sum'];
+    expect(() => validateImportRelationships(records)).toThrow(
+      {
+        slug: 'Card slug does not match key: two-sum',
+        duplicate: 'Duplicate card ID: valid-com',
+        date: 'Stats date does not match key: 2024-01-01',
+        orphan: 'Note has no owning card: valid-com',
+      }[kind]
+    );
+  });
+
+  it('retains unknown fields and current-setting precedence over legacy values', () => {
     const prepared = normalizeImportData(
       JSON.parse(
         JSON.stringify({
@@ -35,22 +61,34 @@ describe('backup import policy', () => {
     );
     expect(prepared).toEqual({
       ...payload.data,
+      schemaVersion: 0,
       settings: { resetEditorOnEveryProblem: false, unknownSetting: 'retained' },
       dataUpdatedAt: incomingTime,
     });
-    const arrays = normalizeImportData(
-      JSON.parse(JSON.stringify({ exportDate: 'not-validated-as-date', data: { cards: [], stats: [], notes: [] } })),
-      0
-    );
-    expect(arrays).toEqual({
-      cards: [],
-      stats: [],
-      notes: [],
+  });
+
+  it.each(malformedBackupCases(payload))('rejects malformed envelope: %s', (_name, json) => {
+    expect(() => {
+      const data = JSON.parse(json);
+      validateImportStructure(data);
+      normalizeImportData(data, 2);
+    }).toThrow();
+  });
+
+  it('accepts empty object maps and omitted optional configuration and schema', () => {
+    const data = JSON.parse(JSON.stringify({ exportDate: incomingTime, data: { cards: {}, stats: {}, notes: {} } }));
+    validateImportStructure(data);
+    expect(normalizeImportData(data, 2)).toEqual({
+      schemaVersion: 0,
+      cards: {},
+      stats: {},
+      notes: {},
       settings: {},
       gistSync: undefined,
       dataUpdatedAt: undefined,
     });
   });
+
   it.each([
     ['missing export date', JSON.stringify({ data: {} }), 'Invalid export data structure'],
     [
@@ -82,7 +120,7 @@ describe('backup import policy', () => {
     }).toThrow(message);
   });
 
-  it('preserves the native error for a null JSON root', () => {
-    expect(() => validateImportStructure(JSON.parse('null'))).toThrow(TypeError);
+  it('rejects a null JSON root with a structure error', () => {
+    expect(() => validateImportStructure(JSON.parse('null'))).toThrow('Invalid export data structure');
   });
 });

@@ -1,8 +1,11 @@
+import { createEmptyCard } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { SETTING_KEYS } from '@/domain/settings';
+import { createDailyStats } from '@/domain/statistics';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createDeferred } from '@/test/utils/deferred';
 import { exportData, importData, prepareImportData, resetAllData } from '../import-export';
 
@@ -15,8 +18,17 @@ const payload = {
   exportDate: incomingTime,
   dataUpdatedAt: incomingTime,
   data: {
-    cards: { imported: { id: 'new', unknownField: 'retained' } },
-    stats: { arbitrary: { unknownField: 42 } },
+    cards: {
+      imported: {
+        ...buildProblem({ slug: 'imported' }),
+        id: 'new',
+        createdAt: Date.parse(incomingTime),
+        paused: false,
+        fsrs: { ...createEmptyCard(new Date(incomingTime)), due: Date.parse(incomingTime) },
+        unknownField: 'retained',
+      },
+    },
+    stats: { '2024-01-01': { ...createDailyStats('2024-01-01', undefined), unknownField: 42 } },
     notes: { new: { text: 'new note', unknownField: true } },
     settings: { theme: 'dark' },
     gistSync: { gistId: 'incoming-gist', enabled: false },
@@ -110,7 +122,7 @@ describe('backup workflow characterization', () => {
     expect(read).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.schemaVersion);
   });
 
-  it('generates a missing import timestamp after the schema read, preserving an empty timestamp', async () => {
+  it('generates a missing import timestamp after the schema read, rejecting an empty timestamp', async () => {
     const schema = createDeferred<number>();
     const read = storage.getItem.bind(storage);
     vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
@@ -120,7 +132,9 @@ describe('backup workflow characterization', () => {
     vi.setSystemTime(new Date(incomingTime));
     schema.resolve(2);
     expect((await preparing).dataUpdatedAt).toBe(incomingTime);
-    expect((await prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: '' }))).dataUpdatedAt).toBe('');
+    await expect(prepareImportData(JSON.stringify({ ...payload, dataUpdatedAt: '' }))).rejects.toThrow(
+      'Invalid update timestamp'
+    );
   });
 
   it('resets before restoration and overwrites the settings timestamp with the imported timestamp', async () => {

@@ -1,73 +1,87 @@
+import { z } from 'zod';
+import type { Card } from './cards';
 import { type Settings, validateSettings } from './settings';
+import type { DailyStats } from './statistics';
 
-// Record contents pass through untouched; persistence owns their representation.
-interface BackupImportData<Cards, Stats, Notes> {
-  schemaVersion?: number;
-  exportDate?: string;
-  dataUpdatedAt?: string;
-  data: {
-    cards: Cards;
-    stats: Stats;
-    notes: Notes;
-    settings?: Partial<Settings> & {
-      animationsEnabled?: boolean;
-      autoClearLeetcode?: boolean;
-    };
-    gistSync?: { gistId?: string; enabled?: boolean };
-  };
+const objectMapSchema = z.record(z.string(), z.unknown());
+const structureSchema = z.looseObject({
+  exportDate: z.unknown().refine(Boolean),
+  data: objectMapSchema,
+});
+type BackupImportEnvelope = z.infer<typeof structureSchema>;
+const schemaVersionSchema = z
+  .number()
+  .refine((value) => Number.isInteger(value) && value >= 0)
+  .optional();
+// Preserve legacy timestamp formats accepted by Date.parse.
+const timestampSchema = z.string().refine((value) => Number.isFinite(Date.parse(value)));
+const gistSyncSchema = z
+  .looseObject({
+    gistId: z.string().optional(),
+    enabled: z.boolean().optional(),
+  })
+  .optional();
+
+function parseImportField<T>(schema: z.ZodType<T>, value: unknown, message: string): T {
+  const result = schema.safeParse(value);
+  if (!result.success) throw new Error(message);
+  return result.data;
 }
 
-export function validateImportStructure(data: { exportDate?: unknown; data?: unknown }): void {
-  // Validate structure (schemaVersion is optional for backward compat with legacy exports)
-  if (!data.exportDate || !data.data) {
-    throw new Error('Invalid export data structure');
-  }
+export function validateImportStructure(data: unknown): asserts data is BackupImportEnvelope {
+  parseImportField(structureSchema, data, 'Invalid export data structure');
 }
 
-function getImportedSettings(
-  settings: BackupImportData<unknown, unknown, unknown>['data']['settings'] | undefined
-): Partial<Settings> {
-  if (!settings) return {};
+function getImportedSettings(settings: unknown): Partial<Settings> {
+  if (settings === undefined) return {};
+  const values = parseImportField(objectMapSchema, settings, 'Invalid settings data');
 
-  const resetEditorOnEveryProblem = settings.resetEditorOnEveryProblem ?? settings.autoClearLeetcode;
-  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = settings;
-  return {
+  const resetEditorOnEveryProblem =
+    values.resetEditorOnEveryProblem !== undefined ? values.resetEditorOnEveryProblem : values.autoClearLeetcode;
+  const { animationsEnabled: _animationsEnabled, autoClearLeetcode: _autoClearLeetcode, ...currentSettings } = values;
+  const importedSettings = {
     ...currentSettings,
-    ...(resetEditorOnEveryProblem != null && { resetEditorOnEveryProblem }),
+    ...(resetEditorOnEveryProblem !== undefined && { resetEditorOnEveryProblem }),
   };
+  // Validate known settings while retaining unrelated fields for compatibility.
+  validateSettings(importedSettings as Partial<Settings>);
+  return importedSettings as Partial<Settings>;
 }
 
-export function normalizeImportData<Cards, Stats, Notes>(
-  data: BackupImportData<Cards, Stats, Notes>,
-  currentSchema: number
-) {
-  const importedSchema = data.schemaVersion ?? 0; // Legacy exports without schemaVersion = 0
-
+export function normalizeImportData(data: BackupImportEnvelope, currentSchema: number) {
+  const importedSchema = parseImportField(schemaVersionSchema, data.schemaVersion, 'Invalid schema version') ?? 0;
   if (importedSchema > currentSchema) {
     throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
   }
-
-  if (typeof data.data.cards !== 'object' || data.data.cards === null) {
-    throw new Error('Invalid cards data');
-  }
-
-  if (typeof data.data.stats !== 'object' || data.data.stats === null) {
-    throw new Error('Invalid stats data');
-  }
-
-  if (typeof data.data.notes !== 'object' || data.data.notes === null) {
-    throw new Error('Invalid notes data');
-  }
-
-  const importedSettings = getImportedSettings(data.data.settings);
-  validateSettings(importedSettings);
+  parseImportField(timestampSchema, data.exportDate, 'Invalid export timestamp');
+  const dataUpdatedAt = parseImportField(timestampSchema.optional(), data.dataUpdatedAt, 'Invalid update timestamp');
 
   return {
-    cards: data.data.cards,
-    stats: data.data.stats,
-    notes: data.data.notes,
-    settings: importedSettings,
-    gistSync: data.data.gistSync,
-    dataUpdatedAt: data.dataUpdatedAt,
+    schemaVersion: importedSchema,
+    cards: parseImportField(objectMapSchema, data.data.cards, 'Invalid cards data'),
+    stats: parseImportField(objectMapSchema, data.data.stats, 'Invalid stats data'),
+    notes: parseImportField(objectMapSchema, data.data.notes, 'Invalid notes data'),
+    settings: getImportedSettings(data.data.settings),
+    gistSync: parseImportField(gistSyncSchema, data.data.gistSync, 'Invalid Gist sync configuration'),
+    dataUpdatedAt,
   };
+}
+
+export function validateImportRelationships(records: {
+  cards: Record<string, Pick<Card, 'id' | 'slug'>>;
+  stats: Record<string, Pick<DailyStats, 'date'>>;
+  notes: Record<string, unknown>;
+}): void {
+  const cardIds = new Set<string>();
+  for (const [slug, card] of Object.entries(records.cards)) {
+    if (card.slug !== slug) throw new Error(`Card slug does not match key: ${slug}`);
+    if (cardIds.has(card.id)) throw new Error(`Duplicate card ID: ${card.id}`);
+    cardIds.add(card.id);
+  }
+  for (const [date, stats] of Object.entries(records.stats)) {
+    if (stats.date !== date) throw new Error(`Stats date does not match key: ${date}`);
+  }
+  for (const id of Object.keys(records.notes)) {
+    if (!cardIds.has(id)) throw new Error(`Note has no owning card: ${id}`);
+  }
 }

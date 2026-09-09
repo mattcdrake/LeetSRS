@@ -5,8 +5,9 @@ import { storage } from 'wxt/utils/storage';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
 import type { StoredCard } from '@/infrastructure/storage/cards/codec';
-import { migrations, runMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import * as auth from '../github-auth';
 import { applyImportData, exportData, importData, prepareImportData, resetAllData } from '../import-export';
@@ -126,7 +127,7 @@ describe('import-export', () => {
     });
 
     it('should export schema version 2 after migrations run', async () => {
-      await runMigrations(migrations);
+      await runStartupMigrations();
       const parsed = JSON.parse(await exportData());
       expect(parsed.schemaVersion).toBe(2);
     });
@@ -141,6 +142,66 @@ describe('import-export', () => {
   });
 
   describe('importData', () => {
+    it.each(['cards', 'stats', 'notes'] as const)(
+      'rejects mixed invalid %s during preparation and import without changing storage',
+      async (collection) => {
+        await setSchemaVersion(2);
+        const { payload, accepted } = mixedRecordBackup();
+        await importData(JSON.stringify({ ...payload, data: accepted }));
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
+        const before = await fakeBrowser.storage.local.get(null);
+        const json = JSON.stringify({ ...payload, data: { ...accepted, [collection]: payload.data[collection] } });
+        await expect(prepareImportData(json)).rejects.toThrow();
+        await expect(importData(json)).rejects.toThrow();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      }
+    );
+
+    it.each([0, undefined])('rejects invalid legacy schema %s records after migration', async (schemaVersion) => {
+      await setSchemaVersion(2);
+      const { payload, accepted } = mixedRecordBackup();
+      await importData(JSON.stringify({ ...payload, data: accepted }));
+      const before = await fakeBrowser.storage.local.get(null);
+      const { domain: _domain, ...legacyCard } = accepted.cards['two-sum'];
+      const json = JSON.stringify({
+        ...payload,
+        schemaVersion,
+        data: { ...accepted, cards: { 'two-sum': { ...legacyCard, paused: 'false' } } },
+      });
+      await expect(importData(json)).rejects.toThrow();
+      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    });
+
+    it.each(['slug', 'duplicate', 'date', 'orphan'] as const)(
+      'rejects invalid %s relationships before replacement',
+      async (kind) => {
+        await setSchemaVersion(2);
+        const { payload, accepted } = mixedRecordBackup();
+        await importData(JSON.stringify({ ...payload, data: accepted }));
+        const before = await fakeBrowser.storage.local.get(null);
+        if (kind === 'slug') accepted.cards['two-sum'].slug = 'different';
+        if (kind === 'duplicate') accepted.cards['cn-problem'].id = 'valid-com';
+        if (kind === 'date') accepted.stats['2024-01-01'].date = '2024-01-02';
+        if (kind === 'orphan') delete (accepted.cards as Record<string, unknown>)['two-sum'];
+        await expect(importData(JSON.stringify({ ...payload, data: accepted }))).rejects.toThrow();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      }
+    );
+
+    it('round-trips valid current records with schedules, domains, pause state and notes intact', async () => {
+      await setSchemaVersion(2);
+      const { payload, accepted } = mixedRecordBackup();
+      await importData(JSON.stringify({ ...payload, data: accepted }));
+      const exported = await exportData();
+      await resetAllData();
+      await importData(exported);
+      const restored = JSON.parse(await exportData());
+      expect(restored.data).toMatchObject(accepted);
+      expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
+    });
+
     const cardUuid = 'b2c3d4e5-f6a7-8901-bcde-f23456789012';
     const validExportData = {
       schemaVersion: 0,
@@ -191,6 +252,131 @@ describe('import-export', () => {
         }),
       },
     };
+
+    describe('schema migrations', () => {
+      const { domain: _domain, ...legacyCard } = validExportData.data.cards['two-sum'];
+      const legacyCards = {
+        'two-sum': {
+          ...legacyCard,
+          paused: true,
+          fsrs: { ...legacyCard.fsrs, last_review: 1704067200000, scheduled_days: 7, reps: 4 },
+          legacyMetadata: { source: 'manual' },
+        },
+        'add-two-numbers': {
+          ...legacyCard,
+          id: 'cn-card-id',
+          slug: 'add-two-numbers',
+          name: 'Add Two Numbers',
+          leetcodeId: '2',
+          domain: 'leetcode.cn',
+        },
+      };
+      const currentCards = {
+        ...legacyCards,
+        'two-sum': { ...legacyCards['two-sum'], domain: 'leetcode.com' },
+      };
+      const notes = { ...validExportData.data.notes, 'cn-card-id': { text: 'Keep the carry' } };
+      const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
+
+      it.each([0, undefined, 2])(
+        'prepares and imports schema %s cards identically to startup migration',
+        async (schemaVersion) => {
+          await storage.setItem(STORAGE_KEYS.cards, legacyCards);
+          await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
+          for (const [id, note] of Object.entries(notes)) {
+            await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
+          }
+          await storage.setItem(STORAGE_KEYS.theme, 'light');
+          await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+          await runStartupMigrations();
+          const startupCards = await storage.getItem(STORAGE_KEYS.cards);
+          expect(startupCards).toEqual(currentCards);
+          const before = await fakeBrowser.storage.local.get(null);
+          const json = JSON.stringify({
+            ...validExportData,
+            schemaVersion,
+            dataUpdatedAt,
+            data: {
+              ...validExportData.data,
+              cards: schemaVersion === 2 ? currentCards : legacyCards,
+              notes,
+            },
+          });
+
+          const prepared = await prepareImportData(json);
+
+          expect.soft(prepared.cards).toEqual(startupCards);
+          expect(prepared.notes).toEqual(notes);
+          expect(prepared.stats).toEqual(validExportData.data.stats);
+          expect(prepared.settings).toEqual(validExportData.data.settings);
+          expect(prepared.dataUpdatedAt).toBe(dataUpdatedAt);
+          expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+
+          await importData(json);
+
+          expect.soft(await storage.getItem(STORAGE_KEYS.cards)).toEqual(startupCards);
+          expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
+          for (const [id, note] of Object.entries(notes)) {
+            expect(await storage.getItem(`${STORAGE_KEYS.notes}:${id}`)).toEqual(note);
+          }
+          expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
+          expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+          expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
+          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+        }
+      );
+
+      it('leaves storage untouched when preparing a legacy import fails', async () => {
+        await setSchemaVersion(2);
+        await storage.setItem(STORAGE_KEYS.cards, currentCards);
+        await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
+        for (const [id, note] of Object.entries(notes)) {
+          await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
+        }
+        await storage.setItem(STORAGE_KEYS.theme, 'dark');
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, dataUpdatedAt);
+        await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, dataUpdatedAt);
+        const before = await fakeBrowser.storage.local.get(null);
+        const json = JSON.stringify({
+          ...validExportData,
+          data: { ...validExportData.data, cards: legacyCards, notes, settings: { theme: 'invalid' } },
+        });
+
+        await expect(prepareImportData(json)).rejects.toThrow('Theme must be');
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        await expect(importData(json)).rejects.toThrow('Theme must be');
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      });
+    });
+
+    it.each(malformedBackupCases(validExportData))(
+      'rejects %s during preparation and import without changing storage',
+      async (_name, json) => {
+        await setSchemaVersion(2);
+        await storage.setItem(STORAGE_KEYS.cards, validExportData.data.cards);
+        await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
+        await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}`, { text: 'existing note' });
+        for (const [key, value] of Object.entries(validExportData.data.settings)) {
+          await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
+        }
+        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-02-01T00:00:00.000Z');
+        await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
+        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-02-02T00:00:00.000Z');
+        const before = await fakeBrowser.storage.local.get(null);
+
+        await expect.soft(prepareImportData(json)).rejects.toThrow();
+        expect.soft(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        await expect.soft(importData(json)).rejects.toThrow();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+      }
+    );
 
     describe('prepareImportData', () => {
       it('normalizes legacy settings without mutating storage', async () => {
