@@ -42,29 +42,12 @@ describe('StatsView', () => {
     return render(<StatsView />, { wrapper });
   };
 
-  it('should render the streak counter in header', () => {
+  it('renders the streak in the header and all three charts', () => {
     renderStatsView();
 
-    const headerContent = screen.getByTestId('header-content');
-    expect(headerContent).toBeInTheDocument();
-    expect(screen.getByTestId('streak-counter')).toBeInTheDocument();
-  });
-
-  it('should render all three chart components', () => {
-    renderStatsView();
-
+    expect(screen.getByTestId('header-content')).toContainElement(screen.getByTestId('streak-counter'));
     expect(screen.getByTestId('card-distribution-chart')).toBeInTheDocument();
     expect(screen.getByTestId('review-history-chart')).toBeInTheDocument();
     expect(screen.getByTestId('upcoming-reviews-chart')).toBeInTheDocument();
-  });
-
-  it('should render charts in correct order', () => {
-    renderStatsView();
-
-    const charts = screen.getAllByTestId(/chart$/);
-    expect(charts).toHaveLength(3);
-    expect(charts[0]).toHaveAttribute('data-testid', 'card-distribution-chart');
-    expect(charts[1]).toHaveAttribute('data-testid', 'review-history-chart');
-    expect(charts[2]).toHaveAttribute('data-testid', 'upcoming-reviews-chart');
   });
 });

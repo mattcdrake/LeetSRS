@@ -2,11 +2,11 @@ import { State as FsrsState, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import type { Difficulty } from '@/domain/cards';
 import type { DailyStats } from '@/domain/statistics';
-import type { StoredCard } from '@/infrastructure/storage/cards/codec';
+import { type StoredCard, serializeCard } from '@/infrastructure/storage/cards/codec';
 import { getStatsForDate } from '@/infrastructure/storage/stats';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { addCard } from '../cards';
 import {
   getCardStateStats,
@@ -123,6 +123,7 @@ describe('Stats management', () => {
       const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
       const todayStats = stats?.['2024-03-15'];
 
+      expect(todayStats?.streak).toBe(1);
       expect(todayStats?.totalReviews).toBe(3);
       expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
       expect(todayStats?.gradeBreakdown[Rating.Hard]).toBe(1);
@@ -130,19 +131,6 @@ describe('Stats management', () => {
       expect(todayStats?.gradeBreakdown[Rating.Easy]).toBe(0);
       expect(todayStats?.reviewedCards).toBe(2);
       expect(todayStats?.newCards).toBe(1);
-    });
-
-    it('should track new cards separately', async () => {
-      await updateStats(Rating.Good, true);
-      await updateStats(Rating.Easy, true);
-      await updateStats(Rating.Hard, false);
-
-      const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      const todayStats = stats?.['2024-03-15'];
-
-      expect(todayStats?.newCards).toBe(2);
-      expect(todayStats?.reviewedCards).toBe(1);
-      expect(todayStats?.totalReviews).toBe(3);
     });
 
     it('should continue streak from yesterday', async () => {
@@ -222,16 +210,6 @@ describe('Stats management', () => {
       expect(stats?.['2024-03-14']?.streak).toBe(5);
     });
 
-    it('should not increment streak for multiple reviews on same day', async () => {
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Easy, false);
-      await updateStats(Rating.Hard, false);
-
-      const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(stats?.['2024-03-15']?.streak).toBe(1);
-      expect(stats?.['2024-03-15']?.totalReviews).toBe(3);
-    });
-
     it('should handle streak reset after multiple day gap', async () => {
       // Create a 3-day streak
       vi.setSystemTime(new Date('2024-03-10T10:00:00'));
@@ -250,13 +228,6 @@ describe('Stats management', () => {
       const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
       expect(stats?.['2024-03-12']?.streak).toBe(3);
       expect(stats?.['2024-03-15']?.streak).toBe(1); // Reset to 1
-    });
-
-    it('should start streak at 1 for first ever review', async () => {
-      await updateStats(Rating.Good, false);
-
-      const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(stats?.['2024-03-15']?.streak).toBe(1);
     });
   });
 
@@ -391,191 +362,31 @@ describe('Stats management', () => {
   });
 
   describe('getCardStateStats', () => {
-    beforeEach(() => {
-      fakeBrowser.reset();
-    });
-
-    it('should return all zeros when no cards exist', async () => {
-      const stats = await getCardStateStats();
-
-      expect(stats[FsrsState.New]).toBe(0);
-      expect(stats[FsrsState.Learning]).toBe(0);
-      expect(stats[FsrsState.Review]).toBe(0);
-      expect(stats[FsrsState.Relearning]).toBe(0);
-    });
-
-    it('should count cards by state correctly', async () => {
-      // Add some cards - new cards start in New state
-      await addCard({
-        slug: 'two-sum',
-        name: 'Two Sum',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
+    it.each([null, {}, []])('returns zero counts for empty storage %j', async (cards) => {
+      if (cards !== null) await storage.setItem(STORAGE_KEYS.cards, cards);
+      expect(await getCardStateStats()).toEqual({
+        [FsrsState.New]: 0,
+        [FsrsState.Learning]: 0,
+        [FsrsState.Review]: 0,
+        [FsrsState.Relearning]: 0,
       });
-      await addCard({
-        slug: 'add-two-numbers',
-        name: 'Add Two Numbers',
-        leetcodeId: '2',
-        difficulty: 'Medium' as Difficulty,
-        domain: 'leetcode.com',
-      });
-      await addCard({
-        slug: 'longest-substring',
-        name: 'Longest Substring',
-        leetcodeId: '3',
-        difficulty: 'Medium' as Difficulty,
-        domain: 'leetcode.com',
-      });
-
-      const stats = await getCardStateStats();
-
-      expect(stats[FsrsState.New]).toBe(3);
-      expect(stats[FsrsState.Learning]).toBe(0);
-      expect(stats[FsrsState.Review]).toBe(0);
-      expect(stats[FsrsState.Relearning]).toBe(0);
     });
 
-    it('should count all fsrs states correctly', async () => {
-      // Add cards with different states by manipulating storage directly
-      const cards = [
-        {
-          id: '1',
-          slug: 'problem-1',
-          name: 'Problem 1',
-          leetcodeId: '1',
-          difficulty: 'Easy' as Difficulty,
-          createdAt: Date.now(),
-          paused: false,
-          domain: 'leetcode.com',
-          fsrs: {
-            due: Date.now(),
-            last_review: null,
-            state: FsrsState.New,
-            stability: 0,
-            difficulty: 0,
-            elapsed_days: 0,
-            scheduled_days: 0,
-            reps: 0,
-            lapses: 0,
-          },
-        },
-        {
-          id: '2',
-          slug: 'problem-2',
-          name: 'Problem 2',
-          leetcodeId: '2',
-          difficulty: 'Medium' as Difficulty,
-          createdAt: Date.now(),
-          paused: false,
-          domain: 'leetcode.com',
-          fsrs: {
-            due: Date.now(),
-            last_review: Date.now(),
-            state: FsrsState.Learning,
-            stability: 1,
-            difficulty: 5,
-            elapsed_days: 1,
-            scheduled_days: 1,
-            reps: 1,
-            lapses: 0,
-          },
-        },
-        {
-          id: '3',
-          slug: 'problem-3',
-          name: 'Problem 3',
-          leetcodeId: '3',
-          difficulty: 'Hard' as Difficulty,
-          createdAt: Date.now(),
-          paused: false,
-          domain: 'leetcode.com',
-          fsrs: {
-            due: Date.now(),
-            last_review: Date.now(),
-            state: FsrsState.Review,
-            stability: 10,
-            difficulty: 5,
-            elapsed_days: 5,
-            scheduled_days: 10,
-            reps: 5,
-            lapses: 0,
-          },
-        },
-        {
-          id: '4',
-          slug: 'problem-4',
-          name: 'Problem 4',
-          leetcodeId: '4',
-          difficulty: 'Hard' as Difficulty,
-          createdAt: Date.now(),
-          paused: false,
-          domain: 'leetcode.com',
-          fsrs: {
-            due: Date.now(),
-            last_review: Date.now(),
-            state: FsrsState.Review,
-            stability: 20,
-            difficulty: 6,
-            elapsed_days: 10,
-            scheduled_days: 20,
-            reps: 10,
-            lapses: 0,
-          },
-        },
-        {
-          id: '5',
-          slug: 'problem-5',
-          name: 'Problem 5',
-          leetcodeId: '5',
-          difficulty: 'Medium' as Difficulty,
-          createdAt: Date.now(),
-          paused: false,
-          domain: 'leetcode.com',
-          fsrs: {
-            due: Date.now(),
-            last_review: Date.now(),
-            state: FsrsState.Relearning,
-            stability: 2,
-            difficulty: 7,
-            elapsed_days: 15,
-            scheduled_days: 2,
-            reps: 15,
-            lapses: 2,
-          },
-        },
-      ];
+    it('counts every state, including paused cards', async () => {
+      const states = [FsrsState.New, FsrsState.Learning, FsrsState.Review, FsrsState.Review, FsrsState.Relearning];
+      const cards = states.map((state, index) =>
+        createMockCard(state, { slug: `problem-${index}`, paused: index === 3 })
+      );
+      await storage.setItem(
+        STORAGE_KEYS.cards,
+        Object.fromEntries(cards.map((card) => [card.slug, serializeCard(card)]))
+      );
 
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getCardStateStats();
-
-      expect(stats[FsrsState.New]).toBe(1);
-      expect(stats[FsrsState.Learning]).toBe(1);
-      expect(stats[FsrsState.Review]).toBe(2);
-      expect(stats[FsrsState.Relearning]).toBe(1);
-    });
-
-    it('should handle empty card array', async () => {
-      await storage.setItem(STORAGE_KEYS.cards, []);
-
-      const stats = await getCardStateStats();
-
-      expect(stats[FsrsState.New]).toBe(0);
-      expect(stats[FsrsState.Learning]).toBe(0);
-      expect(stats[FsrsState.Review]).toBe(0);
-      expect(stats[FsrsState.Relearning]).toBe(0);
-    });
-
-    it('should return type-safe Record<FsrsState, number>', async () => {
-      const stats = await getCardStateStats();
-
-      // TypeScript should enforce that stats has all FsrsState keys
-      const states: FsrsState[] = [FsrsState.New, FsrsState.Learning, FsrsState.Review, FsrsState.Relearning];
-
-      states.forEach((state) => {
-        expect(typeof stats[state]).toBe('number');
-        expect(stats[state]).toBeGreaterThanOrEqual(0);
+      expect(await getCardStateStats()).toEqual({
+        [FsrsState.New]: 1,
+        [FsrsState.Learning]: 1,
+        [FsrsState.Review]: 2,
+        [FsrsState.Relearning]: 1,
       });
     });
   });
@@ -599,13 +410,7 @@ describe('Stats management', () => {
 
     it('should count cards due today', async () => {
       // Add a card that's due today
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       // Manually set the card to be due today
@@ -621,27 +426,9 @@ describe('Stats management', () => {
 
     it('should count cards due in the future', async () => {
       // Add cards with different due dates
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
-      await addCard({
-        slug: 'problem-2',
-        name: 'Problem 2',
-        leetcodeId: '2',
-        difficulty: 'Medium' as Difficulty,
-        domain: 'leetcode.com',
-      });
-      await addCard({
-        slug: 'problem-3',
-        name: 'Problem 3',
-        leetcodeId: '3',
-        difficulty: 'Hard' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
+      await addCard(buildProblem({ slug: 'problem-2' }));
+      await addCard(buildProblem({ slug: 'problem-3' }));
 
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
@@ -664,20 +451,8 @@ describe('Stats management', () => {
 
     it('should not count paused cards', async () => {
       // Add cards
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
-      await addCard({
-        slug: 'problem-2',
-        name: 'Problem 2',
-        leetcodeId: '2',
-        difficulty: 'Medium' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
+      await addCard(buildProblem({ slug: 'problem-2' }));
 
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
@@ -695,20 +470,8 @@ describe('Stats management', () => {
 
     it('should handle cards due in the past', async () => {
       // Add cards due in the past
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
-      await addCard({
-        slug: 'problem-2',
-        name: 'Problem 2',
-        leetcodeId: '2',
-        difficulty: 'Medium' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
+      await addCard(buildProblem({ slug: 'problem-2' }));
 
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
@@ -732,13 +495,7 @@ describe('Stats management', () => {
     });
 
     it('should exclude cards due immediately after the requested window', async () => {
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-22T12:00:00').getTime();
@@ -758,13 +515,7 @@ describe('Stats management', () => {
 
     it('should respect the configured day start hour', async () => {
       await storage.setItem(STORAGE_KEYS.dayStartHour, 4);
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-16T01:00:00').getTime();
@@ -779,20 +530,8 @@ describe('Stats management', () => {
     });
 
     it('should accumulate active cards due on the same review day', async () => {
-      await addCard({
-        slug: 'problem-1',
-        name: 'Problem 1',
-        leetcodeId: '1',
-        difficulty: 'Easy' as Difficulty,
-        domain: 'leetcode.com',
-      });
-      await addCard({
-        slug: 'problem-2',
-        name: 'Problem 2',
-        leetcodeId: '2',
-        difficulty: 'Medium' as Difficulty,
-        domain: 'leetcode.com',
-      });
+      await addCard(buildProblem({ slug: 'problem-1' }));
+      await addCard(buildProblem({ slug: 'problem-2' }));
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, StoredCard>;
 
       cards['problem-1'].fsrs.due = new Date('2024-03-17T09:00:00').getTime();
