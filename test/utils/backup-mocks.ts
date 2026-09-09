@@ -57,7 +57,6 @@ export function mixedRecordBackup() {
     ...card,
     createdAt: date.getTime(),
     fsrs: { ...card.fsrs, due: date.getTime(), last_review: date.getTime(), scheduled_days: 7 },
-    unknownField: { retained: true },
   };
   const acceptedCards = {
     'two-sum': validCard,
@@ -67,7 +66,7 @@ export function mixedRecordBackup() {
   };
   const cards: Record<string, unknown> = { ...acceptedCards };
   const notes: Record<string, unknown> = {
-    'valid-com': { text: 'Keep this note', unknownField: 42 },
+    'valid-com': { text: 'Keep this note' },
     'valid-cn': { text: '' },
     'bad-note': { text: 42 },
     'missing-note-text': {},
@@ -110,7 +109,7 @@ export function mixedRecordBackup() {
   cards['null-card'] = null;
   cards['array-card'] = [];
 
-  const validStats = { ...createDailyStats('2024-01-01', undefined), unknownField: true };
+  const validStats = createDailyStats('2024-01-01', undefined);
   const acceptedStats = { '2024-01-01': validStats };
   const stats: Record<string, unknown> = {
     ...acceptedStats,

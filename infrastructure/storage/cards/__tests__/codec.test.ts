@@ -1,6 +1,7 @@
-import { createEmptyCard } from 'ts-fsrs';
+import { createEmptyCard, State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { deserializeCard, type StoredCard, serializeCard } from '../codec';
 
 describe('Card serialization', () => {
@@ -81,6 +82,12 @@ describe('Card serialization', () => {
       expect(deserialized.name).toBe('Merge Intervals');
       expect(deserialized.createdAt).toBeInstanceOf(Date);
       expect(deserialized.createdAt.getTime()).toBe(timestamp);
+    });
+
+    it.each([undefined, 0, 1705222800000])('round-trips last_review %s', (lastReview) => {
+      const card = createMockCard(State.Review);
+      card.fsrs.last_review = lastReview === undefined ? undefined : new Date(lastReview);
+      expect(deserializeCard(serializeCard(card))).toEqual(card);
     });
 
     it('should default domain to leetcode.com when missing', () => {

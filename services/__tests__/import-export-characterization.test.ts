@@ -23,19 +23,18 @@ const payload = {
         createdAt: Date.parse(incomingTime),
         paused: false,
         fsrs: { ...createEmptyCard(new Date(incomingTime)), due: Date.parse(incomingTime) },
-        unknownField: 'retained',
       },
     },
-    stats: { '2024-01-01': { ...createDailyStats('2024-01-01', undefined), unknownField: 42 } },
-    notes: { new: { text: 'new note', unknownField: true } },
+    stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+    notes: { new: { text: 'new note' } },
     settings: { theme: 'dark' },
     gistSync: { gistId: 'incoming-gist', enabled: false },
   },
 };
 
 async function seedExistingData(pat = 'existing-pat') {
-  await storage.setItem(STORAGE_KEYS.cards, { old: { id: 'old' } });
-  await storage.setItem(STORAGE_KEYS.stats, { old: {} });
+  await storage.setItem(STORAGE_KEYS.cards, { old: { ...payload.data.cards.imported, id: 'old', slug: 'old' } });
+  await storage.setItem(STORAGE_KEYS.stats, { '2024-01-01': createDailyStats('2024-01-01', undefined) });
   await storage.setItem(oldNoteKey, { text: 'old note' });
   await storage.setItem(orphanNoteKey, { text: 'orphan note' });
   await storage.setItem(STORAGE_KEYS.githubPat, pat);
@@ -58,7 +57,7 @@ describe('backup workflow characterization', () => {
     fakeBrowser.reset();
   });
 
-  it('exports raw records while omitting credentials and orphan notes', async () => {
+  it('exports supported records, omitting credentials and orphan notes', async () => {
     await seedExistingData();
     await storage.setItem(STORAGE_KEYS.cards, payload.data.cards);
     await storage.setItem(STORAGE_KEYS.stats, payload.data.stats);

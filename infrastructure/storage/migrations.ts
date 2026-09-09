@@ -1,7 +1,6 @@
 import { storage } from '#imports';
 import { STORAGE_KEYS } from './storage-keys';
 
-// Fields the migrations currently touch; other backup fields pass through unchanged.
 // Cards may be absent in storage, and legacy records have not yet been validated.
 interface MigrationData {
   cards?: Record<string, unknown>;
@@ -34,7 +33,7 @@ const migrations: readonly Migration[] = [
           return [slug, { ...card, domain: 'leetcode.com' }];
         })
       );
-      return { ...data, cards };
+      return { cards };
     },
   },
   {
@@ -43,13 +42,13 @@ const migrations: readonly Migration[] = [
   },
 ];
 
-export function migrateBackupData<T extends MigrationData>(data: T, schemaVersion: number): T {
+export function migrateBackupData(data: MigrationData, schemaVersion: number): MigrationData {
   if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {
     throw new Error(`Unsupported schema version: ${schemaVersion}`);
   }
   let migrated = data;
   for (const migration of migrations.slice(schemaVersion)) {
-    migrated = { ...migrated, ...migration.migrate(migrated) };
+    migrated = migration.migrate(migrated);
   }
   return migrated;
 }
