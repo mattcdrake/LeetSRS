@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { Card } from '@/domain/cards';
 import { messages as backgroundMessages } from '@/entrypoints/background/message-handlers';
+import { createBackgroundMessageRunner } from '@/entrypoints/background/message-runner';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { saveCards } from '@/infrastructure/storage/cards';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -24,7 +25,8 @@ import {
 } from '../cards';
 import { statsQueryKeys } from '../stats';
 
-vi.mock('@/infrastructure/browser/messages', () => ({
+vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
 
@@ -193,10 +195,15 @@ describe('usePauseCardMutation', () => {
 describe('card queries through JSON messaging and background handlers', () => {
   beforeEach(() => {
     fakeBrowser.reset();
+    const runner = createBackgroundMessageRunner({
+      ready: Promise.resolve(),
+      markDataUpdated: vi.fn(),
+      refreshBadge: vi.fn(),
+    });
     createMessageMock(vi.mocked(sendMessage))
       .reset()
-      .handle('getAllCards', backgroundMessages.getAllCards.handler)
-      .handle('rateCard', backgroundMessages.rateCard.handler);
+      .handle('getAllCards', (data) => runner.execute<'getAllCards'>(backgroundMessages.getAllCards, data))
+      .handle('rateCard', (data) => runner.execute<'rateCard'>(backgroundMessages.rateCard, data));
   });
 
   it.each([0, undefined])('preserves numeric dates and last_review=%s in query results', async (lastReview) => {
