@@ -1,17 +1,11 @@
-import type { StorageItemKey } from 'wxt/utils/storage';
 import { storage } from '#imports';
+import { addCardDomainMigration } from './migrations/001-add-card-domain';
+import { addSystemThemeMigration } from './migrations/002-add-system-theme';
+import { removeDayStartMigration } from './migrations/003-remove-day-start';
+import type { Migration, MigrationData } from './migrations/types';
 import { STORAGE_KEYS } from './storage-keys';
 
-// Cards may be absent in storage, and legacy records have not yet been validated.
-interface MigrationData {
-  cards?: Record<string, unknown>;
-}
-
-export interface Migration {
-  description: string;
-  removeKeys?: readonly StorageItemKey[];
-  migrate: (data: MigrationData) => MigrationData;
-}
+export type { Migration } from './migrations/types';
 
 export async function getCurrentSchemaVersion(): Promise<number> {
   return (await storage.getItem<number>(STORAGE_KEYS.schemaVersion)) ?? 0;
@@ -22,32 +16,7 @@ export async function setSchemaVersion(version: number): Promise<void> {
 }
 
 // Append only: index + 1 is the schema version. Never reorder or remove entries.
-const migrations: readonly Migration[] = [
-  {
-    description: 'Add domain field to existing cards, defaulting to leetcode.com',
-    migrate: (data: MigrationData): MigrationData => {
-      if (!data.cards) return data;
-      const cards = Object.fromEntries(
-        Object.entries(data.cards).map(([slug, card]) => {
-          // Leave malformed records for record validation after migration.
-          if (typeof card !== 'object' || card === null || Array.isArray(card)) return [slug, card];
-          if ('domain' in card && card.domain) return [slug, card];
-          return [slug, { ...card, domain: 'leetcode.com' }];
-        })
-      );
-      return { cards };
-    },
-  },
-  {
-    description: 'Add system theme preference',
-    migrate: (data: MigrationData): MigrationData => data,
-  },
-  {
-    description: 'Remove configurable day start',
-    migrate: (data: MigrationData): MigrationData => data,
-    removeKeys: ['sync:leetsrs:dayStartHour'],
-  },
-];
+const migrations: readonly Migration[] = [addCardDomainMigration, addSystemThemeMigration, removeDayStartMigration];
 
 export function migrateBackupData(data: MigrationData, schemaVersion: number): MigrationData {
   if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {

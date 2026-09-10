@@ -19,11 +19,13 @@ describe('migrations', () => {
   });
 
   describe('migrateBackupData', () => {
-    it('migrates frozen input without changing the input or writing storage', async () => {
+    it('preserves unrelated fields and migrates frozen input without changing it or writing storage', async () => {
       const { domain: _domain, ...legacyCard } = createMockCard(State.Review, { slug: 'two-sum', paused: true });
       const card = Object.freeze(legacyCard);
       const data = Object.freeze({
         cards: Object.freeze({ 'two-sum': card }),
+        notes: Object.freeze({ [card.id]: Object.freeze({ text: 'Keep this note' }) }),
+        settings: Object.freeze({ theme: 'dark' }),
       });
       const before = await fakeBrowser.storage.local.get(null);
       const migrated = migrateBackupData(data, 0);
@@ -39,6 +41,29 @@ describe('migrations', () => {
     it.each([1, 2, 3])('does not reapply the domain migration to schema %s', (schemaVersion) => {
       const data = { cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum' }) } };
       expect(migrateBackupData(data, schemaVersion)).toEqual(data);
+    });
+
+    it.each([0, 1, 2])('is idempotent and matches startup for schema %s', async (schemaVersion) => {
+      const cards = {
+        legacy: { domain: '', paused: true },
+        regional: { domain: 'leetcode.cn', extra: 'preserved' },
+        malformed: null,
+      };
+      const expectedCards = {
+        ...cards,
+        legacy: { domain: schemaVersion === 0 ? 'leetcode.com' : '', paused: true },
+      };
+      const migrated = migrateBackupData({ cards }, schemaVersion);
+
+      expect(migrated).toEqual({ cards: expectedCards });
+      expect(migrateBackupData(migrated, schemaVersion)).toEqual(migrated);
+
+      await storage.setItem(STORAGE_KEYS.cards, cards);
+      await setSchemaVersion(schemaVersion);
+      await runStartupMigrations();
+
+      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(migrated.cards);
+      expect(await getCurrentSchemaVersion()).toBe(3);
     });
 
     it.each([-1, 0.5, 4])('rejects unsupported schema %s', (schemaVersion) => {
@@ -180,7 +205,7 @@ describe('migrations', () => {
       expect(await getCurrentSchemaVersion()).toBe(1); // Only first migration succeeded
     });
 
-    it('persists each step before advancing its version and starting the next step', async () => {
+    it('persists each step before cleanup, version advancement, and the next step', async () => {
       const versions: number[] = [];
       const first = createMockCard(State.New, { slug: 'first' });
       const second = createMockCard(State.New, { slug: 'second' });
@@ -188,6 +213,7 @@ describe('migrations', () => {
         {
           description: 'First',
           migrate: () => ({ cards: { first } }),
+          removeKeys: ['sync:leetsrs:dayStartHour'],
         },
         {
           description: 'Second',
@@ -202,6 +228,12 @@ describe('migrations', () => {
         if (key === STORAGE_KEYS.cards) versions.push(await getCurrentSchemaVersion());
         return write(key, value);
       });
+      const remove = storage.removeItems.bind(storage);
+      const removals = vi.spyOn(storage, 'removeItems').mockImplementation(async (keys) => {
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({ first });
+        expect(await getCurrentSchemaVersion()).toBe(0);
+        return remove(keys);
+      });
       try {
         await runStartupMigrations(steps);
 
@@ -213,8 +245,10 @@ describe('migrations', () => {
           STORAGE_KEYS.schemaVersion,
         ]);
         expect(await getCurrentSchemaVersion()).toBe(2);
+        expect(removals).toHaveBeenCalledOnce();
       } finally {
         writes.mockRestore();
+        removals.mockRestore();
       }
     });
   });
@@ -269,6 +303,11 @@ describe('migrations', () => {
       } finally {
         writes.mockRestore();
       }
+
+      await runStartupMigrations();
+
+      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(cards);
+      expect(await getCurrentSchemaVersion()).toBe(3);
     });
 
     it('safely retries startup after cards are saved but the schema version write fails', async () => {
@@ -350,19 +389,37 @@ describe('migrations', () => {
       });
     });
 
-    it('retries legacy setting removal before advancing the schema after a storage failure', async () => {
+    it.each(['cleanup', 'version'])('safely retries after a %s failure', async (failedStep) => {
       await setSchemaVersion(2);
+      const cards = { 'two-sum': createMockCard(State.Review, { slug: 'two-sum' }) };
+      await storage.setItem(STORAGE_KEYS.cards, cards);
       await storage.setItem('sync:leetsrs:dayStartHour', 4);
-      const remove = vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(new Error('storage unavailable'));
+      const remove = vi.spyOn(storage, 'removeItems');
+      const write = storage.setItem.bind(storage);
+      const writes = vi.spyOn(storage, 'setItem');
+      if (failedStep === 'cleanup') {
+        remove.mockRejectedValueOnce(new Error('storage unavailable'));
+      } else {
+        writes.mockImplementation(async (key, value) => {
+          if (key === STORAGE_KEYS.schemaVersion) throw new Error('storage unavailable');
+          return write(key, value);
+        });
+      }
       try {
         await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
         expect(await getCurrentSchemaVersion()).toBe(2);
-        await runStartupMigrations();
-        expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
-        expect(await getCurrentSchemaVersion()).toBe(3);
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(cards);
+        expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBe(failedStep === 'cleanup' ? 4 : null);
       } finally {
         remove.mockRestore();
+        writes.mockRestore();
       }
+
+      await runStartupMigrations();
+
+      expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
+      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(cards);
+      expect(await getCurrentSchemaVersion()).toBe(3);
     });
   });
 
