@@ -34,14 +34,14 @@ afterEach(() => {
 
 it('isolates the control and its menu, restores focus, and dismisses outside clicks', async () => {
   const shadow = requireDefined(host.shadowRoot);
-  const control = requireDefined(shadow.querySelector<HTMLElement>('div > div'));
+  const control = requireDefined(shadow.querySelector<HTMLElement>('div'));
   const queries = within(control);
   const button = queries.getByRole('button', { name: 'LeetSRS' });
   expect(screen.queryByRole('button', { name: 'LeetSRS' })).not.toBeInTheDocument();
 
   act(() => button.focus());
   fireEvent.click(button);
-  const portals = requireDefined(control.nextElementSibling) as HTMLElement;
+  const portals = requireDefined(shadow.querySelector<HTMLElement>('[popover="manual"]'));
   const dialog = await within(portals).findByRole('dialog');
   expect(dialog.getRootNode()).toBe(shadow);
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
