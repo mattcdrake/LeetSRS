@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { CardListItem } from '../CardListItem';
 
@@ -137,8 +136,8 @@ describe('CardListItem', () => {
   });
 
   it('keeps overlapping operations on different cards independent', async () => {
-    const pauseResult = createDeferred<Card>();
-    const deleteResult = createDeferred<void>();
+    const pauseResult = Promise.withResolvers<Card>();
+    const deleteResult = Promise.withResolvers<void>();
     messages.handle('setPauseStatus', () => pauseResult.promise).handle('removeCard', () => deleteResult.promise);
     const cards = [
       createMockCard(State.New, { id: 'first', name: 'First', slug: 'first' }),

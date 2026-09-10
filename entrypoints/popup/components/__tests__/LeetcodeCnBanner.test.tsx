@@ -4,7 +4,6 @@
 
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDeferred } from '@/test/utils/deferred';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { useLeetcodeCnPermissionEvents } from '../../queries/leetcode-cn';
 import { LeetcodeCnSection } from '../../views/settings/LeetcodeCnSection';
@@ -67,7 +66,7 @@ describe('LeetcodeCnBanner', () => {
     { buttonIndex: 0, granted: false },
     { buttonIndex: 1, granted: false },
   ])('shares granted=$granted after Enable button $buttonIndex is clicked', async ({ buttonIndex, granted }) => {
-    const request = createDeferred<boolean>();
+    const request = Promise.withResolvers<boolean>();
     mockRequest.mockReturnValue(request.promise);
     render(
       <>
@@ -176,7 +175,7 @@ describe('LeetcodeCnBanner', () => {
   });
 
   it('hides the prompt until permission has loaded', async () => {
-    const permission = createDeferred<boolean>();
+    const permission = Promise.withResolvers<boolean>();
     mockContains.mockReturnValue(permission.promise);
     render(<LeetcodeCnBanner />, createTestWrapper());
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();

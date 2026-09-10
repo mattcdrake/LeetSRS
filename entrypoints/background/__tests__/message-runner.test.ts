@@ -1,15 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ZodError } from 'zod';
 import { messagePayloadSchemas } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import type { BackgroundMessageRegistry } from '../message-runner';
 import { createBackgroundMessageRunner } from '../message-runner';
 
 describe('background message runner', () => {
   it('waits for readiness and lets reads bypass queued writes', async () => {
-    const ready = createDeferred<void>();
-    const releaseWrite = createDeferred<void>();
-    const writeStarted = createDeferred<void>();
+    const ready = Promise.withResolvers<void>();
+    const releaseWrite = Promise.withResolvers<void>();
+    const writeStarted = Promise.withResolvers<void>();
     const markDataUpdated = vi.fn(async () => {});
     const refreshBadge = vi.fn(async () => {});
     const runner = createBackgroundMessageRunner({
@@ -50,8 +49,8 @@ describe('background message runner', () => {
   });
 
   it('runs writes in order and applies their declared effects', async () => {
-    const releaseFirst = createDeferred<void>();
-    const firstStarted = createDeferred<void>();
+    const releaseFirst = Promise.withResolvers<void>();
+    const firstStarted = Promise.withResolvers<void>();
     const events: string[] = [];
     const runner = createBackgroundMessageRunner({
       ready: Promise.resolve(),

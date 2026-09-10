@@ -7,7 +7,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type { UpcomingReviewStats } from '@/domain/statistics';
 import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { UpcomingReviewsChart } from '../UpcomingReviewsChart';
@@ -76,7 +75,7 @@ describe('UpcomingReviewsChart', () => {
   });
 
   it('should handle loading state gracefully', () => {
-    const pending = createDeferred<UpcomingReviewStats[]>();
+    const pending = Promise.withResolvers<UpcomingReviewStats[]>();
     messages.reset().resolve('getNextNDaysStats', pending.promise);
     const { wrapper } = createTestWrapper();
     const view = render(<UpcomingReviewsChart />, { wrapper });

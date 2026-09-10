@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NoteEditor } from '../NoteEditor';
@@ -44,7 +43,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   });
 
   it('loads a note and saves edits with pending feedback', async () => {
-    const save = createDeferred<void>();
+    const save = Promise.withResolvers<void>();
     messages.resolve('getNote', { text: 'Stored note' }).resolve('saveNote', save.promise);
     const { wrapper } = createTestWrapper();
     render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
@@ -82,7 +81,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   });
 
   it.each(['', 'Stored note'])('confirms deletion of stored text "%s" and shows pending feedback', async (text) => {
-    const remove = createDeferred<void>();
+    const remove = Promise.withResolvers<void>();
     messages.resolve('deleteNote', remove.promise);
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(noteQueryKeys.detail(cardId), { text });
@@ -147,7 +146,7 @@ describe('NoteEditor autosizing', () => {
   });
 
   it('sizes compact notes after fetching and grows, caps, and shrinks with edits', async () => {
-    const note = createDeferred<Note | null>();
+    const note = Promise.withResolvers<Note | null>();
     messages.resolve('getNote', note.promise);
     let contentHeight = 24;
     vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {

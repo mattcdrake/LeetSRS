@@ -11,7 +11,6 @@ import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { CardView } from '../CardView';
 
@@ -37,7 +36,7 @@ describe('CardView', () => {
   });
 
   it('should render loading state', () => {
-    const pending = createDeferred<Card[]>();
+    const pending = Promise.withResolvers<Card[]>();
     messages.resolve('getAllCards', pending.promise);
     const view = renderWithQueryClient(<CardView />);
     expect(screen.getByText('Loading cards...')).toBeInTheDocument();
@@ -385,7 +384,7 @@ describe('CardView', () => {
     });
 
     it('should not show filter input during loading', () => {
-      const pending = createDeferred<Card[]>();
+      const pending = Promise.withResolvers<Card[]>();
       messages.resolve('getAllCards', pending.promise);
       const view = renderWithQueryClient(<CardView />);
 

@@ -7,7 +7,6 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { createDeferred } from '@/test/utils/deferred';
 import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
 import { useLeetcodeCnCapability, useLeetcodeCnPermissionEvents } from '../leetcode-cn';
 
@@ -43,7 +42,7 @@ it('checks and requests permissions while offline', async () => {
 });
 
 it.each([true, false])('loads shared permission state: %s', async (granted) => {
-  const check = createDeferred<boolean>();
+  const check = Promise.withResolvers<boolean>();
   const contains = vi.fn(() => check.promise);
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
   const request = vi.spyOn(browser.permissions, 'request');
@@ -132,7 +131,7 @@ it('refreshes both consumers on external grants and removals', async () => {
 it('tracks request failures and allows retrying without losing the user interaction', async () => {
   const contains = vi.fn(async () => false);
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
-  const pending = createDeferred<boolean>();
+  const pending = Promise.withResolvers<boolean>();
   const request = vi.fn(() => pending.promise);
   vi.spyOn(browser.permissions, 'request').mockImplementation(request);
   const { wrapper } = createTestWrapper();
@@ -170,7 +169,7 @@ it('rechecks browser authorization after a request instead of caching its result
 });
 
 it.each(['initial', 'refresh'])('discards a stale %s check after a newer permission event', async (phase) => {
-  const stale = createDeferred<boolean>();
+  const stale = Promise.withResolvers<boolean>();
   const contains = vi.fn(async () => false);
   contains.mockImplementationOnce(() => (phase === 'initial' ? stale.promise : Promise.resolve(false)));
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
@@ -226,7 +225,7 @@ it('owns listeners at the popup root across consumer unmounts and refreshes on r
   expect(removeAdded).not.toHaveBeenCalled();
   expect(removeRemoved).not.toHaveBeenCalled();
 
-  const pending = createDeferred<boolean>();
+  const pending = Promise.withResolvers<boolean>();
   contains.mockImplementationOnce(() => pending.promise);
   await act(async () => {
     added.mock.calls[0][0]({ origins: ['*://*.leetcode.cn/*'] });
@@ -264,7 +263,7 @@ it('finishes refreshing if the permission listener unmounts during cancellation'
   const consumer = renderHook(() => useLeetcodeCnCapability(), { wrapper });
   await waitFor(() => expect(consumer.result.current.granted).toBe(false));
 
-  const cancellation = createDeferred<void>();
+  const cancellation = Promise.withResolvers<void>();
   const cancelQueries = queryClient.cancelQueries.bind(queryClient);
   vi.spyOn(queryClient, 'cancelQueries').mockImplementation(async (filters) => {
     await cancelQueries(filters);

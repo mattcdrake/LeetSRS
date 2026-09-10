@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { useNoteEditor } from '../useNoteEditor';
@@ -37,9 +36,9 @@ describe('useNoteEditor', () => {
   });
 
   it('exposes real loading and mutation pending states', async () => {
-    const query = createDeferred<Note | null>();
-    const save = createDeferred<void>();
-    const remove = createDeferred<void>();
+    const query = Promise.withResolvers<Note | null>();
+    const save = Promise.withResolvers<void>();
+    const remove = Promise.withResolvers<void>();
     messages
       .reset()
       .resolve('getNote', query.promise)
