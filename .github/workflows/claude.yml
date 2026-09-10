@@ -28,17 +28,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@9c5ddab2e6d17b83ea679153b31f1d5f023cf636 # v1.0.217; pinned for anthropics/claude-code-action#1817
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: https://github.com/mattpocock/skills.git
+          plugins: mattpocock-skills@mattpocock
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
 
           claude_args: |
-            --append-system-prompt-file .github/code-review-guidelines.md
+            --append-system-prompt "When asked to review code, invoke /mattpocock-skills:code-review directly."
+            --allowedTools "Read,Glob,Grep,Agent,Skill(mattpocock-skills:code-review),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git status:*),Bash(git show:*)"
