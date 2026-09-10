@@ -3,6 +3,7 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
+    labels: [enhancement]
     schedule:
       interval: weekly
     groups:
@@ -15,5 +16,6 @@ updates:
 
   - package-ecosystem: github-actions
     directory: /
+    labels: [enhancement]
     schedule:
       interval: weekly

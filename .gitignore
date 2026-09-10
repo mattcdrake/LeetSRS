@@ -26,5 +26,5 @@ devex/
 
 # Super secret stuff
 .agents
-docs/plans
+docs/local
 experiments/
