@@ -7,9 +7,17 @@ updates:
     schedule:
       interval: weekly
     groups:
+      vitest:
+        patterns:
+          - vitest
+          - "@vitest/*"
+        update-types:
+          - major
+          - minor
+          - patch
       npm-minor-and-patch:
         patterns:
-          - '*'
+          - "*"
         update-types:
           - minor
           - patch
