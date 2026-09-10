@@ -1,5 +1,5 @@
 import type { LeetcodeDomain } from '@/domain/cards';
-import { isDueByDate } from '@/domain/review';
+import { isDue } from '@/domain/review';
 import { getAllCards } from '@/infrastructure/storage/cards';
 import { getSettings } from './settings';
 
@@ -17,5 +17,5 @@ export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): P
     return false;
   }
 
-  return isDueByDate(card, new Date(), settings.dayStartHour);
+  return isDue(card, new Date());
 }

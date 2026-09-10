@@ -3,7 +3,6 @@ import { languageSchema } from './language';
 
 export const SETTINGS_CONSTRAINTS = {
   maxNewCardsPerDay: { min: 0, max: 100 },
-  dayStartHour: { min: 0, max: 23 },
 } as const;
 
 function boundedWholeNumber(label: string, bounds: { min: number; max: number }) {
@@ -18,7 +17,6 @@ function boundedWholeNumber(label: string, bounds: { min: number; max: number })
 
 export const settingsSchema = z.object({
   maxNewCardsPerDay: boundedWholeNumber('Max new cards per day', SETTINGS_CONSTRAINTS.maxNewCardsPerDay),
-  dayStartHour: boundedWholeNumber('Day start hour', SETTINGS_CONSTRAINTS.dayStartHour),
   theme: z.enum(['system', 'light', 'dark'], { error: 'Theme must be "system", "light", or "dark"' }),
   resetEditorOnEveryProblem: z.boolean({ error: 'Reset editor on every problem must be a boolean' }),
   resetEditorOnDueReview: z.boolean({ error: 'Reset editor on due review must be a boolean' }),
@@ -31,7 +29,6 @@ export type Theme = Settings['theme'];
 // Language defaults are resolved from browser preferences by the service.
 export const DEFAULT_SETTINGS = {
   maxNewCardsPerDay: 3,
-  dayStartHour: 0,
   theme: 'system',
   resetEditorOnEveryProblem: false,
   resetEditorOnDueReview: false,

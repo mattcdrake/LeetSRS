@@ -164,7 +164,6 @@ const pl: Translations = {
     reviewSettings: {
       title: 'Ustawienia powtórek',
       newCardsPerDay: 'Nowe karty dziennie',
-      dayStartHour: 'Przesunięcie nowego dnia (godziny po północy)',
     },
 
     problemAutoClear: {

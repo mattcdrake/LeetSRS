@@ -68,7 +68,6 @@ describe('import-export', () => {
 
       const mockSettings = buildSettings({
         maxNewCardsPerDay: 5,
-        dayStartHour: 4,
         theme: 'dark',
         resetEditorOnEveryProblem: true,
         resetEditorOnDueReview: true,
@@ -81,7 +80,7 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.stats, mockStats);
       await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}` as const, mockNotes[cardUuid]);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
-      await storage.setItem(STORAGE_KEYS.dayStartHour, mockSettings.dayStartHour);
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, mockSettings.resetEditorOnEveryProblem);
       await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, mockSettings.resetEditorOnDueReview);
@@ -129,10 +128,10 @@ describe('import-export', () => {
       expect(parsed.data.monthlyStats).toBeUndefined();
     });
 
-    it('should export schema version 2 after migrations run', async () => {
+    it('should export schema version 3 after migrations run', async () => {
       await runStartupMigrations();
       const parsed = JSON.parse(await exportData());
-      expect(parsed.schemaVersion).toBe(2);
+      expect(parsed.schemaVersion).toBe(3);
     });
 
     it('does not export legacy monthly stats', async () => {
@@ -263,7 +262,6 @@ describe('import-export', () => {
         },
         settings: buildSettings({
           maxNewCardsPerDay: 5,
-          dayStartHour: 2,
           theme: 'light',
           resetEditorOnEveryProblem: true,
           resetEditorOnDueReview: true,
@@ -432,7 +430,7 @@ describe('import-export', () => {
       const notes = { ...validExportData.data.notes, 'cn-card-id': { text: 'Keep the carry' } };
       const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
 
-      it.each([0, undefined, 2])(
+      it.each([0, undefined, 2, 3])(
         'prepares and imports schema %s cards identically to startup migration',
         async (schemaVersion) => {
           await storage.setItem(STORAGE_KEYS.cards, legacyCards);
@@ -452,7 +450,8 @@ describe('import-export', () => {
             dataUpdatedAt,
             data: {
               ...validExportData.data,
-              cards: schemaVersion === 2 ? currentCards : legacyCards,
+              cards: schemaVersion ? currentCards : legacyCards,
+              settings: { ...validExportData.data.settings, dayStartHour: 4 },
               notes,
             },
           });
@@ -476,7 +475,9 @@ describe('import-export', () => {
           expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
           expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
           expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
-          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+          expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
+          expect(JSON.parse(await exportData()).data.settings).toEqual(validExportData.data.settings);
         }
       );
 
@@ -672,7 +673,6 @@ describe('import-export', () => {
       const legacyMonthlyStats = { '2023-12': { totalReviews: 5 } };
       await storage.setItem(legacyMonthlyStatsKey, legacyMonthlyStats);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 5);
-      await storage.setItem(STORAGE_KEYS.dayStartHour, 3);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.resetEditorOnEveryProblem, true);
       await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, true);
@@ -696,7 +696,6 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.stats)).toBeNull();
       expect(await storage.getItem(legacyMonthlyStatsKey)).toEqual(legacyMonthlyStats);
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.dayStartHour)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnDueReview)).toBeNull();

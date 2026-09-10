@@ -32,10 +32,9 @@ describe('settings service', () => {
     expect((await getSettings()).language).toBe('pl');
   });
 
-  it('persists and exports all seven settings', async () => {
+  it('persists and exports all settings', async () => {
     const settings = buildSettings({
       maxNewCardsPerDay: 0,
-      dayStartHour: 0,
       theme: 'dark',
       resetEditorOnEveryProblem: true,
       resetEditorOnDueReview: true,
@@ -49,7 +48,6 @@ describe('settings service', () => {
 
   it.each([
     ['maxNewCardsPerDay', -1],
-    ['dayStartHour', 24],
     ['theme', 'blue'],
     ['resetEditorOnEveryProblem', 1],
     ['resetEditorOnDueReview', 'true'],
@@ -73,8 +71,8 @@ describe('settings service', () => {
     expect(setItem).not.toHaveBeenCalled();
     expect(await exportSettings()).toEqual({ theme: 'dark' });
 
-    await updateSettings({ theme: undefined, dayStartHour: 5 });
-    expect(await exportSettings()).toEqual({ theme: 'dark', dayStartHour: 5 });
+    await updateSettings({ theme: undefined, maxNewCardsPerDay: 5 });
+    expect(await exportSettings()).toEqual({ theme: 'dark', maxNewCardsPerDay: 5 });
   });
 
   it('validates and persists partial changes', async () => {
@@ -94,11 +92,6 @@ describe('settings service', () => {
     [
       { maxNewCardsPerDay: SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max + 1 },
       `Max new cards per day must be between ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min} and ${SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max}`,
-    ],
-    [{ dayStartHour: 1.5 }, 'Day start hour must be a whole number'],
-    [
-      { dayStartHour: SETTINGS_CONSTRAINTS.dayStartHour.max + 1 },
-      `Day start hour must be between ${SETTINGS_CONSTRAINTS.dayStartHour.min} and ${SETTINGS_CONSTRAINTS.dayStartHour.max}`,
     ],
     [{ theme: 'blue' }, 'Theme must be "system", "light", or "dark"'],
     [{ resetEditorOnEveryProblem: 1 }, 'Reset editor on every problem must be a boolean'],
@@ -147,7 +140,6 @@ describe('settings service', () => {
     const pending = readSettings();
     expect(getItem.mock.calls.map(([key]) => key)).toEqual([
       STORAGE_KEYS.maxNewCardsPerDay,
-      STORAGE_KEYS.dayStartHour,
       STORAGE_KEYS.theme,
       STORAGE_KEYS.resetEditorOnEveryProblem,
       STORAGE_KEYS.resetEditorOnDueReview,
@@ -211,7 +203,6 @@ describe('settings service', () => {
     const pending = resetSettings();
     expect(removeItem.mock.calls.map(([key]) => key)).toEqual([
       STORAGE_KEYS.maxNewCardsPerDay,
-      STORAGE_KEYS.dayStartHour,
       STORAGE_KEYS.theme,
       STORAGE_KEYS.resetEditorOnEveryProblem,
       STORAGE_KEYS.resetEditorOnDueReview,

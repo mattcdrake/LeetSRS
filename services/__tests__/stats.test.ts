@@ -510,8 +510,8 @@ describe('Stats management', () => {
       await expect(getNextNDaysStats(0)).resolves.toEqual([]);
     });
 
-    it('should respect the configured day start hour', async () => {
-      await storage.setItem(STORAGE_KEYS.dayStartHour, 4);
+    it('ignores a legacy day start hour when bucketing upcoming reviews', async () => {
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await addCard(buildProblem({ slug: 'problem-1' }));
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
@@ -521,8 +521,8 @@ describe('Stats management', () => {
       const stats = await getNextNDaysStats(2);
 
       expect(stats).toEqual([
-        { date: '2024-03-15', count: 1 },
-        { date: '2024-03-16', count: 0 },
+        { date: '2024-03-15', count: 0 },
+        { date: '2024-03-16', count: 1 },
       ]);
     });
 

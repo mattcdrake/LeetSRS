@@ -1,3 +1,4 @@
+import type { StorageItemKey } from 'wxt/utils/storage';
 import { storage } from '#imports';
 import { STORAGE_KEYS } from './storage-keys';
 
@@ -8,6 +9,7 @@ interface MigrationData {
 
 export interface Migration {
   description: string;
+  removeKeys?: readonly StorageItemKey[];
   migrate: (data: MigrationData) => MigrationData;
 }
 
@@ -40,6 +42,11 @@ const migrations: readonly Migration[] = [
     description: 'Add system theme preference',
     migrate: (data: MigrationData): MigrationData => data,
   },
+  {
+    description: 'Remove configurable day start',
+    migrate: (data: MigrationData): MigrationData => data,
+    removeKeys: ['sync:leetsrs:dayStartHour'],
+  },
 ];
 
 export function migrateBackupData(data: MigrationData, schemaVersion: number): MigrationData {
@@ -63,6 +70,9 @@ export async function runStartupMigrations(steps: readonly Migration[] = migrati
       const migrated = migration.migrate(data);
       if (migrated.cards !== undefined) {
         await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
+      }
+      if (migration.removeKeys) {
+        await storage.removeItems([...migration.removeKeys]);
       }
       await setSchemaVersion(version);
     } catch (error) {

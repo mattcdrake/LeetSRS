@@ -22,6 +22,7 @@ import {
   usePauseCardMutation,
   useRateCardMutation,
   useRemoveCardMutation,
+  useReviewQueueQuery,
 } from '../cards';
 import { statsQueryKeys } from '../stats';
 
@@ -203,8 +204,33 @@ describe('card queries through JSON messaging and background handlers', () => {
     createMessageMock(vi.mocked(sendMessage))
       .reset()
       .handle('getAllCards', (data) => runner.execute<'getAllCards'>(backgroundMessages.getAllCards, data))
+      .handle('getReviewQueue', (data) => runner.execute<'getReviewQueue'>(backgroundMessages.getReviewQueue, data))
       .handle('rateCard', (data) => runner.execute<'rateCard'>(backgroundMessages.rateCard, data));
   });
+
+  it.each([State.Learning, State.Relearning])(
+    'refreshes an empty queue when a state %i card becomes due',
+    async (state) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+      const card = createMockCard(state);
+      card.fsrs.due = Date.now() + 10_000;
+      await saveCards([card]);
+      const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
+
+      try {
+        await act(() => vi.advanceTimersByTimeAsync(1));
+        expect(view.result.current.isSuccess).toBe(true);
+        expect(view.result.current.data).toEqual([]);
+
+        await act(() => vi.advanceTimersByTimeAsync(15_000));
+        expect(view.result.current.data).toEqual([card]);
+      } finally {
+        view.unmount();
+        vi.useRealTimers();
+      }
+    }
+  );
 
   it.each([0, undefined])('preserves numeric dates and last_review=%s in query results', async (lastReview) => {
     const card = createMockCard(State.Review, { createdAt: 0 });

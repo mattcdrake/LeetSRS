@@ -23,10 +23,10 @@ A card that has not yet received its first rating.
 A tracked card excluded from the review queue until the learner resumes it.
 
 **Review day**:
-A local day beginning at the learner's configured day-start hour, used for due-card eligibility and daily review statistics.
+A local calendar day beginning at midnight, used for daily review statistics and the new-card allowance.
 
 **Review queue**:
-The ordered set of unpaused cards due by the current review day, with new cards limited by the remaining daily allowance.
+The ordered set of unpaused cards whose due time has been reached, with new cards limited by the remaining daily allowance.
 
 **Note**:
 The learner's text attached to a card.

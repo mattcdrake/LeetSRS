@@ -1,13 +1,8 @@
 import { State as FsrsState } from 'ts-fsrs';
-import { formatLocalDate } from './calendar';
 import type { Card } from './cards';
 
-export function isDueByDate(card: Card, referenceDate: Date, dayStartHour: number = 0): boolean {
-  const dueDate = new Date(card.fsrs.due);
-
-  const referenceDateStr = formatLocalDate(referenceDate, dayStartHour);
-  const dueStr = formatLocalDate(dueDate, dayStartHour);
-  return dueStr <= referenceDateStr;
+export function isDue(card: Card, now: Date): boolean {
+  return card.fsrs.due <= now.getTime();
 }
 
 const sortByDueDateThenSlug = (a: Card, b: Card): number => {

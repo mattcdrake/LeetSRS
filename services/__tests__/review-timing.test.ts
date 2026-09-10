@@ -5,12 +5,9 @@ import { storage } from 'wxt/utils/storage';
 import type { DailyStats } from '@/domain/statistics';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { buildSettings } from '@/test/utils/settings-mocks';
-import { getReviewQueue, isDueByDate } from '../cards';
-import { getSettings } from '../settings';
+import { getReviewQueue } from '../cards';
+import { updateSettings } from '../settings';
 import { getLastNDaysStats, getNextNDaysStats, getTodayKey, getYesterdayKey, updateStats } from '../stats';
-
-vi.mock('../settings', () => ({ getSettings: vi.fn() }));
 
 function dailyStats(date: string, newCards: number, streak = 1): DailyStats {
   return {
@@ -23,35 +20,25 @@ function dailyStats(date: string, newCards: number, streak = 1): DailyStats {
   };
 }
 
-describe('review-day service integration', () => {
+describe('review timing service integration', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-03-15T03:59:59.999'));
-    vi.mocked(getSettings).mockResolvedValue(buildSettings({ dayStartHour: 4 }));
+    vi.setSystemTime(new Date('2024-03-15T00:00:00.000'));
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('defaults an omitted reference date to the service clock at each call', () => {
-    const card = createMockCard(State.Review);
-    card.fsrs.due = new Date('2024-03-15T04:00:00').getTime();
-
-    expect(isDueByDate(card, undefined, 4)).toBe(false);
-    vi.setSystemTime(new Date('2024-03-15T04:00:00'));
-    expect(isDueByDate(card, undefined, 4)).toBe(true);
-  });
-
   it.each([
-    [getTodayKey, '2024-03-14'],
-    [getYesterdayKey, '2024-03-13'],
-  ])('%s uses the configured review-day boundary', async (getKey, expected) => {
+    [getTodayKey, '2024-03-15'],
+    [getYesterdayKey, '2024-03-14'],
+  ])('%s uses the local midnight boundary', async (getKey, expected) => {
     await expect(getKey()).resolves.toBe(expected);
   });
 
-  it('uses the review day for due cards and the daily new-card allowance', async () => {
+  it('uses exact due times and resets the daily new-card allowance at midnight', async () => {
     const cards = ['paused', 'new-a', 'new-b', 'future'].map((slug) => {
       const card = createMockCard(State.New, { slug, paused: slug === 'paused' });
       card.fsrs.due = new Date(slug === 'future' ? '2024-03-15T04:00:00' : '2024-03-14T12:00:00').getTime();
@@ -59,35 +46,47 @@ describe('review-day service integration', () => {
     });
     await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, card])));
     await storage.setItem(STORAGE_KEYS.stats, {
-      '2024-03-14': dailyStats('2024-03-14', 1),
-      '2024-03-15': dailyStats('2024-03-15', 0),
+      '2024-03-14': dailyStats('2024-03-14', 2),
+      '2024-03-15': dailyStats('2024-03-15', 1),
     });
-    vi.mocked(getSettings).mockResolvedValue(buildSettings({ dayStartHour: 4, maxNewCardsPerDay: 2 }));
+    await updateSettings({ maxNewCardsPerDay: 2 });
 
+    vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
+    expect(await getReviewQueue()).toEqual([]);
+    vi.setSystemTime(new Date('2024-03-15T00:00:00'));
     expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a']);
   });
 
-  it('continues the previous review day streak when creating stats before the day boundary', async () => {
-    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-13': dailyStats('2024-03-13', 1, 7) });
+  it.each([
+    ['2024-03-15T00:00:00', '2024-03-14', '2024-03-15'],
+    ['2024-01-01T00:00:00', '2023-12-31', '2024-01-01'],
+    ['2024-03-11T00:00:00', '2024-03-10', '2024-03-11'],
+    ['2024-11-04T00:00:00', '2024-11-03', '2024-11-04'],
+  ])('continues the streak at local midnight %s', async (instant, yesterday, today) => {
+    vi.setSystemTime(new Date(instant));
+    await storage.setItem(STORAGE_KEYS.stats, { [yesterday]: dailyStats(yesterday, 1, 7) });
 
     await updateStats(Rating.Good, true);
 
     expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual({
-      '2024-03-13': dailyStats('2024-03-13', 1, 7),
-      '2024-03-14': dailyStats('2024-03-14', 1, 8),
+      [yesterday]: dailyStats(yesterday, 1, 7),
+      [today]: dailyStats(today, 1, 8),
     });
   });
 
-  it.each([getLastNDaysStats, getNextNDaysStats])('%s anchors buckets to the review day', async (getBuckets) => {
-    expect(await getBuckets(1)).toEqual([expect.objectContaining({ date: '2024-03-14' })]);
-    expect(await getBuckets(0)).toEqual([]);
-  });
+  it.each([getLastNDaysStats, getNextNDaysStats])(
+    '%s anchors buckets to the local calendar day',
+    async (getBuckets) => {
+      expect(await getBuckets(1)).toEqual([expect.objectContaining({ date: '2024-03-15' })]);
+      expect(await getBuckets(0)).toEqual([]);
+    }
+  );
 
-  it('preserves the streak when adding to an existing review day', async () => {
-    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-14': dailyStats('2024-03-14', 1, 3) });
+  it('preserves the streak when adding to an existing local calendar day', async () => {
+    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-15': dailyStats('2024-03-15', 1, 3) });
 
     await updateStats(Rating.Good, true);
 
-    expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual({ '2024-03-14': dailyStats('2024-03-14', 2, 3) });
+    expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual({ '2024-03-15': dailyStats('2024-03-15', 2, 3) });
   });
 });

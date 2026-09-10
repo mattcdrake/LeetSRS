@@ -2,46 +2,30 @@ import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { buildReviewQueue, calculateDelayedDueDate, isDueByDate } from '../review';
+import { buildReviewQueue, calculateDelayedDueDate, isDue } from '../review';
 
-describe('isDueByDate', () => {
+describe('isDue', () => {
   it.each([
     ['2024-01-14T10:00:00', true],
     ['2024-01-15T00:00:00', true],
-    ['2024-01-15T08:00:00', true],
-    ['2024-01-15T23:59:59.999', true],
+    ['2024-01-15T14:29:59.999', true],
+    ['2024-01-15T14:30:00.000', true],
+    ['2024-01-15T14:30:00.001', false],
+    ['2024-01-15T23:59:59.999', false],
     ['2024-01-16T00:00:00', false],
-    ['2024-01-20T10:00:00', false],
-  ])('checks due date %s against the local calendar day', (due, expected) => {
+  ])('checks due timestamp %s against the current time', (due, expected) => {
     const card = dueCard('card', due, State.Review);
-    expect(isDueByDate(card, new Date('2024-01-15T14:30:00'))).toBe(expected);
+    expect(isDue(card, new Date('2024-01-15T14:30:00'))).toBe(expected);
   });
 
   it.each([State.New, State.Learning, State.Review, State.Relearning])(
-    'includes state %s due later on the same local day',
+    'waits for the exact due timestamp in state %s',
     (state) => {
       const card = dueCard('card', '2024-01-15T23:59:59.999', state);
-      expect(isDueByDate(card, new Date('2024-01-15T00:00:00'))).toBe(true);
+      expect(isDue(card, new Date('2024-01-15T23:59:59.998'))).toBe(false);
+      expect(isDue(card, new Date('2024-01-15T23:59:59.999'))).toBe(true);
     }
   );
-});
-
-describe('review-day boundaries', () => {
-  it.each([
-    ['2024-03-15T03:59:59.999', 4, false],
-    ['2024-03-15T04:00:00.000', 4, true],
-    ['2024-01-01T03:59:59.999', 4, false],
-    ['2024-01-01T04:00:00.000', 4, true],
-    ['2024-03-01T03:59:59.999', 4, false],
-    ['2024-03-01T04:00:00.000', 4, true],
-  ])('uses the local review day at %s', (instant, dayStartHour, due) => {
-    const referenceDate = new Date(instant);
-    const card = createMockCard(State.Review);
-    card.fsrs.due = new Date(referenceDate).setHours(4, 0, 0, 0);
-
-    expect(isDueByDate(card, referenceDate, dayStartHour)).toBe(due);
-    expect(referenceDate.getTime()).toBe(new Date(instant).getTime());
-  });
 });
 
 function dueCard(slug: string, due: string, state = State.New) {
