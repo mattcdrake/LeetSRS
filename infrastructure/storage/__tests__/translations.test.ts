@@ -3,7 +3,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { translations } from '@/i18n';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { createDeferred } from '@/test/utils/deferred';
 import { getStoredTranslations, watchStoredTranslations } from '../translations';
 
 describe('stored translations', () => {
@@ -49,7 +48,7 @@ describe('stored translations', () => {
   });
 
   it('reads only language and detects fallback after the storage read resolves', async () => {
-    const languageRead = createDeferred<null>();
+    const languageRead = Promise.withResolvers<null>();
     const getItem = vi.spyOn(storage, 'getItem').mockReturnValueOnce(languageRead.promise);
     const languages = vi.fn(() => ['pl']);
     vi.stubGlobal('navigator', {
@@ -119,7 +118,7 @@ describe('stored translations', () => {
   });
 
   it('does not overwrite a storage change with an older initial read', async () => {
-    const initial = createDeferred<string>();
+    const initial = Promise.withResolvers<string>();
     vi.spyOn(storage, 'getItem').mockReturnValueOnce(initial.promise);
     const onChange = vi.fn();
     const stop = watchStoredTranslations(onChange, vi.fn());
@@ -135,7 +134,7 @@ describe('stored translations', () => {
   });
 
   it('ignores an initial read that finishes after unsubscribe', async () => {
-    const initial = createDeferred<string>();
+    const initial = Promise.withResolvers<string>();
     vi.spyOn(storage, 'getItem').mockReturnValueOnce(initial.promise);
     const onChange = vi.fn();
     const stop = watchStoredTranslations(onChange, vi.fn());

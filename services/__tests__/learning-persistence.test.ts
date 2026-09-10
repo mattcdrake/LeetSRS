@@ -5,7 +5,6 @@ import { storage } from 'wxt/utils/storage';
 import { getNote, saveNote } from '@/infrastructure/storage/notes';
 import { getNoteStorageKey, STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem } from '@/test/utils/card-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, getAllCards, rateCard, removeCard } from '../cards';
 import { getSettings } from '../settings';
@@ -29,10 +28,10 @@ describe('learning persistence sequencing', () => {
   });
 
   it('awaits card and statistics persistence before resolving a rating', async () => {
-    const cardWrite = createDeferred<void>();
-    const statsWrite = createDeferred<void>();
-    const cardStarted = createDeferred<void>();
-    const statsStarted = createDeferred<void>();
+    const cardWrite = Promise.withResolvers<void>();
+    const statsWrite = Promise.withResolvers<void>();
+    const cardStarted = Promise.withResolvers<void>();
+    const statsStarted = Promise.withResolvers<void>();
     const setItem = storage.setItem.bind(storage);
     vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
       if (key === STORAGE_KEYS.cards) {
@@ -89,8 +88,8 @@ describe('learning persistence sequencing', () => {
   it('awaits note deletion before writing the card removal', async () => {
     const card = await addCard(buildProblem());
     await saveNote(card.id, 'solution');
-    const started = createDeferred<void>();
-    const deleted = createDeferred<void>();
+    const started = Promise.withResolvers<void>();
+    const deleted = Promise.withResolvers<void>();
     const removeItem = storage.removeItem.bind(storage);
     const removal = vi.spyOn(storage, 'removeItem').mockImplementation(async (key) => {
       started.resolve();

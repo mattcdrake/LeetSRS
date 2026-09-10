@@ -5,7 +5,6 @@ import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } f
 import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { buildProblem } from '@/test/utils/card-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { messages, registerBackgroundMessages } from '../message-handlers';
 import type { BackgroundMessageRegistry } from '../message-runner';
 
@@ -102,9 +101,9 @@ describe('GitHub message contracts', () => {
 
 describe('background message registration', () => {
   it('registers every handler synchronously and shares its queue with direct execution', async () => {
-    const ready = createDeferred<void>();
-    const started = createDeferred<void>();
-    const release = createDeferred<void>();
+    const ready = Promise.withResolvers<void>();
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
     const events: string[] = [];
     const handler = vi.fn(async ({ cardId }: { cardId: string }) => {
       events.push(cardId);

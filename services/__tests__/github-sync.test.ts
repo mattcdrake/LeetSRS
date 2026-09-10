@@ -5,7 +5,6 @@ import { storage } from 'wxt/utils/storage';
 import { setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
 // Mock Octokit
@@ -123,7 +122,7 @@ describe('github-sync', () => {
 
     describe('concurrent sync prevention', () => {
       it('prevents concurrent syncs and permits another after completion', async () => {
-        const request = createDeferred<{ data: { files: Record<string, never> } }>();
+        const request = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
         mockGistsGet.mockReturnValue(request.promise);
         mockExportData.mockResolvedValue('{}');
         mockGistsUpdate.mockResolvedValue({});
@@ -155,8 +154,8 @@ describe('github-sync', () => {
     });
 
     it('retains one client and destination when credentials change during the remote read', async () => {
-      const request = createDeferred<{ data: { files: Record<string, never> } }>();
-      const started = createDeferred<void>();
+      const request = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
+      const started = Promise.withResolvers<void>();
       mockGistsGet.mockImplementation(() => {
         started.resolve();
         return request.promise;
@@ -219,8 +218,8 @@ describe('github-sync', () => {
     });
 
     it('uses local metadata changed while the remote read is pending', async () => {
-      const request = createDeferred<{ data: { files: Record<string, { content: string }> } }>();
-      const started = createDeferred<void>();
+      const request = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
+      const started = Promise.withResolvers<void>();
       mockGistsGet.mockImplementation(() => {
         started.resolve();
         return request.promise;
@@ -421,8 +420,8 @@ describe('github-sync', () => {
     );
 
     it('awaits the request while exposing busy state, then clears it on failure', async () => {
-      const request = createDeferred<never>();
-      const started = createDeferred<void>();
+      const request = Promise.withResolvers<never>();
+      const started = Promise.withResolvers<void>();
       mockGistsGet.mockImplementation(() => {
         started.resolve();
         return request.promise;

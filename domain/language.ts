@@ -1,16 +1,10 @@
 import { z } from 'zod';
 
-export const SUPPORTED_LANGUAGES = {
-  de: true,
-  en: true,
-  hi: true,
-  pl: true,
-  'zh-CN': true,
-} as const;
+export const SUPPORTED_LANGUAGES = ['de', 'en', 'hi', 'pl', 'zh-CN'] as const;
 
-export const languageSchema = z.enum(Object.keys(SUPPORTED_LANGUAGES) as Array<keyof typeof SUPPORTED_LANGUAGES>, {
+export const languageSchema = z.enum(SUPPORTED_LANGUAGES, {
   error: (issue) =>
-    `Unsupported language: ${String(issue.input)}. Supported languages: ${Object.keys(SUPPORTED_LANGUAGES).join(', ')}`,
+    `Unsupported language: ${String(issue.input)}. Supported languages: ${SUPPORTED_LANGUAGES.join(', ')}`,
 });
 export type Language = z.infer<typeof languageSchema>;
 
