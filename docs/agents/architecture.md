@@ -32,11 +32,26 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 
 - Cards are slug-keyed, notes reference card UUIDs, and stored card dates are numeric.
 - Preserve supported card fields, FSRS schedules, notes, stats, settings, and Gist configuration. Unrecognized fields may be discarded; unrelated undecodable records need not survive mutations.
-- Schema changes require a new sequential migration in `infrastructure/storage/migrations.ts`.
+- Before changing schema migrations or startup recovery, read [ADR-0003](../adr/0003-snapshot-migration-input.md) and the migration contract below.
 - Infrastructure owns card date codecs, stored-record validation, migrations, and card/note/stat persistence. Persistence adapters do not mark local edits.
 - Domain owns import envelope/configuration validation, settings compatibility, and relationship checks without depending on storage types.
-- Services migrate and validate imports before replacement, then orchestrate reset/restore through shared persistence adapters. Preserve the local PAT and apply imported timestamps after settings writes.
+- Services parse the import envelope and source version, migrate the raw logical dataset, then normalize and validate current records and relationships before replacement. Preserve historical fields until transformation. Reset/restore uses shared persistence adapters, preserves the local PAT, and applies imported timestamps after settings writes.
 - Imports discard extra record and configuration fields while validating supported fields and relationships. Legacy imports default missing card domains to `leetcode.com` and map `autoClearLeetcode` to `resetEditorOnEveryProblem`, with the current setting taking precedence.
 - Sync, backup/reset, and local-edit tracking share `infrastructure/storage/sync-metadata.ts`.
 - Before changing Gist sync conflict resolution, read [ADR-0002](../adr/0002-whole-dataset-gist-sync.md). Restore pulls through backup import.
 - Sync payloads include settings and Gist configuration, exclude the PAT, and need new synchronized fields added to `ExportData`.
+
+### Migration contract and recovery
+
+Append each schema change as a numbered file in `infrastructure/storage/migrations/` and append it to the ordered list in `infrastructure/storage/migrations.ts`. Array position plus one is its version. `LATEST_SCHEMA_VERSION` governs exports and backup compatibility; the stored device version records completed startup steps. Keep historical checks independent of current application models. Versions 1–3 retain the existing learning-data backend.
+
+Each `Migration` supplies:
+
+- `load()`: read the complete historical logical dataset and any additional inputs as lossless JSON data. Keep historical storage layouts in migration adapters such as `legacy-storage.ts`.
+- `migrate(input)`: perform the pure, deterministic transformation shared by startup and imports. Validate historical input/output here, preserve unrelated fields, and explicitly define and test repair, discard, and rejection policies.
+- `save(output)`: persist the transformed result. Validate and calculate writes first, batching each storage area where practical.
+- Optional `cleanup(input)`: remove obsolete sources using the saved original input when needed. Both saving and cleanup must tolerate repeats.
+
+Startup saves `{ version, input }` at `local:leetsrs:migrationSnapshot` before transformation or destination writes. It then transforms, saves destinations, cleans sources, records completion, and retires the snapshot before starting another step. Retry uses the snapshot without calling `load()` again. Transformations need not accept their own output. Keep this recovery key and the completed-version key available in local storage when learning data moves.
+
+A snapshot for the device's completed version is retired without replay. A pending snapshot must identify the next version; malformed metadata, version gaps, older snapshots, and unsupported future versions block startup without changing recovery data. Failures report the step and phase. Background messages and alarms stay behind startup readiness, including after snapshot creation or retirement fails; reload after resolving the failure to retry. Import preparation runs only transformations and current validation; startup snapshots do not provide import replacement rollback.

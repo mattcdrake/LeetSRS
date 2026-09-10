@@ -2,10 +2,11 @@ import { createEmptyCard, Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { z } from 'zod';
 import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
-import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { type Migration, runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -97,7 +98,7 @@ describe('import-export', () => {
       const result = await exportData();
       const parsed = JSON.parse(result);
 
-      expect(parsed.schemaVersion).toBe(0);
+      expect(parsed.schemaVersion).toBe(3);
       expect(parsed.exportDate).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(parsed.data.stats).toEqual(mockStats);
       expect(parsed.data.notes).toEqual(mockNotes);
@@ -116,7 +117,7 @@ describe('import-export', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed).toMatchObject({
-        schemaVersion: 0,
+        schemaVersion: 3,
         exportDate: expect.any(String),
         data: {
           cards: {},
@@ -144,6 +145,56 @@ describe('import-export', () => {
   });
 
   describe('importData', () => {
+    it('migrates raw historical shapes and configuration before current validation', async () => {
+      const card = createMockCard(State.New, { id: 'one', slug: 'two-sum' });
+      const notes = { one: { text: 'Keep this note' } };
+      const historicalSchema = z.tuple([
+        z.array(z.looseObject({ slug: z.string() })),
+        z.record(z.string(), z.unknown()),
+        z.object({ theme: z.literal('night'), historicalField: z.literal('needed to migrate') }),
+      ]);
+      const noStorage = () => {
+        throw new Error('Import must not execute startup I/O');
+      };
+      const migration: Migration = {
+        description: 'Convert a historical tuple to the current dataset',
+        load: noStorage,
+        migrate: (data) => {
+          const [cards, notes] = historicalSchema.parse(data);
+          return {
+            cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
+            notes,
+            stats: {},
+            settings: { theme: 'dark' },
+          };
+        },
+        save: noStorage,
+        cleanup: noStorage,
+      };
+      const payload = {
+        exportDate: '2024-01-01T00:00:00.000Z',
+        data: [[card], notes, { theme: 'night', historicalField: 'needed to migrate' }],
+      };
+      const before = await storage.snapshot('local');
+
+      const prepared = await prepareImportData(JSON.stringify(payload), [migration]);
+
+      expect(prepared.cards).toEqual({ 'two-sum': card });
+      expect(prepared.notes).toEqual(notes);
+      expect(prepared.settings).toEqual({ theme: 'dark' });
+      await expect(prepareImportData(JSON.stringify({ ...payload, schemaVersion: 2 }), [migration])).rejects.toThrow(
+        'newer version'
+      );
+      await expect(
+        prepareImportData(
+          JSON.stringify({ ...payload, data: [[card], { orphan: { text: 'invalid owner' } }, payload.data[2]] }),
+          [migration]
+        )
+      ).rejects.toThrow('Note has no owning card');
+      expect(await storage.snapshot('local')).toEqual(before);
+      expect(await storage.snapshot('sync')).toEqual({});
+    });
+
     it.each(['cards', 'stats', 'notes'] as const)(
       'rejects mixed invalid %s during preparation and import without changing storage',
       async (collection) => {
@@ -217,7 +268,7 @@ describe('import-export', () => {
         expect(restored.data).toMatchObject(JSON.parse(JSON.stringify(data)));
         expect(restored.data.cards).toEqual(JSON.parse(JSON.stringify(data.cards)));
         expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
-        expect(restored.schemaVersion).toBe(2);
+        expect(restored.schemaVersion).toBe(3);
       }
     );
 
@@ -283,7 +334,7 @@ describe('import-export', () => {
       await setSchemaVersion(2);
     }
 
-    it('propagates schema-read failures without changing existing data', async () => {
+    it('accepts code-supported backups without consulting device progress or writing recovery snapshots', async () => {
       await seedExistingData();
       const failure = new Error('schema unavailable');
       const read = storage.getItem.bind(storage);
@@ -292,7 +343,8 @@ describe('import-export', () => {
       );
       const before = await fakeBrowser.storage.local.get(null);
 
-      await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
+      const prepared = await prepareImportData(JSON.stringify({ ...validExportData, schemaVersion: 3 }));
+      expect(prepared.cards).toEqual(validExportData.data.cards);
       expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     });
 

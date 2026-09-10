@@ -9,15 +9,8 @@ const structureSchema = z.object({
   schemaVersion: z.unknown().optional(),
   exportDate: z.unknown().refine(Boolean),
   dataUpdatedAt: z.unknown().optional(),
-  data: z.object({
-    cards: z.unknown().optional(),
-    stats: z.unknown().optional(),
-    notes: z.unknown().optional(),
-    settings: z.unknown().optional(),
-    gistSync: z.unknown().optional(),
-  }),
+  data: z.unknown().refine((value) => value !== undefined, 'Missing backup data'),
 });
-type BackupImportEnvelope = z.infer<typeof structureSchema>;
 
 const schemaVersionSchema = z.number().refine((value) => Number.isInteger(value) && value >= 0);
 // Preserve legacy timestamp formats accepted by Date.parse.
@@ -28,10 +21,6 @@ export const backupMetadataSchema = z.object({
   exportDate: timestampSchema,
   dataUpdatedAt: timestampSchema.optional(),
 });
-
-export function validateImportStructure(data: unknown): asserts data is BackupImportEnvelope {
-  structureSchema.parse(data);
-}
 
 function getImportedSettings(settings: unknown): Partial<Settings> {
   if (settings === undefined) return {};
@@ -48,7 +37,23 @@ function getImportedSettings(settings: unknown): Partial<Settings> {
   return settingsUpdateSchema.parse(importedSettings);
 }
 
-export function normalizeImportData(data: BackupImportEnvelope, currentSchema: number) {
+export function normalizeImportData(data: unknown, currentSchema: number) {
+  const envelope = parseImportEnvelope(data, currentSchema);
+  const dataset = objectMapSchema.parse(envelope.data);
+
+  return {
+    schemaVersion: envelope.schemaVersion,
+    cards: objectMapSchema.parse(dataset.cards),
+    stats: objectMapSchema.parse(dataset.stats),
+    notes: objectMapSchema.parse(dataset.notes),
+    settings: getImportedSettings(dataset.settings),
+    gistSync: gistSyncBackupSchema.optional().parse(dataset.gistSync),
+    dataUpdatedAt: envelope.dataUpdatedAt,
+  };
+}
+
+export function parseImportEnvelope(input: unknown, currentSchema: number) {
+  const data = structureSchema.parse(input);
   const importedSchema = schemaVersionSchema.optional().parse(data.schemaVersion) ?? 0;
   if (importedSchema > currentSchema) {
     throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
@@ -58,12 +63,9 @@ export function normalizeImportData(data: BackupImportEnvelope, currentSchema: n
 
   return {
     schemaVersion: importedSchema,
-    cards: objectMapSchema.parse(data.data.cards),
-    stats: objectMapSchema.parse(data.data.stats),
-    notes: objectMapSchema.parse(data.data.notes),
-    settings: getImportedSettings(data.data.settings),
-    gistSync: gistSyncBackupSchema.optional().parse(data.data.gistSync),
+    exportDate: data.exportDate,
     dataUpdatedAt,
+    data: data.data,
   };
 }
 

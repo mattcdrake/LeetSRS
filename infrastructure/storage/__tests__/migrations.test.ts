@@ -4,13 +4,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { getAllCards } from '../cards';
-import {
-  getCurrentSchemaVersion,
-  type Migration,
-  migrateBackupData,
-  runStartupMigrations,
-  setSchemaVersion,
-} from '../migrations';
+import { getCurrentSchemaVersion, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../migrations';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('migrations', () => {
@@ -24,6 +18,11 @@ describe('migrations', () => {
       const card = Object.freeze(legacyCard);
       const data = Object.freeze({
         cards: Object.freeze({ 'two-sum': card }),
+        notes: Object.freeze({ [card.id]: Object.freeze({ text: 'Keep this note' }) }),
+        stats: Object.freeze({ historical: Object.freeze({ reviews: 2 }) }),
+        settings: Object.freeze({ theme: 'dark', dayStartHour: 4 }),
+        gistSync: Object.freeze({ gistId: 'saved-gist', enabled: false }),
+        historicalField: Object.freeze({ value: 42 }),
       });
       const before = await fakeBrowser.storage.local.get(null);
       const migrated = migrateBackupData(data, 0);
@@ -31,7 +30,9 @@ describe('migrations', () => {
       expect(migrated).toEqual({
         ...data,
         cards: { 'two-sum': { ...card, domain: 'leetcode.com' } },
+        settings: { theme: 'dark' },
       });
+      expect(migrateBackupData(data, 0)).toEqual(migrated);
       expect(data.cards['two-sum']).not.toHaveProperty('domain');
       expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     });
@@ -43,6 +44,53 @@ describe('migrations', () => {
 
     it.each([-1, 0.5, 4])('rejects unsupported schema %s', (schemaVersion) => {
       expect(() => migrateBackupData({ cards: {} }, schemaVersion)).toThrow('Unsupported schema version');
+    });
+
+    it('repairs only falsy card domains and preserves malformed records for later validation', () => {
+      const cards = {
+        missing: { id: 'one', historical: true },
+        empty: { domain: '' },
+        nullDomain: { domain: null },
+        falseDomain: { domain: false },
+        zeroDomain: { domain: 0 },
+        cn: { domain: 'leetcode.cn' },
+        invalidDomain: { domain: 'example.com' },
+        invalidField: { domain: 'leetcode.com', paused: 'invalid' },
+        nullCard: null,
+        arrayCard: [],
+        primitiveCard: 'invalid',
+      };
+      expect(migrateBackupData({ cards, historical: 'keep' }, 0)).toEqual({
+        historical: 'keep',
+        cards: {
+          ...cards,
+          missing: { id: 'one', historical: true, domain: 'leetcode.com' },
+          empty: { domain: 'leetcode.com' },
+          nullDomain: { domain: 'leetcode.com' },
+          falseDomain: { domain: 'leetcode.com' },
+          zeroDomain: { domain: 'leetcode.com' },
+        },
+      });
+    });
+
+    it.each([[], 'invalid', 42])('rejects malformed historical card collections: %j', (cards) => {
+      expect(() => migrateBackupData({ cards }, 0)).toThrow();
+    });
+
+    it.each([{}, { cards: null }])('preserves absent card collections: %j', (data) => {
+      expect(migrateBackupData(data, 0)).toEqual(data);
+    });
+
+    it.each([4, 'invalid', null, { historical: true }])('discards retired day start values: %j', (dayStartHour) => {
+      const data = { cards: { malformed: null }, settings: { dayStartHour, theme: 'unknown' }, extra: true };
+      expect(migrateBackupData(data, 1)).toEqual({
+        ...data,
+        settings: { theme: 'unknown' },
+      });
+    });
+
+    it.each([[], null, 'invalid'])('rejects malformed historical settings: %j', (settings) => {
+      expect(() => migrateBackupData({ settings }, 2)).toThrow();
     });
   });
 
@@ -64,158 +112,6 @@ describe('migrations', () => {
       await setSchemaVersion(3);
       const stored = await storage.getItem(STORAGE_KEYS.schemaVersion);
       expect(stored).toBe(3);
-    });
-  });
-
-  describe('runStartupMigrations', () => {
-    it('runs migrations in array order', async () => {
-      const executionOrder: string[] = [];
-      const steps: Migration[] = ['add domain', 'add theme', 'next migration'].map((description) => ({
-        description,
-        migrate: (data) => {
-          executionOrder.push(description);
-          return data;
-        },
-      }));
-
-      await runStartupMigrations(steps);
-
-      expect(executionOrder).toEqual(['add domain', 'add theme', 'next migration']);
-      expect(await getCurrentSchemaVersion()).toBe(3);
-    });
-
-    it('should only run migrations newer than current version', async () => {
-      await setSchemaVersion(2);
-
-      const executionOrder: number[] = [];
-      const migrations: Migration[] = [
-        {
-          description: 'Old migration',
-          migrate: (data) => {
-            executionOrder.push(1);
-            return data;
-          },
-        },
-        {
-          description: 'Current migration',
-          migrate: (data) => {
-            executionOrder.push(2);
-            return data;
-          },
-        },
-        {
-          description: 'New migration',
-          migrate: (data) => {
-            executionOrder.push(3);
-            return data;
-          },
-        },
-        {
-          description: 'Newer migration',
-          migrate: (data) => {
-            executionOrder.push(4);
-            return data;
-          },
-        },
-      ];
-
-      await runStartupMigrations(migrations);
-
-      expect(executionOrder).toEqual([3, 4]);
-      expect(await getCurrentSchemaVersion()).toBe(4);
-    });
-
-    it('should handle empty migrations array', async () => {
-      await runStartupMigrations([]);
-      expect(await getCurrentSchemaVersion()).toBe(0);
-    });
-
-    it('derives persisted versions from array positions after skipping completed steps', async () => {
-      await setSchemaVersion(1);
-      const step: Migration = { description: 'No-op', migrate: (data) => data };
-      const writes = vi.spyOn(storage, 'setItem');
-      try {
-        await runStartupMigrations([step, step, step]);
-
-        expect(writes.mock.calls.filter(([key]) => key === STORAGE_KEYS.schemaVersion)).toEqual([
-          [STORAGE_KEYS.schemaVersion, 2],
-          [STORAGE_KEYS.schemaVersion, 3],
-        ]);
-        expect(await getCurrentSchemaVersion()).toBe(3);
-      } finally {
-        writes.mockRestore();
-      }
-    });
-
-    it('should stop and throw error if migration fails', async () => {
-      const executionOrder: number[] = [];
-
-      const migrations: Migration[] = [
-        {
-          description: 'Success migration',
-          migrate: (data) => {
-            executionOrder.push(1);
-            return data;
-          },
-        },
-        {
-          description: 'Failing migration',
-          migrate: () => {
-            executionOrder.push(2);
-            throw new Error('Migration failed');
-          },
-        },
-        {
-          description: 'Should not run',
-          migrate: (data) => {
-            executionOrder.push(3);
-            return data;
-          },
-        },
-      ];
-
-      await expect(runStartupMigrations(migrations)).rejects.toThrow('Failed to run migration 2');
-
-      expect(executionOrder).toEqual([1, 2]);
-      expect(await getCurrentSchemaVersion()).toBe(1); // Only first migration succeeded
-    });
-
-    it('persists each step before advancing its version and starting the next step', async () => {
-      const versions: number[] = [];
-      const first = createMockCard(State.New, { slug: 'first' });
-      const second = createMockCard(State.New, { slug: 'second' });
-      const steps: Migration[] = [
-        {
-          description: 'First',
-          migrate: () => ({ cards: { first } }),
-        },
-        {
-          description: 'Second',
-          migrate: (data) => {
-            expect(data.cards).toEqual({ first });
-            return { cards: { ...data.cards, second } };
-          },
-        },
-      ];
-      const write = storage.setItem.bind(storage);
-      const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
-        if (key === STORAGE_KEYS.cards) versions.push(await getCurrentSchemaVersion());
-        return write(key, value);
-      });
-      try {
-        await runStartupMigrations(steps);
-
-        expect(versions).toEqual([0, 1]);
-        expect(writes.mock.calls.map(([key]) => key)).toEqual([
-          STORAGE_KEYS.cards,
-          STORAGE_KEYS.schemaVersion,
-          STORAGE_KEYS.cards,
-          STORAGE_KEYS.schemaVersion,
-        ]);
-        expect(await getCurrentSchemaVersion()).toBe(2);
-      } finally {
-        writes.mockRestore();
-      }
     });
   });
 
@@ -269,55 +165,6 @@ describe('migrations', () => {
       } finally {
         writes.mockRestore();
       }
-    });
-
-    it('safely retries startup after cards are saved but the schema version write fails', async () => {
-      const { domain: _domain, ...legacyCard } = createMockCard(State.Review, {
-        id: 'legacy-id',
-        slug: 'two-sum',
-        paused: true,
-      });
-      const cards = {
-        'two-sum': legacyCard,
-        'add-two-numbers': createMockCard(State.Learning, {
-          id: 'cn-id',
-          slug: 'add-two-numbers',
-          domain: 'leetcode.cn',
-        }),
-      };
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-      await storage.setItem(`${STORAGE_KEYS.notes}:legacy-id`, { text: 'Keep this note' });
-      await storage.setItem(`${STORAGE_KEYS.notes}:cn-id`, { text: 'Keep this too' });
-      await storage.setItem(STORAGE_KEYS.theme, 'dark');
-      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
-      const before = await fakeBrowser.storage.local.get(null);
-      const expectedAfterCardWrite = {
-        ...before,
-        [STORAGE_KEYS.cards.slice('local:'.length)]: {
-          ...cards,
-          'two-sum': { ...cards['two-sum'], domain: 'leetcode.com' },
-        },
-      };
-      const write = storage.setItem.bind(storage);
-      const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
-        if (key === STORAGE_KEYS.schemaVersion) throw new Error('schema persistence failed');
-        return write(key, value);
-      });
-      try {
-        await expect(runStartupMigrations()).rejects.toThrow('schema persistence failed');
-        expect(await getCurrentSchemaVersion()).toBe(0);
-        expect(await fakeBrowser.storage.local.get(null)).toEqual(expectedAfterCardWrite);
-      } finally {
-        writes.mockRestore();
-      }
-
-      // A new startup sees the persisted cards and the old schema version.
-      await runStartupMigrations();
-
-      expect(await fakeBrowser.storage.local.get(null)).toEqual({
-        ...expectedAfterCardWrite,
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
-      });
     });
 
     it('should handle empty or missing cards storage', async () => {

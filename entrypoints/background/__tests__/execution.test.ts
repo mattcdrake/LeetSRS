@@ -1,3 +1,4 @@
+import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -15,7 +16,7 @@ import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
 import * as sync from '@/services/github-sync';
-import { buildProblem } from '@/test/utils/card-mocks';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import background from '../index';
 
 vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
@@ -49,6 +50,59 @@ beforeEach(async () => {
 const problem = buildProblem();
 
 describe('registered background execution', () => {
+  it.each([STORAGE_KEYS.migrationSnapshot, STORAGE_KEYS.cards])(
+    'blocks data commands and alarms after a real migration write fails at %s, then recovers on restart',
+    async (failedKey) => {
+      fakeBrowser.reset();
+      fakeBrowser.runtime.id = 'test';
+      const { domain: _domain, ...card } = createMockCard(State.New, { id: 'one', slug: 'two-sum' });
+      const legacy = { 'two-sum': card };
+      await storage.setItem(STORAGE_KEYS.cards, legacy);
+      await storage.setItem(STORAGE_KEYS.githubPat, 'pat');
+      await storage.setItem(STORAGE_KEYS.gistId, 'gist');
+      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+      const before = await storage.snapshot('local');
+      const syncBefore = await storage.snapshot('sync');
+      const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const write = storage.setItem.bind(storage);
+      const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+        if (key === failedKey) throw new Error('storage unavailable');
+        return write(key, value);
+      });
+      vi.mocked(onMessage).mockClear();
+      const alarms = vi.spyOn(browser.alarms.onAlarm, 'addListener');
+      background.main();
+      const alarm = alarms.mock.calls[0]?.[0];
+      if (!alarm) throw new Error('Alarm listener not registered');
+
+      await expect(dispatch('getAllCards')).rejects.toThrow('storage unavailable');
+      await expect(dispatch('saveNote', { cardId: 'one', text: 'must not save' })).rejects.toThrow(
+        'storage unavailable'
+      );
+      await expect(dispatch('resetAllData')).rejects.toThrow('storage unavailable');
+      await expect(dispatch('exportData')).rejects.toThrow('storage unavailable');
+      await alarm({ name: 'gist-sync', scheduledTime: 0, persistAcrossSessions: true });
+
+      expect(sync.triggerGistSync).not.toHaveBeenCalled();
+      expect(report).toHaveBeenCalledOnce();
+      const recovery = await storage.getItem(STORAGE_KEYS.migrationSnapshot);
+      expect(await storage.snapshot('local')).toEqual({
+        ...before,
+        ...(failedKey === STORAGE_KEYS.cards ? { 'leetsrs:migrationSnapshot': recovery } : {}),
+      });
+      expect(await storage.snapshot('sync')).toEqual(syncBefore);
+      writes.mockRestore();
+      vi.mocked(onMessage).mockClear();
+      background.main();
+
+      await expect(dispatch('getSettings')).resolves.toBeDefined();
+      await dispatch('saveNote', { cardId: 'one', text: 'recovered' });
+      await expect(dispatch('getNote', { cardId: 'one' })).resolves.toEqual({ text: 'recovered' });
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.migrationSnapshot)).toBeNull();
+    }
+  );
+
   it('registers every message synchronously', () => {
     expect(
       vi

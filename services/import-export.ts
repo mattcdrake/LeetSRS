@@ -1,8 +1,8 @@
-import { normalizeImportData, validateImportRelationships, validateImportStructure } from '@/domain/backup-import';
+import { normalizeImportData, parseImportEnvelope, validateImportRelationships } from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import { validateBackupRecords } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
-import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
+import { LATEST_SCHEMA_VERSION, type Migration, migrateBackupData } from '@/infrastructure/storage/migrations';
 import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
@@ -11,7 +11,7 @@ import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
   const cardsPromise = getAllCards();
-  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt, schemaVersion] = await Promise.all([
+  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
     cardsPromise,
     getStats(),
     cardsPromise.then((cards) => getNotesForCards(cards)),
@@ -19,11 +19,10 @@ export async function exportData(): Promise<string> {
     readSyncMetadata('gistId'),
     readSyncMetadata('gistSyncEnabled'),
     readSyncMetadata('dataUpdatedAt'),
-    getCurrentSchemaVersion(),
   ]);
 
   const exportData: ExportData = {
-    schemaVersion,
+    schemaVersion: LATEST_SCHEMA_VERSION,
     exportDate: new Date().toISOString(),
     dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
@@ -41,7 +40,7 @@ export async function exportData(): Promise<string> {
   return JSON.stringify(exportData, null, 2);
 }
 
-export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
+export async function prepareImportData(jsonData: string, steps?: readonly Migration[]): Promise<PreparedImportData> {
   let data: unknown;
   try {
     data = JSON.parse(jsonData);
@@ -49,12 +48,12 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
     throw new Error('Invalid JSON format');
   }
 
-  validateImportStructure(data);
-  const currentSchema = await getCurrentSchemaVersion();
-  const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
-  const migrated = migrateBackupData({ cards: normalizedData.cards }, schemaVersion);
+  const latestVersion = steps?.length ?? LATEST_SCHEMA_VERSION;
+  const envelope = parseImportEnvelope(data, latestVersion);
+  const migrated = migrateBackupData(envelope.data, envelope.schemaVersion, steps);
+  const normalizedData = normalizeImportData({ ...envelope, data: migrated }, latestVersion);
   const validRecords = validateBackupRecords({
-    cards: migrated.cards,
+    cards: normalizedData.cards,
     stats: normalizedData.stats,
     notes: normalizedData.notes,
   });

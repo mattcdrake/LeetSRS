@@ -1,16 +1,26 @@
-import type { StorageItemKey } from 'wxt/utils/storage';
+import { z } from 'zod';
 import { storage } from '#imports';
+import { cardDomainMigration } from './migrations/001-card-domain';
+import { systemThemeMigration } from './migrations/002-system-theme';
+import { removeDayStartMigration } from './migrations/003-remove-day-start';
+import type { Migration } from './migrations/contract';
 import { STORAGE_KEYS } from './storage-keys';
 
-// Cards may be absent in storage, and legacy records have not yet been validated.
-interface MigrationData {
-  cards?: Record<string, unknown>;
-}
+export type { Migration } from './migrations/contract';
 
-export interface Migration {
-  description: string;
-  removeKeys?: readonly StorageItemKey[];
-  migrate: (data: MigrationData) => MigrationData;
+// Append only: index + 1 is the schema version. Never reorder or remove entries.
+const migrations: readonly Migration[] = [cardDomainMigration, systemThemeMigration, removeDayStartMigration];
+export const LATEST_SCHEMA_VERSION = migrations.length;
+
+const snapshotSchema = z.object({
+  version: z.number().int().positive(),
+  input: z.json(),
+});
+
+function checkVersion(version: number, latest: number): void {
+  if (!Number.isInteger(version) || version < 0 || version > latest) {
+    throw new Error(`Unsupported schema version: ${version}. Please update the extension before retrying.`);
+  }
 }
 
 export async function getCurrentSchemaVersion(): Promise<number> {
@@ -21,62 +31,73 @@ export async function setSchemaVersion(version: number): Promise<void> {
   await storage.setItem(STORAGE_KEYS.schemaVersion, version);
 }
 
-// Append only: index + 1 is the schema version. Never reorder or remove entries.
-const migrations: readonly Migration[] = [
-  {
-    description: 'Add domain field to existing cards, defaulting to leetcode.com',
-    migrate: (data: MigrationData): MigrationData => {
-      if (!data.cards) return data;
-      const cards = Object.fromEntries(
-        Object.entries(data.cards).map(([slug, card]) => {
-          // Leave malformed records for record validation after migration.
-          if (typeof card !== 'object' || card === null || Array.isArray(card)) return [slug, card];
-          if ('domain' in card && card.domain) return [slug, card];
-          return [slug, { ...card, domain: 'leetcode.com' }];
-        })
-      );
-      return { cards };
-    },
-  },
-  {
-    description: 'Add system theme preference',
-    migrate: (data: MigrationData): MigrationData => data,
-  },
-  {
-    description: 'Remove configurable day start',
-    migrate: (data: MigrationData): MigrationData => data,
-    removeKeys: ['sync:leetsrs:dayStartHour'],
-  },
-];
-
-export function migrateBackupData(data: MigrationData, schemaVersion: number): MigrationData {
-  if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {
-    throw new Error(`Unsupported schema version: ${schemaVersion}`);
-  }
+export function migrateBackupData(
+  data: unknown,
+  schemaVersion: number,
+  steps: readonly Migration[] = migrations
+): unknown {
+  checkVersion(schemaVersion, steps.length);
   let migrated = data;
-  for (const migration of migrations.slice(schemaVersion)) {
+  for (const migration of steps.slice(schemaVersion)) {
     migrated = migration.migrate(migrated);
   }
   return migrated;
 }
 
 export async function runStartupMigrations(steps: readonly Migration[] = migrations): Promise<void> {
-  const currentVersion = await getCurrentSchemaVersion();
-  for (const [index, migration] of steps.slice(currentVersion).entries()) {
-    const version = currentVersion + index + 1;
-    try {
-      const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
-      const data = { cards: cards ?? undefined };
-      const migrated = migration.migrate(data);
-      if (migrated.cards !== undefined) {
-        await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
+  let phase = 'read recovery metadata';
+  let step = 'startup recovery';
+  try {
+    const currentVersion = await getCurrentSchemaVersion();
+    checkVersion(currentVersion, steps.length);
+    const saved = await storage.getItem<unknown>(STORAGE_KEYS.migrationSnapshot);
+    let snapshot: z.infer<typeof snapshotSchema> | undefined;
+    if (saved !== null) {
+      const parsed = snapshotSchema.safeParse(saved);
+      if (
+        !parsed.success ||
+        parsed.data.version > steps.length ||
+        (parsed.data.version !== currentVersion && parsed.data.version !== currentVersion + 1)
+      ) {
+        throw new Error(
+          'Inconsistent migration recovery metadata. Preserve the snapshot and restore compatible recovery metadata before retrying.'
+        );
       }
-      if (migration.removeKeys) {
-        await storage.removeItems([...migration.removeKeys]);
+      snapshot = parsed.data;
+      if (snapshot.version === currentVersion) {
+        // Destination writes, cleanup, and version advancement already succeeded.
+        phase = 'retire recovery snapshot';
+        await storage.removeItem(STORAGE_KEYS.migrationSnapshot);
+        snapshot = undefined;
       }
-      await setSchemaVersion(version);
-    } catch (error) {
-      throw new Error(`Failed to run migration ${version}: ${error}`);
     }
+    for (const [index, migration] of steps.slice(currentVersion).entries()) {
+      const version = currentVersion + index + 1;
+      step = `migration ${version} (${migration.description})`;
+      phase = 'load original input';
+      if (!snapshot) {
+        const input = await migration.load();
+        phase = 'save recovery snapshot';
+        snapshot = snapshotSchema.parse({ version, input });
+        await storage.setItem(STORAGE_KEYS.migrationSnapshot, snapshot);
+      }
+      phase = 'transform and validate';
+      const migrated = migration.migrate(snapshot.input);
+      phase = 'save destination';
+      await migration.save(migrated);
+      phase = 'clean obsolete sources';
+      await migration.cleanup?.(snapshot.input);
+      phase = 'record completed version';
+      await setSchemaVersion(version);
+      phase = 'retire recovery snapshot';
+      await storage.removeItem(STORAGE_KEYS.migrationSnapshot);
+      snapshot = undefined;
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to run ${step} during ${phase}: ${error}. ` +
+        'Startup is blocked. Resolve the error and reload the extension to retry; keep any saved recovery snapshot.',
+      { cause: error }
+    );
   }
 }

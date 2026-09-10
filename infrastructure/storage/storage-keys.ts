@@ -9,6 +9,8 @@ export const STORAGE_KEYS = {
   badgeEnabled: 'sync:leetsrs:badgeEnabled',
   language: 'sync:leetsrs:language',
   schemaVersion: 'local:leetsrs:schemaVersion',
+  // Recovery metadata stays in local storage even when learning data moves elsewhere.
+  migrationSnapshot: 'local:leetsrs:migrationSnapshot',
   // Tracks when actual data was last modified (for sync)
   dataUpdatedAt: 'local:leetsrs:dataUpdatedAt',
   // GitHub Gist Sync
