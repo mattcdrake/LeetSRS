@@ -7,9 +7,8 @@ import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { Card } from '@/domain/cards';
-import { messages as backgroundMessages } from '@/entrypoints/background/message-handlers';
-import { createBackgroundMessageRunner } from '@/entrypoints/background/message-runner';
-import { sendMessage } from '@/infrastructure/browser/messages';
+import background from '@/entrypoints/background';
+import { onMessage, sendMessage } from '@/infrastructure/browser/messages';
 import { saveCards } from '@/infrastructure/storage/cards';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -27,6 +26,7 @@ import { statsQueryKeys } from '../stats';
 
 vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
+  onMessage: vi.fn(),
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
 
@@ -138,16 +138,12 @@ describe('usePauseCardMutation', () => {
 describe('card queries through JSON messaging and background handlers', () => {
   beforeEach(() => {
     fakeBrowser.reset();
-    const runner = createBackgroundMessageRunner({
-      ready: Promise.resolve(),
-      markDataUpdated: vi.fn(),
-      refreshBadge: vi.fn(),
-    });
-    createMessageMock(vi.mocked(sendMessage))
-      .reset()
-      .handle('getAllCards', (data) => runner.execute<'getAllCards'>(backgroundMessages.getAllCards, data))
-      .handle('getReviewQueue', (data) => runner.execute<'getReviewQueue'>(backgroundMessages.getReviewQueue, data))
-      .handle('rateCard', (data) => runner.execute<'rateCard'>(backgroundMessages.rateCard, data));
+    fakeBrowser.runtime.id = 'test';
+    background.main();
+    const messaging = createMessageMock(vi.mocked(sendMessage)).reset();
+    for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
+      messaging.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
+    }
   });
 
   it.each([State.Learning, State.Relearning])(
