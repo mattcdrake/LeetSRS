@@ -46,6 +46,8 @@ beforeEach(async () => {
   await dispatch('getSettings');
 });
 
+const problem = buildProblem();
+
 describe('registered background execution', () => {
   it('registers every message synchronously', () => {
     expect(
@@ -149,62 +151,100 @@ describe('registered background execution', () => {
     expect(badge).not.toHaveBeenCalled();
   });
 
-  it('tracks card and note edits, refreshes card badges, and preserves workflow-owned timestamps', async () => {
+  it('updates the timestamp and displays the queue size after adding a card', async () => {
     const tracking = vi.spyOn(tracker, 'markDataUpdated');
     const badge = vi.spyOn(browser.action, 'setBadgeText');
-    const problem = buildProblem();
+
     const card = await dispatch('addCard', { problem });
+
     expect(card).toMatchObject(problem);
     expect(tracking).toHaveBeenCalledOnce();
-    expect(badge).toHaveBeenLastCalledWith({ text: '1' });
-    const allCards = await cards.getAllCards();
-    const cardId = allCards[0].id;
-    for (const [name, data] of [
-      ['saveNote', { cardId, text: 'remember' }],
-      ['deleteNote', { cardId }],
-    ] as const) {
-      tracking.mockClear();
-      badge.mockClear();
-      await dispatch(name, data);
+    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '1' });
+  });
+
+  it.each([
+    ['delayCard', { slug: problem.slug, days: 1 }],
+    ['setPauseStatus', { slug: problem.slug, paused: true }],
+    ['rateCard', { input: { ...problem, rating: 4 } }],
+    ['removeCard', { slug: problem.slug }],
+  ] as const)('%s updates the timestamp and refreshes the badge', async (name, data) => {
+    await cards.addCard(problem);
+    const tracking = vi.spyOn(tracker, 'markDataUpdated');
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+
+    await dispatch(name, data);
+
+    expect(tracking).toHaveBeenCalledOnce();
+    expect(badge).toHaveBeenCalledOnce();
+  });
+
+  it.each(['saveNote', 'deleteNote'] as const)(
+    '%s updates the timestamp without refreshing the badge',
+    async (name) => {
+      const card = await cards.addCard(problem);
+      await notes.saveNote(card.id, 'existing note');
+      const tracking = vi.spyOn(tracker, 'markDataUpdated');
+      const badge = vi.spyOn(browser.action, 'setBadgeText');
+
+      await dispatch(name, { cardId: card.id, text: 'remember' });
+
       expect(tracking).toHaveBeenCalledOnce();
       expect(badge).not.toHaveBeenCalled();
     }
-    for (const [name, data] of [
-      ['delayCard', { slug: problem.slug, days: 1 }],
-      ['setPauseStatus', { slug: problem.slug, paused: true }],
-      ['rateCard', { input: { ...problem, rating: 4 } }],
-      ['removeCard', { slug: problem.slug }],
-    ] as const) {
-      tracking.mockClear();
-      badge.mockClear();
-      await dispatch(name, data);
-      expect(tracking).toHaveBeenCalledOnce();
-      expect(badge).toHaveBeenCalledOnce();
-    }
-    tracking.mockClear();
-    badge.mockClear();
+  );
+
+  it('lets settings own timestamp updates and clears the badge when disabled', async () => {
+    await cards.addCard(problem);
+    const tracking = vi.spyOn(tracker, 'markDataUpdated');
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+
     await dispatch('updateSettings', { changes: { badgeEnabled: false } });
+
     expect(tracking).toHaveBeenCalledOnce();
-    expect(badge).toHaveBeenLastCalledWith({ text: '' });
+    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });
+  });
+
+  it('preserves the imported timestamp and refreshes the badge', async () => {
+    await cards.addCard(problem);
     const timestamp = '2024-01-15T10:00:00.000Z';
     const backup = JSON.parse((await dispatch('exportData')) as string);
     backup.dataUpdatedAt = timestamp;
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+
     await dispatch('importData', { jsonData: JSON.stringify(backup) });
+
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
-    tracking.mockClear();
-    badge.mockClear();
+    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '1' });
+  });
+
+  it('preserves the timestamp and badge when updating Gist configuration', async () => {
+    const timestamp = '2024-01-15T10:00:00.000Z';
+    await storage.setItem(STORAGE_KEYS.dataUpdatedAt, timestamp);
+    const tracking = vi.spyOn(tracker, 'markDataUpdated');
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+
     await dispatch('setGistSyncConfig', { config: { enabled: false } });
+
     expect(tracking).not.toHaveBeenCalled();
     expect(badge).not.toHaveBeenCalled();
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
+  });
+
+  it('removes cards and their timestamp and clears the badge on reset', async () => {
+    await cards.addCard(problem);
+    await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-15T10:00:00.000Z');
+    const tracking = vi.spyOn(tracker, 'markDataUpdated');
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+
     await dispatch('resetAllData');
-    expect(tracking).not.toHaveBeenCalled();
-    expect(badge).toHaveBeenCalledOnce();
+
     expect(await dispatch('getAllCards')).toEqual([]);
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    expect(tracking).not.toHaveBeenCalled();
+    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });
   });
 });
 
-const problem = buildProblem();
 const invalidPayloads: [MessageName, unknown][] = [
   ['addCard', { problem: { ...problem, difficulty: 'Impossible' } }],
   ['removeCard', { slug: '' }],
