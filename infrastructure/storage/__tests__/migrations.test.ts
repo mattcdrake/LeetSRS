@@ -15,7 +15,7 @@ describe('migrations', () => {
   describe('migrateBackupData', () => {
     it('preserves legal JSON keys while validating historical datasets and collections', () => {
       const data: unknown = JSON.parse(
-        '{"__proto__":{"text":"unrelated"},"cards":{"__proto__":{"domain":"leetcode.com"}},"settings":{"__proto__":{"text":"setting"},"dayStartHour":4}}'
+        '{"__proto__":{"text":"unrelated"},"cards":{"__proto__":{}},"settings":{"__proto__":{"text":"setting"},"dayStartHour":4}}'
       );
       expect(migrateBackupData(data, 0)).toEqual(
         JSON.parse(
@@ -66,10 +66,16 @@ describe('migrations', () => {
         zeroDomain: { domain: 0 },
         cn: { domain: 'leetcode.cn' },
         invalidDomain: { domain: 'example.com' },
+        objectDomain: { domain: { historical: true } },
+        arrayDomain: { domain: [] },
+        booleanDomain: { domain: true },
+        numberDomain: { domain: 42 },
         invalidField: { domain: 'leetcode.com', paused: 'invalid' },
         nullCard: null,
         arrayCard: [],
         primitiveCard: 'invalid',
+        booleanCard: false,
+        numberCard: 0,
       };
       expect(migrateBackupData({ cards, historical: 'keep' }, 0)).toEqual({
         historical: 'keep',
@@ -225,14 +231,23 @@ describe('migrations', () => {
   });
 
   describe('migration v2: add system theme preference', () => {
-    it('should advance the schema without changing an existing theme', async () => {
+    it('upgrades version 1 to 3 while preserving learning data and unrelated settings', async () => {
       await setSchemaVersion(1);
+      const card = createMockCard(State.Review, { paused: true });
+      await storage.setItem(STORAGE_KEYS.cards, { [card.slug]: card });
+      await storage.setItem(`${STORAGE_KEYS.notes}:${card.id}`, { text: 'Keep this note' });
+      await storage.setItem(STORAGE_KEYS.stats, { '2024-03-14': { streak: 7 } });
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
+      const localBefore = await fakeBrowser.storage.local.get(null);
+      const syncBefore = await fakeBrowser.storage.sync.get(null);
+      const { 'leetsrs:dayStartHour': _legacy, ...remainingSettings } = syncBefore;
 
       await runStartupMigrations();
 
       expect(await getCurrentSchemaVersion()).toBe(3);
-      expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
+      expect(await fakeBrowser.storage.local.get(null)).toEqual({ ...localBefore, 'leetsrs:schemaVersion': 3 });
+      expect(await fakeBrowser.storage.sync.get(null)).toEqual(remainingSettings);
     });
   });
 });

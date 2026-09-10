@@ -5,23 +5,39 @@ import { loadLegacyData } from './legacy-storage';
 
 const datasetSchema = z.looseObject({ settings: z.record(z.string(), z.unknown()).optional() });
 
-function validateDataset(data: unknown): asserts data is z.infer<typeof datasetSchema> {
+type InputDataset = z.infer<typeof datasetSchema>;
+type OutputDataset = InputDataset & {
+  settings?: Record<string, unknown> & { dayStartHour?: never };
+};
+
+function validateDataset(data: unknown): asserts data is InputDataset {
   // Use validation without the parsed copy so historical JSON keys remain intact.
   datasetSchema.parse(data);
 }
 
-function migrate(data: unknown): unknown {
+function validateOutput(data: unknown): asserts data is OutputDataset {
   validateDataset(data);
-  if (!data.settings) return data;
-  // Discard only the retired setting, regardless of its value. Preserve other historical fields.
-  const { dayStartHour: _removed, ...settings } = data.settings;
-  return { ...data, settings };
+  if (data.settings && Object.hasOwn(data.settings, 'dayStartHour')) {
+    throw new Error('Migrated settings must not contain dayStartHour');
+  }
 }
 
-export const removeDayStartMigration: Migration = {
+function migrate(data: unknown): OutputDataset {
+  validateDataset(data);
+  let output = data;
+  if (data.settings) {
+    // Discard only the retired setting, regardless of its value. Preserve other historical fields.
+    const { dayStartHour: _removed, ...settings } = data.settings;
+    output = { ...data, settings };
+  }
+  validateOutput(output);
+  return output;
+}
+
+export const removeDayStartMigration = {
   description: 'Remove configurable day start',
   load: loadLegacyData,
   migrate,
   save: async () => {},
   cleanup: () => storage.removeItems(['sync:leetsrs:dayStartHour']),
-};
+} satisfies Migration;
