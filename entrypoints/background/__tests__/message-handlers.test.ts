@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ZodError } from 'zod';
+import type { SyncResult } from '@/domain/gist-sync';
 import { type MessageData, type MessageName, onMessage } from '@/infrastructure/browser/messages';
 import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
 import { validatePat } from '@/services/github-auth';
@@ -22,6 +23,37 @@ vi.mock('@/services/github-auth', () => ({ validatePat: vi.fn() }));
 vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
 
 describe('GitHub message contracts', () => {
+  it.each([true, false])('queues a second sync until the first settles (success: %s)', async (success) => {
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const firstResult: SyncResult = success
+      ? { success: true, action: 'no-change', timestamp: 'now' }
+      : { success: false, error: 'Gist not found' };
+    const secondResult: SyncResult = { success: true, action: 'pushed', timestamp: 'later' };
+    vi.mocked(triggerGistSync)
+      .mockImplementationOnce(async () => {
+        started.resolve();
+        await release.promise;
+        return firstResult;
+      })
+      .mockResolvedValueOnce(secondResult);
+    const runner = registerBackgroundMessages(messages, {
+      ready: Promise.resolve(),
+      markDataUpdated: vi.fn(),
+      refreshBadge: vi.fn(),
+    });
+
+    const first = runner.execute(messages.triggerGistSync, undefined);
+    const second = runner.execute(messages.triggerGistSync, undefined);
+    await started.promise;
+    expect(triggerGistSync).toHaveBeenCalledOnce();
+
+    release.resolve();
+    expect(await first).toEqual(firstResult);
+    expect(await second).toEqual(secondResult);
+    expect(triggerGistSync).toHaveBeenCalledTimes(2);
+  });
+
   it('returns combined configuration and forwards partial updates unchanged', async () => {
     const config = { pat: ' token ', gistId: 'gist', enabled: false };
     vi.mocked(getGistSyncConfig).mockResolvedValue(config);

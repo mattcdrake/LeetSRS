@@ -22,10 +22,6 @@ export async function getGistSyncStatus(): Promise<GistSyncStatus> {
 }
 
 export async function triggerGistSync(): Promise<SyncResult> {
-  if (syncInProgress) {
-    return { success: false, error: 'Sync already in progress' };
-  }
-
   syncInProgress = true;
   lastError = null;
 
