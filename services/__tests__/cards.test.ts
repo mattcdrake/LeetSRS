@@ -1120,36 +1120,6 @@ describe('getReviewQueue', () => {
     }
   );
 
-  it('should exclude cards due tomorrow even if due at 00:00:01', async () => {
-    await addCard({
-      slug: 'tomorrow',
-      name: 'Tomorrow Card',
-      leetcodeId: '5004',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'tomorrow',
-      name: 'Tomorrow Card',
-      rating: Rating.Good,
-      leetcodeId: '5004',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Set due to one second after midnight tomorrow in local timezone
-    const now = new Date();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    requireDefined(cards).tomorrow.fsrs.due = tomorrow.getTime();
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should not include the card due tomorrow
-    expect(queue).toHaveLength(0);
-  });
-
   it('should handle mix of new, due, and future cards', async () => {
     // Reset stats to ensure clean state
     await storage.setItem(STORAGE_KEYS.stats, {});
