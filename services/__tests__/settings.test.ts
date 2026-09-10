@@ -3,7 +3,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { SETTINGS_CONSTRAINTS, type Settings } from '@/domain/settings';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { createDeferred } from '@/test/utils/deferred';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { exportSettings, getSettings, resetSettings, updateSettings } from '../settings';
 
@@ -134,7 +133,7 @@ describe('settings service', () => {
   });
 
   it.each([getSettings, exportSettings])('starts all setting reads concurrently (%#)', async (readSettings) => {
-    const firstRead = createDeferred<null>();
+    const firstRead = Promise.withResolvers<null>();
     const getItem = vi.spyOn(storage, 'getItem').mockReturnValueOnce(firstRead.promise);
 
     const pending = readSettings();
@@ -152,7 +151,7 @@ describe('settings service', () => {
   });
 
   it('starts changed writes together and tracks only after every write finishes', async () => {
-    const firstWrite = createDeferred<void>();
+    const firstWrite = Promise.withResolvers<void>();
     const setItem = vi.spyOn(storage, 'setItem').mockReturnValueOnce(firstWrite.promise);
 
     const pending = updateSettings({ maxNewCardsPerDay: 8, theme: 'dark' });
@@ -170,7 +169,7 @@ describe('settings service', () => {
   });
 
   it('preserves successful concurrent writes when another fails and skips tracking', async () => {
-    const firstWrite = createDeferred<void>();
+    const firstWrite = Promise.withResolvers<void>();
     const failure = new Error('setting write failed');
     vi.spyOn(storage, 'setItem').mockReturnValueOnce(firstWrite.promise);
 
@@ -197,7 +196,7 @@ describe('settings service', () => {
 
   it('starts all reset removals concurrently without changing the data timestamp', async () => {
     await storage.setItem(STORAGE_KEYS.dataUpdatedAt, 'existing timestamp');
-    const firstRemoval = createDeferred<void>();
+    const firstRemoval = Promise.withResolvers<void>();
     const removeItem = vi.spyOn(storage, 'removeItem').mockReturnValueOnce(firstRemoval.promise);
 
     const pending = resetSettings();
@@ -229,8 +228,8 @@ describe('settings service', () => {
   });
 
   it('resolves language fallback when its own read finishes without waiting for other settings', async () => {
-    const firstRead = createDeferred<null>();
-    const detected = createDeferred<void>();
+    const firstRead = Promise.withResolvers<null>();
+    const detected = Promise.withResolvers<void>();
     vi.spyOn(storage, 'getItem').mockReturnValueOnce(firstRead.promise);
     vi.stubGlobal('navigator', {
       get languages() {

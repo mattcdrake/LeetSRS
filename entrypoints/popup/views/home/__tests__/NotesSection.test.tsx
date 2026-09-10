@@ -8,7 +8,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
@@ -75,7 +74,7 @@ describe('NotesSection', () => {
   });
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {
-    const save = createDeferred<void>();
+    const save = Promise.withResolvers<void>();
     messages.resolve('saveNote', save.promise).resolve('getNote', { text: 'Saved draft' });
     render(<NotesSection cardId={mockCardId} />, { wrapper });
     const toggle = screen.getByRole('button', { expanded: false });

@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
-import { createDeferred } from '@/test/utils/deferred';
 import { setupLeetcodeAutoReset } from '../auto-reset';
 
 // @vitest-environment happy-dom
@@ -88,7 +87,7 @@ describe('setupLeetcodeAutoReset', () => {
     ['three-sum', 'resolve'],
     ['three-sum', 'reject'],
   ])('skips overlapping requests and retains the decision for %s after %s', async (slug, outcome) => {
-    const decision = createDeferred<boolean>();
+    const decision = Promise.withResolvers<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
     dispose = setupLeetcodeAutoReset(onResetConfirmed);
 
@@ -200,7 +199,7 @@ describe('setupLeetcodeAutoReset', () => {
   );
 
   it.each(['navigation', 'dispose'])('ignores a pending reset decision after %s', async (change) => {
-    const decision = createDeferred<boolean>();
+    const decision = Promise.withResolvers<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
     const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
@@ -216,7 +215,7 @@ describe('setupLeetcodeAutoReset', () => {
   });
 
   it('ignores a decision from an earlier visit to the same problem', async () => {
-    const decision = createDeferred<boolean>();
+    const decision = Promise.withResolvers<boolean>();
     vi.mocked(sendMessage).mockReturnValueOnce(decision.promise);
     const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');

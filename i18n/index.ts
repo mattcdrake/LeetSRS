@@ -16,15 +16,7 @@ import hi from './hi';
 import pl from './pl';
 import zhCN from './zh-CN';
 
-type DeepStringify<T> = T extends (...args: infer A) => infer R
-  ? (...args: A) => R
-  : T extends object
-    ? { [K in keyof T]: DeepStringify<T[K]> }
-    : T extends string
-      ? string
-      : T;
-
-export type Translations = DeepStringify<typeof en>;
+export type Translations = typeof en;
 
 export const translations: Record<Language, Translations> = {
   de,

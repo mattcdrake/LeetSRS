@@ -16,7 +16,6 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import {
   cardQueryKeys,
-  useAddCardMutation,
   useCardsQuery,
   useDelayCardMutation,
   usePauseCardMutation,
@@ -102,7 +101,6 @@ describe('card mutation invalidation', () => {
     const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
     const { result } = renderHook(
       () => ({
-        add: useAddCardMutation(),
         remove: useRemoveCardMutation(),
         rate: useRateCardMutation(),
         delay: useDelayCardMutation(),
@@ -119,7 +117,6 @@ describe('card mutation invalidation', () => {
       );
     };
 
-    await expectInvalidations(() => result.current.add.mutateAsync(problem), [cardQueryKeys.all, statsQueryKeys.all]);
     await expectInvalidations(
       () => result.current.remove.mutateAsync(problem.slug),
       [cardQueryKeys.all, statsQueryKeys.all]

@@ -7,7 +7,6 @@ import { State as FsrsState } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
 import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardDistributionChart } from '../CardDistributionChart';
@@ -54,7 +53,7 @@ describe('CardDistributionChart', () => {
 
   describe('loading state', () => {
     it('should handle loading state gracefully', () => {
-      const pending = createDeferred<Record<FsrsState, number>>();
+      const pending = Promise.withResolvers<Record<FsrsState, number>>();
       messages.reset().resolve('getCardStateStats', pending.promise);
       const { wrapper } = createTestWrapper();
       const view = render(<CardDistributionChart />, { wrapper });

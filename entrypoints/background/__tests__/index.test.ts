@@ -12,7 +12,6 @@ import * as setup from '@/services/gist-setup';
 import * as auth from '@/services/github-auth';
 import { triggerGistSync } from '@/services/github-sync';
 import { getSettings } from '@/services/settings';
-import { createDeferred } from '@/test/utils/deferred';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import background from '../index';
 import { messages } from '../message-handlers';
@@ -79,7 +78,7 @@ describe('background sync alarm', () => {
   );
 
   it('registers synchronously but waits for startup before checking readiness', async () => {
-    const migrations = createDeferred<void>();
+    const migrations = Promise.withResolvers<void>();
     vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
     const credentials = vi.spyOn(auth, 'hasGitHubCredentials');
     const destination = vi.spyOn(setup, 'getGistDestinationConfig');
@@ -98,7 +97,7 @@ describe('background sync alarm', () => {
   it.each(['pending', 'failed'] as const)(
     'blocks RPCs and sync alarms when migration fails (submitted while %s)',
     async (startupState) => {
-      const migrations = createDeferred<void>();
+      const migrations = Promise.withResolvers<void>();
       const failure = new Error('migration failed');
       vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
       const report = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -151,9 +150,9 @@ describe('background sync alarm', () => {
   );
 
   it('keeps alarm sync behind writes submitted through messaging', async () => {
-    const writeStarted = createDeferred<void>();
-    const releaseWrite = createDeferred<void>();
-    const checked = createDeferred<void>();
+    const writeStarted = Promise.withResolvers<void>();
+    const releaseWrite = Promise.withResolvers<void>();
+    const checked = Promise.withResolvers<void>();
     vi.spyOn(messages.deleteNote, 'handler').mockImplementation(async () => {
       writeStarted.resolve();
       await releaseWrite.promise;

@@ -257,6 +257,6 @@ const en = {
     characterCount: (count: number, max: number) => `${count}/${max}`,
     version: (version: string) => `v${version}`,
   },
-} as const;
+};
 
 export default en;

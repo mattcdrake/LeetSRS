@@ -10,7 +10,6 @@ import type { Card } from '@/domain/cards';
 import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -302,7 +301,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should prevent multiple ratings while processing', async () => {
-      const mutation = createDeferred<{ card: Card; shouldRequeue: boolean }>();
+      const mutation = Promise.withResolvers<{ card: Card; shouldRequeue: boolean }>();
       mockMutateAsync.mockReturnValue(mutation.promise);
 
       render(<ReviewQueue />, { wrapper });
@@ -482,7 +481,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should handle rapid delete clicks correctly', async () => {
-      const mutation = createDeferred<void>();
+      const mutation = Promise.withResolvers<void>();
       mockRemoveMutateAsync.mockReturnValue(mutation.promise);
 
       render(<ReviewQueue />, { wrapper });
@@ -610,7 +609,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should handle rapid delay clicks correctly', async () => {
-      const mutation = createDeferred<Card>();
+      const mutation = Promise.withResolvers<Card>();
       mockDelayMutateAsync.mockReturnValue(mutation.promise);
 
       render(<ReviewQueue />, { wrapper });

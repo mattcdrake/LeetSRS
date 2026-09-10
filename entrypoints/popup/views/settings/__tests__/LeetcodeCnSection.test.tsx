@@ -4,7 +4,6 @@
 
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDeferred } from '@/test/utils/deferred';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { LeetcodeCnSection } from '../LeetcodeCnSection';
 
@@ -21,7 +20,7 @@ beforeEach(() => {
 
 describe('LeetcodeCnSection', () => {
   it('hides the prompt until permission has loaded', async () => {
-    const permission = createDeferred<boolean>();
+    const permission = Promise.withResolvers<boolean>();
     mockContains.mockReturnValue(permission.promise);
     render(<LeetcodeCnSection />, createTestWrapper());
     expect(screen.queryByText('LeetCode China')).not.toBeInTheDocument();

@@ -1,5 +1,5 @@
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
+import type { Card, RateCardInput } from '@/domain/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { statsQueryKeys } from './stats';
 
@@ -22,25 +22,15 @@ export function useCardsQuery() {
   });
 }
 
-export function useReviewQueueQuery(options?: { enabled?: boolean; refetchOnWindowFocus?: boolean }) {
-  const { enabled = true, refetchOnWindowFocus = false } = options || {};
+export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }) {
+  const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
     queryKey: cardQueryKeys.reviewQueue,
     queryFn: () => sendMessage('getReviewQueue'),
-    enabled,
     staleTime: 0,
     gcTime: 0,
     refetchInterval: 15_000,
     refetchOnWindowFocus,
-  });
-}
-
-export function useAddCardMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (problem: ProblemDescriptor) => sendMessage('addCard', { problem }),
-    onSuccess: () => invalidateCardData(queryClient),
   });
 }
 

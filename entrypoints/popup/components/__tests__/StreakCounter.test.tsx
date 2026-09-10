@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DailyStats } from '@/domain/statistics';
 import { statsQueryKeys } from '@/entrypoints/popup/queries/stats';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { createDeferred } from '@/test/utils/deferred';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { StreakCounter } from '../StreakCounter';
@@ -43,7 +42,7 @@ describe('StreakCounter', () => {
   });
 
   it('renders nothing while loading', () => {
-    const pending = createDeferred<DailyStats | null>();
+    const pending = Promise.withResolvers<DailyStats | null>();
     messages.reset().resolve('getTodayStats', pending.promise);
     const { wrapper } = createTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
