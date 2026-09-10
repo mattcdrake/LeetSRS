@@ -3,7 +3,7 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { noteQueryKeys, useDeleteNoteMutation, useSaveNoteMutation } from '../notes';
@@ -13,10 +13,6 @@ vi.mock('@/infrastructure/browser/messages', () => ({
 }));
 
 describe('useSaveNoteMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('sends note edits and invalidates the saved card note', async () => {
     const cardId = 'test-card-cache';
     const noteText = '  Solution with whitespace  ';
@@ -45,10 +41,6 @@ describe('useSaveNoteMutation', () => {
 });
 
 describe('useDeleteNoteMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('sends deletion and invalidates the deleted card note', async () => {
     const cardId = 'test-card-delete';
     const { wrapper, queryClient } = createTestWrapper();

@@ -86,10 +86,6 @@ describe('card mutation invalidation', () => {
 });
 
 describe('usePauseCardMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it.each([
     ['pausing', 'two-sum', true],
     ['unpausing', 'three-sum', false],
