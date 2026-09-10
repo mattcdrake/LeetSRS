@@ -145,7 +145,6 @@ const zhCN: Translations = {
     reviewSettings: {
       title: '复习设置',
       newCardsPerDay: '每日新卡片数量',
-      dayStartHour: '新一天偏移（午夜后小时数）',
     },
 
     problemAutoClear: {

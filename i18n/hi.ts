@@ -145,7 +145,6 @@ const hi: Translations = {
     reviewSettings: {
       title: 'रिव्यु सेटिंग्स',
       newCardsPerDay: 'प्रति दिन नए कार्ड',
-      dayStartHour: 'अगले दिन का ऑफ़सेट (मध्यरात्रि के बाद घंटे)',
     },
     problemAutoClear: {
       title: 'प्रॉब्लम ऑटो रीसेट',

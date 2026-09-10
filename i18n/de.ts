@@ -126,7 +126,6 @@ const de: Translations = {
     reviewSettings: {
       title: 'Wiederholungseinstellungen',
       newCardsPerDay: 'Neue Karten pro Tag',
-      dayStartHour: 'Tagesbeginn (Stunden nach Mitternacht)',
     },
     problemAutoClear: {
       title: 'Aufgabe automatisch zurücksetzen',

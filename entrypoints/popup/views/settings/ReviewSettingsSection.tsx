@@ -9,14 +9,9 @@ export function ReviewSettingsSection() {
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
   const [inputValue, setInputValue] = useState('');
-  const [dayStartHourValue, setDayStartHourValue] = useState('');
 
   useEffect(() => {
     setInputValue(settings.maxNewCardsPerDay.toString());
-  }, [settings]);
-
-  useEffect(() => {
-    setDayStartHourValue(settings.dayStartHour.toString());
   }, [settings]);
 
   const handleBlur = () => {
@@ -29,19 +24,6 @@ export function ReviewSettingsSection() {
       updateSettingsMutation.mutate({ maxNewCardsPerDay: value });
     } else {
       setInputValue(settings.maxNewCardsPerDay.toString());
-    }
-  };
-
-  const handleDayStartBlur = () => {
-    const value = parseInt(dayStartHourValue, 10);
-    if (
-      !Number.isNaN(value) &&
-      value >= SETTINGS_CONSTRAINTS.dayStartHour.min &&
-      value <= SETTINGS_CONSTRAINTS.dayStartHour.max
-    ) {
-      updateSettingsMutation.mutate({ dayStartHour: value });
-    } else {
-      setDayStartHourValue(settings.dayStartHour.toString());
     }
   };
 
@@ -59,20 +41,6 @@ export function ReviewSettingsSection() {
             min={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min.toString()}
             max={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max.toString()}
             placeholder={settings.maxNewCardsPerDay.toString()}
-            className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"
-          />
-        </TextField>
-        <TextField className="flex items-center justify-between">
-          <Label>{t.settings.reviewSettings.dayStartHour}</Label>
-          <Input
-            type="number"
-            value={dayStartHourValue}
-            onChange={(e) => setDayStartHourValue(e.target.value)}
-            onBlur={handleDayStartBlur}
-            min={SETTINGS_CONSTRAINTS.dayStartHour.min.toString()}
-            max={SETTINGS_CONSTRAINTS.dayStartHour.max.toString()}
-            step="1"
-            placeholder={settings.dayStartHour.toString()}
             className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"
           />
         </TextField>

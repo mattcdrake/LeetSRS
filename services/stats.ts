@@ -1,5 +1,5 @@
 import type { State as FsrsState, Grade } from 'ts-fsrs';
-import { formatLocalDate } from '@/domain/calendar';
+import { addLocalDays, formatLocalDate } from '@/domain/calendar';
 import {
   calculateHistoryStats,
   calculateUpcomingStats,
@@ -11,27 +11,22 @@ import {
 } from '@/domain/statistics';
 import { getAllCards } from '@/infrastructure/storage/cards';
 import { getStats, getStatsForDate, saveStats } from '@/infrastructure/storage/stats';
-import { getSettings } from './settings';
 
 export async function getTodayKey(): Promise<string> {
-  const now = new Date();
-  const settings = await getSettings();
-  return formatLocalDate(now, settings.dayStartHour);
+  return formatLocalDate(new Date());
 }
 
 export async function getYesterdayKey(): Promise<string> {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const settings = await getSettings();
-  return formatLocalDate(yesterday, settings.dayStartHour);
+  return formatLocalDate(addLocalDays(new Date(), -1));
 }
 
 export async function updateStats(grade: Grade, isNewCard: boolean = false): Promise<void> {
   const stats = await getStats();
-  const todayKey = await getTodayKey();
+  const now = new Date();
+  const todayKey = formatLocalDate(now);
 
   if (!stats[todayKey]) {
-    const yesterdayKey = await getYesterdayKey();
+    const yesterdayKey = formatLocalDate(addLocalDays(now, -1));
     const yesterdayStats = stats[yesterdayKey];
     stats[todayKey] = createDailyStats(todayKey, yesterdayStats);
   }
@@ -55,13 +50,11 @@ export async function getCardStateStats(): Promise<Record<FsrsState, number>> {
 export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
   const stats = await getStats();
   const today = new Date();
-  const { dayStartHour } = await getSettings();
-  return calculateHistoryStats(stats, days, today, dayStartHour);
+  return calculateHistoryStats(stats, days, today);
 }
 
 export async function getNextNDaysStats(days: number): Promise<UpcomingReviewStats[]> {
   const cards = await getAllCards();
   const today = new Date();
-  const { dayStartHour } = await getSettings();
-  return calculateUpcomingStats(cards, days, today, dayStartHour);
+  return calculateUpcomingStats(cards, days, today);
 }

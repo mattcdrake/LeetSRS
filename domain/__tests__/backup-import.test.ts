@@ -44,10 +44,14 @@ describe('backup import policy', () => {
     });
   });
 
-  it('omits undefined settings and inherited settings on import', () => {
-    const settings = Object.assign(Object.create({ badgeEnabled: false }), { theme: undefined, dayStartHour: 5 });
-    expect(normalizeImportData({ ...payload, data: { ...payload.data, settings } }, 2).settings).toEqual({
+  it('ignores legacy day start, undefined, and inherited settings on import', () => {
+    const settings = Object.assign(Object.create({ badgeEnabled: false }), {
+      theme: undefined,
       dayStartHour: 5,
+      maxNewCardsPerDay: 8,
+    });
+    expect(normalizeImportData({ ...payload, data: { ...payload.data, settings } }, 2).settings).toEqual({
+      maxNewCardsPerDay: 8,
     });
   });
 
