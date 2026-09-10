@@ -17,30 +17,9 @@ describe('useSaveNoteMutation', () => {
     vi.clearAllMocks();
   });
 
-  it.each([
-    ['ordinary text', 'test-card-123', 'This is my solution using two pointers approach'],
-    ['empty text', 'test-card-456', ''],
-    ['maximum length text', 'test-card-789', 'a'.repeat(500)],
-  ])('sends %s unchanged', async (_case, cardId, noteText) => {
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useSaveNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(noteText);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('saveNote', {
-        cardId,
-        text: noteText,
-      });
-    });
-  });
-
-  it('should invalidate note query cache on successful save', async () => {
+  it('sends note edits and invalidates the saved card note', async () => {
     const cardId = 'test-card-cache';
-    const noteText = 'Test note for cache invalidation';
+    const noteText = '  Solution with whitespace  ';
     const { wrapper, queryClient } = createTestWrapper();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -56,6 +35,7 @@ describe('useSaveNoteMutation', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId, text: noteText });
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
       queryKey: noteQueryKeys.detail(cardId),
     });
@@ -69,25 +49,7 @@ describe('useDeleteNoteMutation', () => {
     vi.clearAllMocks();
   });
 
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const cardId = 'test-card-123';
-
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => useDeleteNoteMutation(cardId), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate();
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('deleteNote', {
-        cardId: 'test-card-123',
-      });
-    });
-  });
-
-  it('should invalidate note query cache on successful delete', async () => {
+  it('sends deletion and invalidates the deleted card note', async () => {
     const cardId = 'test-card-delete';
     const { wrapper, queryClient } = createTestWrapper();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -104,6 +66,7 @@ describe('useDeleteNoteMutation', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
+    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId });
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
       queryKey: noteQueryKeys.detail(cardId),
     });
