@@ -72,6 +72,28 @@ beforeEach(async () => {
 });
 
 describe('startup snapshot recovery', () => {
+  it('validates snapshots without rewriting historical JSON keys', async () => {
+    const input: unknown = JSON.parse('{"records":{"__proto__":{"text":"preserve"}}}');
+    const copy: Migration = {
+      description: 'Preserve historical JSON',
+      load: async () => input,
+      migrate: (data) => data,
+      save: (data) => storage.setItem('sync:test:copy', data),
+    };
+    const write = storage.setItem.bind(storage);
+    const failure = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+      if (key === 'local:leetsrs:schemaVersion') throw new Error('version unavailable');
+      return write(key, value);
+    });
+
+    await expect(runStartupMigrations([copy])).rejects.toThrow('version unavailable');
+    expect(await storage.getItem(snapshotKey)).toEqual({ version: 1, input });
+    failure.mockRestore();
+    await runStartupMigrations([copy]);
+
+    expect(await storage.getItem('sync:test:copy')).toEqual(input);
+  });
+
   it.each(['snapshot', 'destination', 'cleanup', 'version', 'retirement'] as const)(
     'recovers an interrupted %s phase from its original input',
     async (phase) => {

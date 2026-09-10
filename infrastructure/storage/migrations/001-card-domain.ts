@@ -6,13 +6,18 @@ import { loadLegacyData } from './legacy-storage';
 // This is the v0 shape, deliberately independent of today's Card schema.
 const datasetSchema = z.looseObject({ cards: z.record(z.string(), z.unknown()).nullish() });
 
+function validateDataset(data: unknown): asserts data is z.infer<typeof datasetSchema> {
+  // Use validation without the parsed copy so historical JSON keys remain intact.
+  datasetSchema.parse(data);
+}
+
 export function migrate(data: unknown): unknown {
-  const dataset = datasetSchema.parse(data);
-  if (!dataset.cards) return dataset;
+  validateDataset(data);
+  if (!data.cards) return data;
   return {
-    ...dataset,
+    ...data,
     cards: Object.fromEntries(
-      Object.entries(dataset.cards).map(([slug, card]) => {
+      Object.entries(data.cards).map(([slug, card]) => {
         // Preserve malformed records for later validation. Repair only falsy/missing domains.
         if (typeof card !== 'object' || card === null || Array.isArray(card)) return [slug, card];
         if ('domain' in card && card.domain) return [slug, card];
@@ -27,7 +32,8 @@ export const cardDomainMigration: Migration = {
   load: loadLegacyData,
   migrate,
   save: async (data) => {
-    const { cards } = datasetSchema.parse(data);
+    validateDataset(data);
+    const { cards } = data;
     if (cards != null) await storage.setItem('local:leetsrs:cards', cards);
   },
 };

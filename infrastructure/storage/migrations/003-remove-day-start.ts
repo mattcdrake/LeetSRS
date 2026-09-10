@@ -6,11 +6,16 @@ import { loadLegacyData } from './legacy-storage';
 const datasetSchema = z.looseObject({ settings: z.record(z.string(), z.unknown()).optional() });
 
 export function migrate(data: unknown): unknown {
-  const dataset = datasetSchema.parse(data);
-  if (!dataset.settings) return dataset;
+  validateDataset(data);
+  if (!data.settings) return data;
   // Discard only the retired setting, regardless of its value. Preserve other historical fields.
-  const { dayStartHour: _removed, ...settings } = dataset.settings;
-  return { ...dataset, settings };
+  const { dayStartHour: _removed, ...settings } = data.settings;
+  return { ...data, settings };
+}
+
+function validateDataset(data: unknown): asserts data is z.infer<typeof datasetSchema> {
+  // Use validation without the parsed copy so historical JSON keys remain intact.
+  datasetSchema.parse(data);
 }
 
 export const removeDayStartMigration: Migration = {

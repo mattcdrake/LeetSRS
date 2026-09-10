@@ -13,6 +13,17 @@ describe('migrations', () => {
   });
 
   describe('migrateBackupData', () => {
+    it('preserves legal JSON keys while validating historical datasets and collections', () => {
+      const data: unknown = JSON.parse(
+        '{"__proto__":{"text":"unrelated"},"cards":{"__proto__":{"domain":"leetcode.com"}},"settings":{"__proto__":{"text":"setting"},"dayStartHour":4}}'
+      );
+      expect(migrateBackupData(data, 0)).toEqual(
+        JSON.parse(
+          '{"__proto__":{"text":"unrelated"},"cards":{"__proto__":{"domain":"leetcode.com"}},"settings":{"__proto__":{"text":"setting"}}}'
+        )
+      );
+    });
+
     it('migrates frozen input without changing the input or writing storage', async () => {
       const { domain: _domain, ...legacyCard } = createMockCard(State.Review, { slug: 'two-sum', paused: true });
       const card = Object.freeze(legacyCard);

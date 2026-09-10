@@ -14,7 +14,8 @@ export const LATEST_SCHEMA_VERSION = migrations.length;
 
 const snapshotSchema = z.object({
   version: z.number().int().positive(),
-  input: z.json(),
+  // Validate JSON compatibility without using Zod's parsed copy, which strips keys such as __proto__.
+  input: z.unknown().refine((input) => z.json().safeParse(input).success, 'Migration input must be lossless JSON data'),
 });
 
 function checkVersion(version: number, latest: number): void {
