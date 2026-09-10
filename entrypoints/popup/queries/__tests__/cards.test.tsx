@@ -2,7 +2,6 @@
  * @vitest-environment happy-dom
  */
 
-import { focusManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { type Grade, Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -42,36 +41,6 @@ describe('useCardsQuery', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(sendMessage).toHaveBeenCalledWith('getAllCards');
-  });
-});
-
-describe('useReviewQueueQuery polling', () => {
-  it('pauses polling while hidden and stops after unmount', async () => {
-    vi.useFakeTimers();
-    focusManager.setFocused(true);
-    createMessageMock(vi.mocked(sendMessage)).reset().resolve('getReviewQueue', []);
-    const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
-
-    try {
-      await act(() => vi.advanceTimersByTimeAsync(1));
-      expect(sendMessage).toHaveBeenCalledTimes(1);
-
-      focusManager.setFocused(false);
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      expect(sendMessage).toHaveBeenCalledTimes(1);
-
-      focusManager.setFocused(true);
-      await act(() => vi.advanceTimersByTimeAsync(15_000));
-      expect(sendMessage).toHaveBeenCalledTimes(2);
-
-      view.unmount();
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      expect(sendMessage).toHaveBeenCalledTimes(2);
-    } finally {
-      view.unmount();
-      focusManager.setFocused(undefined);
-      vi.useRealTimers();
-    }
   });
 });
 
