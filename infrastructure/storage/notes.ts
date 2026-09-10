@@ -1,30 +1,24 @@
-import { storage } from '#imports';
-import type { Card } from '@/domain/cards';
 import { type Note, noteSchema } from '@/domain/notes';
-import { getNoteStorageKey } from './storage-keys';
+import { getAllCards, saveCards } from './cards';
 
 export async function getNote(cardId: string): Promise<Note | null> {
-  const key = getNoteStorageKey(cardId);
-  const note = await storage.getItem<unknown>(key);
-  return note == null ? null : noteSchema.parse(note);
+  const card = (await getAllCards()).find((card) => card.id === cardId);
+  return card?.note === undefined ? null : { text: card.note };
 }
 
 export async function saveNote(cardId: string, text: string): Promise<void> {
-  const key = getNoteStorageKey(cardId);
   const note = noteSchema.parse({ text });
-  await storage.setItem(key, note);
+  const cards = await getAllCards();
+  const card = cards.find((card) => card.id === cardId);
+  if (!card) throw new Error(`Card with ID "${cardId}" not found`);
+  card.note = note.text;
+  await saveCards(cards);
 }
 
 export async function deleteNote(cardId: string): Promise<void> {
-  const key = getNoteStorageKey(cardId);
-  await storage.removeItem(key);
-}
-
-export async function getNotesForCards(cards: Pick<Card, 'id'>[]): Promise<Record<string, Note>> {
-  const notes: Record<string, Note> = {};
-  for (const card of cards) {
-    const note = await getNote(card.id);
-    if (note) notes[card.id] = note;
-  }
-  return notes;
+  const cards = await getAllCards();
+  const card = cards.find((card) => card.id === cardId);
+  if (!card || card.note === undefined) return;
+  delete card.note;
+  await saveCards(cards);
 }

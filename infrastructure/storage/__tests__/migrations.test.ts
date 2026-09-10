@@ -41,7 +41,7 @@ describe('migrations', () => {
       expect(migrateBackupData(data, schemaVersion)).toEqual(data);
     });
 
-    it.each([-1, 0.5, 4])('rejects unsupported schema %s', (schemaVersion) => {
+    it.each([-1, 0.5, 5])('rejects unsupported schema %s', (schemaVersion) => {
       expect(() => migrateBackupData({ cards: {} }, schemaVersion)).toThrow('Unsupported schema version');
     });
   });
@@ -219,6 +219,59 @@ describe('migrations', () => {
     });
   });
 
+  describe('migration v4: embed notes', () => {
+    it.each(['cards', 'cleanup', 'version', 'none'])(
+      'preserves configured learning data and retries after %s failure',
+      async (failure) => {
+        await setSchemaVersion(3);
+        const card = createMockCard(State.Review, { id: 'owner', slug: 'two-sum', paused: true });
+        const empty = createMockCard(State.Learning, { id: 'empty', slug: 'empty', domain: 'leetcode.cn' });
+        const absent = createMockCard(State.New, { id: 'absent', slug: 'absent' });
+        await storage.setItem(STORAGE_KEYS.cards, { 'two-sum': card, empty, absent });
+        await storage.setItem('local:leetsrs:notes:owner', { text: 'Keep the full schedule' });
+        await storage.setItem('local:leetsrs:notes:empty', { text: '' });
+        await storage.setItem('local:leetsrs:notes:orphan', { text: 'Obsolete' });
+        await storage.setItem(STORAGE_KEYS.theme, 'dark');
+        await storage.setItem(STORAGE_KEYS.gistId, 'configured-gist');
+        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
+        const settings = await fakeBrowser.storage.sync.get(null);
+        const write = storage.setItem.bind(storage);
+        const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+          if (
+            (failure === 'cards' && key === STORAGE_KEYS.cards) ||
+            (failure === 'version' && key === STORAGE_KEYS.schemaVersion)
+          )
+            throw new Error('write failed');
+          await write(key, value);
+        });
+        const cleanup = vi.spyOn(storage, 'removeItems');
+        if (failure === 'cleanup') cleanup.mockRejectedValueOnce(new Error('cleanup failed'));
+        try {
+          if (failure !== 'none') {
+            await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 4');
+            expect(await getCurrentSchemaVersion()).toBe(3);
+          }
+        } finally {
+          writes.mockRestore();
+          cleanup.mockRestore();
+        }
+        await runStartupMigrations();
+        await runStartupMigrations();
+        expect(await getAllCards()).toEqual([
+          { ...card, note: 'Keep the full schedule' },
+          { ...empty, note: '' },
+          absent,
+        ]);
+        expect(await getCurrentSchemaVersion()).toBe(4);
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual(settings);
+        expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-01T00:00:00.000Z');
+        expect(
+          Object.keys(await fakeBrowser.storage.local.get(null)).filter((key) => key.startsWith('leetsrs:notes'))
+        ).toEqual([]);
+      }
+    );
+  });
+
   describe('migration v1: add domain to cards', () => {
     it('changes only missing domains while preserving schedules, pause state, notes, and unrelated storage', async () => {
       const { domain: _domain, ...legacyCard } = createMockCard(State.Review, {
@@ -235,22 +288,25 @@ describe('migrations', () => {
         }),
       };
       await storage.setItem(STORAGE_KEYS.cards, cards);
-      await storage.setItem(`${STORAGE_KEYS.notes}:legacy-id`, { text: 'Keep this note' });
-      await storage.setItem(`${STORAGE_KEYS.notes}:cn-id`, { text: 'Keep this too' });
+      await storage.setItem(`local:leetsrs:notes:legacy-id`, { text: 'Keep this note' });
+      await storage.setItem(`local:leetsrs:notes:cn-id`, { text: 'Keep this too' });
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
       const before = await fakeBrowser.storage.local.get(null);
 
       await runStartupMigrations();
 
-      expect(await getAllCards()).toEqual([{ ...legacyCard, domain: 'leetcode.com' }, cards['add-two-numbers']]);
+      expect(await getAllCards()).toEqual([
+        { ...legacyCard, domain: 'leetcode.com', note: 'Keep this note' },
+        { ...cards['add-two-numbers'], note: 'Keep this too' },
+      ]);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
-        ...before,
+        [STORAGE_KEYS.dataUpdatedAt.slice('local:'.length)]: before['leetsrs:dataUpdatedAt'],
         [STORAGE_KEYS.cards.slice('local:'.length)]: {
-          ...cards,
-          'two-sum': { ...cards['two-sum'], domain: 'leetcode.com' },
+          'two-sum': { ...cards['two-sum'], domain: 'leetcode.com', note: 'Keep this note' },
+          'add-two-numbers': { ...cards['add-two-numbers'], note: 'Keep this too' },
         },
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
+        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 4,
       });
     });
 
@@ -286,8 +342,8 @@ describe('migrations', () => {
         }),
       };
       await storage.setItem(STORAGE_KEYS.cards, cards);
-      await storage.setItem(`${STORAGE_KEYS.notes}:legacy-id`, { text: 'Keep this note' });
-      await storage.setItem(`${STORAGE_KEYS.notes}:cn-id`, { text: 'Keep this too' });
+      await storage.setItem(`local:leetsrs:notes:legacy-id`, { text: 'Keep this note' });
+      await storage.setItem(`local:leetsrs:notes:cn-id`, { text: 'Keep this too' });
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
       const before = await fakeBrowser.storage.local.get(null);
@@ -315,15 +371,19 @@ describe('migrations', () => {
       await runStartupMigrations();
 
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
-        ...expectedAfterCardWrite,
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
+        'leetsrs:dataUpdatedAt': before['leetsrs:dataUpdatedAt'],
+        'leetsrs:cards': {
+          'two-sum': { ...cards['two-sum'], domain: 'leetcode.com', note: 'Keep this note' },
+          'add-two-numbers': { ...cards['add-two-numbers'], note: 'Keep this too' },
+        },
+        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 4,
       });
     });
 
     it('should handle empty or missing cards storage', async () => {
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await getCurrentSchemaVersion()).toBe(4);
     });
   });
 
@@ -342,11 +402,11 @@ describe('migrations', () => {
       await runStartupMigrations();
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await getCurrentSchemaVersion()).toBe(4);
       expect(await fakeBrowser.storage.sync.get(null)).toEqual(remainingSettings);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...localBefore,
-        'leetsrs:schemaVersion': 3,
+        'leetsrs:schemaVersion': 4,
       });
     });
 
@@ -359,7 +419,7 @@ describe('migrations', () => {
         expect(await getCurrentSchemaVersion()).toBe(2);
         await runStartupMigrations();
         expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
-        expect(await getCurrentSchemaVersion()).toBe(3);
+        expect(await getCurrentSchemaVersion()).toBe(4);
       } finally {
         remove.mockRestore();
       }
@@ -373,7 +433,7 @@ describe('migrations', () => {
 
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await getCurrentSchemaVersion()).toBe(4);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
     });
   });

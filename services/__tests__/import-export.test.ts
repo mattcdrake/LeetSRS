@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
-import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { getNote, saveNote } from '@/infrastructure/storage/notes';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -15,9 +15,10 @@ import { exportData, importData, prepareImportData, resetAllData } from '../impo
 describe('import-export', () => {
   const legacyMonthlyStatsKey = 'local:leetsrs:monthlyStats';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
+    await runStartupMigrations();
   });
 
   afterEach(() => {
@@ -26,12 +27,60 @@ describe('import-export', () => {
     fakeBrowser.reset();
   });
 
+  it('round-trips embedded notes without a separate collection', async () => {
+    await setSchemaVersion(4);
+    const cards = {
+      present: createMockCard(State.Review, { id: 'present', slug: 'present', note: 'solution', paused: true }),
+      empty: createMockCard(State.Learning, { id: 'empty', slug: 'empty', note: '' }),
+      absent: createMockCard(State.New, { id: 'absent', slug: 'absent' }),
+    };
+    await storage.setItem(STORAGE_KEYS.cards, cards);
+    const backup = await exportData();
+    const parsed = JSON.parse(backup);
+    expect(parsed.schemaVersion).toBe(4);
+    expect(parsed.data).not.toHaveProperty('notes');
+    expect(parsed.data.cards).toEqual(cards);
+    await resetAllData();
+    await importData(backup);
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(cards);
+  });
+
+  it.each(['a'.repeat(501), null, 42])('rejects invalid embedded note %j before replacement', async (note) => {
+    const existing = createMockCard(State.New, { slug: 'existing', note: 'keep' });
+    await storage.setItem(STORAGE_KEYS.cards, { existing });
+    const before = await fakeBrowser.storage.local.get(null);
+    await expect(
+      importData(
+        JSON.stringify({
+          schemaVersion: 4,
+          exportDate: '2024-01-01T00:00:00.000Z',
+          data: { cards: { existing: { ...existing, note } }, stats: {} },
+        })
+      )
+    ).rejects.toThrow();
+    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+  });
+
+  it('replaces an existing note with absence and ignores obsolete sidecar notes in schema 4', async () => {
+    const card = createMockCard(State.Review, { slug: 'two-sum', id: 'winner' });
+    await storage.setItem(STORAGE_KEYS.cards, { 'two-sum': { ...card, note: 'old note' } });
+    await importData(
+      JSON.stringify({
+        schemaVersion: 4,
+        exportDate: '2024-01-01T00:00:00.000Z',
+        data: { cards: { 'two-sum': card }, stats: {}, notes: { winner: { text: 'obsolete' } } },
+      })
+    );
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({ 'two-sum': card });
+  });
+
   describe('exportData', () => {
     it('should export all data with correct structure', async () => {
       const cardUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
       const mockCards: Record<string, Card> = {
         'two-sum': {
           id: cardUuid,
+          note: 'Use hash map for O(n) solution',
           slug: 'two-sum',
           name: 'Two Sum',
           leetcodeId: '1',
@@ -62,10 +111,6 @@ describe('import-export', () => {
         },
       };
 
-      const mockNotes: Record<string, Note> = {
-        [cardUuid]: { text: 'Use hash map for O(n) solution' },
-      };
-
       const mockSettings = buildSettings({
         maxNewCardsPerDay: 5,
         theme: 'dark',
@@ -78,7 +123,6 @@ describe('import-export', () => {
       // Set up storage with mock data
       await storage.setItem(STORAGE_KEYS.cards, mockCards);
       await storage.setItem(STORAGE_KEYS.stats, mockStats);
-      await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}` as const, mockNotes[cardUuid]);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, mockSettings.maxNewCardsPerDay);
       await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await storage.setItem(STORAGE_KEYS.theme, mockSettings.theme);
@@ -87,7 +131,6 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
       await storage.setItem(STORAGE_KEYS.language, mockSettings.language);
 
-      await storage.setItem(`${STORAGE_KEYS.notes}:orphan`, { text: 'orphan note' });
       await storage.setItem(STORAGE_KEYS.githubPat, 'private-pat');
       await storage.setItem(STORAGE_KEYS.gistId, 'exported-gist');
       await storage.setItem(STORAGE_KEYS.gistSyncEnabled, false);
@@ -97,10 +140,10 @@ describe('import-export', () => {
       const result = await exportData();
       const parsed = JSON.parse(result);
 
-      expect(parsed.schemaVersion).toBe(0);
+      expect(parsed.schemaVersion).toBe(4);
       expect(parsed.exportDate).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(parsed.data.stats).toEqual(mockStats);
-      expect(parsed.data.notes).toEqual(mockNotes);
+      expect(parsed.data).not.toHaveProperty('notes');
       expect(parsed.data.settings).toEqual(mockSettings);
       expect(parsed.data.gistSync).toEqual({ gistId: 'exported-gist', enabled: false });
       expect(parsed.dataUpdatedAt).toBe('2024-01-01T00:00:00.000Z');
@@ -116,22 +159,21 @@ describe('import-export', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed).toMatchObject({
-        schemaVersion: 0,
+        schemaVersion: 4,
         exportDate: expect.any(String),
         data: {
           cards: {},
           stats: {},
-          notes: {},
           settings: {},
         },
       });
       expect(parsed.data.monthlyStats).toBeUndefined();
     });
 
-    it('should export schema version 3 after migrations run', async () => {
+    it('should export schema version 4 after migrations run', async () => {
       await runStartupMigrations();
       const parsed = JSON.parse(await exportData());
-      expect(parsed.schemaVersion).toBe(3);
+      expect(parsed.schemaVersion).toBe(4);
     });
 
     it('does not export legacy monthly stats', async () => {
@@ -147,7 +189,7 @@ describe('import-export', () => {
     it.each(['cards', 'stats', 'notes'] as const)(
       'rejects mixed invalid %s during preparation and import without changing storage',
       async (collection) => {
-        await setSchemaVersion(2);
+        await setSchemaVersion(4);
         const { payload, accepted } = mixedRecordBackup();
         await importData(JSON.stringify({ ...payload, data: accepted }));
         await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
@@ -162,7 +204,7 @@ describe('import-export', () => {
     );
 
     it.each([0, undefined])('rejects invalid legacy schema %s records after migration', async (schemaVersion) => {
-      await setSchemaVersion(2);
+      await setSchemaVersion(4);
       const { payload, accepted } = mixedRecordBackup();
       await importData(JSON.stringify({ ...payload, data: accepted }));
       const before = await fakeBrowser.storage.local.get(null);
@@ -176,17 +218,16 @@ describe('import-export', () => {
       expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     });
 
-    it.each(['slug', 'duplicate', 'date', 'orphan'] as const)(
+    it.each(['slug', 'duplicate', 'date'] as const)(
       'rejects invalid %s relationships before replacement',
       async (kind) => {
-        await setSchemaVersion(2);
+        await setSchemaVersion(4);
         const { payload, accepted } = mixedRecordBackup();
         await importData(JSON.stringify({ ...payload, data: accepted }));
         const before = await fakeBrowser.storage.local.get(null);
         if (kind === 'slug') accepted.cards['two-sum'].slug = 'different';
         if (kind === 'duplicate') accepted.cards['cn-problem'].id = 'valid-com';
         if (kind === 'date') accepted.stats['2024-01-01'].date = '2024-01-02';
-        if (kind === 'orphan') delete (accepted.cards as Record<string, unknown>)['two-sum'];
         await expect(importData(JSON.stringify({ ...payload, data: accepted }))).rejects.toThrow();
         expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
       }
@@ -195,7 +236,7 @@ describe('import-export', () => {
     it.each([undefined, 0, 1705222800000])(
       'round-trips supported records with numeric dates and last_review %s',
       async (lastReview) => {
-        await setSchemaVersion(2);
+        await setSchemaVersion(4);
         const { payload, accepted } = mixedRecordBackup();
         const originalCard = accepted.cards['two-sum'];
         const data = {
@@ -214,10 +255,19 @@ describe('import-export', () => {
         await resetAllData();
         await importData(exported);
         const restored = JSON.parse(await exportData());
-        expect(restored.data).toMatchObject(JSON.parse(JSON.stringify(data)));
-        expect(restored.data.cards).toEqual(JSON.parse(JSON.stringify(data.cards)));
+        expect(restored.data.stats).toEqual(data.stats);
+        expect(restored.data).not.toHaveProperty('notes');
+        expect(restored.data.cards).toEqual(
+          JSON.parse(
+            JSON.stringify({
+              ...data.cards,
+              'two-sum': { ...data.cards['two-sum'], note: 'Keep this note' },
+              'cn-problem': { ...data.cards['cn-problem'], note: '' },
+            })
+          )
+        );
         expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
-        expect(restored.schemaVersion).toBe(2);
+        expect(restored.schemaVersion).toBe(4);
       }
     );
 
@@ -276,11 +326,11 @@ describe('import-export', () => {
         old: createMockCard(State.New, { id: 'old', slug: 'old' }),
       });
       await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 7 } });
-      await storage.setItem(`${STORAGE_KEYS.notes}:old`, { text: 'old note' });
+      await saveNote('old', 'old note');
       await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
       await storage.setItem(STORAGE_KEYS.gistId, 'old-gist');
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-12-31T00:00:00.000Z');
-      await setSchemaVersion(2);
+      await setSchemaVersion(4);
     }
 
     it('propagates schema-read failures without changing existing data', async () => {
@@ -320,7 +370,9 @@ describe('import-export', () => {
         expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe(gistSync?.gistId ?? null);
         expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBe(gistSync?.enabled ?? null);
         expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
-        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
+        expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({
+          'two-sum': { ...validExportData.data.cards['two-sum'], note: 'Use hash map' },
+        });
       }
     );
 
@@ -350,19 +402,23 @@ describe('import-export', () => {
         })
       );
 
-      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(validExportData.data.cards);
+      expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({
+        'two-sum': { ...validExportData.data.cards['two-sum'], note: 'Use hash map' },
+      });
       expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${cardUuid}`)).toEqual(validExportData.data.notes[cardUuid]);
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:old`)).toBeNull();
+      expect(await getNote(cardUuid)).toEqual(validExportData.data.notes[cardUuid]);
+      expect(await getNote('old')).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBe(validExportData.data.settings.theme);
       expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBe(
         validExportData.data.settings.maxNewCardsPerDay
       );
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-01T00:00:00.000Z');
       expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
-      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
       expect(JSON.parse(await exportData()).data).toEqual({
-        ...validExportData.data,
+        cards: { 'two-sum': { ...validExportData.data.cards['two-sum'], note: 'Use hash map' } },
+        stats: validExportData.data.stats,
+        settings: validExportData.data.settings,
         gistSync: { gistId: 'incoming-gist', enabled: false },
       });
     });
@@ -378,22 +434,19 @@ describe('import-export', () => {
       await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
     });
 
-    it.each([
-      STORAGE_KEYS.cards,
-      STORAGE_KEYS.stats,
-      `${STORAGE_KEYS.notes}:${cardUuid}`,
-      STORAGE_KEYS.theme,
-      STORAGE_KEYS.dataUpdatedAt,
-    ])('reports a failed import write to %s', async (failedKey) => {
-      await seedExistingData();
-      const failure = new Error('import write failed');
-      const write = storage.setItem.bind(storage);
-      vi.spyOn(storage, 'setItem').mockImplementation((key, value) =>
-        key === failedKey ? Promise.reject(failure) : write(key, value)
-      );
+    it.each([STORAGE_KEYS.cards, STORAGE_KEYS.stats, STORAGE_KEYS.theme, STORAGE_KEYS.dataUpdatedAt])(
+      'reports a failed import write to %s',
+      async (failedKey) => {
+        await seedExistingData();
+        const failure = new Error('import write failed');
+        const write = storage.setItem.bind(storage);
+        vi.spyOn(storage, 'setItem').mockImplementation((key, value) =>
+          key === failedKey ? Promise.reject(failure) : write(key, value)
+        );
 
-      await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
-    });
+        await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
+      }
+    );
 
     it.each([null, 'existing-pat'])('ignores imported credentials when the local PAT is %s', async (pat) => {
       if (pat !== null) await storage.setItem(STORAGE_KEYS.githubPat, pat);
@@ -433,16 +486,20 @@ describe('import-export', () => {
       it.each([0, undefined, 2, 3])(
         'prepares and imports schema %s cards identically to startup migration',
         async (schemaVersion) => {
+          await setSchemaVersion(0);
           await storage.setItem(STORAGE_KEYS.cards, legacyCards);
           await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
           for (const [id, note] of Object.entries(notes)) {
-            await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
+            await storage.setItem(`local:leetsrs:notes:${id}`, note);
           }
           await storage.setItem(STORAGE_KEYS.theme, 'light');
           await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
           await runStartupMigrations();
           const startupCards = await storage.getItem(STORAGE_KEYS.cards);
-          expect(startupCards).toEqual(currentCards);
+          expect(startupCards).toEqual({
+            'two-sum': { ...currentCards['two-sum'], note: 'Use hash map' },
+            'add-two-numbers': { ...currentCards['add-two-numbers'], note: 'Keep the carry' },
+          });
           const before = await fakeBrowser.storage.local.get(null);
           const json = JSON.stringify({
             ...validExportData,
@@ -459,7 +516,7 @@ describe('import-export', () => {
           const prepared = await prepareImportData(json);
 
           expect.soft(prepared.cards).toEqual(startupCards);
-          expect(prepared.notes).toEqual(notes);
+          expect(prepared).not.toHaveProperty('notes');
           expect(prepared.stats).toEqual(validExportData.data.stats);
           expect(prepared.settings).toEqual(validExportData.data.settings);
           expect(prepared.dataUpdatedAt).toBe(dataUpdatedAt);
@@ -470,23 +527,23 @@ describe('import-export', () => {
           expect.soft(await storage.getItem(STORAGE_KEYS.cards)).toEqual(startupCards);
           expect(await storage.getItem(STORAGE_KEYS.stats)).toEqual(validExportData.data.stats);
           for (const [id, note] of Object.entries(notes)) {
-            expect(await storage.getItem(`${STORAGE_KEYS.notes}:${id}`)).toEqual(note);
+            expect(await getNote(id)).toEqual(note);
           }
           expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
           expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
           expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
-          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
           expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
           expect(JSON.parse(await exportData()).data.settings).toEqual(validExportData.data.settings);
         }
       );
 
       it('leaves storage untouched when preparing a legacy import fails', async () => {
-        await setSchemaVersion(2);
+        await setSchemaVersion(4);
         await storage.setItem(STORAGE_KEYS.cards, currentCards);
         await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
         for (const [id, note] of Object.entries(notes)) {
-          await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
+          await storage.setItem(`local:leetsrs:notes:${id}`, note);
         }
         await storage.setItem(STORAGE_KEYS.theme, 'dark');
         await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
@@ -510,7 +567,7 @@ describe('import-export', () => {
 
     it('rejects notes over 500 characters before replacing any local data', async () => {
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
-      await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}`, { text: 'existing note' });
+      await storage.setItem(`local:leetsrs:notes:${cardUuid}`, { text: 'existing note' });
       const before = await fakeBrowser.storage.local.get(null);
       const json = JSON.stringify({
         ...validExportData,
@@ -530,10 +587,10 @@ describe('import-export', () => {
         JSON.stringify({ ...validExportData, data: { ...validExportData.data, [key]: null } }),
       ]),
     ])('rejects %s during preparation and import without changing storage', async (_name, json) => {
-      await setSchemaVersion(2);
+      await setSchemaVersion(4);
       await storage.setItem(STORAGE_KEYS.cards, validExportData.data.cards);
       await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
-      await storage.setItem(`${STORAGE_KEYS.notes}:${cardUuid}`, { text: 'existing note' });
+      await storage.setItem(`local:leetsrs:notes:${cardUuid}`, { text: 'existing note' });
       for (const [key, value] of Object.entries(validExportData.data.settings)) {
         await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
       }
@@ -572,7 +629,6 @@ describe('import-export', () => {
         expect(preparedData).toMatchObject({
           cards: parsedLegacyData.data.cards,
           stats: parsedLegacyData.data.stats,
-          notes: parsedLegacyData.data.notes,
           settings: { ...legacySettings, resetEditorOnEveryProblem: true },
           dataUpdatedAt: '2024-01-15T10:00:00.000Z',
         });
@@ -678,18 +734,18 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.resetEditorOnDueReview, true);
       await storage.setItem(STORAGE_KEYS.badgeEnabled, true);
       await storage.setItem(STORAGE_KEYS.language, 'en');
-      await storage.setItem(`${STORAGE_KEYS.notes}:${uuid1}` as const, { text: 'note 1' });
-      await storage.setItem(`${STORAGE_KEYS.notes}:${uuid2}` as const, { text: 'note 2' });
+      await saveNote(uuid1, 'note 1');
+      await saveNote(uuid2, 'note 2');
 
       await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
-      await setSchemaVersion(2);
+      await setSchemaVersion(4);
 
       await resetAllData();
 
       expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
-      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
 
       // Verify all data was removed
       expect(await storage.getItem(STORAGE_KEYS.cards)).toBeNull();
@@ -701,8 +757,8 @@ describe('import-export', () => {
       expect(await storage.getItem(STORAGE_KEYS.resetEditorOnDueReview)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.badgeEnabled)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.language)).toBeNull();
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid1}` as const)).toBeNull();
-      expect(await storage.getItem(`${STORAGE_KEYS.notes}:${uuid2}` as const)).toBeNull();
+      expect(await getNote(uuid1)).toBeNull();
+      expect(await getNote(uuid2)).toBeNull();
     });
   });
 });

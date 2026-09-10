@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { getNote, saveNote } from '@/infrastructure/storage/notes';
-import { getNoteStorageKey, STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, getAllCards, rateCard, removeCard } from '../cards';
@@ -85,43 +85,17 @@ describe('learning persistence sequencing', () => {
     }
   );
 
-  it('awaits note deletion before writing the card removal', async () => {
+  it('removes the card and its note together, preserving both when the write fails', async () => {
     const card = await addCard(buildProblem());
     await saveNote(card.id, 'solution');
-    const started = Promise.withResolvers<void>();
-    const deleted = Promise.withResolvers<void>();
-    const removeItem = storage.removeItem.bind(storage);
-    const removal = vi.spyOn(storage, 'removeItem').mockImplementation(async (key) => {
-      started.resolve();
-      await deleted.promise;
-      await removeItem(key);
-    });
-    const writes = vi.spyOn(storage, 'setItem');
-
-    const removing = removeCard(card.slug);
-    await started.promise;
-    expect(removal).toHaveBeenCalledWith(getNoteStorageKey(card.id));
-    expect(writes).not.toHaveBeenCalled();
-    expect(await getAllCards()).toEqual([card]);
-    deleted.resolve();
-    await removing;
-    expect(writes).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.cards, {});
+    const write = vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('removal failed'));
+    await expect(removeCard(card.slug)).rejects.toThrow('removal failed');
+    expect(await getAllCards()).toEqual([{ ...card, note: 'solution' }]);
+    expect(await getNote(card.id)).toEqual({ text: 'solution' });
+    write.mockRestore();
+    await removeCard(card.slug);
+    expect(await getAllCards()).toEqual([]);
     expect(await getNote(card.id)).toBeNull();
-  });
-
-  it.each(['note', 'card'])('preserves partial removal state when the %s operation fails', async (failedOperation) => {
-    const card = await addCard(buildProblem());
-    await saveNote(card.id, 'solution');
-    const failure = new Error('removal failed');
-    if (failedOperation === 'note') vi.spyOn(storage, 'removeItem').mockRejectedValueOnce(failure);
-    const writes = vi.spyOn(storage, 'setItem');
-    if (failedOperation === 'card') writes.mockRejectedValueOnce(failure);
-
-    await expect(removeCard(card.slug)).rejects.toBe(failure);
-
-    expect(await getAllCards()).toEqual([card]);
-    expect(await getNote(card.id)).toEqual(failedOperation === 'note' ? { text: 'solution' } : null);
-    expect(writes).toHaveBeenCalledTimes(failedOperation === 'note' ? 0 : 1);
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 });

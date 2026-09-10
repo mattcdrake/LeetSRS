@@ -1,7 +1,6 @@
 export const STORAGE_KEYS = {
   cards: 'local:leetsrs:cards',
   stats: 'local:leetsrs:stats',
-  notes: 'local:leetsrs:notes',
   maxNewCardsPerDay: 'sync:leetsrs:maxNewCardsPerDay',
   theme: 'sync:leetsrs:theme',
   resetEditorOnEveryProblem: 'sync:leetsrs:autoClearLeetcode',
@@ -20,7 +19,3 @@ export const STORAGE_KEYS = {
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
-
-export function getNoteStorageKey(cardId: string): `local:leetsrs:notes:${string}` {
-  return `${STORAGE_KEYS.notes}:${cardId}`;
-}

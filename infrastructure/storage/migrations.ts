@@ -1,14 +1,17 @@
 import type { StorageItemKey } from 'wxt/utils/storage';
 import { storage } from '#imports';
+import { noteSchema } from '@/domain/notes';
 import { STORAGE_KEYS } from './storage-keys';
 
 // Cards may be absent in storage, and legacy records have not yet been validated.
 interface MigrationData {
   cards?: Record<string, unknown>;
+  notes?: Record<string, unknown>;
 }
 
 export interface Migration {
   description: string;
+  migrateStorage?: () => Promise<void>;
   removeKeys?: readonly StorageItemKey[];
   migrate: (data: MigrationData) => MigrationData;
 }
@@ -35,7 +38,7 @@ const migrations: readonly Migration[] = [
           return [slug, { ...card, domain: 'leetcode.com' }];
         })
       );
-      return { cards };
+      return { ...data, cards };
     },
   },
   {
@@ -47,7 +50,39 @@ const migrations: readonly Migration[] = [
     migrate: (data: MigrationData): MigrationData => data,
     removeKeys: ['sync:leetsrs:dayStartHour'],
   },
+  {
+    description: 'Embed notes in their owning cards',
+    migrate: embedNotes,
+    migrateStorage: async () => {
+      const snapshot = await storage.snapshot('local');
+      const noteKeys = Object.keys(snapshot).filter((key) => key.startsWith('leetsrs:notes:'));
+      const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
+      const migrated = embedNotes({
+        cards: cards ?? undefined,
+        notes: Object.fromEntries(noteKeys.map((key) => [key.slice('leetsrs:notes:'.length), snapshot[key]])),
+      });
+      // Keep legacy notes until their owners are saved. Retrying after cleanup
+      // preserves embedded notes even when some or all legacy keys are gone.
+      if (migrated.cards !== undefined) await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
+      await storage.removeItems([...noteKeys.map((key): StorageItemKey => `local:${key}`), 'local:leetsrs:notes']);
+    },
+  },
 ];
+
+export const CURRENT_SCHEMA_VERSION = migrations.length;
+
+function embedNotes(data: MigrationData): MigrationData {
+  if (!data.cards) return data;
+  const cards = Object.fromEntries(
+    Object.entries(data.cards).map(([slug, card]) => {
+      if (typeof card !== 'object' || card === null || Array.isArray(card)) return [slug, card];
+      if ('note' in card || !('id' in card) || typeof card.id !== 'string') return [slug, card];
+      const note = data.notes && Object.hasOwn(data.notes, card.id) ? data.notes[card.id] : undefined;
+      return [slug, note == null ? card : { ...card, note: noteSchema.parse(note).text }];
+    })
+  );
+  return { cards };
+}
 
 export function migrateBackupData(data: MigrationData, schemaVersion: number): MigrationData {
   if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {
@@ -65,14 +100,18 @@ export async function runStartupMigrations(steps: readonly Migration[] = migrati
   for (const [index, migration] of steps.slice(currentVersion).entries()) {
     const version = currentVersion + index + 1;
     try {
-      const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
-      const data = { cards: cards ?? undefined };
-      const migrated = migration.migrate(data);
-      if (migrated.cards !== undefined) {
-        await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
-      }
-      if (migration.removeKeys) {
-        await storage.removeItems([...migration.removeKeys]);
+      if (migration.migrateStorage) {
+        await migration.migrateStorage();
+      } else {
+        const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
+        const data = { cards: cards ?? undefined };
+        const migrated = migration.migrate(data);
+        if (migrated.cards !== undefined) {
+          await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
+        }
+        if (migration.removeKeys) {
+          await storage.removeItems([...migration.removeKeys]);
+        }
       }
       await setSchemaVersion(version);
     } catch (error) {

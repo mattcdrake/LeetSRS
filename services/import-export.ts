@@ -2,34 +2,33 @@ import { normalizeImportData, validateImportRelationships, validateImportStructu
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import { validateBackupRecords } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
-import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
-import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
+import {
+  CURRENT_SCHEMA_VERSION,
+  getCurrentSchemaVersion,
+  migrateBackupData,
+} from '@/infrastructure/storage/migrations';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const cardsPromise = getAllCards();
-  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt, schemaVersion] = await Promise.all([
-    cardsPromise,
+  const [cards, stats, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
+    getAllCards(),
     getStats(),
-    cardsPromise.then((cards) => getNotesForCards(cards)),
     exportSettings(),
     readSyncMetadata('gistId'),
     readSyncMetadata('gistSyncEnabled'),
     readSyncMetadata('dataUpdatedAt'),
-    getCurrentSchemaVersion(),
   ]);
 
   const exportData: ExportData = {
-    schemaVersion,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     exportDate: new Date().toISOString(),
     dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
       cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
       stats,
-      notes,
       settings,
       gistSync: {
         ...(gistId != null && { gistId }),
@@ -52,11 +51,10 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
   const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
-  const migrated = migrateBackupData({ cards: normalizedData.cards }, schemaVersion);
+  const migrated = migrateBackupData({ cards: normalizedData.cards, notes: normalizedData.notes }, schemaVersion);
   const validRecords = validateBackupRecords({
     cards: migrated.cards,
     stats: normalizedData.stats,
-    notes: normalizedData.notes,
   });
   validateImportRelationships(validRecords);
 
@@ -79,9 +77,6 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
 
   await saveCards(Object.values(preparedData.cards));
   await saveStats(preparedData.stats);
-  for (const [cardId, note] of Object.entries(preparedData.notes)) {
-    await saveNote(cardId, note.text);
-  }
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
@@ -102,7 +97,6 @@ export async function importData(jsonData: string): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-  const cards = await getAllCards();
   await removeCards();
   await removeStats();
   await resetSettings();
@@ -112,8 +106,4 @@ export async function resetAllData(): Promise<void> {
   await removeSyncMetadata('lastSyncTime');
   await removeSyncMetadata('lastSyncDirection');
   await removeSyncMetadata('dataUpdatedAt');
-
-  for (const card of cards) {
-    await deleteNote(card.id);
-  }
 }

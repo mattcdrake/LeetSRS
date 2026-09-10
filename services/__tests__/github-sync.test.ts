@@ -58,8 +58,32 @@ describe('github-sync', () => {
   });
 
   describe('triggerGistSync', () => {
+    it('pushes and restores schema 4 cards with their own embedded notes', async () => {
+      await setSchemaVersion(4);
+      const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
+      const { payload, accepted } = mixedRecordBackup();
+      await actual.importData(JSON.stringify({ ...payload, data: accepted }));
+      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+      mockExportData.mockImplementation(actual.exportData);
+      mockImportData.mockImplementation(actual.importData);
+      mockGistsGet.mockResolvedValue({ data: { files: {} } });
+      expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pushed' });
+      const content = mockGistsUpdate.mock.calls[0][0].files['leetsrs-backup.json'].content;
+      const backup = JSON.parse(content);
+      expect(backup.schemaVersion).toBe(4);
+      expect(backup.data).not.toHaveProperty('notes');
+      expect(backup.data.cards['two-sum'].note).toBe('Keep this note');
+      expect(backup.data.cards['cn-problem'].note).toBe('');
+      expect(backup.data.cards['bad-note']).not.toHaveProperty('note');
+      await storage.removeItem(STORAGE_KEYS.cards);
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-01-01T00:00:00.000Z');
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content } } } });
+      expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pulled' });
+      expect(JSON.parse(await actual.exportData()).data.cards).toEqual(backup.data.cards);
+    });
+
     it('rejects an invalid pull without changing local data or sync metadata', async () => {
-      await setSchemaVersion(2);
+      await setSchemaVersion(4);
       const { payload, accepted } = mixedRecordBackup();
       const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
       await actual.importData(JSON.stringify({ ...payload, data: accepted }));

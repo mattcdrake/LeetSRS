@@ -271,6 +271,7 @@ it.each(invalidPayloads)('rejects invalid %s input before mutation and recovers 
   await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
   expect(writes).not.toHaveBeenCalled();
   expect(badge).not.toHaveBeenCalled();
-  await dispatch('saveNote', { cardId: 'card', text: 'after failure', extra: true });
-  expect(await dispatch('getNote', { cardId: 'card' })).toEqual({ text: 'after failure' });
+  const card = await cards.addCard(problem);
+  await dispatch('saveNote', { cardId: card.id, text: 'after failure', extra: true });
+  expect(await dispatch('getNote', { cardId: card.id })).toEqual({ text: 'after failure' });
 });

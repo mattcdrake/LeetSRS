@@ -4,7 +4,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { DailyStats } from '@/domain/statistics';
-import * as notesModule from '@/infrastructure/storage/notes';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -12,11 +11,6 @@ import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, delayCard, getAllCards, getReviewQueue, rateCard, removeCard, setPauseStatus } from '../cards';
 
 const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
-
-// Mock the notes module
-vi.mock('@/infrastructure/storage/notes', () => ({
-  deleteNote: vi.fn(),
-}));
 
 // Mock the settings module
 vi.mock('../settings', () => ({
@@ -36,11 +30,20 @@ describe('card mutations', () => {
     '%s retains other supported cards and their learning data',
     async (operation) => {
       const others = [
-        createMockCard(FsrsState.Review, { slug: 'reviewed', domain: 'leetcode.cn', paused: true }),
-        createMockCard(FsrsState.Relearning, { slug: 'relearning' }),
+        createMockCard(FsrsState.Review, {
+          slug: 'reviewed',
+          domain: 'leetcode.cn',
+          paused: true,
+          note: 'Keep this note',
+        }),
+        createMockCard(FsrsState.Relearning, { slug: 'relearning', note: '' }),
       ];
       const problem = buildProblem();
-      const target = createMockCard(FsrsState.Review, { ...problem, paused: operation === 'resume' });
+      const target = createMockCard(FsrsState.Review, {
+        ...problem,
+        paused: operation === 'resume',
+        note: 'Target solution',
+      });
       const initial = operation === 'add' || operation === 'rate new' ? others : [...others, target];
       await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(initial.map((card) => [card.slug, card])));
 
@@ -67,10 +70,8 @@ describe('card mutations', () => {
       const reloaded = await getAllCards();
       expect(reloaded.filter((card) => card.slug !== problem.slug)).toEqual(others);
       expect(reloaded).toHaveLength(operation === 'remove' ? 2 : 3);
-      if (operation === 'remove') {
-        expect(notesModule.deleteNote).toHaveBeenCalledExactlyOnceWith(target.id);
-      } else {
-        expect(notesModule.deleteNote).not.toHaveBeenCalled();
+      if (['rate existing', 'delay', 'pause', 'resume'].includes(operation)) {
+        expect(reloaded.find((card) => card.slug === problem.slug)?.note).toBe('Target solution');
       }
     }
   );
@@ -180,14 +181,6 @@ describe('removeCard', () => {
     // Verify storage is still empty/unchanged
     const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(cards || {}).toEqual({});
-  });
-
-  it('should not call deleteNote when removing non-existent card', async () => {
-    // Try to remove a card that doesn't exist
-    await removeCard('non-existent-card');
-
-    // Verify deleteNote was NOT called
-    expect(notesModule.deleteNote).not.toHaveBeenCalled();
   });
 });
 

@@ -60,7 +60,7 @@ export function normalizeImportData(data: BackupImportEnvelope, currentSchema: n
     schemaVersion: importedSchema,
     cards: objectMapSchema.parse(data.data.cards),
     stats: objectMapSchema.parse(data.data.stats),
-    notes: objectMapSchema.parse(data.data.notes),
+    notes: importedSchema < 4 ? objectMapSchema.parse(data.data.notes) : undefined,
     settings: getImportedSettings(data.data.settings),
     gistSync: gistSyncBackupSchema.optional().parse(data.data.gistSync),
     dataUpdatedAt,
@@ -70,7 +70,6 @@ export function normalizeImportData(data: BackupImportEnvelope, currentSchema: n
 export function validateImportRelationships(records: {
   cards: Record<string, Pick<Card, 'id' | 'slug'>>;
   stats: Record<string, Pick<DailyStats, 'date'>>;
-  notes: Record<string, unknown>;
 }): void {
   const cardIds = new Set<string>();
   for (const [slug, card] of Object.entries(records.cards)) {
@@ -80,8 +79,5 @@ export function validateImportRelationships(records: {
   }
   for (const [date, stats] of Object.entries(records.stats)) {
     if (stats.date !== date) throw new Error(`Stats date does not match key: ${date}`);
-  }
-  for (const id of Object.keys(records.notes)) {
-    if (!cardIds.has(id)) throw new Error(`Note has no owning card: ${id}`);
   }
 }
