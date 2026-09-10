@@ -2,6 +2,7 @@
  * @vitest-environment happy-dom
  */
 
+import { focusManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { type Grade, Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,6 +23,7 @@ import {
   usePauseCardMutation,
   useRateCardMutation,
   useRemoveCardMutation,
+  useReviewQueueQuery,
 } from '../cards';
 import { statsQueryKeys } from '../stats';
 
@@ -40,6 +42,36 @@ describe('useCardsQuery', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(sendMessage).toHaveBeenCalledWith('getAllCards');
+  });
+});
+
+describe('useReviewQueueQuery polling', () => {
+  it('pauses polling while hidden and stops after unmount', async () => {
+    vi.useFakeTimers();
+    focusManager.setFocused(true);
+    createMessageMock(vi.mocked(sendMessage)).reset().resolve('getReviewQueue', []);
+    const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
+
+    try {
+      await act(() => vi.advanceTimersByTimeAsync(1));
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+
+      focusManager.setFocused(false);
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+
+      focusManager.setFocused(true);
+      await act(() => vi.advanceTimersByTimeAsync(15_000));
+      expect(sendMessage).toHaveBeenCalledTimes(2);
+
+      view.unmount();
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      expect(sendMessage).toHaveBeenCalledTimes(2);
+    } finally {
+      view.unmount();
+      focusManager.setFocused(undefined);
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -203,8 +235,33 @@ describe('card queries through JSON messaging and background handlers', () => {
     createMessageMock(vi.mocked(sendMessage))
       .reset()
       .handle('getAllCards', (data) => runner.execute<'getAllCards'>(backgroundMessages.getAllCards, data))
+      .handle('getReviewQueue', (data) => runner.execute<'getReviewQueue'>(backgroundMessages.getReviewQueue, data))
       .handle('rateCard', (data) => runner.execute<'rateCard'>(backgroundMessages.rateCard, data));
   });
+
+  it.each([State.Learning, State.Relearning])(
+    'refreshes an empty queue when a state %i card becomes due',
+    async (state) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+      const card = createMockCard(state);
+      card.fsrs.due = Date.now() + 10_000;
+      await saveCards([card]);
+      const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
+
+      try {
+        await act(() => vi.advanceTimersByTimeAsync(1));
+        expect(view.result.current.isSuccess).toBe(true);
+        expect(view.result.current.data).toEqual([]);
+
+        await act(() => vi.advanceTimersByTimeAsync(15_000));
+        expect(view.result.current.data).toEqual([card]);
+      } finally {
+        view.unmount();
+        vi.useRealTimers();
+      }
+    }
+  );
 
   it.each([0, undefined])('preserves numeric dates and last_review=%s in query results', async (lastReview) => {
     const card = createMockCard(State.Review, { createdAt: 0 });
