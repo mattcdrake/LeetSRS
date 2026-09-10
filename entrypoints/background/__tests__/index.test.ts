@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { onMessage } from '@/infrastructure/browser/messages';
+import { messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
 import * as tracker from '@/infrastructure/storage/data-tracker';
 import { runStartupMigrations } from '@/infrastructure/storage/migrations';
+import * as notes from '@/infrastructure/storage/notes';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
@@ -14,7 +15,6 @@ import { triggerGistSync } from '@/services/github-sync';
 import { getSettings } from '@/services/settings';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import background from '../index';
-import { messages } from '../message-handlers';
 
 vi.mock('octokit', () => ({ Octokit: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
@@ -101,8 +101,8 @@ describe('background sync alarm', () => {
       const failure = new Error('migration failed');
       vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
       const report = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const readHandler = vi.spyOn(messages.getAllCards, 'handler').mockResolvedValue([]);
-      const writeHandler = vi.spyOn(messages.removeCard, 'handler').mockResolvedValue(undefined);
+      const readHandler = vi.spyOn(cards, 'getAllCards').mockResolvedValue([]);
+      const writeHandler = vi.spyOn(cards, 'removeCard').mockResolvedValue(undefined);
       const tracking = vi.spyOn(tracker, 'markDataUpdated');
       const writes = vi.spyOn(storage, 'setItem');
       const credentials = vi.spyOn(auth, 'hasGitHubCredentials');
@@ -153,7 +153,7 @@ describe('background sync alarm', () => {
     const writeStarted = Promise.withResolvers<void>();
     const releaseWrite = Promise.withResolvers<void>();
     const checked = Promise.withResolvers<void>();
-    vi.spyOn(messages.deleteNote, 'handler').mockImplementation(async () => {
+    vi.spyOn(notes, 'deleteNote').mockImplementation(async () => {
       writeStarted.resolve();
       await releaseWrite.promise;
     });
@@ -175,6 +175,45 @@ describe('background sync alarm', () => {
     releaseWrite.resolve();
     await Promise.all([writing, syncing]);
     expect(triggerGistSync).toHaveBeenCalledOnce();
+  });
+
+  it('validates direct alarm execution and recovers its shared queue after rejection', async () => {
+    const fireAlarm = startBackground();
+    const failure = new Error('invalid alarm payload');
+    const parse = vi.spyOn(messagePayloadSchemas.triggerGistSync, 'parse').mockImplementationOnce(() => {
+      throw failure;
+    });
+    await expect(fireAlarm()).rejects.toBe(failure);
+    expect(parse).toHaveBeenCalledExactlyOnceWith(undefined);
+    expect(triggerGistSync).not.toHaveBeenCalled();
+    await fireAlarm();
+    expect(triggerGistSync).toHaveBeenCalledOnce();
+  });
+
+  it('holds reads and writes until startup succeeds', async () => {
+    const migrations = Promise.withResolvers<void>();
+    vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
+    startBackground();
+    const listeners = vi.mocked(onMessage).mock.calls;
+    const read = listeners.find(([name]) => name === 'getAllCards')?.[1];
+    const write = listeners.find(([name]) => name === 'deleteNote')?.[1];
+    if (!read || !write) throw new Error('Missing synchronous listeners');
+    const deleteNote = vi.spyOn(notes, 'deleteNote').mockResolvedValue(undefined);
+    let readCompleted = false;
+    const reading = Promise.resolve(
+      read({ id: 1, type: 'getAllCards', data: undefined, timestamp: 0, sender: {} })
+    ).then((result) => {
+      readCompleted = true;
+      return result;
+    });
+    const writing = write({ id: 2, type: 'deleteNote', data: { cardId: 'card' }, timestamp: 0, sender: {} });
+    await Promise.resolve();
+    expect(readCompleted).toBe(false);
+    expect(deleteNote).not.toHaveBeenCalled();
+    migrations.resolve();
+    await expect(reading).resolves.toEqual([]);
+    await writing;
+    expect(deleteNote).toHaveBeenCalledOnce();
   });
 
   it.each([false, true])('preserves the one-minute alarm (already exists: %s)', async (exists) => {

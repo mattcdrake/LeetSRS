@@ -20,7 +20,7 @@ These rules apply to runtime and type-only imports:
 Before changing background commands or sync execution, read [ADR-0001](../adr/0001-background-command-execution.md).
 
 - RPC contracts and transport belong in `infrastructure/browser/messages.ts`.
-- `entrypoints/background/message-handlers.ts` wires services; `message-runner.ts` owns shared execution and types without service imports.
+- `entrypoints/background/index.ts` owns startup, listener registration, and an exhaustive typed command registry. Its private dispatcher validates payloads by message name and shares one write queue between messages and alarms, including network work and ordered post-handler effects. Reads may overlap writes. Commands mark local edits only when explicitly flagged; workflow-owned tracking and imported timestamps stay with their services.
 - Register message and alarm listeners synchronously during startup. Handlers wait for startup readiness before accessing storage.
 
 ## Content UI lifecycle
