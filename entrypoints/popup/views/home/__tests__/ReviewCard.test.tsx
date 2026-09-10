@@ -31,7 +31,6 @@ describe('ReviewCard', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.mocked(useI18n).mockReturnValue(translations.en);
   });
 

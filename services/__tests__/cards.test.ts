@@ -30,7 +30,6 @@ beforeEach(() => {
 describe('card mutations', () => {
   beforeEach(() => {
     fakeBrowser.reset();
-    vi.clearAllMocks();
   });
 
   it.each(['add', 'rate new', 'rate existing', 'delay', 'pause', 'resume', 'remove'])(
@@ -184,9 +183,6 @@ describe('removeCard', () => {
   });
 
   it('should not call deleteNote when removing non-existent card', async () => {
-    // Clear any previous mock calls
-    vi.clearAllMocks();
-
     // Try to remove a card that doesn't exist
     await removeCard('non-existent-card');
 
