@@ -4,6 +4,7 @@ import { getAllCards } from '@/infrastructure/storage/cards';
 import { getSettings } from './settings';
 
 export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): Promise<boolean> {
+  const now = new Date();
   const settings = await getSettings();
   if (settings.resetEditorOnEveryProblem) {
     return true;
@@ -17,5 +18,5 @@ export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): P
     return false;
   }
 
-  return isDue(card, new Date());
+  return isDue(card, now);
 }
