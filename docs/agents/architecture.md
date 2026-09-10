@@ -45,6 +45,8 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 
 Append each schema change as a numbered file in `infrastructure/storage/migrations/` and append it to the ordered list in `infrastructure/storage/migrations.ts`. Array position plus one is its version. `LATEST_SCHEMA_VERSION` governs exports and backup compatibility; the stored device version records completed startup steps. Keep historical checks independent of current application models. Versions 1–3 retain the existing learning-data backend.
 
+Keep each migration's historical schema and validation helpers, when needed, in its numbered file. Small, similar validation wrappers are intentional and should remain local so historical validation can evolve independently.
+
 Each `Migration` supplies:
 
 - `load()`: read the complete historical logical dataset and any additional inputs as lossless JSON data. Keep historical storage layouts in migration adapters such as `legacy-storage.ts`.
