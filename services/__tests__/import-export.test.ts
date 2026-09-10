@@ -543,7 +543,7 @@ describe('import-export', () => {
         await storage.setItem(STORAGE_KEYS.cards, currentCards);
         await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
         for (const [id, note] of Object.entries(notes)) {
-          await storage.setItem(`local:leetsrs:notes:${id}`, note);
+          await saveNote(id, note.text);
         }
         await storage.setItem(STORAGE_KEYS.theme, 'dark');
         await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
@@ -567,7 +567,9 @@ describe('import-export', () => {
 
     it('rejects notes over 500 characters before replacing any local data', async () => {
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
-      await storage.setItem(`local:leetsrs:notes:${cardUuid}`, { text: 'existing note' });
+      await storage.setItem(STORAGE_KEYS.cards, {
+        'two-sum': { ...validExportData.data.cards['two-sum'], note: 'existing note' },
+      });
       const before = await fakeBrowser.storage.local.get(null);
       const json = JSON.stringify({
         ...validExportData,
@@ -590,7 +592,9 @@ describe('import-export', () => {
       await setSchemaVersion(4);
       await storage.setItem(STORAGE_KEYS.cards, validExportData.data.cards);
       await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
-      await storage.setItem(`local:leetsrs:notes:${cardUuid}`, { text: 'existing note' });
+      await storage.setItem(STORAGE_KEYS.cards, {
+        'two-sum': { ...validExportData.data.cards['two-sum'], note: 'existing note' },
+      });
       for (const [key, value] of Object.entries(validExportData.data.settings)) {
         await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
       }
