@@ -5,8 +5,6 @@ import { removeDayStartMigration } from './migrations/003-remove-day-start';
 import type { Migration, MigrationData } from './migrations/types';
 import { STORAGE_KEYS } from './storage-keys';
 
-export type { Migration } from './migrations/types';
-
 export async function getCurrentSchemaVersion(): Promise<number> {
   return (await storage.getItem<number>(STORAGE_KEYS.schemaVersion)) ?? 0;
 }

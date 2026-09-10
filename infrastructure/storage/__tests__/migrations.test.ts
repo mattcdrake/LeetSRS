@@ -4,13 +4,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { getAllCards } from '../cards';
-import {
-  getCurrentSchemaVersion,
-  type Migration,
-  migrateBackupData,
-  runStartupMigrations,
-  setSchemaVersion,
-} from '../migrations';
+import { getCurrentSchemaVersion, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../migrations';
+import type { Migration } from '../migrations/types';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('migrations', () => {
