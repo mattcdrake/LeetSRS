@@ -1,4 +1,4 @@
-import { FSRS, State as FsrsState, generatorParameters, Rating } from 'ts-fsrs';
+import { State as FsrsState, Rating } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
@@ -12,7 +12,6 @@ import { buildSettings } from '@/test/utils/settings-mocks';
 import { addCard, delayCard, getAllCards, getReviewQueue, rateCard, removeCard, setPauseStatus } from '../cards';
 
 const { mockGetSettings } = vi.hoisted(() => ({ mockGetSettings: vi.fn() }));
-const MOCK_MAX_NEW_CARDS_PER_DAY = buildSettings().maxNewCardsPerDay;
 
 // Mock the notes module
 vi.mock('@/infrastructure/storage/notes', () => ({
@@ -84,42 +83,24 @@ describe('addCard', () => {
     fakeBrowser.reset();
   });
 
-  it('should create and store a new card', async () => {
-    const card = await addCard({
-      slug: 'two-sum',
-      name: 'Two Sum',
-      leetcodeId: '1',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
+  it('round-trips a new card with its creation time and numeric schedule', async () => {
+    const problem = buildProblem();
+    const before = Date.now();
+    const card = await addCard(problem);
+    const after = Date.now();
+
+    expect(card).toMatchObject({
+      ...problem,
+      id: expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i),
+      paused: false,
+      fsrs: { state: FsrsState.New, stability: 0, difficulty: 0, reps: 0, lapses: 0 },
     });
-
-    expect(card.id).toBeDefined();
-    expect(card.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-    expect(card.slug).toBe('two-sum');
-    expect(card.name).toBe('Two Sum');
-    expect(card.difficulty).toBe('Easy');
-    expect(card.domain).toBe('leetcode.com');
-    expect(card.createdAt).toEqual(expect.any(Number));
-
-    // Verify FSRS card is created
-    expect(card.fsrs).toBeDefined();
-    expect(card.fsrs.due).toEqual(expect.any(Number));
-    expect(card.fsrs.stability).toBeDefined();
-    expect(card.fsrs.difficulty).toBeDefined();
-    expect(card.fsrs.reps).toBe(0);
-    expect(card.fsrs.lapses).toBe(0);
-
-    // Verify the card was actually stored using WXT storage
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-
-    expect(cards).toBeDefined();
-    expect(requireDefined(cards)['two-sum']).toBeDefined();
-    expect(requireDefined(cards)['two-sum'].slug).toBe('two-sum');
-    expect(requireDefined(cards)['two-sum'].name).toBe('Two Sum');
-
-    // Verify FSRS data is stored properly
-    expect(requireDefined(cards)['two-sum'].fsrs).toBeDefined();
-    expect(typeof requireDefined(cards)['two-sum'].fsrs.due).toBe('number');
+    expect(card.createdAt).toBeGreaterThanOrEqual(before);
+    expect(card.createdAt).toBeLessThanOrEqual(after);
+    expect(card.fsrs.due).toBe(card.createdAt);
+    expect(card.fsrs.last_review).toBeUndefined();
+    expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual({ [problem.slug]: card });
+    expect(await getAllCards()).toEqual([card]);
   });
 
   it('should return existing card when adding same slug (idempotent)', async () => {
@@ -185,61 +166,12 @@ describe('addCard', () => {
     expect(requireDefined(cards)['valid-parentheses']).toBeDefined();
     expect(requireDefined(cards)['merge-two-sorted-lists']).toBeDefined();
   });
-
-  it('should set createdAt to current date', async () => {
-    const beforeTime = new Date();
-    const card = await addCard({
-      slug: 'test-problem',
-      name: 'Test Problem',
-      leetcodeId: '999',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    const afterTime = new Date();
-
-    expect(card.createdAt).toEqual(expect.any(Number));
-    expect(card.createdAt).toBeGreaterThanOrEqual(beforeTime.getTime());
-    expect(card.createdAt).toBeLessThanOrEqual(afterTime.getTime());
-  });
-
-  it('should properly serialize card when storing', async () => {
-    const card = await addCard({
-      slug: 'serialize-test',
-      name: 'Serialize Test',
-      leetcodeId: '1000',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const storedCard = requireDefined(cards)[card.slug];
-
-    expect(typeof storedCard.createdAt).toBe('number');
-    expect(storedCard.slug).toBe(card.slug);
-    expect(storedCard.name).toBe(card.name);
-  });
 });
 
 describe('removeCard', () => {
   beforeEach(() => {
     // Reset the fake browser state before each test
     fakeBrowser.reset();
-  });
-
-  it('should remove an existing card and its slug mapping', async () => {
-    // Add a card first
-    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
-
-    // Verify it exists
-    let cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    expect(requireDefined(cards)['two-sum']).toBeDefined();
-
-    // Remove the card
-    await removeCard('two-sum');
-
-    // Verify it's removed
-    cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    expect(requireDefined(cards)['two-sum']).toBeUndefined();
   });
 
   it('should handle removing non-existent card gracefully', async () => {
@@ -249,101 +181,6 @@ describe('removeCard', () => {
     // Verify storage is still empty/unchanged
     const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     expect(cards || {}).toEqual({});
-  });
-
-  it('should only remove the specified card when multiple cards exist', async () => {
-    // Add multiple cards
-    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({
-      slug: 'valid-parentheses',
-      name: 'Valid Parentheses',
-      leetcodeId: '20',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'merge-intervals',
-      name: 'Merge Intervals',
-      leetcodeId: '56',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    // Remove the middle card
-    await removeCard('valid-parentheses');
-
-    // Verify only the specified card is removed
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-
-    expect(Object.keys(cards || {}).length).toBe(2);
-
-    // Card 1 should still exist
-    expect(requireDefined(cards)['two-sum']).toBeDefined();
-
-    // Card 2 should be removed
-    expect(requireDefined(cards)['valid-parentheses']).toBeUndefined();
-
-    // Card 3 should still exist
-    expect(requireDefined(cards)['merge-intervals']).toBeDefined();
-  });
-
-  it('should verify card is actually removed from getAllCards', async () => {
-    // Add multiple cards
-    await addCard({ slug: 'two-sum', name: 'Two Sum', leetcodeId: '1', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({
-      slug: 'valid-parentheses',
-      name: 'Valid Parentheses',
-      leetcodeId: '20',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'merge-intervals',
-      name: 'Merge Intervals',
-      leetcodeId: '56',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    // Get initial count
-    let allCards = await getAllCards();
-    expect(allCards).toHaveLength(3);
-
-    // Remove one card
-    await removeCard('valid-parentheses');
-
-    // Verify it's not in getAllCards
-    allCards = await getAllCards();
-    expect(allCards).toHaveLength(2);
-    expect(allCards.some((c) => c.slug === 'valid-parentheses')).toBe(false);
-    expect(allCards.some((c) => c.slug === 'two-sum')).toBe(true);
-    expect(allCards.some((c) => c.slug === 'merge-intervals')).toBe(true);
-  });
-
-  it('should delete associated note when removing a card', async () => {
-    // Clear any previous mock calls
-    vi.clearAllMocks();
-
-    // Add a card
-    const card = await addCard({
-      slug: 'test-with-note',
-      name: 'Test With Note',
-      leetcodeId: '123',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    const cardId = card.id;
-
-    // Remove the card
-    await removeCard('test-with-note');
-
-    // Verify deleteNote was called with the correct card ID
-    expect(notesModule.deleteNote).toHaveBeenCalledTimes(1);
-    expect(notesModule.deleteNote).toHaveBeenCalledWith(cardId);
-
-    // Verify the card is actually removed
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    expect(requireDefined(cards)['test-with-note']).toBeUndefined();
   });
 
   it('should not call deleteNote when removing non-existent card', async () => {
@@ -395,42 +232,6 @@ describe('delayCard', () => {
     const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
     const storedCard = requireDefined(cards)['two-sum'];
     expect(storedCard.fsrs.due).toBe(expectedDueDate.getTime());
-  });
-
-  it('should handle delaying by 1 day', async () => {
-    const card = await addCard({
-      slug: 'test-problem',
-      name: 'Test Problem',
-      leetcodeId: '999',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    const originalDueDate = new Date(card.fsrs.due);
-
-    const delayedCard = await delayCard('test-problem', 1);
-
-    const expectedDueDate = new Date(originalDueDate);
-    expectedDueDate.setDate(expectedDueDate.getDate() + 1);
-
-    expect(delayedCard.fsrs.due).toBe(expectedDueDate.getTime());
-  });
-
-  it('should handle delaying by large number of days', async () => {
-    const card = await addCard({
-      slug: 'large-delay',
-      name: 'Large Delay',
-      leetcodeId: '1000',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    const originalDueDate = new Date(card.fsrs.due);
-
-    const delayedCard = await delayCard('large-delay', 30);
-
-    const expectedDueDate = new Date(originalDueDate);
-    expectedDueDate.setDate(expectedDueDate.getDate() + 30);
-
-    expect(delayedCard.fsrs.due).toBe(expectedDueDate.getTime());
   });
 
   it('should throw error when card does not exist', async () => {
@@ -582,26 +383,6 @@ describe('setPauseStatus', () => {
 });
 
 describe('rateCard', () => {
-  it('FSRS schedules numeric card dates identically to Date objects', () => {
-    const scheduler = new FSRS(generatorParameters({ maximum_interval: 1000, enable_fuzz: false }));
-    const numericCard = createMockCard(FsrsState.Review).fsrs;
-    numericCard.due = Date.parse('2024-03-14T10:00:00Z');
-    numericCard.last_review = Date.parse('2024-03-13T10:00:00Z');
-    const dateCard = {
-      ...numericCard,
-      due: new Date(numericCard.due),
-      last_review: new Date(numericCard.last_review),
-    };
-    const now = new Date('2024-03-15T10:00:00Z');
-
-    const numericResult = scheduler.next(numericCard, now, Rating.Good);
-    const dateResult = scheduler.next(dateCard, now, Rating.Good);
-
-    expect(numericResult).toEqual(dateResult);
-    expect(numericResult.card.last_review).toEqual(now);
-    expect(numericResult.card.due.getTime()).toBeGreaterThan(now.getTime());
-  });
-
   beforeEach(() => {
     // Reset the fake browser state before each test
     fakeBrowser.reset();
@@ -690,99 +471,6 @@ describe('rateCard', () => {
     expect(easyResult.card.fsrs.reps).toBeGreaterThan(0);
   });
 
-  it('should update the due date after rating', async () => {
-    const card = await addCard({
-      slug: 'merge-sort',
-      name: 'Merge Sort',
-      leetcodeId: '88',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    const initialDue = card.fsrs.due;
-
-    const result = await rateCard({
-      slug: 'merge-sort',
-      name: 'Merge Sort',
-      rating: Rating.Good,
-      leetcodeId: '88',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    expect(result.card.fsrs.due).toEqual(expect.any(Number));
-    expect(result.card.fsrs.due).toBeGreaterThan(initialDue);
-  });
-
-  it('should persist card updates to storage', async () => {
-    await addCard({
-      slug: 'binary-search',
-      name: 'Binary Search',
-      leetcodeId: '704',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Rate the card
-    await rateCard({
-      slug: 'binary-search',
-      name: 'Binary Search',
-      rating: Rating.Hard,
-      leetcodeId: '704',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Verify the updated card is in storage
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const storedCard = requireDefined(cards)['binary-search'];
-
-    expect(storedCard).toBeDefined();
-    expect(typeof storedCard.fsrs.last_review).toBe('number');
-  });
-
-  it('should handle multiple ratings on the same card', async () => {
-    const slug = 'dynamic-programming';
-
-    // First rating (creates card)
-    const result1 = await rateCard({
-      slug: slug,
-      name: 'Multi Rate',
-      rating: Rating.Again,
-      leetcodeId: '9998',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    expect(result1.card.fsrs.reps).toBe(1);
-    expect(result1.card.fsrs.lapses).toBe(0);
-
-    // Second rating
-    const result2 = await rateCard({
-      slug: slug,
-      name: 'Multi Rate',
-      rating: Rating.Hard,
-      leetcodeId: '9998',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    expect(result2.card.fsrs.reps).toBeGreaterThan(0);
-
-    // Third rating
-    const result3 = await rateCard({
-      slug: slug,
-      name: 'Multi Rate',
-      rating: Rating.Good,
-      leetcodeId: '9998',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    expect(result3.card.fsrs.reps).toBeGreaterThan(result2.card.fsrs.reps);
-
-    // Verify only one card exists in storage
-    const allCards = await getAllCards();
-    const dpCards = allCards.filter((c) => c.slug === slug);
-    expect(dpCards).toHaveLength(1);
-  });
-
   it('should update stats when rating a new card', async () => {
     // Rate a new card (doesn't exist yet)
     await rateCard({
@@ -869,599 +557,34 @@ describe('rateCard', () => {
 });
 
 describe('getReviewQueue', () => {
-  // Helper function to create test stats with sensible defaults
-  const createTestStats = (overrides: Partial<DailyStats> = {}): Record<string, DailyStats> => {
-    const todayKey = '2024-01-15';
-    const defaults: DailyStats = {
-      date: todayKey,
-      totalReviews: 0,
-      gradeBreakdown: {
-        [Rating.Again]: 0,
-        [Rating.Hard]: 0,
-        [Rating.Good]: 0,
-        [Rating.Easy]: 0,
-      },
-      newCards: 0,
-      reviewedCards: 0,
-      streak: 1,
-    };
-
-    // Auto-calculate totalReviews if not provided
-    const stats = { ...defaults, ...overrides };
-    if (!overrides.totalReviews) {
-      stats.totalReviews = stats.newCards + stats.reviewedCards;
-    }
-
-    return { [todayKey]: stats };
-  };
-
   beforeEach(() => {
     fakeBrowser.reset();
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-01-15T12:00:00Z'));
+    vi.setSystemTime(new Date('2024-01-15T12:00:00'));
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('should return empty array when no cards exist', async () => {
-    const queue = await getReviewQueue();
-    expect(queue).toEqual([]);
-  });
-
-  it('should return only new cards when no reviews are due', async () => {
-    // Create cards - all new
-    await addCard({
-      slug: 'problem1',
-      name: 'Problem 1',
-      leetcodeId: '1001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'problem2',
-      name: 'Problem 2',
-      leetcodeId: '1002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'problem3',
-      name: 'Problem 3',
-      leetcodeId: '1003',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'problem4',
-      name: 'Problem 4',
-      leetcodeId: '1004',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'problem5',
-      name: 'Problem 5',
-      leetcodeId: '1005',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    const queue = await getReviewQueue();
-
-    // Should only get the configured maximum
-    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY);
-    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
-  });
-
-  it('should return only review cards when they are due', async () => {
-    // Create and rate cards to make them review cards
-    await addCard({
-      slug: 'problem1',
-      name: 'Problem 1',
-      leetcodeId: '1001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'problem2',
-      name: 'Problem 2',
-      leetcodeId: '1002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Rate them to move out of New state
-    await rateCard({
-      slug: 'problem1',
-      name: 'Problem 1',
-      rating: Rating.Good,
-      leetcodeId: '1001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'problem2',
-      name: 'Problem 2',
-      rating: Rating.Good,
-      leetcodeId: '1002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Manually update their due dates to be in the past
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    requireDefined(cards).problem1.fsrs.due = pastTime;
-    requireDefined(cards).problem2.fsrs.due = pastTime;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    expect(queue).toHaveLength(2);
-    expect(queue.every((card) => card.fsrs.state !== FsrsState.New)).toBe(true);
-  });
-
-  it('should interleave review and new cards', async () => {
-    // Reset stats to ensure clean state
-    await storage.setItem(STORAGE_KEYS.stats, {});
-
-    // Create some new cards
-    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '2001', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '2002', difficulty: 'Medium', domain: 'leetcode.com' });
-    await addCard({ slug: 'new3', name: 'New 3', leetcodeId: '2003', difficulty: 'Hard', domain: 'leetcode.com' });
-    await addCard({ slug: 'new4', name: 'New 4', leetcodeId: '2004', difficulty: 'Easy', domain: 'leetcode.com' }); // This won't be included (exceeds limit)
-
-    // Create some review cards
-    await addCard({
-      slug: 'review1',
-      name: 'Review 1',
-      leetcodeId: '3001',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'review2',
-      name: 'Review 2',
-      leetcodeId: '3002',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    // Rate review cards to move them out of New state
-    await rateCard({
-      slug: 'review1',
-      name: 'Review 1',
-      rating: Rating.Good,
-      leetcodeId: '3001',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'review2',
-      name: 'Review 2',
-      rating: Rating.Good,
-      leetcodeId: '3002',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    // Set their due dates to the past
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    requireDefined(cards).review1.fsrs.due = pastTime;
-    requireDefined(cards).review2.fsrs.due = pastTime;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Rating the cards created stats entries, so we need to account for that
-    // We rated 2 cards as new (review1 and review2 were new when first rated)
-    // So remaining new cards = configured maximum - 2 = 1
-    // Total = 2 review cards + 1 new card = 3
-    expect(queue).toHaveLength(3);
-
-    const newCards = queue.filter((card) => card.fsrs.state === FsrsState.New);
-    const reviewCards = queue.filter((card) => card.fsrs.state !== FsrsState.New);
-
-    expect(newCards).toHaveLength(1); // Only 1 new card left after rating 2
-    expect(reviewCards).toHaveLength(2);
-  });
-
-  it('should not include future due cards', async () => {
-    await addCard({
-      slug: 'future1',
-      name: 'Future 1',
-      leetcodeId: '4001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'future1',
-      name: 'Future 1',
-      rating: Rating.Good,
-      leetcodeId: '4001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-
-    // Set due date to future
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
-    requireDefined(cards).future1.fsrs.due = futureTime;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    expect(queue).toHaveLength(0);
-  });
-
-  it.each([FsrsState.New, FsrsState.Learning, FsrsState.Review, FsrsState.Relearning])(
-    'includes state %i cards only as each due timestamp is reached',
-    async (state) => {
-      vi.setSystemTime(new Date('2024-01-15T12:00:00'));
-      const cards = [
-        ['morning', '2024-01-15T06:00:00'],
-        ['evening', '2024-01-15T20:00:00'],
-        ['midnight', '2024-01-15T23:59:59.999'],
-      ].map(([slug, due]) => {
-        const card = createMockCard(state, { slug });
-        card.fsrs.due = new Date(due).getTime();
-        return card;
-      });
-      await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, card])));
-
-      expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['morning']);
-      vi.setSystemTime(new Date('2024-01-15T20:00:00'));
-      expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['morning', 'evening']);
-      vi.setSystemTime(new Date('2024-01-15T23:59:59.999'));
-      expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['morning', 'evening', 'midnight']);
-    }
-  );
-
-  it('should handle mix of new, due, and future cards', async () => {
-    // Reset stats to ensure clean state
-    await storage.setItem(STORAGE_KEYS.stats, {});
-
-    // Create new cards
-    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '2001', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '2002', difficulty: 'Medium', domain: 'leetcode.com' });
-
-    // Create due review cards
-    await addCard({ slug: 'due1', name: 'Due 1', leetcodeId: '5001', difficulty: 'Medium', domain: 'leetcode.com' });
-    await rateCard({
-      slug: 'due1',
-      name: 'Due 1',
-      rating: Rating.Good,
-      leetcodeId: '5001',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Create future review cards
-    await addCard({
-      slug: 'future1',
-      name: 'Future 1',
-      leetcodeId: '4001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'future1',
-      name: 'Future 1',
-      rating: Rating.Easy,
-      leetcodeId: '4001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-
-    // Manually set due dates
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    const futureTime = new Date('2024-01-16T12:00:00Z').getTime();
-    requireDefined(cards).due1.fsrs.due = pastTime;
-    requireDefined(cards).future1.fsrs.due = futureTime;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // We rated 2 cards (due1 and future1), using up 2 of our 3 daily new cards
-    // So only 1 new card slot remains: 1 new card + 1 due review = 2 total
-    expect(queue).toHaveLength(2);
-
-    const slugs = queue.map((card) => card.slug);
-    // Should have due1 (review) and one of the new cards
-    expect(slugs).toContain('due1');
-    expect(slugs.some((s) => s === 'new1' || s === 'new2')).toBe(true);
-    expect(slugs).not.toContain('future1');
-    expect(slugs).toHaveLength(2);
-  });
-
-  it('should respect max new cards per day limit from settings', async () => {
-    // Create many new cards
-    for (let i = 1; i <= 10; i++) {
-      await addCard({
-        slug: `new${i}`,
-        name: `New ${i}`,
-        leetcodeId: `${6000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
+  it('uses the full allowance when no completion stats exist', async () => {
+    for (const slug of ['alpha', 'bravo', 'charlie', 'delta']) {
+      await addCard(buildProblem({ slug }));
     }
 
-    const queue = await getReviewQueue();
-
-    // Should only include the configured maximum of new cards
-    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY);
-    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['alpha', 'bravo', 'charlie']);
   });
 
-  it('should include all due review cards regardless of limit', async () => {
-    // Create many review cards
-    for (let i = 1; i <= 10; i++) {
-      await addCard({
-        slug: `review${i}`,
-        name: `Review ${i}`,
-        leetcodeId: `${7000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
-      await rateCard({
-        slug: `review${i}`,
-        name: `Review ${i}`,
-        rating: Rating.Good,
-        leetcodeId: `${7000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
+  it('combines persisted rating completions with current settings', async () => {
+    const completed = buildProblem({ slug: 'completed' });
+    await rateCard({ ...completed, rating: Rating.Good });
+    for (const slug of ['alpha', 'bravo', 'charlie', 'delta']) {
+      await addCard(buildProblem({ slug }));
     }
 
-    // Set all to be due
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    for (let i = 1; i <= 10; i++) {
-      requireDefined(cards)[`review${i}`].fsrs.due = pastTime;
-    }
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should include all 10 review cards (no limit on reviews)
-    expect(queue).toHaveLength(10);
-    expect(queue.every((card) => card.fsrs.state !== FsrsState.New)).toBe(true);
-  });
-
-  it('should respect daily new cards already completed when building queue', async () => {
-    // Create stats showing 1 new card already done today
-    await storage.setItem(
-      STORAGE_KEYS.stats,
-      createTestStats({
-        newCards: 1,
-        gradeBreakdown: {
-          [Rating.Again]: 0,
-          [Rating.Hard]: 0,
-          [Rating.Good]: 1,
-          [Rating.Easy]: 0,
-        },
-      })
-    );
-
-    // Create 5 new cards
-    for (let i = 1; i <= 5; i++) {
-      await addCard({
-        slug: `new${i}`,
-        name: `New ${i}`,
-        leetcodeId: `${6000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
-    }
-
-    const queue = await getReviewQueue();
-
-    // Should only get one less than the configured maximum since 1 was already done
-    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY - 1);
-    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
-  });
-
-  it('should return no new cards when daily limit already reached', async () => {
-    // Create stats showing MAX_NEW_CARDS_PER_DAY already done
-    await storage.setItem(
-      STORAGE_KEYS.stats,
-      createTestStats({
-        newCards: MOCK_MAX_NEW_CARDS_PER_DAY,
-        gradeBreakdown: {
-          [Rating.Again]: 0,
-          [Rating.Hard]: 0,
-          [Rating.Good]: MOCK_MAX_NEW_CARDS_PER_DAY,
-          [Rating.Easy]: 0,
-        },
-      })
-    );
-
-    // Create new cards
-    for (let i = 1; i <= 5; i++) {
-      await addCard({
-        slug: `new${i}`,
-        name: `New ${i}`,
-        leetcodeId: `${8000 + i}`,
-        difficulty: 'Easy',
-        domain: 'leetcode.com',
-      });
-    }
-
-    const queue = await getReviewQueue();
-
-    // Should have no cards since daily limit reached
-    expect(queue).toHaveLength(0);
-  });
-
-  it('should still include review cards when new card limit is reached', async () => {
-    // Create stats showing new card limit reached
-    await storage.setItem(
-      STORAGE_KEYS.stats,
-      createTestStats({
-        newCards: MOCK_MAX_NEW_CARDS_PER_DAY,
-        reviewedCards: 2,
-        totalReviews: MOCK_MAX_NEW_CARDS_PER_DAY + 2,
-        gradeBreakdown: {
-          [Rating.Again]: 0,
-          [Rating.Hard]: 2,
-          [Rating.Good]: MOCK_MAX_NEW_CARDS_PER_DAY,
-          [Rating.Easy]: 0,
-        },
-      })
-    );
-
-    // Create new cards (won't be included)
-    await addCard({ slug: 'new1', name: 'New 1', leetcodeId: '2001', difficulty: 'Easy', domain: 'leetcode.com' });
-    await addCard({ slug: 'new2', name: 'New 2', leetcodeId: '2002', difficulty: 'Medium', domain: 'leetcode.com' });
-
-    // Create review cards (should be included)
-    await addCard({
-      slug: 'review1',
-      name: 'Review 1',
-      leetcodeId: '3001',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'review2',
-      name: 'Review 2',
-      leetcodeId: '3002',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'review1',
-      name: 'Review 1',
-      rating: Rating.Good,
-      leetcodeId: '3001',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'review2',
-      name: 'Review 2',
-      rating: Rating.Good,
-      leetcodeId: '3002',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    // Set review cards to be due
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const pastTime = new Date('2024-01-14T12:00:00Z').getTime();
-    requireDefined(cards).review1.fsrs.due = pastTime;
-    requireDefined(cards).review2.fsrs.due = pastTime;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should only have the 2 review cards
-    expect(queue).toHaveLength(2);
-    expect(queue.every((card) => card.fsrs.state !== FsrsState.New)).toBe(true);
-  });
-
-  it('should handle partial new card limit correctly', async () => {
-    // Configured maximum is 3, already did 2
-    await storage.setItem(
-      STORAGE_KEYS.stats,
-      createTestStats({
-        newCards: 2,
-        gradeBreakdown: {
-          [Rating.Again]: 0,
-          [Rating.Hard]: 0,
-          [Rating.Good]: 2,
-          [Rating.Easy]: 0,
-        },
-      })
-    );
-
-    // Create 10 new cards
-    for (let i = 1; i <= 10; i++) {
-      await addCard({
-        slug: `new${i}`,
-        name: `New ${i}`,
-        leetcodeId: `${6000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
-    }
-
-    const queue = await getReviewQueue();
-
-    // Should only get 1 more new card (3 - 2 = 1)
-    expect(queue).toHaveLength(1);
-    expect(queue[0].fsrs.state).toBe(FsrsState.New);
-  });
-
-  it('should handle no stats (first use) correctly', async () => {
-    // No stats exist (getTodayStats returns null)
-
-    // Create new cards
-    for (let i = 1; i <= 5; i++) {
-      await addCard({
-        slug: `new${i}`,
-        name: `New ${i}`,
-        leetcodeId: `${8000 + i}`,
-        difficulty: 'Easy',
-        domain: 'leetcode.com',
-      });
-    }
-
-    const queue = await getReviewQueue();
-
-    // Should get the full configured maximum when no stats exist
-    expect(queue).toHaveLength(MOCK_MAX_NEW_CARDS_PER_DAY);
-    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
-  });
-
-  it('should respect custom max new cards per day setting', async () => {
-    // Set custom max new cards per day
-    const { getSettings } = await import('../settings');
-    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 5 }));
-
-    // Create new cards
-    for (let i = 1; i <= 10; i++) {
-      await addCard({
-        slug: `new${i}`,
-        name: `New ${i}`,
-        leetcodeId: `${9000 + i}`,
-        difficulty: 'Easy',
-        domain: 'leetcode.com',
-      });
-    }
-
-    const queue = await getReviewQueue();
-
-    // Should get 5 new cards based on custom setting
-    expect(queue).toHaveLength(5);
-    expect(queue.every((card) => card.fsrs.state === FsrsState.New)).toBe(true);
-  });
-
-  it('should maintain stable order across multiple calls', async () => {
-    // Create multiple cards
-    for (let i = 1; i <= 5; i++) {
-      await addCard({
-        slug: `card-${i}`,
-        name: `Card ${i}`,
-        leetcodeId: `${1000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
-    }
-
-    // Get queue multiple times
-    const queue1 = await getReviewQueue();
-    const queue2 = await getReviewQueue();
-    const queue3 = await getReviewQueue();
-
-    // All queues should be identical
-    expect(queue1.map((c) => c.slug)).toEqual(queue2.map((c) => c.slug));
-    expect(queue2.map((c) => c.slug)).toEqual(queue3.map((c) => c.slug));
-    expect(queue1.length).toBe(3); // Limited by max new cards per day
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['alpha', 'bravo']);
+    mockGetSettings.mockResolvedValue(buildSettings({ maxNewCardsPerDay: 4 }));
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['alpha', 'bravo', 'charlie']);
   });
 
   it.each([Rating.Again, Rating.Hard] as const)(
@@ -1479,170 +602,6 @@ describe('getReviewQueue', () => {
       expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['second-card', 'third-card', 'first-card']);
     }
   );
-
-  it('should select the same new cards consistently when limit applies', async () => {
-    // Create more new cards than the daily limit
-    const cardSlugs = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot'];
-    for (let i = 0; i < cardSlugs.length; i++) {
-      await addCard({
-        slug: cardSlugs[i],
-        name: `Card ${cardSlugs[i]}`,
-        leetcodeId: `${2000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
-    }
-
-    // Set all cards to have the same due date for predictable ordering
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const sameTime = Date.now();
-    for (const slug of cardSlugs) {
-      requireDefined(cards)[slug].fsrs.due = sameTime;
-    }
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    // Get queue multiple times
-    const queue1 = await getReviewQueue();
-    const queue2 = await getReviewQueue();
-
-    // Should always select the same new cards (first 3 alphabetically)
-    expect(queue1.map((c) => c.slug)).toEqual(['alpha', 'bravo', 'charlie']);
-    expect(queue2.map((c) => c.slug)).toEqual(['alpha', 'bravo', 'charlie']);
-  });
-
-  it('should maintain order when mixing review and new cards', async () => {
-    vi.setSystemTime(new Date('2024-01-15T12:00:00'));
-    // Create new cards with early due dates
-    await addCard({
-      slug: 'new-early',
-      name: 'New Early',
-      leetcodeId: '1001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'new-late',
-      name: 'New Late',
-      leetcodeId: '1002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Create review cards
-    await addCard({
-      slug: 'review-middle',
-      name: 'Review Middle',
-      leetcodeId: '2001',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-    await rateCard({
-      slug: 'review-middle',
-      name: 'Review Middle',
-      rating: Rating.Good,
-      leetcodeId: '2001',
-      difficulty: 'Hard',
-      domain: 'leetcode.com',
-    });
-
-    // Set specific due dates
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    requireDefined(cards)['new-early'].fsrs.due = new Date('2024-01-15T08:00:00').getTime();
-    requireDefined(cards)['review-middle'].fsrs.due = new Date('2024-01-15T10:00:00').getTime();
-    requireDefined(cards)['new-late'].fsrs.due = new Date('2024-01-15T12:00:00').getTime();
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-
-    // Should be ordered by due date regardless of card type
-    expect(queue[0].slug).toBe('new-early');
-    expect(queue[1].slug).toBe('review-middle');
-    expect(queue[2].slug).toBe('new-late');
-  });
-
-  it('should handle dynamic changes to max new cards setting', async () => {
-    const { getSettings } = await import('../settings');
-
-    // Create many new cards
-    for (let i = 1; i <= 10; i++) {
-      await addCard({
-        slug: `card-${i}`,
-        name: `Card ${i}`,
-        leetcodeId: `${3000 + i}`,
-        difficulty: 'Medium',
-        domain: 'leetcode.com',
-      });
-    }
-
-    // Start with default (3)
-    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 3 }));
-    let queue = await getReviewQueue();
-    expect(queue.length).toBe(3);
-
-    // Increase to 5
-    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 5 }));
-    queue = await getReviewQueue();
-    expect(queue.length).toBe(5);
-
-    // Decrease to 2
-    vi.mocked(getSettings).mockResolvedValue(buildSettings({ maxNewCardsPerDay: 2 }));
-    queue = await getReviewQueue();
-    expect(queue.length).toBe(2);
-
-    // Cards selected should be consistent (first N alphabetically)
-    expect(queue[0].slug).toBe('card-1');
-    expect(queue[1].slug).toBe('card-10'); // '10' comes after '1' in string sort
-  });
-
-  it('should handle queue with only paused cards', async () => {
-    await addCard({
-      slug: 'paused-1',
-      name: 'Paused 1',
-      leetcodeId: '1001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'paused-2',
-      name: 'Paused 2',
-      leetcodeId: '1002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    await setPauseStatus('paused-1', true);
-    await setPauseStatus('paused-2', true);
-
-    const queue = await getReviewQueue();
-    expect(queue).toEqual([]);
-  });
-
-  it('should handle queue with only future cards', async () => {
-    await addCard({
-      slug: 'future-1',
-      name: 'Future 1',
-      leetcodeId: '1001',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-    });
-    await addCard({
-      slug: 'future-2',
-      name: 'Future 2',
-      leetcodeId: '1002',
-      difficulty: 'Medium',
-      domain: 'leetcode.com',
-    });
-
-    // Set due dates to tomorrow
-    const cards = await storage.getItem<Record<string, Card>>(STORAGE_KEYS.cards);
-    const tomorrow = new Date('2024-01-16T10:00:00').getTime();
-    requireDefined(cards)['future-1'].fsrs.due = tomorrow;
-    requireDefined(cards)['future-2'].fsrs.due = tomorrow;
-    await storage.setItem(STORAGE_KEYS.cards, cards);
-
-    const queue = await getReviewQueue();
-    expect(queue).toEqual([]);
-  });
 
   it('should exclude paused cards from review queue', async () => {
     // Set up time

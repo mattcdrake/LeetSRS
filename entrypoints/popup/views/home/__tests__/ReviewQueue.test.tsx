@@ -136,6 +136,8 @@ describe('ReviewQueue', () => {
       await waitFor(() => {
         expect(screen.getByText('No cards to review!')).toBeInTheDocument();
         expect(screen.getByText(/Add problems on LeetCode/)).toBeInTheDocument();
+        expect(screen.queryByTestId('review-card')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('delete-button')).not.toBeInTheDocument();
       });
     });
   });
@@ -149,20 +151,9 @@ describe('ReviewQueue', () => {
         expect(screen.getByText('Two Sum')).toBeInTheDocument();
         expect(screen.getByTestId('notes-section')).toBeInTheDocument();
         expect(screen.getByText('Notes for 1')).toBeInTheDocument();
+        expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
+        expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
       });
-    });
-
-    it('should only display one card at a time', async () => {
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for state to initialize
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      // Should not display other cards
-      expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-      expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
     });
   });
 
@@ -355,21 +346,6 @@ describe('ReviewQueue', () => {
 
       consoleSpy.mockRestore();
     });
-
-    it('should not crash when queue is empty and handleRating is called', async () => {
-      seedQueue([]);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for empty state
-      await waitFor(() => {
-        expect(screen.getByText('No cards to review!')).toBeInTheDocument();
-      });
-
-      // Even though there are no buttons to click, we can test the function doesn't crash
-      // by checking that mutateAsync is never called
-      expect(mockMutateAsync).not.toHaveBeenCalled();
-    });
   });
 
   describe('Card Deletion', () => {
@@ -461,23 +437,6 @@ describe('ReviewQueue', () => {
         expect(goodButton).toBeDisabled();
         expect(easyButton).toBeDisabled();
       });
-    });
-
-    it('should not crash when queue is empty and handleDelete is called', async () => {
-      seedQueue([]);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for empty state
-      await waitFor(() => {
-        expect(screen.getByText('No cards to review!')).toBeInTheDocument();
-      });
-
-      // Delete button shouldn't be visible when queue is empty
-      expect(screen.queryByTestId('delete-button')).not.toBeInTheDocument();
-
-      // Verify remove mutation is never called
-      expect(mockRemoveMutateAsync).not.toHaveBeenCalled();
     });
 
     it('should handle rapid delete clicks correctly', async () => {
@@ -648,40 +607,6 @@ describe('ReviewQueue', () => {
 
       const cardContainer = screen.getByTestId('review-card').parentElement;
       await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
-    });
-  });
-
-  describe('Component Integration', () => {
-    it('should pass correct props to ReviewCard', async () => {
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        const reviewCard = screen.getByTestId('review-card');
-        expect(reviewCard).toBeInTheDocument();
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-    });
-
-    it('should pass correct callbacks to ActionsSection', async () => {
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByTestId('actions-section')).toBeInTheDocument();
-        expect(screen.getByTestId('delete-button')).toBeInTheDocument();
-        expect(screen.getByTestId('delay-1-button')).toBeInTheDocument();
-        expect(screen.getByTestId('delay-5-button')).toBeInTheDocument();
-      });
-    });
-
-    it('should pass correct cardId to NotesSection', async () => {
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Notes for 1')).toBeInTheDocument();
-      });
     });
   });
 });

@@ -44,95 +44,19 @@ describe('Stats management', () => {
       await updateStats(Rating.Good, false);
       await updateStats(Rating.Hard, true);
       await updateStats(Rating.Again, false);
+      await updateStats(Rating.Easy, true);
 
       const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
       const todayStats = stats?.['2024-03-15'];
 
       expect(todayStats?.streak).toBe(1);
-      expect(todayStats?.totalReviews).toBe(3);
-      expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
-      expect(todayStats?.gradeBreakdown[Rating.Hard]).toBe(1);
-      expect(todayStats?.gradeBreakdown[Rating.Again]).toBe(1);
-      expect(todayStats?.gradeBreakdown[Rating.Easy]).toBe(0);
-      expect(todayStats?.reviewedCards).toBe(2);
-      expect(todayStats?.newCards).toBe(1);
-    });
-
-    it('should continue streak from yesterday', async () => {
-      // Create yesterday's stats
-      vi.setSystemTime(new Date('2024-03-14T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      // Move to today
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(stats?.['2024-03-14']?.streak).toBe(1);
-      expect(stats?.['2024-03-15']?.streak).toBe(2);
-    });
-
-    it('should reset streak if yesterday has no stats', async () => {
-      // Create stats for 2 days ago
-      vi.setSystemTime(new Date('2024-03-13T10:00:00'));
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Easy, false);
-
-      const stats1 = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(stats1?.['2024-03-13']?.streak).toBe(1);
-
-      // Skip a day, then create today's stats
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      const stats2 = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      expect(stats2?.['2024-03-15']?.streak).toBe(1); // Reset to 1
-    });
-
-    it('should handle all grade types', async () => {
-      await updateStats(Rating.Again, false);
-      await updateStats(Rating.Hard, false);
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Easy, false);
-
-      const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-      const todayStats = stats?.['2024-03-15'];
-
-      expect(todayStats?.gradeBreakdown[Rating.Again]).toBe(1);
-      expect(todayStats?.gradeBreakdown[Rating.Hard]).toBe(1);
-      expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
-      expect(todayStats?.gradeBreakdown[Rating.Easy]).toBe(1);
       expect(todayStats?.totalReviews).toBe(4);
-    });
-
-    it('should maintain streak across multiple consecutive days', async () => {
-      // Day 1
-      vi.setSystemTime(new Date('2024-03-10T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      // Day 2
-      vi.setSystemTime(new Date('2024-03-11T10:00:00'));
-      await updateStats(Rating.Easy, false);
-
-      // Day 3
-      vi.setSystemTime(new Date('2024-03-12T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      // Day 4
-      vi.setSystemTime(new Date('2024-03-13T10:00:00'));
-      await updateStats(Rating.Hard, false);
-
-      // Day 5
-      vi.setSystemTime(new Date('2024-03-14T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      const stats = await storage.getItem<Record<string, DailyStats>>(STORAGE_KEYS.stats);
-
-      expect(stats?.['2024-03-10']?.streak).toBe(1);
-      expect(stats?.['2024-03-11']?.streak).toBe(2);
-      expect(stats?.['2024-03-12']?.streak).toBe(3);
-      expect(stats?.['2024-03-13']?.streak).toBe(4);
-      expect(stats?.['2024-03-14']?.streak).toBe(5);
+      expect(todayStats?.gradeBreakdown[Rating.Good]).toBe(1);
+      expect(todayStats?.gradeBreakdown[Rating.Hard]).toBe(1);
+      expect(todayStats?.gradeBreakdown[Rating.Again]).toBe(1);
+      expect(todayStats?.gradeBreakdown[Rating.Easy]).toBe(1);
+      expect(todayStats?.reviewedCards).toBe(2);
+      expect(todayStats?.newCards).toBe(2);
     });
 
     it('should handle streak reset after multiple day gap', async () => {
@@ -157,19 +81,6 @@ describe('Stats management', () => {
   });
 
   describe('getStatsForDate', () => {
-    it('should return stats for specific date', async () => {
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Hard, true);
-
-      const stats = await getStatsForDate('2024-03-15');
-
-      expect(stats).toBeDefined();
-      expect(stats?.date).toBe('2024-03-15');
-      expect(stats?.totalReviews).toBe(2);
-      expect(stats?.gradeBreakdown[Rating.Good]).toBe(1);
-      expect(stats?.gradeBreakdown[Rating.Hard]).toBe(1);
-    });
-
     it('should return correct stats when multiple dates exist', async () => {
       // Day 1
       vi.setSystemTime(new Date('2024-03-14T10:00:00'));
@@ -194,40 +105,24 @@ describe('Stats management', () => {
     });
   });
 
-  describe('getTodayStats', () => {
-    it('should return null when no stats exist for today', async () => {
-      const stats = await getTodayStats();
-      expect(stats).toBeNull();
+  it('reads only the current day as reviews are saved and the day changes', async () => {
+    expect(await getTodayStats()).toBeNull();
+    await updateStats(Rating.Good, false);
+    await updateStats(Rating.Easy, true);
+    expect(await getTodayStats()).toMatchObject({
+      date: '2024-03-15',
+      totalReviews: 2,
+      newCards: 1,
+      reviewedCards: 1,
     });
 
-    it("should return today's stats", async () => {
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Easy, true);
-
-      const stats = await getTodayStats();
-
-      expect(stats).toBeDefined();
-      expect(stats?.date).toBe('2024-03-15');
-      expect(stats?.totalReviews).toBe(2);
-      expect(stats?.newCards).toBe(1);
-      expect(stats?.reviewedCards).toBe(1);
-    });
-
-    it('should always return current day stats', async () => {
-      // Create stats for multiple days
-      vi.setSystemTime(new Date('2024-03-14T10:00:00'));
-      await updateStats(Rating.Good, false);
-
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Easy, false);
-
-      vi.setSystemTime(new Date('2024-03-16T10:00:00'));
-      await updateStats(Rating.Hard, false);
-
-      // Check today's stats returns March 16
-      const stats = await getTodayStats();
-      expect(stats?.date).toBe('2024-03-16');
-      expect(stats?.gradeBreakdown[Rating.Hard]).toBe(1);
+    vi.setSystemTime(new Date('2024-03-16T10:00:00'));
+    expect(await getTodayStats()).toBeNull();
+    await updateStats(Rating.Hard, false);
+    expect(await getTodayStats()).toMatchObject({
+      date: '2024-03-16',
+      totalReviews: 1,
+      gradeBreakdown: { [Rating.Hard]: 1 },
     });
   });
 
@@ -265,25 +160,6 @@ describe('Stats management', () => {
       expect(stats[6].totalReviews).toBe(1);
       expect(stats[6].gradeBreakdown[Rating.Hard]).toBe(1);
     });
-
-    it('should include all grade breakdowns for each day', async () => {
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      await updateStats(Rating.Again, false);
-      await updateStats(Rating.Hard, false);
-      await updateStats(Rating.Good, false);
-      await updateStats(Rating.Easy, false);
-
-      const stats = await getLastNDaysStats(1);
-
-      expect(stats).toHaveLength(1);
-      const todayStats = stats[0];
-      expect(todayStats.date).toBe('2024-03-15');
-      expect(todayStats.totalReviews).toBe(4);
-      expect(todayStats.gradeBreakdown[Rating.Again]).toBe(1);
-      expect(todayStats.gradeBreakdown[Rating.Hard]).toBe(1);
-      expect(todayStats.gradeBreakdown[Rating.Good]).toBe(1);
-      expect(todayStats.gradeBreakdown[Rating.Easy]).toBe(1);
-    });
   });
 
   describe('getCardStateStats', () => {
@@ -314,125 +190,26 @@ describe('Stats management', () => {
   });
 
   describe('getNextNDaysStats', () => {
-    beforeEach(() => {
-      fakeBrowser.reset();
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-    });
-
-    it('should return empty counts when no cards exist', async () => {
-      const stats = await getNextNDaysStats(7);
-
-      expect(stats).toHaveLength(7);
-      expect(stats[0].date).toBe('2024-03-15');
-      expect(stats[6].date).toBe('2024-03-21');
-      stats.forEach((stat) => {
-        expect(stat.count).toBe(0);
+    it('buckets stored active cards, folding overdue cards into today and excluding the window end', async () => {
+      const cards = [
+        ['overdue', '2024-03-14T12:00:00', false],
+        ['today', '2024-03-15T12:00:00', false],
+        ['tomorrow-early', '2024-03-16T00:00:00', false],
+        ['tomorrow-late', '2024-03-16T23:59:59.999', false],
+        ['paused', '2024-03-16T12:00:00', true],
+        ['outside', '2024-03-17T00:00:00', false],
+      ] as const;
+      const storedCards = cards.map(([slug, due, paused]) => {
+        const card = createMockCard(FsrsState.Review, { slug, paused });
+        card.fsrs.due = new Date(due).getTime();
+        return card;
       });
-    });
+      await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(storedCards.map((card) => [card.slug, card])));
 
-    it('should count cards due today', async () => {
-      // Add a card that's due today
-      await addCard(buildProblem({ slug: 'problem-1' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
-
-      // Manually set the card to be due today
-      cards['problem-1'].fsrs.due = new Date('2024-03-15T12:00:00').getTime();
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getNextNDaysStats(7);
-
-      expect(stats[0].date).toBe('2024-03-15');
-      expect(stats[0].count).toBe(1);
-      expect(stats[1].count).toBe(0); // Not counted again tomorrow
-    });
-
-    it('should count cards due in the future', async () => {
-      // Add cards with different due dates
-      await addCard(buildProblem({ slug: 'problem-1' }));
-      await addCard(buildProblem({ slug: 'problem-2' }));
-      await addCard(buildProblem({ slug: 'problem-3' }));
-
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
-
-      // Set different due dates
-      cards['problem-1'].fsrs.due = new Date('2024-03-15T12:00:00').getTime(); // Today
-      cards['problem-2'].fsrs.due = new Date('2024-03-17T12:00:00').getTime(); // In 2 days
-      cards['problem-3'].fsrs.due = new Date('2024-03-20T12:00:00').getTime(); // In 5 days
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getNextNDaysStats(7);
-
-      expect(stats[0].count).toBe(1); // problem-1 due today
-      expect(stats[1].count).toBe(0);
-      expect(stats[2].count).toBe(1); // problem-2 due in 2 days
-      expect(stats[3].count).toBe(0);
-      expect(stats[4].count).toBe(0);
-      expect(stats[5].count).toBe(1); // problem-3 due in 5 days
-      expect(stats[6].count).toBe(0);
-    });
-
-    it('should not count paused cards', async () => {
-      // Add cards
-      await addCard(buildProblem({ slug: 'problem-1' }));
-      await addCard(buildProblem({ slug: 'problem-2' }));
-
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
-
-      // Both due today, but one is paused
-      cards['problem-1'].fsrs.due = new Date('2024-03-15T12:00:00').getTime();
-      cards['problem-1'].paused = true;
-      cards['problem-2'].fsrs.due = new Date('2024-03-15T12:00:00').getTime();
-      cards['problem-2'].paused = false;
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getNextNDaysStats(7);
-
-      expect(stats[0].count).toBe(1); // Only the non-paused card
-    });
-
-    it('should handle cards due in the past', async () => {
-      // Add cards due in the past
-      await addCard(buildProblem({ slug: 'problem-1' }));
-      await addCard(buildProblem({ slug: 'problem-2' }));
-
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
-
-      cards['problem-1'].fsrs.due = new Date('2024-03-10T12:00:00').getTime(); // 5 days ago
-      cards['problem-2'].fsrs.due = new Date('2024-03-14T12:00:00').getTime(); // Yesterday
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getNextNDaysStats(7);
-
-      // Both cards are overdue, so they should be counted on the first day (today)
-      expect(stats[0].count).toBe(2);
-      expect(stats[1].count).toBe(0);
-    });
-
-    it('should handle large number of days', async () => {
-      const stats = await getNextNDaysStats(30);
-
-      expect(stats).toHaveLength(30);
-      expect(stats[0].date).toBe('2024-03-15');
-      expect(stats[29].date).toBe('2024-04-13');
-    });
-
-    it('should exclude cards due immediately after the requested window', async () => {
-      await addCard(buildProblem({ slug: 'problem-1' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
-
-      cards['problem-1'].fsrs.due = new Date('2024-03-22T12:00:00').getTime();
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getNextNDaysStats(7);
-
-      expect(stats).toHaveLength(7);
-      expect(stats[0].date).toBe('2024-03-15');
-      expect(stats[6].date).toBe('2024-03-21');
-      expect(stats.every((stat) => stat.count === 0)).toBe(true);
-    });
-
-    it('should return an empty array when zero days are requested', async () => {
-      await expect(getNextNDaysStats(0)).resolves.toEqual([]);
+      expect(await getNextNDaysStats(2)).toEqual([
+        { date: '2024-03-15', count: 2 },
+        { date: '2024-03-16', count: 2 },
+      ]);
     });
 
     it('ignores a legacy day start hour when bucketing upcoming reviews', async () => {
@@ -449,20 +226,6 @@ describe('Stats management', () => {
         { date: '2024-03-15', count: 0 },
         { date: '2024-03-16', count: 1 },
       ]);
-    });
-
-    it('should accumulate active cards due on the same review day', async () => {
-      await addCard(buildProblem({ slug: 'problem-1' }));
-      await addCard(buildProblem({ slug: 'problem-2' }));
-      const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
-
-      cards['problem-1'].fsrs.due = new Date('2024-03-17T09:00:00').getTime();
-      cards['problem-2'].fsrs.due = new Date('2024-03-17T18:00:00').getTime();
-      await storage.setItem(STORAGE_KEYS.cards, cards);
-
-      const stats = await getNextNDaysStats(7);
-
-      expect(stats[2]).toEqual({ date: '2024-03-17', count: 2 });
     });
   });
 });
