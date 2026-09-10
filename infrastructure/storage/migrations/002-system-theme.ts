@@ -1,7 +1,8 @@
 import type { Migration } from './contract';
 import { loadLegacyData } from './legacy-storage';
+
 // Adding the system preference changed no stored values. Preserve all input, including malformed records.
-export function migrate(data: unknown): unknown {
+function migrate(data: unknown): unknown {
   return data;
 }
 

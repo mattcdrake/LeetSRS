@@ -11,7 +11,7 @@ function validateDataset(data: unknown): asserts data is z.infer<typeof datasetS
   datasetSchema.parse(data);
 }
 
-export function migrate(data: unknown): unknown {
+function migrate(data: unknown): unknown {
   validateDataset(data);
   if (!data.cards) return data;
   return {
