@@ -14,9 +14,32 @@ export const LATEST_SCHEMA_VERSION = migrations.length;
 
 const snapshotSchema = z.object({
   version: z.number().int().positive(),
-  // Validate JSON compatibility without using Zod's parsed copy, which strips keys such as __proto__.
-  input: z.unknown().refine((input) => z.json().safeParse(input).success, 'Migration input must be lossless JSON data'),
+  input: z.unknown().refine(isJsonInput, 'Migration input must be lossless JSON data'),
 });
+
+// Visit every own JSON key. Schema parsers may skip __proto__, losing data or overlooking invalid values.
+function isJsonInput(value: unknown): boolean {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (typeof value !== 'object') return false;
+  const properties = Object.getOwnPropertyDescriptors(value);
+  if (Array.isArray(value)) {
+    return (
+      Reflect.ownKeys(value).length === value.length + 1 &&
+      Array.from({ length: value.length }, (_, index) => properties[index]).every(
+        (property) => property !== undefined && 'value' in property && isJsonInput(property.value)
+      )
+    );
+  }
+  const prototype = Object.getPrototypeOf(value);
+  return (
+    (prototype === Object.prototype || prototype === null) &&
+    Object.getOwnPropertySymbols(value).length === 0 &&
+    Object.values(properties).every(
+      (property) => property.enumerable && 'value' in property && isJsonInput(property.value)
+    )
+  );
+}
 
 function checkVersion(version: number, latest: number): void {
   if (!Number.isInteger(version) || version < 0 || version > latest) {

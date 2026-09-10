@@ -257,20 +257,28 @@ describe('startup snapshot recovery', () => {
     expect(await getCurrentSchemaVersion()).toBe(1);
   });
 
-  it.each([undefined, { requiredInput: undefined }, { requiredInput: Number.NaN }])(
-    'rejects input that cannot be saved losslessly as JSON: %j',
-    async (input) => {
-      const before = await storage.snapshot('local');
-      const migration: Migration = {
-        ...move,
-        load: async () => input,
-        migrate: () => expected,
-      };
+  it.each([
+    undefined,
+    { requiredInput: undefined },
+    { requiredInput: Number.NaN },
+    Object.fromEntries([['__proto__', { requiredInput: undefined }]]),
+    Object.fromEntries([['__proto__', { requiredInput: Number.NaN }]]),
+    new Date(0),
+    Array(1),
+    Object.assign([], { requiredInput: true }),
+    Object.defineProperty({}, 'requiredInput', { value: true }),
+    Object.defineProperty({}, 'requiredInput', { enumerable: true, get: () => true }),
+  ])('rejects input that cannot be saved losslessly as JSON: %j', async (input) => {
+    const before = await storage.snapshot('local');
+    const migration: Migration = {
+      ...move,
+      load: async () => input,
+      migrate: () => expected,
+    };
 
-      await expect(runStartupMigrations([migration])).rejects.toThrow('save recovery snapshot');
+    await expect(runStartupMigrations([migration])).rejects.toThrow('save recovery snapshot');
 
-      expect(await storage.snapshot('local')).toEqual(before);
-      expect(await storage.snapshot('sync')).toEqual({});
-    }
-  );
+    expect(await storage.snapshot('local')).toEqual(before);
+    expect(await storage.snapshot('sync')).toEqual({});
+  });
 });
