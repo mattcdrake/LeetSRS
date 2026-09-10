@@ -1,5 +1,6 @@
 import type { MaybePromise } from '@webext-core/messaging';
 import { browser } from 'wxt/browser';
+import type { z } from 'zod';
 import {
   type MessageData,
   type MessageName,
@@ -36,6 +37,8 @@ import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats 
 type Command<Name extends MessageName> = {
   handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
 } & ({ kind: 'read' } | { kind: 'write'; markLocalEdit?: boolean; refreshBadge: boolean });
+
+const payloadSchemas: { [Name in MessageName]: z.ZodType<MessageData<Name>> } = messagePayloadSchemas;
 
 const commands: { [Name in MessageName]: Command<Name> } = {
   addCard: {
@@ -182,7 +185,8 @@ export default defineBackground(() => {
     const run = async () => {
       await readyPromise;
       // The name selects both the payload schema and the corresponding typed handler.
-      const payload = messagePayloadSchemas[name].parse(data) as MessageData<Name>;
+      const schema: z.ZodType<MessageData<Name>> = payloadSchemas[name];
+      const payload = schema.parse(data);
       const result = await command.handler(payload);
       if (command.kind === 'write') {
         if (command.markLocalEdit) await markDataUpdated();
