@@ -4,10 +4,10 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { DailyStats } from '@/domain/statistics';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { createMockCard } from '@/test/utils/card-mocks';
-import { getReviewQueue } from '../cards';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { getReviewQueue, rateCard } from '../cards';
 import { updateSettings } from '../settings';
-import { getLastNDaysStats, getNextNDaysStats, getTodayKey, getYesterdayKey, updateStats } from '../stats';
+import { getLastNDaysStats, getNextNDaysStats, updateStats } from '../stats';
 
 function dailyStats(date: string, newCards: number, streak = 1): DailyStats {
   return {
@@ -31,11 +31,43 @@ describe('review timing service integration', () => {
     vi.useRealTimers();
   });
 
-  it.each([
-    [getTodayKey, '2024-03-15'],
-    [getYesterdayKey, '2024-03-14'],
-  ])('%s uses the local midnight boundary', async (getKey, expected) => {
-    await expect(getKey()).resolves.toBe(expected);
+  it('keeps card creation, scheduling, and statistics on the rating start day across midnight', async () => {
+    vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
+    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-13': dailyStats('2024-03-13', 1, 7) });
+    const get = fakeBrowser.storage.local.get.bind(fakeBrowser.storage.local);
+    vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async (keys) => {
+      const result = await get(keys);
+      vi.setSystemTime(new Date('2024-03-15T00:00:00'));
+      return result;
+    });
+
+    const { card } = await rateCard({ ...buildProblem(), rating: Rating.Good });
+
+    expect(card.createdAt).toBe(new Date('2024-03-14T23:59:59.999').getTime());
+    expect(card.fsrs.last_review).toBe(card.createdAt);
+    expect(await getLastNDaysStats(2)).toEqual([dailyStats('2024-03-14', 1, 8), dailyStats('2024-03-15', 0, 0)]);
+  });
+
+  it('keeps queue eligibility and allowance on the captured time and settings during a read', async () => {
+    vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
+    const cards = ['new-a', 'new-b', 'future'].map((slug) => {
+      const card = createMockCard(State.New, { slug });
+      if (slug === 'future') card.fsrs.due = new Date('2024-03-15T00:00:00').getTime();
+      return card;
+    });
+    await storage.setItem(STORAGE_KEYS.cards, Object.fromEntries(cards.map((card) => [card.slug, card])));
+    await storage.setItem(STORAGE_KEYS.stats, { '2024-03-14': dailyStats('2024-03-14', 1) });
+    await updateSettings({ maxNewCardsPerDay: 2 });
+    const get = fakeBrowser.storage.local.get.bind(fakeBrowser.storage.local);
+    vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async (keys) => {
+      const result = await get(keys);
+      vi.setSystemTime(new Date('2024-03-15T00:00:00'));
+      await updateSettings({ maxNewCardsPerDay: 3 });
+      return result;
+    });
+
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a']);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'future']);
   });
 
   it('uses exact due times and resets the daily new-card allowance at midnight', async () => {
@@ -75,8 +107,14 @@ describe('review timing service integration', () => {
   });
 
   it.each([getLastNDaysStats, getNextNDaysStats])(
-    '%s anchors buckets to the local calendar day',
+    '%s anchors buckets to the initial local day when a read crosses midnight',
     async (getBuckets) => {
+      const get = fakeBrowser.storage.local.get.bind(fakeBrowser.storage.local);
+      vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async (keys) => {
+        const result = await get(keys);
+        vi.setSystemTime(new Date('2024-03-16T00:00:00'));
+        return result;
+      });
       expect(await getBuckets(1)).toEqual([expect.objectContaining({ date: '2024-03-15' })]);
       expect(await getBuckets(0)).toEqual([]);
     }

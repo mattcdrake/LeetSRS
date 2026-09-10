@@ -12,21 +12,12 @@ import {
 import { getAllCards } from '@/infrastructure/storage/cards';
 import { getStats, getStatsForDate, saveStats } from '@/infrastructure/storage/stats';
 
-export async function getTodayKey(): Promise<string> {
-  return formatLocalDate(new Date());
-}
-
-export async function getYesterdayKey(): Promise<string> {
-  return formatLocalDate(addLocalDays(new Date(), -1));
-}
-
-export async function updateStats(grade: Grade, isNewCard: boolean = false): Promise<void> {
-  const stats = await getStats();
-  const now = new Date();
+export async function updateStats(grade: Grade, isNewCard: boolean = false, now = new Date()): Promise<void> {
   const todayKey = formatLocalDate(now);
+  const yesterdayKey = formatLocalDate(addLocalDays(now, -1));
+  const stats = await getStats();
 
   if (!stats[todayKey]) {
-    const yesterdayKey = formatLocalDate(addLocalDays(now, -1));
     const yesterdayStats = stats[yesterdayKey];
     stats[todayKey] = createDailyStats(todayKey, yesterdayStats);
   }
@@ -38,7 +29,8 @@ export async function updateStats(grade: Grade, isNewCard: boolean = false): Pro
 }
 
 export async function getTodayStats(): Promise<DailyStats | null> {
-  return getStatsForDate(await getTodayKey());
+  const now = new Date();
+  return getStatsForDate(formatLocalDate(now));
 }
 
 export async function getCardStateStats(): Promise<Record<FsrsState, number>> {
@@ -48,13 +40,13 @@ export async function getCardStateStats(): Promise<Record<FsrsState, number>> {
 }
 
 export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
-  const stats = await getStats();
   const today = new Date();
+  const stats = await getStats();
   return calculateHistoryStats(stats, days, today);
 }
 
 export async function getNextNDaysStats(days: number): Promise<UpcomingReviewStats[]> {
-  const cards = await getAllCards();
   const today = new Date();
+  const cards = await getAllCards();
   return calculateUpcomingStats(cards, days, today);
 }

@@ -47,6 +47,21 @@ describe('shouldResetEditor', () => {
     await expect(shouldResetEditor('two-sum', 'leetcode.com')).resolves.toBe(true);
   });
 
+  it('uses the initial time and setting when a card becomes due during its read', async () => {
+    await updateSettings({ resetEditorOnDueReview: true });
+    await storeCard(makeCard({ due: new Date('2025-01-01T10:05:00') }));
+    const get = fakeBrowser.storage.local.get.bind(fakeBrowser.storage.local);
+    vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async (keys) => {
+      const result = await get(keys);
+      vi.setSystemTime(new Date('2025-01-01T10:05:00'));
+      await updateSettings({ resetEditorOnEveryProblem: true });
+      return result;
+    });
+
+    await expect(shouldResetEditor('two-sum', 'leetcode.com')).resolves.toBe(false);
+    await expect(shouldResetEditor('two-sum', 'leetcode.com')).resolves.toBe(true);
+  });
+
   it('does not reset a card from the other LeetCode domain', async () => {
     await updateSettings({ resetEditorOnDueReview: true });
     await storeCard(makeCard());
