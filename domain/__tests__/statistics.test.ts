@@ -12,7 +12,7 @@ import {
 
 describe('statistics calculations', () => {
   it('should return empty days when no stats exist', () => {
-    const stats = calculateHistoryStats({}, 7, new Date('2024-03-15T10:00:00'), 0);
+    const stats = calculateHistoryStats({}, 7, new Date('2024-03-15T10:00:00'));
 
     expect(stats).toHaveLength(7);
     stats.forEach((stat) => {
@@ -27,13 +27,11 @@ describe('statistics calculations', () => {
   });
 
   it('should handle large number of days', () => {
-    const stats = calculateHistoryStats({}, 45, new Date('2024-03-15T10:00:00'), 0);
+    const stats = calculateHistoryStats({}, 45, new Date('2024-03-15T10:00:00'));
 
     expect(stats).toHaveLength(45);
 
     // Check first and last dates
-    const firstDate = new Date('2024-03-15');
-    firstDate.setDate(firstDate.getDate() - 44);
     expect(stats[0].date).toBe('2024-01-31');
     expect(stats[44].date).toBe('2024-03-15');
   });
@@ -56,11 +54,11 @@ describe('statistics calculations', () => {
     expect(yesterday.totalReviews).toBe(0);
   });
 
-  it('preserves saved history and inserts independent empty days using the supplied review day', () => {
-    const saved = createDailyStats('2024-03-13', undefined);
+  it('preserves saved history and inserts independent empty days using the supplied local date', () => {
+    const saved = createDailyStats('2024-03-14', undefined);
     recordReview(saved, Rating.Good, true);
-    const result = calculateHistoryStats({ '2024-03-13': saved }, 3, new Date('2024-03-15T03:59:59'), 4);
-    expect(result.map((day) => day.date)).toEqual(['2024-03-12', '2024-03-13', '2024-03-14']);
+    const result = calculateHistoryStats({ '2024-03-14': saved }, 3, new Date('2024-03-15T03:59:59'));
+    expect(result.map((day) => day.date)).toEqual(['2024-03-13', '2024-03-14', '2024-03-15']);
     expect(result[1]).toBe(saved);
     expect(result[0].streak).toBe(0);
     expect(result[2].streak).toBe(0);
@@ -70,9 +68,9 @@ describe('statistics calculations', () => {
   it('includes paused cards in state counts but excludes them from upcoming buckets', () => {
     const cards = [State.New, State.Learning, State.Review, State.Relearning].map((state) => createMockCard(state));
     cards[0].fsrs.due = new Date('2024-03-10T12:00:00').getTime();
-    cards[1].fsrs.due = new Date('2024-03-15T03:59:59').getTime();
-    cards[2].fsrs.due = new Date('2024-03-15T04:00:00').getTime();
-    cards[3].fsrs.due = new Date('2024-03-15T04:00:00').getTime();
+    cards[1].fsrs.due = new Date('2024-03-15T23:59:59.999').getTime();
+    cards[2].fsrs.due = new Date('2024-03-16T00:00:00').getTime();
+    cards[3].fsrs.due = new Date('2024-03-16T00:00:00').getTime();
     cards[3].paused = true;
     expect(countCardStates(cards)).toEqual({
       [State.New]: 1,
@@ -80,16 +78,26 @@ describe('statistics calculations', () => {
       [State.Review]: 1,
       [State.Relearning]: 1,
     });
-    expect(calculateUpcomingStats(cards, 2, new Date('2024-03-15T03:59:59'), 4)).toEqual([
-      { date: '2024-03-14', count: 2 },
-      { date: '2024-03-15', count: 1 },
+    expect(calculateUpcomingStats(cards, 2, new Date('2024-03-15T03:59:59'))).toEqual([
+      { date: '2024-03-15', count: 2 },
+      { date: '2024-03-16', count: 1 },
     ]);
+  });
+
+  it.each([
+    ['2024-12-31T23:30:00', ['2024-12-30', '2024-12-31'], ['2024-12-31', '2025-01-01']],
+    ['2024-03-10T23:30:00', ['2024-03-09', '2024-03-10'], ['2024-03-10', '2024-03-11']],
+    ['2024-11-03T00:30:00', ['2024-11-02', '2024-11-03'], ['2024-11-03', '2024-11-04']],
+  ])('keeps chart buckets on consecutive local dates at %s', (instant, history, upcoming) => {
+    const today = new Date(instant);
+    expect(calculateHistoryStats({}, 2, today).map((day) => day.date)).toEqual(history);
+    expect(calculateUpcomingStats([], 2, today).map((day) => day.date)).toEqual(upcoming);
   });
 
   it.each([0, -1])('returns no buckets for %i days', (days) => {
     const today = new Date('2024-03-15T10:00:00');
-    expect(calculateHistoryStats({}, days, today, 4)).toEqual([]);
-    expect(calculateUpcomingStats([], days, today, 4)).toEqual([]);
+    expect(calculateHistoryStats({}, days, today)).toEqual([]);
+    expect(calculateUpcomingStats([], days, today)).toEqual([]);
   });
 });
 

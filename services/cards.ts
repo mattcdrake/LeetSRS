@@ -1,23 +1,24 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
+import { formatLocalDate } from '@/domain/calendar';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import { buildReviewQueue, calculateDelayedDueDate, isDueByDate as calculateIsDueByDate } from '@/domain/review';
+import { buildReviewQueue, calculateDelayedDueDate, isDue } from '@/domain/review';
 import { getAllCards, saveCards } from '@/infrastructure/storage/cards';
-
 import { deleteNote } from '@/infrastructure/storage/notes';
+import { getStatsForDate } from '@/infrastructure/storage/stats';
 import { getSettings } from './settings';
-import { getTodayStats, updateStats } from './stats';
+import { updateStats } from './stats';
 
 export { getAllCards } from '@/infrastructure/storage/cards';
 
 const params = generatorParameters({ maximum_interval: 1000 });
 const fsrs = new FSRS(params);
 
-function createCard(problem: ProblemDescriptor): Card {
-  const initialFsrs = createEmptyCard();
+function createCard(problem: ProblemDescriptor, now = new Date()): Card {
+  const initialFsrs = createEmptyCard(now);
   return {
     id: crypto.randomUUID(),
     ...problem,
-    createdAt: Date.now(),
+    createdAt: now.getTime(),
     fsrs: { ...initialFsrs, due: initialFsrs.due.getTime(), last_review: initialFsrs.last_review?.getTime() },
     paused: false,
   };
@@ -78,18 +79,18 @@ export async function setPauseStatus(slug: string, paused: boolean): Promise<Car
 }
 
 export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
+  const now = new Date();
   const cards = await getAllCards();
   const { rating, ...problem } = input;
   const { slug } = problem;
 
   let card = cards.find((card) => card.slug === slug);
   if (!card) {
-    card = createCard(problem);
+    card = createCard(problem, now);
     cards.push(card);
   }
   const isNewCard = card.fsrs.state === FsrsState.New;
 
-  const now = new Date();
   const schedulingResult = fsrs.next(card.fsrs, now, rating);
   card.fsrs = {
     ...schedulingResult.card,
@@ -97,21 +98,17 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
     last_review: schedulingResult.card.last_review?.getTime(),
   };
   await saveCards(cards);
-  await updateStats(rating, isNewCard);
-  const settings = await getSettings();
-  const shouldRequeue = isDueByDate(card, now, settings.dayStartHour);
+  await updateStats(rating, isNewCard, now);
+  const shouldRequeue = isDue(card, now);
   return { card, shouldRequeue };
 }
 
-export function isDueByDate(card: Card, referenceDate: Date = new Date(), dayStartHour: number = 0): boolean {
-  return calculateIsDueByDate(card, referenceDate, dayStartHour);
-}
-
 export async function getReviewQueue(): Promise<Card[]> {
-  const allCards = await getAllCards();
+  const now = new Date();
   const settings = await getSettings();
-  const dueCards = allCards.filter((card) => !card.paused && isDueByDate(card, new Date(), settings.dayStartHour));
-  const todayStats = await getTodayStats();
+  const allCards = await getAllCards();
+  const dueCards = allCards.filter((card) => !card.paused && isDue(card, now));
+  const todayStats = await getStatsForDate(formatLocalDate(now));
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
   return buildReviewQueue(dueCards, settings.maxNewCardsPerDay, newCardsCompletedToday);
 }

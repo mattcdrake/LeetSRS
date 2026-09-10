@@ -1,6 +1,6 @@
 import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
 import { z } from 'zod';
-import { formatLocalDate } from './calendar';
+import { addLocalDays, formatLocalDate } from './calendar';
 import type { Card } from './cards';
 
 const count = z.int().nonnegative();
@@ -79,17 +79,10 @@ export function countCardStates(cards: Card[]): Record<FsrsState, number> {
   return stateStats;
 }
 
-export function calculateHistoryStats(
-  stats: Record<string, DailyStats>,
-  days: number,
-  today: Date,
-  dayStartHour: number
-): DailyStats[] {
+export function calculateHistoryStats(stats: Record<string, DailyStats>, days: number, today: Date): DailyStats[] {
   const result: DailyStats[] = [];
   for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const dateKey = formatLocalDate(date, dayStartHour);
+    const dateKey = formatLocalDate(addLocalDays(today, -i));
 
     if (stats[dateKey]) {
       result.push(stats[dateKey]);
@@ -106,18 +99,11 @@ export function calculateHistoryStats(
   return result;
 }
 
-export function calculateUpcomingStats(
-  cards: Card[],
-  days: number,
-  today: Date,
-  dayStartHour: number
-): UpcomingReviewStats[] {
+export function calculateUpcomingStats(cards: Card[], days: number, today: Date): UpcomingReviewStats[] {
   const result: UpcomingReviewStats[] = [];
   const dateToIndex = new Map<string, number>();
   for (let i = 0; i < days; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-    const dateKey = formatLocalDate(date, dayStartHour);
+    const dateKey = formatLocalDate(addLocalDays(today, i));
     result.push({
       date: dateKey,
       count: 0,
@@ -132,7 +118,7 @@ export function calculateUpcomingStats(
   for (const card of cards) {
     if (card.paused) continue;
 
-    const dueKey = formatLocalDate(new Date(card.fsrs.due), dayStartHour);
+    const dueKey = formatLocalDate(new Date(card.fsrs.due));
 
     if (dueKey <= firstDate) {
       result[0].count++;

@@ -8,82 +8,7 @@ import { getStatsForDate } from '@/infrastructure/storage/stats';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { addCard } from '../cards';
-import {
-  getCardStateStats,
-  getLastNDaysStats,
-  getNextNDaysStats,
-  getTodayKey,
-  getTodayStats,
-  getYesterdayKey,
-  updateStats,
-} from '../stats';
-
-describe('Date key generation', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  describe('getTodayKey', () => {
-    it.each([
-      ['2024-03-15T10:30:00', '2024-03-15'],
-      ['2024-01-05T10:30:00', '2024-01-05'],
-      ['2024-12-25T10:30:00', '2024-12-25'],
-      ['2024-01-31T23:59:59', '2024-01-31'],
-      ['2024-02-29T10:00:00', '2024-02-29'],
-    ])('should convert %s to %s', async (input, expected) => {
-      vi.setSystemTime(new Date(input));
-      await expect(getTodayKey()).resolves.toBe(expected);
-    });
-  });
-
-  describe('getYesterdayKey', () => {
-    it.each([
-      ['2024-03-15T10:30:00', '2024-03-14'],
-      ['2024-03-01T10:30:00', '2024-02-29'],
-      ['2023-03-01T10:30:00', '2023-02-28'],
-      ['2024-01-01T00:00:00', '2023-12-31'],
-      ['2024-06-01T10:00:00', '2024-05-31'],
-      ['2024-05-01T10:00:00', '2024-04-30'],
-      ['2024-10-01T10:30:00', '2024-09-30'],
-      ['2024-01-10T10:30:00', '2024-01-09'],
-      ['2024-02-29T10:00:00', '2024-02-28'],
-      ['2024-03-11T10:00:00', '2024-03-10'],
-      ['2024-11-04T10:00:00', '2024-11-03'],
-    ])('should convert %s to %s', async (input, expected) => {
-      vi.setSystemTime(new Date(input));
-      await expect(getYesterdayKey()).resolves.toBe(expected);
-    });
-  });
-
-  describe('getTodayKey and getYesterdayKey consistency', () => {
-    it('should have yesterday be one day before today', async () => {
-      const testDates = [
-        '2024-03-15T10:30:00',
-        '2024-01-01T00:00:00',
-        '2024-02-29T23:59:59',
-        '2024-12-31T12:00:00',
-        '2024-07-01T06:00:00',
-      ];
-
-      for (const dateStr of testDates) {
-        vi.setSystemTime(new Date(dateStr));
-        const today = await getTodayKey();
-
-        // Move to next day
-        const tomorrow = new Date(dateStr);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        vi.setSystemTime(tomorrow);
-
-        const yesterday = await getYesterdayKey();
-        expect(yesterday).toBe(today);
-      }
-    });
-  });
-});
+import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats, updateStats } from '../stats';
 
 describe('Stats management', () => {
   beforeEach(() => {
@@ -510,8 +435,8 @@ describe('Stats management', () => {
       await expect(getNextNDaysStats(0)).resolves.toEqual([]);
     });
 
-    it('should respect the configured day start hour', async () => {
-      await storage.setItem(STORAGE_KEYS.dayStartHour, 4);
+    it('ignores a legacy day start hour when bucketing upcoming reviews', async () => {
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await addCard(buildProblem({ slug: 'problem-1' }));
       const cards = (await storage.getItem(STORAGE_KEYS.cards)) as Record<string, Card>;
 
@@ -521,8 +446,8 @@ describe('Stats management', () => {
       const stats = await getNextNDaysStats(2);
 
       expect(stats).toEqual([
-        { date: '2024-03-15', count: 1 },
-        { date: '2024-03-16', count: 0 },
+        { date: '2024-03-15', count: 0 },
+        { date: '2024-03-16', count: 1 },
       ]);
     });
 

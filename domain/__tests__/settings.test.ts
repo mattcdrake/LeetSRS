@@ -3,7 +3,7 @@ import { buildSettings } from '@/test/utils/settings-mocks';
 import { SETTING_KEYS, settingsSchema, settingsUpdateSchema } from '../settings';
 
 describe('settings validation', () => {
-  it('parses all seven settings and strips unknown fields', () => {
+  it('parses all settings and strips unknown fields', () => {
     const settings = buildSettings();
     expect(settingsSchema.parse({ ...settings, unknown: 'ignored' })).toEqual(settings);
     expect(settingsUpdateSchema.parse({ ...settings, unknown: 'ignored' })).toEqual(settings);
@@ -17,17 +17,17 @@ describe('settings validation', () => {
 
   it('ignores inherited and unknown settings while retaining own settings', () => {
     const changes = Object.create({ theme: 'invalid', badgeEnabled: false });
-    Object.defineProperty(changes, 'dayStartHour', { value: 5 });
+    Object.defineProperty(changes, 'theme', { value: 'dark' });
     Object.assign(changes, { maxNewCardsPerDay: 8, unknown: 'ignored' });
-    expect(settingsUpdateSchema.parse(changes)).toEqual({ maxNewCardsPerDay: 8, dayStartHour: 5 });
+    expect(settingsUpdateSchema.parse(changes)).toEqual({ maxNewCardsPerDay: 8, theme: 'dark' });
   });
 
-  it.each([
-    { maxNewCardsPerDay: 0, dayStartHour: 0 },
-    { maxNewCardsPerDay: 100, dayStartHour: 23 },
-  ])('accepts inclusive numeric boundaries %j', (changes) => {
-    expect(settingsUpdateSchema.parse(changes)).toEqual(changes);
-  });
+  it.each([{ maxNewCardsPerDay: 0 }, { maxNewCardsPerDay: 100 }])(
+    'accepts inclusive numeric boundaries %j',
+    (changes) => {
+      expect(settingsUpdateSchema.parse(changes)).toEqual(changes);
+    }
+  );
 
   it.each(['EN', 'toString', 'constructor', '__proto__'])(
     'rejects unsupported language %s with the full error',

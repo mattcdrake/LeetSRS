@@ -36,12 +36,12 @@ describe('migrations', () => {
       expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     });
 
-    it.each([1, 2])('does not reapply the domain migration to schema %s', (schemaVersion) => {
+    it.each([1, 2, 3])('does not reapply the domain migration to schema %s', (schemaVersion) => {
       const data = { cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum' }) } };
       expect(migrateBackupData(data, schemaVersion)).toEqual(data);
     });
 
-    it.each([-1, 0.5, 3])('rejects unsupported schema %s', (schemaVersion) => {
+    it.each([-1, 0.5, 4])('rejects unsupported schema %s', (schemaVersion) => {
       expect(() => migrateBackupData({ cards: {} }, schemaVersion)).toThrow('Unsupported schema version');
     });
   });
@@ -250,7 +250,7 @@ describe('migrations', () => {
           ...cards,
           'two-sum': { ...cards['two-sum'], domain: 'leetcode.com' },
         },
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 2,
+        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
       });
     });
 
@@ -316,14 +316,53 @@ describe('migrations', () => {
 
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...expectedAfterCardWrite,
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 2,
+        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
       });
     });
 
     it('should handle empty or missing cards storage', async () => {
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(2);
+      expect(await getCurrentSchemaVersion()).toBe(3);
+    });
+  });
+
+  describe('migration v3: remove configurable day start', () => {
+    it('removes the legacy setting while retaining cards, history, and other settings', async () => {
+      await setSchemaVersion(2);
+      const card = createMockCard(State.Review);
+      await storage.setItem(STORAGE_KEYS.cards, { [card.slug]: card });
+      await storage.setItem(STORAGE_KEYS.stats, { '2024-03-14': { streak: 7 } });
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
+      await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 8);
+      const localBefore = await fakeBrowser.storage.local.get(null);
+      const syncBefore = await fakeBrowser.storage.sync.get(null);
+      const { 'leetsrs:dayStartHour': _legacy, ...remainingSettings } = syncBefore;
+
+      await runStartupMigrations();
+      await runStartupMigrations();
+
+      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await fakeBrowser.storage.sync.get(null)).toEqual(remainingSettings);
+      expect(await fakeBrowser.storage.local.get(null)).toEqual({
+        ...localBefore,
+        'leetsrs:schemaVersion': 3,
+      });
+    });
+
+    it('retries legacy setting removal before advancing the schema after a storage failure', async () => {
+      await setSchemaVersion(2);
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
+      const remove = vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(new Error('storage unavailable'));
+      try {
+        await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
+        expect(await getCurrentSchemaVersion()).toBe(2);
+        await runStartupMigrations();
+        expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
+        expect(await getCurrentSchemaVersion()).toBe(3);
+      } finally {
+        remove.mockRestore();
+      }
     });
   });
 
@@ -334,7 +373,7 @@ describe('migrations', () => {
 
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(2);
+      expect(await getCurrentSchemaVersion()).toBe(3);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
     });
   });

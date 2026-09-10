@@ -2,7 +2,6 @@ import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-q
 import type { Settings } from '@/domain/settings';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { cardQueryKeys } from './cards';
-import { statsQueryKeys } from './stats';
 
 export const settingsQueryKeys = {
   all: ['settings'] as const,
@@ -23,12 +22,8 @@ export function useUpdateSettingsMutation() {
     onSuccess: (_data, changes) => {
       queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
 
-      if ('maxNewCardsPerDay' in changes || 'dayStartHour' in changes) {
+      if ('maxNewCardsPerDay' in changes) {
         queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
-      }
-
-      if ('dayStartHour' in changes) {
-        queryClient.invalidateQueries({ queryKey: statsQueryKeys.all });
       }
     },
   });

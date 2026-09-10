@@ -163,7 +163,6 @@ const en = {
     reviewSettings: {
       title: 'Review Settings',
       newCardsPerDay: 'New Cards Per Day',
-      dayStartHour: 'Next Day Offset (hours past midnight)',
     },
 
     problemAutoClear: {

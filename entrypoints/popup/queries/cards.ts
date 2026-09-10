@@ -30,6 +30,7 @@ export function useReviewQueueQuery(options?: { enabled?: boolean; refetchOnWind
     enabled,
     staleTime: 0,
     gcTime: 0,
+    refetchInterval: 15_000,
     refetchOnWindowFocus,
   });
 }
