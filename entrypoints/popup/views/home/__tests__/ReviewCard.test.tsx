@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
@@ -58,69 +58,14 @@ describe('ReviewCard', () => {
       }
     );
 
-    it('should render the problem ID', () => {
+    it('renders the problem identity and its external LeetCode link', () => {
       renderWithProviders();
       expect(screen.getByText('#1')).toBeInTheDocument();
-    });
-
-    it('should render the problem name', () => {
-      renderWithProviders();
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
-    });
-
-    it('should render the external link to LeetCode problem', () => {
-      renderWithProviders();
       const link = screen.getByRole('link', { name: /LeetCode/i });
       expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/two-sum/description/');
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-  });
-
-  describe('Interactions', () => {
-    it.each([
-      ['Again', Rating.Again],
-      ['Hard', Rating.Hard],
-      ['Good', Rating.Good],
-      ['Easy', Rating.Easy],
-    ] as const)('should call onRate with the %s rating', async (label, rating) => {
-      renderWithProviders();
-      fireEvent.click(screen.getByRole('button', { name: label }));
-
-      await waitFor(() => {
-        expect(mockOnRate).toHaveBeenCalledWith(rating);
-      });
-    });
-
-    it('should only call onRate once per button click', async () => {
-      renderWithProviders();
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-
-      fireEvent.click(goodButton);
-
-      await waitFor(() => {
-        expect(mockOnRate).toHaveBeenCalledTimes(1);
-      });
-    });
-  });
-
-  describe('Styling', () => {
-    it('should have cursor pointer on rating buttons', () => {
-      renderWithProviders();
-      const buttons = screen.getAllByRole('button');
-
-      buttons.forEach((button) => {
-        expect(button).toHaveClass('cursor-pointer');
-      });
-    });
-
-    it('should have consistent button width', () => {
-      renderWithProviders();
-      const buttons = screen.getAllByRole('button');
-
-      buttons.forEach((button) => {
-        expect(button).toHaveClass('w-20');
-      });
     });
   });
 

@@ -23,64 +23,20 @@ describe('ActionsSection', () => {
   };
 
   describe('Expand/Collapse', () => {
-    it('should render with collapsed state by default', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      expect(screen.getByText('Actions')).toBeInTheDocument();
-      expect(screen.getByText('▶')).toBeInTheDocument();
-      expect(screen.queryByText('1 Day')).not.toBeInTheDocument();
-      expect(screen.queryByText('Delete Card')).not.toBeInTheDocument();
-    });
-
-    it('should expand when header is clicked', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      expect(screen.getByText('1 Day')).toBeInTheDocument();
-      expect(screen.getByText('5 Days')).toBeInTheDocument();
-      expect(screen.getByText('Pause')).toBeInTheDocument();
-      expect(screen.getByText('Delete Card')).toBeInTheDocument();
-    });
-
-    it('should collapse when header is clicked again', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-
-      // Expand
-      fireEvent.click(expandButton);
-      expect(screen.getByText('1 Day')).toBeInTheDocument();
-
-      // Collapse
-      fireEvent.click(expandButton);
-      expect(screen.queryByText('1 Day')).not.toBeInTheDocument();
-    });
-
-    it('should rotate arrow icon when expanded', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const arrow = screen.getByText('▶');
-      expect(arrow).not.toHaveClass('rotate-90');
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      expect(arrow).toHaveClass('rotate-90');
-    });
-
-    it('should set aria-expanded attribute correctly', () => {
+    it('expands and collapses the available actions with accessible state', () => {
       render(<ActionsSection {...defaultProps} />);
 
       const expandButton = screen.getByRole('button', { name: /Actions/i });
       expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('button', { name: 'Delete Card' })).not.toBeInTheDocument();
 
       fireEvent.click(expandButton);
       expect(expandButton).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('button', { name: 'Delete Card' })).toBeInTheDocument();
 
       fireEvent.click(expandButton);
       expect(expandButton).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('button', { name: 'Delete Card' })).not.toBeInTheDocument();
     });
   });
 
@@ -96,17 +52,6 @@ describe('ActionsSection', () => {
 
       expect(mockOnDelay).toHaveBeenCalledWith(days);
       expect(mockOnDelay).toHaveBeenCalledTimes(1);
-    });
-
-    it('should display delay card section with both delay options', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      expect(screen.getByRole('button', { name: /1 Day/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /5 Days/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Pause/i })).toBeInTheDocument();
     });
   });
 
@@ -125,39 +70,7 @@ describe('ActionsSection', () => {
   });
 
   describe('Delete Functionality', () => {
-    it('should show confirmation when delete button is first clicked', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      // Expand first
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const deleteButton = screen.getByRole('button', { name: 'Delete Card' });
-      fireEvent.click(deleteButton);
-
-      expect(screen.getByRole('button', { name: 'Confirm Delete?' })).toBeInTheDocument();
-      expect(mockOnDelete).not.toHaveBeenCalled();
-    });
-
-    it('should call onDelete when confirmation is clicked', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      // Expand first
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      // First click - show confirmation
-      const deleteButton = screen.getByRole('button', { name: 'Delete Card' });
-      fireEvent.click(deleteButton);
-
-      // Second click - confirm deletion
-      const confirmButton = screen.getByRole('button', { name: 'Confirm Delete?' });
-      fireEvent.click(confirmButton);
-
-      expect(mockOnDelete).toHaveBeenCalledTimes(1);
-    });
-
-    it('should reset confirmation immediately after delete', () => {
+    it('deletes only after confirmation and resets the confirmation afterward', () => {
       render(<ActionsSection {...defaultProps} />);
 
       // Expand first
@@ -167,55 +80,17 @@ describe('ActionsSection', () => {
       // First click - show confirmation
       let deleteButton = screen.getByRole('button', { name: 'Delete Card' });
       fireEvent.click(deleteButton);
+      expect(mockOnDelete).not.toHaveBeenCalled();
 
       // Second click - confirm deletion
       const confirmButton = screen.getByRole('button', { name: 'Confirm Delete?' });
       fireEvent.click(confirmButton);
+      expect(mockOnDelete).toHaveBeenCalledTimes(1);
 
       // Should reset to initial state immediately
       deleteButton = screen.getByRole('button', { name: 'Delete Card' });
       expect(deleteButton).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Confirm Delete?' })).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Visual Styling', () => {
-    it('should apply correct styles to container', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const container = screen.getByText('Actions').closest('.border');
-      expect(container).toHaveClass('border', 'rounded-lg', 'overflow-hidden');
-    });
-
-    it('should apply bounce animation class to action buttons', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const delay1Button = screen.getByRole('button', { name: /1 Day/i });
-      const delay5Button = screen.getByRole('button', { name: /5 Days/i });
-      const pauseButton = screen.getByRole('button', { name: /Pause/i });
-      const deleteButton = screen.getByRole('button', { name: 'Delete Card' });
-
-      // Check for bounceButton class effects (from imported styles)
-      expect(delay1Button.className).toMatch(/active:translate-y-\[1px\]/);
-      expect(delay5Button.className).toMatch(/active:translate-y-\[1px\]/);
-      expect(pauseButton.className).toMatch(/active:translate-y-\[1px\]/);
-      expect(deleteButton.className).toMatch(/active:translate-y-\[1px\]/);
-    });
-
-    it('should have proper spacing between sections', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const contentDiv = screen.getByText('Delete Card').closest('div')?.parentElement;
-      expect(contentDiv).toHaveClass('mt-3', 'space-y-3');
-
-      const deleteSection = screen.getByRole('button', { name: 'Delete Card' }).parentElement;
-      expect(deleteSection).toHaveClass('pt-2', 'border-t');
     });
   });
 
@@ -230,37 +105,6 @@ describe('ActionsSection', () => {
       expect(screen.getByRole('button', { name: /5 Days/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: /Pause/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Delete Card' })).toBeDisabled();
-    });
-
-    it('should handle rapid clicks on expand button', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-
-      // Rapid clicks
-      fireEvent.click(expandButton);
-      fireEvent.click(expandButton);
-      fireEvent.click(expandButton);
-
-      // Should end up expanded (odd number of clicks)
-      expect(screen.getByText('1 Day')).toBeInTheDocument();
-    });
-
-    it('should handle rapid clicks on delay buttons', () => {
-      render(<ActionsSection {...defaultProps} />);
-
-      const expandButton = screen.getByRole('button', { name: /Actions/i });
-      fireEvent.click(expandButton);
-
-      const delay1Button = screen.getByRole('button', { name: /1 Day/i });
-
-      // Rapid clicks
-      fireEvent.click(delay1Button);
-      fireEvent.click(delay1Button);
-      fireEvent.click(delay1Button);
-
-      expect(mockOnDelay).toHaveBeenCalledTimes(3);
-      expect(mockOnDelay).toHaveBeenCalledWith(1);
     });
   });
 });

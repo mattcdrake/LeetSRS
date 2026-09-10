@@ -3,7 +3,7 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { type Grade, Rating, State } from 'ts-fsrs';
+import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { Card } from '@/domain/cards';
@@ -40,57 +40,6 @@ describe('useCardsQuery', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(sendMessage).toHaveBeenCalledWith('getAllCards');
-  });
-});
-
-describe('useRateCardMutation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-  });
-
-  it('should call sendMessage with correct parameters when mutate is called', async () => {
-    const mockCard = {
-      slug: 'two-sum',
-      name: 'Two Sum',
-      rating: Rating.Good as Grade,
-      leetcodeId: '1',
-      difficulty: 'Easy' as const,
-      domain: 'leetcode.com' as const,
-    };
-
-    const mockResponse: Card = {
-      id: 'test-id',
-      slug: mockCard.slug,
-      name: mockCard.name,
-      leetcodeId: mockCard.leetcodeId,
-      difficulty: mockCard.difficulty,
-      domain: 'leetcode.com',
-      createdAt: Date.now(),
-      fsrs: createMockCard(State.New).fsrs,
-      paused: false,
-    };
-
-    vi.mocked(sendMessage).mockResolvedValue(mockResponse);
-
-    const { result } = renderHook(() => useRateCardMutation(), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    result.current.mutate(mockCard);
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('rateCard', {
-        input: {
-          slug: 'two-sum',
-          name: 'Two Sum',
-          rating: Rating.Good,
-          leetcodeId: '1',
-          difficulty: 'Easy',
-          domain: 'leetcode.com',
-        },
-      });
-    });
   });
 });
 
@@ -247,6 +196,8 @@ describe('card queries through JSON messaging and background handlers', () => {
 
     await act(async () => {
       const { card } = await result.current.mutateAsync({ ...buildProblem(), rating: Rating.Good });
+      expect(sendMessage).toHaveBeenCalledWith('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+      expect(card).toMatchObject(buildProblem());
       expect(card.createdAt).toEqual(expect.any(Number));
       expect(card.fsrs.due).toEqual(expect.any(Number));
       expect(card.fsrs.last_review).toEqual(expect.any(Number));

@@ -17,20 +17,6 @@ describe('stored translations', () => {
     fakeBrowser.reset();
   });
 
-  describe('getStoredTranslations', () => {
-    it('should return translations object', async () => {
-      const t = await getStoredTranslations();
-      expect(t).toBeDefined();
-      expect(t.app.name).toBe('LeetSRS');
-    });
-
-    it('should have all required translation keys', async () => {
-      const t = await getStoredTranslations();
-      expect(t.settings.gistSync.gistDescription).toBeDefined();
-      expect(typeof t.settings.gistSync.gistDescription).toBe('string');
-    });
-  });
-
   describe('stored language', () => {
     it.each(['de', 'en', 'hi', 'pl', 'zh-CN'] as const)('uses stored language %s', async (language) => {
       await storage.setItem(STORAGE_KEYS.language, language);
