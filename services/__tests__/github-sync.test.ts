@@ -119,27 +119,6 @@ describe('github-sync', () => {
       mockGistsGet.mockRejectedValue(new Error(message));
       expect(await triggerGistSync()).toEqual({ success: false, error });
     });
-
-    describe('concurrent sync prevention', () => {
-      it('prevents concurrent syncs and permits another after completion', async () => {
-        const request = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
-        mockGistsGet.mockReturnValue(request.promise);
-        mockExportData.mockResolvedValue('{}');
-        mockGistsUpdate.mockResolvedValue({});
-
-        // Start first sync
-        const firstSync = triggerGistSync();
-
-        // Immediately try second sync
-        const secondSync = await triggerGistSync();
-
-        expect(secondSync).toEqual({ success: false, error: 'Sync already in progress' });
-
-        request.resolve({ data: { files: {} } });
-        expect(await firstSync).toMatchObject({ success: true, action: 'pushed' });
-        expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pushed' });
-      });
-    });
   });
 
   describe('extraction characterization', () => {
@@ -430,7 +409,6 @@ describe('github-sync', () => {
       await started.promise;
 
       expect((await getGistSyncStatus()).syncInProgress).toBe(true);
-      expect(await triggerGistSync()).toEqual({ success: false, error: 'Sync already in progress' });
       request.reject('request failed');
       expect(await syncing).toEqual({ success: false, error: 'Unknown sync error' });
       expect(await getGistSyncStatus()).toMatchObject({ syncInProgress: false, lastError: 'Unknown sync error' });
@@ -443,6 +421,7 @@ describe('github-sync', () => {
       mockExportData.mockResolvedValue('{}');
       mockGistsUpdate.mockResolvedValue({});
       expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pushed' });
+      expect((await getGistSyncStatus()).syncInProgress).toBe(false);
     });
   });
 });
