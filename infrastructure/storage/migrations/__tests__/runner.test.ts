@@ -9,7 +9,8 @@ import { getAllCards } from '../../cards';
 import { STORAGE_KEYS } from '../../storage-keys';
 import type { addCardDomain } from '../001-add-card-domain';
 import type { addSystemTheme } from '../002-add-system-theme';
-import type { removeDayStart } from '../003-remove-day-start';
+import { type removeDayStart, validateOutput as validateVersion3 } from '../003-remove-day-start';
+import { readDataset } from '../layouts/v0';
 import { LATEST_SCHEMA_VERSION, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
 
 describe('migrations', () => {
@@ -159,7 +160,12 @@ describe('migrations', () => {
       expectTypeOf<typeof removeDayStart.save>().parameter(0).toEqualTypeOf<Version3>();
       expectTypeOf<Version3>().toExtend<Version2>();
       expectTypeOf<Version3['settings']>().toEqualTypeOf<
-        (Record<string, unknown> & { dayStartHour?: never }) | undefined
+        | (Record<string, unknown> & {
+            dayStartHour?: never;
+            autoClearLeetcode?: never;
+            resetEditorOnEveryProblem?: boolean;
+          })
+        | undefined
       >();
     });
   });
@@ -457,6 +463,74 @@ describe('migrations', () => {
   });
 
   describe('migration v3: remove configurable day start', () => {
+    it.each([
+      { settings: { autoClearLeetcode: true }, value: true },
+      { settings: { autoClearLeetcode: false }, value: false },
+      { settings: { autoClearLeetcode: true, resetEditorOnEveryProblem: false }, value: false },
+      { settings: { autoClearLeetcode: false, resetEditorOnEveryProblem: true }, value: true },
+      { settings: { autoClearLeetcode: 'ignored', resetEditorOnEveryProblem: false }, value: false },
+    ])('renames the legacy editor setting in backups and storage: %j', async ({ settings, value }) => {
+      const data = { settings: { ...settings, dayStartHour: 4, theme: 'dark' } };
+      const expected = {
+        settings: {
+          resetEditorOnEveryProblem: value,
+          theme: 'dark',
+        },
+      };
+      expect(migrateBackupData(data, 2)).toEqual(expected);
+      expect(data.settings).toEqual({ ...settings, dayStartHour: 4, theme: 'dark' });
+
+      await setSchemaVersion(2);
+      await storage.setItems(
+        Object.entries(data.settings).map(([key, value]) => ({ key: `sync:leetsrs:${key}`, value }))
+      );
+      await runStartupMigrations();
+      await runStartupMigrations();
+      expect(await fakeBrowser.storage.sync.get(null)).toEqual({
+        'leetsrs:resetEditorOnEveryProblem': expected.settings.resetEditorOnEveryProblem,
+        'leetsrs:theme': 'dark',
+      });
+      const reloaded = await readDataset();
+      expect(() => validateVersion3(reloaded)).not.toThrow();
+      expect(reloaded.settings).toEqual(expected.settings);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+    });
+
+    it.each(
+      [null, 'false', 0, {}, []].flatMap((value) =>
+        ['autoClearLeetcode', 'resetEditorOnEveryProblem'].map((key) => ({ key, value }))
+      )
+    )('rejects invalid $key: $value before writes', async ({ key, value }) => {
+      const settings = { autoClearLeetcode: true, [key]: value, dayStartHour: 4 };
+      expect(() => migrateBackupData({ settings }, 2)).toThrow('must be a boolean');
+      expect(() => validateVersion3({ settings: { resetEditorOnEveryProblem: value } })).toThrow('must be a boolean');
+
+      await setSchemaVersion(2);
+      const localBefore = await fakeBrowser.storage.local.get(null);
+      const syncBefore = Object.fromEntries(
+        Object.entries(settings).map(([name, value]) => [`leetsrs:${name}`, value])
+      );
+      // Supply raw stored values because fakeBrowser drops nulls during setup.
+      const snapshot = vi
+        .spyOn(storage, 'snapshot')
+        .mockImplementation(async (area) => (area === 'sync' ? syncBefore : localBefore));
+      const localWrite = vi.spyOn(fakeBrowser.storage.local, 'set');
+      const syncWrite = vi.spyOn(fakeBrowser.storage.sync, 'set');
+      const remove = vi.spyOn(fakeBrowser.storage.sync, 'remove');
+      try {
+        await expect(runStartupMigrations()).rejects.toThrow('must be a boolean');
+        expect(localWrite).not.toHaveBeenCalled();
+        expect(syncWrite).not.toHaveBeenCalled();
+        expect(remove).not.toHaveBeenCalled();
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+      } finally {
+        snapshot.mockRestore();
+        localWrite.mockRestore();
+        syncWrite.mockRestore();
+        remove.mockRestore();
+      }
+    });
+
     it('removes the legacy setting while retaining cards, history, and other settings', async () => {
       await setSchemaVersion(2);
       const card = createMockCard(State.Review);
@@ -479,20 +553,40 @@ describe('migrations', () => {
       });
     });
 
-    it('retries legacy setting removal before advancing the schema after a storage failure', async () => {
-      await setSchemaVersion(2);
-      await storage.setItem('sync:leetsrs:dayStartHour', 4);
-      const remove = vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(new Error('storage unavailable'));
-      try {
-        await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
-        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+    it.each(['save', 'cleanup', 'version'] as const)(
+      'retries the settings migration after a %s failure without losing the value',
+      async (stage) => {
+        await setSchemaVersion(2);
+        await storage.setItem('sync:leetsrs:dayStartHour', 4);
+        await storage.setItem('sync:leetsrs:autoClearLeetcode', false);
+        const write = storage.setItem.bind(storage);
+        const failure = new Error('storage unavailable');
+        const operation =
+          stage === 'save'
+            ? vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(failure)
+            : stage === 'cleanup'
+              ? vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(failure)
+              : vi
+                  .spyOn(storage, 'setItem')
+                  .mockImplementation((key, value) =>
+                    key === STORAGE_KEYS.schemaVersion ? Promise.reject(failure) : write(key, value)
+                  );
+        try {
+          await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
+          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+          expect(await storage.getItem('sync:leetsrs:autoClearLeetcode')).toBe(stage === 'version' ? null : false);
+          expect(await storage.getItem(STORAGE_KEYS.resetEditorOnEveryProblem)).toBe(stage === 'save' ? null : false);
+        } finally {
+          operation.mockRestore();
+        }
         await runStartupMigrations();
-        expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
+        await runStartupMigrations();
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual({ 'leetsrs:resetEditorOnEveryProblem': false });
+        const reloaded = await readDataset();
+        expect(() => validateVersion3(reloaded)).not.toThrow();
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
-      } finally {
-        remove.mockRestore();
       }
-    });
+    );
   });
 
   describe('migration v2: add system theme preference', () => {
