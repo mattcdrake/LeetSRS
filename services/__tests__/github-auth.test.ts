@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { getGistSyncConfig, setGistSyncConfig } from '../gist-setup';
-import { getGitHubPat, setGitHubPat, validatePat } from '../github-auth';
+import { setGistSyncConfig } from '../gist-setup';
+import { getGitHubPat, validatePat } from '../github-auth';
 
 const { getAuthenticated, getGist } = vi.hoisted(() => ({
   getAuthenticated: vi.fn(),
@@ -28,29 +28,19 @@ describe('github-auth', () => {
     fakeBrowser.runtime.id = 'test';
   });
 
-  it.each(['', ' token '])(
-    'changes credential %j while preserving the destination and learning timestamp',
-    async (pat) => {
-      expect(await getGitHubPat()).toBeNull();
-      await setGistSyncConfig({ gistId: 'keep-gist', enabled: true });
-      await setGitHubPat(pat);
-      expect(await getGistSyncConfig()).toEqual({ pat, gistId: 'keep-gist', enabled: true });
-      expect(await getGitHubPat()).toBe(pat);
-
-      await setGitHubPat('');
-      expect(await getGitHubPat()).toBe('');
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
-      expect(Octokit).not.toHaveBeenCalled();
-    }
-  );
+  it.each(['', ' token '])('reads the exact saved credential %j without making a request', async (pat) => {
+    expect(await getGitHubPat()).toBeNull();
+    await setGistSyncConfig({ pat, gistId: 'keep-gist', enabled: true });
+    expect(await getGitHubPat()).toBe(pat);
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    expect(Octokit).not.toHaveBeenCalled();
+  });
 
   it('propagates credential persistence failures', async () => {
     const failure = new Error('storage unavailable');
     vi.spyOn(storage, 'getItem').mockRejectedValue(failure);
-    vi.spyOn(storage, 'setItem').mockRejectedValue(failure);
 
     await expect(getGitHubPat()).rejects.toBe(failure);
-    await expect(setGitHubPat('token')).rejects.toBe(failure);
     expect(Octokit).not.toHaveBeenCalled();
   });
 

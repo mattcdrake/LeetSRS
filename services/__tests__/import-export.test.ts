@@ -356,6 +356,7 @@ describe('import-export', () => {
 
       const card = validExportData.data.cards['two-sum'];
       const stats = validExportData.data.stats['2024-01-01'];
+      const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
       await importData(
         JSON.stringify({
           ...validExportData,
@@ -385,6 +386,9 @@ describe('import-export', () => {
       );
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-01T00:00:00.000Z');
       expect((await getGistSyncConfig()).pat).toBe('existing-pat');
+      expect(writes.mock.calls.filter(([items]) => Object.hasOwn(items, 'leetsrs:gistConnection'))).toEqual([
+        [{ 'leetsrs:gistConnection': { pat: 'existing-pat', gistId: 'incoming-gist', enabled: false } }],
+      ]);
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
       expect(JSON.parse(await exportData()).data).toEqual({
         ...embeddedData,

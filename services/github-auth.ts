@@ -1,14 +1,9 @@
 import type { PatValidationResult } from '@/domain/gist-sync';
 import { createGitHubClient, type GitHubClient } from '@/infrastructure/github/client';
-import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { readSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 
 export async function getGitHubPat(): Promise<string | null> {
   return (await readSyncMetadata('gistConnection'))?.pat ?? null;
-}
-
-export async function setGitHubPat(pat: string): Promise<void> {
-  const connection = (await readSyncMetadata('gistConnection')) ?? { pat: '', gistId: null, enabled: false };
-  await writeSyncMetadata('gistConnection', { ...connection, pat });
 }
 
 export function getAuthenticatedGitHubClient(pat: string): Promise<GitHubClient>;
