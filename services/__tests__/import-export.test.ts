@@ -5,13 +5,14 @@ import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
+import { parseBackup } from '@/infrastructure/storage/backup';
 import { removeDayStart } from '@/infrastructure/storage/migrations/003-remove-day-start';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { exportData, importData, prepareImportData, resetAllData } from '../import-export';
+import { exportData, importData, resetAllData } from '../import-export';
 
 describe('import-export', () => {
   const legacyMonthlyStatsKey = 'local:leetsrs:monthlyStats';
@@ -165,7 +166,7 @@ describe('import-export', () => {
         await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
         const before = await fakeBrowser.storage.local.get(null);
         const json = JSON.stringify({ ...payload, data: { ...accepted, [collection]: payload.data[collection] } });
-        await expect(prepareImportData(json)).rejects.toThrow();
+        expect(() => parseBackup(json)).toThrow();
         await expect(importData(json)).rejects.toThrow();
         expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
       }
@@ -310,7 +311,7 @@ describe('import-export', () => {
         const before = await fakeBrowser.storage.local.get(null);
         const syncBefore = await fakeBrowser.storage.sync.get(null);
 
-        expect((await prepareImportData(json)).cards).toEqual(validExportData.data.cards);
+        expect(parseBackup(json).cards).toEqual(validExportData.data.cards);
         expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
         expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
         await importData(json);
@@ -487,7 +488,7 @@ describe('import-export', () => {
             },
           });
 
-          const prepared = await prepareImportData(json);
+          const prepared = parseBackup(json);
 
           expect.soft(prepared.cards).toEqual(startupCards);
           expect(prepared.notes).toEqual(notes);
@@ -539,7 +540,7 @@ describe('import-export', () => {
             }
           }
 
-          const prepared = await prepareImportData(
+          const prepared = parseBackup(
             JSON.stringify({ ...validExportData, schemaVersion, dataUpdatedAt, data: rawData })
           );
 
@@ -567,7 +568,7 @@ describe('import-export', () => {
             data: { ...validExportData.data, cards: legacyCards, notes },
           });
 
-          await expect(prepareImportData(json)).rejects.toThrow();
+          expect(() => parseBackup(json)).toThrow();
           await expect(importData(json)).rejects.toThrow();
           expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
           expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
@@ -594,7 +595,7 @@ describe('import-export', () => {
           data: { ...validExportData.data, cards: legacyCards, notes, settings: { theme: 'invalid' } },
         });
 
-        await expect(prepareImportData(json)).rejects.toThrow('Theme must be');
+        expect(() => parseBackup(json)).toThrow('Theme must be');
         expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
         await expect(importData(json)).rejects.toThrow('Theme must be');
         expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
@@ -609,13 +610,21 @@ describe('import-export', () => {
         ...validExportData,
         data: { ...validExportData.data, notes: { [cardUuid]: { text: 'a'.repeat(501) } } },
       });
-      await expect(prepareImportData(json)).rejects.toThrow('Note exceeds maximum length of 500 characters');
+      expect(() => parseBackup(json)).toThrow('Note exceeds maximum length of 500 characters');
       await expect(importData(json)).rejects.toThrow('Note exceeds maximum length of 500 characters');
       expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     });
 
     it.each([
       ...malformedBackupCases(validExportData),
+      ...['dayStartHour', 'autoClearLeetcode'].map((key) => [
+        `retired ${key} in the declared latest version`,
+        JSON.stringify({
+          ...validExportData,
+          schemaVersion: 3,
+          data: { ...validExportData.data, settings: { resetEditorOnEveryProblem: false, [key]: true } },
+        }),
+      ]),
       ['future schema version', JSON.stringify({ ...validExportData, schemaVersion: 4 })],
       ['null root', 'null'],
       ['missing export date', JSON.stringify({ data: {} })],
@@ -639,13 +648,13 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-02-02T00:00:00.000Z');
       const before = await fakeBrowser.storage.local.get(null);
 
-      await expect.soft(prepareImportData(json)).rejects.toThrow();
+      expect.soft(() => parseBackup(json)).toThrow();
       expect.soft(await fakeBrowser.storage.local.get(null)).toEqual(before);
       await expect.soft(importData(json)).rejects.toThrow();
       expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     });
 
-    describe('prepareImportData', () => {
+    describe('legacy imports', () => {
       it('prepares legacy settings without writes and imports normalized values', async () => {
         const existingCards = { existing: createMockCard(State.New, { slug: 'existing' }) };
         await storage.setItem(STORAGE_KEYS.cards, existingCards);
@@ -661,7 +670,7 @@ describe('import-export', () => {
 
         const serializedLegacyData = JSON.stringify(legacyData);
         const parsedLegacyData = JSON.parse(serializedLegacyData);
-        const preparedData = await prepareImportData(serializedLegacyData);
+        const preparedData = parseBackup(serializedLegacyData);
 
         expect(preparedData).toMatchObject({
           cards: parsedLegacyData.data.cards,
@@ -696,12 +705,12 @@ describe('import-export', () => {
       expect(JSON.parse(await exportData()).data.settings.theme).toBe(theme);
     });
 
-    it('should generate a data update timestamp when the import omits it', async () => {
+    it('uses the export timestamp when the import omits dataUpdatedAt', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-09-06T12:00:00.000Z'));
       await importData(JSON.stringify(validExportData));
 
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2026-09-06T12:00:00.000Z');
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(validExportData.exportDate);
     });
 
     it('should throw error for invalid JSON', async () => {

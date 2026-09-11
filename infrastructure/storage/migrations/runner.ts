@@ -30,6 +30,8 @@ export function migrateBackupData(
   steps: readonly Migration[] = migrations
 ): unknown {
   validateVersion(schemaVersion, steps.length);
+  // Check the declared contract even when no further migration will run.
+  if (schemaVersion > 0) steps[schemaVersion - 1].validateOutput(data);
   let migrated = data;
   for (const migration of steps.slice(schemaVersion)) {
     migrated = migration.migrate(migrated);

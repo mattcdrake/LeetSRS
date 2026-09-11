@@ -2,6 +2,7 @@ import { Octokit } from 'octokit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { parseBackup } from '@/infrastructure/storage/backup';
 import { setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
@@ -58,21 +59,56 @@ describe('github-sync', () => {
   });
 
   describe('triggerGistSync', () => {
-    it('rejects an invalid pull without changing local data or sync metadata', async () => {
-      await setSchemaVersion(2);
+    it.each(['records', 'declared version'])(
+      'rejects invalid %s on pull without changing local data or sync metadata',
+      async (kind) => {
+        await setSchemaVersion(2);
+        const { payload, accepted } = mixedRecordBackup();
+        const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
+        await actual.importData(JSON.stringify({ ...payload, data: accepted }));
+        await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+        await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-01-01T00:00:00.000Z');
+        const before = await fakeBrowser.storage.local.get(null);
+        const syncBefore = await fakeBrowser.storage.sync.get(null);
+        const invalid =
+          kind === 'records'
+            ? payload
+            : {
+                ...payload,
+                schemaVersion: 3,
+                data: { ...accepted, settings: { autoClearLeetcode: true, resetEditorOnEveryProblem: false } },
+              };
+        mockImportData.mockImplementation(actual.importData);
+        mockGistsGet.mockResolvedValue({
+          data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(invalid) } } },
+        });
+        expect(await triggerGistSync()).toMatchObject({ success: false, error: expect.any(String) });
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
+        expect(mockGistsUpdate).not.toHaveBeenCalled();
+      }
+    );
+
+    it('preserves the prepared replacement when pulling a historical Gist backup', async () => {
       const { payload, accepted } = mixedRecordBackup();
-      const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
-      await actual.importData(JSON.stringify({ ...payload, data: accepted }));
-      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
-      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-01-01T00:00:00.000Z');
-      const before = await fakeBrowser.storage.local.get(null);
-      mockImportData.mockImplementation(actual.importData);
-      mockGistsGet.mockResolvedValue({
-        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(payload) } } },
+      const json = JSON.stringify({
+        ...payload,
+        data: {
+          ...accepted,
+          settings: { autoClearLeetcode: false, dayStartHour: 4, theme: 'dark' },
+          gistSync: { gistId: 'incoming-gist', enabled: false },
+        },
       });
-      expect(await triggerGistSync()).toMatchObject({ success: false, error: expect.any(String) });
-      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
-      expect(mockGistsUpdate).not.toHaveBeenCalled();
+      const prepared = parseBackup(json);
+      const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
+      mockImportData.mockImplementation(actual.importData);
+      await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-01-01T00:00:00.000Z');
+      mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: json } } } });
+
+      expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pulled' });
+      const { dataUpdatedAt, ...data } = prepared;
+      expect(JSON.parse(await actual.exportData())).toMatchObject({ data, dataUpdatedAt });
+      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('ghp_test');
     });
 
     beforeEach(async () => {
