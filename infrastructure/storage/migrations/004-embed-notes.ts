@@ -1,36 +1,14 @@
 import { z } from 'zod';
 import { storage } from '#imports';
+import { cardSchema, fsrsCardSchema, noteTextSchema as noteText } from '@/domain/schemas/v4';
 import { type Output as Input, validateOutput as validatePreviousOutput } from './003-remove-day-start';
 import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
-// Freeze the version 4 contract here, independently of current application models.
-const nonemptyString = z.string().refine((value) => value.trim().length > 0);
-const timestamp = z.number().min(-8.64e15).max(8.64e15);
-const count = z.int().nonnegative();
-const noteText = z.string().max(500, { error: 'Note exceeds maximum length of 500 characters' });
+// Preserve fields that later migrations may need, including nested FSRS fields.
 const cardV4Schema = z.looseObject({
-  id: nonemptyString,
-  slug: nonemptyString,
-  name: nonemptyString,
-  leetcodeId: nonemptyString,
-  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
-  domain: z.enum(['leetcode.com', 'leetcode.cn']),
-  createdAt: timestamp,
-  paused: z.boolean(),
-  fsrs: z.looseObject({
-    due: timestamp,
-    last_review: timestamp.optional(),
-    state: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
-    stability: z.number().nonnegative(),
-    difficulty: z.number().nonnegative(),
-    elapsed_days: z.number().nonnegative(),
-    scheduled_days: z.number().nonnegative(),
-    reps: count,
-    lapses: count,
-    learning_steps: count,
-  }),
-  note: noteText.optional(),
+  ...cardSchema.shape,
+  fsrs: z.looseObject(fsrsCardSchema.shape),
 });
 
 export interface Output extends Input {

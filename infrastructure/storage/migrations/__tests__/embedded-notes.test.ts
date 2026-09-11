@@ -11,7 +11,12 @@ describe('embedded note migration', () => {
   beforeEach(() => fakeBrowser.reset());
 
   it('moves attached text onto its card without mutating the historical dataset', () => {
-    const card = Object.freeze(createMockCard(State.Review, { id: 'owner', slug: 'two-sum', paused: true }));
+    const base = createMockCard(State.Review, { id: 'owner', slug: 'two-sum', paused: true });
+    const card = Object.freeze({
+      ...base,
+      extra: { retained: true },
+      fsrs: Object.freeze({ ...base.fsrs, extra: { retained: true } }),
+    });
     const input = Object.freeze({
       cards: Object.freeze({ 'two-sum': card }),
       notes: Object.freeze({ owner: Object.freeze({ text: '  Keep the complement  ' }) }),
@@ -35,6 +40,7 @@ describe('embedded note migration', () => {
     { embedded: {}, legacy: undefined, expected: undefined },
     { embedded: {}, legacy: { text: '' }, expected: undefined },
     { embedded: {}, legacy: { text: ' \t\n ' }, expected: ' \t\n ' },
+    { embedded: {}, legacy: { text: 'x'.repeat(500) }, expected: 'x'.repeat(500) },
     { embedded: { note: 'Embedded' }, legacy: { text: 'Legacy' }, expected: 'Embedded' },
     { embedded: { note: '' }, legacy: { text: 'Legacy' }, expected: undefined },
     { embedded: { note: 'Embedded' }, legacy: undefined, expected: 'Embedded' },
