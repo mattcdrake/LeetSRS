@@ -1,17 +1,13 @@
-import type { StorageItemKey } from 'wxt/utils/storage';
 import { storage } from '#imports';
+import { readMigrationData, writeMigrationData } from './migration-storage';
+import { addCardDomain } from './migrations/001-add-card-domain';
+import { addSystemTheme } from './migrations/002-add-system-theme';
+import { removeDayStart } from './migrations/003-remove-day-start';
 import { STORAGE_KEYS } from './storage-keys';
 
-// Cards may be absent in storage, and legacy records have not yet been validated.
-interface MigrationData {
-  cards?: Record<string, unknown>;
-}
-
-export interface Migration {
-  description: string;
-  removeKeys?: readonly StorageItemKey[];
-  migrate: (data: MigrationData) => MigrationData;
-}
+// Append only: index + 1 is the schema version. Never reorder or remove entries.
+const migrations = [addCardDomain, addSystemTheme, removeDayStart] as const;
+export const LATEST_SCHEMA_VERSION = migrations.length;
 
 export async function getCurrentSchemaVersion(): Promise<number> {
   return (await storage.getItem<number>(STORAGE_KEYS.schemaVersion)) ?? 0;
@@ -21,36 +17,13 @@ export async function setSchemaVersion(version: number): Promise<void> {
   await storage.setItem(STORAGE_KEYS.schemaVersion, version);
 }
 
-// Append only: index + 1 is the schema version. Never reorder or remove entries.
-const migrations: readonly Migration[] = [
-  {
-    description: 'Add domain field to existing cards, defaulting to leetcode.com',
-    migrate: (data: MigrationData): MigrationData => {
-      if (!data.cards) return data;
-      const cards = Object.fromEntries(
-        Object.entries(data.cards).map(([slug, card]) => {
-          // Leave malformed records for record validation after migration.
-          if (typeof card !== 'object' || card === null || Array.isArray(card)) return [slug, card];
-          if ('domain' in card && card.domain) return [slug, card];
-          return [slug, { ...card, domain: 'leetcode.com' }];
-        })
-      );
-      return { cards };
-    },
-  },
-  {
-    description: 'Add system theme preference',
-    migrate: (data: MigrationData): MigrationData => data,
-  },
-  {
-    description: 'Remove configurable day start',
-    migrate: (data: MigrationData): MigrationData => data,
-    removeKeys: ['sync:leetsrs:dayStartHour'],
-  },
-];
-
-export function migrateBackupData(data: MigrationData, schemaVersion: number): MigrationData {
-  if (!Number.isInteger(schemaVersion) || schemaVersion < 0 || schemaVersion > migrations.length) {
+export function migrateBackupData(data: unknown, schemaVersion: unknown = 0): unknown {
+  if (
+    typeof schemaVersion !== 'number' ||
+    !Number.isInteger(schemaVersion) ||
+    schemaVersion < 0 ||
+    schemaVersion > LATEST_SCHEMA_VERSION
+  ) {
     throw new Error(`Unsupported schema version: ${schemaVersion}`);
   }
   let migrated = data;
@@ -60,20 +33,14 @@ export function migrateBackupData(data: MigrationData, schemaVersion: number): M
   return migrated;
 }
 
-export async function runStartupMigrations(steps: readonly Migration[] = migrations): Promise<void> {
+export async function runStartupMigrations(): Promise<void> {
   const currentVersion = await getCurrentSchemaVersion();
-  for (const [index, migration] of steps.slice(currentVersion).entries()) {
+  for (const [index, migration] of migrations.slice(currentVersion).entries()) {
     const version = currentVersion + index + 1;
     try {
-      const cards = await storage.getItem<Record<string, unknown>>(STORAGE_KEYS.cards);
-      const data = { cards: cards ?? undefined };
+      const data = await readMigrationData();
       const migrated = migration.migrate(data);
-      if (migrated.cards !== undefined) {
-        await storage.setItem(STORAGE_KEYS.cards, migrated.cards);
-      }
-      if (migration.removeKeys) {
-        await storage.removeItems([...migration.removeKeys]);
-      }
+      await writeMigrationData(data, migrated);
       await setSchemaVersion(version);
     } catch (error) {
       throw new Error(`Failed to run migration ${version}: ${error}`);

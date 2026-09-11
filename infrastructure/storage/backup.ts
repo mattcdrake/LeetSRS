@@ -23,7 +23,3 @@ export type ExportData = z.infer<typeof exportDataSchema>;
 export type PreparedImportData = ExportData['data'] & {
   dataUpdatedAt: NonNullable<ExportData['dataUpdatedAt']>;
 };
-
-export function validateBackupRecords(records: unknown) {
-  return backupRecordsSchema.parse(records);
-}
