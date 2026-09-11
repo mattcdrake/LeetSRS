@@ -62,7 +62,10 @@ export const removeDayStart = {
   async save(output: Output): Promise<void> {
     validateOutput(output);
     if (output.settings?.resetEditorOnEveryProblem !== undefined) {
-      await storage.setItem('sync:leetsrs:resetEditorOnEveryProblem', output.settings.resetEditorOnEveryProblem);
+      // setItem treats null as deletion; preserve raw values until current validation.
+      await storage.setItems([
+        { key: 'sync:leetsrs:resetEditorOnEveryProblem', value: output.settings.resetEditorOnEveryProblem },
+      ]);
     }
   },
   async cleanup(_input: Input): Promise<void> {

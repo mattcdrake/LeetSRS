@@ -476,9 +476,9 @@ describe('migrations', () => {
       expect(data.settings).toEqual({ ...settings, dayStartHour: 4, theme: 'dark' });
 
       await setSchemaVersion(2);
-      for (const [key, value] of Object.entries(data.settings)) {
-        await storage.setItem(`sync:leetsrs:${key}`, value);
-      }
+      await storage.setItems(
+        Object.entries(data.settings).map(([key, value]) => ({ key: `sync:leetsrs:${key}`, value }))
+      );
       await runStartupMigrations();
       await runStartupMigrations();
       expect(await fakeBrowser.storage.sync.get(null)).toEqual({
@@ -489,6 +489,40 @@ describe('migrations', () => {
       expect(() => validateVersion3(reloaded)).not.toThrow();
       expect(reloaded.settings).toEqual(expected.settings);
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+    });
+
+    it('preserves an explicit null current setting through a cleanup retry', async () => {
+      await setSchemaVersion(2);
+      // fakeBrowser deletes null on set; model the browser's null-preserving
+      // storage behavior at its I/O boundary for this regression.
+      const syncData: Record<string, unknown> = {
+        'leetsrs:autoClearLeetcode': true,
+        'leetsrs:resetEditorOnEveryProblem': null,
+        'leetsrs:dayStartHour': 4,
+      };
+      const get = vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementation(async () => ({ ...syncData }));
+      const set = vi.spyOn(fakeBrowser.storage.sync, 'set').mockImplementation(async (items) => {
+        Object.assign(syncData, items);
+      });
+      const remove = vi.spyOn(fakeBrowser.storage.sync, 'remove').mockImplementation(async (keys) => {
+        for (const key of typeof keys === 'string' ? [keys] : keys) delete syncData[key];
+      });
+      const cleanup = vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(new Error('cleanup unavailable'));
+      try {
+        await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
+        expect(syncData['leetsrs:resetEditorOnEveryProblem']).toBeNull();
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
+        await runStartupMigrations();
+        expect(syncData).toEqual({ 'leetsrs:resetEditorOnEveryProblem': null });
+        const reloaded = await readVersion3();
+        expect(() => validateVersion3(reloaded)).not.toThrow();
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+      } finally {
+        get.mockRestore();
+        set.mockRestore();
+        remove.mockRestore();
+        cleanup.mockRestore();
+      }
     });
 
     it('removes the legacy setting while retaining cards, history, and other settings', async () => {
@@ -522,13 +556,15 @@ describe('migrations', () => {
         const write = storage.setItem.bind(storage);
         const failure = new Error('storage unavailable');
         const operation =
-          stage === 'cleanup'
-            ? vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(failure)
-            : vi.spyOn(storage, 'setItem').mockImplementation((key, value) => {
-                const failingKey =
-                  stage === 'save' ? STORAGE_KEYS.resetEditorOnEveryProblem : STORAGE_KEYS.schemaVersion;
-                return key === failingKey ? Promise.reject(failure) : write(key, value);
-              });
+          stage === 'save'
+            ? vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(failure)
+            : stage === 'cleanup'
+              ? vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(failure)
+              : vi
+                  .spyOn(storage, 'setItem')
+                  .mockImplementation((key, value) =>
+                    key === STORAGE_KEYS.schemaVersion ? Promise.reject(failure) : write(key, value)
+                  );
         try {
           await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
           expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
