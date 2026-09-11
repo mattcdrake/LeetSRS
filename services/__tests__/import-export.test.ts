@@ -5,6 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
+import { removeDayStart } from '@/infrastructure/storage/migrations/003-remove-day-start';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
@@ -97,7 +98,7 @@ describe('import-export', () => {
       const result = await exportData();
       const parsed = JSON.parse(result);
 
-      expect(parsed.schemaVersion).toBe(0);
+      expect(parsed.schemaVersion).toBe(3);
       expect(parsed.exportDate).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(parsed.data.stats).toEqual(mockStats);
       expect(parsed.data.notes).toEqual(mockNotes);
@@ -116,7 +117,7 @@ describe('import-export', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed).toMatchObject({
-        schemaVersion: 0,
+        schemaVersion: 3,
         exportDate: expect.any(String),
         data: {
           cards: {},
@@ -128,11 +129,20 @@ describe('import-export', () => {
       expect(parsed.data.monthlyStats).toBeUndefined();
     });
 
-    it('should export schema version 3 after migrations run', async () => {
-      await runStartupMigrations();
-      const parsed = JSON.parse(await exportData());
-      expect(parsed.schemaVersion).toBe(3);
-    });
+    it.each([undefined, 0, 1, 2, 3, 'unreadable'])(
+      'labels exports with the supported schema regardless of device progress %s',
+      async (progress) => {
+        if (typeof progress === 'number') await setSchemaVersion(progress);
+        const read = storage.getItem.bind(storage);
+        vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
+          if (progress === 'unreadable' && key === STORAGE_KEYS.schemaVersion) {
+            throw new Error('Progress unavailable');
+          }
+          return read(key, options);
+        });
+        expect(JSON.parse(await exportData()).schemaVersion).toBe(3);
+      }
+    );
 
     it('does not export legacy monthly stats', async () => {
       await storage.setItem(legacyMonthlyStatsKey, { '2024-01': { totalReviews: 15 } });
@@ -217,7 +227,7 @@ describe('import-export', () => {
         expect(restored.data).toMatchObject(JSON.parse(JSON.stringify(data)));
         expect(restored.data.cards).toEqual(JSON.parse(JSON.stringify(data.cards)));
         expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
-        expect(restored.schemaVersion).toBe(2);
+        expect(restored.schemaVersion).toBe(3);
       }
     );
 
@@ -283,18 +293,31 @@ describe('import-export', () => {
       await setSchemaVersion(2);
     }
 
-    it('propagates schema-read failures without changing existing data', async () => {
-      await seedExistingData();
-      const failure = new Error('schema unavailable');
-      const read = storage.getItem.bind(storage);
-      vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
-        key === STORAGE_KEYS.schemaVersion ? Promise.reject(failure) : read(key, options)
-      );
-      const before = await fakeBrowser.storage.local.get(null);
+    it.each([undefined, 0, 1, 2, 3, 'unreadable'])(
+      'imports the supported schema independently of device progress %s without advancing it',
+      async (progress) => {
+        await seedExistingData();
+        await storage.removeItem(STORAGE_KEYS.schemaVersion);
+        if (typeof progress === 'number') await setSchemaVersion(progress);
+        const read = storage.getItem.bind(storage);
+        vi.spyOn(storage, 'getItem').mockImplementation((key, options) => {
+          if (progress === 'unreadable' && key === STORAGE_KEYS.schemaVersion) {
+            throw new Error('Progress unavailable');
+          }
+          return read(key, options);
+        });
+        const json = JSON.stringify({ ...validExportData, schemaVersion: 3 });
+        const before = await fakeBrowser.storage.local.get(null);
+        const syncBefore = await fakeBrowser.storage.sync.get(null);
 
-      await expect(importData(JSON.stringify(validExportData))).rejects.toBe(failure);
-      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
-    });
+        expect((await prepareImportData(json)).cards).toEqual(validExportData.data.cards);
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
+        await importData(json);
+        expect(JSON.parse(await exportData()).data).toMatchObject(JSON.parse(json).data);
+        expect(await read(STORAGE_KEYS.schemaVersion)).toBe(typeof progress === 'number' ? progress : null);
+      }
+    );
 
     it.each(['2024-01-01T00:00:00.000Z', '2024-01-01T05:30:00+05:30', '2024-01-01', 'Mon, 01 Jan 2024 00:00:00 GMT'])(
       'accepts and preserves the timestamp format %s',
@@ -433,16 +456,24 @@ describe('import-export', () => {
       it.each([0, undefined, 1, 2, 3])(
         'prepares and imports schema %s cards identically to startup migration',
         async (schemaVersion) => {
-          await storage.setItem(STORAGE_KEYS.cards, legacyCards);
+          if (schemaVersion !== undefined) await setSchemaVersion(schemaVersion);
+          await storage.setItem(STORAGE_KEYS.cards, schemaVersion ? currentCards : legacyCards);
           await storage.setItem(STORAGE_KEYS.stats, validExportData.data.stats);
           for (const [id, note] of Object.entries(notes)) {
             await storage.setItem(`${STORAGE_KEYS.notes}:${id}`, note);
           }
-          await storage.setItem(STORAGE_KEYS.theme, 'light');
+          for (const [key, value] of Object.entries(validExportData.data.settings)) {
+            await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
+          }
+          if (schemaVersion !== 3) await storage.setItem('sync:leetsrs:dayStartHour', 4);
           await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
           await runStartupMigrations();
           const startupCards = await storage.getItem(STORAGE_KEYS.cards);
           expect(startupCards).toEqual(currentCards);
+          const startupData = JSON.parse(await exportData()).data;
+          await setSchemaVersion(0);
+          await storage.setItem('sync:leetsrs:dayStartHour', 9);
+          const syncBefore = await fakeBrowser.storage.sync.get(null);
           const before = await fakeBrowser.storage.local.get(null);
           const json = JSON.stringify({
             ...validExportData,
@@ -451,7 +482,7 @@ describe('import-export', () => {
             data: {
               ...validExportData.data,
               cards: schemaVersion ? currentCards : legacyCards,
-              settings: { ...validExportData.data.settings, dayStartHour: 4 },
+              settings: { ...validExportData.data.settings, ...(schemaVersion !== 3 && { dayStartHour: 4 }) },
               notes,
             },
           });
@@ -464,6 +495,7 @@ describe('import-export', () => {
           expect(prepared.settings).toEqual(validExportData.data.settings);
           expect(prepared.dataUpdatedAt).toBe(dataUpdatedAt);
           expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+          expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
 
           await importData(json);
 
@@ -475,9 +507,70 @@ describe('import-export', () => {
           expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
           expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
           expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
-          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
-          expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
-          expect(JSON.parse(await exportData()).data.settings).toEqual(validExportData.data.settings);
+          expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(0);
+          expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBe(9);
+          expect(JSON.parse(await exportData()).data).toEqual(startupData);
+        }
+      );
+
+      it.each([undefined, 0, 1, 2])(
+        'passes raw schema %s fields to their transformation without storage access',
+        async (schemaVersion) => {
+          const rawData = {
+            ...validExportData.data,
+            cards: schemaVersion ? currentCards : legacyCards,
+            notes,
+            settings: {
+              ...validExportData.data.settings,
+              dayStartHour: { historical: 'retain until migration' },
+              autoClearLeetcode: true,
+              historicalSetting: { nested: [1, 2] },
+            },
+            historicalRoot: { keep: true },
+          };
+          // Observe the real historical transformation: final normalization alone
+          // cannot prove that retired fields reached the migration intact.
+          const transform = vi.spyOn(removeDayStart, 'migrate');
+          for (const area of ['local', 'sync'] as const) {
+            for (const operation of ['get', 'set', 'remove', 'clear'] as const) {
+              vi.spyOn(fakeBrowser.storage[area], operation).mockImplementation(() => {
+                throw new Error('Preparation must not access storage');
+              });
+            }
+          }
+
+          const prepared = await prepareImportData(
+            JSON.stringify({ ...validExportData, schemaVersion, dataUpdatedAt, data: rawData })
+          );
+
+          expect(transform).toHaveBeenCalledWith({ ...rawData, cards: currentCards });
+          expect(prepared).toEqual({
+            cards: currentCards,
+            stats: validExportData.data.stats,
+            notes,
+            settings: validExportData.data.settings,
+            gistSync: undefined,
+            dataUpdatedAt,
+          });
+        }
+      );
+
+      it.each([1, 2, 3])(
+        'rejects schema %s cards missing their required domain without repair',
+        async (schemaVersion) => {
+          await seedExistingData();
+          const before = await fakeBrowser.storage.local.get(null);
+          const syncBefore = await fakeBrowser.storage.sync.get(null);
+          const json = JSON.stringify({
+            ...validExportData,
+            schemaVersion,
+            data: { ...validExportData.data, cards: legacyCards, notes },
+          });
+
+          await expect(prepareImportData(json)).rejects.toThrow();
+          await expect(importData(json)).rejects.toThrow();
+          expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+          expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
         }
       );
 
@@ -523,6 +616,7 @@ describe('import-export', () => {
 
     it.each([
       ...malformedBackupCases(validExportData),
+      ['future schema version', JSON.stringify({ ...validExportData, schemaVersion: 4 })],
       ['null root', 'null'],
       ['missing export date', JSON.stringify({ data: {} })],
       ...['cards', 'stats', 'notes'].map((key) => [

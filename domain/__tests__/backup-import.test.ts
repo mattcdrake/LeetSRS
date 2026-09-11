@@ -33,14 +33,11 @@ describe('backup import policy', () => {
             },
           },
         })
-      ),
-      0
+      ).data
     );
     expect(prepared).toEqual({
       ...payload.data,
-      schemaVersion: 0,
       settings: { resetEditorOnEveryProblem: false },
-      dataUpdatedAt: incomingTime,
     });
   });
 
@@ -50,14 +47,14 @@ describe('backup import policy', () => {
       dayStartHour: 5,
       maxNewCardsPerDay: 8,
     });
-    expect(normalizeImportData({ ...payload, data: { ...payload.data, settings } }, 2).settings).toEqual({
+    expect(normalizeImportData({ ...payload.data, settings }).settings).toEqual({
       maxNewCardsPerDay: 8,
     });
   });
 
   it.each([true, false])('maps legacy autoClearLeetcode %s to the current setting', (value) => {
-    expect(
-      normalizeImportData({ ...payload, data: { ...payload.data, settings: { autoClearLeetcode: value } } }, 2).settings
-    ).toEqual({ resetEditorOnEveryProblem: value });
+    expect(normalizeImportData({ ...payload.data, settings: { autoClearLeetcode: value } }).settings).toEqual({
+      resetEditorOnEveryProblem: value,
+    });
   });
 });
