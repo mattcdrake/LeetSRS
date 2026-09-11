@@ -5,7 +5,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
 import * as tracker from '@/infrastructure/storage/data-tracker';
-import { runStartupMigrations } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
 import * as notes from '@/infrastructure/storage/notes';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
@@ -21,7 +21,7 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   onMessage: vi.fn(),
 }));
-vi.mock('@/infrastructure/storage/migrations', () => ({ runStartupMigrations: vi.fn() }));
+vi.mock('@/infrastructure/storage/migrations/runner', () => ({ runStartupMigrations: vi.fn() }));
 vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
 vi.mock('@/services/settings', () => ({ getSettings: vi.fn(), updateSettings: vi.fn() }));
 

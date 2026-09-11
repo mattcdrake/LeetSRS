@@ -2,7 +2,7 @@ import { Octokit } from 'octokit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { getGistSyncStatus, triggerGistSync } from '../github-sync';

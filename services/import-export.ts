@@ -1,8 +1,8 @@
 import { normalizeImportData, validateImportRelationships, validateImportStructure } from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
-import { validateBackupRecords } from '@/infrastructure/storage/backup';
+import { exportDataSchema } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
-import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
+import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations/runner';
 import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
@@ -52,18 +52,12 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   validateImportStructure(data);
   const currentSchema = await getCurrentSchemaVersion();
   const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
-  const migrated = migrateBackupData({ cards: normalizedData.cards }, schemaVersion);
-  const validRecords = validateBackupRecords({
-    cards: migrated.cards,
-    stats: normalizedData.stats,
-    notes: normalizedData.notes,
-  });
-  validateImportRelationships(validRecords);
+  const migrated = migrateBackupData(normalizedData, schemaVersion);
+  const validData = exportDataSchema.shape.data.parse(migrated);
+  validateImportRelationships(validData);
 
   return {
-    ...validRecords,
-    settings: normalizedData.settings,
-    gistSync: normalizedData.gistSync,
+    ...validData,
     dataUpdatedAt: normalizedData.dataUpdatedAt ?? new Date().toISOString(),
   };
 }

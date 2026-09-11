@@ -5,7 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
-import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -430,7 +430,7 @@ describe('import-export', () => {
       const notes = { ...validExportData.data.notes, 'cn-card-id': { text: 'Keep the carry' } };
       const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
 
-      it.each([0, undefined, 2, 3])(
+      it.each([0, undefined, 1, 2, 3])(
         'prepares and imports schema %s cards identically to startup migration',
         async (schemaVersion) => {
           await storage.setItem(STORAGE_KEYS.cards, legacyCards);
