@@ -10,7 +10,7 @@ interface Input extends Record<string, unknown> {
   cards?: Record<string, HistoricalCard>;
 }
 
-export interface CardDomainOutput extends Record<string, unknown> {
+export interface Output extends Record<string, unknown> {
   // Non-object records and truthy malformed domains are deliberately preserved.
   cards?: Record<string, (Record<string, unknown> & { domain: NonNullable<unknown> }) | PreservedCard>;
 }
@@ -30,7 +30,7 @@ function validateInput(data: unknown): asserts data is Input {
   }
 }
 
-export function validateCardDomainOutput(data: unknown): asserts data is CardDomainOutput {
+export function validateOutput(data: unknown): asserts data is Output {
   validateInput(data);
   for (const card of Object.values(data.cards ?? {})) {
     if (isRecord(card) && (!Object.hasOwn(card, 'domain') || !card.domain)) {
@@ -57,14 +57,14 @@ export const addCardDomain = {
     validateInput(input);
     return input;
   },
-  migrate(data: unknown): CardDomainOutput {
+  migrate(data: unknown): Output {
     validateInput(data);
     const output = transform(data);
-    validateCardDomainOutput(output);
+    validateOutput(output);
     return output;
   },
-  async save(output: CardDomainOutput): Promise<void> {
-    validateCardDomainOutput(output);
+  async save(output: Output): Promise<void> {
+    validateOutput(output);
     if (output.cards !== undefined) await storage.setItem('local:leetsrs:cards', output.cards);
   },
-} satisfies Migration<Input, CardDomainOutput>;
+} satisfies Migration<Input, Output>;
