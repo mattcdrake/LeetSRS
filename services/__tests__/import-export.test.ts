@@ -616,6 +616,14 @@ describe('import-export', () => {
 
     it.each([
       ...malformedBackupCases(validExportData),
+      ...['dayStartHour', 'autoClearLeetcode'].map((key) => [
+        `retired ${key} in the declared latest version`,
+        JSON.stringify({
+          ...validExportData,
+          schemaVersion: 3,
+          data: { ...validExportData.data, settings: { resetEditorOnEveryProblem: false, [key]: true } },
+        }),
+      ]),
       ['future schema version', JSON.stringify({ ...validExportData, schemaVersion: 4 })],
       ['null root', 'null'],
       ['missing export date', JSON.stringify({ data: {} })],
@@ -696,12 +704,12 @@ describe('import-export', () => {
       expect(JSON.parse(await exportData()).data.settings.theme).toBe(theme);
     });
 
-    it('should generate a data update timestamp when the import omits it', async () => {
+    it('uses the export timestamp when the import omits dataUpdatedAt', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-09-06T12:00:00.000Z'));
       await importData(JSON.stringify(validExportData));
 
-      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2026-09-06T12:00:00.000Z');
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(validExportData.exportDate);
     });
 
     it('should throw error for invalid JSON', async () => {

@@ -1,13 +1,7 @@
-import {
-  normalizeImportData,
-  parseImportMetadata,
-  validateImportRelationships,
-  validateImportStructure,
-} from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
-import { exportDataSchema } from '@/infrastructure/storage/backup';
+import { parseBackup } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
-import { LATEST_SCHEMA_VERSION, migrateBackupData } from '@/infrastructure/storage/migrations/runner';
+import { LATEST_SCHEMA_VERSION } from '@/infrastructure/storage/migrations/runner';
 import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
@@ -46,23 +40,7 @@ export async function exportData(): Promise<string> {
 }
 
 export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
-  let data: unknown;
-  try {
-    data = JSON.parse(jsonData);
-  } catch {
-    throw new Error('Invalid JSON format');
-  }
-
-  validateImportStructure(data);
-  const { schemaVersion, dataUpdatedAt } = parseImportMetadata(data, LATEST_SCHEMA_VERSION);
-  const migrated = migrateBackupData(data.data, schemaVersion);
-  const validData = exportDataSchema.shape.data.parse(normalizeImportData(migrated));
-  validateImportRelationships(validData);
-
-  return {
-    ...validData,
-    dataUpdatedAt: dataUpdatedAt ?? new Date().toISOString(),
-  };
+  return parseBackup(jsonData);
 }
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {

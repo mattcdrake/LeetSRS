@@ -52,6 +52,7 @@ function transform(data: Input) {
 
 export const addCardDomain = {
   description: 'Add domain field to existing cards, defaulting to leetcode.com',
+  validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
     validateInput(input);

@@ -31,7 +31,11 @@ describe('migrations', () => {
         cards: Object.freeze({ 'two-sum': card }),
         notes: Object.freeze({ [card.id]: { text: 'Keep this note', revision: 7 } }),
         stats: Object.freeze({ '2024-01-01': { totalReviews: 9, historicalStat: true } }),
-        settings: Object.freeze({ theme: 'dark', dayStartHour: 4, historicalSetting: [1, 2] }),
+        settings: Object.freeze({
+          theme: 'dark',
+          ...(schemaVersion !== 3 && { dayStartHour: 4 }),
+          historicalSetting: [1, 2],
+        }),
         gistSync: Object.freeze({ gistId: 'old-gist', enabled: false, historicalConfig: true }),
         historicalRoot: Object.freeze({ value: 'keep' }),
         ['__proto__']: Object.freeze({ legalJsonKey: true }),
@@ -106,7 +110,7 @@ describe('migrations', () => {
         cards: { malformedDomain: { domain: 42 }, malformedRecord: null, arrayRecord: [], booleanRecord: false },
         notes: ['historical note layout'],
         stats: 'historical statistics',
-        settings: { theme: 42, dayStartHour: null, ['__proto__']: 'legal setting key' },
+        settings: { theme: 42, ...(version !== 3 && { dayStartHour: null }), ['__proto__']: 'legal setting key' },
       };
       expect(migrateBackupData(data, version)).toEqual({
         ...data,
@@ -116,24 +120,21 @@ describe('migrations', () => {
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed cards collection in version 1: %s', (cards) => {
       expect(() => migrateBackupData({ cards }, 0)).toThrow('Migration 1');
-      expect(() => migrateBackupData({ cards }, 1)).toThrow('Migration 2');
-      expect(() => migrateBackupData({ cards }, 2)).toThrow('Migration 3');
-      expect(migrateBackupData({ cards }, 3)).toEqual({ cards });
+      expect(() => migrateBackupData({ cards }, 1)).toThrow('Migration 1');
+      expect(() => migrateBackupData({ cards }, 2)).toThrow('Migration 2');
+      expect(() => migrateBackupData({ cards }, 3)).toThrow('Migration 3');
     });
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed settings container in version 3: %s', (settings) => {
       expect(() => migrateBackupData({ settings }, 2)).toThrow('Migration 3');
-      expect(migrateBackupData({ settings }, 3)).toEqual({ settings });
+      expect(() => migrateBackupData({ settings }, 3)).toThrow('Migration 3');
     });
 
-    it.each([null, [], false, 42, 'legacy'])(
-      'rejects an invalid dataset only when a concrete migration needs an object: %s',
-      (data) => {
-        expect(() => migrateBackupData(data, 0)).toThrow('Migration 1');
-        expect(() => migrateBackupData(data, 2)).toThrow('Migration 3');
-        expect(migrateBackupData(data, 3)).toBe(data);
-      }
-    );
+    it.each([null, [], false, 42, 'legacy'])('rejects an invalid dataset against its declared contract: %s', (data) => {
+      expect(() => migrateBackupData(data, 0)).toThrow('Migration 1');
+      expect(() => migrateBackupData(data, 2)).toThrow('Migration 2');
+      expect(() => migrateBackupData(data, 3)).toThrow('Migration 3');
+    });
 
     it('declares concrete output contracts, including preserved malformed cards and identity types', () => {
       expectTypeOf<typeof addCardDomain.migrate>().returns.toEqualTypeOf<{
@@ -212,7 +213,7 @@ describe('migrations', () => {
         const syncBefore = await fakeBrowser.storage.sync.get(null);
 
         await expect(runStartupMigrations()).rejects.toThrow(`Failed to run migration ${version + 1}`);
-        expect(() => migrateBackupData({ cards }, version)).toThrow(`Migration ${version + 1}`);
+        expect(() => migrateBackupData({ cards }, version)).toThrow(`Migration ${version}`);
         expect(await fakeBrowser.storage.local.get(null)).toEqual(localBefore);
         expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
       }
@@ -225,6 +226,9 @@ describe('migrations', () => {
         const steps = [
           {
             description: 'Extract titles into an array',
+            validateOutput(data: unknown): void {
+              z.array(z.string()).parse(data);
+            },
             async load(): Promise<typeof source> {
               return requireDefined(await storage.getItem<typeof source>('local:test:source'));
             },
@@ -240,6 +244,9 @@ describe('migrations', () => {
           },
           {
             description: 'Move titles to sync without changing their logical shape',
+            validateOutput(data: unknown): void {
+              z.array(z.string()).parse(data);
+            },
             async load(): Promise<string[]> {
               return requireDefined(await storage.getItem<string[]>('local:test:titles'));
             },
@@ -255,6 +262,9 @@ describe('migrations', () => {
           },
           {
             description: 'Wrap the moved titles in a different dataset shape',
+            validateOutput(data: unknown): void {
+              z.object({ names: z.array(z.string()) }).parse(data);
+            },
             async load(): Promise<string[]> {
               return requireDefined(await storage.getItem<string[]>('sync:test:titles'));
             },

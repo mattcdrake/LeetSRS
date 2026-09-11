@@ -60,6 +60,7 @@ function transform(data: ValidatedInput) {
 
 export const removeDayStart = {
   description: 'Remove configurable day start and rename the editor-reset setting',
+  validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
     validateInput(input);

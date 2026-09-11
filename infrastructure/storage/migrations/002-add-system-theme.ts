@@ -17,6 +17,7 @@ export const validateOutput: typeof validateInput = validateInput;
 // System theme changed the application default, not the stored logical dataset.
 export const addSystemTheme = {
   description: 'Add system theme preference',
+  validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
     validateInput(input);
