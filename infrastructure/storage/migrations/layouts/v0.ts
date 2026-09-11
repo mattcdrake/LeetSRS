@@ -1,6 +1,6 @@
 import { storage } from '#imports';
 
-// Layout introduced at schema version 0, also used by migrations 1–3.
+// Layout introduced at schema version 0, also used by migrations 1–4.
 // Read raw values without current-model validation or defaults so historical
 // and malformed records reach their migration.
 export async function readDataset(): Promise<Record<string, unknown>> {

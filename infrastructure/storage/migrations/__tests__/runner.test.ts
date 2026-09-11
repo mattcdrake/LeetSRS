@@ -30,7 +30,11 @@ describe('migrations', () => {
         cards: Object.freeze({ 'two-sum': card }),
         notes: Object.freeze({ [card.id]: { text: 'Keep this note', revision: 7 } }),
         stats: Object.freeze({ '2024-01-01': { totalReviews: 9, historicalStat: true } }),
-        settings: Object.freeze({ theme: 'dark', dayStartHour: 4, historicalSetting: [1, 2] }),
+        settings: Object.freeze({
+          theme: 'dark',
+          ...(schemaVersion !== 3 && { dayStartHour: 4 }),
+          historicalSetting: [1, 2],
+        }),
         gistSync: Object.freeze({ gistId: 'old-gist', enabled: false, historicalConfig: true }),
         historicalRoot: Object.freeze({ value: 'keep' }),
         ['__proto__']: Object.freeze({ legalJsonKey: true }),
@@ -105,7 +109,7 @@ describe('migrations', () => {
         cards: { malformedDomain: { domain: 42 }, malformedRecord: null, arrayRecord: [], booleanRecord: false },
         notes: ['historical note layout'],
         stats: 'historical statistics',
-        settings: { theme: 42, dayStartHour: null, ['__proto__']: 'legal setting key' },
+        settings: { theme: 42, ...(version !== 3 && { dayStartHour: null }), ['__proto__']: 'legal setting key' },
       };
       expect(migrateBackupData(data, version)).toEqual({
         ...data,
@@ -117,12 +121,14 @@ describe('migrations', () => {
       expect(() => migrateBackupData({ cards }, 0)).toThrow('Migration 1');
       expect(() => migrateBackupData({ cards }, 1)).toThrow('Migration 2');
       expect(() => migrateBackupData({ cards }, 2)).toThrow('Migration 3');
-      expect(migrateBackupData({ cards }, 3)).toEqual({ cards });
+      expect(() => migrateBackupData({ cards }, 3)).toThrow('Migration 4');
+      expect(migrateBackupData({ cards }, 4)).toEqual({ cards });
     });
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed settings container in version 3: %s', (settings) => {
       expect(() => migrateBackupData({ settings }, 2)).toThrow('Migration 3');
-      expect(migrateBackupData({ settings }, 3)).toEqual({ settings });
+      expect(() => migrateBackupData({ settings }, 3)).toThrow('Migration 4');
+      expect(migrateBackupData({ settings }, 4)).toEqual({ settings });
     });
 
     it.each([null, [], false, 42, 'legacy'])(
@@ -130,7 +136,8 @@ describe('migrations', () => {
       (data) => {
         expect(() => migrateBackupData(data, 0)).toThrow('Migration 1');
         expect(() => migrateBackupData(data, 2)).toThrow('Migration 3');
-        expect(migrateBackupData(data, 3)).toBe(data);
+        expect(() => migrateBackupData(data, 3)).toThrow('Migration 4');
+        expect(migrateBackupData(data, 4)).toBe(data);
       }
     );
 
@@ -173,7 +180,7 @@ describe('migrations', () => {
   });
 
   describe('runStartupMigrations', () => {
-    it.each([-1, 0.5, 4, '1', null, true, {}, []])(
+    it.each([-1, 0.5, 5, '1', null, true, {}, []])(
       'rejects malformed or unsupported completed version %j before writes',
       async (version) => {
         await fakeBrowser.storage.local.set({ 'leetsrs:schemaVersion': version, unrelated: 'keep' });
@@ -328,7 +335,7 @@ describe('migrations', () => {
       await storage.setItem(`${STORAGE_KEYS.notes}:${card.id}`, { text: 'Keep this note', historicalNote: true });
       await storage.setItem(`${STORAGE_KEYS.notes}:__proto__`, { text: 'Legal note key' });
       await storage.setItem('local:leetsrs:historicalData', { value: 'keep' });
-      await storage.setItem('sync:leetsrs:dayStartHour', 4);
+      if (version !== 3) await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem('sync:leetsrs:historicalSetting', { ['__proto__']: 'keep' });
       const localBefore = await fakeBrowser.storage.local.get(null);
@@ -338,10 +345,10 @@ describe('migrations', () => {
       await runStartupMigrations();
       await runStartupMigrations();
 
-      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...localBefore,
-        'leetsrs:schemaVersion': 3,
+        'leetsrs:schemaVersion': 4,
         'leetsrs:cards': { ...cards, [card.slug]: { ...card, domain: version ? 'leetcode.cn' : 'leetcode.com' } },
       });
       expect(await fakeBrowser.storage.sync.get(null)).toEqual(version === 3 ? syncBefore : remainingSettings);
@@ -379,7 +386,7 @@ describe('migrations', () => {
           ...cards,
           'two-sum': { ...cards['two-sum'], domain: 'leetcode.com' },
         },
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
+        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 4,
       });
     });
 
@@ -445,14 +452,14 @@ describe('migrations', () => {
 
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...expectedAfterCardWrite,
-        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 3,
+        [STORAGE_KEYS.schemaVersion.slice('local:'.length)]: 4,
       });
     });
 
     it('should handle empty or missing cards storage', async () => {
       await runStartupMigrations();
 
-      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
     });
   });
 
@@ -471,11 +478,11 @@ describe('migrations', () => {
       await runStartupMigrations();
       await runStartupMigrations();
 
-      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
       expect(await fakeBrowser.storage.sync.get(null)).toEqual(remainingSettings);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...localBefore,
-        'leetsrs:schemaVersion': 3,
+        'leetsrs:schemaVersion': 4,
       });
     });
 
@@ -488,7 +495,7 @@ describe('migrations', () => {
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
         await runStartupMigrations();
         expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
-        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
       } finally {
         remove.mockRestore();
       }
@@ -502,7 +509,7 @@ describe('migrations', () => {
 
       await runStartupMigrations();
 
-      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
     });
   });

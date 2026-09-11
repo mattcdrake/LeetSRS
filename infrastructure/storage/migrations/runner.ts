@@ -3,10 +3,16 @@ import { STORAGE_KEYS } from '../storage-keys';
 import { addCardDomain } from './001-add-card-domain';
 import { addSystemTheme } from './002-add-system-theme';
 import { removeDayStart } from './003-remove-day-start';
+import { renameAutoClear } from './004-rename-auto-clear';
 import type { Migration } from './migration';
 
 // Append only: index + 1 is the schema version. Never reorder or remove entries.
-const migrations = [addCardDomain, addSystemTheme, removeDayStart] as const satisfies readonly Migration[];
+const migrations = [
+  addCardDomain,
+  addSystemTheme,
+  removeDayStart,
+  renameAutoClear,
+] as const satisfies readonly Migration[];
 export const LATEST_SCHEMA_VERSION = migrations.length;
 
 export async function setSchemaVersion(version: number): Promise<void> {
