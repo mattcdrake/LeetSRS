@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { cardSchema } from '@/domain/cards';
 import { gistSyncBackupSchema } from '@/domain/gist-sync';
-import { noteSchema } from '@/domain/notes';
 import { settingsUpdateSchema } from '@/domain/settings';
 import { dailyStatsSchema } from '@/domain/statistics';
 import { LATEST_SCHEMA_VERSION, migrateBackupData } from './migrations/runner';
@@ -23,7 +22,6 @@ export const exportDataSchema = backupMetadataSchema.extend({
   data: z.object({
     cards: z.record(z.string(), cardSchema),
     stats: z.record(z.string(), dailyStatsSchema),
-    notes: z.record(z.string(), noteSchema),
     settings: settingsUpdateSchema.default({}),
     gistSync: gistSyncBackupSchema.optional(),
   }),
@@ -61,8 +59,5 @@ function validateRelationships(records: ExportData['data']): void {
   }
   for (const [date, stats] of Object.entries(records.stats)) {
     if (stats.date !== date) throw new Error(`Stats date does not match key: ${date}`);
-  }
-  for (const id of Object.keys(records.notes)) {
-    if (!cardIds.has(id)) throw new Error(`Note has no owning card: ${id}`);
   }
 }

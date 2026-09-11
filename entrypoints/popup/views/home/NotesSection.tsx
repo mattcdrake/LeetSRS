@@ -4,10 +4,10 @@ import { NoteEditor } from '@/entrypoints/popup/components/notes/NoteEditor';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface NotesSectionProps {
-  cardId: string;
+  slug: string;
 }
 
-export function NotesSection({ cardId }: NotesSectionProps) {
+export function NotesSection({ slug }: NotesSectionProps) {
   const t = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -25,7 +25,7 @@ export function NotesSection({ cardId }: NotesSectionProps) {
       </Button>
 
       <div className="px-4 pb-4 border-t border-current" hidden={!isExpanded}>
-        <NoteEditor cardId={cardId} variant="regular" />
+        <NoteEditor slug={slug} variant="regular" />
       </div>
     </div>
   );

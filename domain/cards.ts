@@ -1,5 +1,6 @@
 import { type CardInput, State } from 'ts-fsrs';
 import { z } from 'zod';
+import { noteSchema } from './notes';
 import { ratingSchema } from './ratings';
 
 const nonemptyString = z.string().refine((value) => value.trim().length > 0, {
@@ -40,10 +41,16 @@ export const fsrsCardSchema = z.object({
 }) satisfies z.ZodType<CardInput>;
 export type FsrsCard = z.infer<typeof fsrsCardSchema>;
 
-export const cardSchema = problemDescriptorSchema.extend({
-  id: nonemptyString,
-  createdAt: epochMilliseconds,
-  fsrs: fsrsCardSchema,
-  paused: z.boolean(),
-});
+export const cardSchema = problemDescriptorSchema
+  .extend({
+    id: nonemptyString,
+    createdAt: epochMilliseconds,
+    fsrs: fsrsCardSchema,
+    paused: z.boolean(),
+    note: noteSchema.shape.text.optional(),
+  })
+  .transform((card) => {
+    if (card.note === '') delete card.note;
+    return card;
+  });
 export type Card = z.infer<typeof cardSchema>;

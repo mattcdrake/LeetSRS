@@ -11,13 +11,13 @@ import { useNoteEditor } from '../useNoteEditor';
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('useNoteEditor', () => {
-  const cardId = 'test-card-123';
+  const slug = 'test-card-123';
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   const renderEditor = (note: Note | null = null) => {
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), note);
-    return renderHook(() => useNoteEditor(cardId), { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), note);
+    return renderHook(() => useNoteEditor(slug), { wrapper });
   };
 
   beforeEach(() => {
@@ -45,7 +45,7 @@ describe('useNoteEditor', () => {
       .resolve('saveNote', save.promise)
       .resolve('deleteNote', remove.promise);
     const { wrapper } = createTestWrapper();
-    const { result } = renderHook(() => useNoteEditor(cardId), { wrapper });
+    const { result } = renderHook(() => useNoteEditor(slug), { wrapper });
 
     expect(result.current.isLoading).toBe(true);
     act(() => result.current.setText('new'));
@@ -82,7 +82,7 @@ describe('useNoteEditor', () => {
     const { result } = renderEditor();
     act(() => result.current.setText('A new note'));
     await act(() => result.current.save());
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId, text: 'A new note' });
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug, text: 'A new note' });
     expect(result.current.text).toBe('A new note');
   });
 
@@ -104,7 +104,7 @@ describe('useNoteEditor', () => {
     expect(result.current.deleteConfirm).toBe(true);
     expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
     await act(() => result.current.remove());
-    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId });
+    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { slug });
     expect(result.current.text).toBe('');
     expect(result.current.deleteConfirm).toBe(false);
   });

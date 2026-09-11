@@ -19,13 +19,13 @@ export interface NoteEditor {
   error: unknown;
 }
 
-export function useNoteEditor(cardId: string): NoteEditor {
+export function useNoteEditor(slug: string): NoteEditor {
   const [text, setText] = useState('');
   const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
-  const { data: note, isLoading, error } = useNoteQuery(cardId);
-  const saveNoteMutation = useSaveNoteMutation(cardId);
-  const deleteNoteMutation = useDeleteNoteMutation(cardId);
+  const { data: note, isLoading, error } = useNoteQuery(slug);
+  const saveNoteMutation = useSaveNoteMutation(slug);
+  const deleteNoteMutation = useDeleteNoteMutation(slug);
 
   useEffect(() => {
     setText(note?.text ?? '');

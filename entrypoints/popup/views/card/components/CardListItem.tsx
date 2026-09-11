@@ -149,7 +149,7 @@ export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardList
             </Button>
           </div>
 
-          <CardNotes cardId={card.id} />
+          <CardNotes slug={card.slug} />
         </div>
       )}
     </div>

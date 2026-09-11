@@ -3,7 +3,6 @@ import { formatLocalDate } from '@/domain/calendar';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { buildReviewQueue, calculateDelayedDueDate, isDue } from '@/domain/review';
 import { getAllCards, saveCards } from '@/infrastructure/storage/cards';
-import { deleteNote } from '@/infrastructure/storage/notes';
 import { getStatsForDate } from '@/infrastructure/storage/stats';
 import { getSettings } from './settings';
 import { updateStats } from './stats';
@@ -39,11 +38,6 @@ export async function addCard(problem: ProblemDescriptor): Promise<Card> {
 
 export async function removeCard(slug: string): Promise<void> {
   const cards = await getAllCards();
-
-  const card = cards.find((card) => card.slug === slug);
-  if (card) {
-    await deleteNote(card.id);
-  }
 
   await saveCards(cards.filter((card) => card.slug !== slug));
 }

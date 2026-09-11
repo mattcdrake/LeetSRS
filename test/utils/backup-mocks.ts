@@ -131,5 +131,9 @@ export function mixedRecordBackup() {
   return {
     payload: { schemaVersion: 2, exportDate: timestamp, dataUpdatedAt: timestamp, data: { cards, stats, notes } },
     accepted: { cards: acceptedCards, stats: acceptedStats, notes: acceptedNotes },
+    embedded: {
+      cards: { ...acceptedCards, 'two-sum': { ...validCard, note: 'Keep this note' } },
+      stats: acceptedStats,
+    },
   };
 }

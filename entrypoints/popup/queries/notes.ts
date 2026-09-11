@@ -1,37 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { cardQueryKeys } from './cards';
 
 export const noteQueryKeys = {
-  all: ['notes'] as const,
-  detail: (cardId: string) => ['notes', cardId] as const,
+  all: [...cardQueryKeys.all, 'notes'] as const,
+  detail: (slug: string) => [...noteQueryKeys.all, slug] as const,
 };
 
-export function useNoteQuery(cardId: string) {
+export function useNoteQuery(slug: string) {
   return useQuery({
-    queryKey: noteQueryKeys.detail(cardId),
-    queryFn: () => sendMessage('getNote', { cardId }),
+    queryKey: noteQueryKeys.detail(slug),
+    queryFn: () => sendMessage('getNote', { slug }),
     staleTime: 1000 * 60 * 5,
   });
 }
 
-export function useSaveNoteMutation(cardId: string) {
+export function useSaveNoteMutation(slug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (text: string) => sendMessage('saveNote', { cardId, text }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: noteQueryKeys.detail(cardId) });
-    },
+    mutationFn: (text: string) => sendMessage('saveNote', { slug, text }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
   });
 }
 
-export function useDeleteNoteMutation(cardId: string) {
+export function useDeleteNoteMutation(slug: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => sendMessage('deleteNote', { cardId }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: noteQueryKeys.detail(cardId) });
-    },
+    mutationFn: () => sendMessage('deleteNote', { slug }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
   });
 }
