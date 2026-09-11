@@ -35,7 +35,7 @@ Use Conventional Commits for commit subjects and pull request titles, such as `f
 
 ## Code Review Rules
 
-For local agent reviews and Claude review automation, use Matt Pocock's installed `code-review` skill directly. Hosted Codex PR reviews use its native review workflow and this repo's documented standards. The skill's upstream source is [code-review/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md).
+For local agent reviews, use Matt Pocock's installed `code-review` skill directly. Claude review automation uses the skill text inlined in its two workflows. Hosted Codex PR reviews use its native review workflow and this repo's documented standards. The skill's upstream source is [code-review/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md).
 
 ## Agent skills
 
