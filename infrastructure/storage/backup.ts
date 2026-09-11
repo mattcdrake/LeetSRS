@@ -7,7 +7,6 @@ import { dailyStatsSchema } from '@/domain/statistics';
 import { LATEST_SCHEMA_VERSION, migrateBackupData } from './migrations/runner';
 
 const schemaVersionSchema = z.number().int().nonnegative();
-// Preserve legacy timestamp formats accepted by Date.parse.
 const timestampSchema = z.string().refine((value) => Number.isFinite(Date.parse(value)));
 const backupMetadataSchema = z.object({
   schemaVersion: schemaVersionSchema,
@@ -16,7 +15,7 @@ const backupMetadataSchema = z.object({
 });
 const backupEnvelopeSchema = backupMetadataSchema.extend({
   schemaVersion: schemaVersionSchema.default(0),
-  // Keep the declared dataset intact for historical validation and migrations.
+  // Validate the declared contract before migrations or field stripping.
   data: z.unknown(),
 });
 

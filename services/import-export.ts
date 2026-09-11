@@ -39,10 +39,6 @@ export async function exportData(): Promise<string> {
   return JSON.stringify(exportData, null, 2);
 }
 
-export async function prepareImportData(jsonData: string): Promise<PreparedImportData> {
-  return parseBackup(jsonData);
-}
-
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await getGitHubPat();
@@ -72,7 +68,7 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
 }
 
 export async function importData(jsonData: string): Promise<void> {
-  const preparedData = await prepareImportData(jsonData);
+  const preparedData = parseBackup(jsonData);
   await applyImportData(preparedData);
 }
 
