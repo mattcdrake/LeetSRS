@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
+import { readDataset } from '../layouts/v5';
 import { migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
 
 describe('shared Gist connection migration', () => {
@@ -26,7 +27,11 @@ describe('shared Gist connection migration', () => {
     expect(await fakeBrowser.storage.sync.get(null)).toEqual({ ...legacy, 'leetsrs:gistConnection': expected });
     expect(writes).toHaveBeenCalledExactlyOnceWith({ 'leetsrs:gistConnection': expected });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBe(5);
-    expect(await storage.getItem('local:leetsrs:lastSyncTime')).toBe('local-status');
+    expect(await readDataset()).toEqual({
+      lastSyncTime: 'local-status',
+      settings: {},
+      gistConnection: expected,
+    });
   });
   it.each([
     { pat: 'shared', gistId: 'shared-gist', enabled: true },
@@ -44,6 +49,39 @@ describe('shared Gist connection migration', () => {
     await runStartupMigrations();
     expect(await readGistConnection()).toEqual(connection);
     expect(await fakeBrowser.storage.sync.get(null)).toEqual(installed);
+    expect(await readDataset()).toEqual({ settings: {}, gistConnection: connection });
+  });
+
+  it.each([
+    { stored: {}, expected: {} },
+    { stored: { 'leetsrs:gistConnection': null }, expected: { gistConnection: null } },
+    { stored: { 'leetsrs:gistConnection': { pat: 42 } }, expected: { gistConnection: { pat: 42 } } },
+  ])('reads raw layout v5 data without defaults or legacy fallback: %j', async ({ stored, expected }) => {
+    const local = {
+      'leetsrs:cards': { unvalidated: 'retain raw record' },
+      'leetsrs:stats': { unvalidated: true },
+      'leetsrs:schemaVersion': 5,
+      'leetsrs:notes:obsolete': { text: 'ignore separate notes' },
+      'leetsrs:lastSyncTime': 'local-status',
+      unrelated: 'ignore',
+    };
+    const sync = {
+      'leetsrs:githubPat': 'old',
+      'leetsrs:gistId': 'old-gist',
+      'leetsrs:gistSyncEnabled': true,
+      'leetsrs:theme': 'unvalidated-theme',
+      unrelated: 'ignore',
+      ...stored,
+    };
+    // Raw snapshots also let us preserve explicit null, which fake storage drops.
+    vi.spyOn(storage, 'snapshot').mockImplementation(async (area) => (area === 'local' ? local : sync));
+    expect(await readDataset()).toEqual({
+      cards: { unvalidated: 'retain raw record' },
+      stats: { unvalidated: true },
+      lastSyncTime: 'local-status',
+      settings: { theme: 'unvalidated-theme' },
+      ...expected,
+    });
   });
 
   it.each([

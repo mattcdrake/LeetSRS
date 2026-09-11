@@ -1,7 +1,10 @@
 import { z } from 'zod';
-import { gistConnectionSchema } from './schemas/v5';
 
-export const gistSyncConfigSchema = gistConnectionSchema;
+export const gistSyncConfigSchema = z.object({
+  pat: z.string(),
+  gistId: z.string().nullable(),
+  enabled: z.boolean(),
+});
 export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
 
 export const gistSyncConfigUpdateSchema = gistSyncConfigSchema.partial();

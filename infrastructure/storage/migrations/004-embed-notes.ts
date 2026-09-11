@@ -1,9 +1,51 @@
 import { z } from 'zod';
 import { storage } from '#imports';
-import { cardSchema, fsrsCardSchema, noteTextSchema as noteText } from '@/domain/schemas/v4';
 import { type Output as Input, validateOutput as validatePreviousOutput } from './003-remove-day-start';
 import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
+
+// Frozen version 4 contract; changes to current domain schemas must not alter this migration.
+const nonemptyString = z.string().refine((value) => value.trim().length > 0, {
+  message: 'Must contain at least one non-whitespace character',
+});
+const count = z.int().nonnegative();
+const epochMilliseconds = z.number().min(-8.64e15).max(8.64e15);
+
+const NOTES_MAX_LENGTH = 500;
+const noteText = z.string().max(NOTES_MAX_LENGTH, {
+  error: `Note exceeds maximum length of ${NOTES_MAX_LENGTH} characters`,
+});
+
+const difficultySchema = z.enum(['Easy', 'Medium', 'Hard']);
+const leetcodeDomainSchema = z.enum(['leetcode.com', 'leetcode.cn']);
+const problemDescriptorSchema = z.object({
+  slug: nonemptyString,
+  name: nonemptyString,
+  leetcodeId: nonemptyString,
+  difficulty: difficultySchema,
+  domain: leetcodeDomainSchema,
+});
+
+const fsrsCardSchema = z.object({
+  due: epochMilliseconds,
+  last_review: epochMilliseconds.optional(),
+  state: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
+  stability: z.number().nonnegative(),
+  difficulty: z.number().nonnegative(),
+  elapsed_days: z.number().nonnegative(),
+  scheduled_days: z.number().nonnegative(),
+  reps: count,
+  lapses: count,
+  learning_steps: count,
+});
+
+const cardSchema = problemDescriptorSchema.extend({
+  id: nonemptyString,
+  createdAt: epochMilliseconds,
+  fsrs: fsrsCardSchema,
+  paused: z.boolean(),
+  note: noteText.optional(),
+});
 
 // Preserve fields that later migrations may need, including nested FSRS fields.
 const cardV4Schema = z.looseObject({

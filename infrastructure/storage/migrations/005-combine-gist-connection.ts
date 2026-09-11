@@ -1,8 +1,15 @@
+import { z } from 'zod';
 import { storage } from '#imports';
-import { gistConnectionSchema } from '@/domain/schemas/v5';
 import { type Output as Input, validateOutput as validateInput } from './004-embed-notes';
 import { readDataset } from './layouts/v4';
 import type { Migration } from './migration';
+
+// Frozen installed connection contract introduced by migration 5.
+const gistConnectionSchema = z.object({
+  pat: z.string(),
+  gistId: z.string().nullable(),
+  enabled: z.boolean(),
+});
 
 export type Output = Input;
 export const validateOutput: typeof validateInput = validateInput;
