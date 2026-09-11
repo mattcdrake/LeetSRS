@@ -160,7 +160,12 @@ describe('migrations', () => {
       expectTypeOf<typeof removeDayStart.save>().parameter(0).toEqualTypeOf<Version3>();
       expectTypeOf<Version3>().toExtend<Version2>();
       expectTypeOf<Version3['settings']>().toEqualTypeOf<
-        (Record<string, unknown> & { dayStartHour?: never; autoClearLeetcode?: never }) | undefined
+        | (Record<string, unknown> & {
+            dayStartHour?: never;
+            autoClearLeetcode?: never;
+            resetEditorOnEveryProblem?: boolean;
+          })
+        | undefined
       >();
     });
   });
@@ -463,7 +468,7 @@ describe('migrations', () => {
       { settings: { autoClearLeetcode: false }, value: false },
       { settings: { autoClearLeetcode: true, resetEditorOnEveryProblem: false }, value: false },
       { settings: { autoClearLeetcode: false, resetEditorOnEveryProblem: true }, value: true },
-      { settings: { autoClearLeetcode: 'malformed' }, value: 'malformed' },
+      { settings: { autoClearLeetcode: 'ignored', resetEditorOnEveryProblem: false }, value: false },
     ])('renames the legacy editor setting in backups and storage: %j', async ({ settings, value }) => {
       const data = { settings: { ...settings, dayStartHour: 4, theme: 'dark' } };
       const expected = {
@@ -491,37 +496,38 @@ describe('migrations', () => {
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
     });
 
-    it('preserves an explicit null current setting through a cleanup retry', async () => {
+    it.each(
+      [null, 'false', 0, {}, []].flatMap((value) =>
+        ['autoClearLeetcode', 'resetEditorOnEveryProblem'].map((key) => ({ key, value }))
+      )
+    )('rejects invalid $key: $value before writes', async ({ key, value }) => {
+      const settings = { autoClearLeetcode: true, [key]: value, dayStartHour: 4 };
+      expect(() => migrateBackupData({ settings }, 2)).toThrow('must be a boolean');
+      expect(() => validateVersion3({ settings: { resetEditorOnEveryProblem: value } })).toThrow('must be a boolean');
+
       await setSchemaVersion(2);
-      // fakeBrowser deletes null on set; model the browser's null-preserving
-      // storage behavior at its I/O boundary for this regression.
-      const syncData: Record<string, unknown> = {
-        'leetsrs:autoClearLeetcode': true,
-        'leetsrs:resetEditorOnEveryProblem': null,
-        'leetsrs:dayStartHour': 4,
-      };
-      const get = vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementation(async () => ({ ...syncData }));
-      const set = vi.spyOn(fakeBrowser.storage.sync, 'set').mockImplementation(async (items) => {
-        Object.assign(syncData, items);
-      });
-      const remove = vi.spyOn(fakeBrowser.storage.sync, 'remove').mockImplementation(async (keys) => {
-        for (const key of typeof keys === 'string' ? [keys] : keys) delete syncData[key];
-      });
-      const cleanup = vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(new Error('cleanup unavailable'));
+      const localBefore = await fakeBrowser.storage.local.get(null);
+      const syncBefore = Object.fromEntries(
+        Object.entries(settings).map(([name, value]) => [`leetsrs:${name}`, value])
+      );
+      // Supply raw stored values because fakeBrowser drops nulls during setup.
+      const snapshot = vi
+        .spyOn(storage, 'snapshot')
+        .mockImplementation(async (area) => (area === 'sync' ? syncBefore : localBefore));
+      const localWrite = vi.spyOn(fakeBrowser.storage.local, 'set');
+      const syncWrite = vi.spyOn(fakeBrowser.storage.sync, 'set');
+      const remove = vi.spyOn(fakeBrowser.storage.sync, 'remove');
       try {
-        await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
-        expect(syncData['leetsrs:resetEditorOnEveryProblem']).toBeNull();
+        await expect(runStartupMigrations()).rejects.toThrow('must be a boolean');
+        expect(localWrite).not.toHaveBeenCalled();
+        expect(syncWrite).not.toHaveBeenCalled();
+        expect(remove).not.toHaveBeenCalled();
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
-        await runStartupMigrations();
-        expect(syncData).toEqual({ 'leetsrs:resetEditorOnEveryProblem': null });
-        const reloaded = await readDataset();
-        expect(() => validateVersion3(reloaded)).not.toThrow();
-        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       } finally {
-        get.mockRestore();
-        set.mockRestore();
+        snapshot.mockRestore();
+        localWrite.mockRestore();
+        syncWrite.mockRestore();
         remove.mockRestore();
-        cleanup.mockRestore();
       }
     });
 

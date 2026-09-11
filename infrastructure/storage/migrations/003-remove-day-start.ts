@@ -8,7 +8,11 @@ interface ValidatedInput extends Input {
 }
 
 export interface Output extends Input {
-  settings?: Record<string, unknown> & { dayStartHour?: never; autoClearLeetcode?: never };
+  settings?: Record<string, unknown> & {
+    dayStartHour?: never;
+    autoClearLeetcode?: never;
+    resetEditorOnEveryProblem?: boolean;
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -25,6 +29,14 @@ function validateInput(data: unknown): asserts data is ValidatedInput {
   if (!isRecord(data) || (data.settings !== undefined && !isRecord(data.settings))) {
     throw new Error('Migration 3 requires a dataset with an optional settings object');
   }
+  const settings = data.settings;
+  const resetEditor =
+    settings?.resetEditorOnEveryProblem !== undefined
+      ? settings.resetEditorOnEveryProblem
+      : settings?.autoClearLeetcode;
+  if (resetEditor !== undefined && typeof resetEditor !== 'boolean') {
+    throw new Error('Migration 3 editor-reset setting must be a boolean');
+  }
 }
 
 export function validateOutput(data: unknown): asserts data is Output {
@@ -37,7 +49,7 @@ export function validateOutput(data: unknown): asserts data is Output {
   }
 }
 
-function transform(data: ValidatedInput): Output {
+function transform(data: ValidatedInput) {
   if (data.settings === undefined) return data;
   const { dayStartHour: _retired, autoClearLeetcode, ...settings } = data.settings;
   if (settings.resetEditorOnEveryProblem === undefined && autoClearLeetcode !== undefined) {
@@ -62,10 +74,7 @@ export const removeDayStart = {
   async save(output: Output): Promise<void> {
     validateOutput(output);
     if (output.settings?.resetEditorOnEveryProblem !== undefined) {
-      // setItem treats null as deletion; preserve raw values until current validation.
-      await storage.setItems([
-        { key: 'sync:leetsrs:resetEditorOnEveryProblem', value: output.settings.resetEditorOnEveryProblem },
-      ]);
+      await storage.setItem('sync:leetsrs:resetEditorOnEveryProblem', output.settings.resetEditorOnEveryProblem);
     }
   },
   async cleanup(_input: Input): Promise<void> {
