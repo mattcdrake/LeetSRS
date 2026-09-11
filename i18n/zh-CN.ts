@@ -180,7 +180,7 @@ const zhCN: Translations = {
     gistSync: {
       title: 'GitHub Gist 同步',
       gistDescription: 'LeetSRS 备份 - 间隔重复数据',
-      description: '通过 GitHub Gist 在不同浏览器间同步数据',
+      description: '通过 GitHub Gist 同步数据。请在每台设备上分别设置令牌、Gist ID 和同步开关。',
       patLabel: '个人访问令牌',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
       patHelpText: '在以下位置创建具有 "gist" 权限的令牌：',

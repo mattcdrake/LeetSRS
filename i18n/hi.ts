@@ -180,7 +180,7 @@ const hi: Translations = {
     gistSync: {
       title: 'GitHub Gist सिंक',
       gistDescription: 'LeetSRS बैकअप - स्पेस्ड रिपिटिशन डेटा',
-      description: 'GitHub Gists का यूज़ करके ब्राउज़रों में डेटा सिंक करें',
+      description: 'GitHub Gists से डेटा सिंक करें। हर डिवाइस पर टोकन, Gist ID और सिंक स्विच अलग से सेट करें।',
       // PAT field
       patLabel: 'पर्सनल एक्सेस टोकन (PAT)',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',

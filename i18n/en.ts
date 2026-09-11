@@ -201,7 +201,8 @@ const en = {
     gistSync: {
       title: 'GitHub Gist Sync',
       gistDescription: 'LeetSRS Backup - Spaced Repetition Data',
-      description: 'Sync your data across browsers using GitHub Gists',
+      description:
+        'Sync your data using GitHub Gists. Set up the token, Gist ID, and sync toggle separately on each device.',
       // PAT field
       patLabel: 'Personal Access Token',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',

@@ -158,7 +158,8 @@ const de: Translations = {
     gistSync: {
       title: 'GitHub-Gist-Synchronisierung',
       gistDescription: 'LeetSRS-Sicherung – Daten zum verteilten Lernen',
-      description: 'Synchronisiere deine Daten über GitHub Gists zwischen Browsern',
+      description:
+        'Synchronisiere deine Daten über GitHub Gists. Richte Token, Gist-ID und Synchronisierung auf jedem Gerät separat ein.',
       patLabel: 'Personal Access Token',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
       patHelpText: 'Erstelle ein Token mit dem Scope "gist" unter',

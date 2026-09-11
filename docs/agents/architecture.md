@@ -44,5 +44,6 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 - Services prepare file imports and Gist pulls through `parseBackup` before replacement, then orchestrate reset/restore through shared persistence adapters. Preserve the local PAT and apply imported timestamps after settings writes.
 - Historical repair and conversion belong in numbered migrations. Parsing discards extras, rejects invalid supported fields and relationships, and preserves valid `dataUpdatedAt` or falls back to the required `exportDate` without reading the clock.
 - Sync, backup/reset, and local-edit tracking share `infrastructure/storage/sync-metadata.ts`.
+- Gist connections use one device-local `{ pat, gistId, enabled }` record, updated as a whole within the background write queue. Legacy browser-sync connection keys remain only as migration input for devices that have not upgraded; runtime callers never fall back to them. Connection edits do not mark learning data updated.
 - Before changing Gist sync conflict resolution, read [ADR-0002](../adr/0002-whole-dataset-gist-sync.md). Restore pulls through backup import.
 - Sync payloads include settings and Gist configuration, exclude the PAT, and need new synchronized fields added to `ExportData`.

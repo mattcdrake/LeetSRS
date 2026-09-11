@@ -3,9 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
+import { addCardDomain } from '../001-add-card-domain';
+import { addSystemTheme } from '../002-add-system-theme';
+import { removeDayStart } from '../003-remove-day-start';
 import { embedNotes, validateOutput } from '../004-embed-notes';
 import { readDataset } from '../layouts/v4';
 import { migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
+
+const historicalMigrations = [addCardDomain, addSystemTheme, removeDayStart, embedNotes];
 
 describe('embedded note migration', () => {
   beforeEach(() => fakeBrowser.reset());
@@ -99,7 +104,7 @@ describe('embedded note migration', () => {
       vi.spyOn(storage, 'snapshot').mockImplementation(async (area) => (area === 'local' ? local : {}));
       const write = vi.spyOn(fakeBrowser.storage.local, 'set');
       const remove = vi.spyOn(fakeBrowser.storage.local, 'remove');
-      await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 4');
+      await expect(runStartupMigrations(historicalMigrations)).rejects.toThrow('Failed to run migration 4');
       expect(write).not.toHaveBeenCalled();
       expect(remove).not.toHaveBeenCalled();
       expect(await storage.getItem('local:leetsrs:schemaVersion')).toBe(3);
@@ -127,7 +132,7 @@ describe('embedded note migration', () => {
               .mockImplementation((key, value) =>
                 key === 'local:leetsrs:schemaVersion' ? Promise.reject(failure) : write(key, value)
               );
-    await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 4');
+    await expect(runStartupMigrations(historicalMigrations)).rejects.toThrow('Failed to run migration 4');
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBe(3);
     expect(await storage.getItem('local:leetsrs:notes:owner')).toEqual(
       stage === 'version' ? null : { text: 'Keep the schedule' }
@@ -136,8 +141,8 @@ describe('embedded note migration', () => {
       'two-sum': { ...card, ...(stage !== 'save' && { note: 'Keep the schedule' }) },
     });
     failed.mockRestore();
-    await runStartupMigrations();
-    await runStartupMigrations();
+    await runStartupMigrations(historicalMigrations);
+    await runStartupMigrations(historicalMigrations);
     expect(await fakeBrowser.storage.local.get(null)).toEqual({
       'leetsrs:cards': { 'two-sum': { ...card, note: 'Keep the schedule' } },
       'leetsrs:schemaVersion': 4,

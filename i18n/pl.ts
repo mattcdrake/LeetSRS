@@ -202,7 +202,8 @@ const pl: Translations = {
     gistSync: {
       title: 'Synchronizacja przez GitHub Gist',
       gistDescription: 'Kopia zapasowa LeetSRS - Dane powtórek rozłożonych w czasie',
-      description: 'Synchronizuj dane między przeglądarkami za pomocą GitHub Gists',
+      description:
+        'Synchronizuj dane przez GitHub Gist. Ustaw token, ID Gista i włącz synchronizację osobno na każdym urządzeniu.',
       // PAT field
       patLabel: 'Osobisty token dostępu',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',

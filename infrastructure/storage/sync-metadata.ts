@@ -7,9 +7,7 @@ import { STORAGE_KEYS } from './storage-keys';
 // Callers retain defaults, PAT preservation, timestamps, and operation order.
 // These calls do not mark local edits.
 const syncMetadataSchema = z.object({
-  githubPat: gistSyncConfigSchema.shape.pat,
-  gistId: gistSyncConfigSchema.shape.gistId.unwrap(),
-  gistSyncEnabled: gistSyncConfigSchema.shape.enabled,
+  gistConnection: gistSyncConfigSchema,
   lastSyncTime: z.string(),
   lastSyncDirection: z.enum(['push', 'pull']),
   dataUpdatedAt: z.string(),
@@ -24,7 +22,7 @@ export async function readSyncMetadata<K extends keyof SyncMetadata>(key: K): Pr
 }
 
 export function writeSyncMetadata<K extends keyof SyncMetadata>(key: K, value: SyncMetadata[K]): Promise<void> {
-  return storage.setItem(STORAGE_KEYS[key], value);
+  return storage.setItem(STORAGE_KEYS[key], fields[key].parse(value));
 }
 
 export function removeSyncMetadata(key: keyof SyncMetadata): Promise<void> {

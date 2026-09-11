@@ -1,22 +1,14 @@
 import type { PatValidationResult } from '@/domain/gist-sync';
 import { createGitHubClient, type GitHubClient } from '@/infrastructure/github/client';
-import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 
-export function getGitHubPat(): Promise<string | null> {
-  return readSyncMetadata('githubPat');
+export async function getGitHubPat(): Promise<string | null> {
+  return (await readSyncMetadata('gistConnection'))?.pat ?? null;
 }
 
-export function setGitHubPat(pat: string): Promise<void> {
-  return writeSyncMetadata('githubPat', pat);
-}
-
-export function removeGitHubPat(): Promise<void> {
-  return removeSyncMetadata('githubPat');
-}
-
-// Readiness matches the existing truthy-credential gate without making a request.
-export async function hasGitHubCredentials(): Promise<boolean> {
-  return Boolean(await getGitHubPat());
+export async function setGitHubPat(pat: string): Promise<void> {
+  const connection = (await readSyncMetadata('gistConnection')) ?? { pat: '', gistId: null, enabled: false };
+  await writeSyncMetadata('gistConnection', { ...connection, pat });
 }
 
 export function getAuthenticatedGitHubClient(pat: string): Promise<GitHubClient>;

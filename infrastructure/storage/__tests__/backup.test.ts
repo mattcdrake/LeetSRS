@@ -151,7 +151,7 @@ describe('parseBackup', () => {
   });
 
   it.each([
-    { schemaVersion: 5 },
+    { schemaVersion: 6 },
     { schemaVersion: -1 },
     { schemaVersion: null },
     { schemaVersion: 1.5 },

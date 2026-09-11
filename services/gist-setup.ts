@@ -5,40 +5,20 @@ import {
   gistSyncConfigUpdateSchema,
 } from '@/domain/gist-sync';
 import { GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
-import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
-import { getAuthenticatedGitHubClient, getGitHubPat, setGitHubPat } from './github-auth';
+import { getAuthenticatedGitHubClient } from './github-auth';
 import { exportData } from './import-export';
 
 export async function getGistSyncConfig(): Promise<GistSyncConfig> {
-  const [pat, destination] = await Promise.all([getGitHubPat(), getGistDestinationConfig()]);
-  return { pat: pat ?? '', ...destination };
+  return (await readSyncMetadata('gistConnection')) ?? { pat: '', gistId: null, enabled: false };
 }
 
 export async function setGistSyncConfig(config: GistSyncConfigUpdate): Promise<void> {
   const parsed = gistSyncConfigUpdateSchema.parse(config);
-  if (parsed.pat !== undefined) {
-    await setGitHubPat(parsed.pat);
-  }
-  await setGistDestinationConfig(parsed);
-}
-
-export async function getGistDestinationConfig(): Promise<Omit<GistSyncConfig, 'pat'>> {
-  const [gistId, enabled] = await Promise.all([readSyncMetadata('gistId'), readSyncMetadata('gistSyncEnabled')]);
-  return { gistId: gistId ?? null, enabled: enabled ?? false };
-}
-
-export async function setGistDestinationConfig(config: Partial<Omit<GistSyncConfig, 'pat'>>): Promise<void> {
-  if (config.gistId !== undefined) {
-    if (config.gistId === null) {
-      await removeSyncMetadata('gistId');
-    } else {
-      await writeSyncMetadata('gistId', config.gistId);
-    }
-  }
-  if (config.enabled !== undefined) {
-    await writeSyncMetadata('gistSyncEnabled', config.enabled);
-  }
+  const changes = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== undefined));
+  if (Object.keys(changes).length === 0) return;
+  await writeSyncMetadata('gistConnection', { ...(await getGistSyncConfig()), ...changes });
 }
 
 export async function validateGistId(gistId: string, pat: string): Promise<GistValidationResult> {
@@ -100,7 +80,7 @@ export async function createGist(github: GitHubClient): Promise<{ gistId: string
 
   const gistId = data.id;
 
-  await setGistDestinationConfig({ gistId });
+  await setGistSyncConfig({ gistId });
 
   const now = new Date().toISOString();
   await writeSyncMetadata('lastSyncTime', now);

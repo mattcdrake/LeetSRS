@@ -20,14 +20,8 @@ import {
   setPauseStatus,
 } from '@/services/cards';
 import { shouldResetEditor } from '@/services/editor-reset';
-import {
-  createNewGist,
-  getGistDestinationConfig,
-  getGistSyncConfig,
-  setGistSyncConfig,
-  validateGistId,
-} from '@/services/gist-setup';
-import { hasGitHubCredentials, validatePat } from '@/services/github-auth';
+import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
+import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { deleteNote, getNote, saveNote } from '@/services/notes';
@@ -168,8 +162,8 @@ export default defineBackground(() => {
       return;
     }
 
-    const [config, hasCredentials] = await Promise.all([getGistDestinationConfig(), hasGitHubCredentials()]);
-    if (config.enabled && hasCredentials && config.gistId) {
+    const config = await getGistSyncConfig();
+    if (config.enabled && config.pat && config.gistId) {
       await dispatch('triggerGistSync', undefined);
     } else {
       await updateBadge();

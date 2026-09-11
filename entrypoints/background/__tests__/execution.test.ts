@@ -49,6 +49,52 @@ beforeEach(async () => {
 const problem = buildProblem();
 
 describe('registered background execution', () => {
+  it('serializes connection edits without marking learning data or changing another device’s legacy settings', async () => {
+    const legacy = {
+      'leetsrs:githubPat': 'other-device',
+      'leetsrs:gistId': 'other-gist',
+      'leetsrs:gistSyncEnabled': true,
+    };
+    await fakeBrowser.storage.sync.set(legacy);
+    const timestamp = '2024-01-01T00:00:00.000Z';
+    await storage.setItem(STORAGE_KEYS.dataUpdatedAt, timestamp);
+
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: '', gistId: null, enabled: false });
+    await Promise.all([
+      dispatch('setGistSyncConfig', { config: { pat: 'this-device' } }),
+      dispatch('setGistSyncConfig', { config: { gistId: 'this-gist' } }),
+      dispatch('setGistSyncConfig', { config: { enabled: true } }),
+    ]);
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'this-device', gistId: 'this-gist', enabled: true });
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
+    expect(await fakeBrowser.storage.sync.get(null)).toEqual(legacy);
+
+    await dispatch('resetAllData');
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await fakeBrowser.storage.sync.get(null)).toEqual(legacy);
+  });
+
+  it('blocks connection commands after migration failure and accepts them after a successful restart', async () => {
+    fakeBrowser.reset();
+    vi.mocked(onMessage).mockClear();
+    await storage.setItem(STORAGE_KEYS.schemaVersion, 4);
+    await storage.setItem('sync:leetsrs:githubPat', 'migrated-token');
+    const failure = vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('Connection unavailable'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    background.main();
+    await expect(dispatch('getGistSyncConfig')).rejects.toThrow('Failed to run migration 5');
+    await expect(dispatch('setGistSyncConfig', { config: { pat: 'replacement' } })).rejects.toThrow(
+      'Failed to run migration 5'
+    );
+    expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(4);
+    failure.mockRestore();
+    vi.mocked(onMessage).mockClear();
+    background.main();
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'migrated-token', gistId: null, enabled: false });
+    await dispatch('setGistSyncConfig', { config: { enabled: true } });
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'migrated-token', gistId: null, enabled: true });
+  });
+
   it('edits a card note by slug while preserving the card and its schedule', async () => {
     const card = await cards.addCard(problem);
     await expect(dispatch('getNote', { slug: problem.slug })).resolves.toBeNull();

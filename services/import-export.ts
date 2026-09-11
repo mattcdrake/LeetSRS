@@ -4,16 +4,15 @@ import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/ca
 import { LATEST_SCHEMA_VERSION } from '@/infrastructure/storage/migrations/runner';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
-import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
+import { getGitHubPat, setGitHubPat } from './github-auth';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const [cards, stats, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
+  const [cards, stats, settings, connection, dataUpdatedAt] = await Promise.all([
     getAllCards(),
     getStats(),
     exportSettings(),
-    readSyncMetadata('gistId'),
-    readSyncMetadata('gistSyncEnabled'),
+    readSyncMetadata('gistConnection'),
     readSyncMetadata('dataUpdatedAt'),
   ]);
 
@@ -26,8 +25,8 @@ export async function exportData(): Promise<string> {
       stats,
       settings,
       gistSync: {
-        ...(gistId != null && { gistId }),
-        ...(gistSyncEnabled != null && { enabled: gistSyncEnabled }),
+        ...(connection?.gistId != null && { gistId: connection.gistId }),
+        ...(connection != null && { enabled: connection.enabled }),
       },
     },
   };
@@ -49,12 +48,11 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
-    if (preparedData.gistSync.gistId != null) {
-      await writeSyncMetadata('gistId', preparedData.gistSync.gistId);
-    }
-    if (preparedData.gistSync.enabled != null) {
-      await writeSyncMetadata('gistSyncEnabled', preparedData.gistSync.enabled);
-    }
+    await writeSyncMetadata('gistConnection', {
+      pat: existingPat || '',
+      gistId: preparedData.gistSync.gistId ?? null,
+      enabled: preparedData.gistSync.enabled ?? false,
+    });
   }
 
   await writeSyncMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
@@ -69,9 +67,7 @@ export async function resetAllData(): Promise<void> {
   await removeCards();
   await removeStats();
   await resetSettings();
-  await removeGitHubPat();
-  await removeSyncMetadata('gistId');
-  await removeSyncMetadata('gistSyncEnabled');
+  await removeSyncMetadata('gistConnection');
   await removeSyncMetadata('lastSyncTime');
   await removeSyncMetadata('lastSyncDirection');
   await removeSyncMetadata('dataUpdatedAt');
