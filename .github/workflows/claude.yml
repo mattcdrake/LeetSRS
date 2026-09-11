@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
       issues: read
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
@@ -43,5 +43,5 @@ jobs:
             actions: read
 
           claude_args: |
-            --append-system-prompt "When asked to review code, invoke /mattpocock-skills:code-review directly. That skill delegates each review axis to a sub-agent, and sub-agents run in the background. Collect every sub-agent result with TaskOutput before aggregating, and never end your turn while a sub-agent is still running: this run is headless, so ending the turn early kills the pending sub-agents and nothing is ever published. Publish your findings by updating your comment before you finish, even if a sub-agent failed to return."
-            --allowedTools "Read,Glob,Grep,Agent,TaskOutput,TaskStop,Skill(mattpocock-skills:code-review),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git status:*),Bash(git show:*)"
+            --append-system-prompt "Sub-agents run in the background. Collect every sub-agent's result with TaskOutput before you aggregate, and never end your turn while a sub-agent is still running: this run is headless, so ending the turn early kills the pending sub-agents and nothing is ever published. Publish your findings before you finish, even if a sub-agent failed to return: replace your existing comment with the full review if you have the mcp__github_comment__update_claude_comment tool, otherwise post it with gh pr comment. When asked to review code, invoke /mattpocock-skills:code-review directly."
+            --allowedTools "Read,Glob,Grep,Agent,TaskOutput,TaskStop,Skill(mattpocock-skills:code-review),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git status:*),Bash(git show:*)"
