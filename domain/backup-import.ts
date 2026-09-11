@@ -30,6 +30,7 @@ export const backupMetadataSchema = z.object({
 });
 
 export function validateImportStructure(data: unknown): asserts data is BackupImportEnvelope {
+  // Validate without replacing the raw input; parsing strips fields historical migrations may need.
   structureSchema.parse(data);
 }
 

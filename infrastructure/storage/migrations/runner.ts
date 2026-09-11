@@ -9,10 +9,6 @@ import type { Migration } from './migration';
 const migrations = [addCardDomain, addSystemTheme, removeDayStart] as const satisfies readonly Migration[];
 export const LATEST_SCHEMA_VERSION = migrations.length;
 
-export async function getCurrentSchemaVersion(): Promise<number> {
-  return (await storage.getItem<number>(STORAGE_KEYS.schemaVersion)) ?? 0;
-}
-
 export async function setSchemaVersion(version: number): Promise<void> {
   await storage.setItem(STORAGE_KEYS.schemaVersion, version);
 }
