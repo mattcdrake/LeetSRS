@@ -8,7 +8,7 @@ interface ValidatedInput extends Input {
 }
 
 export interface Output extends Input {
-  settings?: Record<string, unknown> & { dayStartHour?: never };
+  settings?: Record<string, unknown> & { dayStartHour?: never; autoClearLeetcode?: never };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,19 +29,25 @@ function validateInput(data: unknown): asserts data is ValidatedInput {
 
 export function validateOutput(data: unknown): asserts data is Output {
   validateInput(data);
-  if (data.settings !== undefined && Object.hasOwn(data.settings, 'dayStartHour')) {
-    throw new Error('Migration 3 must remove dayStartHour');
+  if (
+    data.settings !== undefined &&
+    (Object.hasOwn(data.settings, 'dayStartHour') || Object.hasOwn(data.settings, 'autoClearLeetcode'))
+  ) {
+    throw new Error('Migration 3 must remove retired settings');
   }
 }
 
 function transform(data: ValidatedInput): Output {
   if (data.settings === undefined) return data;
-  const { dayStartHour: _retired, ...settings } = data.settings;
+  const { dayStartHour: _retired, autoClearLeetcode, ...settings } = data.settings;
+  if (settings.resetEditorOnEveryProblem === undefined && autoClearLeetcode !== undefined) {
+    settings.resetEditorOnEveryProblem = autoClearLeetcode;
+  }
   return { ...data, settings };
 }
 
 export const removeDayStart = {
-  description: 'Remove configurable day start',
+  description: 'Remove configurable day start and rename the editor-reset setting',
   async load(): Promise<Input> {
     const input = await readDataset();
     validateInput(input);
@@ -55,9 +61,11 @@ export const removeDayStart = {
   },
   async save(output: Output): Promise<void> {
     validateOutput(output);
-    // Retiring the setting requires only source cleanup, not destination writes.
+    if (output.settings?.resetEditorOnEveryProblem !== undefined) {
+      await storage.setItem('sync:leetsrs:resetEditorOnEveryProblem', output.settings.resetEditorOnEveryProblem);
+    }
   },
   async cleanup(_input: Input): Promise<void> {
-    await storage.removeItems(['sync:leetsrs:dayStartHour']);
+    await storage.removeItems(['sync:leetsrs:dayStartHour', 'sync:leetsrs:autoClearLeetcode']);
   },
 } satisfies Migration<Input, Output>;
