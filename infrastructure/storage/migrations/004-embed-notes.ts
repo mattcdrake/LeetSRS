@@ -9,7 +9,7 @@ const nonemptyString = z.string().refine((value) => value.trim().length > 0);
 const timestamp = z.number().min(-8.64e15).max(8.64e15);
 const count = z.int().nonnegative();
 const noteText = z.string().max(500, { error: 'Note exceeds maximum length of 500 characters' });
-const historicalCard = z.looseObject({
+const cardV4Schema = z.looseObject({
   id: nonemptyString,
   slug: nonemptyString,
   name: nonemptyString,
@@ -34,7 +34,7 @@ const historicalCard = z.looseObject({
 });
 
 export interface Output extends Input {
-  cards?: Record<string, z.infer<typeof historicalCard>>;
+  cards?: Record<string, z.infer<typeof cardV4Schema>>;
   notes?: never;
 }
 
@@ -51,7 +51,7 @@ function parseCards(cards: Input['cards']): NonNullable<Output['cards']> {
   const ids = new Set<string>();
   return Object.fromEntries(
     Object.entries(cards ?? {}).map(([slug, value]) => {
-      const card = historicalCard.parse(value);
+      const card = cardV4Schema.parse(value);
       if (card.slug !== slug) throw new Error(`Card slug does not match key: ${slug}`);
       if (ids.has(card.id)) throw new Error(`Duplicate card ID: ${card.id}`);
       ids.add(card.id);

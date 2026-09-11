@@ -53,6 +53,8 @@ Use a single-context layout. Before exploring the domain, read `docs/agents/doma
 
 ## Architecture boundaries
 
+Keep `docs/agents/architecture.md` focused on details that materially affect architecture: ownership, boundaries, and cross-cutting constraints. If a change fits the documented patterns, leave the reference unchanged rather than adding a PR summary.
+
 - Domain owns explicit-input policy and models; services own workflows and side effects; infrastructure owns external I/O and persistence.
 - Infrastructure must not depend on services or UI. Domain must not depend on browser, storage, services, messaging, or translation catalogs.
 - Popup and content workflows call typed background messages. Content may read translations through its storage adapter.

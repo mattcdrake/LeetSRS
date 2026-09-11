@@ -1,8 +1,9 @@
 import { storage } from '#imports';
 
-// Layout introduced at schema version 4: note text is embedded in each card.
-// Read raw values without current-model validation or defaults so historical
-// and malformed records reach their migration.
+// Layout v4, introduced by migration 4. Unlike v0, this reader omits the separate
+// notes collection assembled from leetsrs:notes:* keys; notes now live in cards.
+// Return stored values unchanged so callers can validate the relevant schema
+// version without applying domain/cards.ts or other application schemas first.
 export async function readDataset(): Promise<Record<string, unknown>> {
   const [local, sync] = await Promise.all([storage.snapshot('local'), storage.snapshot('sync')]);
   const localData = Object.fromEntries(
