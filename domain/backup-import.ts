@@ -30,6 +30,7 @@ export const backupMetadataSchema = z.object({
 });
 
 export function validateImportStructure(data: unknown): asserts data is BackupImportEnvelope {
+  // Validate without replacing the raw input; parsing strips fields historical migrations may need.
   structureSchema.parse(data);
 }
 
@@ -48,22 +49,25 @@ function getImportedSettings(settings: unknown): Partial<Settings> {
   return settingsUpdateSchema.parse(importedSettings);
 }
 
-export function normalizeImportData(data: BackupImportEnvelope, currentSchema: number) {
+export function parseImportMetadata(data: BackupImportEnvelope, supportedSchema: number) {
   const importedSchema = schemaVersionSchema.optional().parse(data.schemaVersion) ?? 0;
-  if (importedSchema > currentSchema) {
+  if (importedSchema > supportedSchema) {
     throw new Error(`Export is from a newer version (schema ${importedSchema}). Please update the extension.`);
   }
   timestampSchema.parse(data.exportDate);
   const dataUpdatedAt = timestampSchema.optional().parse(data.dataUpdatedAt);
 
+  return { schemaVersion: importedSchema, dataUpdatedAt };
+}
+
+export function normalizeImportData(data: unknown) {
+  const records = structureSchema.shape.data.parse(data);
   return {
-    schemaVersion: importedSchema,
-    cards: objectMapSchema.parse(data.data.cards),
-    stats: objectMapSchema.parse(data.data.stats),
-    notes: objectMapSchema.parse(data.data.notes),
-    settings: getImportedSettings(data.data.settings),
-    gistSync: gistSyncBackupSchema.optional().parse(data.data.gistSync),
-    dataUpdatedAt,
+    cards: objectMapSchema.parse(records.cards),
+    stats: objectMapSchema.parse(records.stats),
+    notes: objectMapSchema.parse(records.notes),
+    settings: getImportedSettings(records.settings),
+    gistSync: gistSyncBackupSchema.optional().parse(records.gistSync),
   };
 }
 

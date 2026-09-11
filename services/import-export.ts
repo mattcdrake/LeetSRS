@@ -1,8 +1,13 @@
-import { normalizeImportData, validateImportRelationships, validateImportStructure } from '@/domain/backup-import';
+import {
+  normalizeImportData,
+  parseImportMetadata,
+  validateImportRelationships,
+  validateImportStructure,
+} from '@/domain/backup-import';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import { exportDataSchema } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
-import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations/runner';
+import { LATEST_SCHEMA_VERSION, migrateBackupData } from '@/infrastructure/storage/migrations/runner';
 import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
@@ -11,7 +16,7 @@ import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
   const cardsPromise = getAllCards();
-  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt, schemaVersion] = await Promise.all([
+  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
     cardsPromise,
     getStats(),
     cardsPromise.then((cards) => getNotesForCards(cards)),
@@ -19,11 +24,10 @@ export async function exportData(): Promise<string> {
     readSyncMetadata('gistId'),
     readSyncMetadata('gistSyncEnabled'),
     readSyncMetadata('dataUpdatedAt'),
-    getCurrentSchemaVersion(),
   ]);
 
   const exportData: ExportData = {
-    schemaVersion,
+    schemaVersion: LATEST_SCHEMA_VERSION,
     exportDate: new Date().toISOString(),
     dataUpdatedAt: dataUpdatedAt ?? undefined,
     data: {
@@ -50,15 +54,14 @@ export async function prepareImportData(jsonData: string): Promise<PreparedImpor
   }
 
   validateImportStructure(data);
-  const currentSchema = await getCurrentSchemaVersion();
-  const { schemaVersion, ...normalizedData } = normalizeImportData(data, currentSchema);
-  const migrated = migrateBackupData(normalizedData, schemaVersion);
-  const validData = exportDataSchema.shape.data.parse(migrated);
+  const { schemaVersion, dataUpdatedAt } = parseImportMetadata(data, LATEST_SCHEMA_VERSION);
+  const migrated = migrateBackupData(data.data, schemaVersion);
+  const validData = exportDataSchema.shape.data.parse(normalizeImportData(migrated));
   validateImportRelationships(validData);
 
   return {
     ...validData,
-    dataUpdatedAt: normalizedData.dataUpdatedAt ?? new Date().toISOString(),
+    dataUpdatedAt: dataUpdatedAt ?? new Date().toISOString(),
   };
 }
 

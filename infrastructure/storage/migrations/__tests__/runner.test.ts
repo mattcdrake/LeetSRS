@@ -10,13 +10,7 @@ import { STORAGE_KEYS } from '../../storage-keys';
 import type { addCardDomain } from '../001-add-card-domain';
 import type { addSystemTheme } from '../002-add-system-theme';
 import type { removeDayStart } from '../003-remove-day-start';
-import {
-  getCurrentSchemaVersion,
-  LATEST_SCHEMA_VERSION,
-  migrateBackupData,
-  runStartupMigrations,
-  setSchemaVersion,
-} from '../runner';
+import { LATEST_SCHEMA_VERSION, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
 
 describe('migrations', () => {
   beforeEach(() => {
@@ -170,19 +164,6 @@ describe('migrations', () => {
     });
   });
 
-  describe('getCurrentSchemaVersion', () => {
-    it('should return 0 when no version is stored', async () => {
-      const version = await getCurrentSchemaVersion();
-      expect(version).toBe(0);
-    });
-
-    it('should return stored version', async () => {
-      await storage.setItem(STORAGE_KEYS.schemaVersion, 5);
-      const version = await getCurrentSchemaVersion();
-      expect(version).toBe(5);
-    });
-  });
-
   describe('setSchemaVersion', () => {
     it('should set schema version', async () => {
       await setSchemaVersion(3);
@@ -295,7 +276,7 @@ describe('migrations', () => {
               : vi.spyOn(storage, 'removeItem').mockRejectedValueOnce(new Error('cleanup unavailable'));
           try {
             await expect(runStartupMigrations(steps)).rejects.toThrow('Failed to run migration 1');
-            expect(await getCurrentSchemaVersion()).toBe(0);
+            expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBeNull();
             expect(await storage.getItem('local:test:source')).toEqual(source);
             expect(await storage.getItem('local:test:titles')).toEqual(
               failure === 'save' ? null : ['Two Sum', 'Add Two Numbers']
@@ -357,7 +338,7 @@ describe('migrations', () => {
       await runStartupMigrations();
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...localBefore,
         'leetsrs:schemaVersion': 3,
@@ -412,7 +393,7 @@ describe('migrations', () => {
       });
       try {
         await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 1');
-        expect(await getCurrentSchemaVersion()).toBe(0);
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBeNull();
         expect(writes.mock.calls.map(([key]) => key)).not.toContain(STORAGE_KEYS.schemaVersion);
       } finally {
         writes.mockRestore();
@@ -453,7 +434,7 @@ describe('migrations', () => {
       });
       try {
         await expect(runStartupMigrations()).rejects.toThrow('schema persistence failed');
-        expect(await getCurrentSchemaVersion()).toBe(0);
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBeNull();
         expect(await fakeBrowser.storage.local.get(null)).toEqual(expectedAfterCardWrite);
       } finally {
         writes.mockRestore();
@@ -471,7 +452,7 @@ describe('migrations', () => {
     it('should handle empty or missing cards storage', async () => {
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
     });
   });
 
@@ -490,7 +471,7 @@ describe('migrations', () => {
       await runStartupMigrations();
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       expect(await fakeBrowser.storage.sync.get(null)).toEqual(remainingSettings);
       expect(await fakeBrowser.storage.local.get(null)).toEqual({
         ...localBefore,
@@ -504,10 +485,10 @@ describe('migrations', () => {
       const remove = vi.spyOn(storage, 'removeItems').mockRejectedValueOnce(new Error('storage unavailable'));
       try {
         await expect(runStartupMigrations()).rejects.toThrow('Failed to run migration 3');
-        expect(await getCurrentSchemaVersion()).toBe(2);
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
         await runStartupMigrations();
         expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBeNull();
-        expect(await getCurrentSchemaVersion()).toBe(3);
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       } finally {
         remove.mockRestore();
       }
@@ -521,7 +502,7 @@ describe('migrations', () => {
 
       await runStartupMigrations();
 
-      expect(await getCurrentSchemaVersion()).toBe(3);
+      expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('dark');
     });
   });
