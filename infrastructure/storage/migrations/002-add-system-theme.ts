@@ -1,5 +1,5 @@
 import { type CardDomainOutput, validateCardDomainOutput } from './001-add-card-domain';
-import { readLegacyData } from './legacy-layout';
+import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
 type Input = CardDomainOutput;
@@ -17,7 +17,7 @@ export function validateSystemThemeOutput(data: unknown): asserts data is System
 export const addSystemTheme = {
   description: 'Add system theme preference',
   async load(): Promise<Input> {
-    const input = await readLegacyData();
+    const input = await readDataset();
     validateSystemThemeOutput(input);
     return input;
   },

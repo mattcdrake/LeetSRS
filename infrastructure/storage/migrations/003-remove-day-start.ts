@@ -1,6 +1,6 @@
 import { storage } from '#imports';
 import { type SystemThemeOutput, validateSystemThemeOutput } from './002-add-system-theme';
-import { readLegacyData } from './legacy-layout';
+import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
 type Input = SystemThemeOutput;
@@ -45,7 +45,7 @@ function transform(data: ValidatedInput): RemoveDayStartOutput {
 export const removeDayStart = {
   description: 'Remove configurable day start',
   async load(): Promise<Input> {
-    const input = await readLegacyData();
+    const input = await readDataset();
     validateInput(input);
     return input;
   },

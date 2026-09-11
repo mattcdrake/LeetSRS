@@ -1,8 +1,9 @@
 import { storage } from '#imports';
 
-// Versions 1–3 share this physical layout. Read raw values without current-model
-// validation or defaults so historical and malformed records reach their migration.
-export async function readLegacyData(): Promise<Record<string, unknown>> {
+// Layout introduced at schema version 0, also used by migrations 1–3.
+// Read raw values without current-model validation or defaults so historical
+// and malformed records reach their migration.
+export async function readDataset(): Promise<Record<string, unknown>> {
   const [local, sync] = await Promise.all([storage.snapshot('local'), storage.snapshot('sync')]);
   const localData = Object.fromEntries(
     Object.entries(local)

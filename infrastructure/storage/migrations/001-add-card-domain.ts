@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import { readLegacyData } from './legacy-layout';
+import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
 // Historical contracts stay local: current card validation must not change this upgrade.
@@ -53,7 +53,7 @@ function transform(data: Input) {
 export const addCardDomain = {
   description: 'Add domain field to existing cards, defaulting to leetcode.com',
   async load(): Promise<Input> {
-    const input = await readLegacyData();
+    const input = await readDataset();
     validateInput(input);
     return input;
   },
