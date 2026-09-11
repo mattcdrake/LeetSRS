@@ -5,6 +5,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
 import * as tracker from '@/infrastructure/storage/data-tracker';
+import * as connection from '@/infrastructure/storage/gist-connection';
 import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
@@ -53,7 +54,7 @@ describe('background sync alarm', () => {
     'handles $name configuration without network requests during readiness',
     async ({ enabled, pat, gistId, syncs }) => {
       await setup.setGistSyncConfig({ enabled, pat: pat ?? '', gistId });
-      const destination = vi.spyOn(setup, 'getGistSyncConfig');
+      const destination = vi.spyOn(connection, 'readGistConnection');
       const badge = vi.spyOn(browser.action, 'setBadgeText');
       const fireAlarm = startBackground();
 
@@ -70,7 +71,7 @@ describe('background sync alarm', () => {
   it('registers synchronously but waits for startup before checking readiness', async () => {
     const migrations = Promise.withResolvers<void>();
     vi.mocked(runStartupMigrations).mockReturnValue(migrations.promise);
-    const destination = vi.spyOn(setup, 'getGistSyncConfig');
+    const destination = vi.spyOn(connection, 'readGistConnection');
     const fireAlarm = startBackground();
     const pending = fireAlarm();
     await Promise.resolve();
@@ -93,7 +94,7 @@ describe('background sync alarm', () => {
       const writeHandler = vi.spyOn(cards, 'removeCard').mockResolvedValue(undefined);
       const tracking = vi.spyOn(tracker, 'markDataUpdated');
       const writes = vi.spyOn(storage, 'setItem');
-      const destination = vi.spyOn(setup, 'getGistSyncConfig');
+      const destination = vi.spyOn(connection, 'readGistConnection');
       const alarmRead = vi.spyOn(browser.alarms, 'get');
       const alarmCreate = vi.spyOn(browser.alarms, 'create');
       const badgeText = vi.spyOn(browser.action, 'setBadgeText');
@@ -143,8 +144,8 @@ describe('background sync alarm', () => {
       writeStarted.resolve();
       await releaseWrite.promise;
     });
-    const readConfig = setup.getGistSyncConfig;
-    vi.spyOn(setup, 'getGistSyncConfig').mockImplementation(async () => {
+    const readConfig = connection.readGistConnection;
+    vi.spyOn(connection, 'readGistConnection').mockImplementation(async () => {
       const ready = await readConfig();
       checked.resolve();
       return ready;

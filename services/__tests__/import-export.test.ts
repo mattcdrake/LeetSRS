@@ -5,10 +5,11 @@ import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { DailyStats } from '@/domain/statistics';
 import { parseBackup } from '@/infrastructure/storage/backup';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { removeDayStart } from '@/infrastructure/storage/migrations/003-remove-day-start';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { getGistSyncConfig, setGistSyncConfig } from '@/services/gist-setup';
+import { setGistSyncConfig } from '@/services/gist-setup';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
@@ -354,9 +355,9 @@ describe('import-export', () => {
         });
         expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
         expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
-        expect((await getGistSyncConfig()).gistId).toBe(gistSync?.gistId ?? null);
-        expect((await getGistSyncConfig()).enabled).toBe(gistSync?.enabled ?? false);
-        expect((await getGistSyncConfig()).pat).toBe('existing-pat');
+        expect((await readGistConnection()).gistId).toBe(gistSync?.gistId ?? null);
+        expect((await readGistConnection()).enabled).toBe(gistSync?.enabled ?? false);
+        expect((await readGistConnection()).pat).toBe('existing-pat');
         expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(embeddedData.cards);
       }
     );
@@ -396,7 +397,7 @@ describe('import-export', () => {
         validExportData.data.settings.maxNewCardsPerDay
       );
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-01T00:00:00.000Z');
-      expect((await getGistSyncConfig()).pat).toBe('existing-pat');
+      expect((await readGistConnection()).pat).toBe('existing-pat');
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
       expect(JSON.parse(await exportData()).data).toEqual({
         ...embeddedData,
@@ -437,7 +438,7 @@ describe('import-export', () => {
           data: { ...validExportData.data, gistSync: { pat: 'untrusted-pat', githubPat: 'untrusted-legacy-pat' } },
         })
       );
-      expect((await getGistSyncConfig()).pat).toBe(pat || '');
+      expect((await readGistConnection()).pat).toBe(pat || '');
     });
 
     describe('schema migrations', () => {
@@ -520,7 +521,7 @@ describe('import-export', () => {
             expect(await storage.getItem(`local:leetsrs:notes:${id}`)).toBeNull();
           }
           expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
-          expect((await getGistSyncConfig()).pat).toBe('existing-pat');
+          expect((await readGistConnection()).pat).toBe('existing-pat');
           expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
           expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(0);
           expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBe(9);
@@ -812,7 +813,7 @@ describe('import-export', () => {
         'leetsrs:gistSyncEnabled',
       ]);
 
-      expect((await getGistSyncConfig()).pat).toBe('');
+      expect((await readGistConnection()).pat).toBe('');
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
 

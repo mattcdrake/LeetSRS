@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { parseBackup } from '@/infrastructure/storage/backup';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { getGistSyncConfig, setGistSyncConfig } from '@/services/gist-setup';
+import { setGistSyncConfig } from '@/services/gist-setup';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
@@ -109,7 +110,7 @@ describe('github-sync', () => {
       expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pulled' });
       const { dataUpdatedAt, ...data } = prepared;
       expect(JSON.parse(await actual.exportData())).toMatchObject({ data, dataUpdatedAt });
-      expect((await getGistSyncConfig()).pat).toBe('ghp_test');
+      expect((await readGistConnection()).pat).toBe('ghp_test');
     });
 
     beforeEach(async () => {

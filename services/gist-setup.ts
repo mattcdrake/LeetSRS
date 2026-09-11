@@ -6,8 +6,6 @@ import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import { getAuthenticatedGitHubClient } from './github-auth';
 import { exportData } from './import-export';
 
-export { readGistConnection as getGistSyncConfig } from '@/infrastructure/storage/gist-connection';
-
 export async function setGistSyncConfig(config: GistSyncConfigUpdate): Promise<void> {
   const parsed = gistSyncConfigUpdateSchema.parse(config);
   const changes = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== undefined));

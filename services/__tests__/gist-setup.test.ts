@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { GistSyncConfigUpdate } from '@/domain/gist-sync';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '../gist-setup';
+import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-setup';
 import * as auth from '../github-auth';
 
 const { getGist, create, getAuthenticated, exportData } = vi.hoisted(() => ({
@@ -35,7 +36,7 @@ describe('gist-setup boundaries', () => {
       await storage.setItem(STORAGE_KEYS.gistConnection, expected);
     }
     const reads = vi.spyOn(fakeBrowser.storage.sync, 'get');
-    expect(await getGistSyncConfig()).toEqual(expected);
+    expect(await readGistConnection()).toEqual(expected);
     expect(reads).toHaveBeenCalledExactlyOnceWith('leetsrs:gistConnection');
   });
 
@@ -44,7 +45,7 @@ describe('gist-setup boundaries', () => {
     async (invalid) => {
       await storage.setItem(STORAGE_KEYS.gistConnection, invalid);
       const writes = vi.spyOn(fakeBrowser.storage.sync, 'set');
-      await expect(getGistSyncConfig()).rejects.toThrow();
+      await expect(readGistConnection()).rejects.toThrow();
       await expect(setGistSyncConfig({ pat: 'replacement' })).rejects.toThrow();
       expect(writes).not.toHaveBeenCalled();
     }
@@ -53,7 +54,7 @@ describe('gist-setup boundaries', () => {
   it('ignores retained legacy keys after migration without falling back or dual-writing', async () => {
     const legacy = { 'leetsrs:githubPat': 'old', 'leetsrs:gistId': 'old-gist', 'leetsrs:gistSyncEnabled': true };
     await fakeBrowser.storage.sync.set(legacy);
-    expect(await getGistSyncConfig()).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     await setGistSyncConfig({ pat: 'new', enabled: false });
     expect(await fakeBrowser.storage.sync.get(null)).toEqual({
       ...legacy,
@@ -66,7 +67,7 @@ describe('gist-setup boundaries', () => {
     const writes = vi.spyOn(fakeBrowser.storage.sync, 'set');
     await setGistSyncConfig(config);
     expect(writes).toHaveBeenCalledExactlyOnceWith({ 'leetsrs:gistConnection': config });
-    expect(await getGistSyncConfig()).toEqual(config);
+    expect(await readGistConnection()).toEqual(config);
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
@@ -77,7 +78,7 @@ describe('gist-setup boundaries', () => {
     const writes = vi.spyOn(storage, 'setItem');
     await expect(setGistSyncConfig(config as unknown as GistSyncConfigUpdate)).rejects.toThrow();
     expect(writes).not.toHaveBeenCalled();
-    expect(await getGistSyncConfig()).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
   });
 
   it('ignores undefined configuration fields', async () => {
@@ -85,7 +86,7 @@ describe('gist-setup boundaries', () => {
     const writes = vi.spyOn(storage, 'setItem');
     await setGistSyncConfig({ pat: undefined, gistId: undefined, enabled: undefined });
     expect(writes).not.toHaveBeenCalled();
-    expect(await getGistSyncConfig()).toEqual({ pat: 'token', gistId: 'gist', enabled: true });
+    expect(await readGistConnection()).toEqual({ pat: 'token', gistId: 'gist', enabled: true });
   });
 
   it.each(['', ' \t\n'])('rejects blank Gist ID %j without acquiring a client or requesting a Gist', async (gistId) => {
@@ -166,8 +167,8 @@ describe('gist-setup boundaries', () => {
       await setGistSyncConfig(update);
       expect(writes).toHaveBeenCalledExactlyOnceWith({ 'leetsrs:gistConnection': { ...original, ...update } });
 
-      expect(await getGistSyncConfig()).toEqual({ ...original, ...update });
-      if (update.gistId === null) expect((await getGistSyncConfig()).gistId).toBeNull();
+      expect(await readGistConnection()).toEqual({ ...original, ...update });
+      if (update.gistId === null) expect((await readGistConnection()).gistId).toBeNull();
     }
   );
 
@@ -230,7 +231,7 @@ describe('gist-setup boundaries', () => {
         await expect(createNewGist()).rejects.toThrow('status failed');
 
         expect(create).toHaveBeenCalledOnce();
-        expect((await getGistSyncConfig()).gistId).toBe('created');
+        expect((await readGistConnection()).gistId).toBe('created');
         expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(
           failedKey === STORAGE_KEYS.lastSyncTime ? null : now
         );
@@ -257,7 +258,7 @@ describe('gist-setup boundaries', () => {
         public: false,
         files: { 'leetsrs-backup.json': { content: '{"local":"snapshot"}' } },
       });
-      expect((await getGistSyncConfig()).gistId).toBe('created');
+      expect((await readGistConnection()).gistId).toBe('created');
       expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(now);
       expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('push');
     });
@@ -266,10 +267,10 @@ describe('gist-setup boundaries', () => {
       const writes = vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('write failed'));
       const update = { pat: 'new-pat', gistId: null, enabled: true };
       await expect(setGistSyncConfig(update)).rejects.toThrow('write failed');
-      expect(await getGistSyncConfig()).toEqual({ pat: 'ghp_test', gistId: 'gist123', enabled: false });
+      expect(await readGistConnection()).toEqual({ pat: 'ghp_test', gistId: 'gist123', enabled: false });
       expect(writes).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.gistConnection, update);
       await setGistSyncConfig(update);
-      expect(await getGistSyncConfig()).toEqual(update);
+      expect(await readGistConnection()).toEqual(update);
     });
   });
 });

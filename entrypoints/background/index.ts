@@ -9,6 +9,7 @@ import {
   onMessage,
 } from '@/infrastructure/browser/messages';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
 import {
   addCard,
@@ -20,7 +21,7 @@ import {
   setPauseStatus,
 } from '@/services/cards';
 import { shouldResetEditor } from '@/services/editor-reset';
-import { createNewGist, getGistSyncConfig, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
+import { createNewGist, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
 import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
@@ -75,7 +76,7 @@ const commands: { [Name in MessageName]: Command<Name> } = {
   exportData: read(exportData),
   importData: write(({ jsonData }) => importData(jsonData), { refreshBadge: true }),
   resetAllData: write(resetAllData, { refreshBadge: true }),
-  getGistSyncConfig: read(getGistSyncConfig),
+  getGistSyncConfig: read(readGistConnection),
   setGistSyncConfig: write(({ config }) => setGistSyncConfig(config)),
   getGistSyncStatus: read(getGistSyncStatus),
   triggerGistSync: write(triggerGistSync, { refreshBadge: true }),
@@ -162,7 +163,7 @@ export default defineBackground(() => {
       return;
     }
 
-    const config = await getGistSyncConfig();
+    const config = await readGistConnection();
     if (config.enabled && config.pat && config.gistId) {
       await dispatch('triggerGistSync', undefined);
     } else {
