@@ -4,6 +4,7 @@ import { addCardDomain } from './001-add-card-domain';
 import { addSystemTheme } from './002-add-system-theme';
 import { removeDayStart } from './003-remove-day-start';
 import type { Migration } from './migration';
+import { captureInput, PENDING_KEY, readPending } from './recovery';
 
 // Append only: index + 1 is the schema version. Never reorder or remove entries.
 const migrations = [addCardDomain, addSystemTheme, removeDayStart] as const satisfies readonly Migration[];
@@ -43,16 +44,46 @@ export async function runStartupMigrations(steps: readonly Migration[] = migrati
   const key = STORAGE_KEYS.schemaVersion.slice('local:'.length);
   const currentVersion = Object.hasOwn(local, key) ? local[key] : 0;
   validateVersion(currentVersion, steps.length);
+  let pending: ReturnType<typeof readPending>;
+  try {
+    pending = readPending(local, currentVersion, steps.length);
+  } catch (cause) {
+    throw new Error(`Failed to validate migration recovery metadata at completed version ${currentVersion}: ${cause}`, {
+      cause,
+    });
+  }
+  if (pending?.version === currentVersion) {
+    try {
+      await storage.removeItem(PENDING_KEY);
+      pending = undefined;
+    } catch (cause) {
+      throw new Error(`Failed to run migration ${currentVersion} during retire: ${cause}`, { cause });
+    }
+  }
   for (const [index, migration] of steps.slice(currentVersion).entries()) {
     const version = currentVersion + index + 1;
+    let phase = 'load';
     try {
-      const data = await migration.load();
+      if (!pending) {
+        const input = await migration.load();
+        phase = 'snapshot';
+        pending = { version, input: captureInput(input) };
+        await storage.setItem(PENDING_KEY, pending);
+      }
+      const data = pending.input;
+      phase = 'migrate';
       const migrated = migration.migrate(data);
+      phase = 'save';
       await migration.save(migrated);
+      phase = 'cleanup';
       await migration.cleanup?.(data);
+      phase = 'complete';
       await setSchemaVersion(version);
-    } catch (error) {
-      throw new Error(`Failed to run migration ${version}: ${error}`);
+      phase = 'retire';
+      await storage.removeItem(PENDING_KEY);
+      pending = undefined;
+    } catch (cause) {
+      throw new Error(`Failed to run migration ${version} during ${phase}: ${cause}`, { cause });
     }
   }
 }

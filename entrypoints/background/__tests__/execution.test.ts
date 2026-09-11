@@ -58,6 +58,110 @@ describe('registered background execution', () => {
     ).toEqual(Object.keys(messagePayloadSchemas).sort());
   });
 
+  it('gates messages and alarms through interrupted recovery, then releases a fresh startup', async () => {
+    const card = await cards.addCard(problem);
+    await notes.saveNote(card.id, 'Keep this note');
+    const backup = await dispatch('exportData');
+    const {
+      domain: _domain,
+      fsrs: { last_review: _lastReview, ...schedule },
+      ...fields
+    } = card;
+    const legacyCard = { ...fields, fsrs: schedule };
+    await storage.setItem(STORAGE_KEYS.cards, { [card.slug]: legacyCard });
+    await storage.removeItem(STORAGE_KEYS.schemaVersion);
+    await storage.setItem(STORAGE_KEYS.githubPat, 'token');
+    await storage.setItem(STORAGE_KEYS.gistId, 'gist');
+    await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(sync.triggerGistSync).mockResolvedValue({ success: true, action: 'no-change', timestamp: 'now' });
+
+    const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
+    const start = () => {
+      vi.mocked(onMessage).mockClear();
+      registration.mockClear();
+      background.main();
+      const listener = registration.mock.calls[0]?.[0];
+      if (!listener) throw new Error('Alarm listener was not registered synchronously');
+      expect(onMessage).toHaveBeenCalledTimes(Object.keys(messagePayloadSchemas).length);
+      return () => listener({ name: 'gist-sync', scheduledTime: 0, persistAcrossSessions: true });
+    };
+    const write = storage.setItem.bind(storage);
+    const interrupted = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+      if (key === STORAGE_KEYS.schemaVersion) throw new Error('completion interrupted');
+      await write(key, value);
+    });
+    start();
+    await expect(dispatch('getAllCards')).rejects.toThrow('migration 1 during complete');
+    interrupted.mockRestore();
+    const pending = await storage.getItem('local:leetsrs-migration:pending');
+    expect(pending).toMatchObject({ version: 1, input: { cards: { [card.slug]: legacyCard } } });
+    // Destroy the source to prove a new worker recovers from saved original input.
+    await storage.setItem(STORAGE_KEYS.cards, { partial: true });
+
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const recovering = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+      if (key === STORAGE_KEYS.cards) {
+        started.resolve();
+        await release.promise;
+        throw new Error('recovery write failed');
+      }
+      await write(key, value);
+    });
+    const fireAlarm = start();
+    await started.promise;
+    const before = await fakeBrowser.storage.local.get(null);
+    const syncBefore = await fakeBrowser.storage.sync.get(null);
+    const submitMessages = () => [
+      dispatch('getAllCards'),
+      dispatch('rateCard', { input: { ...problem, rating: 3 } }),
+      dispatch('importData', { jsonData: backup }),
+      dispatch('triggerGistSync'),
+    ];
+    let settled = false;
+    const blocked = Promise.allSettled([...submitMessages(), fireAlarm()]).then((results) => {
+      settled = true;
+      return results;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(sync.triggerGistSync).not.toHaveBeenCalled();
+    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    release.resolve();
+    const results = await blocked;
+    for (const result of results.slice(0, 4)) {
+      expect(result).toMatchObject({
+        status: 'rejected',
+        reason: expect.objectContaining({ message: expect.stringContaining('migration 1 during save') }),
+      });
+    }
+    expect(results[4]).toEqual({ status: 'fulfilled', value: undefined });
+    const afterFailure = await Promise.allSettled(submitMessages());
+    expect(afterFailure.every((result) => result.status === 'rejected')).toBe(true);
+    await fireAlarm();
+    expect(sync.triggerGistSync).not.toHaveBeenCalled();
+    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
+    recovering.mockRestore();
+
+    const recoveredAlarm = start();
+    await expect(dispatch('getAllCards')).resolves.toEqual([card]);
+    expect(await dispatch('getNote', { cardId: card.id })).toEqual({ text: 'Keep this note' });
+    expect(await storage.getItem('local:leetsrs-migration:pending')).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
+    await dispatch('rateCard', { input: { ...problem, rating: 3 } });
+    expect(await dispatch('getAllCards')).toMatchObject([{ fsrs: { reps: 1 } }]);
+    await dispatch('importData', { jsonData: backup });
+    await expect(dispatch('getAllCards')).resolves.toEqual([card]);
+    // Import restores backup configuration, so re-enable alarm synchronization.
+    await dispatch('setGistSyncConfig', { config: { enabled: true, gistId: 'gist' } });
+    expect(JSON.parse((await dispatch('exportData')) as string).data).not.toHaveProperty('leetsrs-migration:pending');
+    await dispatch('triggerGistSync');
+    await recoveredAlarm();
+    expect(sync.triggerGistSync).toHaveBeenCalledTimes(2);
+  });
+
   it('lets reads overlap a write and keeps ordered effects inside the queue', async () => {
     const started = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();

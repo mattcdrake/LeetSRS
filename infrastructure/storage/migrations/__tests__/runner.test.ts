@@ -7,7 +7,7 @@ import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { getAllCards } from '../../cards';
 import { STORAGE_KEYS } from '../../storage-keys';
-import type { addCardDomain } from '../001-add-card-domain';
+import { addCardDomain } from '../001-add-card-domain';
 import type { addSystemTheme } from '../002-add-system-theme';
 import type { removeDayStart } from '../003-remove-day-start';
 import { LATEST_SCHEMA_VERSION, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
@@ -212,10 +212,21 @@ describe('migrations', () => {
       }
     );
 
-    it.each(['none', 'save', 'cleanup'] as const)(
-      'hands each persisted output to the next loader across shape changes and a storage move (failure: %s)',
-      async (failure) => {
-        const source = { titles: ['Two Sum', 'Add Two Numbers'] };
+    it.each(
+      [1, 2].flatMap((failedVersion) =>
+        (['none', 'snapshot', 'save', 'cleanup', 'complete', 'retire'] as const).map((failure) => ({
+          failedVersion,
+          failure,
+        }))
+      )
+    )(
+      'recovers shape changes and storage moves (step $failedVersion, failure: $failure)',
+      async ({ failure, failedVersion }) => {
+        const source = { titles: ['Two Sum', 'Add Two Numbers'], obsoleteKey: 'local:test:source' as const };
+        const sourceKey = failedVersion === 1 ? 'local:test:source' : 'local:test:titles';
+        const destinationKey = failedVersion === 1 ? 'local:test:titles' : 'sync:test:titles';
+        const originalInput = failedVersion === 1 ? source : source.titles;
+        const transformations = [0, 0];
         const steps = [
           {
             description: 'Extract titles into an array',
@@ -223,13 +234,15 @@ describe('migrations', () => {
               return requireDefined(await storage.getItem<typeof source>('local:test:source'));
             },
             migrate(data: unknown): string[] {
+              transformations[0]++;
               return z.object({ titles: z.array(z.string()) }).parse(data).titles;
             },
             async save(data: string[]): Promise<void> {
               await storage.setItem('local:test:titles', data);
             },
-            async cleanup(): Promise<void> {
-              await storage.removeItem('local:test:source');
+            async cleanup(input: typeof source): Promise<void> {
+              expect(input).toEqual(source);
+              await storage.removeItem(input.obsoleteKey);
             },
           },
           {
@@ -238,6 +251,7 @@ describe('migrations', () => {
               return requireDefined(await storage.getItem<string[]>('local:test:titles'));
             },
             migrate(data: unknown): string[] {
+              transformations[1]++;
               return z.array(z.string()).parse(data);
             },
             async save(data: string[]): Promise<void> {
@@ -270,20 +284,60 @@ describe('migrations', () => {
         await storage.setItem('local:test:unrelated', { history: 'keep' });
 
         if (failure !== 'none') {
-          const operation =
-            failure === 'save'
-              ? vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('destination unavailable'))
-              : vi.spyOn(storage, 'removeItem').mockRejectedValueOnce(new Error('cleanup unavailable'));
+          const write = storage.setItem.bind(storage);
+          const remove = storage.removeItem.bind(storage);
+          const writes = vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+            const completed = (await storage.getItem<number>(STORAGE_KEYS.schemaVersion)) ?? 0;
+            if (
+              failure === 'snapshot' &&
+              completed === failedVersion - 1 &&
+              key === 'local:leetsrs-migration:pending'
+            ) {
+              throw new Error('snapshot unavailable');
+            }
+            if (failure === 'complete' && key === STORAGE_KEYS.schemaVersion && value === failedVersion) {
+              throw new Error('completion unavailable');
+            }
+            await write(key, value);
+            if (failure === 'save' && key === destinationKey) {
+              // The old representation is already overwritten when the write fails.
+              await write(sourceKey, { partial: true });
+              throw new Error('destination unavailable');
+            }
+          });
+          const removes = vi.spyOn(storage, 'removeItem').mockImplementation(async (key) => {
+            const completed = await storage.getItem(STORAGE_KEYS.schemaVersion);
+            if (failure === 'retire' && completed === failedVersion && key === 'local:leetsrs-migration:pending') {
+              throw new Error('retirement unavailable');
+            }
+            await remove(key);
+            if (failure === 'cleanup' && key === sourceKey) {
+              throw new Error('cleanup unavailable');
+            }
+          });
           try {
-            await expect(runStartupMigrations(steps)).rejects.toThrow('Failed to run migration 1');
-            expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBeNull();
-            expect(await storage.getItem('local:test:source')).toEqual(source);
-            expect(await storage.getItem('local:test:titles')).toEqual(
-              failure === 'save' ? null : ['Two Sum', 'Add Two Numbers']
+            await expect(runStartupMigrations(steps)).rejects.toThrow(
+              `Failed to run migration ${failedVersion} during ${failure}`
             );
-            expect(await fakeBrowser.storage.sync.get(null)).toEqual({});
+            expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(
+              failure === 'retire' ? failedVersion : failedVersion === 1 ? null : 1
+            );
+            expect(await storage.getItem('local:leetsrs-migration:pending')).toEqual(
+              failure === 'snapshot' ? null : { version: failedVersion, input: originalInput }
+            );
+            if (failure === 'snapshot') {
+              expect(await storage.getItem(sourceKey)).toEqual(originalInput);
+              expect(await storage.getItem(destinationKey)).toBeNull();
+            } else {
+              // A fresh worker must use recovery input even if the old source is gone.
+              await remove(sourceKey);
+            }
+            expect(await fakeBrowser.storage.sync.get(null)).toEqual(
+              failedVersion === 2 && failure !== 'snapshot' ? { 'test:titles': source.titles } : {}
+            );
           } finally {
-            operation.mockRestore();
+            writes.mockRestore();
+            removes.mockRestore();
           }
         }
 
@@ -297,6 +351,9 @@ describe('migrations', () => {
           'leetsrs:schemaVersion': 3,
         });
         expect(await fakeBrowser.storage.sync.get(null)).toEqual({});
+        expect(transformations).toEqual(
+          ['save', 'cleanup', 'complete'].includes(failure) ? (failedVersion === 1 ? [2, 1] : [1, 2]) : [1, 1]
+        );
         // All historical locations now contain different installed data. Backup
         // migration must neither read, overwrite, nor clean up those locations.
         await storage.setItems([
@@ -312,6 +369,143 @@ describe('migrations', () => {
         expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
       }
     );
+
+    it.each([
+      ['undefined', () => ({ missing: undefined })],
+      ['non-finite number', () => ({ value: Infinity })],
+      ['NaN', () => NaN],
+      ['negative zero', () => -0],
+      ['bigint', () => 1n],
+      ['function', () => ({ method() {} })],
+      ['symbol', () => ({ [Symbol('hidden')]: true })],
+      ['sparse array', () => Array(2)],
+      ['extra array property', () => Object.assign([1], { extra: true })],
+      ['date', () => new Date(0)],
+      ['map', () => new Map([['key', 'value']])],
+      ['custom serialization', () => ({ value: 1, toJSON: () => ({ value: 2 }) })],
+      ['accessor', () => Object.defineProperty({}, 'value', { enumerable: true, get: () => 1 })],
+      ['hidden property', () => Object.defineProperty({}, 'value', { value: 1 })],
+      [
+        'cycle',
+        () => {
+          const input: unknown[] = [];
+          input.push(input);
+          return input;
+        },
+      ],
+    ])('rejects non-lossless %s before creating a snapshot or changing destinations', async (_name, createInput) => {
+      const input = createInput();
+      const before = await fakeBrowser.storage.local.get(null);
+      const step = {
+        description: 'Capture a historical input',
+        async load() {
+          return input;
+        },
+        migrate(data: unknown) {
+          return data;
+        },
+        async save() {
+          await storage.setItem('local:test:destination', 'changed');
+        },
+      };
+      await expect(runStartupMigrations([step])).rejects.toThrow('migration 1 during snapshot');
+      expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    });
+
+    it.each([
+      [0, null],
+      [0, []],
+      [0, {}],
+      [0, { version: 1 }],
+      [0, { version: '1', input: {} }],
+      [0, { version: 0, input: {} }],
+      [0, { version: 0.5, input: {} }],
+      [0, { version: 4, input: {} }],
+      [0, { version: 2, input: {} }],
+      [2, { version: 1, input: {} }],
+      [0, { version: 1, input: {}, extra: true }],
+      [0, { version: 1, input: { value: undefined } }],
+      [1, { version: 1, input: { value: Infinity } }],
+      [4, { version: 4, input: {} }],
+    ])('preserves invalid recovery evidence at completed version %s: %j', async (version, pending) => {
+      await storage.setItem('local:test:unrelated', 'keep');
+      const before = await fakeBrowser.storage.local.get(null);
+      const raw = { ...before, 'leetsrs:schemaVersion': version, 'leetsrs-migration:pending': pending };
+      // Browser serialization would erase some malformed values; inject them on read.
+      const read = vi.spyOn(storage, 'snapshot').mockResolvedValueOnce(raw);
+      const writes = vi.spyOn(storage, 'setItem');
+      const removes = vi.spyOn(storage, 'removeItem');
+      try {
+        await expect(runStartupMigrations()).rejects.toThrow();
+        expect(writes).not.toHaveBeenCalled();
+        expect(removes).not.toHaveBeenCalled();
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        expect(raw['leetsrs-migration:pending']).toBe(pending);
+      } finally {
+        read.mockRestore();
+      }
+    });
+
+    it.each(['transformation', 'output validation'] as const)(
+      'retains original input after %s failure and retries without loading the source',
+      async (failure) => {
+        const source = { title: 'Two Sum' };
+        await storage.setItem('local:test:source', source);
+        let failing = true;
+        const step = {
+          description: 'Convert a historical title into an array',
+          async load() {
+            return requireDefined(await storage.getItem('local:test:source'));
+          },
+          migrate(input: unknown) {
+            const { title } = z.object({ title: z.string() }).parse(input);
+            if (failing && failure === 'transformation') throw new Error('cannot transform');
+            const output = failing ? [42] : [title];
+            return z.array(z.string()).parse(output);
+          },
+          async save(output: string[]) {
+            await storage.setItem('local:test:destination', output);
+          },
+        };
+        await expect(runStartupMigrations([step])).rejects.toThrow('migration 1 during migrate');
+        expect(await storage.getItem('local:test:destination')).toBeNull();
+        expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBeNull();
+        expect(await storage.getItem('local:leetsrs-migration:pending')).toEqual({ version: 1, input: source });
+        await storage.removeItem('local:test:source');
+        failing = false;
+        await runStartupMigrations([step]);
+        expect(await storage.getItem('local:test:destination')).toEqual(['Two Sum']);
+        expect(await storage.getItem('local:leetsrs-migration:pending')).toBeNull();
+      }
+    );
+
+    it('never includes recovery metadata in historical inputs or subsequent snapshots', async () => {
+      await storage.setItem(STORAGE_KEYS.cards, { legacy: { name: 'Two Sum' } });
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
+      const snapshots: unknown[] = [];
+      const inputsWhilePending: unknown[] = [];
+      const write = storage.setItem.bind(storage);
+      vi.spyOn(storage, 'setItem').mockImplementation(async (key, value) => {
+        await write(key, value);
+        if (key === 'local:leetsrs-migration:pending') {
+          snapshots.push(structuredClone(value));
+          inputsWhilePending.push(await addCardDomain.load());
+        }
+      });
+      await runStartupMigrations();
+      const expectedSnapshots = [1, 2, 3].map((version) => ({
+        version,
+        input: {
+          cards: { legacy: { name: 'Two Sum', ...(version > 1 ? { domain: 'leetcode.com' } : {}) } },
+          notes: {},
+          settings: { dayStartHour: 4 },
+          gistSync: {},
+        },
+      }));
+      expect(snapshots).toEqual(expectedSnapshots);
+      expect(inputsWhilePending).toEqual(expectedSnapshots.map(({ input }) => input));
+      expect(await storage.getItem('local:leetsrs-migration:pending')).toBeNull();
+    });
 
     it.each([undefined, 0, 1, 2, 3])('upgrades the complete schema %s dataset and is repeatable', async (version) => {
       if (version !== undefined) await setSchemaVersion(version);
@@ -435,7 +629,19 @@ describe('migrations', () => {
       try {
         await expect(runStartupMigrations()).rejects.toThrow('schema persistence failed');
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBeNull();
-        expect(await fakeBrowser.storage.local.get(null)).toEqual(expectedAfterCardWrite);
+        expect(await fakeBrowser.storage.local.get(null)).toEqual({
+          ...expectedAfterCardWrite,
+          'leetsrs-migration:pending': {
+            version: 1,
+            input: {
+              cards,
+              notes: { 'legacy-id': { text: 'Keep this note' }, 'cn-id': { text: 'Keep this too' } },
+              settings: { theme: 'dark' },
+              gistSync: {},
+              dataUpdatedAt: '2024-01-01T00:00:00.000Z',
+            },
+          },
+        });
       } finally {
         writes.mockRestore();
       }
