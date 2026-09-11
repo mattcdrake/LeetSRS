@@ -42,8 +42,19 @@ jobs:
 
             /mattpocock-skills:code-review ${{ github.event.pull_request.base.sha }}
 
-            The spec is the PR description and its linked issues. Post the review result
-            as a comment on this PR.
+            The spec is the PR description and its linked issues.
+
+            The skill delegates each review axis to a sub-agent, and sub-agents run in
+            the background. Collect every sub-agent's result with TaskOutput before you
+            aggregate. Do not end your turn while a sub-agent is still running: this run
+            is headless, so ending the turn early kills the pending sub-agents and the
+            review is never published.
+
+            Publish the aggregated review before ending your turn. If you have the
+            `mcp__github_comment__update_claude_comment` tool, publish by replacing your
+            existing comment with the full review; otherwise post it with
+            `gh pr comment`. If a sub-agent cannot be collected, publish the findings you
+            do have plus what failed, rather than ending the turn with nothing.
 
           claude_args: |
-            --allowedTools "Read,Glob,Grep,Agent,Skill(mattpocock-skills:code-review),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git status:*),Bash(git show:*)"
+            --allowedTools "Read,Glob,Grep,Agent,TaskOutput,TaskStop,Skill(mattpocock-skills:code-review),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh issue view:*),Bash(git diff:*),Bash(git log:*),Bash(git rev-parse:*),Bash(git merge-base:*),Bash(git status:*),Bash(git show:*)"
