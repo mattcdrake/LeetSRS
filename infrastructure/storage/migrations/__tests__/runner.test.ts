@@ -2,6 +2,8 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { z } from 'zod';
+import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { getAllCards } from '../../cards';
 import { STORAGE_KEYS } from '../../storage-keys';
@@ -106,7 +108,7 @@ describe('migrations', () => {
 
     it.each([1, 2, 3])('preserves malformed unrelated data after schema %s without reapplying version 1', (version) => {
       const data = {
-        cards: { missing: {}, falsy: { domain: false }, malformed: null },
+        cards: { malformedDomain: { domain: 42 }, malformedRecord: null, arrayRecord: [], booleanRecord: false },
         notes: ['historical note layout'],
         stats: 'historical statistics',
         settings: { theme: 42, dayStartHour: null, ['__proto__']: 'legal setting key' },
@@ -119,7 +121,9 @@ describe('migrations', () => {
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed cards collection in version 1: %s', (cards) => {
       expect(() => migrateBackupData({ cards }, 0)).toThrow('Migration 1');
-      expect(migrateBackupData({ cards }, 1)).toEqual({ cards });
+      expect(() => migrateBackupData({ cards }, 1)).toThrow('Migration 2');
+      expect(() => migrateBackupData({ cards }, 2)).toThrow('Migration 3');
+      expect(migrateBackupData({ cards }, 3)).toEqual({ cards });
     });
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed settings container in version 3: %s', (settings) => {
@@ -150,11 +154,19 @@ describe('migrations', () => {
           | unknown[]
         >;
       }>();
-      expectTypeOf<typeof addSystemTheme.migrate<{ historical: true }>>().returns.toEqualTypeOf<{ historical: true }>();
-      expectTypeOf<typeof removeDayStart.migrate>().returns.toEqualTypeOf<{
-        [key: string]: unknown;
-        settings?: Record<string, unknown> & { dayStartHour?: never };
-      }>();
+      type Version1 = ReturnType<typeof addCardDomain.migrate>;
+      type Version2 = ReturnType<typeof addSystemTheme.migrate>;
+      type Version3 = ReturnType<typeof removeDayStart.migrate>;
+      expectTypeOf<typeof addSystemTheme.load>().returns.resolves.toEqualTypeOf<Version1>();
+      expectTypeOf<Version2>().toEqualTypeOf<Version1>();
+      expectTypeOf<typeof removeDayStart.load>().returns.resolves.toEqualTypeOf<Version2>();
+      expectTypeOf<typeof addCardDomain.save>().parameter(0).toEqualTypeOf<Version1>();
+      expectTypeOf<typeof addSystemTheme.save>().parameter(0).toEqualTypeOf<Version2>();
+      expectTypeOf<typeof removeDayStart.save>().parameter(0).toEqualTypeOf<Version3>();
+      expectTypeOf<Version3>().toExtend<Version2>();
+      expectTypeOf<Version3['settings']>().toEqualTypeOf<
+        (Record<string, unknown> & { dayStartHour?: never }) | undefined
+      >();
     });
   });
 
@@ -180,6 +192,146 @@ describe('migrations', () => {
   });
 
   describe('runStartupMigrations', () => {
+    it.each([-1, 0.5, 4, '1', null, true, {}, []])(
+      'rejects malformed or unsupported completed version %j before writes',
+      async (version) => {
+        await fakeBrowser.storage.local.set({ 'leetsrs:schemaVersion': version, unrelated: 'keep' });
+        await storage.setItem('sync:leetsrs:dayStartHour', 4);
+        const localBefore = await fakeBrowser.storage.local.get(null);
+        const syncBefore = await fakeBrowser.storage.sync.get(null);
+        // fakeBrowser deletes null values; supply the raw stored null at the storage boundary.
+        const read =
+          version === null
+            ? vi.spyOn(storage, 'snapshot').mockResolvedValueOnce({ ...localBefore, 'leetsrs:schemaVersion': null })
+            : undefined;
+        try {
+          await expect(runStartupMigrations()).rejects.toThrow('Unsupported schema version');
+          expect(await fakeBrowser.storage.local.get(null)).toEqual(localBefore);
+          expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
+        } finally {
+          read?.mockRestore();
+        }
+      }
+    );
+
+    it.each([1, 2])(
+      'rejects schema %s data that does not satisfy its predecessor contract without repairing it',
+      async (version) => {
+        const cards = { missingDomain: { name: 'Two Sum' } };
+        await setSchemaVersion(version);
+        await storage.setItem(STORAGE_KEYS.cards, cards);
+        await storage.setItem('sync:leetsrs:dayStartHour', 4);
+        const localBefore = await fakeBrowser.storage.local.get(null);
+        const syncBefore = await fakeBrowser.storage.sync.get(null);
+
+        await expect(runStartupMigrations()).rejects.toThrow(`Failed to run migration ${version + 1}`);
+        expect(() => migrateBackupData({ cards }, version)).toThrow(`Migration ${version + 1}`);
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(localBefore);
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
+      }
+    );
+
+    it.each(['none', 'save', 'cleanup'] as const)(
+      'hands each persisted output to the next loader across shape changes and a storage move (failure: %s)',
+      async (failure) => {
+        const source = { titles: ['Two Sum', 'Add Two Numbers'] };
+        const steps = [
+          {
+            description: 'Extract titles into an array',
+            async load(): Promise<typeof source> {
+              return requireDefined(await storage.getItem<typeof source>('local:test:source'));
+            },
+            migrate(data: unknown): string[] {
+              return z.object({ titles: z.array(z.string()) }).parse(data).titles;
+            },
+            async save(data: string[]): Promise<void> {
+              await storage.setItem('local:test:titles', data);
+            },
+            async cleanup(): Promise<void> {
+              await storage.removeItem('local:test:source');
+            },
+          },
+          {
+            description: 'Move titles to sync without changing their logical shape',
+            async load(): Promise<string[]> {
+              return requireDefined(await storage.getItem<string[]>('local:test:titles'));
+            },
+            migrate(data: unknown): string[] {
+              return z.array(z.string()).parse(data);
+            },
+            async save(data: string[]): Promise<void> {
+              await storage.setItem('sync:test:titles', data);
+            },
+            async cleanup(): Promise<void> {
+              await storage.removeItem('local:test:titles');
+            },
+          },
+          {
+            description: 'Wrap the moved titles in a different dataset shape',
+            async load(): Promise<string[]> {
+              return requireDefined(await storage.getItem<string[]>('sync:test:titles'));
+            },
+            migrate(data: unknown): { names: string[] } {
+              return { names: z.array(z.string()).parse(data) };
+            },
+            async save(data: { names: string[] }): Promise<void> {
+              await storage.setItems([
+                { key: 'local:test:destination', value: data },
+                { key: 'local:test:count', value: data.names.length },
+              ]);
+            },
+            async cleanup(): Promise<void> {
+              await storage.removeItem('sync:test:titles');
+            },
+          },
+        ];
+        await storage.setItem('local:test:source', source);
+        await storage.setItem('local:test:unrelated', { history: 'keep' });
+
+        if (failure !== 'none') {
+          const operation =
+            failure === 'save'
+              ? vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('destination unavailable'))
+              : vi.spyOn(storage, 'removeItem').mockRejectedValueOnce(new Error('cleanup unavailable'));
+          try {
+            await expect(runStartupMigrations(steps)).rejects.toThrow('Failed to run migration 1');
+            expect(await getCurrentSchemaVersion()).toBe(0);
+            expect(await storage.getItem('local:test:source')).toEqual(source);
+            expect(await storage.getItem('local:test:titles')).toEqual(
+              failure === 'save' ? null : ['Two Sum', 'Add Two Numbers']
+            );
+            expect(await fakeBrowser.storage.sync.get(null)).toEqual({});
+          } finally {
+            operation.mockRestore();
+          }
+        }
+
+        await runStartupMigrations(steps);
+        await runStartupMigrations(steps);
+
+        expect(await fakeBrowser.storage.local.get(null)).toEqual({
+          'test:destination': { names: ['Two Sum', 'Add Two Numbers'] },
+          'test:count': 2,
+          'test:unrelated': { history: 'keep' },
+          'leetsrs:schemaVersion': 3,
+        });
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual({});
+        // All historical locations now contain different installed data. Backup
+        // migration must neither read, overwrite, nor clean up those locations.
+        await storage.setItems([
+          { key: 'local:test:source', value: { titles: ['Installed source'] } },
+          { key: 'local:test:titles', value: ['Installed local titles'] },
+          { key: 'sync:test:titles', value: ['Installed sync titles'] },
+          { key: 'local:test:destination', value: { names: ['Installed destination'] } },
+        ]);
+        const before = await fakeBrowser.storage.local.get(null);
+        const syncBefore = await fakeBrowser.storage.sync.get(null);
+        expect(migrateBackupData(source, 0, steps)).toEqual({ names: ['Two Sum', 'Add Two Numbers'] });
+        expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+        expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
+      }
+    );
+
     it.each([undefined, 0, 1, 2, 3])('upgrades the complete schema %s dataset and is repeatable', async (version) => {
       if (version !== undefined) await setSchemaVersion(version);
       const { domain: _domain, ...legacyCard } = createMockCard(State.Review, { paused: true });

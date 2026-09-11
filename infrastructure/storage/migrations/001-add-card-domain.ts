@@ -1,3 +1,7 @@
+import { storage } from '#imports';
+import { readLegacyData } from './legacy-layout';
+import type { Migration } from './migration';
+
 // Historical contracts stay local: current card validation must not change this upgrade.
 type PreservedCard = null | undefined | string | number | boolean | unknown[];
 type HistoricalCard = Record<string, unknown> | PreservedCard;
@@ -26,7 +30,7 @@ function validateInput(data: unknown): asserts data is Input {
   }
 }
 
-function validateOutput(data: unknown): asserts data is CardDomainOutput {
+export function validateCardDomainOutput(data: unknown): asserts data is CardDomainOutput {
   validateInput(data);
   for (const card of Object.values(data.cards ?? {})) {
     if (isRecord(card) && (!Object.hasOwn(card, 'domain') || !card.domain)) {
@@ -48,10 +52,19 @@ function transform(data: Input) {
 
 export const addCardDomain = {
   description: 'Add domain field to existing cards, defaulting to leetcode.com',
+  async load(): Promise<Input> {
+    const input = await readLegacyData();
+    validateInput(input);
+    return input;
+  },
   migrate(data: unknown): CardDomainOutput {
     validateInput(data);
     const output = transform(data);
-    validateOutput(output);
+    validateCardDomainOutput(output);
     return output;
   },
-};
+  async save(output: CardDomainOutput): Promise<void> {
+    validateCardDomainOutput(output);
+    if (output.cards !== undefined) await storage.setItem('local:leetsrs:cards', output.cards);
+  },
+} satisfies Migration<Input, CardDomainOutput>;

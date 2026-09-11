@@ -33,6 +33,8 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 - Cards are slug-keyed, notes reference card UUIDs, and stored card dates are numeric.
 - Preserve supported card fields, FSRS schedules, notes, stats, settings, and Gist configuration. Unrecognized fields may be discarded; unrelated undecodable records need not survive mutations.
 - Schema changes require a new numbered module in `infrastructure/storage/migrations/`, appended to the sequence in `infrastructure/storage/migrations/runner.ts`.
+- Each migration declares its historical input and output contracts. A loader validates the preceding migration's output shape; its saver accepts its own output type. Keep historical validation and storage keys independent of current application models and layout changes.
+- Startup validates the completed version, then loads, transforms, saves, and cleans up each step before recording its version. The runner assumes no dataset shape. Backup migration invokes only the same pure transformations. Historical layouts may share readers while they remain unchanged.
 - Infrastructure owns card date codecs, stored-record validation, migrations, and card/note/stat persistence. Persistence adapters do not mark local edits.
 - Domain owns import envelope/configuration validation, settings compatibility, and relationship checks without depending on storage types.
 - Services migrate and validate imports before replacement, then orchestrate reset/restore through shared persistence adapters. Preserve the local PAT and apply imported timestamps after settings writes.
