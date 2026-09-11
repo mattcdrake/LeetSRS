@@ -10,7 +10,7 @@ import { STORAGE_KEYS } from '../../storage-keys';
 import type { addCardDomain } from '../001-add-card-domain';
 import type { addSystemTheme } from '../002-add-system-theme';
 import { type removeDayStart, validateOutput as validateVersion3 } from '../003-remove-day-start';
-import { readDataset as readVersion3 } from '../layouts/v3';
+import { readDataset } from '../layouts/v0';
 import { LATEST_SCHEMA_VERSION, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
 
 describe('migrations', () => {
@@ -485,7 +485,7 @@ describe('migrations', () => {
         'leetsrs:resetEditorOnEveryProblem': expected.settings.resetEditorOnEveryProblem,
         'leetsrs:theme': 'dark',
       });
-      const reloaded = await readVersion3();
+      const reloaded = await readDataset();
       expect(() => validateVersion3(reloaded)).not.toThrow();
       expect(reloaded.settings).toEqual(expected.settings);
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
@@ -514,7 +514,7 @@ describe('migrations', () => {
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
         await runStartupMigrations();
         expect(syncData).toEqual({ 'leetsrs:resetEditorOnEveryProblem': null });
-        const reloaded = await readVersion3();
+        const reloaded = await readDataset();
         expect(() => validateVersion3(reloaded)).not.toThrow();
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       } finally {
@@ -576,7 +576,7 @@ describe('migrations', () => {
         await runStartupMigrations();
         await runStartupMigrations();
         expect(await fakeBrowser.storage.sync.get(null)).toEqual({ 'leetsrs:resetEditorOnEveryProblem': false });
-        const reloaded = await readVersion3();
+        const reloaded = await readDataset();
         expect(() => validateVersion3(reloaded)).not.toThrow();
         expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(3);
       }
