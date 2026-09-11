@@ -9,7 +9,7 @@ import {
   onMessage,
 } from '@/infrastructure/browser/messages';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
-import { runStartupMigrations } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
 import { deleteNote, getNote, saveNote } from '@/infrastructure/storage/notes';
 import {
   addCard,

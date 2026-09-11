@@ -3,18 +3,18 @@ import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { getAllCards } from '../cards';
+import { getAllCards } from '../../cards';
+import { STORAGE_KEYS } from '../../storage-keys';
+import type { addCardDomain } from '../001-add-card-domain';
+import type { addSystemTheme } from '../002-add-system-theme';
+import type { removeDayStart } from '../003-remove-day-start';
 import {
   getCurrentSchemaVersion,
   LATEST_SCHEMA_VERSION,
   migrateBackupData,
   runStartupMigrations,
   setSchemaVersion,
-} from '../migrations';
-import type { addCardDomain } from '../migrations/001-add-card-domain';
-import type { addSystemTheme } from '../migrations/002-add-system-theme';
-import type { removeDayStart } from '../migrations/003-remove-day-start';
-import { STORAGE_KEYS } from '../storage-keys';
+} from '../runner';
 
 describe('migrations', () => {
   beforeEach(() => {

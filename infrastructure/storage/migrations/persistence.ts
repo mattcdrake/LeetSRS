@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import { STORAGE_KEYS } from './storage-keys';
+import { STORAGE_KEYS } from '../storage-keys';
 
 // Versions 1–3 share this physical layout. Read raw values without current-model
 // validation or defaults so historical and malformed records reach their migration.

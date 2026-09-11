@@ -1,9 +1,9 @@
 import { storage } from '#imports';
-import { readMigrationData, writeMigrationData } from './migration-storage';
-import { addCardDomain } from './migrations/001-add-card-domain';
-import { addSystemTheme } from './migrations/002-add-system-theme';
-import { removeDayStart } from './migrations/003-remove-day-start';
-import { STORAGE_KEYS } from './storage-keys';
+import { STORAGE_KEYS } from '../storage-keys';
+import { addCardDomain } from './001-add-card-domain';
+import { addSystemTheme } from './002-add-system-theme';
+import { removeDayStart } from './003-remove-day-start';
+import { readMigrationData, writeMigrationData } from './persistence';
 
 // Append only: index + 1 is the schema version. Never reorder or remove entries.
 const migrations = [addCardDomain, addSystemTheme, removeDayStart] as const;

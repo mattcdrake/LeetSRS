@@ -5,7 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import type { Card } from '@/domain/cards';
 import type { Note } from '@/domain/notes';
 import type { DailyStats } from '@/domain/statistics';
-import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations';
+import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';

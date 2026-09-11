@@ -2,7 +2,7 @@ import { normalizeImportData, validateImportRelationships, validateImportStructu
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import { exportDataSchema } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
-import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations';
+import { getCurrentSchemaVersion, migrateBackupData } from '@/infrastructure/storage/migrations/runner';
 import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
