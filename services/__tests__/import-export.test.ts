@@ -548,6 +548,13 @@ describe('import-export', () => {
       expect(JSON.parse(await exportData()).data.settings.theme).toBe(theme);
     });
 
+    it('generates an update timestamp when the backup omits it', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-06T12:00:00.000Z'));
+      await importData(JSON.stringify(validExportData));
+      expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2026-09-06T12:00:00.000Z');
+    });
+
     it('accepts and ignores legacy monthly stats', async () => {
       const existingMonthlyStats = { '2023-12': { totalReviews: 5 } };
       await storage.setItem(legacyMonthlyStatsKey, existingMonthlyStats);

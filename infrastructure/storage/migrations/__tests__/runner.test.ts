@@ -32,7 +32,7 @@ describe('migrations', () => {
         stats: Object.freeze({ '2024-01-01': { totalReviews: 9, historicalStat: true } }),
         settings: Object.freeze({
           theme: 'dark',
-          ...(schemaVersion !== 3 && { dayStartHour: 4 }),
+          dayStartHour: 4,
           historicalSetting: [1, 2],
         }),
         gistSync: Object.freeze({ gistId: 'old-gist', enabled: false, historicalConfig: true }),
@@ -45,7 +45,7 @@ describe('migrations', () => {
       expect(migrated).toEqual({
         ...data,
         cards: { 'two-sum': { ...card, domain: schemaVersion ? 'leetcode.cn' : 'leetcode.com' } },
-        settings: schemaVersion === 3 ? data.settings : { theme: 'dark', historicalSetting: [1, 2] },
+        settings: { theme: 'dark', historicalSetting: [1, 2] },
       });
       expect(migrateBackupData(data, schemaVersion)).toEqual(migrated);
       expect(JSON.stringify(data)).toBe(before);
@@ -109,11 +109,11 @@ describe('migrations', () => {
         cards: { malformedDomain: { domain: 42 }, malformedRecord: null, arrayRecord: [], booleanRecord: false },
         notes: ['historical note layout'],
         stats: 'historical statistics',
-        settings: { theme: 42, ...(version !== 3 && { dayStartHour: null }), ['__proto__']: 'legal setting key' },
+        settings: { theme: 42, dayStartHour: null, ['__proto__']: 'legal setting key' },
       };
       expect(migrateBackupData(data, version)).toEqual({
         ...data,
-        settings: version === 3 ? data.settings : { theme: 42, ['__proto__']: 'legal setting key' },
+        settings: { theme: 42, ['__proto__']: 'legal setting key' },
       });
     });
 
@@ -335,7 +335,7 @@ describe('migrations', () => {
       await storage.setItem(`${STORAGE_KEYS.notes}:${card.id}`, { text: 'Keep this note', historicalNote: true });
       await storage.setItem(`${STORAGE_KEYS.notes}:__proto__`, { text: 'Legal note key' });
       await storage.setItem('local:leetsrs:historicalData', { value: 'keep' });
-      if (version !== 3) await storage.setItem('sync:leetsrs:dayStartHour', 4);
+      await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await storage.setItem(STORAGE_KEYS.theme, 'dark');
       await storage.setItem('sync:leetsrs:historicalSetting', { ['__proto__']: 'keep' });
       const localBefore = await fakeBrowser.storage.local.get(null);

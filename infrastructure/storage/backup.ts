@@ -26,7 +26,7 @@ const recordsSchema = z.object({
 export type ExportData = Omit<z.infer<typeof envelopeSchema>, 'data'> & {
   data: z.infer<typeof recordsSchema>;
 };
-export type PreparedBackup = ExportData['data'] & { dataUpdatedAt: string };
+export type PreparedBackup = ExportData['data'] & Pick<ExportData, 'dataUpdatedAt'>;
 
 export function parseBackup(json: string): PreparedBackup {
   let input: unknown;
@@ -52,5 +52,5 @@ export function parseBackup(json: string): PreparedBackup {
   for (const id of Object.keys(records.notes)) {
     if (!cardIds.has(id)) throw new Error(`Note has no owning card: ${id}`);
   }
-  return { ...records, dataUpdatedAt: envelope.dataUpdatedAt ?? new Date().toISOString() };
+  return { ...records, dataUpdatedAt: envelope.dataUpdatedAt };
 }

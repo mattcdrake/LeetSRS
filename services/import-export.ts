@@ -39,6 +39,7 @@ export async function exportData(): Promise<string> {
 }
 
 export async function applyImportData(preparedData: PreparedBackup): Promise<void> {
+  const dataUpdatedAt = preparedData.dataUpdatedAt ?? new Date().toISOString();
   // Preserve PAT before reset (it's not in export for security)
   const existingPat = await getGitHubPat();
   await resetAllData();
@@ -63,7 +64,7 @@ export async function applyImportData(preparedData: PreparedBackup): Promise<voi
     }
   }
 
-  await writeSyncMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
+  await writeSyncMetadata('dataUpdatedAt', dataUpdatedAt);
 }
 
 export async function importData(jsonData: string): Promise<void> {

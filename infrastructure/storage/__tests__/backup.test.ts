@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { parseBackup } from '../backup';
+import { removeDayStart } from '../migrations/003-remove-day-start';
 
 const { payload, accepted } = mixedRecordBackup();
 const backup = { ...payload, data: accepted };
@@ -38,22 +39,24 @@ describe('parseBackup', () => {
 
   it('migrates historical fields before stripping or validating the current records', () => {
     const { domain: _domain, ...legacyCard } = accepted.cards['two-sum'];
-    const prepared = parseBackup(
-      JSON.stringify({
-        ...backup,
-        schemaVersion: 0,
-        data: {
-          ...accepted,
-          cards: { ...accepted.cards, 'two-sum': { ...legacyCard, historicalCard: { keep: true } } },
-          settings: {
-            dayStartHour: { malformed: 'discarded by migration 3' },
-            autoClearLeetcode: false,
-            historicalSetting: [1, 2],
-          },
-          historicalRoot: { keep: true },
-        },
-      })
-    );
+    const rawData = {
+      ...accepted,
+      cards: { ...accepted.cards, 'two-sum': { ...legacyCard, historicalCard: { keep: true } } },
+      settings: {
+        dayStartHour: { malformed: 'discarded by migration 3' },
+        autoClearLeetcode: false,
+        historicalSetting: [1, 2],
+      },
+      historicalRoot: { keep: true },
+    };
+    // Observe the real migration: normalized output cannot prove that unrelated
+    // historical fields survived parsing until their transformation.
+    const transform = vi.spyOn(removeDayStart, 'migrate');
+    const prepared = parseBackup(JSON.stringify({ ...backup, schemaVersion: 0, data: rawData }));
+    expect(transform).toHaveBeenCalledWith({
+      ...rawData,
+      cards: { ...rawData.cards, 'two-sum': { ...rawData.cards['two-sum'], domain: 'leetcode.com' } },
+    });
 
     expect(prepared).toEqual({
       ...accepted,
@@ -91,7 +94,7 @@ describe('parseBackup', () => {
   });
 
   it.each([
-    [3, { autoClearLeetcode: false }, { resetEditorOnEveryProblem: false }],
+    [3, { autoClearLeetcode: false, dayStartHour: { retired: true } }, { resetEditorOnEveryProblem: false }],
     [3, { autoClearLeetcode: 'ignored', resetEditorOnEveryProblem: false }, { resetEditorOnEveryProblem: false }],
     [4, { autoClearLeetcode: true }, {}],
   ])('applies only the settings conversion for schema %s: %j', (schemaVersion, settings, expected) => {
@@ -201,11 +204,7 @@ describe('parseBackup', () => {
     }
   );
 
-  it('generates a timestamp only when dataUpdatedAt is absent', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-09-06T12:00:00.000Z'));
-    expect(parseBackup(JSON.stringify({ ...backup, dataUpdatedAt: undefined })).dataUpdatedAt).toBe(
-      '2026-09-06T12:00:00.000Z'
-    );
+  it('leaves an absent update timestamp for the import service to supply', () => {
+    expect(parseBackup(JSON.stringify({ ...backup, dataUpdatedAt: undefined })).dataUpdatedAt).toBeUndefined();
   });
 });
