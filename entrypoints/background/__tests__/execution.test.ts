@@ -18,6 +18,14 @@ import * as sync from '@/services/github-sync';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
+const mockGistsGet = vi.fn();
+const mockGistsUpdate = vi.fn();
+vi.mock('octokit', () => ({
+  Octokit: vi.fn(function MockOctokit() {
+    return { rest: { gists: { get: mockGistsGet, update: mockGistsUpdate } } };
+  }),
+}));
+
 vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   onMessage: vi.fn(),
@@ -74,7 +82,10 @@ describe('registered background execution', () => {
     await storage.setItem(STORAGE_KEYS.gistId, 'gist');
     await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.mocked(sync.triggerGistSync).mockResolvedValue({ success: true, action: 'no-change', timestamp: 'now' });
+    const actualSync = await vi.importActual<typeof import('@/services/github-sync')>('@/services/github-sync');
+    vi.mocked(sync.triggerGistSync).mockImplementation(actualSync.triggerGistSync);
+    mockGistsGet.mockResolvedValue({ data: { files: {} } });
+    mockGistsUpdate.mockResolvedValue({ data: {} });
 
     const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
     const start = () => {
@@ -126,7 +137,8 @@ describe('registered background execution', () => {
     });
     await Promise.resolve();
     expect(settled).toBe(false);
-    expect(sync.triggerGistSync).not.toHaveBeenCalled();
+    expect(mockGistsGet).not.toHaveBeenCalled();
+    expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     release.resolve();
     const results = await blocked;
@@ -140,7 +152,8 @@ describe('registered background execution', () => {
     const afterFailure = await Promise.allSettled(submitMessages());
     expect(afterFailure.every((result) => result.status === 'rejected')).toBe(true);
     await fireAlarm();
-    expect(sync.triggerGistSync).not.toHaveBeenCalled();
+    expect(mockGistsGet).not.toHaveBeenCalled();
+    expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
     recovering.mockRestore();
@@ -157,9 +170,18 @@ describe('registered background execution', () => {
     // Import restores backup configuration, so re-enable alarm synchronization.
     await dispatch('setGistSyncConfig', { config: { enabled: true, gistId: 'gist' } });
     expect(JSON.parse((await dispatch('exportData')) as string).data).not.toHaveProperty('leetsrs-migration:pending');
-    await dispatch('triggerGistSync');
+    await expect(dispatch('triggerGistSync')).resolves.toMatchObject({ success: true, action: 'pushed' });
     await recoveredAlarm();
-    expect(sync.triggerGistSync).toHaveBeenCalledTimes(2);
+    expect(mockGistsGet).toHaveBeenCalledTimes(2);
+    expect(mockGistsUpdate).toHaveBeenCalledTimes(2);
+    const pushed = JSON.parse(mockGistsUpdate.mock.lastCall?.[0].files['leetsrs-backup.json'].content);
+    expect(pushed.data.cards).toEqual({ [card.slug]: card });
+    expect(pushed.data.notes).toEqual({ [card.id]: { text: 'Keep this note' } });
+    expect(pushed.data).not.toHaveProperty('leetsrs-migration:pending');
+    await expect(dispatch('getGistSyncStatus')).resolves.toMatchObject({
+      lastSyncDirection: 'push',
+      syncInProgress: false,
+    });
   });
 
   it('lets reads overlap a write and keeps ordered effects inside the queue', async () => {
