@@ -1,15 +1,11 @@
 import { z } from 'zod';
 import { storage } from '#imports';
-import { gistSyncConfigSchema } from '@/domain/gist-sync';
 import { STORAGE_KEYS } from './storage-keys';
 
 // Sync metadata shared by sync, backup/reset, and data tracking.
-// Callers retain defaults, PAT preservation, timestamps, and operation order.
+// Callers retain timestamps and operation order.
 // These calls do not mark local edits.
 const syncMetadataSchema = z.object({
-  githubPat: gistSyncConfigSchema.shape.pat,
-  gistId: gistSyncConfigSchema.shape.gistId.unwrap(),
-  gistSyncEnabled: gistSyncConfigSchema.shape.enabled,
   lastSyncTime: z.string(),
   lastSyncDirection: z.enum(['push', 'pull']),
   dataUpdatedAt: z.string(),

@@ -5,6 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import { parseBackup } from '@/infrastructure/storage/backup';
 import { setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { getGistSyncConfig, setGistSyncConfig } from '@/services/gist-setup';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { getGistSyncStatus, triggerGistSync } from '../github-sync';
 
@@ -66,7 +67,7 @@ describe('github-sync', () => {
         const { payload, accepted } = mixedRecordBackup();
         const actual = await vi.importActual<typeof import('../import-export')>('../import-export');
         await actual.importData(JSON.stringify({ ...payload, data: accepted }));
-        await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+        await setGistSyncConfig({ gistId: 'gist123' });
         await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-01-01T00:00:00.000Z');
         const before = await fakeBrowser.storage.local.get(null);
         const syncBefore = await fakeBrowser.storage.sync.get(null);
@@ -108,19 +109,19 @@ describe('github-sync', () => {
       expect(await triggerGistSync()).toMatchObject({ success: true, action: 'pulled' });
       const { dataUpdatedAt, ...data } = prepared;
       expect(JSON.parse(await actual.exportData())).toMatchObject({ data, dataUpdatedAt });
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('ghp_test');
+      expect((await getGistSyncConfig()).pat).toBe('ghp_test');
     });
 
     beforeEach(async () => {
-      await storage.setItem(STORAGE_KEYS.githubPat, 'ghp_test');
-      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+      await setGistSyncConfig({ pat: 'ghp_test' });
+      await setGistSyncConfig({ gistId: 'gist123' });
     });
 
     it.each([
-      [STORAGE_KEYS.githubPat, 'PAT is not configured'],
-      [STORAGE_KEYS.gistId, 'Gist ID is not configured'],
-    ])('rejects missing configuration at %s', async (key, error) => {
-      await storage.removeItem(key);
+      [{ pat: '' }, 'PAT is not configured'],
+      [{ gistId: null }, 'Gist ID is not configured'],
+    ] as const)('rejects missing configuration %j', async (config, error) => {
+      await setGistSyncConfig(config);
       expect(await triggerGistSync()).toEqual({ success: false, error });
       expect(Octokit).not.toHaveBeenCalled();
     });
@@ -164,8 +165,8 @@ describe('github-sync', () => {
     beforeEach(async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(now));
-      await storage.setItem(STORAGE_KEYS.githubPat, 'ghp_test');
-      await storage.setItem(STORAGE_KEYS.gistId, 'gist123');
+      await setGistSyncConfig({ pat: 'ghp_test' });
+      await setGistSyncConfig({ gistId: 'gist123' });
     });
 
     it('retains one client and destination when credentials change during the remote read', async () => {
@@ -180,8 +181,8 @@ describe('github-sync', () => {
 
       const syncing = triggerGistSync();
       await started.promise;
-      await storage.setItem(STORAGE_KEYS.githubPat, 'replacement');
-      await storage.setItem(STORAGE_KEYS.gistId, 'replacement-gist');
+      await setGistSyncConfig({ pat: 'replacement' });
+      await setGistSyncConfig({ gistId: 'replacement-gist' });
       request.resolve({ data: { files: {} } });
       expect(await syncing).toMatchObject({ success: true, action: 'pushed' });
 

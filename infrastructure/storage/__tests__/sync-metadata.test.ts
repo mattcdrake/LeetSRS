@@ -7,9 +7,6 @@ import { readSyncMetadata } from '../sync-metadata';
 
 type MetadataKey = Parameters<typeof readSyncMetadata>[0];
 const cases: [MetadataKey, unknown, unknown][] = [
-  ['githubPat', ' token ', 42],
-  ['gistId', '', 42],
-  ['gistSyncEnabled', false, 'false'],
   ['lastSyncTime', '2024-01-01T00:00:00.000Z', 42],
   ['lastSyncDirection', 'pull', 'invalid'],
   ['dataUpdatedAt', '2024-01-01T00:00:00.000Z', 42],

@@ -29,7 +29,7 @@ A local calendar day beginning at midnight, used for daily review statistics and
 The ordered set of unpaused cards whose due time has been reached, with new cards limited by the remaining daily allowance.
 
 **Note**:
-The learner's text attached to a card.
+The learner's text attached to a card, with at most one note per card. Empty text means no note; whitespace is preserved.
 
 **Backup**:
 An exported snapshot of cards, notes, review statistics, settings, and Gist configuration that can be restored into LeetSRS.

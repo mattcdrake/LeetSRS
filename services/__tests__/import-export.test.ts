@@ -8,6 +8,7 @@ import { parseBackup } from '@/infrastructure/storage/backup';
 import { removeDayStart } from '@/infrastructure/storage/migrations/003-remove-day-start';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { getGistSyncConfig, setGistSyncConfig } from '@/services/gist-setup';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
@@ -84,16 +85,16 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, mockSettings.badgeEnabled);
       await storage.setItem(STORAGE_KEYS.language, mockSettings.language);
 
-      await storage.setItem(STORAGE_KEYS.githubPat, 'private-pat');
-      await storage.setItem(STORAGE_KEYS.gistId, 'exported-gist');
-      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, false);
+      await setGistSyncConfig({ pat: 'private-pat' });
+      await setGistSyncConfig({ gistId: 'exported-gist' });
+      await setGistSyncConfig({ enabled: false });
       await storage.setItem(STORAGE_KEYS.lastSyncTime, 'private-sync-time');
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
 
       const result = await exportData();
       const parsed = JSON.parse(result);
 
-      expect(parsed.schemaVersion).toBe(4);
+      expect(parsed.schemaVersion).toBe(5);
       expect(parsed.exportDate).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(parsed.data.stats).toEqual(mockStats);
       expect(parsed.data).not.toHaveProperty('notes');
@@ -112,7 +113,7 @@ describe('import-export', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed).toMatchObject({
-        schemaVersion: 4,
+        schemaVersion: 5,
         exportDate: expect.any(String),
         data: {
           cards: {},
@@ -134,7 +135,7 @@ describe('import-export', () => {
           }
           return read(key, options);
         });
-        expect(JSON.parse(await exportData()).schemaVersion).toBe(4);
+        expect(JSON.parse(await exportData()).schemaVersion).toBe(5);
       }
     );
 
@@ -154,8 +155,8 @@ describe('import-export', () => {
         await setSchemaVersion(2);
         const { payload, accepted } = mixedRecordBackup();
         await importData(JSON.stringify({ ...payload, data: accepted }));
-        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
-        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
+        await setGistSyncConfig({ pat: 'existing-pat' });
+        await setGistSyncConfig({ gistId: 'existing-gist' });
         await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
         const before = await fakeBrowser.storage.local.get(null);
         const json = JSON.stringify({ ...payload, data: { ...accepted, [collection]: payload.data[collection] } });
@@ -227,7 +228,7 @@ describe('import-export', () => {
           )
         );
         expect(restored.dataUpdatedAt).toBe(payload.dataUpdatedAt);
-        expect(restored.schemaVersion).toBe(4);
+        expect(restored.schemaVersion).toBe(5);
       }
     );
 
@@ -292,8 +293,8 @@ describe('import-export', () => {
         old: createMockCard(State.New, { id: 'old', slug: 'old', note: 'old note' }),
       });
       await storage.setItem(STORAGE_KEYS.stats, { '2023-12-31': { totalReviews: 7 } });
-      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
-      await storage.setItem(STORAGE_KEYS.gistId, 'old-gist');
+      await setGistSyncConfig({ pat: 'existing-pat' });
+      await setGistSyncConfig({ gistId: 'old-gist' });
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2023-12-31T00:00:00.000Z');
       await setSchemaVersion(2);
     }
@@ -339,15 +340,23 @@ describe('import-export', () => {
         await seedExistingData();
         await storage.setItem(STORAGE_KEYS.theme, 'light');
         await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 12);
-        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await setGistSyncConfig({ enabled: true });
+        const writes = vi.spyOn(fakeBrowser.storage.sync, 'set');
         await importData(
           JSON.stringify({ ...validExportData, data: { ...validExportData.data, settings: undefined, gistSync } })
         );
+        expect(writes).toHaveBeenCalledExactlyOnceWith({
+          'leetsrs:gistConnection': {
+            pat: 'existing-pat',
+            gistId: gistSync?.gistId ?? null,
+            enabled: gistSync?.enabled ?? false,
+          },
+        });
         expect(await storage.getItem(STORAGE_KEYS.theme)).toBeNull();
         expect(await storage.getItem(STORAGE_KEYS.maxNewCardsPerDay)).toBeNull();
-        expect(await storage.getItem(STORAGE_KEYS.gistId)).toBe(gistSync?.gistId ?? null);
-        expect(await storage.getItem(STORAGE_KEYS.gistSyncEnabled)).toBe(gistSync?.enabled ?? null);
-        expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+        expect((await getGistSyncConfig()).gistId).toBe(gistSync?.gistId ?? null);
+        expect((await getGistSyncConfig()).enabled).toBe(gistSync?.enabled ?? false);
+        expect((await getGistSyncConfig()).pat).toBe('existing-pat');
         expect(await storage.getItem(STORAGE_KEYS.cards)).toEqual(embeddedData.cards);
       }
     );
@@ -387,7 +396,7 @@ describe('import-export', () => {
         validExportData.data.settings.maxNewCardsPerDay
       );
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe('2024-01-01T00:00:00.000Z');
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+      expect((await getGistSyncConfig()).pat).toBe('existing-pat');
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
       expect(JSON.parse(await exportData()).data).toEqual({
         ...embeddedData,
@@ -421,14 +430,14 @@ describe('import-export', () => {
     );
 
     it.each([null, 'existing-pat'])('ignores imported credentials when the local PAT is %s', async (pat) => {
-      if (pat !== null) await storage.setItem(STORAGE_KEYS.githubPat, pat);
+      if (pat !== null) await setGistSyncConfig({ pat: pat });
       await importData(
         JSON.stringify({
           ...validExportData,
           data: { ...validExportData.data, gistSync: { pat: 'untrusted-pat', githubPat: 'untrusted-legacy-pat' } },
         })
       );
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(pat || null);
+      expect((await getGistSyncConfig()).pat).toBe(pat || '');
     });
 
     describe('schema migrations', () => {
@@ -472,7 +481,7 @@ describe('import-export', () => {
             await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
           }
           if (schemaVersion !== 3) await storage.setItem('sync:leetsrs:dayStartHour', 4);
-          await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+          await setGistSyncConfig({ pat: 'existing-pat' });
           await runStartupMigrations();
           const startupCards = await storage.getItem(STORAGE_KEYS.cards);
           expect(startupCards).toEqual(embeddedCards);
@@ -511,7 +520,7 @@ describe('import-export', () => {
             expect(await storage.getItem(`local:leetsrs:notes:${id}`)).toBeNull();
           }
           expect(await storage.getItem(STORAGE_KEYS.theme)).toBe('light');
-          expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe('existing-pat');
+          expect((await getGistSyncConfig()).pat).toBe('existing-pat');
           expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(dataUpdatedAt);
           expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(0);
           expect(await storage.getItem('sync:leetsrs:dayStartHour')).toBe(9);
@@ -587,9 +596,9 @@ describe('import-export', () => {
           await storage.setItem(`local:leetsrs:notes:${id}`, note);
         }
         await storage.setItem(STORAGE_KEYS.theme, 'dark');
-        await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
-        await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
-        await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+        await setGistSyncConfig({ pat: 'existing-pat' });
+        await setGistSyncConfig({ gistId: 'existing-gist' });
+        await setGistSyncConfig({ enabled: true });
         await storage.setItem(STORAGE_KEYS.lastSyncTime, dataUpdatedAt);
         await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
         await storage.setItem(STORAGE_KEYS.dataUpdatedAt, dataUpdatedAt);
@@ -629,7 +638,7 @@ describe('import-export', () => {
           data: { ...validExportData.data, settings: { resetEditorOnEveryProblem: false, [key]: true } },
         }),
       ]),
-      ['future schema version', JSON.stringify({ ...validExportData, schemaVersion: 5 })],
+      ['future schema version', JSON.stringify({ ...validExportData, schemaVersion: 6 })],
       ['null root', 'null'],
       ['missing export date', JSON.stringify({ data: {} })],
       ...['cards', 'stats', 'notes'].map((key) => [
@@ -644,9 +653,9 @@ describe('import-export', () => {
       for (const [key, value] of Object.entries(validExportData.data.settings)) {
         await storage.setItem(STORAGE_KEYS[key as keyof typeof validExportData.data.settings], value);
       }
-      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
-      await storage.setItem(STORAGE_KEYS.gistId, 'existing-gist');
-      await storage.setItem(STORAGE_KEYS.gistSyncEnabled, true);
+      await setGistSyncConfig({ pat: 'existing-pat' });
+      await setGistSyncConfig({ gistId: 'existing-gist' });
+      await setGistSyncConfig({ enabled: true });
       await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-02-01T00:00:00.000Z');
       await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'push');
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-02-02T00:00:00.000Z');
@@ -784,13 +793,26 @@ describe('import-export', () => {
       await storage.setItem(STORAGE_KEYS.badgeEnabled, true);
       await storage.setItem(STORAGE_KEYS.language, 'en');
 
-      await storage.setItem(STORAGE_KEYS.githubPat, 'existing-pat');
+      await setGistSyncConfig({ pat: 'existing-pat', gistId: 'gist', enabled: true });
+      await fakeBrowser.storage.sync.set({
+        'leetsrs:githubPat': 'old',
+        'leetsrs:gistId': 'old-gist',
+        'leetsrs:gistSyncEnabled': true,
+      });
       await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-01T00:00:00.000Z');
       await setSchemaVersion(2);
 
+      const remove = vi.spyOn(fakeBrowser.storage.sync, 'remove');
       await resetAllData();
+      expect(await fakeBrowser.storage.sync.get(null)).toEqual({});
+      expect(remove).toHaveBeenCalledWith([
+        'leetsrs:gistConnection',
+        'leetsrs:githubPat',
+        'leetsrs:gistId',
+        'leetsrs:gistSyncEnabled',
+      ]);
 
-      expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBeNull();
+      expect((await getGistSyncConfig()).pat).toBe('');
       expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
       expect(await storage.getItem(STORAGE_KEYS.schemaVersion)).toBe(2);
 

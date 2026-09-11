@@ -1,19 +1,23 @@
+import { gistSyncConfigSchema } from '@/domain/gist-sync';
 import type { ExportData, PreparedImportData } from '@/infrastructure/storage/backup';
 import { parseBackup } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
+import {
+  readGistConnection,
+  removeGistConnection,
+  writeGistConnection,
+} from '@/infrastructure/storage/gist-connection';
 import { LATEST_SCHEMA_VERSION } from '@/infrastructure/storage/migrations/runner';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
-import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const [cards, stats, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
+  const [cards, stats, settings, connection, dataUpdatedAt] = await Promise.all([
     getAllCards(),
     getStats(),
     exportSettings(),
-    readSyncMetadata('gistId'),
-    readSyncMetadata('gistSyncEnabled'),
+    readGistConnection(),
     readSyncMetadata('dataUpdatedAt'),
   ]);
 
@@ -26,8 +30,8 @@ export async function exportData(): Promise<string> {
       stats,
       settings,
       gistSync: {
-        ...(gistId != null && { gistId }),
-        ...(gistSyncEnabled != null && { enabled: gistSyncEnabled }),
+        ...(connection.gistId != null && { gistId: connection.gistId }),
+        enabled: connection.enabled,
       },
     },
   };
@@ -36,26 +40,15 @@ export async function exportData(): Promise<string> {
 }
 
 export async function applyImportData(preparedData: PreparedImportData): Promise<void> {
-  // Preserve PAT before reset (it's not in export for security)
-  const existingPat = await getGitHubPat();
+  // Prepare the complete replacement before reset; exports never contain the PAT.
+  const { pat } = await readGistConnection();
+  const connection = gistSyncConfigSchema.parse({ gistId: null, enabled: false, ...preparedData.gistSync, pat });
   await resetAllData();
-
-  if (existingPat) {
-    await setGitHubPat(existingPat);
-  }
+  await writeGistConnection(connection);
 
   await saveCards(Object.values(preparedData.cards));
   await saveStats(preparedData.stats);
   await updateSettings(preparedData.settings);
-
-  if (preparedData.gistSync) {
-    if (preparedData.gistSync.gistId != null) {
-      await writeSyncMetadata('gistId', preparedData.gistSync.gistId);
-    }
-    if (preparedData.gistSync.enabled != null) {
-      await writeSyncMetadata('gistSyncEnabled', preparedData.gistSync.enabled);
-    }
-  }
 
   await writeSyncMetadata('dataUpdatedAt', preparedData.dataUpdatedAt);
 }
@@ -69,9 +62,7 @@ export async function resetAllData(): Promise<void> {
   await removeCards();
   await removeStats();
   await resetSettings();
-  await removeGitHubPat();
-  await removeSyncMetadata('gistId');
-  await removeSyncMetadata('gistSyncEnabled');
+  await removeGistConnection();
   await removeSyncMetadata('lastSyncTime');
   await removeSyncMetadata('lastSyncDirection');
   await removeSyncMetadata('dataUpdatedAt');

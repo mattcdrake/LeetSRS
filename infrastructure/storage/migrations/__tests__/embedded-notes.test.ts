@@ -5,7 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { embedNotes, validateOutput } from '../004-embed-notes';
 import { readDataset } from '../layouts/v4';
-import { migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
+import { LATEST_SCHEMA_VERSION, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
 
 describe('embedded note migration', () => {
   beforeEach(() => fakeBrowser.reset());
@@ -140,7 +140,7 @@ describe('embedded note migration', () => {
     await runStartupMigrations();
     expect(await fakeBrowser.storage.local.get(null)).toEqual({
       'leetsrs:cards': { 'two-sum': { ...card, note: 'Keep the schedule' } },
-      'leetsrs:schemaVersion': 4,
+      'leetsrs:schemaVersion': LATEST_SCHEMA_VERSION,
       unrelated: 'keep',
     });
     const dataset = await readDataset();

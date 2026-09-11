@@ -2,8 +2,8 @@ import { Octokit } from 'octokit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { getGitHubPat, removeGitHubPat, setGitHubPat, validatePat } from '../github-auth';
+import { setGistSyncConfig } from '@/services/gist-setup';
+import { validatePat } from '../github-auth';
 
 const { getAuthenticated, getGist } = vi.hoisted(() => ({
   getAuthenticated: vi.fn(),
@@ -27,30 +27,6 @@ describe('github-auth', () => {
     fakeBrowser.runtime.id = 'test';
   });
 
-  it.each(['', ' token '])('persists and removes credential %j without marking local edits', async (pat) => {
-    expect(await getGitHubPat()).toBeNull();
-    await setGitHubPat(pat);
-    expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBe(pat);
-    expect(await getGitHubPat()).toBe(pat);
-
-    await removeGitHubPat();
-    expect(await storage.getItem(STORAGE_KEYS.githubPat)).toBeNull();
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
-    expect(Octokit).not.toHaveBeenCalled();
-  });
-
-  it('propagates credential persistence failures', async () => {
-    const failure = new Error('storage unavailable');
-    vi.spyOn(storage, 'getItem').mockRejectedValue(failure);
-    vi.spyOn(storage, 'setItem').mockRejectedValue(failure);
-    vi.spyOn(storage, 'removeItem').mockRejectedValue(failure);
-
-    await expect(getGitHubPat()).rejects.toBe(failure);
-    await expect(setGitHubPat('token')).rejects.toBe(failure);
-    await expect(removeGitHubPat()).rejects.toBe(failure);
-    expect(Octokit).not.toHaveBeenCalled();
-  });
-
   describe('validatePat', () => {
     it.each(['', ' \t\n'])('rejects blank input %j without storage access or requests', async (pat) => {
       const reads = vi.spyOn(storage, 'getItem');
@@ -64,7 +40,7 @@ describe('github-auth', () => {
     });
 
     it('validates the untrimmed input and returns the username without accessing stored credentials', async () => {
-      await storage.setItem(STORAGE_KEYS.githubPat, 'stored');
+      await setGistSyncConfig({ pat: 'stored' });
       const reads = vi.spyOn(storage, 'getItem');
       const writes = vi.spyOn(storage, 'setItem');
       getAuthenticated.mockResolvedValue({ data: { login: 'testuser' } });

@@ -293,6 +293,32 @@ describe('registered background execution', () => {
     expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '1' });
   });
 
+  it('serializes whole-connection updates and exposes the previous record while a write is pending', async () => {
+    await dispatch('setGistSyncConfig', { config: { pat: 'old', gistId: 'old-gist', enabled: false } });
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const write = browser.storage.sync.set.bind(browser.storage.sync);
+    const writes = vi.spyOn(browser.storage.sync, 'set').mockImplementationOnce(async (items) => {
+      started.resolve();
+      await release.promise;
+      await write(items);
+    });
+    const changingPat = dispatch('setGistSyncConfig', { config: { pat: 'new' } });
+    const changingGist = dispatch('setGistSyncConfig', { config: { gistId: 'new-gist' } });
+    const enabling = dispatch('setGistSyncConfig', { config: { enabled: true } });
+    await started.promise;
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'old', gistId: 'old-gist', enabled: false });
+    expect(writes).toHaveBeenCalledOnce();
+    release.resolve();
+    await Promise.all([changingPat, changingGist, enabling]);
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'new', gistId: 'new-gist', enabled: true });
+    expect(writes.mock.calls).toEqual([
+      [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'old-gist', enabled: false } }],
+      [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new-gist', enabled: false } }],
+      [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new-gist', enabled: true } }],
+    ]);
+  });
+
   it('preserves the timestamp and badge when updating Gist configuration', async () => {
     const timestamp = '2024-01-15T10:00:00.000Z';
     await storage.setItem(STORAGE_KEYS.dataUpdatedAt, timestamp);
