@@ -156,7 +156,7 @@ export function ReviewQueue() {
         {/* The key is important to ensure React re-mounts the component for a new card */}
         <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       </div>
-      <NotesSection cardId={currentCard.id} />
+      <NotesSection slug={currentCard.slug} />
       <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
     </div>
   );

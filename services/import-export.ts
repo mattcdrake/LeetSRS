@@ -2,18 +2,15 @@ import type { ExportData, PreparedImportData } from '@/infrastructure/storage/ba
 import { parseBackup } from '@/infrastructure/storage/backup';
 import { getAllCards, removeCards, saveCards } from '@/infrastructure/storage/cards';
 import { LATEST_SCHEMA_VERSION } from '@/infrastructure/storage/migrations/runner';
-import { deleteNote, getNotesForCards, saveNote } from '@/infrastructure/storage/notes';
 import { getStats, removeStats, saveStats } from '@/infrastructure/storage/stats';
 import { readSyncMetadata, removeSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
 import { getGitHubPat, removeGitHubPat, setGitHubPat } from './github-auth';
 import { exportSettings, resetSettings, updateSettings } from './settings';
 
 export async function exportData(): Promise<string> {
-  const cardsPromise = getAllCards();
-  const [cards, stats, notes, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
-    cardsPromise,
+  const [cards, stats, settings, gistId, gistSyncEnabled, dataUpdatedAt] = await Promise.all([
+    getAllCards(),
     getStats(),
-    cardsPromise.then((cards) => getNotesForCards(cards)),
     exportSettings(),
     readSyncMetadata('gistId'),
     readSyncMetadata('gistSyncEnabled'),
@@ -27,7 +24,6 @@ export async function exportData(): Promise<string> {
     data: {
       cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
       stats,
-      notes,
       settings,
       gistSync: {
         ...(gistId != null && { gistId }),
@@ -50,9 +46,6 @@ export async function applyImportData(preparedData: PreparedImportData): Promise
 
   await saveCards(Object.values(preparedData.cards));
   await saveStats(preparedData.stats);
-  for (const [cardId, note] of Object.entries(preparedData.notes)) {
-    await saveNote(cardId, note.text);
-  }
   await updateSettings(preparedData.settings);
 
   if (preparedData.gistSync) {
@@ -73,7 +66,6 @@ export async function importData(jsonData: string): Promise<void> {
 }
 
 export async function resetAllData(): Promise<void> {
-  const cards = await getAllCards();
   await removeCards();
   await removeStats();
   await resetSettings();
@@ -83,8 +75,4 @@ export async function resetAllData(): Promise<void> {
   await removeSyncMetadata('lastSyncTime');
   await removeSyncMetadata('lastSyncDirection');
   await removeSyncMetadata('dataUpdatedAt');
-
-  for (const card of cards) {
-    await deleteNote(card.id);
-  }
 }

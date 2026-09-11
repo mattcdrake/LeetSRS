@@ -44,7 +44,7 @@ vi.mock('../ReviewCard', () => ({
 }));
 
 vi.mock('../NotesSection', () => ({
-  NotesSection: ({ cardId }: { cardId: string }) => <div data-testid="notes-section">Notes for {cardId}</div>,
+  NotesSection: ({ slug }: { slug: string }) => <div data-testid="notes-section">Notes for {slug}</div>,
 }));
 
 vi.mock('../ActionsSection', () => ({
@@ -150,7 +150,7 @@ describe('ReviewQueue', () => {
       await waitFor(() => {
         expect(screen.getByText('Two Sum')).toBeInTheDocument();
         expect(screen.getByTestId('notes-section')).toBeInTheDocument();
-        expect(screen.getByText('Notes for 1')).toBeInTheDocument();
+        expect(screen.getByText('Notes for two-sum')).toBeInTheDocument();
         expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
         expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
       });

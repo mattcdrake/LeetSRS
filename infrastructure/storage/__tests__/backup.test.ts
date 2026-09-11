@@ -1,15 +1,65 @@
+import { State } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { parseBackup } from '../backup';
 
 describe('parseBackup', () => {
+  it.each([undefined, '', '   ', 'Saved note'])('parses embedded note %j without a separate collection', (note) => {
+    const card = createMockCard(State.Review, { slug: 'two-sum' });
+    const parsed = parseBackup(
+      JSON.stringify({
+        schemaVersion: 4,
+        exportDate: '2024-01-01',
+        data: { cards: { 'two-sum': { ...card, note } }, stats: {} },
+      })
+    );
+    expect(parsed.cards['two-sum']).toEqual({ ...card, ...(note ? { note } : {}) });
+    expect(parsed).not.toHaveProperty('notes');
+  });
+
   afterEach(() => vi.restoreAllMocks());
+
+  it.each([{}, [], null, { orphan: { text: 'Legacy' } }])(
+    'rejects a separate notes field in version 4 before stripping extras: %j',
+    (notes) => {
+      expect(() =>
+        parseBackup(
+          JSON.stringify({
+            schemaVersion: 4,
+            exportDate: '2024-01-01',
+            data: { cards: {}, stats: {}, notes },
+          })
+        )
+      ).toThrow('separate notes field');
+    }
+  );
+
+  it.each([undefined, '', ' \t\n ', 'x'.repeat(500)])(
+    'normalizes legacy note %j and discards malformed orphans',
+    (text) => {
+      const card = createMockCard(State.Review, { slug: 'two-sum', id: 'owner' });
+      const parsed = parseBackup(
+        JSON.stringify({
+          schemaVersion: 3,
+          exportDate: '2024-01-01',
+          data: {
+            cards: { 'two-sum': card },
+            stats: {},
+            notes: { orphan: { text: 42 }, ...(text !== undefined && { owner: { text } }) },
+          },
+        })
+      );
+      expect(parsed.cards).toEqual({ 'two-sum': { ...card, ...(text ? { note: text } : {}) } });
+      expect(parsed).not.toHaveProperty('notes');
+    }
+  );
 
   it.each([undefined, 0, 1, 2, 3])(
     'preserves learning data from version %s without storage or clock access',
     (schemaVersion) => {
-      const { payload, accepted } = mixedRecordBackup();
+      const { payload, accepted, embedded } = mixedRecordBackup();
       const { domain: _domain, ...legacyCard } = accepted.cards['two-sum'];
       const data = {
         ...accepted,
@@ -37,7 +87,7 @@ describe('parseBackup', () => {
         throw new Error('Parsing must not read the clock');
       });
       expect(parseBackup(JSON.stringify({ ...payload, schemaVersion, data, dataUpdatedAt: undefined }))).toEqual({
-        ...accepted,
+        ...embedded,
         settings: { resetEditorOnEveryProblem: false },
         gistSync: { gistId: 'incoming-gist', enabled: false },
         dataUpdatedAt: payload.exportDate,
@@ -46,7 +96,7 @@ describe('parseBackup', () => {
   );
 
   it('filters extras after migration while preserving valid current settings over malformed legacy data', () => {
-    const { payload, accepted } = mixedRecordBackup();
+    const { payload, accepted, embedded } = mixedRecordBackup();
     const card = accepted.cards['two-sum'];
     const stats = accepted.stats['2024-01-01'];
     expect(
@@ -74,19 +124,18 @@ describe('parseBackup', () => {
         })
       )
     ).toEqual({
-      ...accepted,
+      ...embedded,
       settings: { resetEditorOnEveryProblem: false },
       gistSync: { gistId: 'incoming-gist', enabled: false },
       dataUpdatedAt: payload.dataUpdatedAt,
     });
   });
 
-  it.each(['slug', 'duplicate', 'date', 'orphan'] as const)('rejects broken %s relationships', (kind) => {
+  it.each(['slug', 'duplicate', 'date'] as const)('rejects broken %s relationships', (kind) => {
     const { payload, accepted } = mixedRecordBackup();
     if (kind === 'slug') accepted.cards['two-sum'].slug = 'different';
     if (kind === 'duplicate') accepted.cards['cn-problem'].id = 'valid-com';
     if (kind === 'date') accepted.stats['2024-01-01'].date = '2024-01-02';
-    if (kind === 'orphan') delete (accepted.cards as Record<string, unknown>)['two-sum'];
     expect(() => parseBackup(JSON.stringify({ ...payload, data: accepted }))).toThrow();
   });
 
@@ -102,7 +151,7 @@ describe('parseBackup', () => {
   });
 
   it.each([
-    { schemaVersion: 4 },
+    { schemaVersion: 5 },
     { schemaVersion: -1 },
     { schemaVersion: null },
     { schemaVersion: 1.5 },
@@ -170,6 +219,6 @@ describe('parseBackup', () => {
           data: { cards: {}, stats: {}, notes: {} },
         })
       )
-    ).toEqual({ cards: {}, stats: {}, notes: {}, settings: {}, dataUpdatedAt: '2024-01-01T05:30:00+05:30' });
+    ).toEqual({ cards: {}, stats: {}, settings: {}, dataUpdatedAt: '2024-01-01T05:30:00+05:30' });
   });
 });

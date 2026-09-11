@@ -11,7 +11,7 @@ import { NoteEditor } from '../NoteEditor';
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
-  const cardId = 'editor-card';
+  const slug = 'editor-card';
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   beforeEach(() => {
@@ -24,8 +24,8 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
   it('enables saving only for a nonempty changed note within the limit', () => {
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
-    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
@@ -46,7 +46,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const save = Promise.withResolvers<void>();
     messages.resolve('getNote', { text: 'Stored note' }).resolve('saveNote', save.promise);
     const { wrapper } = createTestWrapper();
-    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     expect(textarea).toBeDisabled();
@@ -59,7 +59,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('button', { name: 'Saving...' })).toBeDisabled();
     expect(textarea).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { cardId, text: 'Edited note' });
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug, text: 'Edited note' });
 
     await act(async () => save.resolve());
     await waitFor(() => expect(textarea).toBeEnabled());
@@ -67,8 +67,8 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
   it('shows the full over-limit count and prevents saving', () => {
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), null);
-    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), null);
+    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -84,15 +84,15 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const remove = Promise.withResolvers<void>();
     messages.resolve('deleteNote', remove.promise);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text });
-    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), { text });
+    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const confirm = await screen.findByRole('button', { name: 'Confirm?' });
     expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
     fireEvent.click(confirm);
     expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { cardId });
+    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { slug });
 
     await act(async () => remove.resolve());
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Deleting...' })).not.toBeInTheDocument());
@@ -106,8 +106,8 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
-    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
 
     fireEvent.change(textarea, { target: { value: 'Failed draft' } });
@@ -122,8 +122,8 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('deleteNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
-    render(<NoteEditor cardId={cardId} variant={variant} />, { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
@@ -134,7 +134,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 });
 
 describe('NoteEditor autosizing', () => {
-  const cardId = 'autosize-card';
+  const slug = 'autosize-card';
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   beforeEach(() => {
@@ -155,7 +155,7 @@ describe('NoteEditor autosizing', () => {
         : Math.max(contentHeight, Number.parseFloat(this.style.height));
     });
     const { wrapper } = createTestWrapper();
-    render(<NoteEditor cardId={cardId} variant="compact" />, { wrapper });
+    render(<NoteEditor slug={slug} variant="compact" />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     expect(textarea).toHaveStyle({ height: '24px' });
 
@@ -180,18 +180,18 @@ describe('NoteEditor autosizing', () => {
   it('keeps regular sizing fixed and clears compact height when switching variants', () => {
     const measure = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(96);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(cardId), { text: 'Stored note' });
-    const { rerender } = render(<NoteEditor cardId={cardId} variant="regular" />, { wrapper });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    const { rerender } = render(<NoteEditor slug={slug} variant="regular" />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
 
     fireEvent.change(textarea, { target: { value: 'Edited note' } });
     expect(textarea.style.height).toBe('');
     expect(measure).not.toHaveBeenCalled();
 
-    rerender(<NoteEditor cardId={cardId} variant="compact" />);
+    rerender(<NoteEditor slug={slug} variant="compact" />);
     expect(textarea).toHaveStyle({ height: '96px' });
 
-    rerender(<NoteEditor cardId={cardId} variant="regular" />);
+    rerender(<NoteEditor slug={slug} variant="regular" />);
     expect(textarea.style.height).toBe('');
     expect(textarea).toHaveValue('Edited note');
   });

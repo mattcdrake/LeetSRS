@@ -10,11 +10,11 @@ import {
   onMessage,
 } from '@/infrastructure/browser/messages';
 import * as tracker from '@/infrastructure/storage/data-tracker';
-import * as notes from '@/infrastructure/storage/notes';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
 import * as sync from '@/services/github-sync';
+import * as notes from '@/services/notes';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -49,6 +49,82 @@ beforeEach(async () => {
 const problem = buildProblem();
 
 describe('registered background execution', () => {
+  it('edits a card note by slug while preserving the card and its schedule', async () => {
+    const card = await cards.addCard(problem);
+    await expect(dispatch('getNote', { slug: problem.slug })).resolves.toBeNull();
+    await dispatch('saveNote', { slug: problem.slug, text: '  Remember the complement  ' });
+    expect(await dispatch('getAllCards')).toEqual([{ ...card, note: '  Remember the complement  ' }]);
+    expect(await dispatch('getNote', { slug: problem.slug })).toEqual({ text: '  Remember the complement  ' });
+    await dispatch('saveNote', { slug: problem.slug, text: '' });
+    expect(await dispatch('getAllCards')).toEqual([card]);
+    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
+  });
+
+  it('rejects a missing-card save, allows absent reads/deletes, and never looks up UUIDs', async () => {
+    const card = await cards.addCard(problem);
+    const tracking = vi.spyOn(tracker, 'markDataUpdated');
+    const writes = vi.spyOn(browser.storage.local, 'set');
+    await expect(dispatch('saveNote', { slug: card.id, text: 'No owner' })).rejects.toThrow('not found');
+    expect(tracking).not.toHaveBeenCalled();
+    expect(writes).not.toHaveBeenCalled();
+    expect(await dispatch('getNote', { slug: card.id })).toBeNull();
+    await expect(dispatch('deleteNote', { slug: card.id })).resolves.toBeUndefined();
+    expect(await dispatch('getAllCards')).toEqual([card]);
+  });
+
+  it('keeps serialized note and card edits together, then removes notes with cards and on reset', async () => {
+    await dispatch('addCard', { problem });
+    await Promise.all([
+      dispatch('saveNote', { slug: problem.slug, text: 'Keep me' }),
+      dispatch('setPauseStatus', { slug: problem.slug, paused: true }),
+    ]);
+    expect(await dispatch('getAllCards')).toMatchObject([{ slug: problem.slug, paused: true, note: 'Keep me' }]);
+    await dispatch('removeCard', { slug: problem.slug });
+    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
+    await dispatch('addCard', { problem });
+    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
+    await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });
+    await dispatch('resetAllData');
+    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
+    expect(await dispatch('getAllCards')).toEqual([]);
+  });
+
+  it.each(['length', 'write'] as const)('preserves the note and timestamp after a %s failure', async (failure) => {
+    await dispatch('addCard', { problem });
+    await dispatch('saveNote', { slug: problem.slug, text: 'a'.repeat(500) });
+    const previous = await dispatch('getAllCards');
+    const timestamp = await storage.getItem(STORAGE_KEYS.dataUpdatedAt);
+    if (failure === 'write') vi.spyOn(browser.storage.local, 'set').mockRejectedValueOnce(new Error('Unavailable'));
+    await expect(
+      dispatch('saveNote', {
+        slug: problem.slug,
+        text: failure === 'length' ? 'b'.repeat(501) : 'Changed',
+      })
+    ).rejects.toThrow();
+    expect(await dispatch('getAllCards')).toEqual(previous);
+    expect(await dispatch('getNote', { slug: problem.slug })).toEqual({ text: 'a'.repeat(500) });
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
+  });
+
+  it('blocks normal commands when the embedded-note startup migration rejects an ambiguous owner', async () => {
+    fakeBrowser.reset();
+    vi.mocked(onMessage).mockClear();
+    const card = await cards.addCard(problem);
+    await storage.setItem(STORAGE_KEYS.cards, {
+      [problem.slug]: card,
+      other: { ...card, slug: 'other' },
+    });
+    await storage.setItem(STORAGE_KEYS.schemaVersion, 3);
+    await storage.setItem(`local:leetsrs:notes:${card.id}`, { text: 'Ambiguous' });
+    const before = await fakeBrowser.storage.local.get(null);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    background.main();
+    await expect(dispatch('getAllCards')).rejects.toThrow('Duplicate card ID');
+    await expect(dispatch('saveNote', { slug: problem.slug, text: 'New' })).rejects.toThrow('Duplicate card ID');
+    await expect(dispatch('removeCard', { slug: problem.slug })).rejects.toThrow('Duplicate card ID');
+    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+  });
+
   it('registers every message synchronously', () => {
     expect(
       vi
@@ -82,7 +158,7 @@ describe('registered background execution', () => {
     });
 
     const first = dispatch('removeCard', { slug: 'two-sum' });
-    const second = dispatch('deleteNote', { cardId: 'card' });
+    const second = dispatch('deleteNote', { slug: 'card' });
     await started.promise;
     await expect(dispatch('getAllCards')).resolves.toEqual([]);
     expect(events).toEqual(['handler']);
@@ -182,11 +258,11 @@ describe('registered background execution', () => {
     '%s updates the timestamp without refreshing the badge',
     async (name) => {
       const card = await cards.addCard(problem);
-      await notes.saveNote(card.id, 'existing note');
+      await notes.saveNote(card.slug, 'existing note');
       const tracking = vi.spyOn(tracker, 'markDataUpdated');
       const badge = vi.spyOn(browser.action, 'setBadgeText');
 
-      await dispatch(name, { cardId: card.id, text: 'remember' });
+      await dispatch(name, { slug: card.slug, text: 'remember' });
 
       expect(tracking).toHaveBeenCalledOnce();
       expect(badge).not.toHaveBeenCalled();
@@ -251,9 +327,9 @@ const invalidPayloads: [MessageName, unknown][] = [
   ['delayCard', { slug: problem.slug, days: 0.5 }],
   ['setPauseStatus', { slug: problem.slug, paused: 'false' }],
   ['rateCard', { input: { ...problem, rating: 0 } }],
-  ['getNote', { cardId: '' }],
-  ['saveNote', { cardId: 'card', text: 'a'.repeat(501) }],
-  ['deleteNote', { cardId: 42 }],
+  ['getNote', { slug: '' }],
+  ['saveNote', { slug: 'card', text: 'a'.repeat(501) }],
+  ['deleteNote', { slug: 42 }],
   ['updateSettings', { changes: { language: 'constructor' } }],
   ['shouldResetEditor', { slug: problem.slug, domain: 'example.com' }],
   ['getLastNDaysStats', { days: -1 }],
@@ -271,6 +347,7 @@ it.each(invalidPayloads)('rejects invalid %s input before mutation and recovers 
   await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
   expect(writes).not.toHaveBeenCalled();
   expect(badge).not.toHaveBeenCalled();
-  await dispatch('saveNote', { cardId: 'card', text: 'after failure', extra: true });
-  expect(await dispatch('getNote', { cardId: 'card' })).toEqual({ text: 'after failure' });
+  await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });
+  await dispatch('saveNote', { slug: 'card', text: 'after failure', extra: true });
+  expect(await dispatch('getNote', { slug: 'card' })).toEqual({ text: 'after failure' });
 });

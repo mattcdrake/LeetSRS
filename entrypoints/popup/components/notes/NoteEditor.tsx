@@ -8,11 +8,11 @@ import { useNoteEditor } from './useNoteEditor';
 const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
 
 interface NoteEditorProps {
-  cardId: string;
+  slug: string;
   variant: 'regular' | 'compact';
 }
 
-export function NoteEditor({ cardId, variant }: NoteEditorProps) {
+export function NoteEditor({ slug, variant }: NoteEditorProps) {
   const t = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = variant === 'compact';
@@ -32,7 +32,7 @@ export function NoteEditor({ cardId, variant }: NoteEditorProps) {
     isSaving,
     isDeleting,
     error,
-  } = useNoteEditor(cardId);
+  } = useNoteEditor(slug);
 
   useEffect(() => {
     const textarea = textareaRef.current;

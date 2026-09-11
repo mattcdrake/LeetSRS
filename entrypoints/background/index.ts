@@ -10,7 +10,6 @@ import {
 } from '@/infrastructure/browser/messages';
 import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
 import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
-import { deleteNote, getNote, saveNote } from '@/infrastructure/storage/notes';
 import {
   addCard,
   delayCard,
@@ -31,6 +30,7 @@ import {
 import { hasGitHubCredentials, validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
+import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
 
@@ -69,9 +69,9 @@ const commands: { [Name in MessageName]: Command<Name> } = {
   rateCard: write(({ input }) => rateCard(input), { updateDataTimestamp: true, refreshBadge: true }),
   getReviewQueue: read(getReviewQueue),
   getTodayStats: read(getTodayStats),
-  getNote: read(({ cardId }) => getNote(cardId)),
-  saveNote: write(({ cardId, text }) => saveNote(cardId, text), { updateDataTimestamp: true }),
-  deleteNote: write(({ cardId }) => deleteNote(cardId), { updateDataTimestamp: true }),
+  getNote: read(({ slug }) => getNote(slug)),
+  saveNote: write(({ slug, text }) => saveNote(slug, text), { updateDataTimestamp: true }),
+  deleteNote: write(({ slug }) => deleteNote(slug), { updateDataTimestamp: true }),
   getSettings: read(getSettings),
   updateSettings: write(({ changes }) => updateSettings(changes), { refreshBadge: true }),
   shouldResetEditor: read(({ slug, domain }) => shouldResetEditor(slug, domain)),

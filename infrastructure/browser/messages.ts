@@ -1,7 +1,7 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import { z } from 'zod';
-import { type Card, cardSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
+import { type Card, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
 import {
   type GistSyncConfig,
   type GistSyncStatus,
@@ -15,7 +15,6 @@ import { type Settings, settingsUpdateSchema } from '@/domain/settings';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/statistics';
 
 const slugSchema = problemDescriptorSchema.shape.slug;
-const cardIdSchema = cardSchema.shape.id;
 const daysSchema = z.int().nonnegative();
 
 export const messagePayloadSchemas = {
@@ -27,9 +26,9 @@ export const messagePayloadSchemas = {
   rateCard: z.object({ input: rateCardInputSchema }),
   getReviewQueue: z.undefined(),
   getTodayStats: z.undefined(),
-  getNote: z.object({ cardId: cardIdSchema }),
-  saveNote: noteSchema.extend({ cardId: cardIdSchema }),
-  deleteNote: z.object({ cardId: cardIdSchema }),
+  getNote: z.object({ slug: slugSchema }),
+  saveNote: noteSchema.extend({ slug: slugSchema }),
+  deleteNote: z.object({ slug: slugSchema }),
   getSettings: z.undefined(),
   updateSettings: z.object({ changes: settingsUpdateSchema }),
   shouldResetEditor: problemDescriptorSchema.pick({ slug: true, domain: true }),
