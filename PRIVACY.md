@@ -1,6 +1,6 @@
 # LeetSRS Privacy Policy
 
-**Last Updated: January 11, 2026**
+**Last Updated: September 12, 2026**
 
 LeetSRS is a Chrome extension that helps you with spaced repetition for
 LeetCode problems. Your privacy is important. This policy explains what
@@ -15,37 +15,39 @@ places:
 1.  **On Your Local Machine (`chrome.storage.local`):**
     - Your saved LeetCode problems (cards), including review history and notes.
     - Your daily review statistics.
-
-2.  **In Your Personal Cloud Storage (`chrome.storage.sync`):**
     - Your extension settings, such as theme and daily limits.
-    - Your GitHub Personal Access Token (if you enable GitHub Gist sync).
+    - Your last Gist sync time and direction.
 
-This data is managed by your browser and is not accessible to us.
+2.  **In Browser-Synced Storage (`chrome.storage.sync`):**
+    - Your GitHub Personal Access Token, Gist ID, and automatic-sync setting, if you configure GitHub Gist sync.
+    - These connection settings use [Chrome Sync when enabled](https://developer.chrome.com/docs/extensions/reference/api/storage/#sync); otherwise they remain local to your browser.
+
+This data is managed by your browser. The extension does not send it to us.
 
 ### Optional GitHub Gist Sync
 
-LeetSRS offers an optional feature to sync your data across browsers using
-GitHub Gists. This feature is **disabled by default** and requires you to:
+LeetSRS offers optional sync across browsers using GitHub Gists. Automatic sync is
+**disabled by default**. To configure the connection:
 
 1. Create a GitHub Personal Access Token (PAT) with the `gist` scope.
-2. Explicitly enable sync in the extension settings.
+2. Enter the token in Settings → GitHub Gist Sync, choose a new or existing Gist, and save.
 
-When enabled:
+When you use Gist sync:
 
-- Your extension data (cards, stats, notes, and settings) is uploaded to a
-  **private** GitHub Gist that you own.
-- Your PAT is stored locally in your browser and is sent only to GitHub's API
-  (`api.github.com`) to authenticate sync requests.
-- **We never receive or have access to your PAT or synced data.**
+- Creating a Gist uploads your cards, statistics, notes, and stored settings immediately. New Gists are **secret (unlisted)**, but [anyone with the URL can read them](https://docs.github.com/en/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists). Connecting an existing Gist preserves its visibility.
+- **Sync Now** syncs manually; **Enable automatic sync** turns on periodic sync.
+- Your PAT is stored in browser-synced connection settings and sent to GitHub's API (`api.github.com`) to authenticate requests. It is excluded from file backups and the Gist payload.
+- The extension does not send your PAT or synced data to us.
 
-You can disable this feature at any time, and your Gist will remain under your
-control on GitHub.
+You can turn off automatic sync at any time. This leaves your saved connection
+available for manual sync and does not delete your Gist.
 
 ## Data Usage and Sharing
 
-If you use GitHub Gist sync, your data is shared only with GitHub
-under their privacy policy. Aside from that, your data is not shared with
-any other party.
+Browser-synced connection settings are handled by Chrome Sync when enabled.
+If you use Gist sync, your learning data is also stored on GitHub under
+[GitHub's privacy policy](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
+Gist contents are readable according to the visibility described above.
 
 ## Changes to This Policy
 

@@ -13,11 +13,9 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 ### In Extension
 
 <div align="center">
-<img src="assets/screenshots/mainScreen.png" width="30%" alt="Main Screen" />
+<img src="assets/screenshots/mainScreen.png" width="40%" alt="Main Screen" />
 &nbsp;&nbsp;
-<img src="assets/screenshots/cardsScreen.png" width="30%" alt="Cards Screen" />
-&nbsp;&nbsp;
-<img src="assets/screenshots/statsScreen.png" width="30%" alt="Stats Screen" />
+<img src="assets/screenshots/statsScreen.png" width="40%" alt="Stats Screen" />
 </div>
 
 ### Works directly on leetcode.com
@@ -45,7 +43,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 
 - Optional sync via GitHub Gists
 - Requires a GitHub token with `gist` scope—configure in Settings
-- Your data stays private in your own GitHub account
+- New Gists are secret (unlisted), but anyone with the URL can read them; see [GitHub's Gist visibility guide](https://docs.github.com/en/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists)
 
 ### Interface
 
@@ -63,12 +61,16 @@ LeetSRS is open source and accepts contributions.
 ### Setting Up GitHub Gist Sync (Optional)
 
 <div align="center">
+<img src="assets/screenshots/gistSetupScreen.png" width="30%" alt="GitHub Gist Sync setup form" />
+&nbsp;&nbsp;
 <img src="assets/screenshots/githubGistSyncScreen.png" width="30%" alt="GitHub Gist Sync settings screen" />
 </div>
 
-1. **Create a GitHub Personal Access Token** with the `gist` scope
-2. **Create a Gist** using the "Create New Gist" button in Settings, or manually on GitHub
-3. The token, Gist ID, and automatic-sync switch sync via Chrome when signed in; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
+1. **Create a GitHub Personal Access Token** with the `gist` scope and enter it in Settings → GitHub Gist Sync.
+2. Select **Create New Gist** and click **Save**, or select **Use existing Gist** and enter the ID of a Gist containing a `leetsrs-backup.json` backup before saving. Creating a Gist uploads your current learning data and stored preferences.
+3. Turn on **Enable automatic sync**, or use **Sync Now** to sync manually. Use **Edit** to change a saved connection.
+
+The token, Gist ID, and automatic-sync switch use [Chrome Sync when enabled](https://developer.chrome.com/docs/extensions/reference/api/storage/#sync); otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
 
 ### Upgrading to the learning-document format
 
