@@ -9,7 +9,6 @@ type MetadataKey = Parameters<typeof readSyncMetadata>[0];
 const cases: [MetadataKey, unknown, unknown][] = [
   ['lastSyncTime', '2024-01-01T00:00:00.000Z', 42],
   ['lastSyncDirection', 'pull', 'invalid'],
-  ['dataUpdatedAt', '2024-01-01T00:00:00.000Z', 42],
 ];
 
 describe('sync metadata decoding', () => {

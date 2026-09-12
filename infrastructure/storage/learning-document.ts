@@ -40,7 +40,6 @@ export async function replaceLearningDocument(document: LearningDocument): Promi
 }
 
 // Accepts an in-memory legacy installation or an already-versioned document.
-// Runtime activation and gathering legacy storage are prepared separately.
 export function convertLearningDocument(input: unknown): LearningDocument {
   const { schemaVersion, ...data } = versionedInputSchema.parse(input);
 

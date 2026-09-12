@@ -68,7 +68,14 @@ LeetSRS is open source and accepts contributions.
 
 1. **Create a GitHub Personal Access Token** with the `gist` scope
 2. **Create a Gist** using the "Create New Gist" button in Settings, or manually on GitHub
-3. Settings sync automatically via Chrome if signed in, otherwise enter the token and Gist ID on each device
+3. The token, Gist ID, and automatic-sync switch sync via Chrome when signed in; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
+
+### Upgrading to the learning-document format
+
+1. Turn off automatic Gist sync on every browser sharing the Gist before updating. Avoid manual sync during the upgrade.
+2. Update LeetSRS on **every browser sharing that Gist** before resuming sync. Older extension versions cannot safely sync with the new format.
+3. Open the updated extension on each browser to let it convert existing cards, notes, review statistics, and stored preferences automatically. Existing file backups remain importable; the Gist connection is preserved.
+4. Once every browser is updated, resume sync. Stored preferences now travel with learning data through Gist. Sync still replaces the older dataset with the newer one; it does not merge independent edits.
 
 ## License
 
