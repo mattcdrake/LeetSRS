@@ -45,7 +45,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 
 - Optional sync via GitHub Gists
 - Requires a GitHub token with `gist` scope—configure in Settings
-- Your data stays private in your own GitHub account
+- Your data stays in your own GitHub account
 
 ### Interface
 
@@ -67,8 +67,8 @@ LeetSRS is open source and accepts contributions.
 </div>
 
 1. **Create a GitHub Personal Access Token** with the `gist` scope
-2. **Create a Gist** using the "Create New Gist" button in Settings, or manually on GitHub
-3. The token, Gist ID, and automatic-sync switch sync via Chrome when signed in; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
+2. Select **Create New Gist** and click **Save** in Settings, or select **Use existing Gist** and enter the ID of a Gist containing `leetsrs-backup.json` before saving
+3. The token, Gist ID, and automatic-sync switch sync via Chrome when browser sync is enabled; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
 
 ### Upgrading to the learning-document format
 

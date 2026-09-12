@@ -1,6 +1,6 @@
 # Architecture reference
 
-Ownership and implementation constraints. Keep this reference aligned with authorized design changes; historical decisions live in ADRs. Accepted changes awaiting implementation are identified below.
+Ownership and implementation constraints. Keep this reference aligned with authorized design changes; historical decisions live in ADRs.
 
 ## Ownership and dependencies
 
@@ -8,9 +8,9 @@ These rules apply to runtime and type-only imports:
 
 - `entrypoints/` owns WXT registration, background message execution, popup UI, and query hooks.
 - `content/` owns LeetCode DOM/GraphQL integration. `content/ui/` owns presentation; `content/rating-actions.ts` owns problem lookup and background RPC orchestration; `content/bootstrap.tsx` owns mounting and lifecycle.
-- `domain/` owns application models and schemas, scheduling, review days, settings, and language. Pass explicit inputs; keep browser, storage, service, messaging, and translation-catalog dependencies out. `ts-fsrs` is allowed.
-- `services/` owns workflows, clocks, settings reads, FSRS lifetime, write order, and sync decisions. Services may compose domain rules, adapters, and other services without cycles. Learning workflows, including statistics and editor reset, use one captured document through the storage entry point.
-- `infrastructure/` owns storage keys, codecs, document conversions, backup-format parsing and relationship checks, GitHub requests, browser messaging, and language detection. It must not depend on services or UI.
+- `domain/` owns application models and schemas, current document invariants, scheduling, review days, settings, language, and Gist conflict policy. Pass explicit inputs; keep browser, storage, service, messaging, and translation-catalog dependencies out. `ts-fsrs` is allowed.
+- `services/` owns workflows, clocks, settings reads, FSRS lifetime, write order, and sync execution. Services may compose domain rules, adapters, and other services without cycles. Learning workflows, including statistics and editor reset, use one captured document through the storage entry point.
+- `infrastructure/` owns storage keys, codecs, document conversions, backup parsing and historical validation, GitHub requests, browser messaging, and language detection. It must not depend on services or UI.
 - `i18n/` owns translation catalogs and the `Translations` type. It may import the domain language type, but has no browser, storage, service, or UI dependencies. Settings policy uses the domain language registry without loading dictionaries.
 - Popup and content workflows use `infrastructure/browser/messages.ts` rather than importing services or persistence. Content may use the read-only `infrastructure/storage/translations.ts` adapter.
 - The popup owns permissions, active-tab inspection, and banner dismissal state. Permission requests originate from user interactions.
@@ -32,7 +32,7 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 
 [ADR-0003](../adr/0003-single-document-learning-data.md) records the single-document design. The document is authoritative at runtime. The superseded migration lifecycle and collection/settings persistence wrappers have been removed; historical compatibility lives in the startup bridge and pure document conversions.
 
-- One browser-local document owns its schema version, modification timestamp, slug-keyed cards with embedded notes, daily statistics, and stored settings overrides. Dates remain numbers. Missing settings retain normal defaults, including browser-language detection.
+- One browser-local document owns its schema version, modification timestamp, slug-keyed cards with embedded notes, daily statistics, and stored settings overrides. Card timestamps use epoch milliseconds; `dataUpdatedAt` is an optional timestamp string, and statistics use local `YYYY-MM-DD` dates. Missing settings retain normal defaults, including browser-language detection.
 - Domain owns current schemas and explicit-input policy. Services prepare and validate complete changes, including timestamps, before infrastructure writes the document once. Reviews commit cards, statistics, and their edit timestamp together; queue calculations use one captured document and time. Keep normal operations behind startup readiness and the existing background write queue.
 - `infrastructure/storage/learning-document.ts` owns reads, replacement, backup parsing, and pure document-version conversion orchestration shared by startup and import. `document-conversions/` owns the frozen historical contracts and individual conversions. Preserve supported historical versions and their meaning, frozen historical data contracts, and precedence rules. Validate historical input before stripping extras and validate the current result. Keep browser storage, clocks, per-step loaders/savers/cleanup, physical-layout modules, and intermediate completion writes out of the conversion sequence.
 - One startup bridge gathers scattered legacy values only when the new document is absent. Prepare and validate before writing the complete document and its version. After success the document is authoritative; cleanup failure must not trigger re-import, and corrupt or future documents must not fall back to stale legacy keys. Preserve credentials and already-combined connection values over retained legacy fields.
