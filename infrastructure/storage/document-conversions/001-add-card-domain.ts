@@ -1,3 +1,5 @@
+import { isRecord } from './is-record';
+
 // Historical contracts stay local: current card validation must not change this upgrade.
 type PreservedCard = null | undefined | string | number | boolean | unknown[];
 type HistoricalCard = Record<string, unknown> | PreservedCard;
@@ -9,10 +11,6 @@ export interface Input extends Record<string, unknown> {
 export interface Output extends Record<string, unknown> {
   // Non-object records and truthy malformed domains are deliberately preserved.
   cards?: Record<string, (Record<string, unknown> & { domain: NonNullable<unknown> }) | PreservedCard>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function validateInput(data: unknown): asserts data is Input {

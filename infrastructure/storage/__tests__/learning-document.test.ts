@@ -53,7 +53,15 @@ describe('learning document persistence', () => {
     expect(await readLearningDocument()).toEqual(next);
   });
 
-  it.each([null, {}, { schemaVersion: 5 }, { schemaVersion: 7 }])(
+  it('treats a stored null document as absent', async () => {
+    // fakeBrowser deletes null values; supply raw null at the storage boundary.
+    vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async () => ({
+      [STORAGE_KEYS.learningDocument.slice('local:'.length)]: null,
+    }));
+    expect(await readLearningDocument()).toBeUndefined();
+  });
+
+  it.each([{}, { schemaVersion: 5 }, { schemaVersion: 7 }])(
     'reports invalid saved data %j without falling back to legacy keys',
     async (invalid) => {
       await fakeBrowser.storage.local.set({
@@ -61,12 +69,6 @@ describe('learning document persistence', () => {
         'leetsrs:cards': {},
         'leetsrs:stats': {},
       });
-      // fakeBrowser deletes null values; supply raw null at the storage boundary.
-      if (invalid === null) {
-        vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async () => ({
-          [STORAGE_KEYS.learningDocument.slice('local:'.length)]: null,
-        }));
-      }
       await expect(readLearningDocument()).rejects.toThrow();
     }
   );

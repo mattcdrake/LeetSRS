@@ -1,4 +1,5 @@
 import { type Output as Input, validateOutput as validatePreviousOutput } from './002-add-system-theme';
+import { isRecord } from './is-record';
 
 interface ValidatedInput extends Input {
   settings?: Record<string, unknown>;
@@ -10,10 +11,6 @@ export interface Output extends Input {
     autoClearLeetcode?: never;
     resetEditorOnEveryProblem?: boolean;
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function validateInput(data: unknown): asserts data is ValidatedInput {
