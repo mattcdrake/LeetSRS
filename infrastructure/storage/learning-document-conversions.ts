@@ -6,7 +6,7 @@ import * as removeDayStart from './document-conversions/003-remove-day-start';
 import * as embedNotes from './document-conversions/004-embed-notes';
 import * as combineGistConnection from './document-conversions/005-combine-gist-connection';
 import * as learningDocument from './document-conversions/006-learning-document';
-import { legacyBackupSchema } from './document-conversions/backup-envelope';
+import { legacyBackupSchema } from './document-conversions/legacy-backup-envelope';
 
 const conversions = [
   addCardDomain,
