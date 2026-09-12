@@ -32,4 +32,4 @@ The ordered set of unpaused cards whose due time has been reached, with new card
 The learner's text attached to a card, with at most one note per card. Empty text means no note; whitespace is preserved.
 
 **Backup**:
-An exported snapshot of cards, notes, review statistics, settings, and Gist configuration that can be restored into LeetSRS.
+An exported snapshot of cards, their notes, review statistics, and settings that can be restored into LeetSRS. The Gist connection is separate from the backup.
