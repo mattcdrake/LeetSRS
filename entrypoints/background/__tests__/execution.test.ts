@@ -14,7 +14,6 @@ import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
 import * as sync from '@/services/github-sync';
-import * as notes from '@/services/notes';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -49,16 +48,19 @@ beforeEach(async () => {
 const problem = buildProblem();
 
 describe('registered background execution', () => {
-  it('edits a card note by slug while preserving the card and its schedule', async () => {
-    const card = await cards.addCard(problem);
-    await expect(dispatch('getNote', { slug: problem.slug })).resolves.toBeNull();
-    await dispatch('saveNote', { slug: problem.slug, text: '  Remember the complement  ' });
-    expect(await dispatch('getAllCards')).toEqual([{ ...card, note: '  Remember the complement  ' }]);
-    expect(await dispatch('getNote', { slug: problem.slug })).toEqual({ text: '  Remember the complement  ' });
-    await dispatch('saveNote', { slug: problem.slug, text: '' });
-    expect(await dispatch('getAllCards')).toEqual([card]);
-    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
-  });
+  it.each(['  Remember the complement  ', ' \n\t '])(
+    'edits note text "%s" while preserving the card and its schedule',
+    async (text) => {
+      const card = await cards.addCard(problem);
+      await expect(dispatch('getNote', { slug: problem.slug })).resolves.toBeNull();
+      await dispatch('saveNote', { slug: problem.slug, text });
+      expect(await dispatch('getAllCards')).toEqual([{ ...card, note: text }]);
+      expect(await dispatch('getNote', { slug: problem.slug })).toBe(text);
+      await dispatch('saveNote', { slug: problem.slug, text: '' });
+      expect(await dispatch('getAllCards')).toEqual([card]);
+      expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
+    }
+  );
 
   it('rejects a missing-card save, allows absent reads/deletes, and never looks up UUIDs', async () => {
     const card = await cards.addCard(problem);
@@ -102,7 +104,7 @@ describe('registered background execution', () => {
       })
     ).rejects.toThrow();
     expect(await dispatch('getAllCards')).toEqual(previous);
-    expect(await dispatch('getNote', { slug: problem.slug })).toEqual({ text: 'a'.repeat(500) });
+    expect(await dispatch('getNote', { slug: problem.slug })).toBe('a'.repeat(500));
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
   });
 
@@ -153,7 +155,7 @@ describe('registered background execution', () => {
     vi.spyOn(browser.action, 'setBadgeText').mockImplementation(async () => {
       events.push('badge');
     });
-    vi.spyOn(notes, 'deleteNote').mockImplementation(async () => {
+    vi.spyOn(cards, 'deleteNote').mockImplementation(async () => {
       events.push('next');
     });
 
@@ -258,7 +260,7 @@ describe('registered background execution', () => {
     '%s updates the timestamp without refreshing the badge',
     async (name) => {
       const card = await cards.addCard(problem);
-      await notes.saveNote(card.slug, 'existing note');
+      await cards.saveNote(card.slug, 'existing note');
       const tracking = vi.spyOn(tracker, 'markDataUpdated');
       const badge = vi.spyOn(browser.action, 'setBadgeText');
 
@@ -375,5 +377,5 @@ it.each(invalidPayloads)('rejects invalid %s input before mutation and recovers 
   expect(badge).not.toHaveBeenCalled();
   await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });
   await dispatch('saveNote', { slug: 'card', text: 'after failure', extra: true });
-  expect(await dispatch('getNote', { slug: 'card' })).toEqual({ text: 'after failure' });
+  expect(await dispatch('getNote', { slug: 'card' })).toBe('after failure');
 });

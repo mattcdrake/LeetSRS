@@ -1,7 +1,7 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import { z } from 'zod';
-import { type Card, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
+import { type Card, noteTextSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
 import {
   type GistSyncConfig,
   type GistSyncStatus,
@@ -10,7 +10,6 @@ import {
   type PatValidationResult,
   type SyncResult,
 } from '@/domain/gist-sync';
-import { type Note, noteSchema } from '@/domain/notes';
 import { type Settings, settingsUpdateSchema } from '@/domain/settings';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/statistics';
 
@@ -27,7 +26,7 @@ export const messagePayloadSchemas = {
   getReviewQueue: z.undefined(),
   getTodayStats: z.undefined(),
   getNote: z.object({ slug: slugSchema }),
-  saveNote: noteSchema.extend({ slug: slugSchema }),
+  saveNote: z.object({ slug: slugSchema, text: noteTextSchema }),
   deleteNote: z.object({ slug: slugSchema }),
   getSettings: z.undefined(),
   updateSettings: z.object({ changes: settingsUpdateSchema }),
@@ -58,7 +57,7 @@ export interface ExtensionMessageMap {
   rateCard(data: MessagePayload<'rateCard'>): { card: Card; shouldRequeue: boolean };
   getReviewQueue(): Card[];
   getTodayStats(): DailyStats | null;
-  getNote(data: MessagePayload<'getNote'>): Note | null;
+  getNote(data: MessagePayload<'getNote'>): string | null;
   saveNote(data: MessagePayload<'saveNote'>): void;
   deleteNote(data: MessagePayload<'deleteNote'>): void;
   getSettings(): Settings;

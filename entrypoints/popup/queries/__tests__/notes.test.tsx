@@ -51,7 +51,7 @@ describe('note and card query coherence', () => {
     await act(() => result.current.save.mutateAsync('  Use a map  '));
     expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug: problem.slug, text: '  Use a map  ' });
     await waitFor(() => {
-      expect(result.current.note.data).toEqual({ text: '  Use a map  ' });
+      expect(result.current.note.data).toBe('  Use a map  ');
       expect(result.current.cards.data).toMatchObject([{ slug: problem.slug, note: '  Use a map  ' }]);
       expect(result.current.queue.data).toMatchObject([{ slug: problem.slug, note: '  Use a map  ' }]);
     });
@@ -76,7 +76,7 @@ describe('note and card query coherence', () => {
       }),
       { wrapper: createTestWrapper().wrapper }
     );
-    await waitFor(() => expect(result.current.note.data).toEqual({ text: 'Previous note' }));
+    await waitFor(() => expect(result.current.note.data).toBe('Previous note'));
     const card = (await sendMessage('getAllCards'))[0];
     const { note: _note, ...replacement } = card;
     await act(async () => {

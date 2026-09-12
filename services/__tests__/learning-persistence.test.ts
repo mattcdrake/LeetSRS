@@ -5,8 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { addCard, getAllCards, rateCard, removeCard } from '../cards';
-import { getNote, saveNote } from '../notes';
+import { addCard, getAllCards, getNote, rateCard, removeCard, saveNote } from '../cards';
 import { getSettings } from '../settings';
 
 vi.mock('../settings', () => ({ getSettings: vi.fn() }));
@@ -93,10 +92,23 @@ describe('learning persistence sequencing', () => {
 
     await expect(removeCard(card.slug)).rejects.toBe(failure);
     expect(await getAllCards()).toEqual([{ ...card, note: 'solution' }]);
-    expect(await getNote(card.slug)).toEqual({ text: 'solution' });
+    expect(await getNote(card.slug)).toBe('solution');
     await removeCard(card.slug);
     expect(await getAllCards()).toEqual([]);
     expect(await getNote(card.slug)).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+  });
+
+  it('validates text before saving and deletes the note when saving empty text', async () => {
+    const card = await addCard(buildProblem());
+    await saveNote(card.slug, 'a'.repeat(500));
+
+    expect(await getNote(card.slug)).toBe('a'.repeat(500));
+    await expect(saveNote(card.slug, 'a'.repeat(501))).rejects.toThrow('Note exceeds maximum length of 500 characters');
+    expect(await getNote(card.slug)).toBe('a'.repeat(500));
+    await saveNote(card.slug, '');
+    expect(await getNote(card.slug)).toBeNull();
+    expect(await getAllCards()).toEqual([card]);
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 });

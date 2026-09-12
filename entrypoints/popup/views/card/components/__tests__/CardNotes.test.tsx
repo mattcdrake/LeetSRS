@@ -15,7 +15,7 @@ describe('CardNotes', () => {
   beforeEach(() => {
     messages
       .reset()
-      .resolve('getNote', { text: 'Stored card note' })
+      .resolve('getNote', 'Stored card note')
       .resolve('saveNote', undefined)
       .resolve('deleteNote', undefined);
   });

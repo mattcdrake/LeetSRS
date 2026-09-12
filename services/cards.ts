@@ -1,6 +1,6 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { formatLocalDate } from '@/domain/calendar';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
+import { type Card, noteTextSchema, type ProblemDescriptor, type RateCardInput } from '@/domain/cards';
 import { buildReviewQueue, calculateDelayedDueDate, isDue } from '@/domain/review';
 import { getAllCards, saveCards } from '@/infrastructure/storage/cards';
 import { getStatsForDate } from '@/infrastructure/storage/stats';
@@ -105,4 +105,30 @@ export async function getReviewQueue(): Promise<Card[]> {
   const todayStats = await getStatsForDate(formatLocalDate(now));
   const newCardsCompletedToday = todayStats?.newCards ?? 0;
   return buildReviewQueue(dueCards, settings.maxNewCardsPerDay, newCardsCompletedToday);
+}
+
+export async function getNote(slug: string): Promise<string | null> {
+  const cards = await getAllCards();
+  const text = cards.find((card) => card.slug === slug)?.note;
+  return text ?? null;
+}
+
+export async function saveNote(slug: string, text: string): Promise<void> {
+  const note = noteTextSchema.parse(text);
+  const cards = await getAllCards();
+  const card = cards.find((card) => card.slug === slug);
+  if (!card) throw new Error(`Card with slug "${slug}" not found`);
+
+  if (note === '') delete card.note;
+  else card.note = note;
+  await saveCards(cards);
+}
+
+export async function deleteNote(slug: string): Promise<void> {
+  const cards = await getAllCards();
+  const card = cards.find((card) => card.slug === slug);
+  if (!card || card.note === undefined) return;
+
+  delete card.note;
+  await saveCards(cards);
 }
