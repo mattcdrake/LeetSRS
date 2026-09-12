@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
 import { FaArrowsRotate, FaCloudArrowDown, FaCloudArrowUp, FaGithub } from 'react-icons/fa6';
 import type { GistConnectionResult, GistSetup, GistSyncConfig } from '@/domain/gist-sync';
+import { useGistEditingState } from '@/entrypoints/popup/hooks/useGistEditingState';
 import {
   useGistSyncConfigQuery,
   useGistSyncStatusQuery,
@@ -15,8 +16,6 @@ import { SettingsSwitch } from './SettingsSwitch';
 
 const buttonClass = `px-3 py-2 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`;
 
-type GistViewMode = 'unset' | 'editing' | 'viewing';
-
 export function GistSyncSection() {
   const t = useI18n().settings.gistSync;
   const configQuery = useGistSyncConfigQuery();
@@ -25,24 +24,9 @@ export function GistSyncSection() {
   const setup = useSetupGistSyncMutation();
   const enable = useSetGistSyncEnabledMutation();
   const sync = useTriggerGistSyncMutation();
-  const [viewMode, setViewMode] = useState<GistViewMode>('unset');
-  const editing = viewMode === 'editing';
-  const [formKey, setFormKey] = useState(0);
+  const { connected, editing, formKey, editButton, startEditing, closeEditing } = useGistEditingState(config);
   const [outcome, setOutcome] = useState<{ error: boolean; text: string } | null>(null);
-  const editButton = useRef<HTMLButtonElement>(null);
-  const wasEditing = useRef(false);
   const busy = setup.isPending || enable.isPending || sync.isPending || !!status?.syncInProgress;
-  const connected = !!config?.pat && !!config?.gistId;
-  if (config && viewMode === 'unset') {
-    setViewMode(connected ? 'viewing' : 'editing');
-  } else if (config && !connected && viewMode === 'viewing') {
-    setViewMode('editing');
-  }
-
-  useEffect(() => {
-    if (wasEditing.current && !editing) editButton.current?.focus();
-    wasEditing.current = editing;
-  }, [editing]);
 
   function showConnectionResult(result: GistConnectionResult) {
     setOutcome(
@@ -58,7 +42,7 @@ export function GistSyncSection() {
     setOutcome(null);
     try {
       const result = await setup.mutateAsync(input);
-      if (result.saved) setViewMode('viewing');
+      if (result.saved) closeEditing();
       showConnectionResult(result);
       return result;
     } catch {
@@ -104,8 +88,7 @@ export function GistSyncSection() {
           saving={setup.isPending}
           onSave={save}
           onCancel={() => {
-            setViewMode('viewing');
-            setFormKey(formKey + 1);
+            closeEditing();
             setOutcome(null);
           }}
         />
@@ -115,7 +98,7 @@ export function GistSyncSection() {
           {t.configFailed}
         </p>
       )}
-      {connected && !editing && (
+      {config && connected && !editing && (
         <div className="space-y-4">
           <a
             href={`https://gist.github.com/${encodeURIComponent(config.gistId ?? '')}`}
@@ -150,7 +133,7 @@ export function GistSyncSection() {
           <Button
             ref={editButton}
             onPress={() => {
-              setViewMode('editing');
+              startEditing();
               setOutcome(null);
             }}
             isDisabled={busy}

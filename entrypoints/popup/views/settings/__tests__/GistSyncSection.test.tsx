@@ -48,7 +48,7 @@ function enterCredentials() {
 }
 
 describe('Gist setup form', () => {
-  it('starts with setup when unconfigured and shows the saved connection after Save', async () => {
+  it('resets initial setup on Cancel and shows the saved connection after Save', async () => {
     config = { pat: '', gistId: null, enabled: false };
     messages.handle('setupGistSync', (input) => {
       config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: false };
@@ -57,6 +57,15 @@ describe('Gist setup form', () => {
     render(<GistSyncSection />, { wrapper: test.wrapper });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toBeEnabled());
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    enterCredentials();
+    fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByLabelText('Personal Access Token')).toHaveValue('');
+    expect(screen.getByLabelText('Personal Access Token')).toHaveFocus();
+    expect(screen.getByLabelText('Gist ID')).toHaveValue('');
+    expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
     enterCredentials();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Connection saved'));
