@@ -1,8 +1,21 @@
 import { z } from 'zod';
+import { outputSchema as inputSchema } from './002-add-system-theme';
 import { assertSchema } from './schema-utils';
-import { datasetV2Schema as inputSchema, datasetV3Schema as outputSchema } from './schemas';
 
-export { inputSchema, outputSchema };
+export { inputSchema };
+
+const retiredSettingSchema = z.never({ error: 'Migration 3 must remove retired settings' }).optional();
+export const outputSchema = inputSchema.safeExtend({
+  settings: inputSchema.shape.settings
+    .unwrap()
+    .safeExtend({ dayStartHour: retiredSettingSchema, autoClearLeetcode: retiredSettingSchema })
+    .superRefine((settings, ctx) => {
+      if (Object.hasOwn(settings, 'dayStartHour') || Object.hasOwn(settings, 'autoClearLeetcode')) {
+        ctx.addIssue({ code: 'custom', message: 'Migration 3 must remove retired settings' });
+      }
+    })
+    .optional(),
+});
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 

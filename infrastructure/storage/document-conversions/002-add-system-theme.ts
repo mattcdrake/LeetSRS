@@ -1,8 +1,10 @@
 import type { z } from 'zod';
+import { outputSchema as inputSchema } from './001-add-card-domain';
 import { assertSchema } from './schema-utils';
-import { datasetV1Schema as inputSchema, datasetV2Schema as outputSchema } from './schemas';
 
-export { inputSchema, outputSchema };
+export { inputSchema };
+// v2 changed the default theme, not stored learning data.
+export const outputSchema = inputSchema;
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 

@@ -1,8 +1,10 @@
 import type { z } from 'zod';
+import { outputSchema as inputSchema } from './004-embed-notes';
 import { assertSchema } from './schema-utils';
-import { datasetV4Schema as inputSchema, datasetV5Schema as outputSchema } from './schemas';
 
-export { inputSchema, outputSchema };
+export { inputSchema };
+// v5 changed connection storage only, not the learning dataset.
+export const outputSchema = inputSchema;
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 

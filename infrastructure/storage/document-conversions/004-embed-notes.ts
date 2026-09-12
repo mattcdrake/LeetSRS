@@ -1,13 +1,17 @@
-import type { z } from 'zod';
+import { z } from 'zod';
+import { legacyNoteSchema, noteTextSchema } from './001-add-card-domain';
+import { outputSchema as inputSchema } from './003-remove-day-start';
 import { assertSchema } from './schema-utils';
-import {
-  datasetV3Schema as inputSchema,
-  legacyNoteSchema,
-  noteTextSchema,
-  datasetV4Schema as outputSchema,
-} from './schemas';
 
-export { inputSchema, outputSchema };
+export { inputSchema };
+export const outputSchema = inputSchema
+  .safeExtend({
+    notes: z.never({ error: 'Migration 4 must remove the separate notes field' }).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (Object.hasOwn(data, 'notes'))
+      ctx.addIssue({ code: 'custom', path: ['notes'], message: 'Migration 4 must remove the separate notes field' });
+  });
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 

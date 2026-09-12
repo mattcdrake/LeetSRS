@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { timestampSchema } from './schemas';
+import { timestampSchema } from './001-add-card-domain';
 
 export const legacyBackupSchema = z.object({
   schemaVersion: z.int().nonnegative().default(0),
