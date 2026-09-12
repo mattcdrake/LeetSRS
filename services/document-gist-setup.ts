@@ -1,9 +1,9 @@
 import { translations } from '@/i18n';
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
+import { createGitHubClient } from '@/infrastructure/github/client';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { createGistFromBackup } from './gist-setup';
-import { getAuthenticatedGitHubClient } from './github-auth';
 
 // Prepared for the coordinated runtime activation in #378.
 export async function createNewGist(): Promise<{ gistId: string }> {
@@ -12,7 +12,7 @@ export async function createNewGist(): Promise<{ gistId: string }> {
     throw new Error('PAT is required to create a gist');
   }
 
-  const github = await getAuthenticatedGitHubClient(config.pat);
+  const github = createGitHubClient(config.pat);
   const document = await readLearningDocument();
   if (!document) {
     throw new Error('Learning document is not initialized');

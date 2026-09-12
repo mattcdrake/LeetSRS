@@ -1,5 +1,5 @@
 import { decideGistSync, type GistSyncStatus, type SyncResult } from '@/domain/gist-sync';
-import { GIST_FILENAME } from '@/infrastructure/github/client';
+import { createGitHubClient, GIST_FILENAME } from '@/infrastructure/github/client';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import {
   parseLearningDocumentBackup,
@@ -7,7 +7,6 @@ import {
   replaceLearningDocument,
 } from '@/infrastructure/storage/learning-document';
 import { readSyncMetadata, writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
-import { getAuthenticatedGitHubClient } from './github-auth';
 
 // Prepared for the coordinated runtime activation in #378.
 // Keep the legacy workflow authoritative until then; #379 removes its duplicate
@@ -42,7 +41,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
       return { success: false, error: 'Gist ID is not configured' };
     }
 
-    const github = await getAuthenticatedGitHubClient(config.pat);
+    const github = createGitHubClient(config.pat);
 
     let remoteGist: Awaited<ReturnType<typeof github.getGist>>['data'];
     try {

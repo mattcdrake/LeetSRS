@@ -1,8 +1,5 @@
 import type { PatValidationResult } from '@/domain/gist-sync';
-import { createGitHubClient, type GitHubClient } from '@/infrastructure/github/client';
-export async function getAuthenticatedGitHubClient(pat: string): Promise<GitHubClient> {
-  return createGitHubClient(pat);
-}
+import { createGitHubClient } from '@/infrastructure/github/client';
 
 export async function validatePat(pat: string): Promise<PatValidationResult> {
   if (!pat.trim()) {
@@ -10,7 +7,7 @@ export async function validatePat(pat: string): Promise<PatValidationResult> {
   }
 
   try {
-    const github = await getAuthenticatedGitHubClient(pat);
+    const github = createGitHubClient(pat);
     const { data } = await github.getAuthenticated();
     return { valid: true, username: data.login };
   } catch (error) {

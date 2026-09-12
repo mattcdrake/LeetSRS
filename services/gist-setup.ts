@@ -1,9 +1,8 @@
 import { type GistSyncConfigUpdate, type GistValidationResult, gistSyncConfigUpdateSchema } from '@/domain/gist-sync';
-import { GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
+import { createGitHubClient, GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
 import { writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
-import { getAuthenticatedGitHubClient } from './github-auth';
 import { exportData } from './import-export';
 
 export async function setGistSyncConfig(config: GistSyncConfigUpdate): Promise<void> {
@@ -19,7 +18,7 @@ export async function validateGistId(gistId: string, pat: string): Promise<GistV
   }
 
   try {
-    const github = await getAuthenticatedGitHubClient(pat);
+    const github = createGitHubClient(pat);
     return await validateGist(gistId, github);
   } catch (error) {
     return gistValidationError(error);
@@ -54,7 +53,7 @@ export async function createNewGist(): Promise<{ gistId: string }> {
     throw new Error('PAT is required to create a gist');
   }
 
-  const github = await getAuthenticatedGitHubClient(config.pat);
+  const github = createGitHubClient(config.pat);
   const exportJson = await exportData();
 
   return createGistFromBackup(github, exportJson, (await getStoredTranslations()).settings.gistSync.gistDescription);

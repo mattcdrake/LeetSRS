@@ -10,7 +10,6 @@ import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as documentSetup from '../document-gist-setup';
 import * as documentBackup from '../document-import-export';
 import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-setup';
-import * as auth from '../github-auth';
 
 const { getGist, create, getAuthenticated, exportData } = vi.hoisted(() => ({
   getGist: vi.fn(),
@@ -94,9 +93,8 @@ describe('gist-setup boundaries', () => {
   });
 
   it.each(['', ' \t\n'])('rejects blank Gist ID %j without acquiring a client or requesting a Gist', async (gistId) => {
-    const acquire = vi.spyOn(auth, 'getAuthenticatedGitHubClient');
     expect(await validateGistId(gistId, 'token')).toEqual({ valid: false, error: 'Gist ID is required' });
-    expect(acquire).not.toHaveBeenCalled();
+    expect(Octokit).not.toHaveBeenCalled();
     expect(getGist).not.toHaveBeenCalled();
   });
 
@@ -104,11 +102,9 @@ describe('gist-setup boundaries', () => {
     await setGistSyncConfig({ pat: 'saved' });
     const reads = vi.spyOn(storage, 'getItem');
     const writes = vi.spyOn(storage, 'setItem');
-    const acquire = vi.spyOn(auth, 'getAuthenticatedGitHubClient');
     getGist.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': {} } } });
 
     expect(await validateGistId(' gist ', ' token ')).toEqual({ valid: true });
-    expect(acquire).toHaveBeenCalledExactlyOnceWith(' token ');
     expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: ' token ' });
     expect(reads).not.toHaveBeenCalled();
     expect(writes).not.toHaveBeenCalled();
@@ -122,8 +118,13 @@ describe('gist-setup boundaries', () => {
     { stage: 'request', failure: new Error('404 Not Found'), error: 'Gist not found' },
     { stage: 'request', failure: new Error('Network error'), error: 'Network error' },
   ])('maps $stage failure to "$error"', async ({ stage, failure, error }) => {
-    if (stage === 'acquisition') vi.spyOn(auth, 'getAuthenticatedGitHubClient').mockRejectedValue(failure);
-    else getGist.mockRejectedValue(failure);
+    if (stage === 'acquisition') {
+      vi.mocked(Octokit).mockImplementationOnce(function FailingOctokit() {
+        throw failure;
+      });
+    } else {
+      getGist.mockRejectedValue(failure);
+    }
 
     expect(await validateGistId('gist', 'token')).toEqual({ valid: false, error });
     expect(getGist).toHaveBeenCalledTimes(stage === 'acquisition' ? 0 : 1);
