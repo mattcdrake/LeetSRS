@@ -11,9 +11,7 @@ export const STORAGE_KEYS = {
   // Tracks when actual data was last modified (for sync)
   dataUpdatedAt: 'local:leetsrs:dataUpdatedAt',
   // GitHub Gist Sync
-  githubPat: 'sync:leetsrs:githubPat',
-  gistId: 'sync:leetsrs:gistId',
-  gistSyncEnabled: 'sync:leetsrs:gistSyncEnabled',
+  gistConnection: 'sync:leetsrs:gistConnection',
   lastSyncTime: 'local:leetsrs:lastSyncTime',
   lastSyncDirection: 'local:leetsrs:lastSyncDirection',
 } as const;

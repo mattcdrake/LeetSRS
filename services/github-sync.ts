@@ -1,9 +1,9 @@
 import { decideGistSync, type GistSyncDecision, type GistSyncStatus, type SyncResult } from '@/domain/gist-sync';
 import { GIST_FILENAME } from '@/infrastructure/github/client';
 import type { ExportData } from '@/infrastructure/storage/backup';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
-import { getGistDestinationConfig } from './gist-setup';
-import { getAuthenticatedGitHubClient, getGitHubPat } from './github-auth';
+import { getAuthenticatedGitHubClient } from './github-auth';
 import { exportData, importData } from './import-export';
 
 // In-memory state for sync status (not persisted)
@@ -26,9 +26,9 @@ export async function triggerGistSync(): Promise<SyncResult> {
   lastError = null;
 
   try {
-    const [pat, config] = await Promise.all([getGitHubPat(), getGistDestinationConfig()]);
+    const config = await readGistConnection();
 
-    if (!pat) {
+    if (!config.pat) {
       return { success: false, error: 'PAT is not configured' };
     }
 
@@ -36,7 +36,7 @@ export async function triggerGistSync(): Promise<SyncResult> {
       return { success: false, error: 'Gist ID is not configured' };
     }
 
-    const github = await getAuthenticatedGitHubClient(pat);
+    const github = await getAuthenticatedGitHubClient(config.pat);
 
     let remoteGist: Awaited<ReturnType<typeof github.getGist>>['data'];
     try {
