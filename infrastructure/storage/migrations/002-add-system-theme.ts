@@ -1,21 +1,26 @@
 import {
   convert,
   type Input,
+  inputSchema,
   type Output,
-  validateInput,
-  validateOutput,
+  outputSchema,
 } from '../document-conversions/002-add-system-theme';
+import { assertSchema } from '../document-conversions/schema-utils';
 import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
-export { type Output, validateOutput } from '../document-conversions/002-add-system-theme';
+export type { Output } from '../document-conversions/002-add-system-theme';
+
+export function validateOutput(data: unknown): void {
+  outputSchema.parse(data);
+}
 
 export const addSystemTheme = {
   description: 'Add system theme preference',
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
-    validateInput(input);
+    assertSchema(inputSchema, input);
     return input;
   },
   migrate: convert,

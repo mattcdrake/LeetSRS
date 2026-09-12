@@ -1,21 +1,14 @@
-import { type Output as Input, validateOutput as validatePreviousOutput } from './001-add-card-domain';
+import type { z } from 'zod';
+import { assertSchema } from './schema-utils';
+import { datasetV1Schema as inputSchema, datasetV2Schema as outputSchema } from './schemas';
 
-export type Output = Input;
+export { inputSchema, outputSchema };
+export type Input = z.infer<typeof inputSchema>;
+export type Output = z.infer<typeof outputSchema>;
 
-export function validateInput(data: unknown): asserts data is Input {
-  try {
-    validatePreviousOutput(data);
-  } catch (cause) {
-    throw new Error('Migration 2 requires the output shape of migration 1', { cause });
-  }
-}
-
-export const validateOutput: typeof validateInput = validateInput;
-
-// System theme changed the application default, not the stored logical dataset.
-
-export type { Input };
 export function convert(data: unknown): Output {
-  validateInput(data);
-  return data;
+  assertSchema(inputSchema, data);
+  const output = data;
+  assertSchema(outputSchema, output);
+  return output;
 }

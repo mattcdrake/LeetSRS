@@ -5,15 +5,18 @@ import * as addSystemTheme from './document-conversions/002-add-system-theme';
 import * as removeDayStart from './document-conversions/003-remove-day-start';
 import * as embedNotes from './document-conversions/004-embed-notes';
 import * as combineGistConnection from './document-conversions/005-combine-gist-connection';
-import { historicalRecordsSchema, legacyBackupSchema } from './document-conversions/historical-records';
+import * as learningDocument from './document-conversions/006-learning-document';
+import { legacyBackupSchema } from './document-conversions/backup-envelope';
 
-const historicalConversions = [
+const conversions = [
   addCardDomain,
   addSystemTheme,
   removeDayStart,
   embedNotes,
   combineGistConnection,
+  learningDocument,
 ] as const;
+const LAST_LEGACY_DATASET_VERSION = 5;
 
 const versionedInputSchema = z.looseObject({ schemaVersion: z.int().nonnegative().default(0) });
 
@@ -22,12 +25,11 @@ const versionedInputSchema = z.looseObject({ schemaVersion: z.int().nonnegative(
 export function convertLearningDocument(input: unknown): LearningDocument {
   const { schemaVersion, ...data } = versionedInputSchema.parse(input);
   if (schemaVersion > LEARNING_DOCUMENT_VERSION) throw new Error(`Unsupported schema version: ${schemaVersion}`);
-  if (schemaVersion === LEARNING_DOCUMENT_VERSION) return learningDocumentSchema.parse(input);
-  if (schemaVersion > 0) historicalConversions[schemaVersion - 1].validateOutput(data);
-  let converted: unknown = data;
-  for (const conversion of historicalConversions.slice(schemaVersion)) converted = conversion.convert(converted);
-  const records = historicalRecordsSchema.parse(converted);
-  return learningDocumentSchema.parse({ ...records, schemaVersion: LEARNING_DOCUMENT_VERSION });
+  // Versions 0–5 stored the version separately; v6 introduced the document envelope.
+  let converted: unknown = schemaVersion <= LAST_LEGACY_DATASET_VERSION ? data : input;
+  if (schemaVersion > 0) conversions[schemaVersion - 1].outputSchema.parse(converted);
+  for (const conversion of conversions.slice(schemaVersion)) converted = conversion.convert(converted);
+  return learningDocumentSchema.parse(converted);
 }
 
 export function parseLearningDocumentBackup(json: string): LearningDocument {
@@ -38,7 +40,7 @@ export function parseLearningDocumentBackup(json: string): LearningDocument {
     throw new Error('Invalid JSON format');
   }
   const { schemaVersion } = versionedInputSchema.parse(decoded);
-  if (schemaVersion >= LEARNING_DOCUMENT_VERSION) return convertLearningDocument(decoded);
+  if (schemaVersion > LAST_LEGACY_DATASET_VERSION) return convertLearningDocument(decoded);
   const { data, dataUpdatedAt, exportDate } = legacyBackupSchema.parse(decoded);
   return convertLearningDocument({ ...data, schemaVersion, dataUpdatedAt: dataUpdatedAt ?? exportDate });
 }

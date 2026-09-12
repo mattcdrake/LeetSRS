@@ -1,12 +1,14 @@
-import { type Output as Input, validateOutput as validateInput } from './004-embed-notes';
+import type { z } from 'zod';
+import { assertSchema } from './schema-utils';
+import { datasetV4Schema as inputSchema, datasetV5Schema as outputSchema } from './schemas';
 
-export type { Input };
-export type Output = Input;
-export { validateInput };
-export const validateOutput: typeof validateInput = validateInput;
+export { inputSchema, outputSchema };
+export type Input = z.infer<typeof inputSchema>;
+export type Output = z.infer<typeof outputSchema>;
 
-// Version 5 changed connection storage only; the learning dataset stayed at v4.
 export function convert(data: unknown): Output {
-  validateInput(data);
-  return data;
+  assertSchema(inputSchema, data);
+  const output = data;
+  assertSchema(outputSchema, output);
+  return output;
 }

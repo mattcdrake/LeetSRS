@@ -2,21 +2,26 @@ import { storage } from '#imports';
 import {
   convert,
   type Input,
+  inputSchema,
   type Output,
-  validateInput,
-  validateOutput,
+  outputSchema,
 } from '../document-conversions/001-add-card-domain';
+import { assertSchema } from '../document-conversions/schema-utils';
 import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
-export { type Output, validateOutput } from '../document-conversions/001-add-card-domain';
+export type { Output } from '../document-conversions/001-add-card-domain';
+
+export function validateOutput(data: unknown): void {
+  outputSchema.parse(data);
+}
 
 export const addCardDomain = {
   description: 'Add domain field to existing cards, defaulting to leetcode.com',
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
-    validateInput(input);
+    assertSchema(inputSchema, input);
     return input;
   },
   migrate: convert,
