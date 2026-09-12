@@ -61,10 +61,16 @@ export async function createNewGist(): Promise<{ gistId: string }> {
 export async function createGist(github: GitHubClient): Promise<{ gistId: string }> {
   const exportJson = await exportData();
 
-  const { data } = await github.createGist(
-    (await getStoredTranslations()).settings.gistSync.gistDescription,
-    exportJson
-  );
+  return createGistFromBackup(github, exportJson, (await getStoredTranslations()).settings.gistSync.gistDescription);
+}
+
+// Shared by the legacy and prepared document consumers until #379 removes the former.
+export async function createGistFromBackup(
+  github: GitHubClient,
+  exportJson: string,
+  description: string
+): Promise<{ gistId: string }> {
+  const { data } = await github.createGist(description, exportJson);
 
   if (!data.id) {
     throw new Error('Failed to create gist: no ID returned');

@@ -3,8 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { GistSyncConfigUpdate } from '@/domain/gist-sync';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
+import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import * as documentSetup from '../document-gist-setup';
+import * as documentBackup from '../document-import-export';
 import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-setup';
 import * as auth from '../github-auth';
 
@@ -272,5 +276,38 @@ describe('gist-setup boundaries', () => {
       await setGistSyncConfig(update);
       expect(await readGistConnection()).toEqual(update);
     });
+  });
+});
+
+// Prepared Gist creation uses the same document as file export and sync.
+describe('document Gist creation', () => {
+  const document: LearningDocument = {
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+    cards: {},
+    stats: {},
+    settings: { language: 'zh-CN', theme: 'dark' },
+  };
+
+  beforeEach(async () => {
+    fakeBrowser.reset();
+    await setGistSyncConfig({ pat: 'private-pat', enabled: true });
+    await replaceLearningDocument(document);
+    // The description must follow the document language, not a stale override.
+    await storage.setItem(STORAGE_KEYS.language, 'en');
+    create.mockResolvedValue({ data: { id: 'created' } });
+  });
+
+  it('creates a localized secret Gist with the exported document and retains an absent edit timestamp', async () => {
+    const reads = vi.spyOn(storage, 'getItem');
+    await expect(documentSetup.createNewGist()).resolves.toEqual({ gistId: 'created' });
+    expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
+    expect(create).toHaveBeenCalledExactlyOnceWith({
+      description: 'LeetSRS 备份 - 间隔重复数据',
+      public: false,
+      files: { 'leetsrs-backup.json': { content: await documentBackup.exportData() } },
+    });
+    expect(await readGistConnection()).toEqual({ pat: 'private-pat', gistId: 'created', enabled: true });
+    expect(await readLearningDocument()).toEqual(document);
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('push');
   });
 });
