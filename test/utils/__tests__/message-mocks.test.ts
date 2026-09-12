@@ -1,5 +1,7 @@
+import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { createMockCard } from '../card-mocks';
 import { createMessageMock } from '../message-mocks';
 
 vi.mock('@/infrastructure/browser/messages', () => ({
@@ -36,14 +38,16 @@ describe('createMessageMock', () => {
   });
 
   it('JSON-round-trips resolved responses', async () => {
-    const result = { slug: 'card-1', text: 'Remember this', omitted: undefined };
-    messages.resolve('getNote', Promise.resolve(result));
+    const card = createMockCard(State.New, { note: 'Remember this' });
+    const result = [{ ...card, omitted: undefined }];
+    messages.resolve('getAllCards', Promise.resolve(result));
 
-    const received = await sendMessage('getNote', { slug: 'card-1' });
+    const received = await sendMessage('getAllCards');
 
-    expect(received).toEqual({ slug: 'card-1', text: 'Remember this' });
+    expect(received).toEqual([card]);
     expect(received).not.toBe(result);
-    expect(received).not.toHaveProperty('omitted');
+    expect(received[0]).not.toBe(result[0]);
+    expect(received[0]).not.toHaveProperty('omitted');
   });
 
   it.each(['throw', 'reject'])('preserves errors when handlers %s', async (mode) => {

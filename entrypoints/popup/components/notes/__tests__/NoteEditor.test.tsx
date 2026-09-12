@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
+import { NOTES_MAX_LENGTH } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -24,7 +24,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
   it('enables saving only for a nonempty changed note within the limit', () => {
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     const save = screen.getByRole('button', { name: 'Save' });
@@ -44,7 +44,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
   it('loads a note and saves edits with pending feedback', async () => {
     const save = Promise.withResolvers<void>();
-    messages.resolve('getNote', { text: 'Stored note' }).resolve('saveNote', save.promise);
+    messages.resolve('getNote', 'Stored note').resolve('saveNote', save.promise);
     const { wrapper } = createTestWrapper();
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
@@ -84,7 +84,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const remove = Promise.withResolvers<void>();
     messages.resolve('deleteNote', remove.promise);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(slug), { text });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), text);
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -106,7 +106,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
 
@@ -122,7 +122,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('deleteNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -146,7 +146,7 @@ describe('NoteEditor autosizing', () => {
   });
 
   it('sizes compact notes after fetching and grows, caps, and shrinks with edits', async () => {
-    const note = Promise.withResolvers<Note | null>();
+    const note = Promise.withResolvers<string | null>();
     messages.resolve('getNote', note.promise);
     let contentHeight = 24;
     vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
@@ -160,7 +160,7 @@ describe('NoteEditor autosizing', () => {
     expect(textarea).toHaveStyle({ height: '24px' });
 
     contentHeight = 48;
-    await act(async () => note.resolve({ text: 'Fetched note' }));
+    await act(async () => note.resolve('Fetched note'));
     await waitFor(() => expect(textarea).toHaveValue('Fetched note'));
     expect(textarea).toHaveStyle({ height: '48px' });
 
@@ -180,7 +180,7 @@ describe('NoteEditor autosizing', () => {
   it('keeps regular sizing fixed and clears compact height when switching variants', () => {
     const measure = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(96);
     const { wrapper, queryClient } = createTestWrapper();
-    queryClient.setQueryData(noteQueryKeys.detail(slug), { text: 'Stored note' });
+    queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     const { rerender } = render(<NoteEditor slug={slug} variant="regular" />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
 

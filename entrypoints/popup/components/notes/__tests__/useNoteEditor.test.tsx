@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { NOTES_MAX_LENGTH, type Note } from '@/domain/notes';
+import { NOTES_MAX_LENGTH } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -14,7 +14,7 @@ describe('useNoteEditor', () => {
   const slug = 'test-card-123';
   const messages = createMessageMock(vi.mocked(sendMessage));
 
-  const renderEditor = (note: Note | null = null) => {
+  const renderEditor = (note: string | null = null) => {
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(noteQueryKeys.detail(slug), note);
     return renderHook(() => useNoteEditor(slug), { wrapper });
@@ -25,7 +25,7 @@ describe('useNoteEditor', () => {
   });
 
   it('syncs text with stored note data', () => {
-    const { result } = renderEditor({ text: 'Existing note' });
+    const { result } = renderEditor('Existing note');
     expect(result.current.text).toBe('Existing note');
     expect(result.current.characterCount).toBe(13);
     expect(result.current.hasExistingNote).toBe(true);
@@ -36,7 +36,7 @@ describe('useNoteEditor', () => {
   });
 
   it('exposes real loading and mutation pending states', async () => {
-    const query = Promise.withResolvers<Note | null>();
+    const query = Promise.withResolvers<string | null>();
     const save = Promise.withResolvers<void>();
     const remove = Promise.withResolvers<void>();
     messages
@@ -64,7 +64,7 @@ describe('useNoteEditor', () => {
   });
 
   it('computes save eligibility', () => {
-    const { result } = renderEditor({ text: 'Existing note' });
+    const { result } = renderEditor('Existing note');
     expect(result.current.canSave).toBe(false);
     act(() => result.current.setText('Edited note'));
     expect(result.current.canSave).toBe(true);
@@ -90,7 +90,7 @@ describe('useNoteEditor', () => {
     const error = new Error('Save failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(error));
-    const { result } = renderEditor({ text: 'Existing note' });
+    const { result } = renderEditor('Existing note');
     act(() => result.current.setText('Edited note'));
     await act(() => result.current.save());
     expect(result.current.text).toBe('Existing note');
@@ -99,7 +99,7 @@ describe('useNoteEditor', () => {
   });
 
   it('requires confirmation, then deletes and clears the text', async () => {
-    const { result } = renderEditor({ text: 'Existing note' });
+    const { result } = renderEditor('Existing note');
     await act(() => result.current.remove());
     expect(result.current.deleteConfirm).toBe(true);
     expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
@@ -113,7 +113,7 @@ describe('useNoteEditor', () => {
     const error = new Error('Delete failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('deleteNote', () => Promise.reject(error));
-    const { result } = renderEditor({ text: 'Existing note' });
+    const { result } = renderEditor('Existing note');
     await act(() => result.current.remove());
     await act(() => result.current.remove());
     expect(result.current.text).toBe('Existing note');
@@ -123,7 +123,7 @@ describe('useNoteEditor', () => {
   });
 
   it('distinguishes no note from a stored empty note', () => {
-    expect(renderEditor({ text: '' }).result.current.hasExistingNote).toBe(true);
+    expect(renderEditor('').result.current.hasExistingNote).toBe(true);
     expect(renderEditor().result.current.hasExistingNote).toBe(false);
   });
 });

@@ -28,7 +28,7 @@ export function useNoteEditor(slug: string): NoteEditor {
   const deleteNoteMutation = useDeleteNoteMutation(slug);
 
   useEffect(() => {
-    setText(note?.text ?? '');
+    setText(note ?? '');
     resetConfirmation();
   }, [note, resetConfirmation]);
 
@@ -37,7 +37,7 @@ export function useNoteEditor(slug: string): NoteEditor {
       await saveNoteMutation.mutateAsync(text);
     } catch (error) {
       console.error('Failed to save note:', error);
-      setText(note?.text ?? '');
+      setText(note ?? '');
     }
   };
 
@@ -51,7 +51,7 @@ export function useNoteEditor(slug: string): NoteEditor {
       }
     });
 
-  const originalText = note?.text ?? '';
+  const originalText = note ?? '';
   const characterCount = text.length;
   const isOverLimit = characterCount > NOTES_MAX_LENGTH;
   const hasChanges = text !== originalText;

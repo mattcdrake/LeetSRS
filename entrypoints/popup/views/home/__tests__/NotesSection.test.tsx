@@ -5,7 +5,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Note } from '@/domain/notes';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -20,7 +19,7 @@ describe('NotesSection', () => {
   let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
   let queryClient: QueryClient;
 
-  const seedNote = (note: Note | null) => queryClient.setQueryData(noteQueryKeys.detail(mockSlug), note);
+  const seedNote = (note: string | null) => queryClient.setQueryData(noteQueryKeys.detail(mockSlug), note);
 
   beforeEach(() => {
     messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
@@ -51,7 +50,7 @@ describe('NotesSection', () => {
   });
 
   it('retains the draft and delete confirmation across collapse and reopen', async () => {
-    seedNote({ text: 'Stored note' });
+    seedNote('Stored note');
     render(<NotesSection slug={mockSlug} />, { wrapper });
     const toggle = screen.getByRole('button', { expanded: false });
     fireEvent.click(toggle);
@@ -75,7 +74,7 @@ describe('NotesSection', () => {
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {
     const save = Promise.withResolvers<void>();
-    messages.resolve('saveNote', save.promise).resolve('getNote', { text: 'Saved draft' });
+    messages.resolve('saveNote', save.promise).resolve('getNote', 'Saved draft');
     render(<NotesSection slug={mockSlug} />, { wrapper });
     const toggle = screen.getByRole('button', { expanded: false });
     fireEvent.click(toggle);
@@ -85,9 +84,7 @@ describe('NotesSection', () => {
 
     fireEvent.click(toggle);
     await act(async () => save.resolve());
-    await waitFor(() =>
-      expect(queryClient.getQueryData(noteQueryKeys.detail(mockSlug))).toEqual({ text: 'Saved draft' })
-    );
+    await waitFor(() => expect(queryClient.getQueryData(noteQueryKeys.detail(mockSlug))).toBe('Saved draft'));
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
@@ -99,7 +96,7 @@ describe('NotesSection', () => {
 
   it('loads the supplied card while collapsed and saves edits to that card', async () => {
     const slug = 'another-home-card';
-    messages.resolve('getNote', { text: 'This card note' });
+    messages.resolve('getNote', 'This card note');
     render(<NotesSection slug={slug} />, { wrapper });
 
     await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('getNote', { slug }));
