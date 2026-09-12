@@ -4,7 +4,7 @@ import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { findCard, type LearningDocument } from '@/domain/learning-document';
 import { calculateDelayedDueDate, isDue } from '@/domain/review';
 import { createDailyStats, recordReview } from '@/domain/statistics';
-import { requireLearningDocument } from '@/infrastructure/storage/learning-document';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { saveLocalLearningDocument } from './save-local-learning-document';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
@@ -30,7 +30,7 @@ function createCard(problem: ProblemDescriptor, now: Date): Card {
 
 export async function addCard(problem: ProblemDescriptor): Promise<Card> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   const existing = findCard(document, problem.slug);
   if (existing) {
     return existing;
@@ -44,14 +44,14 @@ export async function addCard(problem: ProblemDescriptor): Promise<Card> {
 
 export async function removeCard(slug: string): Promise<void> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   delete document.cards[slug];
   await saveLocalLearningDocument(document, now);
 }
 
 export async function delayCard(slug: string, days: number): Promise<Card> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   const card = requireCard(document, slug);
   card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
   await saveLocalLearningDocument(document, now);
@@ -60,7 +60,7 @@ export async function delayCard(slug: string, days: number): Promise<Card> {
 
 export async function setPauseStatus(slug: string, paused: boolean): Promise<Card> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   const card = requireCard(document, slug);
   card.paused = paused;
   await saveLocalLearningDocument(document, now);
@@ -69,7 +69,7 @@ export async function setPauseStatus(slug: string, paused: boolean): Promise<Car
 
 export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   const { rating, ...problem } = input;
   const card = findCard(document, problem.slug) ?? createCard(problem, now);
   const isNewCard = card.fsrs.state === FsrsState.New;
@@ -95,7 +95,7 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
 
 export async function saveNote(slug: string, text: string): Promise<void> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   const card = requireCard(document, slug);
   if (text === '') {
     delete card.note;
@@ -107,7 +107,7 @@ export async function saveNote(slug: string, text: string): Promise<void> {
 
 export async function deleteNote(slug: string): Promise<void> {
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   const card = findCard(document, slug);
   if (!card || card.note === undefined) {
     return;

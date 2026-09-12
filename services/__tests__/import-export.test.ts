@@ -141,6 +141,6 @@ describe('document import-export', () => {
 
   it('rejects export before initialization without manufacturing a timestamp or document', async () => {
     await expect(exportData()).rejects.toThrow('Learning document is not initialized');
-    expect(await readLearningDocument()).toBeUndefined();
+    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
   });
 });

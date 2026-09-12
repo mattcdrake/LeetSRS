@@ -1,5 +1,5 @@
 import type { SettingsUpdate } from '@/domain/settings';
-import { requireLearningDocument } from '@/infrastructure/storage/learning-document';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { saveLocalLearningDocument } from './save-local-learning-document';
 
 export async function updateSettings(changes: SettingsUpdate): Promise<void> {
@@ -8,6 +8,6 @@ export async function updateSettings(changes: SettingsUpdate): Promise<void> {
   }
 
   const now = new Date();
-  const document = await requireLearningDocument();
+  const document = await readLearningDocument();
   await saveLocalLearningDocument({ ...document, settings: { ...document.settings, ...changes } }, now);
 }
