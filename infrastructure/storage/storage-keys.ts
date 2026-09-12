@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   learningDocument: 'local:leetsrs:learningDocument',
+  // Legacy names retained only for startup conversion, cleanup, and reset.
   cards: 'local:leetsrs:cards',
   stats: 'local:leetsrs:stats',
   maxNewCardsPerDay: 'sync:leetsrs:maxNewCardsPerDay',
@@ -9,12 +10,9 @@ export const STORAGE_KEYS = {
   badgeEnabled: 'sync:leetsrs:badgeEnabled',
   language: 'sync:leetsrs:language',
   schemaVersion: 'local:leetsrs:schemaVersion',
-  // Tracks when actual data was last modified (for sync)
   dataUpdatedAt: 'local:leetsrs:dataUpdatedAt',
   // GitHub Gist Sync
   gistConnection: 'sync:leetsrs:gistConnection',
   lastSyncTime: 'local:leetsrs:lastSyncTime',
   lastSyncDirection: 'local:leetsrs:lastSyncDirection',
 } as const;
-
-export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

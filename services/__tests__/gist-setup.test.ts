@@ -7,15 +7,13 @@ import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learn
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import * as documentSetup from '../document-gist-sync';
-import * as documentBackup from '../document-import-export';
 import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-sync';
+import * as documentBackup from '../import-export';
 
-const { getGist, create, getAuthenticated, exportData } = vi.hoisted(() => ({
+const { getGist, create, getAuthenticated } = vi.hoisted(() => ({
   getGist: vi.fn(),
   create: vi.fn(),
   getAuthenticated: vi.fn(),
-  exportData: vi.fn(),
 }));
 
 vi.mock('octokit', () => ({
@@ -23,12 +21,12 @@ vi.mock('octokit', () => ({
     return { rest: { users: { getAuthenticated }, gists: { get: getGist, create } } };
   }),
 }));
-vi.mock('../import-export', () => ({ exportData }));
 
 describe('gist-setup boundaries', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
+    await replaceLearningDocument({ schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {}, settings: {} });
   });
 
   it.each([
@@ -71,7 +69,7 @@ describe('gist-setup boundaries', () => {
     await setGistSyncConfig(config);
     expect(writes).toHaveBeenCalledExactlyOnceWith({ 'leetsrs:gistConnection': config });
     expect(await readGistConnection()).toEqual(config);
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    expect(await readLearningDocument()).not.toHaveProperty('dataUpdatedAt');
   });
 
   it.each([
@@ -141,15 +139,19 @@ describe('gist-setup boundaries', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it.each(['export', 'request', 'destination'] as const)(
+  it.each(['document read', 'request', 'destination'] as const)(
     'stops creation persistence after a failed %s',
     async (stage) => {
       await setGistSyncConfig({ pat: 'saved' });
       const failure = new Error('failed');
-      exportData.mockResolvedValue('{}');
       create.mockResolvedValue({ data: { id: 'created' } });
       const writes = vi.spyOn(storage, 'setItem');
-      if (stage === 'export') exportData.mockRejectedValue(failure);
+      if (stage === 'document read') {
+        const read = storage.getItem.bind(storage);
+        vi.spyOn(storage, 'getItem').mockImplementation((key, options) =>
+          key === STORAGE_KEYS.learningDocument ? Promise.reject(failure) : read(key, options)
+        );
+      }
       if (stage === 'request') create.mockRejectedValue(failure);
       if (stage === 'destination') writes.mockRejectedValue(failure);
 
@@ -159,7 +161,7 @@ describe('gist-setup boundaries', () => {
           ? [[STORAGE_KEYS.gistConnection, { pat: 'saved', gistId: 'created', enabled: false }]]
           : []
       );
-      if (stage === 'export') expect(create).not.toHaveBeenCalled();
+      if (stage === 'document read') expect(create).not.toHaveBeenCalled();
     }
   );
   it.each([{ pat: 'replacement' }, { gistId: 'replacement-gist' }, { gistId: null }, { enabled: true }])(
@@ -203,7 +205,6 @@ describe('gist-setup boundaries', () => {
 
     it('should throw when gist creation fails with no ID', async () => {
       await setGistSyncConfig({ pat: 'ghp_test' });
-      exportData.mockResolvedValue('{}');
       create.mockResolvedValue({ data: {} });
 
       await expect(createNewGist()).rejects.toThrow('Failed to create gist: no ID returned');
@@ -222,39 +223,6 @@ describe('gist-setup boundaries', () => {
 
     afterEach(() => vi.useRealTimers());
 
-    it('retains the created destination and previous status when saving status fails', async () => {
-      exportData.mockResolvedValue('{}');
-      create.mockResolvedValue({ data: { id: 'created' } });
-      await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-time');
-      await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
-      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('status failed'));
-
-      await expect(createNewGist()).rejects.toThrow('status failed');
-
-      expect(create).toHaveBeenCalledOnce();
-      expect((await readGistConnection()).gistId).toBe('created');
-      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-time');
-      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
-    });
-
-    it('creates a secret localized backup and saves the destination and sync status', async () => {
-      await storage.setItem(STORAGE_KEYS.language, 'zh-CN');
-      exportData.mockResolvedValue('{"local":"snapshot"}');
-      create.mockResolvedValue({ data: { id: 'created' } });
-
-      await expect(createNewGist()).resolves.toEqual({ gistId: 'created' });
-
-      expect(Octokit).toHaveBeenCalledWith({ auth: 'ghp_test' });
-      expect(create).toHaveBeenCalledExactlyOnceWith({
-        description: 'LeetSRS 备份 - 间隔重复数据',
-        public: false,
-        files: { 'leetsrs-backup.json': { content: '{"local":"snapshot"}' } },
-      });
-      expect((await readGistConnection()).gistId).toBe('created');
-      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(now);
-      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('push');
-    });
-
     it('preserves the complete connection when an update fails and permits retry', async () => {
       const writes = vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('write failed'));
       const update = { pat: 'new-pat', gistId: null, enabled: true };
@@ -267,7 +235,6 @@ describe('gist-setup boundaries', () => {
   });
 });
 
-// Prepared Gist creation uses the same document as file export and sync.
 describe('document Gist creation', () => {
   const document: LearningDocument = {
     schemaVersion: LEARNING_DOCUMENT_VERSION,
@@ -287,7 +254,7 @@ describe('document Gist creation', () => {
 
   it('creates a localized secret Gist with the exported document and retains an absent edit timestamp', async () => {
     const reads = vi.spyOn(storage, 'getItem');
-    await expect(documentSetup.createNewGist()).resolves.toEqual({ gistId: 'created' });
+    await expect(createNewGist()).resolves.toEqual({ gistId: 'created' });
     expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
     expect(create).toHaveBeenCalledExactlyOnceWith({
       description: 'LeetSRS 备份 - 间隔重复数据',
@@ -310,7 +277,7 @@ describe('document Gist creation', () => {
       await write(items);
     });
 
-    await expect(documentSetup.createNewGist()).rejects.toThrow('status failed');
+    await expect(createNewGist()).rejects.toThrow('status failed');
     expect(await readGistConnection()).toEqual({ pat: 'private-pat', gistId: 'created', enabled: true });
     expect(await readLearningDocument()).toEqual(document);
     expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');

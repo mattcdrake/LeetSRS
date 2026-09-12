@@ -3,29 +3,12 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { translations } from '@/i18n';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import {
-  getDocumentTranslations,
-  getStoredTranslations,
-  watchDocumentTranslations,
-  watchStoredTranslations,
-} from '../translations';
+import { getDocumentTranslations as read, watchDocumentTranslations as watch } from '../translations';
 
-describe.each([
-  {
-    source: 'legacy language',
-    key: STORAGE_KEYS.language,
-    read: getStoredTranslations,
-    watch: watchStoredTranslations,
-    storedValue: (language: unknown): unknown => language,
-  },
-  {
-    source: 'learning document',
-    key: STORAGE_KEYS.learningDocument,
-    read: getDocumentTranslations,
-    watch: watchDocumentTranslations,
-    storedValue: (language: unknown): unknown => ({ schemaVersion: 6, cards: {}, stats: {}, settings: { language } }),
-  },
-])('stored translations from $source', ({ key, read, watch, storedValue }) => {
+const key = STORAGE_KEYS.learningDocument;
+const storedValue = (language: unknown) => ({ schemaVersion: 6, cards: {}, stats: {}, settings: { language } });
+
+describe('stored translations from the learning document', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';

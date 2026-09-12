@@ -10,9 +10,6 @@ export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
 export const gistSyncConfigUpdateSchema = gistSyncConfigSchema.partial();
 export type GistSyncConfigUpdate = z.infer<typeof gistSyncConfigUpdateSchema>;
 
-export const gistSyncBackupSchema = gistSyncConfigSchema.omit({ pat: true }).extend({ gistId: z.string() }).partial();
-export type GistSyncBackup = z.infer<typeof gistSyncBackupSchema>;
-
 export interface GistSyncStatus {
   lastSyncTime: string | null;
   lastSyncDirection: 'push' | 'pull' | null;
@@ -35,39 +32,35 @@ export interface PatValidationResult {
   error?: string;
 }
 
-export type RemoteGistContent =
-  | { state: 'missing' | 'invalid-json' }
-  | { state: 'parsed'; dataUpdatedAt?: string | null };
+export type RemoteGistContent = { state: 'missing' } | { state: 'parsed'; dataUpdatedAt?: string | null };
 
-export type GistSyncDecision =
-  | { action: 'push'; initializeDataUpdatedAt: boolean }
-  | { action: 'pull' | 'no-change'; initializeDataUpdatedAt: false };
+export type GistSyncDecision = { action: 'push' | 'pull' | 'no-change' };
 
 export function decideGistSync(
   remote: RemoteGistContent,
   localDataUpdatedAt: string | null | undefined
 ): GistSyncDecision {
   if (remote.state !== 'parsed') {
-    return { action: 'push', initializeDataUpdatedAt: false };
+    return { action: 'push' };
   }
 
   if (!remote.dataUpdatedAt) {
-    return { action: 'push', initializeDataUpdatedAt: !localDataUpdatedAt };
+    return { action: 'push' };
   }
 
   if (!localDataUpdatedAt) {
-    return { action: 'pull', initializeDataUpdatedAt: false };
+    return { action: 'pull' };
   }
 
   const localUpdated = new Date(localDataUpdatedAt);
   const remoteUpdated = new Date(remote.dataUpdatedAt);
   if (localUpdated < remoteUpdated) {
-    return { action: 'pull', initializeDataUpdatedAt: false };
+    return { action: 'pull' };
   }
   if (localUpdated > remoteUpdated) {
-    return { action: 'push', initializeDataUpdatedAt: false };
+    return { action: 'push' };
   }
 
   // Preserve existing comparisons: invalid dates, like equal dates, fall through.
-  return { action: 'no-change', initializeDataUpdatedAt: false };
+  return { action: 'no-change' };
 }

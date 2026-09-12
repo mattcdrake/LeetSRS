@@ -10,8 +10,15 @@ import {
 } from '@/infrastructure/browser/messages';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
-import { createNewGist, getGistSyncStatus, triggerGistSync } from '@/services/document-gist-sync';
-import { exportData, importData, resetAllData } from '@/services/document-import-export';
+import {
+  createNewGist,
+  getGistSyncStatus,
+  setGistSyncConfig,
+  triggerGistSync,
+  validateGistId,
+} from '@/services/gist-sync';
+import { validatePat } from '@/services/github-auth';
+import { exportData, importData, resetAllData } from '@/services/import-export';
 import {
   addCard,
   delayCard,
@@ -28,10 +35,8 @@ import {
   saveNote,
   setPauseStatus,
   shouldResetEditor,
-} from '@/services/document-learning';
-import { getSettings, updateSettings } from '@/services/document-settings';
-import { setGistSyncConfig, validateGistId } from '@/services/gist-sync';
-import { validatePat } from '@/services/github-auth';
+} from '@/services/learning';
+import { getSettings, updateSettings } from '@/services/settings';
 
 type Command<Name extends MessageName> = {
   handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;

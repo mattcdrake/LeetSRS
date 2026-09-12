@@ -16,7 +16,6 @@ describe('decideGistSync', () => {
   ])('returns $action for local $local and remote $remote', ({ local, remote, action }) => {
     expect(decideGistSync({ state: 'parsed', dataUpdatedAt: remote }, local)).toEqual({
       action,
-      initializeDataUpdatedAt: false,
     });
   });
 
@@ -24,7 +23,6 @@ describe('decideGistSync', () => {
     for (const remote of [earlier, 'invalid']) {
       expect(decideGistSync({ state: 'parsed', dataUpdatedAt: remote }, local)).toEqual({
         action: 'pull',
-        initializeDataUpdatedAt: false,
       });
     }
   });
@@ -33,16 +31,14 @@ describe('decideGistSync', () => {
     for (const local of [null, undefined, '', earlier, 'invalid']) {
       expect(decideGistSync({ state: 'parsed', dataUpdatedAt: remote }, local)).toEqual({
         action: 'push',
-        initializeDataUpdatedAt: !local,
       });
     }
   });
 
-  it.each(['missing', 'invalid-json'] as const)('pushes %s content without initialization', (state) => {
+  it('pushes when the remote file is missing', () => {
     for (const local of [null, undefined, '', earlier, 'invalid']) {
-      expect(decideGistSync({ state }, local)).toEqual({
+      expect(decideGistSync({ state: 'missing' }, local)).toEqual({
         action: 'push',
-        initializeDataUpdatedAt: false,
       });
     }
   });
