@@ -1,20 +1,39 @@
 import { State } from 'ts-fsrs';
-import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { z } from 'zod';
+import { createDailyStats } from '@/domain/statistics';
 import { requireDefined } from '@/test/utils/assertions';
+import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { getAllCards } from '../../cards';
 import { STORAGE_KEYS } from '../../storage-keys';
 import { addCardDomain } from '../001-add-card-domain';
 import { addSystemTheme } from '../002-add-system-theme';
 import { removeDayStart, validateOutput as validateVersion3 } from '../003-remove-day-start';
+import { embedNotes } from '../004-embed-notes';
+import { combineGistConnection } from '../005-combine-gist-connection';
 import { readDataset } from '../layouts/v0';
 import { LATEST_SCHEMA_VERSION, migrateBackupData, runStartupMigrations, setSchemaVersion } from '../runner';
 
 // Keep historical contract tests pinned to the sequence they describe.
 const historicalMigrations = [addCardDomain, addSystemTheme, removeDayStart];
+
+it.each([1, 2, 3, 4, 5])('validates the complete version %i even when no conversion remains', (version) => {
+  const { accepted, embedded } = mixedRecordBackup();
+  const data = version < 4 ? accepted : embedded;
+  const steps = [...historicalMigrations, embedNotes, combineGistConnection].slice(0, version);
+  for (const invalid of [
+    { cards: { invalid: null } },
+    { stats: { '2024-01-01': { ...accepted.stats['2024-01-01'], totalReviews: -1 } } },
+    { settings: { theme: 'invalid' } },
+    { notes: { 'valid-com': { text: 42 } } },
+    { dataUpdatedAt: 'not-a-date' },
+  ]) {
+    expect(() => migrateBackupData({ ...data, ...invalid }, version, steps)).toThrow();
+  }
+});
 
 describe('migrations 1–3', () => {
   beforeEach(() => {
@@ -33,7 +52,9 @@ describe('migrations 1–3', () => {
       const data = Object.freeze({
         cards: Object.freeze({ 'two-sum': card }),
         notes: Object.freeze({ [card.id]: { text: 'Keep this note', revision: 7 } }),
-        stats: Object.freeze({ '2024-01-01': { totalReviews: 9, historicalStat: true } }),
+        stats: Object.freeze({
+          '2024-01-01': { ...createDailyStats('2024-01-01', undefined), totalReviews: 9, historicalStat: true },
+        }),
         settings: Object.freeze({
           theme: 'dark',
           ...(schemaVersion !== 3 && { dayStartHour: 4 }),
@@ -71,108 +92,52 @@ describe('migrations 1–3', () => {
       }
     );
 
-    it('defaults only missing or falsy domains, preserving malformed records and legal JSON keys', () => {
-      const cards = Object.freeze({
-        missing: Object.freeze({ name: 'Legacy', ['__proto__']: { historical: true } }),
-        empty: Object.freeze({ domain: '' }),
-        zero: Object.freeze({ domain: 0 }),
-        no: Object.freeze({ domain: false }),
-        nil: Object.freeze({ domain: null }),
-        truthy: Object.freeze({ domain: 42 }),
-        objectDomain: Object.freeze({ domain: { historical: 'region' } }),
-        nullRecord: null,
-        arrayRecord: Object.freeze([1, 'legacy']),
-        stringRecord: 'legacy',
-        numericRecord: 0,
-        booleanRecord: false,
-        ['__proto__']: Object.freeze({ name: 'Legal slug', domain: null }),
-        constructor: Object.freeze({ name: 'Another legal slug' }),
-      });
-      const settings = Object.freeze({ dayStartHour: 'malformed but retired', ['__proto__']: { keep: true } });
-      const data = Object.freeze({ cards, settings });
-      const before = JSON.stringify(data);
-      const migrated = migrateBackupData(data, 0, historicalMigrations);
+    it.each([undefined, '', 0, false, null])(
+      'defaults missing or falsy domain %j while preserving legal JSON keys',
+      (domain) => {
+        const base = createMockCard(State.Review, { id: 'owner', slug: '__proto__' });
+        const card = Object.freeze({ ...base, domain, ['__proto__']: { historical: true } });
+        const data = Object.freeze({
+          cards: Object.freeze({ ['__proto__']: card }),
+          settings: Object.freeze({ dayStartHour: 'malformed but retired', ['__proto__']: { keep: true } }),
+          ['__proto__']: { keep: true },
+        });
+        const before = JSON.stringify(data);
+        expect(migrateBackupData(data, 0, historicalMigrations)).toEqual({
+          cards: { ['__proto__']: { ...card, domain: 'leetcode.com' } },
+          settings: { ['__proto__']: { keep: true } },
+          ['__proto__']: { keep: true },
+        });
+        expect(JSON.stringify(data)).toBe(before);
+      }
+    );
 
-      expect(migrated).toEqual({
-        cards: {
-          ...cards,
-          missing: { ...cards.missing, domain: 'leetcode.com' },
-          empty: { domain: 'leetcode.com' },
-          zero: { domain: 'leetcode.com' },
-          no: { domain: 'leetcode.com' },
-          nil: { domain: 'leetcode.com' },
-          ['__proto__']: { name: 'Legal slug', domain: 'leetcode.com' },
-          constructor: { name: 'Another legal slug', domain: 'leetcode.com' },
-        },
-        settings: { ['__proto__']: { keep: true } },
-      });
-      expect(JSON.stringify(data)).toBe(before);
-      expect(migrateBackupData(data, 0, historicalMigrations)).toEqual(migrated);
-    });
-
-    it.each([1, 2, 3])('preserves malformed unrelated data after schema %s without reapplying version 1', (version) => {
+    it.each([1, 2, 3])('rejects malformed learning data against the complete schema %s', (version) => {
       const data = {
         cards: { malformedDomain: { domain: 42 }, malformedRecord: null, arrayRecord: [], booleanRecord: false },
         notes: ['historical note layout'],
         stats: 'historical statistics',
         settings: { theme: 42, ...(version !== 3 && { dayStartHour: null }), ['__proto__']: 'legal setting key' },
       };
-      expect(migrateBackupData(data, version, historicalMigrations)).toEqual({
-        ...data,
-        settings: version === 3 ? data.settings : { theme: 42, ['__proto__']: 'legal setting key' },
-      });
+      expect(() => migrateBackupData(data, version, historicalMigrations)).toThrow();
     });
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed cards collection in version 1: %s', (cards) => {
-      expect(() => migrateBackupData({ cards }, 0, historicalMigrations)).toThrow('Migration 1');
-      expect(() => migrateBackupData({ cards }, 1, historicalMigrations)).toThrow('Migration 1');
-      expect(() => migrateBackupData({ cards }, 2, historicalMigrations)).toThrow('Migration 2');
-      expect(() => migrateBackupData({ cards }, 3, historicalMigrations)).toThrow('Migration 3');
+      expect(() => migrateBackupData({ cards }, 0, historicalMigrations)).toThrow();
+      expect(() => migrateBackupData({ cards }, 1, historicalMigrations)).toThrow();
+      expect(() => migrateBackupData({ cards }, 2, historicalMigrations)).toThrow();
+      expect(() => migrateBackupData({ cards }, 3, historicalMigrations)).toThrow();
     });
 
     it.each([null, [], false, 42, 'legacy'])('rejects a malformed settings container in version 3: %s', (settings) => {
-      expect(() => migrateBackupData({ settings }, 2, historicalMigrations)).toThrow('Migration 3');
-      expect(() => migrateBackupData({ settings }, 3, historicalMigrations)).toThrow('Migration 3');
+      expect(() => migrateBackupData({ settings }, 2, historicalMigrations)).toThrow();
+      expect(() => migrateBackupData({ settings }, 3, historicalMigrations)).toThrow();
     });
 
     it.each([null, [], false, 42, 'legacy'])('rejects an invalid dataset against its declared contract: %s', (data) => {
-      expect(() => migrateBackupData(data, 0, historicalMigrations)).toThrow('Migration 1');
-      expect(() => migrateBackupData(data, 2, historicalMigrations)).toThrow('Migration 2');
-      expect(() => migrateBackupData(data, 3, historicalMigrations)).toThrow('Migration 3');
-    });
-
-    it('declares concrete output contracts, including preserved malformed cards and identity types', () => {
-      expectTypeOf<typeof addCardDomain.migrate>().returns.toEqualTypeOf<{
-        [key: string]: unknown;
-        cards?: Record<
-          string,
-          | (Record<string, unknown> & { domain: NonNullable<unknown> })
-          | null
-          | undefined
-          | string
-          | number
-          | boolean
-          | unknown[]
-        >;
-      }>();
-      type Version1 = ReturnType<typeof addCardDomain.migrate>;
-      type Version2 = ReturnType<typeof addSystemTheme.migrate>;
-      type Version3 = ReturnType<typeof removeDayStart.migrate>;
-      expectTypeOf<typeof addSystemTheme.load>().returns.resolves.toEqualTypeOf<Version1>();
-      expectTypeOf<Version2>().toEqualTypeOf<Version1>();
-      expectTypeOf<typeof removeDayStart.load>().returns.resolves.toEqualTypeOf<Version2>();
-      expectTypeOf<typeof addCardDomain.save>().parameter(0).toEqualTypeOf<Version1>();
-      expectTypeOf<typeof addSystemTheme.save>().parameter(0).toEqualTypeOf<Version2>();
-      expectTypeOf<typeof removeDayStart.save>().parameter(0).toEqualTypeOf<Version3>();
-      expectTypeOf<Version3>().toExtend<Version2>();
-      expectTypeOf<Version3['settings']>().toEqualTypeOf<
-        | (Record<string, unknown> & {
-            dayStartHour?: never;
-            autoClearLeetcode?: never;
-            resetEditorOnEveryProblem?: boolean;
-          })
-        | undefined
-      >();
+      expect(() => migrateBackupData(data, 0, historicalMigrations)).toThrow();
+      expect(() => migrateBackupData(data, 2, historicalMigrations)).toThrow();
+      expect(() => migrateBackupData(data, 3, historicalMigrations)).toThrow();
     });
   });
 
@@ -220,7 +185,7 @@ describe('migrations 1–3', () => {
         await expect(runStartupMigrations(historicalMigrations)).rejects.toThrow(
           `Failed to run migration ${version + 1}`
         );
-        expect(() => migrateBackupData({ cards }, version, historicalMigrations)).toThrow(`Migration ${version}`);
+        expect(() => migrateBackupData({ cards }, version, historicalMigrations)).toThrow();
         expect(await fakeBrowser.storage.local.get(null)).toEqual(localBefore);
         expect(await fakeBrowser.storage.sync.get(null)).toEqual(syncBefore);
       }
@@ -344,8 +309,16 @@ describe('migrations 1–3', () => {
         historicalCard: { source: 'legacy' },
         ...(version ? { domain: 'leetcode.cn' } : {}),
       };
-      const cards = { [card.slug]: card, ['__proto__']: { domain: 'leetcode.cn', historical: true } };
-      const stats = { '2024-01-01': { totalReviews: 9, historicalStat: 'keep' } };
+      const cards = {
+        [card.slug]: card,
+        ['__proto__']: {
+          ...createMockCard(State.Review, { id: '__proto__', slug: '__proto__', domain: 'leetcode.cn' }),
+          historical: true,
+        },
+      };
+      const stats = {
+        '2024-01-01': { ...createDailyStats('2024-01-01', undefined), totalReviews: 9, historicalStat: 'keep' },
+      };
       await storage.setItem(STORAGE_KEYS.cards, cards);
       await storage.setItem(STORAGE_KEYS.stats, stats);
       await storage.setItem(`local:leetsrs:notes:${card.id}`, { text: 'Keep this note', historicalNote: true });
@@ -552,7 +525,9 @@ describe('migrations 1–3', () => {
       await setSchemaVersion(2);
       const card = createMockCard(State.Review);
       await storage.setItem(STORAGE_KEYS.cards, { [card.slug]: card });
-      await storage.setItem(STORAGE_KEYS.stats, { '2024-03-14': { streak: 7 } });
+      await storage.setItem(STORAGE_KEYS.stats, {
+        '2024-03-14': { ...createDailyStats('2024-03-14', undefined), streak: 7 },
+      });
       await storage.setItem('sync:leetsrs:dayStartHour', 4);
       await storage.setItem(STORAGE_KEYS.maxNewCardsPerDay, 8);
       const localBefore = await fakeBrowser.storage.local.get(null);

@@ -1,32 +1,31 @@
-import { type Output as Input, validateOutput as validatePreviousOutput } from './001-add-card-domain';
+import {
+  convert,
+  type Input,
+  inputSchema,
+  type Output,
+  outputSchema,
+} from '../document-conversions/002-add-system-theme';
+import { assertSchema } from '../document-conversions/schema-utils';
 import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
-export type Output = Input;
+export type { Output } from '../document-conversions/002-add-system-theme';
 
-function validateInput(data: unknown): asserts data is Input {
-  try {
-    validatePreviousOutput(data);
-  } catch (cause) {
-    throw new Error('Migration 2 requires the output shape of migration 1', { cause });
-  }
+export function validateOutput(data: unknown): void {
+  outputSchema.parse(data);
 }
 
-export const validateOutput: typeof validateInput = validateInput;
-
-// System theme changed the application default, not the stored logical dataset.
 export const addSystemTheme = {
   description: 'Add system theme preference',
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
-    validateInput(input);
+
+    assertSchema(inputSchema, input);
+
     return input;
   },
-  migrate(data: unknown): Output {
-    validateInput(data);
-    return data;
-  },
+  migrate: convert,
   async save(_output: Output): Promise<void> {
     // The logical dataset and its physical layout are unchanged.
   },

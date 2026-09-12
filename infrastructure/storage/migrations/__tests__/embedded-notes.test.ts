@@ -2,6 +2,7 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { embedNotes, validateOutput } from '../004-embed-notes';
 import { readDataset } from '../layouts/v4';
@@ -20,7 +21,7 @@ describe('embedded note migration', () => {
     const input = Object.freeze({
       cards: Object.freeze({ 'two-sum': card }),
       notes: Object.freeze({ owner: Object.freeze({ text: '  Keep the complement  ' }) }),
-      stats: { historical: true },
+      stats: { '2024-01-01': { ...createDailyStats('2024-01-01', undefined), historical: true } },
       settings: { theme: 'dark' },
     });
     const before = JSON.stringify(input);
@@ -62,6 +63,7 @@ describe('embedded note migration', () => {
 
   it.each([
     { cards: { invalid: null } },
+    { cards: { ['__proto__']: null } },
     { notes: [] },
     { notes: null },
     { notes: { owner: {} } },

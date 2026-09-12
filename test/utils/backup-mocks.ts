@@ -58,7 +58,7 @@ export function mixedRecordBackup() {
   };
   const acceptedCards = {
     'two-sum': validCard,
-    'cn-problem': { ...validCard, id: 'valid-cn', slug: 'cn-problem', domain: 'leetcode.cn', paused: false },
+    'cn-problem': { ...validCard, id: 'valid-cn', slug: 'cn-problem', domain: 'leetcode.cn' as const, paused: false },
     'bad-note': { ...validCard, id: 'bad-note', slug: 'bad-note' },
     'missing-note-text': { ...validCard, id: 'missing-note-text', slug: 'missing-note-text' },
   };

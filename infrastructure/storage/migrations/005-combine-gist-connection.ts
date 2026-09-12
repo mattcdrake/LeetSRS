@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { storage } from '#imports';
-import { type Output as Input, validateOutput as validateInput } from './004-embed-notes';
+import {
+  convert,
+  type Input,
+  inputSchema,
+  type Output,
+  outputSchema,
+} from '../document-conversions/005-combine-gist-connection';
+import { assertSchema } from '../document-conversions/schema-utils';
 import { readDataset } from './layouts/v4';
 import type { Migration } from './migration';
 
@@ -11,8 +18,11 @@ const gistConnectionSchema = z.object({
   enabled: z.boolean(),
 });
 
-export type Output = Input;
-export const validateOutput: typeof validateInput = validateInput;
+export type { Output } from '../document-conversions/005-combine-gist-connection';
+
+export function validateOutput(data: unknown): void {
+  outputSchema.parse(data);
+}
 
 // Only the installed representation changes. Backup transformations stay pure
 // and leave their existing Gist configuration (which excludes the PAT) alone.
@@ -21,15 +31,15 @@ export const combineGistConnection = {
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
-    validateInput(input);
+
+    assertSchema(inputSchema, input);
+
     return input;
   },
-  migrate(data: unknown): Output {
-    validateInput(data);
-    return data;
-  },
+  migrate: convert,
   async save(output: Output): Promise<void> {
     validateOutput(output);
+
     const settings = output.settings ?? {};
     if (Object.hasOwn(settings, 'gistConnection')) {
       gistConnectionSchema.parse(settings.gistConnection);
