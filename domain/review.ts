@@ -47,5 +47,6 @@ export function shouldResetCardEditor(
   if (settings.resetEditorOnEveryProblem) {
     return true;
   }
-  return settings.resetEditorOnDueReview && !!card && card.domain === domain && !card.paused && isDue(card, now);
+  const isDueReview = !!card && card.domain === domain && !card.paused && isDue(card, now);
+  return settings.resetEditorOnDueReview && isDueReview;
 }
