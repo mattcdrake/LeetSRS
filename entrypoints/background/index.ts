@@ -8,16 +8,14 @@ import {
   messagePayloadSchemas,
   onMessage,
 } from '@/infrastructure/browser/messages';
-import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
 import {
-  createNewGist,
+  getGistSyncConfig,
   getGistSyncStatus,
-  setGistSyncConfig,
+  setGistSyncEnabled,
+  setupGistSync,
   triggerGistSync,
-  validateGistId,
 } from '@/services/gist-sync';
-import { validatePat } from '@/services/github-auth';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import {
   addCard,
@@ -82,13 +80,11 @@ const commands: { [Name in MessageName]: Command<Name> } = {
   exportData: read(exportData),
   importData: write(({ jsonData }) => importData(jsonData), { refreshBadge: true }),
   resetAllData: write(resetAllData, { refreshBadge: true }),
-  getGistSyncConfig: read(readGistConnection),
-  setGistSyncConfig: write(({ config }) => setGistSyncConfig(config)),
+  getGistSyncConfig: read(getGistSyncConfig),
+  setupGistSync: write(setupGistSync, { refreshBadge: true }),
+  setGistSyncEnabled: write(({ enabled }) => setGistSyncEnabled(enabled), { refreshBadge: true }),
   getGistSyncStatus: read(getGistSyncStatus),
   triggerGistSync: write(triggerGistSync, { refreshBadge: true }),
-  createNewGist: write(createNewGist),
-  validatePat: read(({ pat }) => validatePat(pat)),
-  validateGistId: read(({ gistId, pat }) => validateGistId(gistId, pat)),
 };
 
 const SYNC_ALARM_NAME = 'gist-sync';
@@ -130,6 +126,21 @@ export default defineBackground(() => {
   // Keep network work and post-handler effects in the same mutation queue.
   // Recover its tail after rejection while returning the original error to callers.
   let writeQueue = Promise.resolve();
+  const enqueue = <Result>(run: () => Promise<Result>): Promise<Result> => {
+    const result = writeQueue.then(run);
+    writeQueue = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  };
+  const refreshBadge = async () => {
+    try {
+      await updateBadge();
+    } catch (error) {
+      console.warn('Failed to refresh badge:', error);
+    }
+  };
   const dispatch = <Name extends MessageName>(name: Name, data: unknown): Promise<MessageResult<Name>> => {
     const command = commands[name];
     const run = async () => {
@@ -139,21 +150,12 @@ export default defineBackground(() => {
       const payload = schema.parse(data);
       const result = await command.handler(payload);
       if (command.kind === 'write' && command.refreshBadge) {
-        try {
-          await updateBadge();
-        } catch (error) {
-          console.warn('Failed to refresh badge:', error);
-        }
+        await refreshBadge();
       }
       return result;
     };
     if (command.kind === 'read') return run();
-    const result = writeQueue.then(run);
-    writeQueue = result.then(
-      () => undefined,
-      () => undefined
-    );
-    return result;
+    return enqueue(run);
   };
 
   for (const name of Object.keys(commands) as MessageName[]) {
@@ -172,11 +174,12 @@ export default defineBackground(() => {
       return;
     }
 
-    const config = await readGistConnection();
-    if (config.enabled && config.pat && config.gistId) {
-      await dispatch('triggerGistSync', undefined);
-    } else {
-      await updateBadge();
-    }
+    await enqueue(async () => {
+      const config = await getGistSyncConfig();
+      if (config.enabled && config.pat.trim() && config.gistId?.trim()) {
+        await triggerGistSync();
+      }
+      await refreshBadge();
+    });
   });
 });

@@ -1,9 +1,9 @@
 import {
   decideGistSync,
-  type GistSyncConfigUpdate,
+  type GistConnectionResult,
+  type GistSetup,
   type GistSyncStatus,
-  type GistValidationResult,
-  gistSyncConfigUpdateSchema,
+  gistSetupSchema,
   type SyncResult,
 } from '@/domain/gist-sync';
 import { translations } from '@/i18n';
@@ -101,80 +101,59 @@ export async function triggerGistSync(): Promise<SyncResult> {
   }
 }
 
-export async function createNewGist(): Promise<{ gistId: string }> {
-  const config = await readGistConnection();
-  if (!config.pat) {
-    throw new Error('PAT is required to create a gist');
+export { readGistConnection as getGistSyncConfig } from '@/infrastructure/storage/gist-connection';
+
+export async function setupGistSync(input: GistSetup): Promise<GistConnectionResult> {
+  let createdGistId: string | undefined;
+  try {
+    const setup = gistSetupSchema.parse(input);
+    const previous = await readGistConnection();
+    const github = createGitHubClient(setup.pat);
+    let gistId: string;
+    if (setup.mode === 'existing') {
+      const { data } = await github.getGist(setup.gistId);
+      if (!data.files?.[GIST_FILENAME]) {
+        throw new Error(`Gist does not contain ${GIST_FILENAME}`);
+      }
+      gistId = setup.gistId;
+    } else {
+      const document = await readLearningDocument();
+      if (!document) throw new Error('Learning document is not initialized');
+      const language = document.settings.language ?? detectBrowserLanguage();
+      const { data } = await github.createGist(
+        translations[language].settings.gistSync.gistDescription,
+        JSON.stringify(document, null, 2)
+      );
+      if (!data.id) throw new Error('Failed to create gist: no ID returned');
+      gistId = data.id;
+      createdGistId = gistId;
+    }
+    await writeGistConnection({ pat: setup.pat, gistId, enabled: previous.enabled });
+    return { saved: true, ...(previous.enabled ? { sync: await triggerGistSync() } : {}) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown Gist setup error';
+    return {
+      saved: false,
+      error: message.includes('404') ? 'Gist not found' : message,
+      ...(createdGistId ? { createdGistId } : {}),
+    };
   }
+}
 
-  const github = createGitHubClient(config.pat);
-  const document = await readLearningDocument();
-  if (!document) {
-    throw new Error('Learning document is not initialized');
+export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
+  try {
+    const config = await readGistConnection();
+    if (enabled && (!config.pat.trim() || !config.gistId?.trim())) {
+      throw new Error('PAT and Gist ID are required to enable sync');
+    }
+    await writeGistConnection({ ...config, enabled });
+  } catch (error) {
+    return { saved: false, error: error instanceof Error ? error.message : 'Failed to save connection' };
   }
-
-  // Resolve from the exported snapshot; the translation storage adapter would
-  // read a second document that could have a different language.
-  const language = document.settings.language ?? detectBrowserLanguage();
-  const { data } = await github.createGist(
-    translations[language].settings.gistSync.gistDescription,
-    JSON.stringify(document, null, 2)
-  );
-  if (!data.id) {
-    throw new Error('Failed to create gist: no ID returned');
-  }
-
-  const gistId = data.id;
-  await setGistSyncConfig({ gistId });
-
-  const now = new Date().toISOString();
-  await writeSyncStatus({ lastSyncTime: now, lastSyncDirection: 'push' });
-
-  return { gistId };
+  return { saved: true, ...(enabled ? { sync: await triggerGistSync() } : {}) };
 }
 
 export async function resetGistSyncStatus(): Promise<void> {
   await removeSyncStatus();
   lastError = null;
-}
-
-export async function setGistSyncConfig(config: GistSyncConfigUpdate): Promise<void> {
-  const parsed = gistSyncConfigUpdateSchema.parse(config);
-  const changes = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== undefined));
-  if (Object.keys(changes).length === 0) {
-    return;
-  }
-
-  await writeGistConnection({ ...(await readGistConnection()), ...changes });
-}
-
-export async function validateGistId(gistId: string, pat: string): Promise<GistValidationResult> {
-  if (!gistId.trim()) {
-    return { valid: false, error: 'Gist ID is required' };
-  }
-
-  try {
-    const github = createGitHubClient(pat);
-    const { data } = await github.getGist(gistId);
-
-    if (!data.files?.[GIST_FILENAME]) {
-      return { valid: false, error: `Gist does not contain ${GIST_FILENAME}` };
-    }
-
-    return { valid: true };
-  } catch (error) {
-    return gistValidationError(error);
-  }
-}
-
-function gistValidationError(error: unknown): GistValidationResult {
-  if (!(error instanceof Error)) {
-    return { valid: false, error: 'Unknown error validating Gist ID' };
-  }
-
-  if (error.message.includes('404')) {
-    return { valid: false, error: 'Gist not found' };
-  }
-
-  return { valid: false, error: error.message };
 }

@@ -208,18 +208,10 @@ const pl: Translations = {
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
       patHelpText: 'Utwórz token z uprawnieniem "gist" na',
       patHelpLink: 'Ustawienia GitHub',
-      validatePat: 'Zweryfikuj',
-      validating: 'Weryfikowanie...',
-      patValid: 'Prawidłowy',
-      patInvalid: 'Nieprawidłowy token',
       // Gist selection
       gistIdLabel: 'ID Gista',
       gistIdPlaceholder: 'Wpisz istniejące ID Gista lub utwórz nowy',
       createNewGist: 'Utwórz nowy Gist',
-      creating: 'Tworzenie...',
-      validateGist: 'Zweryfikuj',
-      gistValid: 'Prawidłowy',
-      gistInvalid: 'Nieprawidłowy gist',
       // Sync controls
       enableSync: 'Włącz automatyczną synchronizację',
       syncNow: 'Synchronizuj teraz',
@@ -227,13 +219,18 @@ const pl: Translations = {
       // Status
       lastSync: 'Ostatnia synchronizacja',
       lastSyncNever: 'Nigdy',
-      lastSyncPushed: 'Wysłano',
-      lastSyncPulled: 'Pobrano',
       // Errors
-      patRequired: 'Token jest wymagany do włączenia synchronizacji',
-      gistRequired: 'ID Gista jest wymagane do włączenia synchronizacji',
       syncFailed: 'Synchronizacja nie powiodła się',
       createGistFailed: 'Nie udało się utworzyć gista',
+      destination: 'Miejsce docelowe',
+      existingGist: 'Użyj istniejącego Gista',
+      save: 'Zapisz',
+      saving: 'Zapisywanie…',
+      saved: 'Połączenie zapisane',
+      saveFailed: 'Nie udało się zapisać połączenia',
+      savedSyncFailed: 'Połączenie zapisane, ale synchronizacja nie powiodła się',
+      synced: 'Synchronizacja zakończona',
+      configFailed: 'Nie udało się wczytać zapisanego połączenia',
     },
 
     // About section

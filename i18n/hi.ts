@@ -186,18 +186,10 @@ const hi: Translations = {
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
       patHelpText: '"gist" स्कोप के साथ टोकन बनाएँ',
       patHelpLink: 'GitHub सेटिंग्स',
-      validatePat: 'वैलिडेट',
-      validating: 'वैलिडेटिंग...',
-      patValid: 'वैलिड',
-      patInvalid: 'इनवैलिड टोकन',
       // Gist selection
       gistIdLabel: 'Gist ID',
       gistIdPlaceholder: 'मौजूदा Gist ID डालें या नया बनाएँ',
       createNewGist: 'नया Gist बनाएँ',
-      creating: 'क्रिएट हो रहा है...',
-      validateGist: 'वैलिडेट',
-      gistValid: 'वैलिड',
-      gistInvalid: 'इनवैलिड Gist',
       // Sync controls
       enableSync: 'ऑटोमैटिक सिंक ऑन करें',
       syncNow: 'अभी सिंक करें',
@@ -205,13 +197,18 @@ const hi: Translations = {
       // Status
       lastSync: 'लास्ट सिंक',
       lastSyncNever: 'कभी नहीं',
-      lastSyncPushed: 'पुश किया',
-      lastSyncPulled: 'पुल किया',
       // Errors
-      patRequired: 'सिंक ऑन करने के लिए PAT ज़रूरी है',
-      gistRequired: 'सिंक ऑन करने के लिए Gist ID ज़रूरी है',
       syncFailed: 'सिंक फेल हो गया',
       createGistFailed: 'Gist बनाने में फेल',
+      destination: 'गंतव्य',
+      existingGist: 'मौजूदा Gist का उपयोग करें',
+      save: 'सहेजें',
+      saving: 'सहेजा जा रहा है…',
+      saved: 'कनेक्शन सहेजा गया',
+      saveFailed: 'कनेक्शन सहेजा नहीं जा सका',
+      savedSyncFailed: 'कनेक्शन सहेजा गया, लेकिन सिंक विफल रहा',
+      synced: 'सिंक पूरा हुआ',
+      configFailed: 'सहेजा गया कनेक्शन लोड नहीं हो सका',
     },
     // About section
     about: {

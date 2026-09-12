@@ -7,8 +7,15 @@ export const gistSyncConfigSchema = z.object({
 });
 export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
 
-export const gistSyncConfigUpdateSchema = gistSyncConfigSchema.partial();
-export type GistSyncConfigUpdate = z.infer<typeof gistSyncConfigUpdateSchema>;
+export const gistSetupSchema = z.discriminatedUnion('mode', [
+  z.object({ mode: z.literal('existing'), pat: z.string().trim().min(1), gistId: z.string().trim().min(1) }),
+  z.object({ mode: z.literal('create'), pat: z.string().trim().min(1) }),
+]);
+export type GistSetup = z.infer<typeof gistSetupSchema>;
+
+export type GistConnectionResult =
+  | { saved: true; sync?: SyncResult }
+  | { saved: false; error: string; createdGistId?: string };
 
 export interface GistSyncStatus {
   lastSyncTime: string | null;
@@ -17,20 +24,9 @@ export interface GistSyncStatus {
   lastError: string | null;
 }
 
-export interface GistValidationResult {
-  valid: boolean;
-  error?: string;
-}
-
 export type SyncResult =
   | { success: true; action: 'pushed' | 'pulled' | 'no-change'; timestamp: string }
   | { success: false; error: string };
-
-export interface PatValidationResult {
-  valid: boolean;
-  username?: string;
-  error?: string;
-}
 
 export type RemoteGistContent = { state: 'missing' } | { state: 'parsed'; dataUpdatedAt?: string | null };
 

@@ -8,9 +8,6 @@ export function createGitHubClient(pat: string) {
   const octokit = new Octokit({ auth: pat });
 
   return {
-    getAuthenticated() {
-      return octokit.rest.users.getAuthenticated();
-    },
     getGist(gistId: string) {
       return octokit.rest.gists.get({ gist_id: gistId });
     },

@@ -3,12 +3,20 @@ import type { ReactNode } from 'react';
 interface SettingsSwitchProps {
   label: string;
   isSelected: boolean;
+  isDisabled?: boolean;
   onChange: (isSelected: boolean) => void;
   leftIcon?: (isSelected: boolean) => ReactNode;
   rightIcon?: (isSelected: boolean) => ReactNode;
 }
 
-export function SettingsSwitch({ label, isSelected, onChange, leftIcon, rightIcon }: SettingsSwitchProps) {
+export function SettingsSwitch({
+  label,
+  isSelected,
+  isDisabled = false,
+  onChange,
+  leftIcon,
+  rightIcon,
+}: SettingsSwitchProps) {
   const hasIcons = leftIcon || rightIcon;
 
   return (
@@ -21,10 +29,11 @@ export function SettingsSwitch({ label, isSelected, onChange, leftIcon, rightIco
         <button
           type="button"
           role="switch"
+          disabled={isDisabled}
           aria-checked={isSelected}
           aria-label={label}
           onClick={() => onChange(!isSelected)}
-          className={`group relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors focus-visible:ring-2 ring-offset-2 ring-offset-primary ${
+          className={`group relative inline-flex h-6 w-11 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 items-center rounded-full transition-colors focus-visible:ring-2 ring-offset-2 ring-offset-primary ${
             isSelected ? 'bg-accent' : 'bg-tertiary border border-current'
           }`}
         >
