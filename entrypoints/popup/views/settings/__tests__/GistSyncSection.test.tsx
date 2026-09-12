@@ -116,6 +116,22 @@ describe('Gist setup form', () => {
     expect(screen.getByRole('link', { name: /remote-gist/ })).toBeInTheDocument();
   });
 
+  it('can cancel drafts after browser sync removes the connection during editing', async () => {
+    await open();
+    enterCredentials();
+    config = { pat: '', gistId: null, enabled: false };
+    await act(async () => {
+      await test.queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
+    });
+    await waitFor(() => expect(test.queryClient.getQueryData(gistSyncQueryKeys.config)).toEqual(config));
+    expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByLabelText('Personal Access Token')).toHaveValue('');
+    expect(screen.getByLabelText('Gist ID')).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
+  });
+
   it('recovers a created Gist ID after save failure and retries without creating again', async () => {
     let attempts = 0;
     messages.handle('setupGistSync', (input) => {

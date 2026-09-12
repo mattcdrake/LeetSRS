@@ -24,6 +24,7 @@ export function GistSyncSection() {
   const enable = useSetGistSyncEnabledMutation();
   const sync = useTriggerGistSyncMutation();
   const [editing, setEditing] = useState<boolean | null>(null);
+  const [formKey, setFormKey] = useState(0);
   const [outcome, setOutcome] = useState<{ error: boolean; text: string } | null>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
@@ -90,18 +91,16 @@ export function GistSyncSection() {
       <p className="text-xs text-secondary mb-4">{t.connectionHelp}</p>
       {config && editing && (
         <GistSetupForm
+          key={formKey}
           config={config}
           busy={busy}
           saving={setup.isPending}
           onSave={save}
-          onCancel={
-            connected
-              ? () => {
-                  setEditing(false);
-                  setOutcome(null);
-                }
-              : undefined
-          }
+          onCancel={() => {
+            setEditing(false);
+            setFormKey(formKey + 1);
+            setOutcome(null);
+          }}
         />
       )}
       {configQuery.isError && (
@@ -177,7 +176,7 @@ function GistSetupForm({
   busy: boolean;
   saving: boolean;
   onSave: (input: GistSetup) => Promise<GistConnectionResult | undefined>;
-  onCancel?: () => void;
+  onCancel: () => void;
 }) {
   const t = useI18n().settings.gistSync;
   const [inputs, setDraft] = useState<{ pat: string; gistId: string; mode: GistSetup['mode'] }>(() => ({
@@ -270,11 +269,9 @@ function GistSetupForm({
       >
         {saving ? t.saving : t.save}
       </Button>
-      {onCancel && (
-        <Button onPress={onCancel} isDisabled={busy} className={`ml-2 ${buttonClass}`}>
-          {t.cancel}
-        </Button>
-      )}
+      <Button onPress={onCancel} isDisabled={busy} className={`ml-2 ${buttonClass}`}>
+        {t.cancel}
+      </Button>
     </form>
   );
 }
