@@ -6,7 +6,7 @@ import {
   readLearningDocument,
   replaceLearningDocument,
 } from '@/infrastructure/storage/learning-document';
-import { readSyncMetadata, writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { readSyncMetadata, writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
 import { getAuthenticatedGitHubClient } from './github-auth';
 
 // Prepared for the coordinated runtime activation in #378.
@@ -74,12 +74,12 @@ export async function triggerGistSync(): Promise<SyncResult> {
     }
 
     const now = new Date().toISOString();
-    await writeSyncMetadata('lastSyncTime', now);
-    if (action !== 'no-change') {
-      await writeSyncMetadata('lastSyncDirection', action);
-    }
-    const resultAction = action === 'push' ? 'pushed' : action === 'pull' ? 'pulled' : 'no-change';
-    return { success: true, action: resultAction, timestamp: now };
+    await writeSyncStatus({
+      lastSyncTime: now,
+      lastSyncDirection: action === 'no-change' ? undefined : action,
+    });
+    const resultActions = { push: 'pushed', pull: 'pulled', 'no-change': 'no-change' } as const;
+    return { success: true, action: resultActions[action], timestamp: now };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
     lastError = errorMessage;

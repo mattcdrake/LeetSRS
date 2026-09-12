@@ -671,4 +671,43 @@ describe('document Gist sync', () => {
     expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(local);
   });
+
+  it.each(['push', 'pull', 'no-change'] as const)(
+    'retains the complete prior status when saving status after %s fails',
+    async (action) => {
+      const remote = { ...local, settings: { theme: 'light' }, dataUpdatedAt: action === 'pull' ? '2025-01-01' : now };
+      mockGistsGet.mockResolvedValue({
+        data: {
+          files:
+            action === 'push'
+              ? {}
+              : {
+                  'leetsrs-backup.json': { content: JSON.stringify(remote) },
+                },
+        },
+      });
+      const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+      const writes = vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation(async (items) => {
+        const failedKey = action === 'no-change' ? 'leetsrs:lastSyncTime' : 'leetsrs:lastSyncDirection';
+        if (failedKey in items) {
+          throw new Error('status failed');
+        }
+        await write(items);
+      });
+      expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: 'status failed' });
+      expect(await documentSync.getGistSyncStatus()).toEqual({
+        lastSyncTime: 'previous-sync',
+        lastSyncDirection: 'pull',
+        syncInProgress: false,
+        lastError: 'status failed',
+      });
+      // A status failure does not roll back a completed data transfer.
+      expect(await readLearningDocument()).toEqual(action === 'pull' ? remote : local);
+      expect(mockGistsUpdate).toHaveBeenCalledTimes(action === 'push' ? 1 : 0);
+      expect(await readGistConnection()).toEqual(connection);
+      writes.mockRestore();
+      expect(await documentSync.triggerGistSync()).toMatchObject({ success: true });
+      expect(await documentSync.getGistSyncStatus()).toMatchObject({ lastSyncTime: now, lastError: null });
+    }
+  );
 });
