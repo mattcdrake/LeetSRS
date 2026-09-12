@@ -3,9 +3,29 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { translations } from '@/i18n';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { getStoredTranslations, watchStoredTranslations } from '../translations';
+import {
+  getDocumentTranslations,
+  getStoredTranslations,
+  watchDocumentTranslations,
+  watchStoredTranslations,
+} from '../translations';
 
-describe('stored translations', () => {
+describe.each([
+  {
+    source: 'legacy language',
+    key: STORAGE_KEYS.language,
+    read: getStoredTranslations,
+    watch: watchStoredTranslations,
+    storedValue: (language: unknown): unknown => language,
+  },
+  {
+    source: 'learning document',
+    key: STORAGE_KEYS.learningDocument,
+    read: getDocumentTranslations,
+    watch: watchDocumentTranslations,
+    storedValue: (language: unknown): unknown => ({ schemaVersion: 6, cards: {}, stats: {}, settings: { language } }),
+  },
+])('stored translations from $source', ({ key, read, watch, storedValue }) => {
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
@@ -19,21 +39,21 @@ describe('stored translations', () => {
 
   describe('stored language', () => {
     it.each(['de', 'en', 'hi', 'pl', 'zh-CN'] as const)('uses stored language %s', async (language) => {
-      await storage.setItem(STORAGE_KEYS.language, language);
-      expect(await getStoredTranslations()).toBe(translations[language]);
+      await storage.setItem(key, storedValue(language));
+      expect(await read()).toBe(translations[language]);
     });
 
     it.each(['xx-INVALID', 'toString', 'constructor', '__proto__', 42, null])(
       'falls back to browser language for %s',
       async (language) => {
         vi.stubGlobal('navigator', { languages: ['pl'] });
-        await storage.setItem(STORAGE_KEYS.language, language);
-        expect(await getStoredTranslations()).toBe(translations.pl);
+        await storage.setItem(key, storedValue(language));
+        expect(await read()).toBe(translations.pl);
       }
     );
   });
 
-  it('reads only language and detects fallback after the storage read resolves', async () => {
+  it('reads its source once and detects fallback after the storage read resolves', async () => {
     const languageRead = Promise.withResolvers<null>();
     const getItem = vi.spyOn(storage, 'getItem').mockReturnValueOnce(languageRead.promise);
     const languages = vi.fn(() => ['pl']);
@@ -43,8 +63,8 @@ describe('stored translations', () => {
       },
     });
 
-    const pending = getStoredTranslations();
-    expect(getItem.mock.calls).toEqual([[STORAGE_KEYS.language]]);
+    const pending = read();
+    expect(getItem.mock.calls).toEqual([[key]]);
     expect(languages).not.toHaveBeenCalled();
     languageRead.resolve(null);
     expect(await pending).toBe(translations.pl);
@@ -52,7 +72,7 @@ describe('stored translations', () => {
   });
 
   it('uses stored language without accessing browser preferences', async () => {
-    await storage.setItem(STORAGE_KEYS.language, 'de');
+    await storage.setItem(key, storedValue('de'));
     const languages = vi.fn(() => ['pl']);
     vi.stubGlobal('navigator', {
       get languages() {
@@ -60,8 +80,23 @@ describe('stored translations', () => {
       },
     });
 
-    expect(await getStoredTranslations()).toBe(translations.de);
+    expect(await read()).toBe(translations.de);
     expect(languages).not.toHaveBeenCalled();
+  });
+
+  it('follows replacement with an omitted override using browser language', async () => {
+    vi.stubGlobal('navigator', { languages: ['de'] });
+    await storage.setItem(key, storedValue('pl'));
+    const onChange = vi.fn();
+    const stop = watch(onChange);
+    try {
+      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.pl));
+      await storage.setItem(key, storedValue(undefined));
+      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
+      expect(await read()).toBe(translations.de);
+    } finally {
+      stop();
+    }
   });
 
   it('propagates storage failure without detecting a fallback', async () => {
@@ -74,24 +109,24 @@ describe('stored translations', () => {
       },
     });
 
-    await expect(getStoredTranslations()).rejects.toBe(failure);
+    await expect(read()).rejects.toBe(failure);
     expect(languages).not.toHaveBeenCalled();
   });
 
   it('loads once, follows language changes and removal, and stops after unsubscribe', async () => {
-    await storage.setItem(STORAGE_KEYS.language, 'en');
+    await storage.setItem(key, storedValue('en'));
     vi.stubGlobal('navigator', { languages: ['de'] });
     const onChange = vi.fn();
     const onError = vi.fn();
     const getItem = vi.spyOn(storage, 'getItem');
-    const stop = watchStoredTranslations(onChange, onError);
+    const stop = watch(onChange, onError);
     try {
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.en));
-      await storage.setItem(STORAGE_KEYS.language, 'pl');
+      await storage.setItem(key, storedValue('pl'));
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.pl));
-      await storage.setItem(STORAGE_KEYS.language, 'toString');
+      await storage.setItem(key, storedValue('toString'));
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
-      await storage.removeItem(STORAGE_KEYS.language);
+      await storage.removeItem(key);
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
       expect(getItem).toHaveBeenCalledOnce();
       expect(onError).not.toHaveBeenCalled();
@@ -99,19 +134,19 @@ describe('stored translations', () => {
       stop();
     }
     onChange.mockClear();
-    await storage.setItem(STORAGE_KEYS.language, 'en');
+    await storage.setItem(key, storedValue('en'));
     expect(onChange).not.toHaveBeenCalled();
   });
 
   it('does not overwrite a storage change with an older initial read', async () => {
-    const initial = Promise.withResolvers<string>();
+    const initial = Promise.withResolvers<unknown>();
     vi.spyOn(storage, 'getItem').mockReturnValueOnce(initial.promise);
     const onChange = vi.fn();
-    const stop = watchStoredTranslations(onChange, vi.fn());
+    const stop = watch(onChange, vi.fn());
     try {
-      await storage.setItem(STORAGE_KEYS.language, 'pl');
+      await storage.setItem(key, storedValue('pl'));
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations.pl));
-      initial.resolve('en');
+      initial.resolve(storedValue('en'));
       await initial.promise;
       expect(onChange).toHaveBeenCalledOnce();
     } finally {
@@ -120,12 +155,12 @@ describe('stored translations', () => {
   });
 
   it('ignores an initial read that finishes after unsubscribe', async () => {
-    const initial = Promise.withResolvers<string>();
+    const initial = Promise.withResolvers<unknown>();
     vi.spyOn(storage, 'getItem').mockReturnValueOnce(initial.promise);
     const onChange = vi.fn();
-    const stop = watchStoredTranslations(onChange, vi.fn());
+    const stop = watch(onChange, vi.fn());
     stop();
-    initial.resolve('en');
+    initial.resolve(storedValue('en'));
     await initial.promise;
     expect(onChange).not.toHaveBeenCalled();
   });
@@ -135,11 +170,32 @@ describe('stored translations', () => {
     vi.spyOn(storage, 'getItem').mockRejectedValueOnce(error);
     const onChange = vi.fn();
     const onError = vi.fn();
-    const stop = watchStoredTranslations(onChange, onError);
+    const stop = watch(onChange, onError);
     try {
       await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(error));
-      await storage.setItem(STORAGE_KEYS.language, 'pl');
+      await storage.setItem(key, storedValue('pl'));
       await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations.pl));
+    } finally {
+      stop();
+    }
+  });
+
+  it.each(['change', 'unsubscribe'] as const)('ignores an initial read failure after %s', async (event) => {
+    const initial = Promise.withResolvers<unknown>();
+    vi.spyOn(storage, 'getItem').mockReturnValueOnce(initial.promise);
+    const onChange = vi.fn();
+    const onError = vi.fn();
+    const stop = watch(onChange, onError);
+    try {
+      if (event === 'unsubscribe') {
+        stop();
+      } else {
+        await storage.setItem(key, storedValue('pl'));
+        await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations.pl));
+      }
+      initial.reject(new Error('Late failure'));
+      await initial.promise.catch(() => {});
+      expect(onError).not.toHaveBeenCalled();
     } finally {
       stop();
     }

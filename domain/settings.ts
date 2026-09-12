@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { languageSchema } from './language';
+import { type Language, languageSchema } from './language';
 
 export const SETTINGS_CONSTRAINTS = {
   maxNewCardsPerDay: { min: 0, max: 100 },
@@ -36,6 +36,14 @@ export const DEFAULT_SETTINGS = {
 } satisfies Omit<Settings, 'language'>;
 
 export const SETTING_KEYS = settingsSchema.keyof().options;
+
+export function resolveSettings(overrides: Partial<Settings>, fallbackLanguage: Language): Settings {
+  const entries = SETTING_KEYS.map((key) => [
+    key,
+    overrides[key] ?? (key === 'language' ? fallbackLanguage : DEFAULT_SETTINGS[key]),
+  ]);
+  return settingsSchema.parse(Object.fromEntries(entries));
+}
 
 // Updates use only own settings; undefined means no change.
 export const settingsUpdateSchema = z.preprocess((changes) => {
