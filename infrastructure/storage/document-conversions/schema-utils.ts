@@ -13,6 +13,7 @@ export function recordSchema<T>(valueSchema: z.ZodType<T>) {
         ctx.addIssue({ code: 'custom', message: 'Expected a record object' });
         return z.NEVER;
       }
+
       return Object.entries(value);
     },
     z.array(z.tuple([z.string(), valueSchema])).transform((entries) => Object.fromEntries<T>(entries))

@@ -15,17 +15,23 @@ export const embedNotes = {
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
+
     assertSchema(inputSchema, input);
+
     return input;
   },
   migrate: convert,
   async save(output: Output): Promise<void> {
     validateOutput(output);
-    if (output.cards !== undefined) await storage.setItem('local:leetsrs:cards', output.cards);
+
+    if (output.cards !== undefined) {
+      await storage.setItem('local:leetsrs:cards', output.cards);
+    }
   },
   async cleanup(input: Input): Promise<void> {
     inputSchema.parse(input);
     const notes = input.notes ?? {};
+
     await storage.removeItems(Object.keys(notes).map((id) => `local:leetsrs:notes:${id}` as const));
   },
 } satisfies Migration<Input, Output>;

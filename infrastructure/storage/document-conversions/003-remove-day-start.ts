@@ -5,6 +5,7 @@ import { assertSchema } from './schema-utils';
 export { inputSchema };
 
 const retiredSettingSchema = z.never({ error: 'Migration 3 must remove retired settings' }).optional();
+
 export const outputSchema = inputSchema.safeExtend({
   settings: inputSchema.shape.settings
     .unwrap()
@@ -16,19 +17,26 @@ export const outputSchema = inputSchema.safeExtend({
     })
     .optional(),
 });
+
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
 export function convert(data: unknown): Output {
   assertSchema(inputSchema, data);
+
   const output = { ...data };
+
   if (data.settings !== undefined) {
     const { dayStartHour: _retired, autoClearLeetcode, ...settings } = data.settings;
+
     if (settings.resetEditorOnEveryProblem === undefined && autoClearLeetcode !== undefined) {
       settings.resetEditorOnEveryProblem = z.boolean().parse(autoClearLeetcode);
     }
+
     output.settings = settings;
   }
+
   assertSchema(outputSchema, output);
+
   return output;
 }

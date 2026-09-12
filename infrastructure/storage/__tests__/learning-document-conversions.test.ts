@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
-import { convertLearningDocument, parseLearningDocumentBackup } from '../learning-document-conversions';
+import { convertLearningDocument, parseLearningDocumentBackup } from '../learning-document';
 
 describe('convertLearningDocument', () => {
   it('prepares an unversioned installation without inventing settings or an edit timestamp', () => {

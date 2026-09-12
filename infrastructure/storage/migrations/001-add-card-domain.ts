@@ -21,12 +21,17 @@ export const addCardDomain = {
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
+
     assertSchema(inputSchema, input);
+
     return input;
   },
   migrate: convert,
   async save(output: Output): Promise<void> {
     validateOutput(output);
-    if (output.cards !== undefined) await storage.setItem('local:leetsrs:cards', output.cards);
+
+    if (output.cards !== undefined) {
+      await storage.setItem('local:leetsrs:cards', output.cards);
+    }
   },
 } satisfies Migration<Input, Output>;

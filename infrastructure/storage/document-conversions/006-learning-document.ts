@@ -4,16 +4,23 @@ import { outputSchema as inputSchema } from './005-combine-gist-connection';
 import { assertSchema } from './schema-utils';
 
 export { inputSchema, outputSchema };
+
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;
 
 export function convert(data: unknown): Output {
   assertSchema(inputSchema, data);
-  return outputSchema.parse({
+
+  const document: Output = {
     schemaVersion: 6,
-    ...(data.dataUpdatedAt !== undefined && { dataUpdatedAt: data.dataUpdatedAt }),
     cards: data.cards ?? {},
     stats: data.stats ?? {},
     settings: data.settings ?? {},
-  });
+  };
+
+  if (data.dataUpdatedAt !== undefined) {
+    document.dataUpdatedAt = data.dataUpdatedAt;
+  }
+
+  return outputSchema.parse(document);
 }

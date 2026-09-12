@@ -20,7 +20,9 @@ export const addSystemTheme = {
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
+
     assertSchema(inputSchema, input);
+
     return input;
   },
   migrate: convert,

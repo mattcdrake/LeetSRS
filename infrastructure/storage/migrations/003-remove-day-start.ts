@@ -21,12 +21,15 @@ export const removeDayStart = {
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
+
     assertSchema(inputSchema, input);
+
     return input;
   },
   migrate: convert,
   async save(output: Output): Promise<void> {
     validateOutput(output);
+
     if (output.settings?.resetEditorOnEveryProblem !== undefined) {
       await storage.setItem('sync:leetsrs:resetEditorOnEveryProblem', output.settings.resetEditorOnEveryProblem);
     }

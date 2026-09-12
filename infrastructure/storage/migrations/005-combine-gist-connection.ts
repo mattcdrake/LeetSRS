@@ -31,12 +31,15 @@ export const combineGistConnection = {
   validateOutput,
   async load(): Promise<Input> {
     const input = await readDataset();
+
     assertSchema(inputSchema, input);
+
     return input;
   },
   migrate: convert,
   async save(output: Output): Promise<void> {
     validateOutput(output);
+
     const settings = output.settings ?? {};
     if (Object.hasOwn(settings, 'gistConnection')) {
       gistConnectionSchema.parse(settings.gistConnection);
