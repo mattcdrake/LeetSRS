@@ -15,6 +15,8 @@ import { SettingsSwitch } from './SettingsSwitch';
 
 const buttonClass = `px-3 py-2 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`;
 
+type GistViewMode = 'unset' | 'editing' | 'viewing';
+
 export function GistSyncSection() {
   const t = useI18n().settings.gistSync;
   const configQuery = useGistSyncConfigQuery();
@@ -23,18 +25,23 @@ export function GistSyncSection() {
   const setup = useSetupGistSyncMutation();
   const enable = useSetGistSyncEnabledMutation();
   const sync = useTriggerGistSyncMutation();
-  const [editing, setEditing] = useState<boolean | null>(null);
+  const [viewMode, setViewMode] = useState<GistViewMode>('unset');
+  const editing = viewMode === 'editing';
   const [formKey, setFormKey] = useState(0);
   const [outcome, setOutcome] = useState<{ error: boolean; text: string } | null>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
   const busy = setup.isPending || enable.isPending || sync.isPending || !!status?.syncInProgress;
   const connected = !!config?.pat && !!config?.gistId;
-  if (config && (editing === null || (!connected && !editing))) setEditing(!connected);
+  if (config && viewMode === 'unset') {
+    setViewMode(connected ? 'viewing' : 'editing');
+  } else if (config && !connected && viewMode === 'viewing') {
+    setViewMode('editing');
+  }
 
   useEffect(() => {
     if (wasEditing.current && !editing) editButton.current?.focus();
-    wasEditing.current = !!editing;
+    wasEditing.current = editing;
   }, [editing]);
 
   function showConnectionResult(result: GistConnectionResult) {
@@ -51,7 +58,7 @@ export function GistSyncSection() {
     setOutcome(null);
     try {
       const result = await setup.mutateAsync(input);
-      if (result.saved) setEditing(false);
+      if (result.saved) setViewMode('viewing');
       showConnectionResult(result);
       return result;
     } catch {
@@ -97,7 +104,7 @@ export function GistSyncSection() {
           saving={setup.isPending}
           onSave={save}
           onCancel={() => {
-            setEditing(false);
+            setViewMode('viewing');
             setFormKey(formKey + 1);
             setOutcome(null);
           }}
@@ -143,7 +150,7 @@ export function GistSyncSection() {
           <Button
             ref={editButton}
             onPress={() => {
-              setEditing(true);
+              setViewMode('editing');
               setOutcome(null);
             }}
             isDisabled={busy}
