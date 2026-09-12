@@ -16,19 +16,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
-// Test-only activation; #378 switches production paths and removes the old timestamp effect.
-vi.mock('@/services/cards', () => import('@/services/document-learning'));
-vi.mock('@/services/stats', () => import('@/services/document-learning'));
-vi.mock('@/services/editor-reset', () => import('@/services/document-learning'));
-vi.mock('@/services/settings', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/settings')>()),
-  ...(await import('@/services/document-settings')),
-}));
-vi.mock('@/infrastructure/storage/migrations/runner', async () => ({
-  runStartupMigrations: (await import('@/infrastructure/storage/learning-document-startup')).initializeLearningDocument,
-}));
-vi.mock('@/infrastructure/storage/data-tracker', () => ({ markDataUpdated: () => Promise.resolve() }));
-
 function dispatch<Name extends MessageName>(name: Name, data?: MessageData<Name>): Promise<MessageResult<Name>> {
   const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
   if (!listener) {

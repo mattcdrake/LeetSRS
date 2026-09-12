@@ -52,7 +52,7 @@ export const { get: getStoredTranslations, watch: watchStoredTranslations } = cr
   (value) => value
 );
 
-// Prepared for content activation in #378; content remains read-only.
+// Content reads and watches the authoritative document without writing it.
 export const { get: getDocumentTranslations, watch: watchDocumentTranslations } = createTranslationReader(
   STORAGE_KEYS.learningDocument,
   (value) => documentLanguageSchema.safeParse(value).data?.settings.language

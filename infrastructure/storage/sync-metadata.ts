@@ -40,3 +40,7 @@ export async function writeSyncStatus(status: z.infer<typeof syncStatusUpdateSch
 export function removeSyncMetadata(key: keyof SyncMetadata): Promise<void> {
   return storage.removeItem(STORAGE_KEYS[key]);
 }
+
+export function removeSyncStatus(): Promise<void> {
+  return storage.removeItems([STORAGE_KEYS.lastSyncTime, STORAGE_KEYS.lastSyncDirection]);
+}

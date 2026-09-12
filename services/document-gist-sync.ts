@@ -8,12 +8,9 @@ import {
   readLearningDocument,
   replaceLearningDocument,
 } from '@/infrastructure/storage/learning-document';
-import { readSyncMetadata, writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
+import { readSyncMetadata, removeSyncStatus, writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
 import { createGistFromBackup } from './gist-sync';
 
-// Prepared for the coordinated runtime activation in #378.
-// Keep the legacy workflow authoritative until then; #379 removes its duplicate
-// request/error handling along with the old persistence path.
 // In-memory state for sync status (not persisted)
 let syncInProgress = false;
 let lastError: string | null = null;
@@ -118,4 +115,9 @@ export async function createNewGist(): Promise<{ gistId: string }> {
     JSON.stringify(document, null, 2),
     translations[language].settings.gistSync.gistDescription
   );
+}
+
+export async function resetGistSyncStatus(): Promise<void> {
+  await removeSyncStatus();
+  lastError = null;
 }

@@ -5,15 +5,15 @@ import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { translations } from '@/i18n';
-import { watchStoredTranslations } from '@/infrastructure/storage/translations';
+import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
 
 vi.mock('@/infrastructure/storage/translations', () => ({
-  watchStoredTranslations: vi.fn(),
+  watchDocumentTranslations: vi.fn(),
 }));
 vi.mock('@/content/rating-actions', () => ({ addCurrentProblem: vi.fn(), rateCurrentProblem: vi.fn() }));
 const unwatch = vi.fn();
 beforeEach(() => {
-  vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
+  vi.mocked(watchDocumentTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
     return unwatch;
   });
@@ -116,11 +116,11 @@ it('cycles focus through every choice with Tab after opening with the mouse', as
 it('updates an open menu when stored language changes without resubscribing on clicks', () => {
   const { button, unmount } = setup();
   fireEvent.click(button);
-  const onChange = vi.mocked(watchStoredTranslations).mock.calls[0][0];
+  const onChange = vi.mocked(watchDocumentTranslations).mock.calls[0][0];
   act(() => onChange(translations.pl));
   fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings[Rating.Good] }));
   fireEvent.click(button);
-  expect(watchStoredTranslations).toHaveBeenCalledOnce();
+  expect(watchDocumentTranslations).toHaveBeenCalledOnce();
   unmount();
   expect(unwatch).toHaveBeenCalledOnce();
 });

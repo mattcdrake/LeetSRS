@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from 'wxt/utils/storage';
 import { ZodError } from 'zod';
 import {
   type MessageData,
@@ -9,10 +8,6 @@ import {
   messagePayloadSchemas,
   onMessage,
 } from '@/infrastructure/browser/messages';
-import * as tracker from '@/infrastructure/storage/data-tracker';
-import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import * as cards from '@/services/cards';
-import * as sync from '@/services/gist-sync';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -21,13 +16,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
-vi.mock('@/services/gist-sync', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/gist-sync')>()),
-  triggerGistSync: vi.fn(),
-  createNewGist: vi.fn(),
-}));
-
-// Exercise untrusted input through the listeners registered by the real background.
 function dispatch(name: MessageName, data?: unknown) {
   const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
   if (!listener) throw new Error(`Missing listener for ${name}`);
@@ -37,6 +25,7 @@ function dispatch(name: MessageName, data?: unknown) {
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
+  vi.mocked(onMessage).mockClear();
   background.main();
   await dispatch('getSettings');
 });
@@ -44,85 +33,6 @@ beforeEach(async () => {
 const problem = buildProblem();
 
 describe('registered background execution', () => {
-  it.each(['  Remember the complement  ', ' \n\t '])(
-    'edits note text "%s" while preserving the card and its schedule',
-    async (text) => {
-      const card = await cards.addCard(problem);
-      await expect(dispatch('getNote', { slug: problem.slug })).resolves.toBeNull();
-      await dispatch('saveNote', { slug: problem.slug, text });
-      expect(await dispatch('getAllCards')).toEqual([{ ...card, note: text }]);
-      expect(await dispatch('getNote', { slug: problem.slug })).toBe(text);
-      await dispatch('saveNote', { slug: problem.slug, text: '' });
-      expect(await dispatch('getAllCards')).toEqual([card]);
-      expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
-    }
-  );
-
-  it('rejects a missing-card save, allows absent reads/deletes, and never looks up UUIDs', async () => {
-    const card = await cards.addCard(problem);
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const writes = vi.spyOn(browser.storage.local, 'set');
-    await expect(dispatch('saveNote', { slug: card.id, text: 'No owner' })).rejects.toThrow('not found');
-    expect(tracking).not.toHaveBeenCalled();
-    expect(writes).not.toHaveBeenCalled();
-    expect(await dispatch('getNote', { slug: card.id })).toBeNull();
-    await expect(dispatch('deleteNote', { slug: card.id })).resolves.toBeUndefined();
-    expect(await dispatch('getAllCards')).toEqual([card]);
-  });
-
-  it('keeps serialized note and card edits together, then removes notes with cards and on reset', async () => {
-    await dispatch('addCard', { problem });
-    await Promise.all([
-      dispatch('saveNote', { slug: problem.slug, text: 'Keep me' }),
-      dispatch('setPauseStatus', { slug: problem.slug, paused: true }),
-    ]);
-    expect(await dispatch('getAllCards')).toMatchObject([{ slug: problem.slug, paused: true, note: 'Keep me' }]);
-    await dispatch('removeCard', { slug: problem.slug });
-    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
-    await dispatch('addCard', { problem });
-    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
-    await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });
-    await dispatch('resetAllData');
-    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
-    expect(await dispatch('getAllCards')).toEqual([]);
-  });
-
-  it.each(['length', 'write'] as const)('preserves the note and timestamp after a %s failure', async (failure) => {
-    await dispatch('addCard', { problem });
-    await dispatch('saveNote', { slug: problem.slug, text: 'a'.repeat(500) });
-    const previous = await dispatch('getAllCards');
-    const timestamp = await storage.getItem(STORAGE_KEYS.dataUpdatedAt);
-    if (failure === 'write') vi.spyOn(browser.storage.local, 'set').mockRejectedValueOnce(new Error('Unavailable'));
-    await expect(
-      dispatch('saveNote', {
-        slug: problem.slug,
-        text: failure === 'length' ? 'b'.repeat(501) : 'Changed',
-      })
-    ).rejects.toThrow();
-    expect(await dispatch('getAllCards')).toEqual(previous);
-    expect(await dispatch('getNote', { slug: problem.slug })).toBe('a'.repeat(500));
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
-  });
-
-  it('blocks normal commands when the embedded-note startup migration rejects an ambiguous owner', async () => {
-    fakeBrowser.reset();
-    vi.mocked(onMessage).mockClear();
-    const card = await cards.addCard(problem);
-    await storage.setItem(STORAGE_KEYS.cards, {
-      [problem.slug]: card,
-      other: { ...card, slug: 'other' },
-    });
-    await storage.setItem(STORAGE_KEYS.schemaVersion, 3);
-    await storage.setItem(`local:leetsrs:notes:${card.id}`, { text: 'Ambiguous' });
-    const before = await fakeBrowser.storage.local.get(null);
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    background.main();
-    await expect(dispatch('getAllCards')).rejects.toThrow('Duplicate card ID');
-    await expect(dispatch('saveNote', { slug: problem.slug, text: 'New' })).rejects.toThrow('Duplicate card ID');
-    await expect(dispatch('removeCard', { slug: problem.slug })).rejects.toThrow('Duplicate card ID');
-    expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
-  });
-
   it('registers every message synchronously', () => {
     expect(
       vi
@@ -132,163 +42,112 @@ describe('registered background execution', () => {
     ).toEqual(Object.keys(messagePayloadSchemas).sort());
   });
 
-  it('lets reads overlap a write and keeps ordered effects inside the queue', async () => {
+  it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
+    await dispatch('rateCard', { input: { ...problem, rating: 3 } });
+    await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });
+    await dispatch('updateSettings', { changes: { language: 'de' } });
+    await dispatch('setGistSyncConfig', { config: { pat: 'secret', gistId: 'gist', enabled: true } });
+    const staleLocal = {
+      'leetsrs:cards': { stale: 'invalid leftover' },
+      'leetsrs:stats': { stale: 'invalid leftover' },
+      'leetsrs:schemaVersion': 3,
+      'leetsrs:dataUpdatedAt': '2024-01-01T00:00:00.000Z',
+      'leetsrs:notes:old-id': { text: 'stale note' },
+    };
+    await fakeBrowser.storage.local.set({
+      ...staleLocal,
+      'leetsrs:lastSyncTime': 'old',
+      'leetsrs:lastSyncDirection': 'pull',
+      unrelated: 'keep',
+    });
+    await fakeBrowser.storage.sync.set({
+      'leetsrs:githubPat': 'legacy secret',
+      'leetsrs:gistId': 'old-gist',
+      'leetsrs:gistSyncEnabled': true,
+      'leetsrs:theme': 'dark',
+      'leetsrs:dayStartHour': 4,
+      'leetsrs:autoClearLeetcode': true,
+      unrelated: 'keep',
+    });
+
+    await dispatch('resetAllData');
+
+    const empty = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    expect(JSON.parse((await dispatch('exportData')) as string)).toEqual(empty);
+    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await dispatch('getGistSyncStatus')).toEqual({
+      lastSyncTime: null,
+      lastSyncDirection: null,
+      syncInProgress: false,
+      lastError: null,
+    });
+    expect(await fakeBrowser.storage.local.get(null)).toEqual({ 'leetsrs:learningDocument': empty, unrelated: 'keep' });
+    expect(await fakeBrowser.storage.sync.get(null)).toEqual({ unrelated: 'keep' });
+
+    await fakeBrowser.storage.local.set(staleLocal);
+    vi.mocked(onMessage).mockClear();
+    background.main();
+    expect(await dispatch('getAllCards')).toEqual([]);
+    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
+    expect(await dispatch('getTodayStats')).toBeNull();
+    expect(JSON.parse((await dispatch('exportData')) as string)).toEqual(empty);
+  });
+  it.each(['document', 'connection cleanup'] as const)(
+    'reports reset failure at %s without resurrecting data on restart',
+    async (stage) => {
+      await dispatch('addCard', { problem });
+      await dispatch('setGistSyncConfig', { config: { pat: 'secret', gistId: 'gist', enabled: true } });
+      const before = await dispatch('exportData');
+      const failure = new Error('Reset storage unavailable');
+      if (stage === 'document') {
+        vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
+      } else {
+        vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
+      }
+      await expect(dispatch('resetAllData')).rejects.toBe(failure);
+      expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      vi.mocked(onMessage).mockClear();
+      background.main();
+      if (stage === 'document') {
+        expect(await dispatch('exportData')).toBe(before);
+      } else {
+        expect(await dispatch('getAllCards')).toEqual([]);
+      }
+      await dispatch('resetAllData');
+      expect(await dispatch('getAllCards')).toEqual([]);
+      expect(await dispatch('getGistSyncConfig')).toEqual({ pat: '', gistId: null, enabled: false });
+    }
+  );
+
+  it.each(['setBadgeText', 'setBadgeBackgroundColor'] as const)(
+    'keeps a saved card successful when %s fails and accepts the next write',
+    async (method) => {
+      const failure = new Error('Badge unavailable');
+      vi.spyOn(browser.action, method).mockRejectedValueOnce(failure);
+      const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await expect(dispatch('addCard', { problem })).resolves.toMatchObject(problem);
+      expect(await dispatch('getAllCards')).toMatchObject([problem]);
+      expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
+      await dispatch('saveNote', { slug: problem.slug, text: 'saved after badge failure' });
+      expect(await dispatch('getNote', { slug: problem.slug })).toBe('saved after badge failure');
+    }
+  );
+
+  it('keeps badge effects inside the write queue while reads see the saved document', async () => {
     const started = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
-    const effectStarted = Promise.withResolvers<void>();
-    const releaseEffect = Promise.withResolvers<void>();
-    const events: string[] = [];
-    vi.spyOn(cards, 'removeCard').mockImplementation(async () => {
-      events.push('handler');
+    vi.spyOn(browser.action, 'setBadgeText').mockImplementationOnce(async () => {
       started.resolve();
       await release.promise;
     });
-    vi.spyOn(tracker, 'markDataUpdated').mockImplementationOnce(async () => {
-      events.push('mark');
-      effectStarted.resolve();
-      await releaseEffect.promise;
-    });
-    vi.spyOn(browser.action, 'setBadgeText').mockImplementation(async () => {
-      events.push('badge');
-    });
-    vi.spyOn(cards, 'deleteNote').mockImplementation(async () => {
-      events.push('next');
-    });
-
-    const first = dispatch('removeCard', { slug: 'two-sum' });
-    const second = dispatch('deleteNote', { slug: 'card' });
+    const first = dispatch('addCard', { problem });
+    const second = dispatch('saveNote', { slug: problem.slug, text: 'next edit' });
     await started.promise;
-    await expect(dispatch('getAllCards')).resolves.toEqual([]);
-    expect(events).toEqual(['handler']);
+    expect(await dispatch('getAllCards')).toMatchObject([problem]);
+    expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
     release.resolve();
-    await effectStarted.promise;
-    expect(events).toEqual(['handler', 'mark']);
-    releaseEffect.resolve();
     await Promise.all([first, second]);
-    expect(events).toEqual(['handler', 'mark', 'badge', 'next']);
-  });
-
-  it.each(['handler', 'tracking', 'badge'] as const)(
-    'recovers after %s rejection without running later effects',
-    async (stage) => {
-      const failure = new Error(`${stage} failed`);
-      const handler = vi.spyOn(cards, 'removeCard').mockResolvedValue(undefined);
-      const tracking = vi.spyOn(tracker, 'markDataUpdated').mockResolvedValue(undefined);
-      const badge = vi.spyOn(browser.action, 'setBadgeText').mockResolvedValue(undefined);
-      if (stage === 'handler') handler.mockRejectedValueOnce(failure);
-      if (stage === 'tracking') tracking.mockRejectedValueOnce(failure);
-      if (stage === 'badge') badge.mockRejectedValueOnce(failure);
-
-      await expect(dispatch('removeCard', { slug: 'two-sum' })).rejects.toBe(failure);
-      expect(tracking).toHaveBeenCalledTimes(stage === 'handler' ? 0 : 1);
-      expect(badge).toHaveBeenCalledTimes(stage === 'badge' ? 1 : 0);
-      await expect(dispatch('removeCard', { slug: 'two-sum' })).resolves.toBeUndefined();
-      expect(handler).toHaveBeenCalledTimes(2);
-    }
-  );
-
-  it.each([true, false])('queues sync network work until the previous sync settles (success: %s)', async (success) => {
-    const started = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
-    const firstResult = success
-      ? { success: true as const, action: 'no-change' as const, timestamp: 'now' }
-      : { success: false as const, error: 'Gist not found' };
-    const handler = vi
-      .mocked(sync.triggerGistSync)
-      .mockImplementationOnce(async () => {
-        started.resolve();
-        await release.promise;
-        return firstResult;
-      })
-      .mockResolvedValueOnce({ success: true, action: 'pushed', timestamp: 'later' });
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-    const first = dispatch('triggerGistSync');
-    const second = dispatch('triggerGistSync');
-    await started.promise;
-    expect(handler).toHaveBeenCalledOnce();
-    release.resolve();
-    expect(await first).toEqual(firstResult);
-    expect(await second).toEqual({ success: true, action: 'pushed', timestamp: 'later' });
-    expect(tracking).not.toHaveBeenCalled();
-    expect(badge).toHaveBeenCalledTimes(2);
-  });
-
-  it('preserves Gist creation results and errors without executor effects', async () => {
-    const failure = new Error('save failed');
-    vi.mocked(sync.createNewGist).mockResolvedValueOnce({ gistId: 'created' }).mockRejectedValueOnce(failure);
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-    await expect(dispatch('createNewGist')).resolves.toEqual({ gistId: 'created' });
-    await expect(dispatch('createNewGist')).rejects.toBe(failure);
-    expect(tracking).not.toHaveBeenCalled();
-    expect(badge).not.toHaveBeenCalled();
-  });
-
-  it('updates the timestamp and displays the queue size after adding a card', async () => {
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-    const card = await dispatch('addCard', { problem });
-
-    expect(card).toMatchObject(problem);
-    expect(tracking).toHaveBeenCalledOnce();
-    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '1' });
-  });
-
-  it.each([
-    ['delayCard', { slug: problem.slug, days: 1 }],
-    ['setPauseStatus', { slug: problem.slug, paused: true }],
-    ['rateCard', { input: { ...problem, rating: 4 } }],
-    ['removeCard', { slug: problem.slug }],
-  ] as const)('%s updates the timestamp and refreshes the badge', async (name, data) => {
-    await cards.addCard(problem);
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-    await dispatch(name, data);
-
-    expect(tracking).toHaveBeenCalledOnce();
-    expect(badge).toHaveBeenCalledOnce();
-  });
-
-  it.each(['saveNote', 'deleteNote'] as const)(
-    '%s updates the timestamp without refreshing the badge',
-    async (name) => {
-      const card = await cards.addCard(problem);
-      await cards.saveNote(card.slug, 'existing note');
-      const tracking = vi.spyOn(tracker, 'markDataUpdated');
-      const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-      await dispatch(name, { slug: card.slug, text: 'remember' });
-
-      expect(tracking).toHaveBeenCalledOnce();
-      expect(badge).not.toHaveBeenCalled();
-    }
-  );
-
-  it('lets settings own timestamp updates and clears the badge when disabled', async () => {
-    await cards.addCard(problem);
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-    await dispatch('updateSettings', { changes: { badgeEnabled: false } });
-
-    expect(tracking).toHaveBeenCalledOnce();
-    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });
-  });
-
-  it('preserves the imported timestamp and refreshes the badge', async () => {
-    await cards.addCard(problem);
-    const timestamp = '2024-01-15T10:00:00.000Z';
-    const backup = JSON.parse((await dispatch('exportData')) as string);
-    backup.dataUpdatedAt = timestamp;
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-    await dispatch('importData', { jsonData: JSON.stringify(backup) });
-
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
-    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '1' });
+    expect(await dispatch('getNote', { slug: problem.slug })).toBe('next edit');
   });
 
   it('serializes whole-connection updates and exposes the previous record while a write is pending', async () => {
@@ -315,33 +174,6 @@ describe('registered background execution', () => {
       [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new-gist', enabled: false } }],
       [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new-gist', enabled: true } }],
     ]);
-  });
-
-  it('preserves the timestamp and badge when updating Gist configuration', async () => {
-    const timestamp = '2024-01-15T10:00:00.000Z';
-    await storage.setItem(STORAGE_KEYS.dataUpdatedAt, timestamp);
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-    await dispatch('setGistSyncConfig', { config: { enabled: false } });
-
-    expect(tracking).not.toHaveBeenCalled();
-    expect(badge).not.toHaveBeenCalled();
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBe(timestamp);
-  });
-
-  it('removes cards and their timestamp and clears the badge on reset', async () => {
-    await cards.addCard(problem);
-    await storage.setItem(STORAGE_KEYS.dataUpdatedAt, '2024-01-15T10:00:00.000Z');
-    const tracking = vi.spyOn(tracker, 'markDataUpdated');
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-
-    await dispatch('resetAllData');
-
-    expect(await dispatch('getAllCards')).toEqual([]);
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
-    expect(tracking).not.toHaveBeenCalled();
-    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });
   });
 });
 

@@ -13,15 +13,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
-// Test-only activation of the prepared paths; production switches together in #378.
-vi.mock('@/services/settings', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/settings')>()),
-  ...(await import('@/services/document-settings')),
-}));
-vi.mock('@/infrastructure/storage/migrations/runner', async () => ({
-  runStartupMigrations: (await import('@/infrastructure/storage/learning-document-startup')).initializeLearningDocument,
-}));
-
 function dispatch(name: MessageName, data?: unknown) {
   const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
   if (!listener) throw new Error(`Missing listener for ${name}`);

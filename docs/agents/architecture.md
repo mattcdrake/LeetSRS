@@ -20,7 +20,7 @@ These rules apply to runtime and type-only imports:
 Before changing background commands or sync execution, read [ADR-0001](../adr/0001-background-command-execution.md).
 
 - RPC contracts and transport belong in `infrastructure/browser/messages.ts`.
-- `entrypoints/background/index.ts` owns startup, listener registration, and an exhaustive typed command registry. Its private dispatcher validates payloads by message name and shares one write queue between messages and alarms, including network work and ordered post-handler effects. Reads may overlap writes. The single-document transition moves local-edit timestamps into the prepared document write; imported timestamps remain unchanged. Badge failures must not overturn a successful data write.
+- `entrypoints/background/index.ts` owns startup, listener registration, and an exhaustive typed command registry. Its private dispatcher validates payloads by message name and shares one write queue between messages and alarms, including network work and ordered post-handler effects. Reads may overlap writes. Prepared document writes include local-edit timestamps; imported timestamps remain unchanged. Badge failures must not overturn a successful data write.
 - Register message and alarm listeners synchronously during startup. Handlers wait for startup readiness before accessing storage.
 
 ## Content UI lifecycle
@@ -30,7 +30,7 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 
 ## Storage, backup, and sync
 
-[ADR-0003](../adr/0003-single-document-learning-data.md) records the accepted target. The [canonical implementation plan](https://github.com/mattcdrake/LeetSRS/issues/371) owns its transition; the current multi-key implementation is awaiting replacement.
+[ADR-0003](../adr/0003-single-document-learning-data.md) records the single-document design. The document is authoritative at runtime; the [canonical implementation plan](https://github.com/mattcdrake/LeetSRS/issues/371) tracks the remaining superseded-code cleanup.
 
 - One browser-local document owns its schema version, modification timestamp, slug-keyed cards with embedded notes, daily statistics, and stored settings overrides. Dates remain numbers. Missing settings retain normal defaults, including browser-language detection.
 - Domain owns current schemas and explicit-input policy. Services prepare and validate complete changes, including timestamps, before infrastructure writes the document once. Reviews commit cards, statistics, and their edit timestamp together; queue calculations use one captured document and time. Keep normal operations behind startup readiness and the existing background write queue.

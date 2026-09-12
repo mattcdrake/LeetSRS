@@ -3,7 +3,6 @@ import { resolveSettings, type Settings, type SettingsUpdate, settingsUpdateSche
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
-// Prepared for the coordinated runtime activation in #378.
 export async function getSettings(): Promise<Settings> {
   const document = await readLearningDocument();
   if (!document) {

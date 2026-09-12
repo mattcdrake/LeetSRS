@@ -22,7 +22,6 @@ import {
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
-// Prepared for the coordinated runtime activation in #378.
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
 
 async function getDocument(): Promise<LearningDocument> {
