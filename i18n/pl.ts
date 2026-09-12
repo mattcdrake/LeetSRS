@@ -221,7 +221,6 @@ const pl: Translations = {
       lastSyncNever: 'Nigdy',
       // Errors
       syncFailed: 'Synchronizacja nie powiodła się',
-      createGistFailed: 'Nie udało się utworzyć gista',
       destination: 'Miejsce docelowe',
       existingGist: 'Użyj istniejącego Gista',
       save: 'Zapisz',

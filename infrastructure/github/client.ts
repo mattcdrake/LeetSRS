@@ -34,5 +34,3 @@ export function createGitHubClient(pat: string) {
     },
   };
 }
-
-export type GitHubClient = ReturnType<typeof createGitHubClient>;

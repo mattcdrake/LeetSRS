@@ -194,7 +194,6 @@ const zhCN: Translations = {
       lastSync: '上次同步',
       lastSyncNever: '从未',
       syncFailed: '同步失败',
-      createGistFailed: '创建 Gist 失败',
       destination: '目标',
       existingGist: '使用现有 Gist',
       save: '保存',

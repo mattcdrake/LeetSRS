@@ -220,7 +220,6 @@ const en = {
       lastSyncNever: 'Never',
       // Errors
       syncFailed: 'Sync failed',
-      createGistFailed: 'Failed to create gist',
       destination: 'Destination',
       existingGist: 'Use existing Gist',
       save: 'Save',

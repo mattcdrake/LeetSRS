@@ -172,7 +172,6 @@ const de: Translations = {
       lastSync: 'Letzte Synchronisierung',
       lastSyncNever: 'Nie',
       syncFailed: 'Synchronisierung fehlgeschlagen',
-      createGistFailed: 'Gist konnte nicht erstellt werden',
       destination: 'Ziel',
       existingGist: 'Vorhandenen Gist verwenden',
       save: 'Speichern',

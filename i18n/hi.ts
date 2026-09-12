@@ -199,7 +199,6 @@ const hi: Translations = {
       lastSyncNever: 'कभी नहीं',
       // Errors
       syncFailed: 'सिंक फेल हो गया',
-      createGistFailed: 'Gist बनाने में फेल',
       destination: 'गंतव्य',
       existingGist: 'मौजूदा Gist का उपयोग करें',
       save: 'सहेजें',
