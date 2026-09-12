@@ -23,6 +23,8 @@ export async function createGist(github: GitHubClient): Promise<{ gistId: string
     throw new Error('Learning document is not initialized');
   }
 
+  // Resolve from the exported snapshot; the translation storage adapter would
+  // read a second document that could have a different language.
   const language = document.settings.language ?? detectBrowserLanguage();
   return createGistFromBackup(
     github,

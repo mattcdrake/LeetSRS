@@ -10,6 +10,8 @@ import { readSyncMetadata, writeSyncStatus } from '@/infrastructure/storage/sync
 import { getAuthenticatedGitHubClient } from './github-auth';
 
 // Prepared for the coordinated runtime activation in #378.
+// Keep the legacy workflow authoritative until then; #379 removes its duplicate
+// request/error handling along with the old persistence path.
 // In-memory state for sync status (not persisted)
 let syncInProgress = false;
 let lastError: string | null = null;
@@ -53,9 +55,9 @@ export async function triggerGistSync(): Promise<SyncResult> {
       throw error;
     }
 
-    const remoteFileContent = remoteGist.files?.[GIST_FILENAME]?.content;
+    const remoteFile = remoteGist.files?.[GIST_FILENAME];
     // Validate even when local data would win, before either side can be overwritten.
-    const remote = remoteFileContent ? parseLearningDocumentBackup(remoteFileContent) : undefined;
+    const remote = remoteFile ? parseLearningDocumentBackup(remoteFile.content ?? '') : undefined;
     const local = await readLearningDocument();
     if (!local) {
       throw new Error('Learning document is not initialized');

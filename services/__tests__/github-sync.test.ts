@@ -558,8 +558,6 @@ describe('document Gist sync', () => {
 
   it.each([
     { name: 'missing file', files: {} },
-    { name: 'missing content', files: { 'leetsrs-backup.json': {} } },
-    { name: 'empty content', files: { 'leetsrs-backup.json': { content: '' } } },
     {
       name: 'unedited remote',
       files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, dataUpdatedAt: undefined }) } },
@@ -579,6 +577,8 @@ describe('document Gist sync', () => {
   });
 
   it.each([
+    ['missing content in an existing file', undefined],
+    ['empty existing file', ''],
     ['invalid JSON', '{'],
     ['null', 'null'],
     ['malformed current document', JSON.stringify({ ...local, cards: { invalid: {} }, dataUpdatedAt: timestamp })],

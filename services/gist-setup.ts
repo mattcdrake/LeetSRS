@@ -1,7 +1,7 @@
 import { type GistSyncConfigUpdate, type GistValidationResult, gistSyncConfigUpdateSchema } from '@/domain/gist-sync';
 import { GIST_FILENAME, type GitHubClient } from '@/infrastructure/github/client';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
-import { writeSyncMetadata } from '@/infrastructure/storage/sync-metadata';
+import { writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
 import { getStoredTranslations } from '@/infrastructure/storage/translations';
 import { getAuthenticatedGitHubClient } from './github-auth';
 import { exportData } from './import-export';
@@ -81,8 +81,7 @@ export async function createGistFromBackup(
   await setGistSyncConfig({ gistId });
 
   const now = new Date().toISOString();
-  await writeSyncMetadata('lastSyncTime', now);
-  await writeSyncMetadata('lastSyncDirection', 'push');
+  await writeSyncStatus({ lastSyncTime: now, lastSyncDirection: 'push' });
 
   return { gistId };
 }

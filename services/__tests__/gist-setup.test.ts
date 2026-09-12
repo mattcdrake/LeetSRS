@@ -221,33 +221,20 @@ describe('gist-setup boundaries', () => {
 
     afterEach(() => vi.useRealTimers());
 
-    it.each([STORAGE_KEYS.lastSyncTime, STORAGE_KEYS.lastSyncDirection])(
-      'retains the created destination when writing %s fails',
-      async (failedKey) => {
-        exportData.mockResolvedValue('{}');
-        create.mockResolvedValue({ data: { id: 'created' } });
-        const write = storage.setItem.bind(storage);
-        const writes = vi.spyOn(storage, 'setItem').mockImplementation((key, value) => {
-          if (key === failedKey) return Promise.reject(new Error('status failed'));
-          return write(key, value);
-        });
+    it('retains the created destination and previous status when saving status fails', async () => {
+      exportData.mockResolvedValue('{}');
+      create.mockResolvedValue({ data: { id: 'created' } });
+      await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-time');
+      await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('status failed'));
 
-        await expect(createNewGist()).rejects.toThrow('status failed');
+      await expect(createNewGist()).rejects.toThrow('status failed');
 
-        expect(create).toHaveBeenCalledOnce();
-        expect((await readGistConnection()).gistId).toBe('created');
-        expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(
-          failedKey === STORAGE_KEYS.lastSyncTime ? null : now
-        );
-        expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBeNull();
-        const expectedWrites: unknown[][] = [
-          [STORAGE_KEYS.gistConnection, { pat: 'ghp_test', gistId: 'created', enabled: false }],
-          [STORAGE_KEYS.lastSyncTime, now],
-        ];
-        if (failedKey === STORAGE_KEYS.lastSyncDirection) expectedWrites.push([STORAGE_KEYS.lastSyncDirection, 'push']);
-        expect(writes.mock.calls).toEqual(expectedWrites);
-      }
-    );
+      expect(create).toHaveBeenCalledOnce();
+      expect((await readGistConnection()).gistId).toBe('created');
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-time');
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
+    });
 
     it('creates a secret localized backup and saves the destination and sync status', async () => {
       await storage.setItem(STORAGE_KEYS.language, 'zh-CN');
@@ -309,5 +296,24 @@ describe('document Gist creation', () => {
     expect(await readGistConnection()).toEqual({ pat: 'private-pat', gistId: 'created', enabled: true });
     expect(await readLearningDocument()).toEqual(document);
     expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('push');
+  });
+
+  it('retains both previous status fields and the created destination when status persistence fails', async () => {
+    await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-sync');
+    await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+    const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation(async (items) => {
+      if ('leetsrs:lastSyncDirection' in items) {
+        throw new Error('status failed');
+      }
+      await write(items);
+    });
+
+    await expect(documentSetup.createNewGist()).rejects.toThrow('status failed');
+    expect(await readGistConnection()).toEqual({ pat: 'private-pat', gistId: 'created', enabled: true });
+    expect(await readLearningDocument()).toEqual(document);
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
+    expect(create).toHaveBeenCalledOnce();
   });
 });
