@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { type MessageData, type MessageName, onMessage } from '@/infrastructure/browser/messages';
+import { onMessage } from '@/infrastructure/browser/messages';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import background from '../index';
@@ -12,21 +13,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   onMessage: vi.fn(),
 }));
-
-// Test-only activation of the prepared paths; production switches together in #378.
-vi.mock('@/services/settings', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/settings')>()),
-  ...(await import('@/services/document-settings')),
-}));
-vi.mock('@/infrastructure/storage/migrations/runner', async () => ({
-  runStartupMigrations: (await import('@/infrastructure/storage/learning-document-startup')).initializeLearningDocument,
-}));
-
-function dispatch(name: MessageName, data?: unknown) {
-  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
-  if (!listener) throw new Error(`Missing listener for ${name}`);
-  return listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} });
-}
 
 describe('document settings through background commands', () => {
   beforeEach(() => {

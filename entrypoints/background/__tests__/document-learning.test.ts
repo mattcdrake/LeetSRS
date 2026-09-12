@@ -4,9 +4,10 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
-import { type MessageData, type MessageName, type MessageResult, onMessage } from '@/infrastructure/browser/messages';
+import { onMessage } from '@/infrastructure/browser/messages';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import background from '../index';
@@ -15,29 +16,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   onMessage: vi.fn(),
 }));
-
-// Test-only activation; #378 switches production paths and removes the old timestamp effect.
-vi.mock('@/services/cards', () => import('@/services/document-learning'));
-vi.mock('@/services/stats', () => import('@/services/document-learning'));
-vi.mock('@/services/editor-reset', () => import('@/services/document-learning'));
-vi.mock('@/services/settings', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/settings')>()),
-  ...(await import('@/services/document-settings')),
-}));
-vi.mock('@/infrastructure/storage/migrations/runner', async () => ({
-  runStartupMigrations: (await import('@/infrastructure/storage/learning-document-startup')).initializeLearningDocument,
-}));
-vi.mock('@/infrastructure/storage/data-tracker', () => ({ markDataUpdated: () => Promise.resolve() }));
-
-function dispatch<Name extends MessageName>(name: Name, data?: MessageData<Name>): Promise<MessageResult<Name>> {
-  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
-  if (!listener) {
-    throw new Error(`Missing listener for ${name}`);
-  }
-  return Promise.resolve(
-    listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} })
-  ) as Promise<MessageResult<Name>>;
-}
 
 describe('document learning through background commands', () => {
   beforeEach(async () => {

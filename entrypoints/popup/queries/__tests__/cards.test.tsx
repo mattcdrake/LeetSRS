@@ -9,7 +9,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { Card } from '@/domain/cards';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/infrastructure/browser/messages';
-import { saveCards } from '@/infrastructure/storage/cards';
+
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
@@ -136,7 +136,7 @@ describe('usePauseCardMutation', () => {
 });
 
 describe('card queries through JSON messaging and background handlers', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
     background.main();
@@ -144,6 +144,7 @@ describe('card queries through JSON messaging and background handlers', () => {
     for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
       messaging.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
     }
+    await sendMessage('getSettings');
   });
 
   it.each([State.Learning, State.Relearning])(
@@ -153,7 +154,9 @@ describe('card queries through JSON messaging and background handlers', () => {
       vi.setSystemTime(new Date('2024-03-15T10:00:00'));
       const card = createMockCard(state);
       card.fsrs.due = Date.now() + 10_000;
-      await saveCards([card]);
+      await sendMessage('importData', {
+        jsonData: JSON.stringify({ schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} }),
+      });
       const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
 
       try {
@@ -175,7 +178,9 @@ describe('card queries through JSON messaging and background handlers', () => {
     card.fsrs.due = 0;
     if (lastReview === undefined) delete card.fsrs.last_review;
     else card.fsrs.last_review = lastReview;
-    await saveCards([card]);
+    await sendMessage('importData', {
+      jsonData: JSON.stringify({ schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} }),
+    });
 
     const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
 

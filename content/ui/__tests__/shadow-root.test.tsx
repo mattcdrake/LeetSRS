@@ -3,18 +3,18 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { translations } from '@/i18n';
-import { watchStoredTranslations } from '@/infrastructure/storage/translations';
+import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
 import { requireDefined } from '@/test/utils/assertions';
 import { LeetSrsControl } from '../LeetSrsControl';
 import { createContentRoot } from '../shadow-root';
 
-vi.mock('@/infrastructure/storage/translations', () => ({ watchStoredTranslations: vi.fn() }));
+vi.mock('@/infrastructure/storage/translations', () => ({ watchDocumentTranslations: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 let root: ReturnType<typeof createContentRoot>;
 let host: HTMLElement;
 beforeEach(() => {
-  vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
+  vi.mocked(watchDocumentTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
     return vi.fn();
   });

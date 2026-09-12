@@ -60,7 +60,6 @@ async function promoteLegacyConnection(sync: Record<string, unknown>): Promise<v
   await writeGistConnection(connection);
 }
 
-// Prepared for background startup activation in #378.
 export async function initializeLearningDocument(): Promise<void> {
   const saved = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
 
@@ -83,18 +82,23 @@ export async function initializeLearningDocument(): Promise<void> {
   await replaceLearningDocument(document);
 
   try {
-    await storage.removeItems([
-      STORAGE_KEYS.cards,
-      STORAGE_KEYS.stats,
-      STORAGE_KEYS.dataUpdatedAt,
-      STORAGE_KEYS.schemaVersion,
-      ...Object.keys(local)
-        .filter((key) => key.startsWith('leetsrs:notes:'))
-        .map((key): `local:${string}` => `local:${key}`),
-      ...legacySettingNames.map((name): `sync:${string}` => `sync:leetsrs:${name}`),
-    ]);
+    await removeLegacyLearningData();
   } catch (error) {
     // Publication succeeded. Retained legacy values must never become authoritative again.
     console.warn('Failed to clean up legacy learning data:', error);
   }
+}
+
+export async function removeLegacyLearningData(): Promise<void> {
+  const local = await storage.snapshot('local');
+  await storage.removeItems([
+    STORAGE_KEYS.cards,
+    STORAGE_KEYS.stats,
+    STORAGE_KEYS.dataUpdatedAt,
+    STORAGE_KEYS.schemaVersion,
+    ...Object.keys(local)
+      .filter((key) => key.startsWith('leetsrs:notes:'))
+      .map((key): `local:${string}` => `local:${key}`),
+    ...legacySettingNames.map((name): `sync:${string}` => `sync:leetsrs:${name}`),
+  ]);
 }

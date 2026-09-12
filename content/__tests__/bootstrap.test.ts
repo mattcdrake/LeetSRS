@@ -6,12 +6,12 @@ import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { watchStoredTranslations } from '@/infrastructure/storage/translations';
+import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
 import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
-vi.mock('@/infrastructure/storage/translations', () => ({ watchStoredTranslations: vi.fn() }));
+vi.mock('@/infrastructure/storage/translations', () => ({ watchDocumentTranslations: vi.fn() }));
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 let ctx: ContentScriptContext;
@@ -38,7 +38,7 @@ beforeEach(() => {
   );
   document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
   vi.mocked(sendMessage).mockResolvedValue(undefined);
-  vi.mocked(watchStoredTranslations).mockImplementation((onChange) => {
+  vi.mocked(watchDocumentTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
     return unwatchTranslations;
   });

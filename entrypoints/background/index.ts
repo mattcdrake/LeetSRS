@@ -8,37 +8,34 @@ import {
   messagePayloadSchemas,
   onMessage,
 } from '@/infrastructure/browser/messages';
-import { markDataUpdated } from '@/infrastructure/storage/data-tracker';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
-import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
+import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
+import { createNewGist, getGistSyncStatus, triggerGistSync } from '@/services/document-gist-sync';
+import { exportData, importData, resetAllData } from '@/services/document-import-export';
 import {
   addCard,
   delayCard,
   deleteNote,
   getAllCards,
+  getCardStateStats,
+  getLastNDaysStats,
+  getNextNDaysStats,
   getNote,
   getReviewQueue,
+  getTodayStats,
   rateCard,
   removeCard,
   saveNote,
   setPauseStatus,
-} from '@/services/cards';
-import { shouldResetEditor } from '@/services/editor-reset';
-import {
-  createNewGist,
-  getGistSyncStatus,
-  setGistSyncConfig,
-  triggerGistSync,
-  validateGistId,
-} from '@/services/gist-sync';
+  shouldResetEditor,
+} from '@/services/document-learning';
+import { getSettings, updateSettings } from '@/services/document-settings';
+import { setGistSyncConfig, validateGistId } from '@/services/gist-sync';
 import { validatePat } from '@/services/github-auth';
-import { exportData, importData, resetAllData } from '@/services/import-export';
-import { getSettings, updateSettings } from '@/services/settings';
-import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
 
 type Command<Name extends MessageName> = {
   handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
-} & ({ kind: 'read' } | { kind: 'write'; updateDataTimestamp?: boolean; refreshBadge: boolean });
+} & ({ kind: 'read' } | { kind: 'write'; refreshBadge: boolean });
 
 const payloadSchemas: { [Name in MessageName]: z.ZodType<MessageData<Name>> } = messagePayloadSchemas;
 
@@ -47,33 +44,30 @@ function read<Data, Result>(handler: (data: Data) => MaybePromise<Result>) {
 }
 
 type WriteOptions = {
-  // Set dataUpdatedAt to now after success so Gist sync can compare dataset freshness.
-  updateDataTimestamp?: boolean;
   refreshBadge?: boolean;
 };
 
 function write<Data, Result>(
   handler: (data: Data) => MaybePromise<Result>,
-  { updateDataTimestamp = false, refreshBadge = false }: WriteOptions = {}
+  { refreshBadge = false }: WriteOptions = {}
 ) {
-  return { kind: 'write' as const, handler, updateDataTimestamp, refreshBadge };
+  return { kind: 'write' as const, handler, refreshBadge };
 }
 
 const commands: { [Name in MessageName]: Command<Name> } = {
-  addCard: write(({ problem }) => addCard(problem), { updateDataTimestamp: true, refreshBadge: true }),
+  addCard: write(({ problem }) => addCard(problem), { refreshBadge: true }),
   getAllCards: read(getAllCards),
-  removeCard: write(({ slug }) => removeCard(slug), { updateDataTimestamp: true, refreshBadge: true }),
-  delayCard: write(({ slug, days }) => delayCard(slug, days), { updateDataTimestamp: true, refreshBadge: true }),
+  removeCard: write(({ slug }) => removeCard(slug), { refreshBadge: true }),
+  delayCard: write(({ slug, days }) => delayCard(slug, days), { refreshBadge: true }),
   setPauseStatus: write(({ slug, paused }) => setPauseStatus(slug, paused), {
-    updateDataTimestamp: true,
     refreshBadge: true,
   }),
-  rateCard: write(({ input }) => rateCard(input), { updateDataTimestamp: true, refreshBadge: true }),
+  rateCard: write(({ input }) => rateCard(input), { refreshBadge: true }),
   getReviewQueue: read(getReviewQueue),
   getTodayStats: read(getTodayStats),
   getNote: read(({ slug }) => getNote(slug)),
-  saveNote: write(({ slug, text }) => saveNote(slug, text), { updateDataTimestamp: true }),
-  deleteNote: write(({ slug }) => deleteNote(slug), { updateDataTimestamp: true }),
+  saveNote: write(({ slug, text }) => saveNote(slug, text)),
+  deleteNote: write(({ slug }) => deleteNote(slug)),
   getSettings: read(getSettings),
   updateSettings: write(({ changes }) => updateSettings(changes), { refreshBadge: true }),
   shouldResetEditor: read(({ slug, domain }) => shouldResetEditor(slug, domain)),
@@ -109,9 +103,9 @@ async function updateBadge() {
 }
 
 export default defineBackground(() => {
-  // Keep message and alarm handlers from accessing storage while startup migrations are running.
+  // Keep message and alarm handlers from accessing storage until the learning document is ready.
   const readyPromise = (async () => {
-    await runStartupMigrations();
+    await initializeLearningDocument();
 
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {
@@ -139,9 +133,12 @@ export default defineBackground(() => {
       const schema: z.ZodType<MessageData<Name>> = payloadSchemas[name];
       const payload = schema.parse(data);
       const result = await command.handler(payload);
-      if (command.kind === 'write') {
-        if (command.updateDataTimestamp) await markDataUpdated();
-        if (command.refreshBadge) await updateBadge();
+      if (command.kind === 'write' && command.refreshBadge) {
+        try {
+          await updateBadge();
+        } catch (error) {
+          console.warn('Failed to refresh badge:', error);
+        }
       }
       return result;
     };
