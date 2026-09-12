@@ -1,7 +1,7 @@
 import type { State as FsrsState } from 'ts-fsrs';
 import { formatLocalDate } from '@/domain/calendar';
 import type { Card, LeetcodeDomain } from '@/domain/cards';
-import { findCard } from '@/domain/learning-document';
+import { findCard, type LearningDocument } from '@/domain/learning-document';
 import { buildReviewQueue, isDue, shouldResetCardEditor } from '@/domain/review';
 import { resolveSettings, type Settings } from '@/domain/settings';
 import {
@@ -11,8 +11,12 @@ import {
   type DailyStats,
   type UpcomingReviewStats,
 } from '@/domain/statistics';
-import { detectBrowserLanguage } from '@/infrastructure/browser/language';
+import { resolveLanguage } from '@/infrastructure/browser/language';
 import { requireLearningDocument } from './learning-document';
+
+function resolveDocumentSettings(document: LearningDocument): Settings {
+  return resolveSettings(document.settings, resolveLanguage(document.settings.language));
+}
 
 export async function getAllCards(): Promise<Card[]> {
   return Object.values((await requireLearningDocument()).cards);
@@ -44,7 +48,7 @@ export async function getNextNDaysStats(days: number): Promise<UpcomingReviewSta
 export async function getReviewQueue(): Promise<Card[]> {
   const now = new Date();
   const document = await requireLearningDocument();
-  const settings = resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
+  const settings = resolveDocumentSettings(document);
   const dueCards = Object.values(document.cards).filter((card) => !card.paused && isDue(card, now));
   const newCardsCompletedToday = document.stats[formatLocalDate(now)]?.newCards ?? 0;
   return buildReviewQueue(dueCards, settings.maxNewCardsPerDay, newCardsCompletedToday);
@@ -53,7 +57,7 @@ export async function getReviewQueue(): Promise<Card[]> {
 export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): Promise<boolean> {
   const now = new Date();
   const document = await requireLearningDocument();
-  const settings = resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
+  const settings = resolveDocumentSettings(document);
   return shouldResetCardEditor(findCard(document, slug), domain, settings, now);
 }
 
@@ -65,7 +69,7 @@ export async function getNote(slug: string): Promise<string | null> {
 export async function getSettings(): Promise<Settings> {
   const document = await requireLearningDocument();
 
-  return resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
+  return resolveDocumentSettings(document);
 }
 
 export async function exportData(): Promise<string> {

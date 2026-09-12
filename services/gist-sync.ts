@@ -7,7 +7,7 @@ import {
   type SyncResult,
 } from '@/domain/gist-sync';
 import { translations } from '@/i18n';
-import { detectBrowserLanguage } from '@/infrastructure/browser/language';
+import { resolveLanguage } from '@/infrastructure/browser/language';
 import { createGitHubClient, GIST_FILENAME } from '@/infrastructure/github/client';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
 import { replaceLearningDocument, requireLearningDocument } from '@/infrastructure/storage/learning-document';
@@ -112,7 +112,7 @@ export async function setupGistSync(input: GistSetup): Promise<GistConnectionRes
       gistId = setup.gistId;
     } else {
       const document = await requireLearningDocument();
-      const language = document.settings.language ?? detectBrowserLanguage();
+      const language = resolveLanguage(document.settings.language);
       const { data } = await github.createGist(
         translations[language].settings.gistSync.gistDescription,
         JSON.stringify(document, null, 2)

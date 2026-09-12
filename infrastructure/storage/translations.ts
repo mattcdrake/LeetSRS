@@ -2,14 +2,14 @@ import { z } from 'zod';
 import { storage } from '#imports';
 import { languageSchema } from '@/domain/language';
 import { type Translations, translations } from '@/i18n';
-import { detectBrowserLanguage } from '@/infrastructure/browser/language';
+import { resolveLanguage } from '@/infrastructure/browser/language';
 import { STORAGE_KEYS } from './storage-keys';
 
 const documentLanguageSchema = z.object({ settings: z.object({ language: languageSchema.optional() }) });
 
 function resolve(value: unknown): Translations {
   const language = documentLanguageSchema.safeParse(value).data?.settings.language;
-  return translations[language ?? detectBrowserLanguage()];
+  return translations[resolveLanguage(language)];
 }
 
 export async function getDocumentTranslations(): Promise<Translations> {
