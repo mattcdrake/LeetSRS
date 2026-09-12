@@ -1,20 +1,15 @@
-import { type Output as Input, validateOutput as validatePreviousOutput } from './001-add-card-domain';
+import {
+  convert,
+  type Input,
+  type Output,
+  validateInput,
+  validateOutput,
+} from '../document-conversions/002-add-system-theme';
 import { readDataset } from './layouts/v0';
 import type { Migration } from './migration';
 
-export type Output = Input;
+export { type Output, validateOutput } from '../document-conversions/002-add-system-theme';
 
-function validateInput(data: unknown): asserts data is Input {
-  try {
-    validatePreviousOutput(data);
-  } catch (cause) {
-    throw new Error('Migration 2 requires the output shape of migration 1', { cause });
-  }
-}
-
-export const validateOutput: typeof validateInput = validateInput;
-
-// System theme changed the application default, not the stored logical dataset.
 export const addSystemTheme = {
   description: 'Add system theme preference',
   validateOutput,
@@ -23,10 +18,7 @@ export const addSystemTheme = {
     validateInput(input);
     return input;
   },
-  migrate(data: unknown): Output {
-    validateInput(data);
-    return data;
-  },
+  migrate: convert,
   async save(_output: Output): Promise<void> {
     // The logical dataset and its physical layout are unchanged.
   },
