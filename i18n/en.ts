@@ -209,7 +209,7 @@ const en = {
       patHelpLink: 'GitHub Settings',
       // Gist selection
       gistIdLabel: 'Gist ID',
-      gistIdPlaceholder: 'Enter existing Gist ID or create new',
+      gistIdPlaceholder: 'Enter existing Gist ID',
       createNewGist: 'Create New Gist',
       // Sync controls
       enableSync: 'Enable automatic sync',
@@ -220,6 +220,10 @@ const en = {
       lastSyncNever: 'Never',
       // Errors
       syncFailed: 'Sync failed',
+      edit: 'Edit',
+      cancel: 'Cancel',
+      connectionHelp:
+        'The connection and automatic-sync setting are synced by your browser. Last sync is local to this browser.',
       destination: 'Destination',
       existingGist: 'Use existing Gist',
       save: 'Save',

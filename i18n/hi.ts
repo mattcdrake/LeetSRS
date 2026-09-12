@@ -188,7 +188,7 @@ const hi: Translations = {
       patHelpLink: 'GitHub सेटिंग्स',
       // Gist selection
       gistIdLabel: 'Gist ID',
-      gistIdPlaceholder: 'मौजूदा Gist ID डालें या नया बनाएँ',
+      gistIdPlaceholder: 'मौजूदा Gist ID डालें',
       createNewGist: 'नया Gist बनाएँ',
       // Sync controls
       enableSync: 'ऑटोमैटिक सिंक ऑन करें',
@@ -199,6 +199,9 @@ const hi: Translations = {
       lastSyncNever: 'कभी नहीं',
       // Errors
       syncFailed: 'सिंक फेल हो गया',
+      edit: 'संपादित करें',
+      cancel: 'रद्द करें',
+      connectionHelp: 'कनेक्शन और ऑटोमैटिक सिंक सेटिंग आपके ब्राउज़र द्वारा सिंक की जाती हैं। लास्ट सिंक की स्थिति केवल इस ब्राउज़र की है।',
       destination: 'गंतव्य',
       existingGist: 'मौजूदा Gist का उपयोग करें',
       save: 'सहेजें',
