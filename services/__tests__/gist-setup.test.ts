@@ -3,10 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import type { GistSyncConfigUpdate } from '@/domain/gist-sync';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
+import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-setup';
-import * as auth from '../github-auth';
+import * as documentSetup from '../document-gist-sync';
+import * as documentBackup from '../document-import-export';
+import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-sync';
 
 const { getGist, create, getAuthenticated, exportData } = vi.hoisted(() => ({
   getGist: vi.fn(),
@@ -90,9 +93,8 @@ describe('gist-setup boundaries', () => {
   });
 
   it.each(['', ' \t\n'])('rejects blank Gist ID %j without acquiring a client or requesting a Gist', async (gistId) => {
-    const acquire = vi.spyOn(auth, 'getAuthenticatedGitHubClient');
     expect(await validateGistId(gistId, 'token')).toEqual({ valid: false, error: 'Gist ID is required' });
-    expect(acquire).not.toHaveBeenCalled();
+    expect(Octokit).not.toHaveBeenCalled();
     expect(getGist).not.toHaveBeenCalled();
   });
 
@@ -100,11 +102,9 @@ describe('gist-setup boundaries', () => {
     await setGistSyncConfig({ pat: 'saved' });
     const reads = vi.spyOn(storage, 'getItem');
     const writes = vi.spyOn(storage, 'setItem');
-    const acquire = vi.spyOn(auth, 'getAuthenticatedGitHubClient');
     getGist.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': {} } } });
 
     expect(await validateGistId(' gist ', ' token ')).toEqual({ valid: true });
-    expect(acquire).toHaveBeenCalledExactlyOnceWith(' token ');
     expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: ' token ' });
     expect(reads).not.toHaveBeenCalled();
     expect(writes).not.toHaveBeenCalled();
@@ -118,8 +118,13 @@ describe('gist-setup boundaries', () => {
     { stage: 'request', failure: new Error('404 Not Found'), error: 'Gist not found' },
     { stage: 'request', failure: new Error('Network error'), error: 'Network error' },
   ])('maps $stage failure to "$error"', async ({ stage, failure, error }) => {
-    if (stage === 'acquisition') vi.spyOn(auth, 'getAuthenticatedGitHubClient').mockRejectedValue(failure);
-    else getGist.mockRejectedValue(failure);
+    if (stage === 'acquisition') {
+      vi.mocked(Octokit).mockImplementationOnce(function FailingOctokit() {
+        throw failure;
+      });
+    } else {
+      getGist.mockRejectedValue(failure);
+    }
 
     expect(await validateGistId('gist', 'token')).toEqual({ valid: false, error });
     expect(getGist).toHaveBeenCalledTimes(stage === 'acquisition' ? 0 : 1);
@@ -217,33 +222,20 @@ describe('gist-setup boundaries', () => {
 
     afterEach(() => vi.useRealTimers());
 
-    it.each([STORAGE_KEYS.lastSyncTime, STORAGE_KEYS.lastSyncDirection])(
-      'retains the created destination when writing %s fails',
-      async (failedKey) => {
-        exportData.mockResolvedValue('{}');
-        create.mockResolvedValue({ data: { id: 'created' } });
-        const write = storage.setItem.bind(storage);
-        const writes = vi.spyOn(storage, 'setItem').mockImplementation((key, value) => {
-          if (key === failedKey) return Promise.reject(new Error('status failed'));
-          return write(key, value);
-        });
+    it('retains the created destination and previous status when saving status fails', async () => {
+      exportData.mockResolvedValue('{}');
+      create.mockResolvedValue({ data: { id: 'created' } });
+      await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-time');
+      await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('status failed'));
 
-        await expect(createNewGist()).rejects.toThrow('status failed');
+      await expect(createNewGist()).rejects.toThrow('status failed');
 
-        expect(create).toHaveBeenCalledOnce();
-        expect((await readGistConnection()).gistId).toBe('created');
-        expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(
-          failedKey === STORAGE_KEYS.lastSyncTime ? null : now
-        );
-        expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBeNull();
-        const expectedWrites: unknown[][] = [
-          [STORAGE_KEYS.gistConnection, { pat: 'ghp_test', gistId: 'created', enabled: false }],
-          [STORAGE_KEYS.lastSyncTime, now],
-        ];
-        if (failedKey === STORAGE_KEYS.lastSyncDirection) expectedWrites.push([STORAGE_KEYS.lastSyncDirection, 'push']);
-        expect(writes.mock.calls).toEqual(expectedWrites);
-      }
-    );
+      expect(create).toHaveBeenCalledOnce();
+      expect((await readGistConnection()).gistId).toBe('created');
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-time');
+      expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
+    });
 
     it('creates a secret localized backup and saves the destination and sync status', async () => {
       await storage.setItem(STORAGE_KEYS.language, 'zh-CN');
@@ -272,5 +264,57 @@ describe('gist-setup boundaries', () => {
       await setGistSyncConfig(update);
       expect(await readGistConnection()).toEqual(update);
     });
+  });
+});
+
+// Prepared Gist creation uses the same document as file export and sync.
+describe('document Gist creation', () => {
+  const document: LearningDocument = {
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+    cards: {},
+    stats: {},
+    settings: { language: 'zh-CN', theme: 'dark' },
+  };
+
+  beforeEach(async () => {
+    fakeBrowser.reset();
+    await setGistSyncConfig({ pat: 'private-pat', enabled: true });
+    await replaceLearningDocument(document);
+    // The description must follow the document language, not a stale override.
+    await storage.setItem(STORAGE_KEYS.language, 'en');
+    create.mockResolvedValue({ data: { id: 'created' } });
+  });
+
+  it('creates a localized secret Gist with the exported document and retains an absent edit timestamp', async () => {
+    const reads = vi.spyOn(storage, 'getItem');
+    await expect(documentSetup.createNewGist()).resolves.toEqual({ gistId: 'created' });
+    expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
+    expect(create).toHaveBeenCalledExactlyOnceWith({
+      description: 'LeetSRS 备份 - 间隔重复数据',
+      public: false,
+      files: { 'leetsrs-backup.json': { content: await documentBackup.exportData() } },
+    });
+    expect(await readGistConnection()).toEqual({ pat: 'private-pat', gistId: 'created', enabled: true });
+    expect(await readLearningDocument()).toEqual(document);
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('push');
+  });
+
+  it('retains both previous status fields and the created destination when status persistence fails', async () => {
+    await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-sync');
+    await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
+    const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation(async (items) => {
+      if ('leetsrs:lastSyncDirection' in items) {
+        throw new Error('status failed');
+      }
+      await write(items);
+    });
+
+    await expect(documentSetup.createNewGist()).rejects.toThrow('status failed');
+    expect(await readGistConnection()).toEqual({ pat: 'private-pat', gistId: 'created', enabled: true });
+    expect(await readLearningDocument()).toEqual(document);
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
+    expect(create).toHaveBeenCalledOnce();
   });
 });

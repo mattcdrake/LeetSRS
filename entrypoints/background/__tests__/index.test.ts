@@ -8,8 +8,8 @@ import * as tracker from '@/infrastructure/storage/data-tracker';
 import * as connection from '@/infrastructure/storage/gist-connection';
 import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner';
 import * as cards from '@/services/cards';
-import * as setup from '@/services/gist-setup';
-import { triggerGistSync } from '@/services/github-sync';
+import * as setup from '@/services/gist-sync';
+import { triggerGistSync } from '@/services/gist-sync';
 import { getSettings } from '@/services/settings';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import background from '../index';
@@ -20,7 +20,11 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 vi.mock('@/infrastructure/storage/migrations/runner', () => ({ runStartupMigrations: vi.fn() }));
-vi.mock('@/services/github-sync', () => ({ getGistSyncStatus: vi.fn(), triggerGistSync: vi.fn() }));
+vi.mock('@/services/gist-sync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/gist-sync')>()),
+  getGistSyncStatus: vi.fn(),
+  triggerGistSync: vi.fn(),
+}));
 vi.mock('@/services/settings', () => ({ getSettings: vi.fn(), updateSettings: vi.fn() }));
 
 function startBackground() {

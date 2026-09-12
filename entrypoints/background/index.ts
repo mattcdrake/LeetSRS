@@ -24,9 +24,14 @@ import {
   setPauseStatus,
 } from '@/services/cards';
 import { shouldResetEditor } from '@/services/editor-reset';
-import { createNewGist, setGistSyncConfig, validateGistId } from '@/services/gist-setup';
+import {
+  createNewGist,
+  getGistSyncStatus,
+  setGistSyncConfig,
+  triggerGistSync,
+  validateGistId,
+} from '@/services/gist-sync';
 import { validatePat } from '@/services/github-auth';
-import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';

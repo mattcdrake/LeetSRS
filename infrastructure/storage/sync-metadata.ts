@@ -12,6 +12,8 @@ const syncMetadataSchema = z.object({
 });
 type SyncMetadata = z.infer<typeof syncMetadataSchema>;
 
+const syncStatusUpdateSchema = syncMetadataSchema.omit({ dataUpdatedAt: true }).partial({ lastSyncDirection: true });
+
 const fields: { [K in keyof SyncMetadata]: z.ZodType<SyncMetadata[K]> } = syncMetadataSchema.shape;
 
 export async function readSyncMetadata<K extends keyof SyncMetadata>(key: K): Promise<SyncMetadata[K] | null> {
@@ -21,6 +23,18 @@ export async function readSyncMetadata<K extends keyof SyncMetadata>(key: K): Pr
 
 export function writeSyncMetadata<K extends keyof SyncMetadata>(key: K, value: SyncMetadata[K]): Promise<void> {
   return storage.setItem(STORAGE_KEYS[key], value);
+}
+
+export async function writeSyncStatus(status: z.infer<typeof syncStatusUpdateSchema>): Promise<void> {
+  const prepared = syncStatusUpdateSchema.parse(status);
+  const items: { key: typeof STORAGE_KEYS.lastSyncTime | typeof STORAGE_KEYS.lastSyncDirection; value: string }[] = [
+    { key: STORAGE_KEYS.lastSyncTime, value: prepared.lastSyncTime },
+  ];
+  if (prepared.lastSyncDirection !== undefined) {
+    items.push({ key: STORAGE_KEYS.lastSyncDirection, value: prepared.lastSyncDirection });
+  }
+
+  await storage.setItems(items);
 }
 
 export function removeSyncMetadata(key: keyof SyncMetadata): Promise<void> {

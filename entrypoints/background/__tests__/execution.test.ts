@@ -12,8 +12,7 @@ import {
 import * as tracker from '@/infrastructure/storage/data-tracker';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
-import * as setup from '@/services/gist-setup';
-import * as sync from '@/services/github-sync';
+import * as sync from '@/services/gist-sync';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -22,12 +21,9 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
-vi.mock('@/services/github-sync', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/github-sync')>()),
+vi.mock('@/services/gist-sync', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/services/gist-sync')>()),
   triggerGistSync: vi.fn(),
-}));
-vi.mock('@/services/gist-setup', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/services/gist-setup')>()),
   createNewGist: vi.fn(),
 }));
 
@@ -220,7 +216,7 @@ describe('registered background execution', () => {
 
   it('preserves Gist creation results and errors without executor effects', async () => {
     const failure = new Error('save failed');
-    vi.mocked(setup.createNewGist).mockResolvedValueOnce({ gistId: 'created' }).mockRejectedValueOnce(failure);
+    vi.mocked(sync.createNewGist).mockResolvedValueOnce({ gistId: 'created' }).mockRejectedValueOnce(failure);
     const tracking = vi.spyOn(tracker, 'markDataUpdated');
     const badge = vi.spyOn(browser.action, 'setBadgeText');
     await expect(dispatch('createNewGist')).resolves.toEqual({ gistId: 'created' });

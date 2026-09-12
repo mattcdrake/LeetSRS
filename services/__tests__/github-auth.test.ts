@@ -2,7 +2,7 @@ import { Octokit } from 'octokit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { setGistSyncConfig } from '@/services/gist-setup';
+import { setGistSyncConfig } from '@/services/gist-sync';
 import { validatePat } from '../github-auth';
 
 const { getAuthenticated, getGist } = vi.hoisted(() => ({
