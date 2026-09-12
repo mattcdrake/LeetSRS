@@ -1,7 +1,7 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import type { State as FsrsState } from 'ts-fsrs';
 import { z } from 'zod';
-import { type Card, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
+import { type Card, noteTextSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
 import {
   type GistSyncConfig,
   type GistSyncStatus,
@@ -10,7 +10,6 @@ import {
   type PatValidationResult,
   type SyncResult,
 } from '@/domain/gist-sync';
-import { noteTextSchema } from '@/domain/notes';
 import { type Settings, settingsUpdateSchema } from '@/domain/settings';
 import type { DailyStats, UpcomingReviewStats } from '@/domain/statistics';
 

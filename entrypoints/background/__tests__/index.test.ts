@@ -10,7 +10,6 @@ import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
 import { triggerGistSync } from '@/services/github-sync';
-import * as notes from '@/services/notes';
 import { getSettings } from '@/services/settings';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import background from '../index';
@@ -140,7 +139,7 @@ describe('background sync alarm', () => {
     const writeStarted = Promise.withResolvers<void>();
     const releaseWrite = Promise.withResolvers<void>();
     const checked = Promise.withResolvers<void>();
-    vi.spyOn(notes, 'deleteNote').mockImplementation(async () => {
+    vi.spyOn(cards, 'deleteNote').mockImplementation(async () => {
       writeStarted.resolve();
       await releaseWrite.promise;
     });
@@ -185,7 +184,7 @@ describe('background sync alarm', () => {
     const read = listeners.find(([name]) => name === 'getAllCards')?.[1];
     const write = listeners.find(([name]) => name === 'deleteNote')?.[1];
     if (!read || !write) throw new Error('Missing synchronous listeners');
-    const deleteNote = vi.spyOn(notes, 'deleteNote').mockResolvedValue(undefined);
+    const deleteNote = vi.spyOn(cards, 'deleteNote').mockResolvedValue(undefined);
     let readCompleted = false;
     const reading = Promise.resolve(
       read({ id: 1, type: 'getAllCards', data: undefined, timestamp: 0, sender: {} })

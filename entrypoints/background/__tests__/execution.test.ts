@@ -14,7 +14,6 @@ import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import * as cards from '@/services/cards';
 import * as setup from '@/services/gist-setup';
 import * as sync from '@/services/github-sync';
-import * as notes from '@/services/notes';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -156,7 +155,7 @@ describe('registered background execution', () => {
     vi.spyOn(browser.action, 'setBadgeText').mockImplementation(async () => {
       events.push('badge');
     });
-    vi.spyOn(notes, 'deleteNote').mockImplementation(async () => {
+    vi.spyOn(cards, 'deleteNote').mockImplementation(async () => {
       events.push('next');
     });
 
@@ -261,7 +260,7 @@ describe('registered background execution', () => {
     '%s updates the timestamp without refreshing the badge',
     async (name) => {
       const card = await cards.addCard(problem);
-      await notes.saveNote(card.slug, 'existing note');
+      await cards.saveNote(card.slug, 'existing note');
       const tracking = vi.spyOn(tracker, 'markDataUpdated');
       const badge = vi.spyOn(browser.action, 'setBadgeText');
 

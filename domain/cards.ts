@@ -1,7 +1,11 @@
 import type { CardInput } from 'ts-fsrs';
 import { z } from 'zod';
-import { noteTextSchema } from './notes';
 import { ratingSchema } from './ratings';
+
+export const NOTES_MAX_LENGTH = 500;
+export const noteTextSchema = z.string().max(NOTES_MAX_LENGTH, {
+  error: `Note exceeds maximum length of ${NOTES_MAX_LENGTH} characters`,
+});
 
 const nonemptyString = z.string().refine((value) => value.trim().length > 0, {
   message: 'Must contain at least one non-whitespace character',

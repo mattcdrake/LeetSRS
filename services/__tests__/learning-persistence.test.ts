@@ -5,8 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { addCard, getAllCards, rateCard, removeCard } from '../cards';
-import { getNote, saveNote } from '../notes';
+import { addCard, getAllCards, getNote, rateCard, removeCard, saveNote } from '../cards';
 import { getSettings } from '../settings';
 
 vi.mock('../settings', () => ({ getSettings: vi.fn() }));

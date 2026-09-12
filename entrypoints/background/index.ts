@@ -14,10 +14,13 @@ import { runStartupMigrations } from '@/infrastructure/storage/migrations/runner
 import {
   addCard,
   delayCard,
+  deleteNote,
   getAllCards,
+  getNote,
   getReviewQueue,
   rateCard,
   removeCard,
+  saveNote,
   setPauseStatus,
 } from '@/services/cards';
 import { shouldResetEditor } from '@/services/editor-reset';
@@ -25,7 +28,6 @@ import { createNewGist, setGistSyncConfig, validateGistId } from '@/services/gis
 import { validatePat } from '@/services/github-auth';
 import { getGistSyncStatus, triggerGistSync } from '@/services/github-sync';
 import { exportData, importData, resetAllData } from '@/services/import-export';
-import { deleteNote, getNote, saveNote } from '@/services/notes';
 import { getSettings, updateSettings } from '@/services/settings';
 import { getCardStateStats, getLastNDaysStats, getNextNDaysStats, getTodayStats } from '@/services/stats';
 

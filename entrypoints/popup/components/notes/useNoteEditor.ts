@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NOTES_MAX_LENGTH } from '@/domain/notes';
+import { NOTES_MAX_LENGTH } from '@/domain/cards';
 import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/entrypoints/popup/queries/notes';
 
