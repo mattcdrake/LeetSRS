@@ -5,10 +5,10 @@ import { storage } from 'wxt/utils/storage';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { exportData } from '@/infrastructure/storage/learning-queries';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import * as documentSync from '../gist-sync';
-import * as documentBackup from '../import-export';
 
 // Mock Octokit
 const mockGetAuthenticated = vi.fn();
@@ -147,7 +147,7 @@ describe('document Gist sync', () => {
     expect(mockGistsCreate).toHaveBeenCalledExactlyOnceWith({
       description: 'LeetSRS 备份 - 间隔重复数据',
       public: false,
-      files: { 'leetsrs-backup.json': { content: await documentBackup.exportData() } },
+      files: { 'leetsrs-backup.json': { content: await exportData() } },
     });
     expect(await documentSync.getGistSyncConfig()).toEqual(connection);
     expect(await documentSync.getGistSyncStatus()).toMatchObject({
@@ -242,7 +242,7 @@ describe('document Gist sync', () => {
     const reads = vi.spyOn(storage, 'getItem');
     expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pushed', timestamp: now });
     expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
-    const json = await documentBackup.exportData();
+    const json = await exportData();
     expect(mockGistsUpdate).toHaveBeenCalledExactlyOnceWith({
       gist_id: 'gist123',
       files: { 'leetsrs-backup.json': { content: json } },
@@ -279,7 +279,7 @@ describe('document Gist sync', () => {
       });
       const writes = vi.spyOn(storage, 'setItem');
       expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pulled', timestamp: now });
-      expect(JSON.parse(await documentBackup.exportData())).toEqual({
+      expect(JSON.parse(await exportData())).toEqual({
         schemaVersion: LEARNING_DOCUMENT_VERSION,
         ...(format === 'current' ? { cards: {}, stats: {} } : embedded),
         settings: format === 'current' ? {} : { resetEditorOnEveryProblem: false, theme: 'light' },

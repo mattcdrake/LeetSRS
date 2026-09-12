@@ -157,6 +157,29 @@ describe('document learning through background commands', () => {
     }
   });
 
+  it('keeps a review schedule, statistics, and edit timestamp on the captured day when a read crosses midnight', async () => {
+    const now = new Date('2024-03-15T23:59:59.999');
+    vi.setSystemTime(now);
+    const get = storage.getItem.bind(storage);
+    vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
+      const document = await get(key);
+      vi.setSystemTime(new Date('2024-03-16T00:00:00'));
+      return document;
+    });
+
+    const { card } = await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+
+    expect(card.createdAt).toBe(now.getTime());
+    expect(card.fsrs.last_review).toBe(now.getTime());
+    expect(card.fsrs.due).toBe(new Date('2024-03-16T00:09:59.999').getTime());
+    expect(await readLearningDocument()).toMatchObject({
+      cards: { [card.slug]: card },
+      stats: { '2024-03-15': { totalReviews: 1, newCards: 1 } },
+      dataUpdatedAt: now.toISOString(),
+    });
+    expect(await dispatch('getTodayStats')).toBeNull();
+  });
+
   it('uses one document and time for queue eligibility and the daily allowance across midnight', async () => {
     vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
     const cards = ['new-a', 'new-b', 'future', 'review', 'paused'].map((slug) => {

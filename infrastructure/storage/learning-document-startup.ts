@@ -3,7 +3,8 @@ import { storage } from '#imports';
 import { gistSyncConfigSchema } from '@/domain/gist-sync';
 import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { writeGistConnection } from './gist-connection';
-import { convertLearningDocument, replaceLearningDocument } from './learning-document';
+import { replaceLearningDocument } from './learning-document';
+import { convertLearningDocument } from './learning-document-conversions';
 import { STORAGE_KEYS } from './storage-keys';
 
 const legacySettingNames = [

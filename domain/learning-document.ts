@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cardSchema } from './cards';
+import { type Card, cardSchema } from './cards';
 import { settingsSchema } from './settings';
 import { dailyStatsSchema } from './statistics';
 
@@ -39,3 +39,10 @@ export const learningDocumentSchema = z
   });
 
 export type LearningDocument = z.infer<typeof learningDocumentSchema>;
+
+export function findCard(document: LearningDocument, slug: string): Card | undefined {
+  if (Object.hasOwn(document.cards, slug)) {
+    return document.cards[slug];
+  }
+  return undefined;
+}

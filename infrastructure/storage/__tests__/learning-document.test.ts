@@ -2,11 +2,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { LearningDocument } from '@/domain/learning-document';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
-import { readLearningDocument, replaceLearningDocument } from '../learning-document';
+import { readLearningDocument, replaceLearningDocument, requireLearningDocument } from '../learning-document';
 import { STORAGE_KEYS } from '../storage-keys';
 
 describe('learning document persistence', () => {
   beforeEach(() => fakeBrowser.reset());
+
+  it('requires initialization and returns the current validated document once available', async () => {
+    await expect(requireLearningDocument()).rejects.toThrow('Learning document is not initialized');
+    const document: LearningDocument = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    await replaceLearningDocument(document);
+    expect(await requireLearningDocument()).toEqual(document);
+  });
 
   it('replaces the complete document, clearing omitted notes, settings, and timestamps', async () => {
     expect(await readLearningDocument()).toBeUndefined();
@@ -70,6 +77,7 @@ describe('learning document persistence', () => {
         'leetsrs:stats': {},
       });
       await expect(readLearningDocument()).rejects.toThrow();
+      await expect(requireLearningDocument()).rejects.toThrow();
     }
   );
 });

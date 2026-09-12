@@ -10,31 +10,27 @@ import {
 } from '@/infrastructure/browser/messages';
 import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
 import {
-  getGistSyncConfig,
-  getGistSyncStatus,
-  setGistSyncEnabled,
-  setupGistSync,
-  triggerGistSync,
-} from '@/services/gist-sync';
-import { exportData, importData, resetAllData } from '@/services/import-export';
-import {
-  addCard,
-  delayCard,
-  deleteNote,
+  exportData,
   getAllCards,
   getCardStateStats,
   getLastNDaysStats,
   getNextNDaysStats,
   getNote,
   getReviewQueue,
+  getSettings,
   getTodayStats,
-  rateCard,
-  removeCard,
-  saveNote,
-  setPauseStatus,
   shouldResetEditor,
-} from '@/services/learning';
-import { getSettings, updateSettings } from '@/services/settings';
+} from '@/infrastructure/storage/learning-queries';
+import {
+  getGistSyncConfig,
+  getGistSyncStatus,
+  setGistSyncEnabled,
+  setupGistSync,
+  triggerGistSync,
+} from '@/services/gist-sync';
+import { importData, resetAllData } from '@/services/import-export';
+import { addCard, delayCard, deleteNote, rateCard, removeCard, saveNote, setPauseStatus } from '@/services/learning';
+import { updateSettings } from '@/services/settings';
 
 type Command<Name extends MessageName> = {
   handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;

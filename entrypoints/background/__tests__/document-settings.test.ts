@@ -120,12 +120,16 @@ describe('document settings through background commands', () => {
     await dispatch('getSettings');
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const changes = Object.assign(Object.create({ badgeEnabled: false }), { theme: undefined, unknown: 1 });
+    const before = await readLearningDocument();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Number.NaN);
 
     await dispatch('updateSettings', { changes: {} });
     await dispatch('updateSettings', { changes });
 
     expect(writes).not.toHaveBeenCalled();
-    expect(await readLearningDocument()).toEqual({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
+    expect(await readLearningDocument()).toEqual(before);
+    vi.useRealTimers();
     await dispatch('updateSettings', { changes: { theme: undefined, maxNewCardsPerDay: 5 } });
     expect((await readLearningDocument())?.settings).toEqual({ maxNewCardsPerDay: 5 });
   });
