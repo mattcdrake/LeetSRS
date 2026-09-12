@@ -1,6 +1,5 @@
 import { translations } from '@/i18n';
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
-import type { GitHubClient } from '@/infrastructure/github/client';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { createGistFromBackup } from './gist-setup';
@@ -14,10 +13,6 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   }
 
   const github = await getAuthenticatedGitHubClient(config.pat);
-  return createGist(github);
-}
-
-export async function createGist(github: GitHubClient): Promise<{ gistId: string }> {
   const document = await readLearningDocument();
   if (!document) {
     throw new Error('Learning document is not initialized');

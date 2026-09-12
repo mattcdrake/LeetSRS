@@ -55,10 +55,6 @@ export async function createNewGist(): Promise<{ gistId: string }> {
   }
 
   const github = await getAuthenticatedGitHubClient(config.pat);
-  return createGist(github);
-}
-
-export async function createGist(github: GitHubClient): Promise<{ gistId: string }> {
   const exportJson = await exportData();
 
   return createGistFromBackup(github, exportJson, (await getStoredTranslations()).settings.gistSync.gistDescription);
