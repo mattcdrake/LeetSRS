@@ -210,7 +210,7 @@ const pl: Translations = {
       patHelpLink: 'Ustawienia GitHub',
       // Gist selection
       gistIdLabel: 'ID Gista',
-      gistIdPlaceholder: 'Wpisz istniejące ID Gista lub utwórz nowy',
+      gistIdPlaceholder: 'Wpisz istniejące ID Gista',
       createNewGist: 'Utwórz nowy Gist',
       // Sync controls
       enableSync: 'Włącz automatyczną synchronizację',
@@ -221,6 +221,10 @@ const pl: Translations = {
       lastSyncNever: 'Nigdy',
       // Errors
       syncFailed: 'Synchronizacja nie powiodła się',
+      edit: 'Edytuj',
+      cancel: 'Anuluj',
+      connectionHelp:
+        'Przeglądarka synchronizuje połączenie i ustawienie automatycznej synchronizacji. Stan ostatniej synchronizacji dotyczy tylko tej przeglądarki.',
       destination: 'Miejsce docelowe',
       existingGist: 'Użyj istniejącego Gista',
       save: 'Zapisz',
