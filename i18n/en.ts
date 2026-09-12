@@ -207,18 +207,10 @@ const en = {
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
       patHelpText: 'Create a token with "gist" scope at',
       patHelpLink: 'GitHub Settings',
-      validatePat: 'Validate',
-      validating: 'Validating...',
-      patValid: 'Valid',
-      patInvalid: 'Invalid token',
       // Gist selection
       gistIdLabel: 'Gist ID',
       gistIdPlaceholder: 'Enter existing Gist ID or create new',
       createNewGist: 'Create New Gist',
-      creating: 'Creating...',
-      validateGist: 'Validate',
-      gistValid: 'Valid',
-      gistInvalid: 'Invalid gist',
       // Sync controls
       enableSync: 'Enable automatic sync',
       syncNow: 'Sync Now',
@@ -226,13 +218,17 @@ const en = {
       // Status
       lastSync: 'Last sync',
       lastSyncNever: 'Never',
-      lastSyncPushed: 'Pushed',
-      lastSyncPulled: 'Pulled',
       // Errors
-      patRequired: 'PAT is required to enable sync',
-      gistRequired: 'Gist ID is required to enable sync',
       syncFailed: 'Sync failed',
-      createGistFailed: 'Failed to create gist',
+      destination: 'Destination',
+      existingGist: 'Use existing Gist',
+      save: 'Save',
+      saving: 'Saving…',
+      saved: 'Connection saved',
+      saveFailed: 'Connection could not be saved',
+      savedSyncFailed: 'Connection saved, but sync failed',
+      synced: 'Sync complete',
+      configFailed: 'Could not load the saved connection',
     },
 
     // About section

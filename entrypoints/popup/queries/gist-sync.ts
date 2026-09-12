@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { GistSyncConfig } from '@/domain/gist-sync';
+import type { GistSetup } from '@/domain/gist-sync';
 import { sendMessage } from '@/infrastructure/browser/messages';
 
 export const gistSyncQueryKeys = {
@@ -12,6 +12,7 @@ export function useGistSyncConfigQuery() {
   return useQuery({
     queryKey: gistSyncQueryKeys.config,
     queryFn: () => sendMessage('getGistSyncConfig'),
+    refetchInterval: 15000,
   });
 }
 
@@ -23,47 +24,27 @@ export function useGistSyncStatusQuery() {
   });
 }
 
-export function useSetGistSyncConfigMutation() {
+export function useSetupGistSyncMutation() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (config: Partial<GistSyncConfig>) => sendMessage('setGistSyncConfig', { config }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
-    },
+    mutationFn: (setup: GistSetup) => sendMessage('setupGistSync', setup),
+    // A pull may have completed even if status persistence or the response failed.
+    onSettled: () => queryClient.invalidateQueries(),
+  });
+}
+
+export function useSetGistSyncEnabledMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (enabled: boolean) => sendMessage('setGistSyncEnabled', { enabled }),
+    onSettled: () => queryClient.invalidateQueries(),
   });
 }
 
 export function useTriggerGistSyncMutation() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: () => sendMessage('triggerGistSync'),
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-    },
-  });
-}
-
-export function useCreateNewGistMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => sendMessage('createNewGist'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.all });
-    },
-  });
-}
-
-export function useValidatePatMutation() {
-  return useMutation({
-    mutationFn: (pat: string) => sendMessage('validatePat', { pat }),
-  });
-}
-
-export function useValidateGistIdMutation() {
-  return useMutation({
-    mutationFn: ({ gistId, pat }: { gistId: string; pat: string }) => sendMessage('validateGistId', { gistId, pat }),
+    onSettled: () => queryClient.invalidateQueries(),
   });
 }

@@ -3,11 +3,10 @@ import type { State as FsrsState } from 'ts-fsrs';
 import { z } from 'zod';
 import { type Card, noteTextSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
 import {
+  type GistConnectionResult,
   type GistSyncConfig,
   type GistSyncStatus,
-  type GistValidationResult,
-  gistSyncConfigUpdateSchema,
-  type PatValidationResult,
+  gistSetupSchema,
   type SyncResult,
 } from '@/domain/gist-sync';
 import { type Settings, settingsUpdateSchema } from '@/domain/settings';
@@ -38,12 +37,10 @@ export const messagePayloadSchemas = {
   importData: z.object({ jsonData: z.string() }),
   resetAllData: z.undefined(),
   getGistSyncConfig: z.undefined(),
-  setGistSyncConfig: z.object({ config: gistSyncConfigUpdateSchema }),
+  setupGistSync: gistSetupSchema,
+  setGistSyncEnabled: z.object({ enabled: z.boolean() }),
   getGistSyncStatus: z.undefined(),
   triggerGistSync: z.undefined(),
-  createNewGist: z.undefined(),
-  validatePat: z.object({ pat: z.string() }),
-  validateGistId: z.object({ gistId: z.string(), pat: z.string() }),
 };
 
 type MessagePayload<Name extends keyof typeof messagePayloadSchemas> = z.infer<(typeof messagePayloadSchemas)[Name]>;
@@ -70,12 +67,10 @@ export interface ExtensionMessageMap {
   importData(data: MessagePayload<'importData'>): void;
   resetAllData(): void;
   getGistSyncConfig(): GistSyncConfig;
-  setGistSyncConfig(data: MessagePayload<'setGistSyncConfig'>): void;
+  setupGistSync(data: MessagePayload<'setupGistSync'>): GistConnectionResult;
+  setGistSyncEnabled(data: MessagePayload<'setGistSyncEnabled'>): GistConnectionResult;
   getGistSyncStatus(): GistSyncStatus;
   triggerGistSync(): SyncResult;
-  createNewGist(): { gistId: string };
-  validatePat(data: MessagePayload<'validatePat'>): PatValidationResult;
-  validateGistId(data: MessagePayload<'validateGistId'>): GistValidationResult;
 }
 
 export type MessageName = keyof ExtensionMessageMap;

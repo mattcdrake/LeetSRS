@@ -36,7 +36,7 @@ describe('registered background execution', () => {
     await dispatch('rateCard', { input: { ...problem, rating: 3 } });
     await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });
     await dispatch('updateSettings', { changes: { language: 'de' } });
-    await dispatch('setGistSyncConfig', { config: { pat: 'secret', gistId: 'gist', enabled: true } });
+    await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
     const staleLocal = {
       'leetsrs:cards': { stale: 'invalid leftover' },
       'leetsrs:stats': { stale: 'invalid leftover' },
@@ -86,7 +86,9 @@ describe('registered background execution', () => {
     'reports reset failure at %s without resurrecting data on restart',
     async (stage) => {
       await dispatch('addCard', { problem });
-      await dispatch('setGistSyncConfig', { config: { pat: 'secret', gistId: 'gist', enabled: true } });
+      await fakeBrowser.storage.sync.set({
+        'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true },
+      });
       const before = await dispatch('exportData');
       const failure = new Error('Reset storage unavailable');
       if (stage === 'document') {
@@ -139,32 +141,6 @@ describe('registered background execution', () => {
     await Promise.all([first, second]);
     expect(await dispatch('getNote', { slug: problem.slug })).toBe('next edit');
   });
-
-  it('serializes whole-connection updates and exposes the previous record while a write is pending', async () => {
-    await dispatch('setGistSyncConfig', { config: { pat: 'old', gistId: 'old-gist', enabled: false } });
-    const started = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
-    const write = browser.storage.sync.set.bind(browser.storage.sync);
-    const writes = vi.spyOn(browser.storage.sync, 'set').mockImplementationOnce(async (items) => {
-      started.resolve();
-      await release.promise;
-      await write(items);
-    });
-    const changingPat = dispatch('setGistSyncConfig', { config: { pat: 'new' } });
-    const changingGist = dispatch('setGistSyncConfig', { config: { gistId: 'new-gist' } });
-    const enabling = dispatch('setGistSyncConfig', { config: { enabled: true } });
-    await started.promise;
-    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'old', gistId: 'old-gist', enabled: false });
-    expect(writes).toHaveBeenCalledOnce();
-    release.resolve();
-    await Promise.all([changingPat, changingGist, enabling]);
-    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'new', gistId: 'new-gist', enabled: true });
-    expect(writes.mock.calls).toEqual([
-      [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'old-gist', enabled: false } }],
-      [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new-gist', enabled: false } }],
-      [{ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new-gist', enabled: true } }],
-    ]);
-  });
 });
 
 const invalidPayloads: [MessageName, unknown][] = [
@@ -181,9 +157,10 @@ const invalidPayloads: [MessageName, unknown][] = [
   ['getLastNDaysStats', { days: -1 }],
   ['getNextNDaysStats', { days: '14' }],
   ['importData', { jsonData: {} }],
-  ['setGistSyncConfig', { config: { gistId: 42 } }],
-  ['validatePat', { pat: null }],
-  ['validateGistId', { gistId: 'gist', pat: 42 }],
+  ['setupGistSync', { mode: 'existing', gistId: 42, pat: 'token' }],
+  ['setupGistSync', { mode: 'create', pat: null }],
+  ['setupGistSync', { mode: 'existing', gistId: 'gist', pat: '  ' }],
+  ['setGistSyncEnabled', { enabled: 'true' }],
   ['triggerGistSync', {}],
 ];
 
