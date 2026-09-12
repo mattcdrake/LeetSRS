@@ -3,11 +3,15 @@ import { addLocalDays, formatLocalDate } from '@/domain/calendar';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { findCard, type LearningDocument } from '@/domain/learning-document';
 import { calculateDelayedDueDate, isDue } from '@/domain/review';
+import type { SettingsUpdate } from '@/domain/settings';
 import { createDailyStats, recordReview } from '@/domain/statistics';
-import { readLearningDocument } from '@/infrastructure/storage/learning-document';
-import { saveLocalLearningDocument } from './save-local-learning-document';
+import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
+
+async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<void> {
+  await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
+}
 
 function requireCard(document: LearningDocument, slug: string): Card {
   const card = findCard(document, slug);
@@ -115,4 +119,14 @@ export async function deleteNote(slug: string): Promise<void> {
 
   delete card.note;
   await saveLocalLearningDocument(document, now);
+}
+
+export async function updateSettings(changes: SettingsUpdate): Promise<void> {
+  if (Object.keys(changes).length === 0) {
+    return;
+  }
+
+  const now = new Date();
+  const document = await readLearningDocument();
+  await saveLocalLearningDocument({ ...document, settings: { ...document.settings, ...changes } }, now);
 }

@@ -29,8 +29,16 @@ import {
   triggerGistSync,
 } from '@/services/gist-sync';
 import { importData, resetAllData } from '@/services/import-export';
-import { addCard, delayCard, deleteNote, rateCard, removeCard, saveNote, setPauseStatus } from '@/services/learning';
-import { updateSettings } from '@/services/settings';
+import {
+  addCard,
+  delayCard,
+  deleteNote,
+  rateCard,
+  removeCard,
+  saveNote,
+  setPauseStatus,
+  updateSettings,
+} from '@/services/learning';
 
 type Command<Name extends MessageName> = {
   handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
