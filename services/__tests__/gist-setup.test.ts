@@ -7,9 +7,9 @@ import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learn
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import * as documentSetup from '../document-gist-setup';
+import * as documentSetup from '../document-gist-sync';
 import * as documentBackup from '../document-import-export';
-import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-setup';
+import { createNewGist, setGistSyncConfig, validateGistId } from '../gist-sync';
 
 const { getGist, create, getAuthenticated, exportData } = vi.hoisted(() => ({
   getGist: vi.fn(),

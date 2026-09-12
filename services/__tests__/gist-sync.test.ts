@@ -8,11 +8,11 @@ import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { setGistSyncConfig } from '@/services/gist-setup';
+import { setGistSyncConfig } from '@/services/gist-sync';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
-import * as documentSync from '../document-github-sync';
+import * as documentSync from '../document-gist-sync';
 import * as documentBackup from '../document-import-export';
-import { getGistSyncStatus, triggerGistSync } from '../github-sync';
+import { getGistSyncStatus, triggerGistSync } from '../gist-sync';
 
 // Mock Octokit
 const mockGetAuthenticated = vi.fn();
@@ -42,7 +42,7 @@ vi.mock('../import-export', () => ({
   importData: (...args: unknown[]) => mockImportData(...args),
 }));
 
-describe('github-sync', () => {
+describe('gist-sync', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';

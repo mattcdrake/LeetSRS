@@ -11,7 +11,7 @@ import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/
 import { removeDayStart } from '@/infrastructure/storage/migrations/003-remove-day-start';
 import { runStartupMigrations, setSchemaVersion } from '@/infrastructure/storage/migrations/runner';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
-import { setGistSyncConfig } from '@/services/gist-setup';
+import { setGistSyncConfig } from '@/services/gist-sync';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
