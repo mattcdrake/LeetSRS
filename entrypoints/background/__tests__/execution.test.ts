@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
-import {
-  type MessageData,
-  type MessageName,
-  messagePayloadSchemas,
-  onMessage,
-} from '@/infrastructure/browser/messages';
+import { type MessageName, messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
+import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -15,12 +11,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   onMessage: vi.fn(),
 }));
-
-function dispatch(name: MessageName, data?: unknown) {
-  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
-  if (!listener) throw new Error(`Missing listener for ${name}`);
-  return listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} });
-}
 
 beforeEach(async () => {
   fakeBrowser.reset();
@@ -73,7 +63,7 @@ describe('registered background execution', () => {
     await dispatch('resetAllData');
 
     const empty = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
-    expect(JSON.parse((await dispatch('exportData')) as string)).toEqual(empty);
+    expect(JSON.parse(await dispatch('exportData'))).toEqual(empty);
     expect(await dispatch('getGistSyncConfig')).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await dispatch('getGistSyncStatus')).toEqual({
       lastSyncTime: null,
@@ -90,7 +80,7 @@ describe('registered background execution', () => {
     expect(await dispatch('getAllCards')).toEqual([]);
     expect(await dispatch('getNote', { slug: problem.slug })).toBeNull();
     expect(await dispatch('getTodayStats')).toBeNull();
-    expect(JSON.parse((await dispatch('exportData')) as string)).toEqual(empty);
+    expect(JSON.parse(await dispatch('exportData'))).toEqual(empty);
   });
   it.each(['document', 'connection cleanup'] as const)(
     'reports reset failure at %s without resurrecting data on restart',

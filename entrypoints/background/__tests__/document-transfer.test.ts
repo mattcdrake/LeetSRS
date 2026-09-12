@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
-import { type MessageData, type MessageName, onMessage } from '@/infrastructure/browser/messages';
+import { onMessage } from '@/infrastructure/browser/messages';
+import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
@@ -18,14 +19,8 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
-function dispatch(name: MessageName, data?: unknown) {
-  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
-  if (!listener) throw new Error(`Missing listener for ${name}`);
-  return listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} });
-}
-
 async function exported(): Promise<LearningDocument> {
-  return learningDocumentSchema.parse(JSON.parse((await dispatch('exportData')) as string));
+  return learningDocumentSchema.parse(JSON.parse(await dispatch('exportData')));
 }
 
 beforeEach(async () => {

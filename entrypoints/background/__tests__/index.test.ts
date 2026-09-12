@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { type MessageData, type MessageName, onMessage } from '@/infrastructure/browser/messages';
+import { onMessage } from '@/infrastructure/browser/messages';
+import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
 
@@ -9,12 +10,6 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
   onMessage: vi.fn(),
 }));
-
-function dispatch(name: MessageName, data?: unknown) {
-  const listener = vi.mocked(onMessage).mock.calls.find(([registered]) => registered === name)?.[1];
-  if (!listener) throw new Error(`Missing listener for ${name}`);
-  return listener({ id: 1, type: name, data: data as MessageData<MessageName>, timestamp: 0, sender: {} });
-}
 
 function startBackground() {
   vi.mocked(onMessage).mockClear();
@@ -112,7 +107,7 @@ describe('document startup through registered background commands', () => {
       expect(await dispatch('getSettings')).toMatchObject({ language: stage === 'cleanup' ? 'pl' : 'de' });
       expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       if (stage !== 'cleanup') {
-        expect(JSON.parse((await dispatch('exportData')) as string)).toEqual({
+        expect(JSON.parse(await dispatch('exportData'))).toEqual({
           schemaVersion: 6,
           cards: {},
           stats: {},
