@@ -129,6 +129,17 @@ export async function setupGistSync(input: GistSetup): Promise<GistConnectionRes
       createdGistId = gistId;
     }
     await writeGistConnection({ pat: setup.pat, gistId, enabled: previous.enabled });
+    if (createdGistId) {
+      try {
+        const timestamp = new Date().toISOString();
+        await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: 'push' });
+        lastError = null;
+        return { saved: true, sync: { success: true, action: 'pushed', timestamp } };
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : 'Failed to record Gist creation';
+        return { saved: true, sync: { success: false, error: lastError } };
+      }
+    }
     return { saved: true, ...(previous.enabled ? { sync: await triggerGistSync() } : {}) };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown Gist setup error';

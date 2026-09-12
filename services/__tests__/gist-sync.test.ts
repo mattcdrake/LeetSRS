@@ -84,6 +84,57 @@ describe('document Gist sync', () => {
     });
   });
 
+  it.each([false, true])('records creation as a push with automatic sync enabled=%s', async (enabled) => {
+    await writeGistConnection({ ...connection, enabled });
+    mockGistsGet.mockRejectedValueOnce(new Error('previous sync failed'));
+    await documentSync.triggerGistSync();
+    mockGistsGet.mockClear();
+    mockGistsCreate.mockResolvedValue({ data: { id: 'created' } });
+    mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } } });
+
+    expect(await documentSync.setupGistSync({ mode: 'create', pat: 'entered' })).toEqual({
+      saved: true,
+      sync: { success: true, action: 'pushed', timestamp: now },
+    });
+    expect(await documentSync.getGistSyncStatus()).toEqual({
+      lastSyncTime: now,
+      lastSyncDirection: 'push',
+      lastError: null,
+      syncInProgress: false,
+    });
+    expect(await documentSync.getGistSyncConfig()).toEqual({ pat: 'entered', gistId: 'created', enabled });
+    expect(await readLearningDocument()).toEqual(local);
+    expect(mockGistsCreate).toHaveBeenCalledOnce();
+    expect(mockGistsGet).not.toHaveBeenCalled();
+    expect(mockGistsUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    'retains the created connection after status failure with enabled=%s and retries without recreating',
+    async (enabled) => {
+      await writeGistConnection({ ...connection, enabled });
+      mockGistsCreate.mockResolvedValue({ data: { id: 'created' } });
+      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('status failed'));
+      expect(await documentSync.setupGistSync({ mode: 'create', pat: 'entered' })).toEqual({
+        saved: true,
+        sync: { success: false, error: 'status failed' },
+      });
+      expect(await documentSync.getGistSyncConfig()).toEqual({ pat: 'entered', gistId: 'created', enabled });
+      expect(await documentSync.getGistSyncStatus()).toMatchObject({
+        lastSyncTime: 'previous-sync',
+        lastSyncDirection: 'pull',
+        lastError: 'status failed',
+      });
+      expect(await readLearningDocument()).toEqual(local);
+      mockGistsGet.mockResolvedValue({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
+      });
+      expect(await documentSync.triggerGistSync()).toMatchObject({ success: true });
+      expect((await documentSync.getGistSyncStatus()).lastError).toBeNull();
+      expect(mockGistsCreate).toHaveBeenCalledOnce();
+    }
+  );
+
   it('returns a created ID after failed save and retries in existing mode without creating again', async () => {
     await replaceLearningDocument({ ...local, settings: { language: 'zh-CN' }, dataUpdatedAt: undefined });
     mockGistsCreate.mockResolvedValue({ data: { id: 'created' } });

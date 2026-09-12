@@ -192,12 +192,19 @@ describe('file and Gist transfers through registered background commands', () =>
       const release = Promise.withResolvers<void>();
       if (operation === 'existing setup')
         github.get.mockResolvedValueOnce({ data: { files: { 'leetsrs-backup.json': {} } } });
-      github.create.mockResolvedValueOnce({ data: { id: 'created' } });
-      github.get.mockImplementationOnce(async () => {
-        started.resolve();
-        await release.promise;
-        return { data: { files: {} } };
-      });
+      if (operation === 'create setup') {
+        github.create.mockImplementationOnce(async () => {
+          started.resolve();
+          await release.promise;
+          return { data: { id: 'created' } };
+        });
+      } else {
+        github.get.mockImplementationOnce(async () => {
+          started.resolve();
+          await release.promise;
+          return { data: { files: {} } };
+        });
+      }
       const before = await exported();
       let finished = false;
       const first = (
@@ -228,10 +235,13 @@ describe('file and Gist transfers through registered background commands', () =>
       release.resolve();
       expect(await first).toMatchObject({ saved: true, sync: { success: true } });
       await Promise.all([disable, automatic, edit]);
-      expect(github.get).toHaveBeenCalledTimes(operation === 'existing setup' ? 2 : 1);
+      expect(github.get).toHaveBeenCalledTimes(
+        operation === 'existing setup' ? 2 : operation === 'create setup' ? 0 : 1
+      );
       expect((await dispatch('getGistSyncConfig')).enabled).toBe(false);
       expect(await dispatch('getAllCards')).toMatchObject([buildProblem()]);
-      expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
+      const upload = operation === 'create setup' ? github.create : github.update;
+      expect(JSON.parse(upload.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
     }
   );
 
