@@ -1,6 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { browser } from 'wxt/browser';
 import type { GistSetup } from '@/domain/gist-sync';
 import { sendMessage } from '@/infrastructure/browser/messages';
 
@@ -11,17 +9,10 @@ export const gistSyncQueryKeys = {
 };
 
 export function useGistSyncConfigQuery() {
-  const queryClient = useQueryClient();
-  useEffect(() => {
-    const refresh = (_changes: unknown, area: string) => {
-      if (area === 'sync') void queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
-    };
-    browser.storage.onChanged.addListener(refresh);
-    return () => browser.storage.onChanged.removeListener(refresh);
-  }, [queryClient]);
   return useQuery({
     queryKey: gistSyncQueryKeys.config,
     queryFn: () => sendMessage('getGistSyncConfig'),
+    refetchInterval: 15000,
   });
 }
 

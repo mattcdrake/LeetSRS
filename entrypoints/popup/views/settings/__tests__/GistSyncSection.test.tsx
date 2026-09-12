@@ -2,8 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GistConnectionResult, GistSyncConfig } from '@/domain/gist-sync';
 import { gistSyncQueryKeys } from '@/entrypoints/popup/queries/gist-sync';
 import { sendMessage } from '@/infrastructure/browser/messages';
@@ -18,7 +17,6 @@ let config: GistSyncConfig;
 let test: ReturnType<typeof createTestWrapper>;
 
 beforeEach(() => {
-  fakeBrowser.reset();
   config = { pat: 'saved-pat', gistId: 'saved-gist', enabled: false };
   messages
     .reset()
@@ -34,6 +32,8 @@ beforeEach(() => {
     .resolve('triggerGistSync', { success: true, action: 'no-change', timestamp: '2026-09-12' });
   test = createTestWrapper();
 });
+
+afterEach(() => vi.useRealTimers());
 
 async function open() {
   const view = render(<GistSyncSection />, { wrapper: test.wrapper });
@@ -95,8 +95,9 @@ describe('Gist setup form', () => {
   });
 
   it.each(['setup failure', 'transport failure'])(
-    'preserves drafts through browser-sync updates, refetch, and %s',
+    'preserves drafts when polling discovers browser-sync updates and after %s',
     async (failure) => {
+      vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
       messages.handle('setupGistSync', () => {
         if (failure === 'transport failure') throw new Error('Disconnected');
         return { saved: false, error: 'Network unavailable' };
@@ -105,7 +106,7 @@ describe('Gist setup form', () => {
       enterCredentials();
       config = { pat: 'other-browser-pat', gistId: 'other-browser-gist', enabled: true };
       await act(async () => {
-        await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': config });
+        await vi.advanceTimersByTimeAsync(15000);
       });
       await waitFor(() => expect(screen.getByRole('link', { name: /other-browser-gist/ })).toBeInTheDocument());
       expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');

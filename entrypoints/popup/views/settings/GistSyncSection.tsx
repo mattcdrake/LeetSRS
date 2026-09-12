@@ -74,6 +74,7 @@ export function GistSyncSection() {
     }
   }
 
+  const isError = outcome ? outcome.error : !!status?.lastError;
   const inputClass =
     'w-full px-2 py-1 rounded border bg-tertiary text-primary border-current text-sm disabled:opacity-50';
   const buttonClass = `px-3 py-2 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`;
@@ -195,8 +196,8 @@ export function GistSyncSection() {
       )}
       {(outcome || status?.lastError) && (
         <p
-          role={outcome?.error || (!outcome && status?.lastError) ? 'alert' : 'status'}
-          className={`mt-3 text-sm break-words ${outcome?.error || (!outcome && status?.lastError) ? 'text-red-700 [.dark_&]:text-red-400' : 'text-primary'}`}
+          role={isError ? 'alert' : 'status'}
+          className={`mt-3 text-sm break-words ${isError ? 'text-red-700 [.dark_&]:text-red-400' : 'text-primary'}`}
         >
           {outcome?.text ?? `${t.syncFailed}: ${status?.lastError}`}
         </p>
