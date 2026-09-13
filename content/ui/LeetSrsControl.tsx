@@ -3,12 +3,11 @@ import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigge
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import type { Translations } from '@/i18n';
 import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
-import type { ArrivalRefreshState } from '@/ui/useArrivalRefresh';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 
-export function LeetSrsControl({ refresh }: { refresh?: ArrivalRefreshState }) {
+export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -33,19 +32,12 @@ export function LeetSrsControl({ refresh }: { refresh?: ArrivalRefreshState }) {
       </TooltipTrigger>
       <Popover placement="bottom end" offset={8} className="z-50">
         <Dialog aria-label={t.app.name}>
-          {(refresh?.pending || refresh?.notice) && (
-            <p role="status" className="max-w-80 px-3 py-2 text-sm">
-              {refresh.pending ? t.settings.gistSync.syncing : refresh.notice}
-            </p>
-          )}
-          <fieldset disabled={refresh?.pending} className="border-0 m-0 p-0">
-            <RatingMenu
-              t={t}
-              onRate={rateCurrentProblem}
-              onAddWithoutRating={addCurrentProblem}
-              onSelect={() => setMenuOpen(false)}
-            />
-          </fieldset>
+          <RatingMenu
+            t={t}
+            onRate={rateCurrentProblem}
+            onAddWithoutRating={addCurrentProblem}
+            onSelect={() => setMenuOpen(false)}
+          />
         </Dialog>
       </Popover>
     </DialogTrigger>

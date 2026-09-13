@@ -1,14 +1,16 @@
 /** @vitest-environment happy-dom */
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { buildSettings } from '@/test/utils/settings-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
 import App from '../App';
 
 vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
 
-vi.mock('@/entrypoints/popup/queries/settings', () => ({
+vi.mock('@/entrypoints/popup/queries/settings', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entrypoints/popup/queries/settings')>()),
   useSettingsQuery: () => ({ data: buildSettings() }),
 }));
 vi.mock('@/entrypoints/popup/hooks/useTheme', () => ({ useTheme: vi.fn() }));
@@ -38,7 +40,7 @@ describe('App theme', () => {
   });
 
   it('applies the resolved theme to the document', () => {
-    render(<App />);
+    render(<App />, { wrapper: createTestWrapper().wrapper });
 
     expect(document.documentElement).toHaveClass('dark');
     expect(document.body).toHaveClass('dark');
@@ -52,8 +54,8 @@ describe('App theme', () => {
 it('refreshes on opening, keeps saved data visible, and releases edits with the background result', async () => {
   const refresh = Promise.withResolvers<undefined>();
   vi.mocked(sendMessage).mockReturnValue(refresh.promise);
-  render(<App />);
-  expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival');
+  render(<App />, { wrapper: createTestWrapper().wrapper });
+  await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival'));
   expect(screen.getByText('Saved cards')).toBeVisible();
   expect(screen.getByRole('status')).toHaveTextContent('Syncing...');
   expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();

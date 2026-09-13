@@ -132,8 +132,11 @@ it('refreshes on return to an existing tab and disposes arrival listeners', asyn
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
   await act(async () => document.dispatchEvent(new Event('visibilitychange')));
   expect(sendMessage).toHaveBeenCalledExactlyOnceWith('refreshGistOnArrival');
+  vi.mocked(sendMessage).mockResolvedValueOnce({ success: false, error: translations.en.syncNotices.unavailable });
   await act(async () => window.dispatchEvent(new Event('focus')));
   expect(sendMessage).toHaveBeenCalledTimes(2);
+  const toast = document.querySelector('leetsrs-toast')?.shadowRoot?.querySelector('[role="status"]');
+  expect(toast).toHaveTextContent(translations.en.syncNotices.unavailable);
   act(() => ctx.notifyInvalidated());
   await act(async () => window.dispatchEvent(new Event('focus')));
   expect(sendMessage).toHaveBeenCalledTimes(2);

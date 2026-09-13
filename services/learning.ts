@@ -7,13 +7,13 @@ import type { SettingsUpdate } from '@/domain/settings';
 import { createDailyStats, recordReview } from '@/domain/statistics';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
-import { requestAutomaticSync } from './gist-sync';
+import { triggerGistSync } from './gist-sync';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
 
 async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<LearningDocument> {
   const saved = await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
-  void requestAutomaticSync(true);
+  void triggerGistSync('save');
   return saved;
 }
 

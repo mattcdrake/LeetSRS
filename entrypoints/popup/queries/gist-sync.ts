@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import type { GistSetup } from '@/domain/gist-sync';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
@@ -47,4 +48,10 @@ export function useTriggerGistSyncMutation() {
   return useMutation({
     mutationFn: () => sendMessage('triggerGistSync'),
   });
+}
+
+export function useArrivalRefresh() {
+  const refresh = useMutation({ networkMode: 'always', mutationFn: () => sendMessage('refreshGistOnArrival') });
+  useEffect(() => refresh.mutate(), [refresh.mutate]);
+  return refresh;
 }

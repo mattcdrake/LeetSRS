@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useArrivalRefresh } from '@/ui/useArrivalRefresh';
+import { useArrivalRefresh } from '@/entrypoints/popup/queries/gist-sync';
 import './App.css';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { BottomNav, type ViewId } from './components/BottomNav';
@@ -13,6 +13,7 @@ function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
   const theme = useTheme();
   const refresh = useArrivalRefresh();
+  const notice = refresh.error?.message ?? (refresh.data && !refresh.data.success ? refresh.data.error : null);
   const t = useI18n();
 
   useEffect(() => {
@@ -37,9 +38,9 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      {(refresh.pending || refresh.notice) && (
+      {(refresh.isPending || notice) && (
         <p role="status" className="px-4 py-2 text-sm">
-          {refresh.pending ? t.settings.gistSync.syncing : refresh.notice}
+          {refresh.isPending ? t.settings.gistSync.syncing : notice}
         </p>
       )}
       <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>

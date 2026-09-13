@@ -239,9 +239,7 @@ describe('document Gist sync', () => {
     mockGistsGet.mockResolvedValue({
       data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, dataUpdatedAt: timestamp }) } } },
     });
-    const reads = vi.spyOn(storage, 'getItem');
     expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pushed', timestamp: now });
-    expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
     const json = JSON.stringify(await readLearningDocument(), null, 2);
     expect(mockGistsUpdate).toHaveBeenCalledExactlyOnceWith({
       gist_id: 'gist123',

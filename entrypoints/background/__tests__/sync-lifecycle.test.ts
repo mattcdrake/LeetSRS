@@ -30,15 +30,20 @@ beforeEach(async () => {
 });
 afterEach(() => vi.useRealTimers());
 
-it('responds to local saves during slow GitHub work and uploads the current document', async () => {
+function pauseRequest(request: typeof github.get) {
   const started = Promise.withResolvers<void>();
-  const download = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
-  github.get.mockImplementationOnce(() => {
+  const response = Promise.withResolvers<unknown>();
+  request.mockImplementationOnce(() => {
     started.resolve();
-    return download.promise;
+    return response.promise;
   });
+  return { ...response, started: started.promise };
+}
+
+it('responds to local saves during slow GitHub work and uploads the current document', async () => {
+  const download = pauseRequest(github.get);
   const sync = dispatch('triggerGistSync');
-  await started.promise;
+  await download.started;
   try {
     await dispatch('addCard', { problem: buildProblem() });
     await dispatch('saveNote', { slug: 'two-sum', text: 'Saved while offline' });
@@ -53,19 +58,14 @@ it('responds to local saves during slow GitHub work and uploads the current docu
 });
 
 it('starts sync after a save, shares duplicate triggers, and coalesces intervening saves into one follow-up', async () => {
-  const started = Promise.withResolvers<void>();
-  const upload = Promise.withResolvers<void>();
-  github.update.mockImplementationOnce(() => {
-    started.resolve();
-    return upload.promise;
-  });
+  const upload = pauseRequest(github.update);
   await dispatch('addCard', { problem: buildProblem() });
-  await started.promise;
+  await upload.started;
   const duplicate = dispatch('triggerGistSync');
   await dispatch('saveNote', { slug: 'two-sum', text: 'first draft' });
   await dispatch('saveNote', { slug: 'two-sum', text: 'latest draft' });
   expect(github.get).toHaveBeenCalledTimes(1);
-  upload.resolve();
+  upload.resolve(undefined);
   await duplicate;
   await vi.waitFor(() => expect(github.update).toHaveBeenCalledTimes(2));
   await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
@@ -78,14 +78,9 @@ it('starts sync after a save, shares duplicate triggers, and coalesces interveni
 it.each(['import', 'reset', 'connection'] as const)(
   'ignores a late download after %s and allows another attempt',
   async (operation) => {
-    const started = Promise.withResolvers<void>();
-    const download = Promise.withResolvers<{ data: { files: { 'leetsrs-backup.json': { content: string } } } }>();
-    github.get.mockImplementationOnce(() => {
-      started.resolve();
-      return download.promise;
-    });
+    const download = pauseRequest(github.get);
     const sync = dispatch('triggerGistSync');
-    await started.promise;
+    await download.started;
     if (operation === 'import') {
       await dispatch('importData', {
         jsonData: JSON.stringify({ schemaVersion: 6, cards: {}, stats: {}, settings: { theme: 'dark' } }),
@@ -119,14 +114,9 @@ it.each(['success', 'offline', 'timeout'] as const)(
   'releases arrival edits after %s and ignores late responses',
   async (outcome) => {
     vi.useFakeTimers();
-    const started = Promise.withResolvers<void>();
-    const download = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
-    github.get.mockImplementationOnce(() => {
-      started.resolve();
-      return download.promise;
-    });
+    const download = pauseRequest(github.get);
     const arrival = dispatch('refreshGistOnArrival');
-    await started.promise;
+    await download.started;
     const saved = vi.fn();
     const edit = dispatch('addCard', { problem: buildProblem() }).then(saved);
     await vi.advanceTimersByTimeAsync(2999);
@@ -205,14 +195,9 @@ it.each(['resolve', 'reject'] as const)(
   'ignores late upload %s after timeout without altering newer sync status',
   async (outcome) => {
     vi.useFakeTimers();
-    const started = Promise.withResolvers<void>();
-    const upload = Promise.withResolvers<void>();
-    github.update.mockImplementationOnce(() => {
-      started.resolve();
-      return upload.promise;
-    });
+    const upload = pauseRequest(github.update);
     const sync = dispatch('triggerGistSync');
-    await started.promise;
+    await upload.started;
     const arrival = dispatch('refreshGistOnArrival');
     await vi.advanceTimersByTimeAsync(3000);
     expect(await arrival).toMatchObject({ success: false });
@@ -220,7 +205,7 @@ it.each(['resolve', 'reject'] as const)(
     expect(await dispatch('triggerGistSync')).toMatchObject({ success: true });
     const status = await dispatch('getGistSyncStatus');
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    if (outcome === 'resolve') upload.resolve();
+    if (outcome === 'resolve') upload.resolve(undefined);
     else upload.reject(new Error('late failure'));
     await vi.advanceTimersByTimeAsync(0);
     expect(writes).not.toHaveBeenCalled();
@@ -249,14 +234,9 @@ it('leaves the timestamp untouched and requests no sync for unchanged local valu
 it.each(['existing', 'create'] as const)(
   'does not restore a connection when %s setup finishes after reset',
   async (mode) => {
-    const started = Promise.withResolvers<void>();
-    const response = Promise.withResolvers<{ data: { id: string; files: { 'leetsrs-backup.json': object } } }>();
-    (mode === 'create' ? github.create : github.get).mockImplementationOnce(() => {
-      started.resolve();
-      return response.promise;
-    });
+    const response = pauseRequest(mode === 'create' ? github.create : github.get);
     const setup = dispatch('setupGistSync', { mode, pat: 'new-token', gistId: 'new-gist' });
-    await started.promise;
+    await response.started;
     await dispatch('resetAllData');
     response.resolve({ data: { id: 'created-gist', files: { 'leetsrs-backup.json': {} } } });
     expect(await setup).toMatchObject({ saved: false });
@@ -276,16 +256,33 @@ it('uses the selected language for temporary sync failures', async () => {
   });
 });
 
+it.each(['reset', 'connection'] as const)(
+  'does not restore stale credentials when a toggle overlaps %s',
+  async (change) => {
+    const previous = await fakeBrowser.storage.sync.get(null);
+    const connection = Promise.withResolvers<Record<string, unknown>>();
+    const started = Promise.withResolvers<void>();
+    vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementationOnce(() => {
+      started.resolve();
+      return connection.promise;
+    });
+    const toggle = dispatch('setGistSyncEnabled', { enabled: false });
+    await started.promise;
+    if (change === 'reset') await dispatch('resetAllData');
+    else await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'new', gistId: 'new', enabled: true } });
+    const current = await fakeBrowser.storage.sync.get(null);
+    connection.resolve(previous);
+    expect(await toggle).toMatchObject({ saved: false });
+    expect(await fakeBrowser.storage.sync.get(null)).toEqual(current);
+    expect(github.get).not.toHaveBeenCalled();
+  }
+);
+
 it('retains a save follow-up when arrival times out an existing upload', async () => {
   vi.useFakeTimers();
-  const started = Promise.withResolvers<void>();
-  const upload = Promise.withResolvers<void>();
-  github.update.mockImplementationOnce(() => {
-    started.resolve();
-    return upload.promise;
-  });
+  const upload = pauseRequest(github.update);
   await dispatch('addCard', { problem: buildProblem() });
-  await started.promise;
+  await upload.started;
   await dispatch('saveNote', { slug: 'two-sum', text: 'follow up after timeout' });
   const arrival = dispatch('refreshGistOnArrival');
   await vi.advanceTimersByTimeAsync(3000);
@@ -295,6 +292,40 @@ it('retains a save follow-up when arrival times out an existing upload', async (
   expect(JSON.parse(github.update.mock.calls[1][0].files['leetsrs-backup.json'].content).cards['two-sum'].note).toBe(
     'follow up after timeout'
   );
-  upload.resolve();
+  upload.resolve(undefined);
   await vi.advanceTimersByTimeAsync(0);
+});
+
+it('does not hold arrival edits behind a manual sync when automatic sync is disabled', async () => {
+  await dispatch('setGistSyncEnabled', { enabled: false });
+  const download = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
+  const started = Promise.withResolvers<void>();
+  github.get.mockImplementationOnce(() => {
+    started.resolve();
+    return download.promise;
+  });
+  const manual = dispatch('triggerGistSync');
+  await started.promise;
+  try {
+    expect(await dispatch('refreshGistOnArrival')).toBeUndefined();
+    await dispatch('addCard', { problem: buildProblem() });
+    expect((await readLearningDocument()).cards['two-sum']).toMatchObject(buildProblem());
+  } finally {
+    download.resolve({ data: { files: {} } });
+  }
+  await manual;
+  expect(github.get).toHaveBeenCalledTimes(1);
+});
+
+it('releases arrival edits at the deadline even while connection storage is pending', async () => {
+  vi.useFakeTimers();
+  const connection = Promise.withResolvers<Record<string, unknown>>();
+  vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementationOnce(async () => connection.promise);
+  const arrival = dispatch('refreshGistOnArrival');
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(await arrival).toMatchObject({ success: false });
+  await dispatch('addCard', { problem: buildProblem() });
+  connection.resolve({ 'leetsrs:gistConnection': { pat: 'obsolete', gistId: 'obsolete', enabled: true } });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(github.get.mock.calls.some(([args]) => args.gist_id === 'obsolete')).toBe(false);
 });

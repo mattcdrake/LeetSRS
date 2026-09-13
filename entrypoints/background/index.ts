@@ -7,8 +7,6 @@ import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import {
   getGistSyncStatus,
   invalidateGistSync,
-  refreshGistOnArrival,
-  requestAutomaticSync,
   setGistSyncEnabled,
   setupGistSync,
   triggerGistSync,
@@ -29,17 +27,15 @@ import {
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 
-async function updateBadge() {
-  const settings = await getSettings();
-  if (settings.badgeEnabled) {
-    const queue = await getReviewQueue();
-    if (queue.length > 0) {
-      await browser.action.setBadgeText({ text: String(queue.length) });
-      await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
-      return;
-    }
+async function refreshBadge() {
+  try {
+    const settings = await getSettings();
+    const count = settings.badgeEnabled ? (await getReviewQueue()).length : 0;
+    await browser.action.setBadgeText({ text: count ? String(count) : '' });
+    if (count) await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
+  } catch (error) {
+    console.warn('Failed to refresh badge:', error);
   }
-  await browser.action.setBadgeText({ text: '' });
 }
 
 export default defineBackground(() => {
@@ -62,12 +58,9 @@ export default defineBackground(() => {
     console.error('Failed to initialize background:', error);
   });
 
-  async function refreshBadge() {
-    try {
-      await updateBadge();
-    } catch (error) {
-      console.warn('Failed to refresh badge:', error);
-    }
+  async function readyToEdit() {
+    await readyPromise;
+    await waitForArrivalRefresh();
   }
   onMessage('waitForInitialization', async ({ data }) => {
     await readyPromise;
@@ -75,57 +68,43 @@ export default defineBackground(() => {
     return undefined;
   });
   onMessage('addCard', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
-    const payload = messagePayloadSchemas.addCard.parse(data);
-    return addCard(payload.problem);
+    await readyToEdit();
+    return addCard(messagePayloadSchemas.addCard.parse(data).problem);
   });
   onMessage('removeCard', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
-    const payload = messagePayloadSchemas.removeCard.parse(data);
-    return removeCard(payload.slug);
+    await readyToEdit();
+    return removeCard(messagePayloadSchemas.removeCard.parse(data).slug);
   });
   onMessage('delayCard', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
+    await readyToEdit();
     const payload = messagePayloadSchemas.delayCard.parse(data);
     return delayCard(payload.slug, payload.days);
   });
   onMessage('setPauseStatus', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
+    await readyToEdit();
     const payload = messagePayloadSchemas.setPauseStatus.parse(data);
     return setPauseStatus(payload.slug, payload.paused);
   });
   onMessage('rateCard', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
-    const payload = messagePayloadSchemas.rateCard.parse(data);
-    return rateCard(payload.input);
+    await readyToEdit();
+    return rateCard(messagePayloadSchemas.rateCard.parse(data).input);
   });
   onMessage('saveNote', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
+    await readyToEdit();
     const payload = messagePayloadSchemas.saveNote.parse(data);
     return saveNote(payload.slug, payload.text);
   });
   onMessage('deleteNote', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
-    const payload = messagePayloadSchemas.deleteNote.parse(data);
-    return deleteNote(payload.slug);
+    await readyToEdit();
+    return deleteNote(messagePayloadSchemas.deleteNote.parse(data).slug);
   });
   onMessage('updateSettings', async ({ data }) => {
-    await readyPromise;
-    await waitForArrivalRefresh();
-    const payload = messagePayloadSchemas.updateSettings.parse(data);
-    return updateSettings(payload.changes);
+    await readyToEdit();
+    return updateSettings(messagePayloadSchemas.updateSettings.parse(data).changes);
   });
   onMessage('importData', async ({ data }) => {
     await readyPromise;
-    const payload = messagePayloadSchemas.importData.parse(data);
-    return importData(payload.jsonData);
+    return importData(messagePayloadSchemas.importData.parse(data).jsonData);
   });
   onMessage('resetAllData', async ({ data }) => {
     await readyPromise;
@@ -134,13 +113,11 @@ export default defineBackground(() => {
   });
   onMessage('setupGistSync', async ({ data }) => {
     await readyPromise;
-    const payload = messagePayloadSchemas.setupGistSync.parse(data);
-    return setupGistSync(payload);
+    return setupGistSync(messagePayloadSchemas.setupGistSync.parse(data));
   });
   onMessage('setGistSyncEnabled', async ({ data }) => {
     await readyPromise;
-    const payload = messagePayloadSchemas.setGistSyncEnabled.parse(data);
-    return setGistSyncEnabled(payload.enabled);
+    return setGistSyncEnabled(messagePayloadSchemas.setGistSyncEnabled.parse(data).enabled);
   });
   onMessage('getGistSyncStatus', async ({ data }) => {
     await readyPromise;
@@ -156,7 +133,7 @@ export default defineBackground(() => {
   onMessage('refreshGistOnArrival', async ({ data }) => {
     await readyPromise;
     messagePayloadSchemas.refreshGistOnArrival.parse(data);
-    return refreshGistOnArrival();
+    return triggerGistSync('arrival');
   });
 
   storage.watch(STORAGE_KEYS.gistConnection, () => invalidateGistSync());
@@ -176,6 +153,6 @@ export default defineBackground(() => {
       return;
     }
 
-    await Promise.all([requestAutomaticSync(), refreshBadge()]);
+    await Promise.all([triggerGistSync('alarm'), refreshBadge()]);
   });
 });
