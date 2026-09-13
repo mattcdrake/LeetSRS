@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GistSyncConfig } from '@/domain/gist-sync';
 
-type GistViewMode = 'unset' | 'editing' | 'viewing';
+type GistViewMode = 'unset' | 'editing' | 'viewing' | 'saved';
 
 export function useGistEditingState(config: GistSyncConfig | undefined) {
   const [viewMode, setViewMode] = useState<GistViewMode>('unset');
@@ -13,6 +13,8 @@ export function useGistEditingState(config: GistSyncConfig | undefined) {
 
   if (config && viewMode === 'unset') {
     setViewMode(connected ? 'viewing' : 'editing');
+  } else if (viewMode === 'saved' && connected) {
+    setViewMode('viewing');
   } else if (config && !connected && viewMode === 'viewing') {
     // Without a saved connection, closing the form returns to fresh setup.
     setViewMode('editing');
@@ -29,6 +31,7 @@ export function useGistEditingState(config: GistSyncConfig | undefined) {
     formKey,
     editButton,
     startEditing: () => setViewMode('editing'),
+    finishSaving: () => setViewMode('saved'),
     closeEditing: () => {
       setViewMode('viewing');
       setFormKey((key) => key + 1);

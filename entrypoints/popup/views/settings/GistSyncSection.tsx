@@ -24,7 +24,8 @@ export function GistSyncSection() {
   const setup = useSetupGistSyncMutation();
   const enable = useSetGistSyncEnabledMutation();
   const sync = useTriggerGistSyncMutation();
-  const { connected, editing, formKey, editButton, startEditing, closeEditing } = useGistEditingState(config);
+  const { connected, editing, formKey, editButton, startEditing, finishSaving, closeEditing } =
+    useGistEditingState(config);
   const [outcome, setOutcome] = useState<{ error: boolean; text: string } | null>(null);
   const busy = setup.isPending || enable.isPending || sync.isPending || !!status?.syncInProgress;
 
@@ -42,7 +43,7 @@ export function GistSyncSection() {
     setOutcome(null);
     try {
       const result = await setup.mutateAsync(input);
-      if (result.saved) closeEditing();
+      if (result.saved) finishSaving();
       showConnectionResult(result);
       return result;
     } catch {
