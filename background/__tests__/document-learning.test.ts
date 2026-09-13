@@ -291,7 +291,7 @@ describe('document learning through background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
     await dispatch('deleteNote', { slug: 'missing' });
-    await expect(dispatch('saveNote', { slug: 'missing', text: '' })).rejects.toThrow('not found');
+    await dispatch('saveNote', { slug: 'missing', text: '' });
     await expect(dispatch('delayCard', { slug: 'missing', days: 1 })).rejects.toThrow('not found');
     await expect(dispatch('setPauseStatus', { slug: 'missing', paused: true })).rejects.toThrow('not found');
     expect(writes).not.toHaveBeenCalled();

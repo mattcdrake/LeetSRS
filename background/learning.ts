@@ -96,25 +96,14 @@ export async function rateCard(input: RateCardInput): Promise<void> {
 export async function saveNote(slug: string, text: string): Promise<void> {
   const now = new Date();
   const document = await readLearningDocument();
-  const card = requireCard(document, slug);
+  const card = text === '' ? findCard(document, slug) : requireCard(document, slug);
+  if (!card) return;
   if ((card.note ?? '') === text) return;
   if (text === '') {
     delete card.note;
   } else {
     card.note = text;
   }
-  await saveLocalLearningDocument(document, now);
-}
-
-export async function deleteNote(slug: string): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const card = findCard(document, slug);
-  if (!card || card.note === undefined) {
-    return;
-  }
-
-  delete card.note;
   await saveLocalLearningDocument(document, now);
 }
 
