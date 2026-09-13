@@ -1,23 +1,6 @@
-import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import App from '../../popup/App.tsx';
-import { ErrorBoundary } from '../../popup/components/ErrorBoundary';
-import { I18nProvider } from '../../popup/contexts/I18nContext';
-import { useLeetcodeCnPermissionEvents } from '../../popup/queries/leetcode-cn';
-import { useStorageQueryEvents } from '../../popup/queries/storage-events';
+import { PopupRoot } from '../../popup/PopupRoot';
 import { createPopupQueryClient } from '../../popup/query-client';
-
-function PopupStorageObserver() {
-  useStorageQueryEvents();
-  return null;
-}
-
-function PopupPermissionObserver() {
-  useLeetcodeCnPermissionEvents();
-  return null;
-}
 
 const queryClient = createPopupQueryClient({
   defaultOptions: {
@@ -35,25 +18,4 @@ if (!root) {
   throw new Error('Root element not found');
 }
 
-ReactDOM.createRoot(root).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <PopupPermissionObserver />
-        <PopupStorageObserver />
-        <Suspense
-          fallback={
-            <div className="popup-loading" role="status" aria-label="Loading">
-              <div className="popup-loading-spinner" />
-            </div>
-          }
-        >
-          <I18nProvider>
-            <App />
-          </I18nProvider>
-        </Suspense>
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      </QueryClientProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+ReactDOM.createRoot(root).render(<PopupRoot queryClient={queryClient} />);

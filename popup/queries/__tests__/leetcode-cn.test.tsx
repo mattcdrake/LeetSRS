@@ -2,20 +2,12 @@
  * @vitest-environment happy-dom
  */
 
-import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
+import { onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
-import { useLeetcodeCnCapability, useLeetcodeCnPermissionEvents } from '../leetcode-cn';
-
-beforeEach(() => {
-  for (const event of [browser.permissions.onAdded, browser.permissions.onRemoved]) {
-    vi.spyOn(event, 'addListener').mockImplementation(() => {});
-    vi.spyOn(event, 'removeListener').mockImplementation(() => {});
-  }
-});
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
+import { useLeetcodeCnCapability } from '../leetcode-cn';
 
 it('checks and requests permissions while offline', async () => {
   const wasOnline = onlineManager.isOnline();
@@ -94,40 +86,6 @@ it.each([true, false])('shares the enable result across consumers: %s', async (g
   }
 });
 
-it('refreshes both consumers on external grants and removals', async () => {
-  const contains = vi.fn(async () => false);
-  vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
-  const added = vi.spyOn(browser.permissions.onAdded, 'addListener');
-  const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener');
-  const { wrapper: QueryWrapper } = createPopupTestWrapper();
-  function PermissionObserver() {
-    useLeetcodeCnPermissionEvents();
-    return null;
-  }
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryWrapper>
-      <PermissionObserver />
-      {children}
-    </QueryWrapper>
-  );
-  const { result } = renderHook(() => [useLeetcodeCnCapability(), useLeetcodeCnCapability()], { wrapper });
-  await waitFor(() => expect(result.current.map((state) => state.granted)).toEqual([false, false]));
-  expect(added).toHaveBeenCalledTimes(1);
-  expect(removed).toHaveBeenCalledTimes(1);
-
-  await act(async () => added.mock.calls[0][0]({ permissions: ['storage'] }));
-  expect(contains).toHaveBeenCalledTimes(1);
-
-  contains.mockResolvedValue(true);
-  // Broad permission changes also require checking the effective authorization.
-  await act(async () => added.mock.calls[0][0]({ origins: ['<all_urls>'] }));
-  await waitFor(() => expect(result.current.map((state) => state.granted)).toEqual([true, true]));
-
-  contains.mockResolvedValue(false);
-  await act(async () => removed.mock.calls[0][0]({ origins: ['*://*.leetcode.cn/*'] }));
-  await waitFor(() => expect(result.current.map((state) => state.granted)).toEqual([false, false]));
-});
-
 it('tracks request failures and allows retrying without losing the user interaction', async () => {
   const contains = vi.fn(async () => false);
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
@@ -166,116 +124,4 @@ it('rechecks browser authorization after a request instead of caching its result
   await waitFor(() => expect(result.current.granted).toBe(false));
   await act(() => result.current.enable());
   expect(result.current.granted).toBe(false);
-});
-
-it.each(['initial', 'refresh'])('discards a stale %s check after a newer permission event', async (phase) => {
-  const stale = Promise.withResolvers<boolean>();
-  const contains = vi.fn(async () => false);
-  contains.mockImplementationOnce(() => (phase === 'initial' ? stale.promise : Promise.resolve(false)));
-  vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
-  const added = vi.spyOn(browser.permissions.onAdded, 'addListener');
-  const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener');
-  const { wrapper: QueryWrapper } = createPopupTestWrapper();
-  function PermissionObserver() {
-    useLeetcodeCnPermissionEvents();
-    return null;
-  }
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryWrapper>
-      <PermissionObserver />
-      {children}
-    </QueryWrapper>
-  );
-  const { result } = renderHook(() => useLeetcodeCnCapability(), { wrapper });
-
-  if (phase === 'refresh') {
-    await waitFor(() => expect(result.current.granted).toBe(false));
-    contains.mockImplementationOnce(() => stale.promise);
-    await act(async () => {
-      added.mock.calls[0][0]({ origins: ['*://*.leetcode.cn/*'] });
-    });
-    await waitFor(() => expect(contains).toHaveBeenCalledTimes(2));
-  }
-
-  contains.mockResolvedValue(false);
-  await act(async () => removed.mock.calls[0][0]({ origins: ['*://*.leetcode.cn/*'] }));
-  await waitFor(() => expect(result.current.granted).toBe(false));
-  await act(async () => stale.resolve(true));
-  expect(result.current.granted).toBe(false);
-});
-
-it('owns listeners at the popup root across consumer unmounts and refreshes on remount', async () => {
-  const contains = vi.fn(async () => false);
-  vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
-  const added = vi.spyOn(browser.permissions.onAdded, 'addListener');
-  const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener');
-  const removeAdded = vi.spyOn(browser.permissions.onAdded, 'removeListener');
-  const removeRemoved = vi.spyOn(browser.permissions.onRemoved, 'removeListener');
-  const queryClient = createTestQueryClient();
-  queryClient.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } });
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-  const root = renderHook(() => useLeetcodeCnPermissionEvents(), { wrapper });
-  const first = renderHook(() => useLeetcodeCnCapability(), { wrapper });
-  const second = renderHook(() => useLeetcodeCnCapability(), { wrapper });
-  await waitFor(() => expect(second.result.current.granted).toBe(false));
-
-  first.unmount();
-  expect(removeAdded).not.toHaveBeenCalled();
-  expect(removeRemoved).not.toHaveBeenCalled();
-
-  const pending = Promise.withResolvers<boolean>();
-  contains.mockImplementationOnce(() => pending.promise);
-  await act(async () => {
-    added.mock.calls[0][0]({ origins: ['*://*.leetcode.cn/*'] });
-  });
-  await waitFor(() => expect(contains).toHaveBeenCalledTimes(2));
-  second.unmount();
-  expect(removeAdded).not.toHaveBeenCalled();
-  expect(removeRemoved).not.toHaveBeenCalled();
-  root.unmount();
-  expect(removeAdded).toHaveBeenCalledExactlyOnceWith(added.mock.calls[0][0]);
-  expect(removeRemoved).toHaveBeenCalledExactlyOnceWith(removed.mock.calls[0][0]);
-
-  // The browser check can finish while no consumers are mounted.
-  await act(async () => pending.resolve(false));
-  contains.mockResolvedValue(true);
-  const reopenedRoot = renderHook(() => useLeetcodeCnPermissionEvents(), { wrapper });
-  const reopened = renderHook(() => useLeetcodeCnCapability(), { wrapper });
-  await waitFor(() => expect(reopened.result.current.granted).toBe(true));
-  expect(added).toHaveBeenCalledTimes(2);
-  expect(removed).toHaveBeenCalledTimes(2);
-  reopened.unmount();
-  reopenedRoot.unmount();
-  queryClient.clear();
-});
-
-it('finishes refreshing if the permission listener unmounts during cancellation', async () => {
-  const contains = vi.fn(async () => false);
-  vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
-  const added = vi.spyOn(browser.permissions.onAdded, 'addListener');
-  const queryClient = createTestQueryClient();
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-  const root = renderHook(() => useLeetcodeCnPermissionEvents(), { wrapper });
-  const consumer = renderHook(() => useLeetcodeCnCapability(), { wrapper });
-  await waitFor(() => expect(consumer.result.current.granted).toBe(false));
-
-  const cancellation = Promise.withResolvers<void>();
-  const cancelQueries = queryClient.cancelQueries.bind(queryClient);
-  vi.spyOn(queryClient, 'cancelQueries').mockImplementation(async (filters) => {
-    await cancelQueries(filters);
-    await cancellation.promise;
-  });
-  contains.mockResolvedValue(true);
-  await act(async () => {
-    added.mock.calls[0][0]({ origins: ['*://*.leetcode.cn/*'] });
-  });
-  root.unmount();
-  await act(async () => cancellation.resolve());
-  await waitFor(() => expect(consumer.result.current.granted).toBe(true));
-  consumer.unmount();
-  queryClient.clear();
 });

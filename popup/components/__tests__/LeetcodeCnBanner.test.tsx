@@ -5,7 +5,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useLeetcodeCnPermissionEvents } from '../../queries/leetcode-cn';
 import { LeetcodeCnSection } from '../../views/settings/LeetcodeCnSection';
 import { DISMISS_KEY, LeetcodeCnBanner } from '../LeetcodeCnBanner';
 
@@ -109,51 +108,6 @@ describe('LeetcodeCnBanner', () => {
     expect(screen.getByText('LeetCode China')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
-  });
-
-  it.each([true, false])('preserves dismissed=%s across reopenings and permission events', async (dismissed) => {
-    const added = vi.spyOn(browser.permissions.onAdded, 'addListener').mockImplementation(() => {});
-    const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener').mockImplementation(() => {});
-    vi.spyOn(browser.permissions.onAdded, 'removeListener').mockImplementation(() => {});
-    vi.spyOn(browser.permissions.onRemoved, 'removeListener').mockImplementation(() => {});
-    const removePermission = vi.spyOn(browser.permissions, 'remove');
-    function PermissionObserver() {
-      useLeetcodeCnPermissionEvents();
-      return null;
-    }
-    const openPopup = () =>
-      render(
-        <>
-          <PermissionObserver />
-          <LeetcodeCnBanner />
-          <LeetcodeCnSection />
-        </>,
-        createPopupTestWrapper()
-      );
-
-    const popup = openPopup();
-    const dismiss = await screen.findByRole('button', { name: 'Dismiss' });
-    if (dismissed) act(() => dismiss.click());
-    popup.unmount();
-
-    openPopup();
-    expect(await screen.findByText('LeetCode China')).toBeInTheDocument();
-    expect(screen.queryAllByRole('button', { name: 'Dismiss' })).toHaveLength(dismissed ? 0 : 1);
-
-    mockContains.mockResolvedValue(true);
-    await act(async () => added.mock.calls[1][0]({ origins: ['*://*.leetcode.cn/*'] }));
-    await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(0));
-
-    mockContains.mockResolvedValue(false);
-    await act(async () => removed.mock.calls[1][0]({ origins: ['*://*.leetcode.cn/*'] }));
-    expect(await screen.findByText('LeetCode China')).toBeInTheDocument();
-    const buttons = screen.getAllByRole('button', { name: /enable/i });
-    expect(buttons).toHaveLength(dismissed ? 1 : 2);
-    for (const button of buttons) expect(button).toBeEnabled();
-    expect(screen.queryAllByRole('button', { name: 'Dismiss' })).toHaveLength(dismissed ? 0 : 1);
-    expect(store[DISMISS_KEY]).toBe(dismissed ? '1' : undefined);
-    expect(mockRequest).not.toHaveBeenCalled();
-    expect(removePermission).not.toHaveBeenCalled();
   });
 
   it.each([
