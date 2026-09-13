@@ -61,7 +61,7 @@ describe('document transfers through background commands', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
         ...converted,
-        settings: {},
+        settings: { resetEditorOnReviewQueue: false },
         dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
       })
     );

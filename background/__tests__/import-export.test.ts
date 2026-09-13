@@ -40,7 +40,7 @@ describe('document import', () => {
       const expected = {
         schemaVersion: LEARNING_DOCUMENT_VERSION,
         ...converted,
-        settings: { resetEditorOnEveryProblem: false, theme: 'dark' },
+        settings: { resetEditorOnReviewQueue: false, theme: 'dark' },
         dataUpdatedAt: timestamp,
       };
       expect(await readLearningDocument()).toEqual(expected);
@@ -70,7 +70,7 @@ describe('document import', () => {
       const expected = {
         schemaVersion: LEARNING_DOCUMENT_VERSION,
         ...data,
-        settings: {},
+        settings: format === 'historical' ? { resetEditorOnReviewQueue: false } : {},
         ...(format === 'historical' && { dataUpdatedAt: '2023-01-01' }),
       };
       expect(writes).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument, expected);

@@ -152,7 +152,7 @@ describe('document startup through registered background commands', () => {
       if (stage !== 'cleanup') {
         expect(await readLearningDocument()).toEqual(
           buildLearningDocument({
-            settings: { language: 'de' },
+            settings: { language: 'de', resetEditorOnReviewQueue: false },
             dataUpdatedAt: legacy['leetsrs:dataUpdatedAt'],
           })
         );

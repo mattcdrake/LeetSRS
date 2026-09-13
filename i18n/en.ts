@@ -170,10 +170,9 @@ const en = {
     },
 
     problemAutoClear: {
-      title: 'Problem Auto Reset',
-      description: 'Automatically reset code when opening a LeetCode problem.',
-      resetEditorOnEveryProblem: 'Reset editor on every problem',
-      resetEditorOnDueReview: 'Reset editor on due review',
+      title: 'Problem Editor Reset',
+      description: 'Reset code only when you open a Problem from the review queue.',
+      resetEditorOnReviewQueue: 'Reset editor when opening from the review queue',
     },
 
     leetcodeCn: {

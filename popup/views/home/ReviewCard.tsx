@@ -3,8 +3,10 @@ import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import type { Card } from '@/domain/cards';
 import { ratingSchema } from '@/domain/ratings';
+import { authorizeEditorReset } from '@/integrations/leetcode/page-context';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { getLeetcodeProblemUrl } from '@/popup/leetcode';
+import { useSettingsQuery } from '@/popup/queries/settings';
 import { bounceButton } from '@/popup/styles';
 import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
 import { RATING_COLORS } from '@/ui/rating-colors';
@@ -19,7 +21,10 @@ type ReviewCardProps = {
 export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardProps) {
   const t = useI18n();
   const colors = RATING_COLORS[useTheme()];
+  const { data: settings } = useSettingsQuery();
   const difficultyColor = DIFFICULTY_COLORS[card.difficulty] ?? DIFFICULTY_COLORS.Medium;
+  const problemUrl = getLeetcodeProblemUrl(card);
+  const href = settings.resetEditorOnReviewQueue ? authorizeEditorReset(problemUrl) : problemUrl;
 
   return (
     <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
@@ -32,7 +37,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
 
       <div className="flex justify-center pb-3 -mt-1 text-center">
         <a
-          href={getLeetcodeProblemUrl(card)}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="text-lg font-semibold text-primary group"

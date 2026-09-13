@@ -38,6 +38,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 - View statistics and streaks
 - Works directly on leetcode.com
 - Easily rate after solving problems, or add to review later
+- Optional editor reset when opening a Problem from the review queue; other navigation preserves your code
 - Customizable daily new card limits
 - Daily limits, statistics, and streaks follow local calendar days beginning at midnight
 

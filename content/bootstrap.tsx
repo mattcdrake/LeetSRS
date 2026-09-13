@@ -1,6 +1,6 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
-import { setupLeetcodeAutoReset } from './auto-reset';
+import { setupLeetcodeEditorReset } from './editor-reset';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 import { createContentRoot } from './ui/shadow-root';
 import { Toast } from './ui/Toast';
@@ -9,7 +9,7 @@ import './ui/shadow.css';
 export async function bootstrapContent(ctx: ContentScriptContext) {
   await setupLeetSrsControl(ctx);
   if (ctx.isInvalid) return;
-  const disposeReset = setupLeetcodeAutoReset(() => {
+  const disposeReset = setupLeetcodeEditorReset(() => {
     void showToast(ctx, 'Code reset to default');
   });
   ctx.onInvalidated(disposeReset);
