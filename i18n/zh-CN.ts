@@ -176,7 +176,6 @@ const zhCN: Translations = {
       importing: '导入中...',
       resetAllData: '重置所有数据',
       resetting: '重置中...',
-      clickToConfirm: '再次点击以确认',
       importConfirmMessage: '确定要导入此数据吗？\n\n这将替换您当前的所有数据，包括卡片、复习历史和笔记。',
       importSuccess: '数据导入成功！',
       importFailed: '数据导入失败：',

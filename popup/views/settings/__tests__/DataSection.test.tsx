@@ -1,7 +1,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -22,67 +22,54 @@ describe('DataSection reset', () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
 
-  it('arms on the first click without opening the browser dialog', () => {
-    render(<DataSection />, { wrapper });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
-
-    expect(screen.getByRole('button', { name: 'Click again to confirm' })).toBeInTheDocument();
-    expect(window.confirm).not.toHaveBeenCalled();
-    expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
-  });
-
-  it('expires confirmation after 3000ms', () => {
-    vi.useFakeTimers();
-    render(<DataSection />, { wrapper });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
-    act(() => {
-      vi.advanceTimersByTime(3000);
-    });
-
-    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument();
-    expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
-  });
-
-  it('disarms when the browser dialog is cancelled', async () => {
+  it('opens the dialog on the first click and preserves data when cancelled', () => {
     vi.mocked(window.confirm).mockReturnValue(false);
     render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Click again to confirm' }));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument());
+    expect(window.confirm).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('Are you absolutely sure you want to delete all data?')
+    );
+    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
+    expect(window.alert).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
   });
 
-  it('resets data, alerts success, and disarms after confirmation', async () => {
+  it('disables reset until the confirmed operation succeeds, then alerts success', async () => {
+    const reset = Promise.withResolvers<void>();
+    messages.handle('resetAllData', () => reset.promise);
     render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Click again to confirm' }));
 
-    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('resetAllData'));
-    expect(window.alert).toHaveBeenCalledWith('All data has been reset');
-    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument();
+    const button = await screen.findByRole('button', { name: 'Resetting...' });
+    expect(button).toBeDisabled();
+    expect(window.alert).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(sendMessage).toHaveBeenCalledExactlyOnceWith('resetAllData');
+
+    reset.resolve();
+
+    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('All data has been reset'));
+    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
   });
 
-  it('alerts the error and disarms when reset fails', async () => {
+  it('alerts the error and enables retry when reset fails', async () => {
     const error = new Error('Reset failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('resetAllData', () => Promise.reject(error));
     render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Click again to confirm' }));
 
     await waitFor(() => expect(consoleError).toHaveBeenCalledWith('Reset failed:', error));
     expect(window.alert).toHaveBeenCalledWith('Failed to reset data');
-    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
   });
 });

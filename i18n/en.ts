@@ -194,7 +194,6 @@ const en = {
       importing: 'Importing...',
       resetAllData: 'Reset All Data',
       resetting: 'Resetting...',
-      clickToConfirm: 'Click again to confirm',
       importConfirmMessage:
         'Are you sure you want to import this data?\n\nThis will replace ALL your current data including cards, review history, and notes.',
       importSuccess: 'Data imported successfully!',
