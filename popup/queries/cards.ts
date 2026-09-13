@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import { readLearningDocument } from '@/data/learning-document';
 import { getReviewQueue } from '@/data/learning-queries';
 import type { Card, RateCardInput } from '@/domain/cards';
@@ -9,12 +9,14 @@ export const cardQueryKeys = {
   reviewQueue: ['cards', 'reviewQueue'] as const,
 };
 
+export const cardsQueryOptions = queryOptions({
+  queryKey: cardQueryKeys.all,
+  networkMode: 'always',
+  queryFn: async () => Object.values((await readLearningDocument(true)).cards),
+});
+
 export function useCardsQuery() {
-  return useQuery({
-    queryKey: cardQueryKeys.all,
-    networkMode: 'always',
-    queryFn: async () => Object.values((await readLearningDocument(true)).cards),
-  });
+  return useQuery(cardsQueryOptions);
 }
 
 export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }) {

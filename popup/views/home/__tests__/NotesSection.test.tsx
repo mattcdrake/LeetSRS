@@ -11,7 +11,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
-import { noteQueryKeys } from '@/popup/queries/notes';
+import { cardQueryKeys } from '@/popup/queries/cards';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
@@ -31,7 +31,9 @@ describe('NotesSection', () => {
         cards: { [mockSlug]: createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }) },
       })
     );
-    queryClient.setQueryData(noteQueryKeys.detail(mockSlug), note);
+    queryClient.setQueryData(cardQueryKeys.all, [
+      createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }),
+    ]);
   };
 
   beforeEach(() => {
@@ -100,7 +102,9 @@ describe('NotesSection', () => {
 
     fireEvent.click(toggle);
     await act(async () => save.resolve());
-    await waitFor(() => expect(queryClient.getQueryData(noteQueryKeys.detail(mockSlug))).toBe('Saved draft'));
+    await waitFor(() =>
+      expect(queryClient.getQueryData(cardQueryKeys.all)).toMatchObject([{ slug: mockSlug, note: 'Saved draft' }])
+    );
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
     fireEvent.click(toggle);

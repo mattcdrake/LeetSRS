@@ -12,7 +12,7 @@ import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
+import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '../notes';
 
@@ -116,4 +116,27 @@ it('preserves a dirty rendered note through incoming replacement and saves its d
   expect(input).toHaveValue('My draft');
   await act(() => sendMessage('saveNote', { slug: problem.slug, text: 'Later update' }));
   await waitFor(() => expect(input).toHaveValue('Later update'));
+});
+
+it('keeps the outgoing card note live after it leaves the review queue', async () => {
+  const next = buildProblem({ slug: 'next-card', name: 'Next card' });
+  await sendMessage('addCard', { problem: next });
+  await sendMessage('saveNote', { slug: problem.slug, text: 'Outgoing note' });
+  await sendMessage('saveNote', { slug: next.slug, text: 'Next note' });
+  const view = renderHook(
+    ({ slug }) => ({
+      note: useNoteQuery(slug),
+      queue: useReviewQueueQuery(),
+      delay: useDelayCardMutation(),
+    }),
+    { initialProps: { slug: problem.slug }, wrapper: createTestWrapper().wrapper }
+  );
+  await waitFor(() => expect(view.result.current.note.data).toBe('Outgoing note'));
+  await act(() => view.result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }));
+  await waitFor(() => expect(view.result.current.queue.data).toMatchObject([{ slug: next.slug }]));
+  expect(view.result.current.note.data).toBe('Outgoing note');
+  await act(() => sendMessage('deleteNote', { slug: problem.slug }));
+  await waitFor(() => expect(view.result.current.note.data).toBeNull());
+  view.rerender({ slug: next.slug });
+  await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));
 });
