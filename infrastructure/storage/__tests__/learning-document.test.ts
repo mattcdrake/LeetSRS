@@ -8,8 +8,14 @@ import { STORAGE_KEYS } from '../storage-keys';
 describe('learning document persistence', () => {
   beforeEach(() => fakeBrowser.reset());
 
+  it('requires initialization and returns the current validated document once available', async () => {
+    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
+    const document: LearningDocument = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    await replaceLearningDocument(document);
+    expect(await readLearningDocument()).toEqual(document);
+  });
+
   it('replaces the complete document, clearing omitted notes, settings, and timestamps', async () => {
-    expect(await readLearningDocument()).toBeUndefined();
     const { embedded, payload } = mixedRecordBackup();
     const document: LearningDocument = {
       ...embedded,
@@ -36,7 +42,6 @@ describe('learning document persistence', () => {
     const document: LearningDocument = { ...embedded, schemaVersion: 6, settings: {} };
     await replaceLearningDocument(document);
     const next = await readLearningDocument();
-    if (!next) throw new Error('Expected saved document');
     next.cards['two-sum'].slug = 'mismatched';
     await expect(replaceLearningDocument(next)).rejects.toThrow('Card slug');
     expect(await readLearningDocument()).toEqual(document);
@@ -53,12 +58,28 @@ describe('learning document persistence', () => {
     expect(await readLearningDocument()).toEqual(next);
   });
 
-  it('treats a stored null document as absent', async () => {
+  it('returns the normalized document that was persisted', async () => {
+    const { embedded } = mixedRecordBackup();
+    const { note: _note, ...cardWithoutNote } = embedded.cards['two-sum'];
+    const document: LearningDocument = {
+      ...embedded,
+      schemaVersion: 6,
+      cards: { 'two-sum': { ...cardWithoutNote, note: '' } },
+      settings: {},
+    };
+    const expected = { ...document, cards: { 'two-sum': cardWithoutNote } };
+
+    expect(await replaceLearningDocument(document)).toEqual(expected);
+    expect(await readLearningDocument()).toEqual(expected);
+    expect(document.cards['two-sum'].note).toBe('');
+  });
+
+  it('requires initialization for a stored null document', async () => {
     // fakeBrowser deletes null values; supply raw null at the storage boundary.
     vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async () => ({
       [STORAGE_KEYS.learningDocument.slice('local:'.length)]: null,
     }));
-    expect(await readLearningDocument()).toBeUndefined();
+    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
   });
 
   it.each([{}, { schemaVersion: 5 }, { schemaVersion: 7 }])(

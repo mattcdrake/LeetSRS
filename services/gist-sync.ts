@@ -10,11 +10,8 @@ import { translations } from '@/i18n';
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { createGitHubClient, GIST_FILENAME } from '@/infrastructure/github/client';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
-import {
-  parseLearningDocumentBackup,
-  readLearningDocument,
-  replaceLearningDocument,
-} from '@/infrastructure/storage/learning-document';
+import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { parseLearningDocumentBackup } from '@/infrastructure/storage/learning-document-conversions';
 import { readSyncMetadata, removeSyncStatus, writeSyncStatus } from '@/infrastructure/storage/sync-metadata';
 
 // In-memory state for sync status (not persisted)
@@ -64,9 +61,6 @@ export async function triggerGistSync(): Promise<SyncResult> {
     // Validate even when local data would win, before either side can be overwritten.
     const remote = remoteFile ? parseLearningDocumentBackup(remoteFile.content ?? '') : undefined;
     const local = await readLearningDocument();
-    if (!local) {
-      throw new Error('Learning document is not initialized');
-    }
 
     const { action } = decideGistSync(
       remote ? { state: 'parsed', dataUpdatedAt: remote.dataUpdatedAt } : { state: 'missing' },
@@ -118,7 +112,6 @@ export async function setupGistSync(input: GistSetup): Promise<GistConnectionRes
       gistId = setup.gistId;
     } else {
       const document = await readLearningDocument();
-      if (!document) throw new Error('Learning document is not initialized');
       const language = document.settings.language ?? detectBrowserLanguage();
       const { data } = await github.createGist(
         translations[language].settings.gistSync.gistDescription,

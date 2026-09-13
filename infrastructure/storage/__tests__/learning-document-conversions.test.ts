@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
-import { convertLearningDocument, parseLearningDocumentBackup } from '../learning-document';
+import { convertLearningDocument, parseLearningDocumentBackup } from '../learning-document-conversions';
 
 describe('convertLearningDocument', () => {
   it('prepares an unversioned installation without inventing settings or an edit timestamp', () => {
@@ -106,13 +106,18 @@ describe('convertLearningDocument', () => {
     }
   });
 
-  it.each(['slug', 'duplicate', 'date'] as const)('rejects broken %s relationships in a current document', (kind) => {
-    const { embedded } = mixedRecordBackup();
-    if (kind === 'slug') embedded.cards['two-sum'].slug = 'different';
-    if (kind === 'duplicate') embedded.cards['cn-problem'].id = 'valid-com';
-    if (kind === 'date') embedded.stats['2024-01-01'].date = '2024-01-02';
-    expect(() => convertLearningDocument({ ...embedded, schemaVersion: 6, settings: {} })).toThrow();
-  });
+  it.each(['slug', 'duplicate', 'date'] as const)(
+    'rejects broken %s relationships in current installations and backups',
+    (kind) => {
+      const { embedded } = mixedRecordBackup();
+      if (kind === 'slug') embedded.cards['two-sum'].slug = 'different';
+      if (kind === 'duplicate') embedded.cards['cn-problem'].id = 'valid-com';
+      if (kind === 'date') embedded.stats['2024-01-01'].date = '2024-01-02';
+      const document = { ...embedded, schemaVersion: 6, settings: {} };
+      expect(() => convertLearningDocument(document)).toThrow();
+      expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
+    }
+  );
 
   it.each([-1, 0.5, null, '5', 7])('rejects unsupported schema version %j', (schemaVersion) => {
     const input = { schemaVersion, cards: {}, stats: {}, settings: {} };

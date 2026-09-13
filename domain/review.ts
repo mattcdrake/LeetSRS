@@ -1,5 +1,6 @@
 import { State as FsrsState } from 'ts-fsrs';
-import type { Card } from './cards';
+import type { Card, LeetcodeDomain } from './cards';
+import type { Settings } from './settings';
 
 export function isDue(card: Card, now: Date): boolean {
   return card.fsrs.due <= now.getTime();
@@ -35,4 +36,17 @@ export function calculateDelayedDueDate(due: number, days: number): number {
   const newDueDate = new Date(due);
   newDueDate.setDate(newDueDate.getDate() + days);
   return newDueDate.getTime();
+}
+
+export function shouldResetCardEditor(
+  card: Card | undefined,
+  domain: LeetcodeDomain,
+  settings: Settings,
+  now: Date
+): boolean {
+  if (settings.resetEditorOnEveryProblem) {
+    return true;
+  }
+  const isDueReview = !!card && card.domain === domain && !card.paused && isDue(card, now);
+  return settings.resetEditorOnDueReview && isDueReview;
 }

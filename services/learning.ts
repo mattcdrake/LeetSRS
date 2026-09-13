@@ -1,46 +1,16 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { addLocalDays, formatLocalDate } from '@/domain/calendar';
-import {
-  type Card,
-  type LeetcodeDomain,
-  noteTextSchema,
-  type ProblemDescriptor,
-  type RateCardInput,
-} from '@/domain/cards';
-import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
-import { buildReviewQueue, calculateDelayedDueDate, isDue } from '@/domain/review';
-import { resolveSettings } from '@/domain/settings';
-import {
-  calculateHistoryStats,
-  calculateUpcomingStats,
-  countCardStates,
-  createDailyStats,
-  type DailyStats,
-  recordReview,
-  type UpcomingReviewStats,
-} from '@/domain/statistics';
-import { detectBrowserLanguage } from '@/infrastructure/browser/language';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
+import { findCard, type LearningDocument } from '@/domain/learning-document';
+import { calculateDelayedDueDate, isDue } from '@/domain/review';
+import type { SettingsUpdate } from '@/domain/settings';
+import { createDailyStats, recordReview } from '@/domain/statistics';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
 
-async function getDocument(): Promise<LearningDocument> {
-  const document = await readLearningDocument();
-  if (!document) {
-    throw new Error('Learning document is not initialized');
-  }
-  return document;
-}
-
-function prepareLocalEdit(document: LearningDocument, now: Date): LearningDocument {
-  return learningDocumentSchema.parse({ ...document, dataUpdatedAt: now.toISOString() });
-}
-
-function findCard(document: LearningDocument, slug: string): Card | undefined {
-  if (Object.hasOwn(document.cards, slug)) {
-    return document.cards[slug];
-  }
-  return undefined;
+async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<LearningDocument> {
+  return replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
 }
 
 function requireCard(document: LearningDocument, slug: string): Card {
@@ -62,58 +32,48 @@ function createCard(problem: ProblemDescriptor, now: Date): Card {
   };
 }
 
-export async function getAllCards(): Promise<Card[]> {
-  return Object.values((await getDocument()).cards);
-}
-
 export async function addCard(problem: ProblemDescriptor): Promise<Card> {
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   const existing = findCard(document, problem.slug);
   if (existing) {
     return existing;
   }
 
   document.cards[problem.slug] = createCard(problem, now);
-  const next = prepareLocalEdit(document, now);
-  const result = requireCard(next, problem.slug);
-  await replaceLearningDocument(next);
-  return result;
+  requireCard(document, problem.slug);
+  const saved = await saveLocalLearningDocument(document, now);
+  return saved.cards[problem.slug];
 }
 
 export async function removeCard(slug: string): Promise<void> {
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   delete document.cards[slug];
-  const next = prepareLocalEdit(document, now);
-  await replaceLearningDocument(next);
+  await saveLocalLearningDocument(document, now);
 }
 
 export async function delayCard(slug: string, days: number): Promise<Card> {
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   const card = requireCard(document, slug);
   card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
-  const next = prepareLocalEdit(document, now);
-  const result = requireCard(next, slug);
-  await replaceLearningDocument(next);
-  return result;
+  const saved = await saveLocalLearningDocument(document, now);
+  return saved.cards[slug];
 }
 
 export async function setPauseStatus(slug: string, paused: boolean): Promise<Card> {
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   const card = requireCard(document, slug);
   card.paused = paused;
-  const next = prepareLocalEdit(document, now);
-  const result = requireCard(next, slug);
-  await replaceLearningDocument(next);
-  return result;
+  const saved = await saveLocalLearningDocument(document, now);
+  return saved.cards[slug];
 }
 
 export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   const { rating, ...problem } = input;
   const card = findCard(document, problem.slug) ?? createCard(problem, now);
   const isNewCard = card.fsrs.state === FsrsState.New;
@@ -131,88 +91,42 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   recordReview(todayStats, rating, isNewCard);
   document.stats[today] = todayStats;
 
-  const next = prepareLocalEdit(document, now);
-  const savedCard = requireCard(next, card.slug);
-  const result = { card: savedCard, shouldRequeue: isDue(savedCard, now) };
-  await replaceLearningDocument(next);
-  return result;
-}
-
-export async function getTodayStats(): Promise<DailyStats | null> {
-  const now = new Date();
-  const document = await getDocument();
-  return document.stats[formatLocalDate(now)] ?? null;
-}
-
-export async function getCardStateStats(): Promise<Record<FsrsState, number>> {
-  const document = await getDocument();
-  return countCardStates(Object.values(document.cards));
-}
-
-export async function getLastNDaysStats(days: number): Promise<DailyStats[]> {
-  const now = new Date();
-  const document = await getDocument();
-  return calculateHistoryStats(document.stats, days, now);
-}
-
-export async function getNextNDaysStats(days: number): Promise<UpcomingReviewStats[]> {
-  const now = new Date();
-  const document = await getDocument();
-  return calculateUpcomingStats(Object.values(document.cards), days, now);
-}
-
-export async function getReviewQueue(): Promise<Card[]> {
-  const now = new Date();
-  const document = await getDocument();
-  const settings = resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
-  const dueCards = Object.values(document.cards).filter((card) => !card.paused && isDue(card, now));
-  const newCardsCompletedToday = document.stats[formatLocalDate(now)]?.newCards ?? 0;
-  return buildReviewQueue(dueCards, settings.maxNewCardsPerDay, newCardsCompletedToday);
-}
-
-export async function shouldResetEditor(slug: string, domain: LeetcodeDomain): Promise<boolean> {
-  const now = new Date();
-  const document = await getDocument();
-  const settings = resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
-  if (settings.resetEditorOnEveryProblem) {
-    return true;
-  }
-  if (!settings.resetEditorOnDueReview) {
-    return false;
-  }
-
-  const card = findCard(document, slug);
-  return !!card && card.domain === domain && !card.paused && isDue(card, now);
-}
-
-export async function getNote(slug: string): Promise<string | null> {
-  const document = await getDocument();
-  return findCard(document, slug)?.note ?? null;
+  requireCard(document, card.slug);
+  const saved = await saveLocalLearningDocument(document, now);
+  const savedCard = saved.cards[card.slug];
+  return { card: savedCard, shouldRequeue: isDue(savedCard, now) };
 }
 
 export async function saveNote(slug: string, text: string): Promise<void> {
-  const note = noteTextSchema.parse(text);
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   const card = requireCard(document, slug);
-  if (note === '') {
+  if (text === '') {
     delete card.note;
   } else {
-    card.note = note;
+    card.note = text;
   }
-  const next = prepareLocalEdit(document, now);
-  await replaceLearningDocument(next);
+  await saveLocalLearningDocument(document, now);
 }
 
 export async function deleteNote(slug: string): Promise<void> {
   const now = new Date();
-  const document = await getDocument();
+  const document = await readLearningDocument();
   const card = findCard(document, slug);
   if (!card || card.note === undefined) {
     return;
   }
 
   delete card.note;
-  const next = prepareLocalEdit(document, now);
-  await replaceLearningDocument(next);
+  await saveLocalLearningDocument(document, now);
+}
+
+export async function updateSettings(changes: SettingsUpdate): Promise<void> {
+  if (Object.keys(changes).length === 0) {
+    return;
+  }
+
+  const now = new Date();
+  const document = await readLearningDocument();
+  await saveLocalLearningDocument({ ...document, settings: { ...document.settings, ...changes } }, now);
 }

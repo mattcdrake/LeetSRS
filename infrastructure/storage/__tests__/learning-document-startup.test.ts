@@ -165,7 +165,7 @@ describe('learning document startup', () => {
 
     await expect(initializeLearningDocument()).rejects.toThrow('Storage unavailable');
 
-    expect(await readLearningDocument()).toBeUndefined();
+    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
     expect(await fakeBrowser.storage.local.get()).toEqual(local);
     expect(await fakeBrowser.storage.sync.get()).toEqual({
       ...sync,

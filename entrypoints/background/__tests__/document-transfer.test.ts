@@ -67,18 +67,22 @@ describe('file and Gist transfers through registered background commands', () =>
     }
   );
 
-  it('imports supported historical data without importing its connection', async () => {
-    const { accepted, embedded, payload } = mixedRecordBackup();
-    await dispatch('importData', { jsonData: JSON.stringify({ ...payload, data: accepted }) });
-    expect(await exported()).toEqual({
-      schemaVersion: 6,
-      ...embedded,
-      settings: {},
-      dataUpdatedAt: payload.dataUpdatedAt,
-    });
-    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
-    expect(await dispatch('getNote', { slug: 'two-sum' })).toBe('Keep this note');
-  });
+  it.each([true, false])(
+    'imports historical data with an explicit timestamp: %s without importing its connection',
+    async (hasTimestamp) => {
+      const { accepted, embedded, payload } = mixedRecordBackup();
+      const backup = { ...payload, data: accepted, dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : undefined };
+      await dispatch('importData', { jsonData: JSON.stringify(backup) });
+      expect(await exported()).toEqual({
+        schemaVersion: 6,
+        ...embedded,
+        settings: {},
+        dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : payload.exportDate,
+      });
+      expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect(await dispatch('getNote', { slug: 'two-sum' })).toBe('Keep this note');
+    }
+  );
 
   it.each(['file', 'gist'] as const)(
     'retains all data after a rejected %s replacement and accepts a later command',

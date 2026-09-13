@@ -1,21 +1,9 @@
 import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { removeGistConnection } from '@/infrastructure/storage/gist-connection';
-import {
-  parseLearningDocumentBackup,
-  readLearningDocument,
-  replaceLearningDocument,
-} from '@/infrastructure/storage/learning-document';
+import { replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { parseLearningDocumentBackup } from '@/infrastructure/storage/learning-document-conversions';
 import { removeLegacyLearningData } from '@/infrastructure/storage/learning-document-startup';
 import { resetGistSyncStatus } from './gist-sync';
-
-export async function exportData(): Promise<string> {
-  const document = await readLearningDocument();
-  if (!document) {
-    throw new Error('Learning document is not initialized');
-  }
-
-  return JSON.stringify(document, null, 2);
-}
 
 export async function importData(json: string): Promise<void> {
   const document = parseLearningDocumentBackup(json);
