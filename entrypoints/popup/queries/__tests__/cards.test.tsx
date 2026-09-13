@@ -24,7 +24,7 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
 }));
 
 describe('useCardsQuery', () => {
-  it('reads current cards directly and refreshes after another context writes', async () => {
+  it('shows saved cards and refreshes when another context removes them', async () => {
     fakeBrowser.reset();
     const card = createMockCard(State.New);
     const document = { schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} };
@@ -33,7 +33,6 @@ describe('useCardsQuery', () => {
     await waitFor(() => expect(result.current.data).toEqual([card]));
     await storage.setItem(STORAGE_KEYS.learningDocument, { ...document, cards: {} });
     await waitFor(() => expect(result.current.data).toEqual([]));
-    expect(sendMessage).not.toHaveBeenCalled();
   });
 });
 

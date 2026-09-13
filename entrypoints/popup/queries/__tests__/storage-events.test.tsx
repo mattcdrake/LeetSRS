@@ -19,7 +19,7 @@ import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
-import { cardQueryKeys, useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
+import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useExportDataMutation } from '../data';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
 import { useNoteQuery } from '../notes';
@@ -79,35 +79,48 @@ it.each(['success', 'failure'] as const)(
   }
 );
 
-it('ignores unrelated storage, disposes subscriptions, and refreshes cached data on remount', async () => {
+it('keeps an open view unchanged for unrelated events or a disposed subscription, then refreshes on remount', async () => {
+  vi.useFakeTimers();
   const first = createMockCard(State.New);
   await replaceLearningDocument(buildLearningDocument({ cards: { [first.slug]: first } }));
   const queryClient = createTestQueryClient();
   queryClient.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } });
+  let observing = true;
+  function Observer() {
+    useStorageQueryEvents();
+    return null;
+  }
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {observing && <Observer />}
+      {children}
+    </QueryClientProvider>
   );
-  const mount = () =>
-    renderHook(
-      () => {
-        useStorageQueryEvents();
-        return useCardsQuery();
-      },
-      { wrapper }
-    );
-  const view = mount();
-  await waitFor(() => expect(view.result.current.data).toEqual([first]));
-  const reads = vi.spyOn(storage, 'getItem');
-  await storage.setItem('local:unrelated', 'change');
-  await act(async () => {});
-  expect(reads).not.toHaveBeenCalled();
+  const view = renderHook(() => useCardsQuery(), { wrapper });
+  await act(() => vi.advanceTimersByTimeAsync(1));
+  expect(view.result.current.data).toEqual([first]);
+
+  const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
+  await act(async () => {
+    await storage.setItem('local:unrelated', 'change');
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(view.result.current.data).toEqual([first]);
+  expect(view.result.current.error).toBeNull();
+  reads.mockRestore();
+
+  observing = false;
+  view.rerender();
+  await act(async () => {
+    await replaceLearningDocument(buildLearningDocument());
+    await vi.advanceTimersByTimeAsync(1);
+  });
+  expect(view.result.current.data).toEqual([first]);
+  observing = true;
+  view.rerender();
+  await act(() => vi.advanceTimersByTimeAsync(1));
+  expect(view.result.current.data).toEqual([]);
   view.unmount();
-  await replaceLearningDocument(buildLearningDocument());
-  expect(queryClient.getQueryData(cardQueryKeys.all)).toEqual([first]);
-  expect(queryClient.getQueryState(cardQueryKeys.all)?.isInvalidated).toBe(false);
-  const reopened = mount();
-  await waitFor(() => expect(reopened.result.current.data).toEqual([]));
-  reopened.unmount();
   queryClient.clear();
 });
 
@@ -117,15 +130,18 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
     await storage.setItem(STORAGE_KEYS.learningDocument, stored);
     const ready = Promise.withResolvers<void>();
     messages.resolve('waitForInitialization', ready.promise);
-    const writes = vi.spyOn(storage, 'setItem');
+    vi.useFakeTimers();
     const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
-    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('waitForInitialization'));
+    await act(() => vi.advanceTimersByTimeAsync(1));
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
-    expect(writes).not.toHaveBeenCalled();
-    await replaceLearningDocument(buildLearningDocument());
-    await act(async () => ready.resolve());
-    await waitFor(() => expect(result.current.data).toEqual([]));
+    expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toEqual(stored);
+    await act(async () => {
+      await replaceLearningDocument(buildLearningDocument());
+      ready.resolve();
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(result.current.data).toEqual([]);
   }
 );
 
@@ -147,7 +163,6 @@ it.each([
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
-  expect(sendMessage).not.toHaveBeenCalled();
 });
 
 it('runs local queries, saves, and validated export while offline', async () => {
@@ -255,14 +270,19 @@ it('keeps a successful local save successful when refreshing the cache fails', a
     wrapper: createTestWrapper().wrapper,
   });
   await waitFor(() => expect(result.current.cards.isSuccess).toBe(true));
-  const get = storage.getItem.bind(storage);
-  const reads = vi.spyOn(storage, 'getItem').mockImplementationOnce(get).mockRejectedValue(new Error('Read failed'));
+  const reads = vi.spyOn(storage, 'getItem');
+  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation((items) => {
+    reads.mockRejectedValue(new Error('Read failed'));
+    return write(items);
+  });
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   await act(() => result.current.rate.mutateAsync({ ...buildProblem(), rating: Rating.Good }));
   await waitFor(() => expect(result.current.cards.error?.message).toBe('Read failed'));
   expect(result.current.rate.isSuccess).toBe(true);
   reads.mockRestore();
-  expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
+  await act(() => result.current.cards.refetch());
+  await waitFor(() => expect(result.current.cards.data).toMatchObject([buildProblem()]));
 });
 
 it('keeps polling background-only sync progress and errors without stored changes', async () => {

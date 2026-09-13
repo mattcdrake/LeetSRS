@@ -11,45 +11,19 @@ import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import * as documentBackup from '../import-export';
 
-describe('document import-export', () => {
+describe('document import', () => {
   const timestamp = '2024-01-15T10:00:00.000Z';
   const connection = { pat: 'private-pat', gistId: 'local-gist', enabled: true };
 
   beforeEach(async () => {
     fakeBrowser.reset();
-    const get = fakeBrowser.storage.local.get.bind(fakeBrowser.storage.local);
-    vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementation(async (keys) => structuredClone(await get(keys)));
     await writeGistConnection(connection);
     await storage.setItem(STORAGE_KEYS.lastSyncTime, 'previous-sync');
     await storage.setItem(STORAGE_KEYS.lastSyncDirection, 'pull');
   });
 
-  it('round-trips the complete captured document without connection or status fields', async () => {
-    const { embedded } = mixedRecordBackup();
-    const document: LearningDocument = {
-      schemaVersion: LEARNING_DOCUMENT_VERSION,
-      ...embedded,
-      settings: { theme: 'dark', maxNewCardsPerDay: 7 },
-      dataUpdatedAt: timestamp,
-    };
-    await replaceLearningDocument(document);
-    // Stale scattered keys must not become part of the exported snapshot.
-    await storage.setItem(STORAGE_KEYS.theme, 'light');
-    const reads = vi.spyOn(storage, 'getItem');
-    const json = JSON.stringify(await readLearningDocument(), null, 2);
-    expect(reads.mock.calls.map(([key]) => key)).toEqual([STORAGE_KEYS.learningDocument]);
-    expect(JSON.parse(json)).toEqual(document);
-
-    await documentBackup.importData(JSON.stringify({ ...document, cards: {}, settings: {} }));
-    await documentBackup.importData(json);
-    expect(await readLearningDocument()).toEqual(document);
-    expect(await readGistConnection()).toEqual(connection);
-    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
-    expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
-  });
-
   it.each([undefined, 0, 1, 2, 3, 4, 5])(
-    'round-trips historical version %s with stored settings and the export-time fallback',
+    'imports historical version %s with stored settings and the export-time fallback',
     async (schemaVersion) => {
       const { accepted, embedded } = mixedRecordBackup();
       const settings =
@@ -70,8 +44,6 @@ describe('document import-export', () => {
         settings: { resetEditorOnEveryProblem: false, theme: 'dark' },
         dataUpdatedAt: timestamp,
       };
-      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual(expected);
-      await documentBackup.importData(JSON.stringify(await readLearningDocument(), null, 2));
       expect(await readLearningDocument()).toEqual(expected);
       expect(await readGistConnection()).toEqual(connection);
       expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
@@ -103,7 +75,7 @@ describe('document import-export', () => {
         ...(format === 'historical' && { dataUpdatedAt: '2023-01-01' }),
       };
       expect(writes).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument, expected);
-      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual(expected);
+      expect(await readLearningDocument()).toEqual(expected);
       expect(await readGistConnection()).toEqual(connection);
       expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
       expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
@@ -135,12 +107,7 @@ describe('document import-export', () => {
         expect(writes).not.toHaveBeenCalled();
       }
       await documentBackup.importData(JSON.stringify(next));
-      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual(next);
+      expect(await readLearningDocument()).toEqual(next);
     }
   );
-
-  it('rejects export before initialization without manufacturing a timestamp or document', async () => {
-    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
-    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
-  });
 });

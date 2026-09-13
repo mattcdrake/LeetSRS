@@ -279,7 +279,7 @@ describe('document Gist sync', () => {
       });
       const writes = vi.spyOn(storage, 'setItem');
       expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pulled', timestamp: now });
-      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual({
+      expect(await readLearningDocument()).toEqual({
         schemaVersion: LEARNING_DOCUMENT_VERSION,
         ...(format === 'current' ? { cards: {}, stats: {} } : embedded),
         settings: format === 'current' ? {} : { resetEditorOnEveryProblem: false, theme: 'light' },

@@ -15,7 +15,6 @@ These rules apply to runtime and type-only imports:
 - `i18n/` owns translation catalogs and the `Translations` type. It may import the domain language type, but has no browser, storage, service, or UI dependencies. Settings policy uses the domain language registry without loading dictionaries.
 - Popup and content writes use `infrastructure/browser/messages.ts`; background owns learning-data writes. Their persisted-data reads use storage adapters directly. Content translations use `infrastructure/storage/translations.ts`.
 - The popup owns permissions, active-tab inspection, and banner dismissal state. Permission requests originate from user interactions.
-- React Query remains the popup asynchronous-data interface. One lifecycle-owned WXT subscription group outside Suspense invalidates learning, connection, and persisted sync-status queries; it cancels obsolete reads and refreshes on mount. Local queries and local-save mutations run offline. Queue/day-derived queries retain a fifteen-second refresh; live sync status retains its background read and polling because it includes in-memory state. Note and daily-limit editors retain dirty drafts through incoming changes; untouched fields follow storage.
 
 ## Background execution
 
