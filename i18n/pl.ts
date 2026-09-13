@@ -97,6 +97,7 @@ const pl: Translations = {
 
   // Home view - Notes section
   notes: {
+    saveFailed: 'Nie udało się zapisać notatki. Wersja robocza została zachowana. Spróbuj zapisać ponownie.',
     title: 'Notatki',
     ariaLabel: 'Tekst notatki',
     placeholderLoading: 'Ładowanie...',

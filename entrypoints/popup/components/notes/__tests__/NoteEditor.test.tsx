@@ -1,9 +1,15 @@
 /** @vitest-environment happy-dom */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { storage } from '#imports';
 import { NOTES_MAX_LENGTH } from '@/domain/cards';
 import { noteQueryKeys } from '@/entrypoints/popup/queries/notes';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { NoteEditor } from '../NoteEditor';
@@ -15,7 +21,9 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   beforeEach(() => {
-    messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
+    fakeBrowser.reset();
+    vi.spyOn(storage, 'getItem').mockResolvedValue(buildLearningDocument());
+    messages.reset().resolve('saveNote', undefined).resolve('deleteNote', undefined);
   });
 
   afterEach(() => {
@@ -24,6 +32,9 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
   it('enables saving only for a nonempty changed note within the limit', () => {
     const { wrapper, queryClient } = createTestWrapper();
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+    );
     queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -44,7 +55,10 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
   it('loads a note and saves edits with pending feedback', async () => {
     const save = Promise.withResolvers<void>();
-    messages.resolve('getNote', 'Stored note').resolve('saveNote', save.promise);
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+    );
+    messages.resolve('saveNote', save.promise);
     const { wrapper } = createTestWrapper();
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
@@ -80,10 +94,17 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it.each(['', 'Stored note'])('confirms deletion of stored text "%s" and shows pending feedback', async (text) => {
+  it.each(['Stored note'])('confirms deletion of stored text "%s" and shows pending feedback', async (text) => {
     const remove = Promise.withResolvers<void>();
-    messages.resolve('deleteNote', remove.promise);
+    messages.handle('deleteNote', async () => {
+      await remove.promise;
+      vi.mocked(storage.getItem).mockResolvedValue(buildLearningDocument());
+      await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument());
+    });
     const { wrapper, queryClient } = createTestWrapper();
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: text }) } })
+    );
     queryClient.setQueryData(noteQueryKeys.detail(slug), text);
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
@@ -96,25 +117,56 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
     await act(async () => remove.resolve());
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Deleting...' })).not.toBeInTheDocument());
-    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('');
+    await waitFor(() => expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue(''));
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('restores stored text after a failed save', async () => {
+  it('shows a save failure, retains the draft, and clears the error after a successful retry', async () => {
     const error = new Error('Save failed');
-    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+    );
     queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
 
     fireEvent.change(textarea, { target: { value: 'Failed draft' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to save note:', error));
-    await waitFor(() => expect(textarea).toHaveValue('Stored note'));
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not save your note. Your draft is kept. Try saving again.'
+    );
+    expect(textarea).toHaveValue('Failed draft');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+
+    messages.handle('saveNote', async ({ text }) => {
+      const saved = buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: text }) } });
+      vi.mocked(storage.getItem).mockResolvedValue(saved);
+      await storage.setItem(STORAGE_KEYS.learningDocument, saved);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
+    expect(textarea).toHaveValue('Failed draft');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('does not show another card’s save failure', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
+    const { wrapper } = createTestWrapper();
+    const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+    await waitFor(() => expect(textarea).toBeEnabled());
+    fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByRole('alert');
+
+    view.rerender(<NoteEditor slug="another-card" variant={variant} />);
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(textarea).toHaveValue('');
   });
 
   it('retains text and resets confirmation after a failed deletion', async () => {
@@ -122,6 +174,9 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('deleteNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+    );
     queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
@@ -138,7 +193,9 @@ describe('NoteEditor autosizing', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   beforeEach(() => {
-    messages.reset().resolve('getNote', null);
+    fakeBrowser.reset();
+    vi.spyOn(storage, 'getItem').mockResolvedValue(buildLearningDocument());
+    messages.reset();
   });
 
   afterEach(() => {
@@ -147,7 +204,11 @@ describe('NoteEditor autosizing', () => {
 
   it('sizes compact notes after fetching and grows, caps, and shrinks with edits', async () => {
     const note = Promise.withResolvers<string | null>();
-    messages.resolve('getNote', note.promise);
+    vi.mocked(storage.getItem).mockImplementation(() =>
+      note.promise.then((text) =>
+        buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: text ?? undefined }) } })
+      )
+    );
     let contentHeight = 24;
     vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockImplementation(function (this: HTMLElement) {
       return this.style.height === 'auto'
@@ -180,6 +241,9 @@ describe('NoteEditor autosizing', () => {
   it('keeps regular sizing fixed and clears compact height when switching variants', () => {
     const measure = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(96);
     const { wrapper, queryClient } = createTestWrapper();
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+    );
     queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
     const { rerender } = render(<NoteEditor slug={slug} variant="regular" />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });

@@ -16,36 +16,41 @@ export interface NoteEditor {
   isLoading: boolean;
   isSaving: boolean;
   isDeleting: boolean;
+  saveError: unknown;
   error: unknown;
 }
 
 export function useNoteEditor(slug: string): NoteEditor {
-  const [text, setText] = useState('');
+  const [draft, setDraft] = useState<{ slug: string; text: string } | null>(null);
   const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
   const { data: note, isLoading, error } = useNoteQuery(slug);
   const saveNoteMutation = useSaveNoteMutation(slug);
   const deleteNoteMutation = useDeleteNoteMutation(slug);
 
+  const text = draft?.slug === slug ? draft.text : (note ?? '');
+  const setText = (text: string) => setDraft({ slug, text });
+
   useEffect(() => {
-    setText(note ?? '');
+    setDraft((current) => (current?.slug === slug ? current : null));
     resetConfirmation();
-  }, [note, resetConfirmation]);
+  }, [slug, resetConfirmation]);
 
   const save = async () => {
     try {
       await saveNoteMutation.mutateAsync(text);
+      setDraft((current) => (current?.slug === slug && current.text === text ? null : current));
     } catch (error) {
       console.error('Failed to save note:', error);
-      setText(note ?? '');
     }
   };
 
   const remove = () =>
     startOrConfirm(async () => {
+      saveNoteMutation.reset();
       try {
         await deleteNoteMutation.mutateAsync();
-        setText('');
+        setDraft((current) => (current?.slug === slug ? null : current));
       } catch (error) {
         console.error('Failed to delete note:', error);
       }
@@ -69,6 +74,7 @@ export function useNoteEditor(slug: string): NoteEditor {
     isLoading,
     isSaving: saveNoteMutation.isPending,
     isDeleting: deleteNoteMutation.isPending,
+    saveError: saveNoteMutation.error,
     error,
   };
 }

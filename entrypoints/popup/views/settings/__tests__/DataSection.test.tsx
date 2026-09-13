@@ -15,7 +15,7 @@ describe('DataSection reset', () => {
   let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
   beforeEach(() => {
-    messages.reset().resolve('exportData', '').resolve('importData', undefined).resolve('resetAllData', undefined);
+    messages.reset().resolve('importData', undefined).resolve('resetAllData', undefined);
     wrapper = createTestWrapper().wrapper;
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     vi.stubGlobal('alert', vi.fn());

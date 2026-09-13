@@ -1,24 +1,19 @@
-import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { Card, RateCardInput } from '@/domain/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { statsQueryKeys } from './stats';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
+import { getReviewQueue } from '@/infrastructure/storage/learning-queries';
 
 export const cardQueryKeys = {
   all: ['cards'] as const,
   reviewQueue: ['cards', 'reviewQueue'] as const,
 };
 
-async function invalidateCardData(queryClient: QueryClient) {
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
-    queryClient.invalidateQueries({ queryKey: statsQueryKeys.all }),
-  ]);
-}
-
 export function useCardsQuery() {
   return useQuery({
     queryKey: cardQueryKeys.all,
-    queryFn: () => sendMessage('getAllCards'),
+    networkMode: 'always',
+    queryFn: async () => Object.values((await readLearningDocument(true)).cards),
   });
 }
 
@@ -26,7 +21,8 @@ export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }
   const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
     queryKey: cardQueryKeys.reviewQueue,
-    queryFn: () => sendMessage('getReviewQueue'),
+    networkMode: 'always',
+    queryFn: () => getReviewQueue(true),
     staleTime: 0,
     gcTime: 0,
     refetchInterval: 15_000,
@@ -35,26 +31,20 @@ export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }
 }
 
 export function useRemoveCardMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    networkMode: 'always',
     mutationFn: (slug: string) => sendMessage('removeCard', { slug }),
-    onSuccess: () => invalidateCardData(queryClient),
   });
 }
 
 export function useRateCardMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation<{ card: Card; shouldRequeue: boolean }, Error, RateCardInput>({
+    networkMode: 'always',
     mutationFn: (input) => sendMessage('rateCard', { input }),
-    onSuccess: () => invalidateCardData(queryClient),
   });
 }
 
 export function useDelayCardMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation<
     Card,
     Error,
@@ -63,14 +53,12 @@ export function useDelayCardMutation() {
       days: number;
     }
   >({
+    networkMode: 'always',
     mutationFn: ({ slug, days }) => sendMessage('delayCard', { slug, days }),
-    onSuccess: () => invalidateCardData(queryClient),
   });
 }
 
 export function usePauseCardMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation<
     Card,
     Error,
@@ -79,7 +67,7 @@ export function usePauseCardMutation() {
       paused: boolean;
     }
   >({
+    networkMode: 'always',
     mutationFn: ({ slug, paused }) => sendMessage('setPauseStatus', { slug, paused }),
-    onSuccess: () => invalidateCardData(queryClient),
   });
 }

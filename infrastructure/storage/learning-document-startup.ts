@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { storage } from '#imports';
 import { gistSyncConfigSchema } from '@/domain/gist-sync';
-import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
+import { LEARNING_DOCUMENT_VERSION, learningDocumentVersionSchema } from '@/domain/learning-document';
 import { writeGistConnection } from './gist-connection';
 import { replaceLearningDocument } from './learning-document';
 import { convertLearningDocument } from './learning-document-conversions';
@@ -66,7 +66,7 @@ export async function initializeLearningDocument(): Promise<void> {
 
   if (saved != null) {
     // Stored documents must declare their version; only scattered installs may be unversioned.
-    const { schemaVersion } = z.object({ schemaVersion: z.int().nonnegative() }).parse(saved);
+    const { schemaVersion } = learningDocumentVersionSchema.parse(saved);
     const document = convertLearningDocument(saved);
 
     if (schemaVersion !== LEARNING_DOCUMENT_VERSION) {

@@ -1,9 +1,24 @@
 import { storage } from '#imports';
-import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
+import {
+  LEARNING_DOCUMENT_VERSION,
+  type LearningDocument,
+  learningDocumentSchema,
+  learningDocumentVersionSchema,
+} from '@/domain/learning-document';
+import { sendMessage } from '@/infrastructure/browser/messages';
 import { STORAGE_KEYS } from './storage-keys';
 
-export async function readLearningDocument(): Promise<LearningDocument> {
-  const document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
+export async function readLearningDocument(waitForInitialization = false): Promise<LearningDocument> {
+  let document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
+  const version = learningDocumentVersionSchema.safeParse(document);
+
+  if (
+    waitForInitialization &&
+    (document == null || (version.success && version.data.schemaVersion < LEARNING_DOCUMENT_VERSION))
+  ) {
+    await sendMessage('waitForInitialization');
+    document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
+  }
 
   if (document == null) {
     throw new Error('Learning document is not initialized');

@@ -8,26 +8,10 @@ import {
   messagePayloadSchemas,
   onMessage,
 } from '@/infrastructure/browser/messages';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
 import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
-import {
-  exportData,
-  getAllCards,
-  getCardStateStats,
-  getLastNDaysStats,
-  getNextNDaysStats,
-  getNote,
-  getReviewQueue,
-  getSettings,
-  getTodayStats,
-  shouldResetEditor,
-} from '@/infrastructure/storage/learning-queries';
-import {
-  getGistSyncConfig,
-  getGistSyncStatus,
-  setGistSyncEnabled,
-  setupGistSync,
-  triggerGistSync,
-} from '@/services/gist-sync';
+import { getReviewQueue, getSettings } from '@/infrastructure/storage/learning-queries';
+import { getGistSyncStatus, setGistSyncEnabled, setupGistSync, triggerGistSync } from '@/services/gist-sync';
 import { importData, resetAllData } from '@/services/import-export';
 import {
   addCard,
@@ -62,29 +46,19 @@ function write<Data, Result>(
 }
 
 const commands: { [Name in MessageName]: Command<Name> } = {
+  waitForInitialization: read(() => undefined),
   addCard: write(({ problem }) => addCard(problem), { refreshBadge: true }),
-  getAllCards: read(getAllCards),
   removeCard: write(({ slug }) => removeCard(slug), { refreshBadge: true }),
   delayCard: write(({ slug, days }) => delayCard(slug, days), { refreshBadge: true }),
   setPauseStatus: write(({ slug, paused }) => setPauseStatus(slug, paused), {
     refreshBadge: true,
   }),
   rateCard: write(({ input }) => rateCard(input), { refreshBadge: true }),
-  getReviewQueue: read(getReviewQueue),
-  getTodayStats: read(getTodayStats),
-  getNote: read(({ slug }) => getNote(slug)),
   saveNote: write(({ slug, text }) => saveNote(slug, text)),
   deleteNote: write(({ slug }) => deleteNote(slug)),
-  getSettings: read(getSettings),
   updateSettings: write(({ changes }) => updateSettings(changes), { refreshBadge: true }),
-  shouldResetEditor: read(({ slug, domain }) => shouldResetEditor(slug, domain)),
-  getCardStateStats: read(getCardStateStats),
-  getLastNDaysStats: read(({ days }) => getLastNDaysStats(days)),
-  getNextNDaysStats: read(({ days }) => getNextNDaysStats(days)),
-  exportData: read(exportData),
   importData: write(({ jsonData }) => importData(jsonData), { refreshBadge: true }),
   resetAllData: write(resetAllData, { refreshBadge: true }),
-  getGistSyncConfig: read(getGistSyncConfig),
   setupGistSync: write(setupGistSync, { refreshBadge: true }),
   setGistSyncEnabled: write(({ enabled }) => setGistSyncEnabled(enabled), { refreshBadge: true }),
   getGistSyncStatus: read(getGistSyncStatus),
@@ -179,7 +153,7 @@ export default defineBackground(() => {
     }
 
     await enqueue(async () => {
-      const config = await getGistSyncConfig();
+      const config = await readGistConnection();
       if (config.enabled && config.pat.trim() && config.gistId?.trim()) {
         await triggerGistSync();
       }

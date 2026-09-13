@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useEffect } from 'react';
+import { useStorageQueryEvents } from '@/entrypoints/popup/queries/storage-events';
 
 /**
  * Creates a new QueryClient with test-friendly defaults
@@ -22,10 +23,20 @@ export function createTestQueryClient() {
   });
 }
 
+function StorageObserver() {
+  useStorageQueryEvents();
+  return null;
+}
+
 function TestQueryClientProvider({ children, queryClient }: { children: ReactNode; queryClient: QueryClient }) {
   useEffect(() => () => queryClient.clear(), [queryClient]);
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <StorageObserver />
+      {children}
+    </QueryClientProvider>
+  );
 }
 
 /**

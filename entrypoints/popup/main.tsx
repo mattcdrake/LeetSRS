@@ -6,6 +6,12 @@ import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider } from './contexts/I18nContext';
 import { useLeetcodeCnPermissionEvents } from './queries/leetcode-cn';
+import { useStorageQueryEvents } from './queries/storage-events';
+
+function PopupStorageObserver() {
+  useStorageQueryEvents();
+  return null;
+}
 
 function PopupPermissionObserver() {
   useLeetcodeCnPermissionEvents();
@@ -33,6 +39,7 @@ ReactDOM.createRoot(root).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <PopupPermissionObserver />
+        <PopupStorageObserver />
         <Suspense
           fallback={
             <div className="popup-loading" role="status" aria-label="Loading">

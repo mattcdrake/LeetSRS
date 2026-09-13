@@ -1,3 +1,4 @@
+import { CancelledError } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { Grade } from 'ts-fsrs';
 import type { Card, RateCardInput } from '@/domain/cards';
@@ -18,7 +19,7 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export function ReviewQueue() {
   const t = useI18n();
-  const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
+  const { data: queue = [], isLoading, error, refetch } = useReviewQueueQuery({ refetchOnWindowFocus: true });
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();
@@ -47,6 +48,17 @@ export function ReviewQueue() {
 
     try {
       const result = await action();
+
+      // Storage events can cancel obsolete reads. Keep actions disabled until a
+      // post-save read completes; a read failure is shown by the queue error state.
+      for (;;) {
+        try {
+          await refetch({ throwOnError: true });
+          break;
+        } catch (error) {
+          if (!(error instanceof CancelledError)) break;
+        }
+      }
 
       if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
         finishCardAction();

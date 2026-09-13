@@ -96,6 +96,7 @@ const en = {
 
   // Home view - Notes section
   notes: {
+    saveFailed: 'Could not save your note. Your draft is kept. Try saving again.',
     title: 'Notes',
     ariaLabel: 'Note text',
     placeholderLoading: 'Loading...',

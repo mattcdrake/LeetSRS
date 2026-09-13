@@ -42,7 +42,7 @@ describe('UpcomingReviewsChart', () => {
   ];
 
   const renderChart = (data: UpcomingReviewStats[] = mockNext14DaysStats) => {
-    messages.reset().resolve('getNextNDaysStats', data);
+    messages.reset();
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(statsQueryKeys.nextNDays.detail(14), data);
     return render(<UpcomingReviewsChart />, { wrapper });
@@ -56,7 +56,6 @@ describe('UpcomingReviewsChart', () => {
 
     expect(chartData.labels).toEqual(['5/15', '5/16', '5/17']);
     expect(screen.getByRole('heading', { name: 'Upcoming Reviews (Next 14 Days)' })).toBeInTheDocument();
-    expect(sendMessage).toHaveBeenCalledWith('getNextNDaysStats', { days: 14 });
 
     // Check dataset
     expect(chartData.datasets).toHaveLength(1);
@@ -76,7 +75,7 @@ describe('UpcomingReviewsChart', () => {
 
   it('should handle loading state gracefully', () => {
     const pending = Promise.withResolvers<UpcomingReviewStats[]>();
-    messages.reset().resolve('getNextNDaysStats', pending.promise);
+    messages.reset();
     const { wrapper } = createTestWrapper();
     const view = render(<UpcomingReviewsChart />, { wrapper });
 
