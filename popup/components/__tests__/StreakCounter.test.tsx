@@ -10,7 +10,7 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { statsQueryKeys } from '@/popup/queries/stats';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StreakCounter } from '../StreakCounter';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -31,7 +31,7 @@ describe('StreakCounter', () => {
 
   const renderStats = (data: DailyStats | null) => {
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(statsQueryKeys.today, data);
     return render(<StreakCounter />, { wrapper });
   };
@@ -51,7 +51,7 @@ describe('StreakCounter', () => {
     const pending = Promise.withResolvers<LearningDocument>();
     const read = vi.spyOn(storage, 'getItem').mockReturnValue(pending.promise);
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
     await waitFor(() => expect(read).toHaveBeenCalled());
     expect(queryClient.getQueryState(statsQueryKeys.today)).toMatchObject({
@@ -68,7 +68,7 @@ describe('StreakCounter', () => {
     const error = new Error('Failed to fetch stats');
     vi.spyOn(storage, 'getItem').mockRejectedValue(error);
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
     await waitFor(() =>
       expect(queryClient.getQueryState(statsQueryKeys.today)).toMatchObject({ status: 'error', error })

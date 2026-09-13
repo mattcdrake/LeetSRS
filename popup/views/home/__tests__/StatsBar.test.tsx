@@ -7,7 +7,7 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { cardQueryKeys } from '@/popup/queries/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StatsBar } from '../StatsBar';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -17,7 +17,7 @@ describe('StatsBar', () => {
 
   const renderStats = (cards: Card[] = []) => {
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
     return render(<StatsBar />, { wrapper });
   };

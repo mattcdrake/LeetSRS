@@ -11,7 +11,7 @@ import { onMessage, sendMessage } from '@/integrations/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '../notes';
@@ -45,7 +45,7 @@ describe('note and card query coherence', () => {
         save: useSaveNoteMutation(problem.slug),
         remove: useDeleteNoteMutation(problem.slug),
       }),
-      { wrapper: createTestWrapper().wrapper }
+      { wrapper: createPopupTestWrapper().wrapper }
     );
     await waitFor(() => expect(result.current.note.isSuccess).toBe(true));
     expect(result.current.note.data).toBeNull();
@@ -76,7 +76,7 @@ describe('note and card query coherence', () => {
         import: useImportDataMutation(),
         reset: useResetAllDataMutation(),
       }),
-      { wrapper: createTestWrapper().wrapper }
+      { wrapper: createPopupTestWrapper().wrapper }
     );
     await waitFor(() => expect(result.current.note.data).toBe('Previous note'));
     const card = requireDefined(result.current.cards.data?.[0]);
@@ -102,7 +102,7 @@ describe('note and card query coherence', () => {
 
 it('preserves a dirty rendered note through incoming replacement and saves its draft', async () => {
   await sendMessage('saveNote', { slug: problem.slug, text: 'Original' });
-  render(<NoteEditor slug={problem.slug} variant="regular" />, { wrapper: createTestWrapper().wrapper });
+  render(<NoteEditor slug={problem.slug} variant="regular" />, { wrapper: createPopupTestWrapper().wrapper });
   const input = screen.getByRole('textbox', { name: 'Note text' });
   await waitFor(() => expect(input).toHaveValue('Original'));
   await act(() => sendMessage('saveNote', { slug: problem.slug, text: 'Untouched update' }));
@@ -129,7 +129,7 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
       queue: useReviewQueueQuery(),
       delay: useDelayCardMutation(),
     }),
-    { initialProps: { slug: problem.slug }, wrapper: createTestWrapper().wrapper }
+    { initialProps: { slug: problem.slug }, wrapper: createPopupTestWrapper().wrapper }
   );
   await waitFor(() => expect(view.result.current.note.data).toBe('Outgoing note'));
   await act(() => view.result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }));

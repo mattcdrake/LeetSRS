@@ -13,7 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
 import { cardQueryKeys } from '@/popup/queries/cards';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -21,7 +21,7 @@ vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 describe('NotesSection', () => {
   const mockSlug = 'test-card-123';
   const messages = createMessageMock(vi.mocked(sendMessage));
-  let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
+  let wrapper: ReturnType<typeof createPopupTestWrapper>['wrapper'];
   let queryClient: QueryClient;
 
   const seedNote = (note: string | null) => {
@@ -38,7 +38,7 @@ describe('NotesSection', () => {
 
   beforeEach(() => {
     messages.reset().resolve('saveNote', undefined).resolve('deleteNote', undefined);
-    ({ wrapper, queryClient } = createTestWrapper());
+    ({ wrapper, queryClient } = createPopupTestWrapper());
     seedNote(null);
   });
 

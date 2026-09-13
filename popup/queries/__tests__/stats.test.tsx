@@ -10,7 +10,7 @@ import { replaceLearningDocument } from '@/data/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useLastNDaysStatsQuery, useNextNDaysStatsQuery, useTodayStatsQuery } from '../stats';
 
 beforeEach(() => {
@@ -51,7 +51,7 @@ it('preserves history and upcoming statistics results', async () => {
       emptyHistory: useLastNDaysStatsQuery(0),
       emptyUpcoming: useNextNDaysStatsQuery(0),
     }),
-    { wrapper: createTestWrapper().wrapper }
+    { wrapper: createPopupTestWrapper().wrapper }
   );
   await waitFor(() => expect(result.current.emptyUpcoming.isSuccess).toBe(true));
   expect(result.current.today.data).toBeNull();

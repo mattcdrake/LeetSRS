@@ -12,7 +12,7 @@ import { cardQueryKeys, useCardsQuery } from '@/popup/queries/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NoteEditor } from '../NoteEditor';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -32,7 +32,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   });
 
   it('enables saving only for a nonempty changed note within the limit', () => {
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
     );
@@ -60,7 +60,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
       buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
     );
     messages.resolve('saveNote', save.promise);
-    const { wrapper } = createTestWrapper();
+    const { wrapper } = createPopupTestWrapper();
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -81,7 +81,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   });
 
   it('shows the full over-limit count and prevents saving', () => {
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(cardQueryKeys.all, [createMockCard(State.New, { slug, note: undefined })]);
     render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
 
@@ -103,7 +103,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
       vi.mocked(storage.getItem).mockResolvedValue(buildLearningDocument());
       await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument());
     });
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: text }) } })
     );
@@ -128,7 +128,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const error = new Error('Save failed');
     vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(error));
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
     );
@@ -160,7 +160,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   it('does not show another card’s save failure', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
-    const { wrapper } = createTestWrapper();
+    const { wrapper } = createPopupTestWrapper();
     const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     await waitFor(() => expect(textarea).toBeEnabled());
@@ -174,7 +174,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   });
 
   it('preserves a dirty draft during incoming updates and resets it and confirmation when switching cards', async () => {
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(cardQueryKeys.all, [
       createMockCard(State.New, { slug, note: 'Stored note' }),
       createMockCard(State.New, { slug: 'another-card', note: 'Other note' }),
@@ -212,7 +212,7 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     const error = new Error('Delete failed');
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('deleteNote', () => Promise.reject(error));
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
     );
@@ -254,7 +254,7 @@ describe('NoteEditor autosizing', () => {
         ? contentHeight
         : Math.max(contentHeight, Number.parseFloat(this.style.height));
     });
-    const { wrapper } = createTestWrapper();
+    const { wrapper } = createPopupTestWrapper();
     render(<NoteEditor slug={slug} variant="compact" />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     expect(textarea).toHaveStyle({ height: '24px' });
@@ -279,7 +279,7 @@ describe('NoteEditor autosizing', () => {
 
   it('keeps regular sizing fixed and clears compact height when switching variants', () => {
     const measure = vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(96);
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
     );
@@ -306,7 +306,7 @@ it('shares card reads across editors mounted separately and refreshes them with 
   const second = createMockCard(State.New, { id: 'second', slug: 'second', note: 'Second note' });
   await replaceLearningDocument(buildLearningDocument({ cards: { first, second } }));
   const reads = vi.spyOn(storage, 'getItem');
-  const { wrapper } = createTestWrapper();
+  const { wrapper } = createPopupTestWrapper();
   function Editors({ expanded }: { expanded: boolean }) {
     const { data: cards = [] } = useCardsQuery();
     return (

@@ -9,7 +9,7 @@ import { updateSettings } from '@/background/learning';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
 vi.mock('@/integrations/browser/messages', () => ({
@@ -27,7 +27,7 @@ describe('popup settings with the prepared document workflows', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('loads defaults, displays saved edits, and reloads replaced overrides through the existing commands', async () => {
-    const { wrapper } = createTestWrapper();
+    const { wrapper } = createPopupTestWrapper();
     const { result } = renderHook(() => ({ settings: useSettingsQuery(), update: useUpdateSettingsMutation() }), {
       wrapper,
     });
@@ -44,7 +44,7 @@ describe('popup settings with the prepared document workflows', () => {
   });
 
   it('reports a rejected save while retaining displayed and stored settings, then allows retry', async () => {
-    const { wrapper } = createTestWrapper();
+    const { wrapper } = createPopupTestWrapper();
     const { result } = renderHook(() => ({ settings: useSettingsQuery(), update: useUpdateSettingsMutation() }), {
       wrapper,
     });

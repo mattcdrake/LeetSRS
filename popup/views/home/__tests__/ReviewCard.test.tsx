@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { translations } from '@/i18n';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
 
 vi.mock('@/popup/hooks/useTheme', () => ({ useTheme: () => 'light' }));
@@ -24,7 +24,7 @@ describe('ReviewCard', () => {
     domain: 'leetcode.com',
   };
 
-  const { wrapper: TestWrapper } = createTestWrapper();
+  const { wrapper: TestWrapper } = createPopupTestWrapper();
 
   const renderWithProviders = (card = mockCard, onRate = mockOnRate) => {
     return render(<ReviewCard card={card} onRate={onRate} />, { wrapper: TestWrapper });

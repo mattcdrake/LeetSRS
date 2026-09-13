@@ -6,7 +6,7 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { settingsQueryKeys } from '@/popup/queries/settings';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { AppearanceSection } from '../AppearanceSection';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -23,7 +23,7 @@ describe('AppearanceSection', () => {
     ['Light', 'light'],
     ['Dark', 'dark'],
   ] as const)('updates the theme to %s', async (label, theme: Theme) => {
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ theme: theme === 'system' ? 'dark' : 'system' }));
     render(<AppearanceSection />, { wrapper });
 
@@ -38,7 +38,7 @@ describe('AppearanceSection', () => {
   });
 
   it('shows the badge control', () => {
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(settingsQueryKeys.all, buildSettings());
     render(<AppearanceSection />, { wrapper });
 

@@ -2,13 +2,13 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { cardQueryKeys } from '@/popup/queries/cards';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { BottomNav } from '../BottomNav';
 
 describe('BottomNav', () => {
   it('shows the active view and navigates to the selected view', () => {
     const onNavigate = vi.fn();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(cardQueryKeys.reviewQueue, []);
     render(<BottomNav activeView="home" onNavigate={onNavigate} />, { wrapper });
 
@@ -21,7 +21,7 @@ describe('BottomNav', () => {
 
   it('navigates when arrow keys move focus', () => {
     const onNavigate = vi.fn();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(cardQueryKeys.reviewQueue, []);
     render(<BottomNav activeView="home" onNavigate={onNavigate} />, { wrapper });
     const home = screen.getByRole('radio', { name: 'Home' });

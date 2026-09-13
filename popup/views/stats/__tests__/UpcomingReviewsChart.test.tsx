@@ -11,7 +11,7 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { statsQueryKeys } from '@/popup/queries/stats';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { UpcomingReviewsChart } from '../UpcomingReviewsChart';
 
 // Mock react-chartjs-2
@@ -48,7 +48,7 @@ describe('UpcomingReviewsChart', () => {
 
   const renderChart = (data: UpcomingReviewStats[] = mockNext14DaysStats) => {
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(statsQueryKeys.nextNDays.detail(14), data);
     return render(<UpcomingReviewsChart />, { wrapper });
   };
@@ -82,7 +82,7 @@ describe('UpcomingReviewsChart', () => {
     const pending = Promise.withResolvers<LearningDocument>();
     const read = vi.spyOn(storage, 'getItem').mockReturnValue(pending.promise);
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     const view = render(<UpcomingReviewsChart />, { wrapper });
 
     await waitFor(() => expect(read).toHaveBeenCalled());

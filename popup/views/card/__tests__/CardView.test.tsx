@@ -4,7 +4,7 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
  * @vitest-environment happy-dom
  */
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,15 +14,17 @@ import { cardQueryKeys } from '@/popup/queries/cards';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardView } from '../CardView';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 let queryClient: QueryClient;
+let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
 const renderWithQueryClient = (component: React.ReactElement) => {
-  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+  return render(component, { wrapper });
 };
 
 describe('CardView', () => {
@@ -33,7 +35,7 @@ describe('CardView', () => {
 
   beforeEach(() => {
     messages.reset();
-    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    ({ queryClient, wrapper } = createTestWrapper());
   });
 
   it('should render loading state without a filter input', () => {

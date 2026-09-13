@@ -10,7 +10,7 @@ import { createDailyStats } from '@/domain/statistics';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useExportDataMutation } from '../data';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -30,7 +30,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
     { key: STORAGE_KEYS.lastSyncDirection, value: 'pull' },
     { key: 'sync:leetsrs:theme', value: 'light' },
   ]);
-  const { result } = renderHook(() => useExportDataMutation(), { wrapper: createTestWrapper().wrapper });
+  const { result } = renderHook(() => useExportDataMutation(), { wrapper: createPopupTestWrapper().wrapper });
   await act(async () => expect(JSON.parse(await result.current.mutateAsync())).toEqual(document));
 
   const replacement = buildLearningDocument();
@@ -40,7 +40,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
 
 it('reports initialization failure when exporting unavailable data without creating an empty backup', async () => {
   vi.mocked(sendMessage).mockRejectedValue(new Error('Initialization failed'));
-  const { result } = renderHook(() => useExportDataMutation(), { wrapper: createTestWrapper().wrapper });
+  const { result } = renderHook(() => useExportDataMutation(), { wrapper: createPopupTestWrapper().wrapper });
   await act(async () => expect(result.current.mutateAsync()).rejects.toThrow('Initialization failed'));
   expect(result.current.data).toBeUndefined();
   expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();

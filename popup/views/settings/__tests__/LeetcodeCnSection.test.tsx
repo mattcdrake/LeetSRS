@@ -4,7 +4,7 @@
 
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { LeetcodeCnSection } from '../LeetcodeCnSection';
 
 const mockContains = vi.fn<() => Promise<boolean>>();
@@ -22,7 +22,7 @@ describe('LeetcodeCnSection', () => {
   it('hides the prompt until permission has loaded', async () => {
     const permission = Promise.withResolvers<boolean>();
     mockContains.mockReturnValue(permission.promise);
-    render(<LeetcodeCnSection />, createTestWrapper());
+    render(<LeetcodeCnSection />, createPopupTestWrapper());
     expect(screen.queryByText('LeetCode China')).not.toBeInTheDocument();
     await act(async () => permission.resolve(false));
     expect(await screen.findByText('LeetCode China')).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('LeetcodeCnSection', () => {
     mockContains.mockResolvedValue(true);
 
     await act(async () => {
-      render(<LeetcodeCnSection />, createTestWrapper());
+      render(<LeetcodeCnSection />, createPopupTestWrapper());
     });
 
     expect(screen.queryByText('LeetCode China')).not.toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('LeetcodeCnSection', () => {
     mockContains.mockResolvedValue(false);
 
     await act(async () => {
-      render(<LeetcodeCnSection />, createTestWrapper());
+      render(<LeetcodeCnSection />, createPopupTestWrapper());
     });
 
     expect(await screen.findByText('LeetCode China')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('LeetcodeCnSection', () => {
     mockRequest.mockResolvedValue(true);
 
     await act(async () => {
-      render(<LeetcodeCnSection />, createTestWrapper());
+      render(<LeetcodeCnSection />, createPopupTestWrapper());
     });
 
     await act(async () => {
@@ -71,7 +71,7 @@ describe('LeetcodeCnSection', () => {
     mockRequest.mockResolvedValue(false);
 
     await act(async () => {
-      render(<LeetcodeCnSection />, createTestWrapper());
+      render(<LeetcodeCnSection />, createPopupTestWrapper());
     });
 
     await act(async () => {
