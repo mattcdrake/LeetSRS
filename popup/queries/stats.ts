@@ -7,11 +7,9 @@ export const statsQueryKeys = {
   all: ['stats'] as const,
   today: ['stats', 'today'] as const,
   lastNDays: {
-    all: ['stats', 'lastNDays'] as const,
     detail: (days: number) => ['stats', 'lastNDays', days] as const,
   },
   nextNDays: {
-    all: ['stats', 'nextNDays'] as const,
     detail: (days: number) => ['stats', 'nextNDays', days] as const,
   },
 };

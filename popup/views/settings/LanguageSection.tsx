@@ -6,14 +6,13 @@ import { useI18n } from '../../contexts/I18nContext';
 
 const LANGUAGE_OPTIONS: Array<{
   code: Language;
-  name: string;
   nativeName: string;
 }> = [
-  { code: 'de', name: 'German', nativeName: 'Deutsch' },
-  { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी' },
-  { code: 'pl', name: 'Polish', nativeName: 'Polski' },
-  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
+  { code: 'de', nativeName: 'Deutsch' },
+  { code: 'en', nativeName: 'English' },
+  { code: 'hi', nativeName: 'हिन्दी' },
+  { code: 'pl', nativeName: 'Polski' },
+  { code: 'zh-CN', nativeName: '简体中文' },
 ];
 
 export function LanguageSection() {
