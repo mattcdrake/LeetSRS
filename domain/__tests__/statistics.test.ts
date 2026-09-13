@@ -4,7 +4,6 @@ import { createMockCard } from '@/test/utils/card-mocks';
 import {
   calculateHistoryStats,
   calculateUpcomingStats,
-  countCardStates,
   createDailyStats,
   dailyStatsSchema,
   recordReview,
@@ -65,19 +64,13 @@ describe('statistics calculations', () => {
     expect(result[0].gradeBreakdown).not.toBe(result[2].gradeBreakdown);
   });
 
-  it('includes paused cards in state counts but excludes them from upcoming buckets', () => {
+  it('includes overdue cards but excludes paused cards from upcoming buckets', () => {
     const cards = [State.New, State.Learning, State.Review, State.Relearning].map((state) => createMockCard(state));
     cards[0].fsrs.due = new Date('2024-03-10T12:00:00').getTime();
     cards[1].fsrs.due = new Date('2024-03-15T23:59:59.999').getTime();
     cards[2].fsrs.due = new Date('2024-03-16T00:00:00').getTime();
     cards[3].fsrs.due = new Date('2024-03-16T00:00:00').getTime();
     cards[3].paused = true;
-    expect(countCardStates(cards)).toEqual({
-      [State.New]: 1,
-      [State.Learning]: 1,
-      [State.Review]: 1,
-      [State.Relearning]: 1,
-    });
     expect(calculateUpcomingStats(cards, 2, new Date('2024-03-15T03:59:59'))).toEqual([
       { date: '2024-03-15', count: 2 },
       { date: '2024-03-16', count: 1 },

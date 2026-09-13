@@ -135,7 +135,6 @@ const zhCN: Translations = {
   },
 
   charts: {
-    cardDistribution: '卡片分布',
     reviewHistory: '近30天复习历史',
     upcomingReviews: '未来14天待复习',
     cardsDue: '到期卡片',

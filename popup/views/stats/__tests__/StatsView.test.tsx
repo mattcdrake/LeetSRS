@@ -23,10 +23,6 @@ vi.mock('../../../components/StreakCounter', () => ({
 }));
 
 // Mock the chart components
-vi.mock('../CardDistributionChart', () => ({
-  CardDistributionChart: () => <div data-testid="card-distribution-chart">Card Distribution Chart</div>,
-}));
-
 vi.mock('../ReviewHistoryChart', () => ({
   ReviewHistoryChart: () => <div data-testid="review-history-chart">Review History Chart</div>,
 }));
@@ -42,11 +38,11 @@ describe('StatsView', () => {
     return render(<StatsView />, { wrapper });
   };
 
-  it('renders the streak in the header and all three charts', () => {
+  it('renders the streak, review history, and upcoming reviews without card distribution', () => {
     renderStatsView();
 
     expect(screen.getByTestId('header-content')).toContainElement(screen.getByTestId('streak-counter'));
-    expect(screen.getByTestId('card-distribution-chart')).toBeInTheDocument();
+    expect(screen.queryByText('Card Distribution')).not.toBeInTheDocument();
     expect(screen.getByTestId('review-history-chart')).toBeInTheDocument();
     expect(screen.getByTestId('upcoming-reviews-chart')).toBeInTheDocument();
   });

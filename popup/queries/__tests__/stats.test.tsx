@@ -11,13 +11,13 @@ import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardStateStatsQuery, useLastNDaysStatsQuery, useNextNDaysStatsQuery, useTodayStatsQuery } from '../stats';
+import { useLastNDaysStatsQuery, useNextNDaysStatsQuery, useTodayStatsQuery } from '../stats';
 
 beforeEach(() => {
   fakeBrowser.reset();
   vi.setSystemTime(new Date('2024-03-15T12:00:00'));
 });
-it('preserves card-state, history, and upcoming statistics results', async () => {
+it('preserves history and upcoming statistics results', async () => {
   const cards = [
     createMockCard(State.New, { slug: 'overdue' }),
     createMockCard(State.Learning, { slug: 'today' }),
@@ -45,7 +45,6 @@ it('preserves card-state, history, and upcoming statistics results', async () =>
 
   const { result } = renderHook(
     () => ({
-      states: useCardStateStatsQuery(),
       today: useTodayStatsQuery(),
       history: useLastNDaysStatsQuery(2),
       upcoming: useNextNDaysStatsQuery(2),
@@ -55,7 +54,6 @@ it('preserves card-state, history, and upcoming statistics results', async () =>
     { wrapper: createTestWrapper().wrapper }
   );
   await waitFor(() => expect(result.current.emptyUpcoming.isSuccess).toBe(true));
-  expect(result.current.states.data).toEqual({ 0: 1, 1: 1, 2: 2, 3: 1 });
   expect(result.current.today.data).toBeNull();
   expect(result.current.history.data).toEqual([
     yesterday,

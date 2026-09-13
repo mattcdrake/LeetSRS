@@ -135,7 +135,6 @@ const hi: Translations = {
   },
   // Charts
   charts: {
-    cardDistribution: 'कार्ड डिस्ट्रीब्यूशन',
     reviewHistory: 'पिछले 30 दिनों की रिव्यु हिस्ट्री',
     upcomingReviews: 'आगामी रिव्युज़ (अगले 14 दिन)',
     cardsDue: 'ड्यू कार्ड्स',

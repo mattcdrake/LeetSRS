@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { readLearningDocument } from '@/data/learning-document';
 import { formatLocalDate } from '@/domain/calendar';
-import { calculateHistoryStats, calculateUpcomingStats, countCardStates } from '@/domain/statistics';
+import { calculateHistoryStats, calculateUpcomingStats } from '@/domain/statistics';
 
 export const statsQueryKeys = {
   all: ['stats'] as const,
   today: ['stats', 'today'] as const,
-  cardState: ['stats', 'cardState'] as const,
   lastNDays: {
     all: ['stats', 'lastNDays'] as const,
     detail: (days: number) => ['stats', 'lastNDays', days] as const,
@@ -27,14 +26,6 @@ export function useTodayStatsQuery() {
       const document = await readLearningDocument(true);
       return document.stats[formatLocalDate(now)] ?? null;
     },
-  });
-}
-
-export function useCardStateStatsQuery() {
-  return useQuery({
-    queryKey: statsQueryKeys.cardState,
-    networkMode: 'always',
-    queryFn: async () => countCardStates(Object.values((await readLearningDocument(true)).cards)),
   });
 }
 

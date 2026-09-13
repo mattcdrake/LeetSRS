@@ -122,7 +122,6 @@ const de: Translations = {
     title: 'Statistik',
   },
   charts: {
-    cardDistribution: 'Kartenverteilung',
     reviewHistory: 'Wiederholungsverlauf der letzten 30 Tage',
     upcomingReviews: 'Anstehende Wiederholungen (nächste 14 Tage)',
     cardsDue: 'Fällige Karten',

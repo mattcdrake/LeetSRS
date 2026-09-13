@@ -149,7 +149,6 @@ const en = {
 
   // Charts
   charts: {
-    cardDistribution: 'Card Distribution',
     reviewHistory: 'Last 30 Days Review History',
     upcomingReviews: 'Upcoming Reviews (Next 14 Days)',
     cardsDue: 'Cards Due',

@@ -62,16 +62,16 @@ describe('document learning through background commands', () => {
 
     expect(result.card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
     expect(result.card.fsrs).toEqual({
-      due: new Date('2024-03-15T12:10:00').getTime(),
+      due: new Date('2024-03-18T12:00:00').getTime(),
       last_review: Date.now(),
       stability: 2.3065,
       difficulty: 2.11810397,
       elapsed_days: 0,
-      scheduled_days: 0,
+      scheduled_days: 3,
       reps: 1,
       lapses: 0,
-      learning_steps: 1,
-      state: State.Learning,
+      learning_steps: 0,
+      state: State.Review,
     });
     expect(result.shouldRequeue).toBe(false);
     expect(Object.values((await readLearningDocument()).cards)).toEqual([result.card]);
@@ -173,7 +173,7 @@ describe('document learning through background commands', () => {
 
     expect(card.createdAt).toBe(now.getTime());
     expect(card.fsrs.last_review).toBe(now.getTime());
-    expect(card.fsrs.due).toBe(new Date('2024-03-16T00:09:59.999').getTime());
+    expect(card.fsrs.due).toBe(new Date('2024-03-18T23:59:59.999').getTime());
     expect(await readLearningDocument()).toMatchObject({
       cards: { [card.slug]: card },
       stats: { '2024-03-15': { totalReviews: 1, newCards: 1 } },
@@ -331,7 +331,9 @@ describe('document learning through background commands', () => {
       });
       expect(first.card.fsrs.reps).toBe(1);
       expect(first.card.fsrs.last_review).toBe(card.createdAt);
-      expect(first.card.fsrs.due).toBeGreaterThan(card.createdAt);
+      expect(first.card.fsrs.state).toBe(State.Review);
+      expect(first.card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+      expect(first.card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
       expect(first.shouldRequeue).toBe(false);
       vi.setSystemTime(first.card.fsrs.due - 1);
       expect(await getReviewQueue()).toEqual([]);
@@ -341,6 +343,10 @@ describe('document learning through background commands', () => {
       vi.setSystemTime(card.createdAt);
       const second = await dispatch('rateCard', { input: { ...buildProblem(), rating } });
       expect(second.card.fsrs.reps).toBe(2);
+      expect(second.card.fsrs.state).toBe(State.Review);
+      expect(second.card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+      expect(second.card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+      expect(second.shouldRequeue).toBe(false);
       expect(Object.values((await readLearningDocument()).cards)).toEqual([second.card]);
       expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toEqual({
         date: '2024-03-15',
@@ -352,6 +358,46 @@ describe('document learning through background commands', () => {
       });
     }
   );
+
+  describe.each([
+    ['untracked', undefined],
+    ['Learning', State.Learning],
+    ['Review', State.Review],
+    ['Relearning', State.Relearning],
+  ] as const)('long-term scheduling for %s cards', (_name, state) => {
+    it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
+      'schedules rating %s in Review state at least one day later',
+      async (rating) => {
+        const problem = buildProblem();
+        const existing = state === undefined ? undefined : createMockCard(state, { ...problem, note: 'Retained' });
+        if (existing) {
+          existing.fsrs.last_review = new Date(
+            state === State.Review ? '2024-03-12T12:00:00' : '2024-03-15T11:50:00'
+          ).getTime();
+          existing.fsrs.learning_steps = state === State.Review ? 0 : 1;
+          const document = await readLearningDocument();
+          await replaceLearningDocument({ ...document, cards: { [existing.slug]: existing } });
+          expect((await readLearningDocument()).cards[existing.slug]).toEqual(existing);
+        }
+
+        const { card, shouldRequeue } = await dispatch('rateCard', { input: { ...problem, rating } });
+
+        expect(card.fsrs).toMatchObject({
+          state: State.Review,
+          learning_steps: 0,
+          last_review: Date.now(),
+          reps: (existing?.fsrs.reps ?? 0) + 1,
+        });
+        expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+        expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+        expect(shouldRequeue).toBe(false);
+        expect((await readLearningDocument()).cards[card.slug]).toEqual(card);
+        if (existing) {
+          expect(card).toMatchObject({ id: existing.id, createdAt: existing.createdAt, note: 'Retained' });
+        }
+      }
+    );
+  });
 
   it.each([
     ['2024-03-14T23:59:59.999', '2024-03-13', '2024-03-14', '2024-03-15'],
