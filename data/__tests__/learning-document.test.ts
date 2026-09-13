@@ -1,7 +1,10 @@
+import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { LearningDocument } from '@/domain/learning-document';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { createDailyStats } from '@/domain/statistics';
+import { createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { readLearningDocument, replaceLearningDocument } from '../learning-document';
 import { STORAGE_KEYS } from '../storage-keys';
 
@@ -16,13 +19,12 @@ describe('learning document persistence', () => {
   });
 
   it('replaces the complete document, clearing omitted notes, settings, and timestamps', async () => {
-    const { embedded, payload } = mixedRecordBackup();
-    const document: LearningDocument = {
-      ...embedded,
-      schemaVersion: 6,
-      dataUpdatedAt: payload.dataUpdatedAt,
+    const document = buildLearningDocument({
+      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      dataUpdatedAt: '2024-01-15T10:00:00.000Z',
       settings: { language: 'de' },
-    };
+    });
     await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
     await fakeBrowser.storage.local.set({ 'leetsrs:lastSyncTime': '2024-01-01' });
     const connection = await fakeBrowser.storage.sync.get();
@@ -38,8 +40,11 @@ describe('learning document persistence', () => {
   });
 
   it('retains the previous document after invalid preparation or a rejected replacement', async () => {
-    const { embedded } = mixedRecordBackup();
-    const document: LearningDocument = { ...embedded, schemaVersion: 6, settings: {} };
+    const document = buildLearningDocument({
+      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      settings: {},
+    });
     await replaceLearningDocument(document);
     const next = await readLearningDocument();
     next.cards['two-sum'].slug = 'mismatched';
@@ -59,14 +64,12 @@ describe('learning document persistence', () => {
   });
 
   it('returns the normalized document that was persisted', async () => {
-    const { embedded } = mixedRecordBackup();
-    const { note: _note, ...cardWithoutNote } = embedded.cards['two-sum'];
-    const document: LearningDocument = {
-      ...embedded,
-      schemaVersion: 6,
+    const cardWithoutNote = createMockCard(State.New, { slug: 'two-sum' });
+    const document = buildLearningDocument({
+      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
       cards: { 'two-sum': { ...cardWithoutNote, note: '' } },
       settings: {},
-    };
+    });
     const expected = { ...document, cards: { 'two-sum': cardWithoutNote } };
 
     expect(await replaceLearningDocument(document)).toEqual(expected);

@@ -1,12 +1,14 @@
 /** @vitest-environment happy-dom */
 import { act, renderHook } from '@testing-library/react';
+import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { replaceLearningDocument } from '@/data/learning-document';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import { createDailyStats } from '@/domain/statistics';
 import { sendMessage } from '@/integrations/browser/messages';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { useExportDataMutation } from '../data';
@@ -15,9 +17,9 @@ vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 beforeEach(() => fakeBrowser.reset());
 
 it('exports the current complete snapshot, preserving its timestamp and excluding connection, status, and legacy values', async () => {
-  const { embedded } = mixedRecordBackup();
   const document = buildLearningDocument({
-    ...embedded,
+    cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+    stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
     settings: { theme: 'dark', maxNewCardsPerDay: 7 },
     dataUpdatedAt: '2024-01-15T10:00:00.000Z',
   });

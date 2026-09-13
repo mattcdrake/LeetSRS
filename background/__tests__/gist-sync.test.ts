@@ -7,7 +7,7 @@ import { readLearningDocument, replaceLearningDocument } from '@/data/learning-d
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { translations } from '@/i18n';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import * as documentSync from '../gist-sync';
 
 // Mock Octokit
@@ -270,8 +270,8 @@ describe('document Gist sync', () => {
   it.each(['current', 'historical'])(
     'pulls a %s backup into an unedited document without changing the connection',
     async (format) => {
-      const { accepted, embedded } = mixedRecordBackup();
-      await replaceLearningDocument({ ...local, ...embedded, dataUpdatedAt: undefined });
+      const { backup, converted } = validLegacyBackup();
+      await replaceLearningDocument({ ...local, ...converted, dataUpdatedAt: undefined });
       const remote =
         format === 'current'
           ? { ...local, settings: {}, dataUpdatedAt: timestamp }
@@ -279,7 +279,7 @@ describe('document Gist sync', () => {
               schemaVersion: 2,
               exportDate: timestamp,
               data: {
-                ...accepted,
+                ...backup.data,
                 settings: { autoClearLeetcode: false, theme: 'light' },
                 gistSync: { gistId: 'incoming-gist', enabled: true, pat: 'incoming-pat' },
               },
@@ -291,7 +291,7 @@ describe('document Gist sync', () => {
       expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pulled', timestamp: now });
       expect(await readLearningDocument()).toEqual({
         schemaVersion: LEARNING_DOCUMENT_VERSION,
-        ...(format === 'current' ? { cards: {}, stats: {} } : embedded),
+        ...(format === 'current' ? { cards: {}, stats: {} } : converted),
         settings: format === 'current' ? {} : { resetEditorOnEveryProblem: false, theme: 'light' },
         dataUpdatedAt: timestamp,
       });

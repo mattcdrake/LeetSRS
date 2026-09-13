@@ -1,12 +1,15 @@
+import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { getSettings } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import background from '../../entrypoints/background/index';
 
@@ -47,11 +50,14 @@ describe('document settings through background commands', () => {
   });
 
   it('saves explicit overrides and their timestamp together while preserving learning data and connection state', async () => {
-    const { embedded, payload } = mixedRecordBackup();
-    const document = { ...embedded, schemaVersion: 6 as const, settings: {}, dataUpdatedAt: payload.dataUpdatedAt };
+    const document = buildLearningDocument({
+      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+    });
     await replaceLearningDocument(document);
     await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
-    await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
+    await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-01-15T10:00:00.000Z');
     background.main();
     await dispatch('waitForInitialization');
     const sync = await fakeBrowser.storage.sync.get();
@@ -74,20 +80,19 @@ describe('document settings through background commands', () => {
     expect(await readLearningDocument()).toEqual({ ...document, settings: changes, dataUpdatedAt: now.toISOString() });
     expect(writes).toHaveBeenCalledOnce();
     expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
-    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(payload.dataUpdatedAt);
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
     expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
   });
 
   it.each(['validation', 'clock', 'write'] as const)(
     'preserves the document after a %s failure and accepts the next edit',
     async (failure) => {
-      const { embedded, payload } = mixedRecordBackup();
-      const document = {
-        ...embedded,
-        schemaVersion: 6 as const,
-        dataUpdatedAt: payload.dataUpdatedAt,
+      const document = buildLearningDocument({
+        cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+        stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+        dataUpdatedAt: '2024-01-15T10:00:00.000Z',
         settings: { language: 'de' as const, theme: 'dark' as const },
-      };
+      });
       await replaceLearningDocument(document);
       background.main();
       const before = await getSettings();
