@@ -156,10 +156,12 @@ it('reports initialization failure without presenting an empty account', async (
 });
 
 it.each([
+  { schemaVersion: -1, cards: {}, stats: {}, settings: {} },
   { schemaVersion: 7, cards: {}, stats: {}, settings: {} },
   { schemaVersion: 6, cards: 'corrupt', stats: {}, settings: {} },
 ])('reports invalid current data directly: %j', async (document) => {
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
+  messages.resolve('waitForInitialization', new Promise<void>(() => {}));
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
