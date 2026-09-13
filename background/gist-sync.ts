@@ -1,7 +1,7 @@
 import { readGistConnection, writeGistConnection } from '@/data/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { parseLearningDocumentBackup } from '@/data/legacy/learning-document-conversions';
-import { readSyncMetadata, removeSyncStatus, writeSyncStatus } from '@/data/sync-metadata';
+import { readSyncStatus, removeSyncStatus, writeSyncStatus } from '@/data/sync-metadata';
 import {
   decideGistSync,
   type GistConnectionResult,
@@ -87,9 +87,9 @@ function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: s
 }
 
 export async function getGistSyncStatus(): Promise<GistSyncStatus> {
+  const status = await readSyncStatus();
   return {
-    lastSyncTime: (await readSyncMetadata('lastSyncTime')) ?? null,
-    lastSyncDirection: (await readSyncMetadata('lastSyncDirection')) ?? null,
+    ...status,
     syncInProgress: activeSync !== undefined,
     lastError,
   };
