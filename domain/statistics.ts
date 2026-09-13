@@ -1,4 +1,4 @@
-import { State as FsrsState, type Grade, Rating } from 'ts-fsrs';
+import { type Grade, Rating } from 'ts-fsrs';
 import { z } from 'zod';
 import { addLocalDays, formatLocalDate } from './calendar';
 import type { Card } from './cards';
@@ -61,22 +61,6 @@ export function recordReview(todayStats: DailyStats, grade: Grade, isNewCard: bo
   } else {
     todayStats.reviewedCards++;
   }
-}
-
-export function countCardStates(cards: Card[]): Record<FsrsState, number> {
-  const stateStats: Record<FsrsState, number> = {
-    [FsrsState.New]: 0,
-    [FsrsState.Learning]: 0,
-    [FsrsState.Review]: 0,
-    [FsrsState.Relearning]: 0,
-  };
-
-  for (const card of cards) {
-    const state = card.fsrs.state;
-    stateStats[state]++;
-  }
-
-  return stateStats;
 }
 
 export function calculateHistoryStats(stats: Record<string, DailyStats>, days: number, today: Date): DailyStats[] {
