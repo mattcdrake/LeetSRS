@@ -58,6 +58,22 @@ describe('learning document persistence', () => {
     expect(await readLearningDocument()).toEqual(next);
   });
 
+  it('returns the normalized document that was persisted', async () => {
+    const { embedded } = mixedRecordBackup();
+    const { note: _note, ...cardWithoutNote } = embedded.cards['two-sum'];
+    const document: LearningDocument = {
+      ...embedded,
+      schemaVersion: 6,
+      cards: { 'two-sum': { ...cardWithoutNote, note: '' } },
+      settings: {},
+    };
+    const expected = { ...document, cards: { 'two-sum': cardWithoutNote } };
+
+    expect(await replaceLearningDocument(document)).toEqual(expected);
+    expect(await readLearningDocument()).toEqual(expected);
+    expect(document.cards['two-sum'].note).toBe('');
+  });
+
   it('requires initialization for a stored null document', async () => {
     // fakeBrowser deletes null values; supply raw null at the storage boundary.
     vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async () => ({

@@ -12,8 +12,9 @@ export async function readLearningDocument(): Promise<LearningDocument> {
   return learningDocumentSchema.parse(document);
 }
 
-export async function replaceLearningDocument(document: LearningDocument): Promise<void> {
+export async function replaceLearningDocument(document: LearningDocument): Promise<LearningDocument> {
   const validated = learningDocumentSchema.parse(document);
 
   await storage.setItem(STORAGE_KEYS.learningDocument, validated);
+  return validated;
 }

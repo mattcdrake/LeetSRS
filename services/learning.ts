@@ -9,8 +9,8 @@ import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
 
-async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<void> {
-  await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
+async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<LearningDocument> {
+  return replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
 }
 
 function requireCard(document: LearningDocument, slug: string): Card {
@@ -41,9 +41,9 @@ export async function addCard(problem: ProblemDescriptor): Promise<Card> {
   }
 
   document.cards[problem.slug] = createCard(problem, now);
-  const result = requireCard(document, problem.slug);
-  await saveLocalLearningDocument(document, now);
-  return result;
+  requireCard(document, problem.slug);
+  const saved = await saveLocalLearningDocument(document, now);
+  return saved.cards[problem.slug];
 }
 
 export async function removeCard(slug: string): Promise<void> {
@@ -58,8 +58,8 @@ export async function delayCard(slug: string, days: number): Promise<Card> {
   const document = await readLearningDocument();
   const card = requireCard(document, slug);
   card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
-  await saveLocalLearningDocument(document, now);
-  return card;
+  const saved = await saveLocalLearningDocument(document, now);
+  return saved.cards[slug];
 }
 
 export async function setPauseStatus(slug: string, paused: boolean): Promise<Card> {
@@ -67,8 +67,8 @@ export async function setPauseStatus(slug: string, paused: boolean): Promise<Car
   const document = await readLearningDocument();
   const card = requireCard(document, slug);
   card.paused = paused;
-  await saveLocalLearningDocument(document, now);
-  return card;
+  const saved = await saveLocalLearningDocument(document, now);
+  return saved.cards[slug];
 }
 
 export async function rateCard(input: RateCardInput): Promise<{ card: Card; shouldRequeue: boolean }> {
@@ -91,10 +91,10 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   recordReview(todayStats, rating, isNewCard);
   document.stats[today] = todayStats;
 
-  const savedCard = requireCard(document, card.slug);
-  const result = { card: savedCard, shouldRequeue: isDue(savedCard, now) };
-  await saveLocalLearningDocument(document, now);
-  return result;
+  requireCard(document, card.slug);
+  const saved = await saveLocalLearningDocument(document, now);
+  const savedCard = saved.cards[card.slug];
+  return { card: savedCard, shouldRequeue: isDue(savedCard, now) };
 }
 
 export async function saveNote(slug: string, text: string): Promise<void> {
