@@ -16,6 +16,7 @@ export interface NoteEditor {
   isLoading: boolean;
   isSaving: boolean;
   isDeleting: boolean;
+  saveError: unknown;
   error: unknown;
 }
 
@@ -46,6 +47,7 @@ export function useNoteEditor(slug: string): NoteEditor {
 
   const remove = () =>
     startOrConfirm(async () => {
+      saveNoteMutation.reset();
       try {
         await deleteNoteMutation.mutateAsync();
         setDraft((current) => (current?.slug === slug ? null : current));
@@ -72,6 +74,7 @@ export function useNoteEditor(slug: string): NoteEditor {
     isLoading,
     isSaving: saveNoteMutation.isPending,
     isDeleting: deleteNoteMutation.isPending,
+    saveError: saveNoteMutation.error,
     error,
   };
 }

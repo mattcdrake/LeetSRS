@@ -20,6 +20,7 @@ export function useNoteQuery(slug: string) {
 
 export function useSaveNoteMutation(slug: string) {
   return useMutation({
+    mutationKey: [...noteQueryKeys.detail(slug), 'save'],
     networkMode: 'always',
     mutationFn: (text: string) => sendMessage('saveNote', { slug, text }),
   });

@@ -86,6 +86,7 @@ const hi: Translations = {
   },
   // Home view - Notes section
   notes: {
+    saveFailed: 'आपका नोट सहेजा नहीं जा सका। आपका ड्राफ़्ट सुरक्षित है। दोबारा सहेजने का प्रयास करें।',
     title: 'नोट्स',
     ariaLabel: 'नोट टेक्स्ट',
     placeholderLoading: 'लोड हो रहा है...',

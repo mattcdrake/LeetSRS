@@ -122,9 +122,9 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('retains the draft after a failed save', async () => {
+  it('shows a save failure, retains the draft, and clears the error after a successful retry', async () => {
     const error = new Error('Save failed');
-    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
@@ -136,9 +136,37 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
     fireEvent.change(textarea, { target: { value: 'Failed draft' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to save note:', error));
-    await waitFor(() => expect(textarea).toHaveValue('Failed draft'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not save your note. Your draft is kept. Try saving again.'
+    );
+    expect(textarea).toHaveValue('Failed draft');
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+
+    messages.handle('saveNote', async ({ text }) => {
+      const saved = buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: text }) } });
+      vi.mocked(storage.getItem).mockResolvedValue(saved);
+      await storage.setItem(STORAGE_KEYS.learningDocument, saved);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
+    expect(textarea).toHaveValue('Failed draft');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('does not show another card’s save failure', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
+    const { wrapper } = createTestWrapper();
+    const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+    await waitFor(() => expect(textarea).toBeEnabled());
+    fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByRole('alert');
+
+    view.rerender(<NoteEditor slug="another-card" variant={variant} />);
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    expect(textarea).toHaveValue('');
   });
 
   it('retains text and resets confirmation after a failed deletion', async () => {

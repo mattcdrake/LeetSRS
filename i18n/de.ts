@@ -75,6 +75,7 @@ const de: Translations = {
     deleteCard: 'Karte löschen',
   },
   notes: {
+    saveFailed: 'Deine Notiz konnte nicht gespeichert werden. Dein Entwurf bleibt erhalten. Versuche es erneut.',
     title: 'Notizen',
     ariaLabel: 'Notiztext',
     placeholderLoading: 'Wird geladen...',
