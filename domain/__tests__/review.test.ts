@@ -40,7 +40,7 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
   const document = buildLearningDocument({
     cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
     settings: { maxNewCardsPerDay: limit },
-    stats: { '2024-01-15': { ...createDailyStats('2024-01-15', undefined), newCards: completed } },
+    stats: { '2024-01-15': { ...createDailyStats(undefined), newCards: completed } },
   });
   const before = structuredClone(document);
   const queue = buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'));
@@ -68,7 +68,7 @@ describe('review queue calculations', () => {
     const cards = Object.fromEntries(['a', 'b', 'c', 'd'].map((slug) => [slug, dueCard(slug, '2024-01-15T12:00:00')]));
     const document = buildLearningDocument({
       cards,
-      stats: { '2024-01-15': { ...createDailyStats('2024-01-15', undefined), newCards: 3 } },
+      stats: { '2024-01-15': { ...createDailyStats(undefined), newCards: 3 } },
     });
     const before = structuredClone(document);
     expect(buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'))).toEqual([]);

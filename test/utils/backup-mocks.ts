@@ -1,5 +1,4 @@
 import { State } from 'ts-fsrs';
-import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from './card-mocks';
 
 // Change one envelope field at a time to verify rejection before storage is changed.
@@ -48,10 +47,33 @@ export function validLegacyBackup() {
     'two-sum': card,
     'cn-problem': { ...card, id: 'valid-cn', slug: 'cn-problem', domain: 'leetcode.cn' as const, paused: false },
   };
-  const stats = { '2024-01-01': createDailyStats('2024-01-01', undefined) };
+  const legacyStats = {
+    '2024-01-01': {
+      date: '2024-01-01',
+      totalReviews: 0,
+      newCards: 0,
+      reviewedCards: 0,
+      streak: 1,
+      gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    },
+  };
+  const stats = {
+    '2024-01-01': {
+      newCards: 0,
+      streak: 1,
+      gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    },
+  };
   const notes = { 'valid-com': { text: 'Keep this note' }, 'valid-cn': { text: '' } };
+  const convertedCards = { ...cards, 'two-sum': { ...card, note: 'Keep this note' } };
   return {
-    backup: { schemaVersion: 2, exportDate: timestamp, dataUpdatedAt: timestamp, data: { cards, stats, notes } },
-    converted: { cards: { ...cards, 'two-sum': { ...card, note: 'Keep this note' } }, stats },
+    backup: {
+      schemaVersion: 2,
+      exportDate: timestamp,
+      dataUpdatedAt: timestamp,
+      data: { cards, stats: legacyStats, notes },
+    },
+    legacyConverted: { cards: convertedCards, stats: legacyStats },
+    converted: { cards: convertedCards, stats },
   };
 }

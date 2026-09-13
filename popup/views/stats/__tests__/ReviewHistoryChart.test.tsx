@@ -5,7 +5,7 @@
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import type { DailyStats } from '@/domain/statistics';
+import type { HistoryDailyStats } from '@/domain/statistics';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/integrations/browser/messages';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
@@ -31,7 +31,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   // Default mock data
-  const mockLast30DaysStats: DailyStats[] = [
+  const mockLast30DaysStats: HistoryDailyStats[] = [
     {
       date: '2024-05-15',
       totalReviews: 12,
@@ -60,7 +60,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     },
   ];
 
-  const renderChart = (data: DailyStats[] = mockLast30DaysStats, language: 'en' | 'pl' = 'en') => {
+  const renderChart = (data: HistoryDailyStats[] = mockLast30DaysStats, language: 'en' | 'pl' = 'en') => {
     const settings = buildSettings({ theme: 'light', language });
     messages.reset();
     const { wrapper, queryClient } = createPopupTestWrapper();

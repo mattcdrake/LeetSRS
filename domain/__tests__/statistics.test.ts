@@ -42,9 +42,7 @@ describe('statistics calculations', () => {
     ['2024-03-10T23:59:59.999', '2024-03-09', '2024-03-10', 8],
     ['2024-11-03T23:59:59.999', '2024-11-02', '2024-11-03', 8],
   ] as const)('records a review at %s with prior day %s', (instant, priorDay, today, streak) => {
-    const stats = priorDay
-      ? { [priorDay]: { ...createDailyStats(priorDay, undefined), totalReviews: 1, reviewedCards: 1, streak: 7 } }
-      : {};
+    const stats = priorDay ? { [priorDay]: { ...createDailyStats(undefined), streak: 7 } } : {};
     const before = structuredClone(stats);
     const now = new Date(instant);
     const result = recordReview(stats, now, Rating.Good, true);
@@ -52,11 +50,8 @@ describe('statistics calculations', () => {
     expect(result).toEqual({
       ...before,
       [today]: {
-        date: today,
         streak,
-        totalReviews: 1,
         newCards: 1,
-        reviewedCards: 0,
         gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 0 },
       },
     });
@@ -77,11 +72,8 @@ describe('statistics calculations', () => {
     expect(stats).toEqual({
       ...before,
       '2024-03-15': {
-        date: '2024-03-15',
         streak: 2,
-        totalReviews: 4,
         newCards: 2,
-        reviewedCards: 2,
         gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 1, [Rating.Easy]: 1 },
       },
     });
@@ -93,7 +85,12 @@ describe('statistics calculations', () => {
     const stats = recordReview({}, new Date('2024-03-14T12:00:00'), Rating.Good, true);
     const result = calculateHistoryStats(stats, 3, new Date('2024-03-15T03:59:59'));
     expect(result.map((day) => day.date)).toEqual(['2024-03-13', '2024-03-14', '2024-03-15']);
-    expect(result[1]).toBe(stats['2024-03-14']);
+    expect(result[1]).toEqual({
+      ...stats['2024-03-14'],
+      date: '2024-03-14',
+      totalReviews: 1,
+      reviewedCards: 0,
+    });
     expect(result[0].streak).toBe(0);
     expect(result[2].streak).toBe(0);
     expect(result[0].gradeBreakdown).not.toBe(result[2].gradeBreakdown);
@@ -131,25 +128,25 @@ describe('statistics calculations', () => {
 
 describe('daily statistics schema', () => {
   it('accepts leap days and zero counts while stripping nested unknown fields', () => {
-    const stats = createDailyStats('2024-02-29', undefined);
+    const stats = createDailyStats(undefined);
     expect(
-      dailyStatsSchema.parse({ ...stats, extra: true, gradeBreakdown: { ...stats.gradeBreakdown, extra: 1 } })
+      dailyStatsSchema.parse({
+        ...stats,
+        date: '2024-02-29',
+        totalReviews: 0,
+        reviewedCards: 0,
+        extra: true,
+        gradeBreakdown: { ...stats.gradeBreakdown, extra: 1 },
+      })
     ).toEqual(stats);
   });
 
   it.each([
-    { date: '2023-02-29' },
-    { date: '2024-02-30' },
-    { date: '2024-2-01' },
-    { totalReviews: -1 },
     { newCards: 0.5 },
-    { reviewedCards: Number.POSITIVE_INFINITY },
     { streak: -1 },
     { gradeBreakdown: { 1: 0, 2: 0, 3: 0 } },
     { gradeBreakdown: { 1: 0, 2: 0, 3: -1, 4: 0 } },
   ])('rejects malformed statistics %j', (overrides) => {
-    expect(dailyStatsSchema.safeParse({ ...createDailyStats('2024-01-01', undefined), ...overrides }).success).toBe(
-      false
-    );
+    expect(dailyStatsSchema.safeParse({ ...createDailyStats(undefined), ...overrides }).success).toBe(false);
   });
 });

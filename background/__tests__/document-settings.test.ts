@@ -48,7 +48,7 @@ describe('document settings through background commands', () => {
   it('saves explicit overrides and their timestamp together while preserving learning data and connection state', async () => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      stats: { '2024-01-01': createDailyStats(undefined) },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
     await replaceLearningDocument(document);
@@ -84,7 +84,7 @@ describe('document settings through background commands', () => {
     async (failure) => {
       const document = buildLearningDocument({
         cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-        stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+        stats: { '2024-01-01': createDailyStats(undefined) },
         dataUpdatedAt: '2024-01-15T10:00:00.000Z',
         settings: { language: 'de' as const, theme: 'dark' as const },
       });
