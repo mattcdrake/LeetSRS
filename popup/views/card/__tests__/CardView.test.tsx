@@ -189,8 +189,8 @@ describe('CardView', () => {
 
   it('should handle multiple cards expanded simultaneously', () => {
     const cards = [
-      createMockCard(State.New, { name: 'Problem 1', leetcodeId: '1' }),
-      createMockCard(State.New, { name: 'Problem 2', leetcodeId: '2' }),
+      createMockCard(State.New, { id: 'problem-1', name: 'Problem 1', leetcodeId: '1' }),
+      createMockCard(State.New, { id: 'problem-2', name: 'Problem 2', leetcodeId: '2' }),
     ];
 
     seedCards(cards);

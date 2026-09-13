@@ -48,7 +48,11 @@ it('keeps popup and badge queues consistent without reading browser language', a
     },
   });
   const cards = ['new-a', 'new-b', 'review', 'future', 'paused'].map((slug) => {
-    const card = createMockCard(slug === 'review' ? State.Review : State.New, { slug, paused: slug === 'paused' });
+    const card = createMockCard(slug === 'review' ? State.Review : State.New, {
+      id: slug,
+      slug,
+      paused: slug === 'paused',
+    });
     card.fsrs.due = slug === 'future' ? Date.now() + 1000 : Date.now();
     return card;
   });
