@@ -5,12 +5,14 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
  */
 
 import type { QueryClient } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import type { LearningDocument } from '@/domain/learning-document';
 import { cardQueryKeys } from '@/entrypoints/popup/queries/cards';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
@@ -201,6 +203,49 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
+    it('prevents rating the previous card again while its saved queue refresh is delayed with reduced motion', async () => {
+      const matchMedia = window.matchMedia.bind(window);
+      vi.spyOn(window, 'matchMedia').mockImplementation((query) => {
+        const media = matchMedia(query);
+        Object.defineProperty(media, 'matches', { value: query === '(prefers-reduced-motion: reduce)' });
+        return media;
+      });
+      render(<ReviewQueue />, { wrapper });
+      const goodButton = await screen.findByRole('button', { name: 'Good' });
+      const refresh = Promise.withResolvers<LearningDocument>();
+      vi.mocked(storage.getItem).mockReturnValue(refresh.promise);
+      const savedCard = { ...mockCards[0], fsrs: { ...mockCards[0].fsrs, due: Date.now() + 86400000 } };
+      const saved = buildLearningDocument({
+        cards: Object.fromEntries([savedCard, ...mockCards.slice(1)].map((card) => [card.slug, card])),
+      });
+      mockMutateAsync.mockImplementation(async () => {
+        await storage.setItem(STORAGE_KEYS.learningDocument, saved);
+        return { card: savedCard, shouldRequeue: false };
+      });
+
+      await act(async () => fireEvent.click(goodButton));
+      expect(goodButton).toBeDisabled();
+      fireEvent.click(goodButton);
+      expect(mockMutateAsync).toHaveBeenCalledTimes(1);
+
+      const latestRefresh = Promise.withResolvers<LearningDocument>();
+      const latest = buildLearningDocument({
+        cards: { [savedCard.slug]: savedCard, [mockCards[2].slug]: mockCards[2] },
+      });
+      await act(async () => {
+        vi.mocked(storage.getItem).mockReturnValue(latestRefresh.promise);
+        await storage.setItem(STORAGE_KEYS.learningDocument, latest);
+        refresh.resolve(saved);
+      });
+      expect(goodButton).toBeDisabled();
+      await act(async () => {
+        vi.mocked(storage.getItem).mockResolvedValue(latest);
+        latestRefresh.resolve(latest);
+      });
+      await screen.findByText('Longest Substring');
+      expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
+    });
+
     it('should finish processing when the slide animation ends', async () => {
       render(<ReviewQueue />, { wrapper });
 
