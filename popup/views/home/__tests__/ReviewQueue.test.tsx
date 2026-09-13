@@ -272,67 +272,6 @@ describe('ReviewQueue', () => {
       expect(screen.getByTestId('pause-button')).not.toBeDisabled();
       expect(screen.getByTestId('review-card').parentElement).toHaveClass('animate-slide-in');
     });
-
-    it('should disable rating buttons while processing', async () => {
-      // Make mutateAsync never resolve
-      mockMutateAsync.mockImplementation(() => new Promise(() => {}));
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const againButton = screen.getByRole('button', { name: 'Again' });
-      const hardButton = screen.getByRole('button', { name: 'Hard' });
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      const easyButton = screen.getByRole('button', { name: 'Easy' });
-
-      // All buttons should be enabled initially
-      expect(againButton).not.toBeDisabled();
-      expect(hardButton).not.toBeDisabled();
-      expect(goodButton).not.toBeDisabled();
-      expect(easyButton).not.toBeDisabled();
-
-      // Click a button
-      fireEvent.click(goodButton);
-
-      // All buttons should be disabled while processing
-      await waitFor(() => {
-        expect(againButton).toBeDisabled();
-        expect(hardButton).toBeDisabled();
-        expect(goodButton).toBeDisabled();
-        expect(easyButton).toBeDisabled();
-      });
-    });
-
-    it('should prevent multiple ratings while processing', async () => {
-      const mutation = Promise.withResolvers<{ card: Card; shouldRequeue: boolean }>();
-      mockMutateAsync.mockReturnValue(mutation.promise);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      const hardButton = screen.getByRole('button', { name: 'Hard' });
-
-      // Click multiple buttons quickly
-      fireEvent.click(goodButton);
-      fireEvent.click(hardButton);
-      fireEvent.click(goodButton);
-
-      // Should only have called mutateAsync once
-      await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledTimes(1));
-
-      mutation.resolve({ card: mockCards[0], shouldRequeue: false });
-      const cardContainer = screen.getByTestId('review-card').parentElement;
-      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
-    });
   });
 
   describe('Error Handling', () => {
@@ -420,67 +359,6 @@ describe('ReviewQueue', () => {
 
       consoleSpy.mockRestore();
     });
-
-    it('should disable all interactions while deleting', async () => {
-      // Make deletion never resolve
-      mockRemoveMutateAsync.mockImplementation(() => new Promise(() => {}));
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const deleteButton = screen.getByTestId('delete-button');
-      const againButton = screen.getByRole('button', { name: 'Again' });
-      const hardButton = screen.getByRole('button', { name: 'Hard' });
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      const easyButton = screen.getByRole('button', { name: 'Easy' });
-
-      // All buttons should be enabled initially
-      expect(againButton).not.toBeDisabled();
-      expect(hardButton).not.toBeDisabled();
-      expect(goodButton).not.toBeDisabled();
-      expect(easyButton).not.toBeDisabled();
-
-      // Click delete button
-      fireEvent.click(deleteButton);
-
-      // All rating buttons should be disabled while processing
-      await waitFor(() => {
-        expect(againButton).toBeDisabled();
-        expect(hardButton).toBeDisabled();
-        expect(goodButton).toBeDisabled();
-        expect(easyButton).toBeDisabled();
-      });
-    });
-
-    it('should handle rapid delete clicks correctly', async () => {
-      const mutation = Promise.withResolvers<void>();
-      mockRemoveMutateAsync.mockReturnValue(mutation.promise);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const deleteButton = screen.getByTestId('delete-button');
-
-      // Click delete multiple times rapidly
-      fireEvent.click(deleteButton);
-      fireEvent.click(deleteButton);
-      fireEvent.click(deleteButton);
-
-      // Should only have called remove mutation once
-      await waitFor(() => expect(mockRemoveMutateAsync).toHaveBeenCalledTimes(1));
-
-      mutation.resolve(undefined);
-      const cardContainer = screen.getByTestId('review-card').parentElement;
-      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-left'));
-    });
   });
 
   describe('Card Delay', () => {
@@ -549,82 +427,46 @@ describe('ReviewQueue', () => {
 
       consoleSpy.mockRestore();
     });
-
-    it('should disable all interactions while delaying', async () => {
-      // Make delay never resolve
-      mockDelayMutateAsync.mockImplementation(() => new Promise(() => {}));
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const delay1Button = screen.getByTestId('delay-1-button');
-      const againButton = screen.getByRole('button', { name: 'Again' });
-      const hardButton = screen.getByRole('button', { name: 'Hard' });
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      const easyButton = screen.getByRole('button', { name: 'Easy' });
-
-      // All buttons should be enabled initially
-      expect(againButton).not.toBeDisabled();
-      expect(hardButton).not.toBeDisabled();
-      expect(goodButton).not.toBeDisabled();
-      expect(easyButton).not.toBeDisabled();
-
-      // Click delay button
-      fireEvent.click(delay1Button);
-
-      // All rating buttons should be disabled while processing
-      await waitFor(() => {
-        expect(againButton).toBeDisabled();
-        expect(hardButton).toBeDisabled();
-        expect(goodButton).toBeDisabled();
-        expect(easyButton).toBeDisabled();
-      });
-    });
-
-    it('should handle rapid delay clicks correctly', async () => {
-      const mutation = Promise.withResolvers<Card>();
-      mockDelayMutateAsync.mockReturnValue(mutation.promise);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const delay1Button = screen.getByTestId('delay-1-button');
-      const delay5Button = screen.getByTestId('delay-5-button');
-
-      // Click delay buttons multiple times rapidly
-      fireEvent.click(delay1Button);
-      fireEvent.click(delay5Button);
-      fireEvent.click(delay1Button);
-
-      // Should only have called delay mutation once
-      await waitFor(() => expect(mockDelayMutateAsync).toHaveBeenCalledTimes(1));
-
-      mutation.resolve(mockCards[0]);
-      const cardContainer = screen.getByTestId('review-card').parentElement;
-      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
-    });
   });
 
   describe('Card Actions', () => {
     it.each([
-      ['delete-button', 'animate-slide-left'],
-      ['delay-1-button', 'animate-slide-right'],
-      ['pause-button', 'animate-slide-right'],
-    ] as const)('should animate %s in the expected direction', async (buttonTestId, animationClass) => {
-      render(<ReviewQueue />, { wrapper });
+      ['Good', 'rateCard', { card: mockCards[0], shouldRequeue: false }, 'animate-slide-right'],
+      ['Delete', 'removeCard', undefined, 'animate-slide-left'],
+      ['Delay 1 day', 'delayCard', mockCards[0], 'animate-slide-right'],
+      ['Pause', 'setPauseStatus', mockCards[0], 'animate-slide-right'],
+    ] as const)(
+      'should disable controls and prevent duplicate actions while %s is pending',
+      async (buttonName, message, result, animationClass) => {
+        const mutation = Promise.withResolvers<typeof result>();
+        messages.handle(message, () => mutation.promise);
+        render(<ReviewQueue />, { wrapper });
 
-      fireEvent.click(await screen.findByTestId(buttonTestId));
+        const actionButton = await screen.findByRole('button', { name: buttonName });
+        const controls = screen.getAllByRole('button');
+        for (const control of controls) expect(control).toBeEnabled();
 
-      const cardContainer = screen.getByTestId('review-card').parentElement;
-      await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
-    });
+        vi.mocked(sendMessage).mockClear();
+        fireEvent.click(actionButton);
+        for (const control of controls) fireEvent.click(control);
+        fireEvent.click(actionButton);
+
+        await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+        expect(sendMessage).toHaveBeenCalledWith(message, expect.any(Object));
+        for (const control of controls) expect(control).toBeDisabled();
+
+        mutation.resolve(result);
+        const cardContainer = screen.getByTestId('review-card').parentElement as HTMLElement;
+        await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
+        for (const control of controls) expect(control).toBeDisabled();
+
+        fireEvent.animationEnd(cardContainer);
+        await waitFor(() => {
+          for (const control of controls) expect(control).toBeEnabled();
+        });
+        expect(cardContainer).not.toHaveClass(animationClass);
+        expect(sendMessage).toHaveBeenCalledTimes(1);
+      }
+    );
   });
 });
