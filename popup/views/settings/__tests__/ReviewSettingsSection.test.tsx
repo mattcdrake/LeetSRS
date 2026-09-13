@@ -7,14 +7,14 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { settingsQueryKeys } from '@/popup/queries/settings';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewSettingsSection } from '../ReviewSettingsSection';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 it('offers only the daily new-card limit and saves changes', async () => {
   createMessageMock(vi.mocked(sendMessage)).resolve('updateSettings', undefined);
-  const { wrapper, queryClient } = createTestWrapper();
+  const { wrapper, queryClient } = createPopupTestWrapper();
   queryClient.setQueryData(settingsQueryKeys.all, buildSettings());
   render(<ReviewSettingsSection />, { wrapper });
 
@@ -37,7 +37,7 @@ it('keeps an unfinished limit while incoming settings refresh and saves the draf
     await save.promise;
     return updateSettings(changes);
   });
-  render(<ReviewSettingsSection />, { wrapper: createTestWrapper().wrapper });
+  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
   const input = await screen.findByRole('spinbutton');
   await waitFor(() => expect(input).toHaveValue(3));
   fireEvent.change(input, { target: { value: '8' } });

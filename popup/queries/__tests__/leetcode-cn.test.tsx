@@ -7,7 +7,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useLeetcodeCnCapability, useLeetcodeCnPermissionEvents } from '../leetcode-cn';
 
 beforeEach(() => {
@@ -25,7 +25,7 @@ it('checks and requests permissions while offline', async () => {
     vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
     const request = vi.fn(async () => true);
     vi.spyOn(browser.permissions, 'request').mockImplementation(request);
-    const { wrapper } = createTestWrapper();
+    const { wrapper } = createPopupTestWrapper();
     const { result, unmount } = renderHook(() => useLeetcodeCnCapability(), { wrapper });
 
     await waitFor(() => expect(result.current.granted).toBe(false));
@@ -46,7 +46,7 @@ it.each([true, false])('loads shared permission state: %s', async (granted) => {
   const contains = vi.fn(() => check.promise);
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
   const request = vi.spyOn(browser.permissions, 'request');
-  const { wrapper } = createTestWrapper();
+  const { wrapper } = createPopupTestWrapper();
   const { result } = renderHook(() => [useLeetcodeCnCapability(), useLeetcodeCnCapability()], { wrapper });
 
   for (const capability of result.current) {
@@ -70,7 +70,7 @@ it.each([true, false])('shares the enable result across consumers: %s', async (g
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
   const request = vi.fn(async () => granted);
   vi.spyOn(browser.permissions, 'request').mockImplementation(request);
-  const { wrapper } = createTestWrapper();
+  const { wrapper } = createPopupTestWrapper();
   const { result } = renderHook(() => [useLeetcodeCnCapability(), useLeetcodeCnCapability()], { wrapper });
   await waitFor(() => expect(result.current[0].granted).toBe(false));
 
@@ -99,7 +99,7 @@ it('refreshes both consumers on external grants and removals', async () => {
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
   const added = vi.spyOn(browser.permissions.onAdded, 'addListener');
   const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener');
-  const { wrapper: QueryWrapper } = createTestWrapper();
+  const { wrapper: QueryWrapper } = createPopupTestWrapper();
   function PermissionObserver() {
     useLeetcodeCnPermissionEvents();
     return null;
@@ -134,7 +134,7 @@ it('tracks request failures and allows retrying without losing the user interact
   const pending = Promise.withResolvers<boolean>();
   const request = vi.fn(() => pending.promise);
   vi.spyOn(browser.permissions, 'request').mockImplementation(request);
-  const { wrapper } = createTestWrapper();
+  const { wrapper } = createPopupTestWrapper();
   const { result } = renderHook(() => useLeetcodeCnCapability(), { wrapper });
   await waitFor(() => expect(result.current.granted).toBe(false));
 
@@ -161,7 +161,7 @@ it('tracks request failures and allows retrying without losing the user interact
 it('rechecks browser authorization after a request instead of caching its result', async () => {
   vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => false);
   vi.spyOn(browser.permissions, 'request').mockImplementation(async () => true);
-  const { wrapper } = createTestWrapper();
+  const { wrapper } = createPopupTestWrapper();
   const { result } = renderHook(() => useLeetcodeCnCapability(), { wrapper });
   await waitFor(() => expect(result.current.granted).toBe(false));
   await act(() => result.current.enable());
@@ -175,7 +175,7 @@ it.each(['initial', 'refresh'])('discards a stale %s check after a newer permiss
   vi.spyOn(browser.permissions, 'contains').mockImplementation(contains);
   const added = vi.spyOn(browser.permissions.onAdded, 'addListener');
   const removed = vi.spyOn(browser.permissions.onRemoved, 'addListener');
-  const { wrapper: QueryWrapper } = createTestWrapper();
+  const { wrapper: QueryWrapper } = createPopupTestWrapper();
   function PermissionObserver() {
     useLeetcodeCnPermissionEvents();
     return null;

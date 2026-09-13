@@ -13,7 +13,7 @@ import { settingsQueryKeys } from '@/popup/queries/settings';
 import { statsQueryKeys } from '@/popup/queries/stats';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewHistoryChart } from '../ReviewHistoryChart';
 
 // Mock react-chartjs-2
@@ -63,7 +63,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
   const renderChart = (data: DailyStats[] = mockLast30DaysStats, language: 'en' | 'pl' = 'en') => {
     const settings = buildSettings({ theme: 'light', language });
     messages.reset();
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(statsQueryKeys.lastNDays.detail(30), data);
     queryClient.setQueryData(settingsQueryKeys.all, settings);
     return render(

@@ -19,7 +19,7 @@ import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useExportDataMutation } from '../data';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
@@ -65,7 +65,7 @@ it.each(['success', 'failure'] as const)(
   async (outcome) => {
     const pending = Promise.withResolvers<LearningDocument>();
     const reads = vi.spyOn(storage, 'getItem').mockReturnValue(pending.promise);
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(reads).toHaveBeenCalled());
     reads.mockRestore();
     const card = createMockCard(State.New);
@@ -132,7 +132,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
     const ready = Promise.withResolvers<void>();
     messages.resolve('waitForInitialization', ready.promise);
     vi.useFakeTimers();
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await act(() => vi.advanceTimersByTimeAsync(1));
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
@@ -150,7 +150,7 @@ it('reports initialization failure without presenting an empty account', async (
   messages.handle('waitForInitialization', () => {
     throw new Error('Conversion failed');
   });
-  const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+  const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.error?.message).toBe('Conversion failed'));
   expect(result.current.data).toBeUndefined();
   expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
@@ -163,7 +163,7 @@ it.each([
 ])('reports invalid current data directly: %j', async (document) => {
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
   messages.resolve('waitForInitialization', new Promise<void>(() => {}));
-  const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+  const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
 });
@@ -180,7 +180,7 @@ it('runs local queries, saves, and validated export while offline', async () => 
       update: useUpdateSettingsMutation(),
       export: useExportDataMutation(),
     }),
-    { wrapper: createTestWrapper().wrapper }
+    { wrapper: createPopupTestWrapper().wrapper }
   );
   await waitFor(() => expect(result.current?.config.isSuccess).toBe(true));
   expect(result.current.cards.data).toEqual([]);
@@ -209,7 +209,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
       config: useGistSyncConfigQuery(),
       status: useGistSyncStatusQuery(),
     }),
-    { wrapper: createTestWrapper().wrapper }
+    { wrapper: createPopupTestWrapper().wrapper }
   );
   await waitFor(() => expect(result.current?.note.isSuccess).toBe(true));
   // Content sends this same command without a popup mutation hook.
@@ -252,7 +252,7 @@ it('advances the review day and queue allowance without a storage write', async 
       history: useLastNDaysStatsQuery(1),
       upcoming: useNextNDaysStatsQuery(1),
     }),
-    { wrapper: createTestWrapper().wrapper }
+    { wrapper: createPopupTestWrapper().wrapper }
   );
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.queue.data).toEqual([]);
@@ -270,7 +270,7 @@ it('advances the review day and queue allowance without a storage write', async 
 it('keeps a successful local save successful when refreshing the cache fails', async () => {
   await startBackground();
   const { result } = renderHook(() => ({ cards: useCardsQuery(), rate: useRateCardMutation() }), {
-    wrapper: createTestWrapper().wrapper,
+    wrapper: createPopupTestWrapper().wrapper,
   });
   await waitFor(() => expect(result.current.cards.isSuccess).toBe(true));
   const reads = vi.spyOn(storage, 'getItem');
@@ -298,7 +298,7 @@ it('keeps polling background-only sync progress and errors without stored change
     lastError: null,
   };
   messages.handle('getGistSyncStatus', () => status);
-  const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createTestWrapper().wrapper });
+  const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.data?.syncInProgress).toBe(true);
   status.syncInProgress = false;
@@ -337,7 +337,7 @@ it('disables automatic sync offline without attempting GitHub', async () => {
   github.get.mockClear();
   onlineManager.setOnline(false);
   const { result } = renderHook(() => ({ config: useGistSyncConfigQuery(), toggle: useSetGistSyncEnabledMutation() }), {
-    wrapper: createTestWrapper().wrapper,
+    wrapper: createPopupTestWrapper().wrapper,
   });
   await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
   act(() => result.current.toggle.mutate(false));

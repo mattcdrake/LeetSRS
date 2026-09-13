@@ -13,14 +13,14 @@ import { gistSyncQueryKeys } from '@/popup/queries/gist-sync';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { GistSyncSection } from '../GistSyncSection';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
 let config: GistSyncConfig;
-let test: ReturnType<typeof createTestWrapper>;
+let test: ReturnType<typeof createPopupTestWrapper>;
 
 beforeEach(async () => {
   await replaceLearningDocument(buildLearningDocument());
@@ -35,7 +35,7 @@ beforeEach(async () => {
     })
     .resolve('setupGistSync', { saved: true })
     .resolve('setGistSyncEnabled', { saved: true });
-  test = createTestWrapper();
+  test = createPopupTestWrapper();
 });
 
 afterEach(() => vi.useRealTimers());

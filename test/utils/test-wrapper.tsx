@@ -32,12 +32,26 @@ function StorageObserver() {
 function TestQueryClientProvider({ children, queryClient }: { children: ReactNode; queryClient: QueryClient }) {
   useEffect(() => () => queryClient.clear(), [queryClient]);
 
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
+function PopupTestQueryClientProvider({ children, queryClient }: { children: ReactNode; queryClient: QueryClient }) {
   return (
-    <QueryClientProvider client={queryClient}>
+    <TestQueryClientProvider queryClient={queryClient}>
       <StorageObserver />
       {children}
-    </QueryClientProvider>
+    </TestQueryClientProvider>
   );
+}
+
+function createTestWrapperWithProvider(
+  Provider: ({ children, queryClient }: { children: ReactNode; queryClient: QueryClient }) => ReactNode
+) {
+  const queryClient = createTestQueryClient();
+
+  const wrapper = ({ children }: { children: ReactNode }) => <Provider queryClient={queryClient}>{children}</Provider>;
+
+  return { wrapper, queryClient };
 }
 
 /**
@@ -46,11 +60,12 @@ function TestQueryClientProvider({ children, queryClient }: { children: ReactNod
  * The client is cleared when the wrapper unmounts.
  */
 export function createTestWrapper() {
-  const queryClient = createTestQueryClient();
+  return createTestWrapperWithProvider(TestQueryClientProvider);
+}
 
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <TestQueryClientProvider queryClient={queryClient}>{children}</TestQueryClientProvider>
-  );
-
-  return { wrapper, queryClient };
+/**
+ * Creates the popup integration wrapper with storage event observation.
+ */
+export function createPopupTestWrapper() {
+  return createTestWrapperWithProvider(PopupTestQueryClientProvider);
 }

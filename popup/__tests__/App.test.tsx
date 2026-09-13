@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Header } from '@/popup/components/Header';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import App from '../App';
 
 vi.mock('@/popup/queries/settings', async (importOriginal) => ({
@@ -38,7 +38,7 @@ describe('App theme', () => {
   });
 
   it('applies the resolved theme to the document', () => {
-    render(<App />, { wrapper: createTestWrapper().wrapper });
+    render(<App />, { wrapper: createPopupTestWrapper().wrapper });
 
     expect(document.documentElement).toHaveClass('dark');
     expect(document.body).toHaveClass('dark');

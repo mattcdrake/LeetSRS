@@ -5,7 +5,7 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { settingsQueryKeys } from '@/popup/queries/settings';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { LanguageSection } from '../LanguageSection';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -18,7 +18,7 @@ describe('LanguageSection', () => {
   });
 
   it('shows the current language and persists a new selection', async () => {
-    const { wrapper, queryClient } = createTestWrapper();
+    const { wrapper, queryClient } = createPopupTestWrapper();
     queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ language: 'en' }));
     render(<LanguageSection />, { wrapper });
 

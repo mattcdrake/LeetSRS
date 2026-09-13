@@ -5,18 +5,18 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { DataSection } from '../DataSection';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('DataSection reset', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
-  let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
+  let wrapper: ReturnType<typeof createPopupTestWrapper>['wrapper'];
 
   beforeEach(() => {
     messages.reset().resolve('importData', undefined).resolve('resetAllData', undefined);
-    wrapper = createTestWrapper().wrapper;
+    wrapper = createPopupTestWrapper().wrapper;
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     vi.stubGlobal('alert', vi.fn());
   });

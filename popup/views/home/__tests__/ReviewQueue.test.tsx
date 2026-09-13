@@ -13,7 +13,7 @@ import { sendMessage } from '@/integrations/browser/messages';
 import { cardQueryKeys } from '@/popup/queries/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
@@ -131,7 +131,7 @@ describe('ReviewQueue', () => {
       .resolve('setPauseStatus', undefined);
     mockMutateAsync.mockReset();
 
-    ({ wrapper, queryClient } = createTestWrapper());
+    ({ wrapper, queryClient } = createPopupTestWrapper());
     mockCards.forEach((card, index) => {
       card.fsrs.due = index;
     });

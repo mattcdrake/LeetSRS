@@ -15,7 +15,7 @@ import { onMessage, sendMessage } from '@/integrations/browser/messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, usePauseCardMutation, useRateCardMutation, useReviewQueueQuery } from '../cards';
 
 vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
@@ -30,7 +30,7 @@ describe('useCardsQuery', () => {
     const card = createMockCard(State.New);
     const document = { schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} };
     await storage.setItem(STORAGE_KEYS.learningDocument, document);
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(result.current.data).toEqual([card]));
     await storage.setItem(STORAGE_KEYS.learningDocument, { ...document, cards: {} });
     await waitFor(() => expect(result.current.data).toEqual([]));
@@ -61,7 +61,7 @@ it('keeps popup and badge queues consistent without reading browser language', a
     settings: { maxNewCardsPerDay: 1 },
   });
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
-  const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
+  const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
   try {
     await waitFor(() => expect(view.result.current.data?.map((card) => card.slug)).toEqual(['new-a', 'review']));
     expect(await getBadgeState()).toEqual({ count: 2, nextDueAt: Date.now() + 1000 });
@@ -81,7 +81,7 @@ describe('usePauseCardMutation', () => {
     vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createTestWrapper().wrapper,
+      wrapper: createPopupTestWrapper().wrapper,
     });
 
     result.current.mutate({ slug, paused });
@@ -99,7 +99,7 @@ describe('usePauseCardMutation', () => {
     vi.mocked(sendMessage).mockRejectedValue(new Error(errorMessage));
 
     const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createTestWrapper().wrapper,
+      wrapper: createPopupTestWrapper().wrapper,
     });
 
     result.current.mutate({ slug: 'non-existent', paused: true });
@@ -133,7 +133,7 @@ describe('card queries through JSON messaging and background handlers', () => {
       await sendMessage('importData', {
         jsonData: JSON.stringify({ schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} }),
       });
-      const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
+      const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
 
       try {
         await act(() => vi.advanceTimersByTimeAsync(1));
@@ -158,14 +158,14 @@ describe('card queries through JSON messaging and background handlers', () => {
       jsonData: JSON.stringify({ schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} }),
     });
 
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toStrictEqual([card]);
   });
 
   it('acknowledges scheduling and refreshes the saved card with numeric dates', async () => {
-    const { result } = renderHook(() => useRateCardMutation(), { wrapper: createTestWrapper().wrapper });
+    const { result } = renderHook(() => useRateCardMutation(), { wrapper: createPopupTestWrapper().wrapper });
 
     await act(async () => {
       await expect(result.current.mutateAsync({ ...buildProblem(), rating: Rating.Good })).resolves.toBeUndefined();

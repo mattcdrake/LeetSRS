@@ -4,7 +4,7 @@
 
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useLeetcodeCnPermissionEvents } from '../../queries/leetcode-cn';
 import { LeetcodeCnSection } from '../../views/settings/LeetcodeCnSection';
 import { DISMISS_KEY, LeetcodeCnBanner } from '../LeetcodeCnBanner';
@@ -73,7 +73,7 @@ describe('LeetcodeCnBanner', () => {
         <LeetcodeCnBanner />
         <LeetcodeCnSection />
       </>,
-      createTestWrapper()
+      createPopupTestWrapper()
     );
     await waitFor(() => expect(screen.getAllByRole('button', { name: /enable/i })).toHaveLength(2));
     expect(mockRequest).not.toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe('LeetcodeCnBanner', () => {
         <LeetcodeCnBanner />
         <LeetcodeCnSection />
       </>,
-      createTestWrapper()
+      createPopupTestWrapper()
     );
     const dismiss = await screen.findByRole('button', { name: 'Dismiss' });
     act(() => dismiss.click());
@@ -128,7 +128,7 @@ describe('LeetcodeCnBanner', () => {
           <LeetcodeCnBanner />
           <LeetcodeCnSection />
         </>,
-        createTestWrapper()
+        createPopupTestWrapper()
       );
 
     const popup = openPopup();
@@ -166,7 +166,7 @@ describe('LeetcodeCnBanner', () => {
     mockQuery.mockResolvedValue(tabs);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     expect(mockQuery).toHaveBeenCalledWith({ active: true, currentWindow: true });
@@ -177,7 +177,7 @@ describe('LeetcodeCnBanner', () => {
   it('hides the prompt until permission has loaded', async () => {
     const permission = Promise.withResolvers<boolean>();
     mockContains.mockReturnValue(permission.promise);
-    render(<LeetcodeCnBanner />, createTestWrapper());
+    render(<LeetcodeCnBanner />, createPopupTestWrapper());
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
     await act(async () => permission.resolve(false));
     expect(await screen.findByText(/leetcode\.cn/i)).toBeInTheDocument();
@@ -187,7 +187,7 @@ describe('LeetcodeCnBanner', () => {
     mockContains.mockResolvedValue(true);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
@@ -198,7 +198,7 @@ describe('LeetcodeCnBanner', () => {
     mockContains.mockResolvedValue(false);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
@@ -208,7 +208,7 @@ describe('LeetcodeCnBanner', () => {
     mockContains.mockResolvedValue(false);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     expect(await screen.findByText(/leetcode\.cn/i)).toBeInTheDocument();
@@ -221,7 +221,7 @@ describe('LeetcodeCnBanner', () => {
     mockRequest.mockResolvedValue(true);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     await act(async () => {
@@ -237,7 +237,7 @@ describe('LeetcodeCnBanner', () => {
     mockRequest.mockResolvedValue(false);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     await act(async () => {
@@ -251,7 +251,7 @@ describe('LeetcodeCnBanner', () => {
     mockContains.mockResolvedValue(false);
 
     await act(async () => {
-      render(<LeetcodeCnBanner />, createTestWrapper());
+      render(<LeetcodeCnBanner />, createPopupTestWrapper());
     });
 
     await act(async () => {

@@ -2,7 +2,6 @@
  * @vitest-environment happy-dom
  */
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,27 +9,24 @@ import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
+import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardListItem } from '../CardListItem';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
-let queryClient: QueryClient;
+let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
 const renderItem = (card: Card, onDeleted = vi.fn()) => {
-  render(
-    <QueryClientProvider client={queryClient}>
-      <CardListItem card={card} isExpanded onToggle={vi.fn()} onDeleted={onDeleted} />
-    </QueryClientProvider>
-  );
+  render(<CardListItem card={card} isExpanded onToggle={vi.fn()} onDeleted={onDeleted} />, { wrapper });
   return onDeleted;
 };
 
 describe('CardListItem', () => {
   beforeEach(() => {
     messages.reset().resolve('setPauseStatus', undefined).resolve('removeCard', undefined);
-    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    wrapper = createTestWrapper().wrapper;
   });
 
   afterEach(() => {
@@ -145,11 +141,8 @@ describe('CardListItem', () => {
     ];
 
     render(
-      <QueryClientProvider client={queryClient}>
-        {cards.map((card) => (
-          <CardListItem key={card.id} card={card} isExpanded onToggle={vi.fn()} onDeleted={vi.fn()} />
-        ))}
-      </QueryClientProvider>
+      cards.map((card) => <CardListItem key={card.id} card={card} isExpanded onToggle={vi.fn()} onDeleted={vi.fn()} />),
+      { wrapper }
     );
 
     const pauseButtons = screen.getAllByRole('button', { name: 'Pause' });

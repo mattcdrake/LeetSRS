@@ -4,7 +4,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { createTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StatsView } from '../StatsView';
 
 // Mock the ViewLayout component
@@ -32,7 +32,7 @@ vi.mock('../UpcomingReviewsChart', () => ({
 }));
 
 describe('StatsView', () => {
-  const { wrapper } = createTestWrapper();
+  const { wrapper } = createPopupTestWrapper();
 
   const renderStatsView = () => {
     return render(<StatsView />, { wrapper });
