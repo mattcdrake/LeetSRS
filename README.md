@@ -67,12 +67,14 @@ LeetSRS is open source and accepts contributions.
 </div>
 
 1. **Create a GitHub Personal Access Token** with the `gist` scope
-2. Select **Create New Gist** and click **Save** in Settings, or select **Use existing Gist** and enter the ID of a Gist containing `leetsrs-backup.json` before saving
-3. The token, Gist ID, and automatic-sync switch sync via Chrome when browser sync is enabled; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
+2. Select **Create New Gist** and click **Save** in Settings, or select **Use existing Gist** and enter the ID of a Gist containing `leetsrs-backup.json` before saving. Saving the connection turns on syncing.
+3. The token, Gist ID, and syncing setting sync via Chrome when browser sync is enabled; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
+
+Sync uses last-write-wins for the entire dataset, not per-card merging. The browser with the newest edit replaces all Gist data, so concurrent changes in another browser can be lost. Enabled sync runs after local edits, when the extension starts, and at least once per minute for retry.
 
 ### Upgrading to the learning-document format
 
-1. Turn off automatic Gist sync on every browser sharing the Gist before updating. Avoid manual sync during the upgrade.
+1. Turn off Gist syncing on every browser sharing the Gist before updating.
 2. Update LeetSRS on **every browser sharing that Gist** before resuming sync. Older extension versions cannot safely sync with the new format.
 3. Open the updated extension on each browser to let it convert existing cards, notes, review statistics, and stored preferences automatically. Existing file backups remain importable; the Gist connection is preserved.
 4. Once every browser is updated, resume sync. Stored preferences now travel with learning data through Gist. Sync still replaces the older dataset with the newer one; it does not merge independent edits.

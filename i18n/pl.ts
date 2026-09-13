@@ -7,7 +7,6 @@ const pl: Translations = {
   syncNotices: {
     missingBackup: 'Gist nie zawiera kopii zapasowej LeetSRS. Wybierz inny Gist w ustawieniach.',
     creationFailed: 'GitHub nie zwrócił identyfikatora utworzonego Gist. Sprawdź swoje Gisty przed ponowną próbą.',
-    creationStatusFailed: 'Gist został utworzony, ale nie udało się zapisać stanu synchronizacji.',
     connectionSaveFailed: 'Nie udało się zapisać połączenia.',
     unavailable: 'Możesz kontynuować naukę. Synchronizacja wznowi się automatycznie, gdy GitHub będzie dostępny.',
     rateLimit: 'Osiągnięto limit API GitHub. Spróbuj później. Możesz kontynuować naukę.',
@@ -15,9 +14,7 @@ const pl: Translations = {
     missingToken: 'Brak tokenu. Dodaj token GitHub w ustawieniach.',
     missingGist: 'Brak identyfikatora Gist. Wybierz Gist w ustawieniach.',
     gistNotFound: 'Nie znaleziono Gist. Sprawdź identyfikator i dostęp tokenu w ustawieniach.',
-    obsolete: 'Synchronizacja zatrzymana, ponieważ dane lub połączenie się zmieniły.',
-    setupStopped: 'Konfiguracja Gist zatrzymana, ponieważ dane lub połączenie się zmieniły.',
-    refreshFailed: 'Nie udało się odświeżyć synchronizacji.',
+    unknown: 'Synchronizacja nie powiodła się. Spróbuj ponownie później.',
   },
   app: {
     name: 'LeetSRS',
@@ -208,19 +205,16 @@ const pl: Translations = {
     gistSync: {
       title: 'Synchronizacja przez GitHub Gist',
       gistDescription: 'Kopia zapasowa LeetSRS - Dane powtórek rozłożonych w czasie',
-      description: 'Synchronizuj dane między przeglądarkami za pomocą GitHub Gists',
       // PAT field
       patLabel: 'Osobisty token dostępu',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
-      patHelpText: 'Utwórz token z uprawnieniem "gist" na',
-      patHelpLink: 'Ustawienia GitHub',
+      patHelpLink: 'Utwórz token GitHub',
       // Gist selection
       gistIdLabel: 'ID Gista',
       gistIdPlaceholder: 'Wpisz istniejące ID Gista',
       createNewGist: 'Utwórz nowy Gist',
       // Sync controls
-      enableSync: 'Włącz automatyczną synchronizację',
-      syncNow: 'Synchronizuj teraz',
+      syncEnabled: 'Synchronizacja',
       syncing: 'Synchronizowanie...',
       // Status
       lastSync: 'Ostatnia synchronizacja',
@@ -230,17 +224,17 @@ const pl: Translations = {
       edit: 'Edytuj',
       cancel: 'Anuluj',
       latestEditNotice:
-        'Używane są pełne dane z przeglądarki, w której ostatnio wprowadzono zmiany; zmiany z innych przeglądarek mogą zostać zastąpione.',
-      connectionHelp:
-        'Przeglądarka synchronizuje połączenie i ustawienie automatycznej synchronizacji. Stan ostatniej synchronizacji dotyczy tylko tej przeglądarki.',
+        'Najnowsza zmiana wygrywa dla całego zestawu danych. Równoczesne zmiany w innej przeglądarce mogą zostać utracone.',
+      howSyncWorks: 'Jak działa synchronizacja',
+      syncDetails:
+        'LeetSRS porównuje czas edycji kompletnych zestawów danych i zastępuje starszy. Nie scala pojedynczych kart.',
+      openGist: 'Otwórz Gist kopii zapasowej',
       destination: 'Miejsce docelowe',
       existingGist: 'Użyj istniejącego Gista',
       save: 'Zapisz',
       saving: 'Zapisywanie…',
       saved: 'Połączenie zapisane',
       saveFailed: 'Nie udało się zapisać połączenia',
-      savedSyncFailed: 'Połączenie zapisane, ale synchronizacja nie powiodła się',
-      synced: 'Synchronizacja zakończona',
       configFailed: 'Nie udało się wczytać zapisanego połączenia',
     },
 

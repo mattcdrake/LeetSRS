@@ -6,7 +6,6 @@ import {
   setGistSyncEnabled,
   setupGistSync,
   triggerGistSync,
-  waitForArrivalRefresh,
 } from '@/background/gist-sync';
 import { importData, resetAllData } from '@/background/import-export';
 import {
@@ -54,6 +53,7 @@ export function startBackground() {
     }
 
     void refreshBadge();
+    void triggerGistSync();
   })();
 
   // Report startup failure without replacing the rejected readiness promise.
@@ -61,48 +61,44 @@ export function startBackground() {
     console.error('Failed to initialize background:', error);
   });
 
-  async function readyToEdit() {
-    await readyPromise;
-    await waitForArrivalRefresh();
-  }
   onMessage('waitForInitialization', async ({ data }) => {
     await readyPromise;
     messagePayloadSchemas.waitForInitialization.parse(data);
     return undefined;
   });
   onMessage('addCard', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     return addCard(messagePayloadSchemas.addCard.parse(data).problem);
   });
   onMessage('removeCard', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     return removeCard(messagePayloadSchemas.removeCard.parse(data).slug);
   });
   onMessage('delayCard', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     const payload = messagePayloadSchemas.delayCard.parse(data);
     return delayCard(payload.slug, payload.days);
   });
   onMessage('setPauseStatus', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     const payload = messagePayloadSchemas.setPauseStatus.parse(data);
     return setPauseStatus(payload.slug, payload.paused);
   });
   onMessage('rateCard', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     return rateCard(messagePayloadSchemas.rateCard.parse(data).input);
   });
   onMessage('saveNote', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     const payload = messagePayloadSchemas.saveNote.parse(data);
     return saveNote(payload.slug, payload.text);
   });
   onMessage('deleteNote', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     return deleteNote(messagePayloadSchemas.deleteNote.parse(data).slug);
   });
   onMessage('updateSettings', async ({ data }) => {
-    await readyToEdit();
+    await readyPromise;
     return updateSettings(messagePayloadSchemas.updateSettings.parse(data).changes);
   });
   onMessage('importData', async ({ data }) => {
@@ -127,19 +123,10 @@ export function startBackground() {
     messagePayloadSchemas.getGistSyncStatus.parse(data);
     return getGistSyncStatus();
   });
-  onMessage('triggerGistSync', async ({ data }) => {
-    await readyPromise;
-    messagePayloadSchemas.triggerGistSync.parse(data);
-    return triggerGistSync();
+  storage.watch(STORAGE_KEYS.gistConnection, () => {
+    invalidateGistSync();
+    void readyPromise.then(triggerGistSync, () => {});
   });
-
-  onMessage('refreshGistOnArrival', async ({ data }) => {
-    await readyPromise;
-    messagePayloadSchemas.refreshGistOnArrival.parse(data);
-    return triggerGistSync('arrival');
-  });
-
-  storage.watch(STORAGE_KEYS.gistConnection, () => invalidateGistSync());
   storage.watch(STORAGE_KEYS.learningDocument, () => {
     void readyPromise.then(refreshBadge, () => {});
   });
@@ -156,6 +143,6 @@ export function startBackground() {
       return;
     }
 
-    await Promise.all([alarm.name === SYNC_ALARM_NAME && triggerGistSync('alarm'), refreshBadge()]);
+    await Promise.all([alarm.name === SYNC_ALARM_NAME && triggerGistSync(), refreshBadge()]);
   });
 }

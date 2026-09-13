@@ -34,8 +34,7 @@ beforeEach(async () => {
       lastError: null,
     })
     .resolve('setupGistSync', { saved: true })
-    .resolve('setGistSyncEnabled', { saved: true })
-    .resolve('triggerGistSync', { success: true, action: 'no-change', timestamp: '2026-09-12' });
+    .resolve('setGistSyncEnabled', { saved: true });
   test = createTestWrapper();
 });
 
@@ -59,7 +58,7 @@ describe('Gist setup form', () => {
     const refresh = Promise.withResolvers<void>();
     config = { pat: '', gistId: null, enabled: false };
     messages.handle('setupGistSync', async (input) => {
-      config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: false };
+      config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: true };
       if (delayed) {
         vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementationOnce(async () => {
           await refresh.promise;
@@ -97,10 +96,11 @@ describe('Gist setup form', () => {
       pat: 'entered-pat',
       gistId: 'entered-gist',
     });
-    expect(await screen.findByRole('link', { name: /entered-gist/ })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Open backup Gist' })).toHaveAttribute(
       'href',
       'https://gist.github.com/entered-gist'
     );
+    expect(screen.getByRole('switch', { name: 'Syncing' })).toBeChecked();
     expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
   });
@@ -123,7 +123,7 @@ describe('Gist setup form', () => {
       fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
       fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
-      expect(screen.getByRole('link', { name: /other-browser-gist/ })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Open backup Gist' })).toBeInTheDocument();
       expect(screen.getByRole('switch')).toBeChecked();
       fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
       expect(screen.getByLabelText('Personal Access Token')).toHaveValue('other-browser-pat');
@@ -146,7 +146,7 @@ describe('Gist setup form', () => {
     });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toHaveValue(''));
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
-    expect(screen.getByRole('link', { name: /remote-gist/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open backup Gist' })).toBeInTheDocument();
   });
 
   it('can cancel drafts after browser sync removes the connection during editing', async () => {
@@ -168,42 +168,13 @@ describe('Gist setup form', () => {
     expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
   });
 
-  it('recovers a created Gist ID after save failure and retries without creating again', async () => {
-    let attempts = 0;
-    messages.handle('setupGistSync', async (input) => {
-      attempts++;
-      if (attempts === 1) return { saved: false, error: 'Storage unavailable', createdGistId: 'created-gist' };
-      config = { pat: input.pat, gistId: 'created-gist', enabled: false };
-      await storage.setItem(STORAGE_KEYS.gistConnection, config);
-      return { saved: true };
-    });
-    await open();
-    enterCredentials();
-    fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
-    expect(screen.queryByLabelText('Gist ID')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent('Connection could not be saved: Storage unavailable')
-    );
-    expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
-    expect(screen.getByLabelText('Gist ID')).toHaveValue('created-gist');
-    expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
-    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Connection saved'));
-    expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'setupGistSync')).toEqual([
-      ['setupGistSync', { mode: 'create', pat: 'entered-pat' }],
-      ['setupGistSync', { mode: 'existing', pat: 'entered-pat', gistId: 'created-gist' }],
-    ]);
-  });
-
   it.each(['setup failure', 'transport failure'])(
     'preserves drafts when storage events deliver browser-sync updates and after %s',
     async (failure) => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
       messages.handle('setupGistSync', () => {
         if (failure === 'transport failure') throw new Error('Disconnected');
-        return { saved: false, error: 'Network unavailable' };
+        return { saved: false, error: 'unavailable' };
       });
       await open();
       enterCredentials();
@@ -225,23 +196,16 @@ describe('Gist setup form', () => {
     }
   );
 
-  it.each(['setup', 'enable', 'manual'] as const)(
+  it.each(['setup', 'enable'] as const)(
     'locks conflicting controls while %s is pending and permits retry',
     async (operation) => {
       const pending = Promise.withResolvers<GistConnectionResult>();
       if (operation === 'setup') messages.resolve('setupGistSync', pending.promise);
-      else if (operation === 'enable') messages.resolve('setGistSyncEnabled', pending.promise);
-      else
-        messages.handle('triggerGistSync', async () => {
-          await pending.promise;
-          return { success: false, error: 'Network unavailable' };
-        });
+      else messages.resolve('setGistSyncEnabled', pending.promise);
       await open(operation === 'setup');
       if (operation === 'setup') enterCredentials();
       fireEvent.click(
-        operation === 'enable'
-          ? screen.getByRole('switch')
-          : screen.getByRole('button', { name: operation === 'setup' ? 'Save' : 'Sync Now' })
+        operation === 'enable' ? screen.getByRole('switch') : screen.getByRole('button', { name: 'Save' })
       );
       if (operation === 'setup') {
         await waitFor(() => expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled());
@@ -252,13 +216,12 @@ describe('Gist setup form', () => {
       } else {
         await waitFor(() => expect(screen.getByRole('switch')).toBeDisabled());
         expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled();
-        expect(screen.getByRole('button', { name: /^(Sync Now|Syncing...)$/ })).toBeDisabled();
       }
       if (operation === 'enable') expect(sendMessage).toHaveBeenCalledWith('setGistSyncEnabled', { enabled: true });
       await act(async () => {
-        pending.resolve({ saved: false, error: 'Network unavailable' });
+        pending.resolve({ saved: false, error: 'unavailable' });
       });
-      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Network unavailable'));
+      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('continue learning'));
       if (operation === 'setup') {
         expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
         expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
@@ -266,71 +229,20 @@ describe('Gist setup form', () => {
       } else {
         expect(screen.getByRole('switch')).toBeEnabled();
         expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled();
-        expect(screen.getByRole('button', { name: 'Sync Now' })).toBeEnabled();
       }
     }
   );
 
-  it.each(['setup', 'enable', 'manual', 'lost response'] as const)(
-    'refreshes configuration, status, and learning views after %s fails following a pull',
-    async (operation) => {
-      test.queryClient.setQueryData(['cards'], ['old card']);
-      test.queryClient.setQueryData(['settings'], { theme: 'dark' });
-      let pulled = false;
-      const learning = vi.fn(async () => (pulled ? ['pulled card'] : ['old card']));
-      const { QueryObserver } = await import('@tanstack/react-query');
-      const observer = new QueryObserver(test.queryClient, { queryKey: ['cards'], queryFn: learning });
-      const unsubscribe = observer.subscribe(() => {});
-      const afterPull = async () => {
-        pulled = true;
-        await replaceLearningDocument(buildLearningDocument({ settings: { theme: 'light' } }));
-        config = { pat: 'entered-pat', gistId: 'entered-gist', enabled: true };
-        await storage.setItem(STORAGE_KEYS.gistConnection, config);
-        return { saved: true, sync: { success: false, error: 'Status unavailable' } } as const;
-      };
-      messages
-        .handle('setupGistSync', afterPull)
-        .handle('setGistSyncEnabled', afterPull)
-        .handle('triggerGistSync', async () => {
-          await afterPull();
-          if (operation === 'lost response') throw new Error('Disconnected after pull');
-          return { success: false, error: 'Status unavailable' };
-        });
-      await open(operation === 'setup');
-      if (operation === 'setup') enterCredentials();
-      vi.mocked(sendMessage).mockClear();
-      fireEvent.click(
-        operation === 'enable'
-          ? screen.getByRole('switch')
-          : screen.getByRole('button', { name: operation === 'setup' ? 'Save' : 'Sync Now' })
-      );
-      await waitFor(() =>
-        expect(screen.getByRole('alert')).toHaveTextContent(
-          operation === 'setup' || operation === 'enable' ? 'Connection saved, but sync failed' : 'Sync failed'
-        )
-      );
-      expect(test.queryClient.getQueryData(gistSyncQueryKeys.config)).toEqual(config);
-
-      expect(test.queryClient.getQueryData(['cards'])).toEqual(['pulled card']);
-      expect(test.queryClient.getQueryState(['settings'])?.isInvalidated).toBe(true);
-      expect(screen.getByRole('switch')).toBeChecked();
-      expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled();
-      unsubscribe();
-    }
-  );
-
-  it('syncs manually while disabled and requires credentials when editing', async () => {
-    messages.resolve('triggerGistSync', { success: false, error: 'Network unavailable' });
+  it('explains whole-dataset LWW, has no manual sync, and validates edited credentials', async () => {
     await open(false);
-    expect(screen.getByRole('button', { name: 'Sync Now' })).toBeEnabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Sync Now' }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Sync failed: Network unavailable'));
-    messages.resolve('triggerGistSync', { success: true, action: 'no-change', timestamp: '2026-09-12' });
-    fireEvent.click(screen.getByRole('button', { name: 'Sync Now' }));
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Sync complete'));
-    expect(sendMessage).toHaveBeenCalledWith('triggerGistSync');
-    expect(screen.getByRole('switch')).not.toBeChecked();
+    expect(screen.getByText(/newest edit wins/i)).toHaveTextContent(/simultaneous changes/i);
+    const disclosure = requireDefined(screen.getByText('How sync works').closest('details'));
+    expect(disclosure).not.toHaveAttribute('open');
+    fireEvent.click(screen.getByText('How sync works'));
+    expect(disclosure).toHaveAttribute('open');
+    expect(screen.getByText(/does not merge individual cards/i)).toBeVisible();
+    expect(screen.queryByRole('button', { name: /sync now/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Syncing' })).not.toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(screen.getByLabelText('Personal Access Token'), { target: { value: '' } });
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();

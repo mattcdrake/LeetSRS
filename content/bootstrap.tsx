@@ -1,6 +1,5 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
-import { sendMessage } from '@/integrations/browser/messages';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 import { createContentRoot } from './ui/shadow-root';
@@ -10,25 +9,6 @@ import './ui/shadow.css';
 export async function bootstrapContent(ctx: ContentScriptContext) {
   await setupLeetSrsControl(ctx);
   if (ctx.isInvalid) return;
-  let refreshing = false;
-  async function refresh() {
-    if (refreshing || ctx.isInvalid) return;
-    refreshing = true;
-    try {
-      const result = await sendMessage('refreshGistOnArrival');
-      if (result && !result.success) await showToast(ctx, result.error);
-    } catch (error) {
-      await showToast(ctx, error instanceof Error ? error.message : String(error));
-    } finally {
-      refreshing = false;
-    }
-  }
-  const onReturn = () => {
-    if (document.visibilityState === 'visible') void refresh();
-  };
-  ctx.addEventListener(document, 'visibilitychange', onReturn);
-  ctx.addEventListener(window, 'focus', onReturn);
-  void refresh();
   const disposeReset = setupLeetcodeAutoReset(() => {
     void showToast(ctx, 'Code reset to default');
   });

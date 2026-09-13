@@ -1,7 +1,7 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import { z } from 'zod';
 import { type Card, noteTextSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
-import { type GistConnectionResult, type GistSyncStatus, gistSetupSchema, type SyncResult } from '@/domain/gist-sync';
+import { type GistConnectionResult, type GistSyncStatus, gistSetupSchema } from '@/domain/gist-sync';
 import { settingsUpdateSchema } from '@/domain/settings';
 
 const slugSchema = problemDescriptorSchema.shape.slug;
@@ -22,8 +22,6 @@ export const messagePayloadSchemas = {
   setupGistSync: gistSetupSchema,
   setGistSyncEnabled: z.object({ enabled: z.boolean() }),
   getGistSyncStatus: z.undefined(),
-  triggerGistSync: z.undefined(),
-  refreshGistOnArrival: z.undefined(),
 };
 
 type MessagePayload<Name extends keyof typeof messagePayloadSchemas> = z.infer<(typeof messagePayloadSchemas)[Name]>;
@@ -43,8 +41,6 @@ export interface ExtensionMessageMap {
   setupGistSync(data: MessagePayload<'setupGistSync'>): GistConnectionResult;
   setGistSyncEnabled(data: MessagePayload<'setGistSyncEnabled'>): GistConnectionResult;
   getGistSyncStatus(): GistSyncStatus;
-  triggerGistSync(): SyncResult;
-  refreshGistOnArrival(): SyncResult | undefined;
 }
 
 export type MessageName = keyof ExtensionMessageMap;

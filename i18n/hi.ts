@@ -6,7 +6,6 @@ const hi: Translations = {
   syncNotices: {
     missingBackup: 'इस Gist में LeetSRS बैकअप नहीं है। सेटिंग्स में कोई दूसरा Gist चुनें।',
     creationFailed: 'GitHub ने बनाए गए Gist का ID नहीं लौटाया। फिर कोशिश करने से पहले अपने Gist जाँचें।',
-    creationStatusFailed: 'Gist बन गया, लेकिन उसकी सिंक स्थिति सहेजी नहीं जा सकी।',
     connectionSaveFailed: 'कनेक्शन सहेजा नहीं जा सका।',
     unavailable: 'आप सीखना जारी रख सकते हैं। GitHub उपलब्ध होने पर सिंक अपने आप फिर शुरू होगा।',
     rateLimit: 'GitHub API की सीमा पूरी हो गई है। बाद में फिर कोशिश करें। आप सीखना जारी रख सकते हैं।',
@@ -14,9 +13,7 @@ const hi: Translations = {
     missingToken: 'टोकन सेट नहीं है। सेटिंग्स में अपना GitHub टोकन जोड़ें।',
     missingGist: 'Gist ID सेट नहीं है। सेटिंग्स में एक Gist चुनें।',
     gistNotFound: 'Gist नहीं मिला। सेटिंग्स में Gist ID और टोकन की पहुँच जाँचें।',
-    obsolete: 'डेटा या कनेक्शन बदलने के कारण सिंक रुक गया।',
-    setupStopped: 'डेटा या कनेक्शन बदलने के कारण Gist सेटअप रुक गया।',
-    refreshFailed: 'सिंक रीफ़्रेश नहीं हो सका।',
+    unknown: 'सिंक विफल रहा। बाद में फिर कोशिश करें।',
   },
   app: {
     name: 'LeetSRS',
@@ -187,19 +184,16 @@ const hi: Translations = {
     gistSync: {
       title: 'GitHub Gist सिंक',
       gistDescription: 'LeetSRS बैकअप - स्पेस्ड रिपिटिशन डेटा',
-      description: 'GitHub Gists का यूज़ करके ब्राउज़रों में डेटा सिंक करें',
       // PAT field
       patLabel: 'पर्सनल एक्सेस टोकन (PAT)',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
-      patHelpText: '"gist" स्कोप के साथ टोकन बनाएँ',
-      patHelpLink: 'GitHub सेटिंग्स',
+      patHelpLink: 'GitHub टोकन बनाएँ',
       // Gist selection
       gistIdLabel: 'Gist ID',
       gistIdPlaceholder: 'मौजूदा Gist ID डालें',
       createNewGist: 'नया Gist बनाएँ',
       // Sync controls
-      enableSync: 'ऑटोमैटिक सिंक ऑन करें',
-      syncNow: 'अभी सिंक करें',
+      syncEnabled: 'सिंक',
       syncing: 'सिंक हो रहा है...',
       // Status
       lastSync: 'लास्ट सिंक',
@@ -208,17 +202,16 @@ const hi: Translations = {
       syncFailed: 'सिंक फेल हो गया',
       edit: 'संपादित करें',
       cancel: 'रद्द करें',
-      latestEditNotice:
-        'जिस ब्राउज़र में सबसे हाल में बदलाव किए गए हैं, उसका पूरा डेटा उपयोग किया जाता है; दूसरे ब्राउज़रों के बदलाव बदले जा सकते हैं।',
-      connectionHelp: 'कनेक्शन और ऑटोमैटिक सिंक सेटिंग आपके ब्राउज़र द्वारा सिंक की जाती हैं। लास्ट सिंक की स्थिति केवल इस ब्राउज़र की है।',
+      latestEditNotice: 'पूरे डेटा में सबसे नया बदलाव लागू होता है। दूसरे ब्राउज़र में उसी समय किए गए बदलाव खो सकते हैं।',
+      howSyncWorks: 'सिंक कैसे काम करता है',
+      syncDetails: 'LeetSRS पूरे डेटा के बदलाव का समय देखकर पुराने डेटा को बदल देता है। अलग-अलग कार्ड मर्ज नहीं किए जाते।',
+      openGist: 'बैकअप Gist खोलें',
       destination: 'गंतव्य',
       existingGist: 'मौजूदा Gist का उपयोग करें',
       save: 'सहेजें',
       saving: 'सहेजा जा रहा है…',
       saved: 'कनेक्शन सहेजा गया',
       saveFailed: 'कनेक्शन सहेजा नहीं जा सका',
-      savedSyncFailed: 'कनेक्शन सहेजा गया, लेकिन सिंक विफल रहा',
-      synced: 'सिंक पूरा हुआ',
       configFailed: 'सहेजा गया कनेक्शन लोड नहीं हो सका',
     },
     // About section

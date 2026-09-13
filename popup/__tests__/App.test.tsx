@@ -1,14 +1,11 @@
 /** @vitest-environment happy-dom */
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/integrations/browser/messages';
 import { Header } from '@/popup/components/Header';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import App from '../App';
-
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 vi.mock('@/popup/queries/settings', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/popup/queries/settings')>()),
@@ -31,7 +28,6 @@ vi.mock('../views/stats/StatsView', () => ({ StatsView: () => null }));
 describe('App theme', () => {
   beforeEach(() => {
     vi.mocked(useTheme).mockReturnValue('dark');
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -51,19 +47,4 @@ describe('App theme', () => {
     expect(document.documentElement).not.toHaveClass('system');
     expect(document.body).not.toHaveClass('system');
   });
-});
-
-it('refreshes on opening, keeps saved data visible, and releases edits with the background result', async () => {
-  const refresh = Promise.withResolvers<undefined>();
-  vi.mocked(sendMessage).mockReturnValue(refresh.promise);
-  render(<App />, { wrapper: createTestWrapper().wrapper });
-  await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival'));
-  expect(screen.getByText('Saved cards')).toBeVisible();
-  expect(screen.getByRole('status', { name: 'Syncing...' }).parentElement?.previousElementSibling).toHaveTextContent(
-    'LeetSRS'
-  );
-  expect(screen.queryByText('Syncing...')).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();
-  await act(async () => refresh.resolve(undefined));
-  expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();
 });

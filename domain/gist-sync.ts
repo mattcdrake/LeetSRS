@@ -13,20 +13,26 @@ export const gistSetupSchema = z.discriminatedUnion('mode', [
 ]);
 export type GistSetup = z.infer<typeof gistSetupSchema>;
 
-export type GistConnectionResult =
-  | { saved: true; sync?: SyncResult }
-  | { saved: false; error: string; createdGistId?: string };
+export type GistSyncErrorCode =
+  | 'authentication'
+  | 'connectionSaveFailed'
+  | 'creationFailed'
+  | 'gistNotFound'
+  | 'missingBackup'
+  | 'missingGist'
+  | 'missingToken'
+  | 'rateLimit'
+  | 'unavailable'
+  | 'unknown';
+
+export type GistConnectionResult = { saved: true } | { saved: false; error: GistSyncErrorCode };
 
 export interface GistSyncStatus {
   lastSyncTime: string | null;
   lastSyncDirection: 'push' | 'pull' | null;
   syncInProgress: boolean;
-  lastError: string | null;
+  lastError: GistSyncErrorCode | null;
 }
-
-export type SyncResult =
-  | { success: true; action: 'pushed' | 'pulled' | 'no-change'; timestamp: string }
-  | { success: false; error: string };
 
 export type RemoteGistContent = { state: 'missing' } | { state: 'parsed'; dataUpdatedAt?: string | null };
 

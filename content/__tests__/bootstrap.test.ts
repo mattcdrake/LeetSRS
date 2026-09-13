@@ -6,13 +6,11 @@ import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
 import { watchDocumentTranslations } from '@/data/translations';
 import { translations } from '@/i18n';
-import { sendMessage } from '@/integrations/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
 vi.mock('@/data/translations', () => ({ watchDocumentTranslations: vi.fn() }));
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 let ctx: ContentScriptContext;
 let notifyMutation: () => void;
@@ -37,7 +35,6 @@ beforeEach(() => {
     }
   );
   document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
-  vi.mocked(sendMessage).mockResolvedValue(undefined);
   vi.mocked(watchDocumentTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
     return unwatchTranslations;
@@ -72,10 +69,9 @@ describe('content startup', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('mounts controls and requests arrival refresh', async () => {
+  it('mounts controls', async () => {
     await act(() => bootstrapContent(ctx));
 
-    expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival');
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
     expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
     expect(disposeReset).not.toHaveBeenCalled();
@@ -124,20 +120,4 @@ describe('content startup', () => {
     expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
     expect(unwatchTranslations).toHaveBeenCalledOnce();
   });
-});
-
-it('refreshes on return to an existing tab and disposes arrival listeners', async () => {
-  await act(() => bootstrapContent(ctx));
-  vi.mocked(sendMessage).mockClear();
-  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
-  await act(async () => document.dispatchEvent(new Event('visibilitychange')));
-  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('refreshGistOnArrival');
-  vi.mocked(sendMessage).mockResolvedValueOnce({ success: false, error: translations.en.syncNotices.unavailable });
-  await act(async () => window.dispatchEvent(new Event('focus')));
-  expect(sendMessage).toHaveBeenCalledTimes(2);
-  const toast = document.querySelector('leetsrs-toast')?.shadowRoot?.querySelector('[role="status"]');
-  expect(toast).toHaveTextContent(translations.en.syncNotices.unavailable);
-  act(() => ctx.notifyInvalidated());
-  await act(async () => window.dispatchEvent(new Event('focus')));
-  expect(sendMessage).toHaveBeenCalledTimes(2);
 });

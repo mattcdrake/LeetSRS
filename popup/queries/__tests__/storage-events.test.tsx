@@ -9,6 +9,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import type { GistSyncStatus } from '@/domain/gist-sync';
 import type { LearningDocument } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import background from '@/entrypoints/background';
@@ -290,18 +291,18 @@ it('keeps a successful local save successful when refreshing the cache fails', a
 it('keeps polling background-only sync progress and errors without stored changes', async () => {
   await replaceLearningDocument(buildLearningDocument());
   vi.useFakeTimers();
-  const status = {
+  const status: GistSyncStatus = {
     lastSyncTime: null,
     lastSyncDirection: null,
     syncInProgress: true,
-    lastError: null as string | null,
+    lastError: null,
   };
   messages.handle('getGistSyncStatus', () => status);
   const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createTestWrapper().wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.data?.syncInProgress).toBe(true);
   status.syncInProgress = false;
-  status.lastError = 'Network unavailable';
+  status.lastError = 'unavailable';
   await act(() => vi.advanceTimersByTimeAsync(15_000));
   expect(view.result.current.data).toEqual(status);
   view.unmount();
@@ -332,6 +333,8 @@ it('loads settings inside Suspense alongside the root storage observer', async (
 it('disables automatic sync offline without attempting GitHub', async () => {
   await startBackground();
   await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
+  await waitFor(() => expect(github.get).toHaveBeenCalledOnce());
+  github.get.mockClear();
   onlineManager.setOnline(false);
   const { result } = renderHook(() => ({ config: useGistSyncConfigQuery(), toggle: useSetGistSyncEnabledMutation() }), {
     wrapper: createTestWrapper().wrapper,

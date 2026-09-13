@@ -158,7 +158,6 @@ const invalidPayloads: [MessageName, unknown][] = [
   ['setupGistSync', { mode: 'create', pat: null }],
   ['setupGistSync', { mode: 'existing', gistId: 'gist', pat: '  ' }],
   ['setGistSyncEnabled', { enabled: 'true' }],
-  ['triggerGistSync', {}],
 ];
 
 it.each(invalidPayloads)(

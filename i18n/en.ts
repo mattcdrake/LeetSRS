@@ -6,7 +6,6 @@ const en = {
   syncNotices: {
     missingBackup: 'The Gist contains no LeetSRS backup. Choose another Gist in Settings.',
     creationFailed: 'GitHub returned no ID for the created Gist. Check your Gists before trying again.',
-    creationStatusFailed: 'The Gist was created, but its sync status could not be saved.',
     connectionSaveFailed: 'The connection could not be saved.',
     unavailable: 'You can continue learning. Sync will resume automatically when GitHub is available.',
     rateLimit: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
@@ -14,9 +13,7 @@ const en = {
     missingToken: 'PAT is not configured. Add your GitHub token in Settings.',
     missingGist: 'Gist ID is not configured. Choose a Gist in Settings.',
     gistNotFound: 'Gist not found. Check the Gist ID and token access in Settings.',
-    obsolete: 'Sync stopped because data or connection changed.',
-    setupStopped: 'Gist setup stopped because data or connection changed.',
-    refreshFailed: 'Unable to refresh sync.',
+    unknown: 'Sync failed. Try again later.',
   },
   app: {
     name: 'LeetSRS',
@@ -207,19 +204,16 @@ const en = {
     gistSync: {
       title: 'GitHub Gist Sync',
       gistDescription: 'LeetSRS Backup - Spaced Repetition Data',
-      description: 'Sync your data across browsers using GitHub Gists',
       // PAT field
       patLabel: 'Personal Access Token',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
-      patHelpText: 'Create a token with "gist" scope at',
-      patHelpLink: 'GitHub Settings',
+      patHelpLink: 'Create GitHub token',
       // Gist selection
       gistIdLabel: 'Gist ID',
       gistIdPlaceholder: 'Enter existing Gist ID',
       createNewGist: 'Create New Gist',
       // Sync controls
-      enableSync: 'Enable automatic sync',
-      syncNow: 'Sync Now',
+      syncEnabled: 'Syncing',
       syncing: 'Syncing...',
       // Status
       lastSync: 'Last sync',
@@ -229,17 +223,17 @@ const en = {
       edit: 'Edit',
       cancel: 'Cancel',
       latestEditNotice:
-        'The most recently edited browser’s complete data is used; changes from other browsers may be replaced.',
-      connectionHelp:
-        'The connection and automatic-sync setting are synced by your browser. Last sync is local to this browser.',
+        'Newest edit wins across the whole dataset. Simultaneous changes in another browser may be lost.',
+      howSyncWorks: 'How sync works',
+      syncDetails:
+        'LeetSRS compares the edit time of each complete dataset and replaces the older one. It does not merge individual cards.',
+      openGist: 'Open backup Gist',
       destination: 'Destination',
       existingGist: 'Use existing Gist',
       save: 'Save',
       saving: 'Saving…',
       saved: 'Connection saved',
       saveFailed: 'Connection could not be saved',
-      savedSyncFailed: 'Connection saved, but sync failed',
-      synced: 'Sync complete',
       configFailed: 'Could not load the saved connection',
     },
 

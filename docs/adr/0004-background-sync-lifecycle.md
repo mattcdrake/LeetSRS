@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded by ADR-0005
 ---
 
 # Keep local saves independent of background sync
+
+Superseded by [ADR-0005](0005-direct-whole-dataset-gist-sync.md), which removes the manual and arrival-specific lifecycle while retaining independent local saves.
 
 Supersede [ADR-0001](0001-background-command-execution.md): named workflows save locally and request automatic sync after persistence, without waiting for GitHub or badges. Remove the general write queue, command registry, dispatcher, classification, and effect metadata. Accept overlapping manual edits and the narrow race between a sync comparison and replacement rather than introducing another queue.
 
