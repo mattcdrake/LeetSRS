@@ -50,6 +50,24 @@ const hi: Translations = {
     [Rating.Easy]: 'इज़ी',
   },
   // Error boundary
+  applicationErrors: {
+    unexpected: 'कुछ गलत हो गया। कृपया फिर से कोशिश करें।',
+    invalid_input: 'अपनी जानकारी जाँचें और फिर से कोशिश करें।',
+    invalid_settings: 'अपनी सेटिंग्स जाँचें और फिर से कोशिश करें।',
+    card_not_found: 'यह कार्ड अब मौजूद नहीं है। रीफ़्रेश करें और फिर से कोशिश करें।',
+    invalid_backup: 'एक मान्य LeetSRS बैकअप फ़ाइल चुनें।',
+    gist_token_required: 'GitHub पर्सनल एक्सेस टोकन दर्ज करें।',
+    gist_id_required: 'Gist ID दर्ज करें।',
+    gist_not_found: 'Gist नहीं मिला। ID और अपनी पहुँच जाँचें।',
+    gist_backup_missing: 'इस Gist में LeetSRS बैकअप नहीं है।',
+    github_unauthorized: 'GitHub ने टोकन अस्वीकार कर दिया। इसे जाँचें या बदलें।',
+    github_forbidden: 'GitHub ने पहुँच अस्वीकार कर दी। टोकन की अनुमतियाँ और Gist की पहुँच जाँचें।',
+    github_rate_limited: 'GitHub अनुरोध सीमा पूरी हो गई। बाद में फिर से कोशिश करें।',
+    github_unavailable: 'GitHub अभी उपलब्ध नहीं है। बाद में फिर से कोशिश करें।',
+    note_too_long: 'अपने नोट को {limit} अक्षरों तक सीमित रखें।',
+    unsupported_backup_version:
+      'बैकअप संस्करण {version} के लिए LeetSRS का नया संस्करण चाहिए। एक्सटेंशन अपडेट करें और फिर से कोशिश करें।',
+  },
   errors: {
     somethingWentWrong: 'कुछ गलत हो गया',
     unexpectedError: 'एक अनपेक्षित एरर आया',

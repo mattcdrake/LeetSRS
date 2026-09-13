@@ -28,6 +28,7 @@ export function useSaveNoteMutation(slug: string) {
 
 export function useDeleteNoteMutation(slug: string) {
   return useMutation({
+    mutationKey: [...noteQueryKeys.detail(slug), 'delete'],
     networkMode: 'always',
     mutationFn: () => sendMessage('deleteNote', { slug }),
   });

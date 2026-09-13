@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ApplicationFailure } from './application-error';
 
 export const gistSyncConfigSchema = z.object({
   pat: z.string(),
@@ -15,18 +16,18 @@ export type GistSetup = z.infer<typeof gistSetupSchema>;
 
 export type GistConnectionResult =
   | { saved: true; sync?: SyncResult }
-  | { saved: false; error: string; createdGistId?: string };
+  | { saved: false; error: ApplicationFailure; createdGistId?: string };
 
 export interface GistSyncStatus {
   lastSyncTime: string | null;
   lastSyncDirection: 'push' | 'pull' | null;
   syncInProgress: boolean;
-  lastError: string | null;
+  lastError: ApplicationFailure | null;
 }
 
 export type SyncResult =
   | { success: true; action: 'pushed' | 'pulled' | 'no-change'; timestamp: string }
-  | { success: false; error: string };
+  | { success: false; error: ApplicationFailure };
 
 export type RemoteGistContent = { state: 'missing' } | { state: 'parsed'; dataUpdatedAt?: string | null };
 

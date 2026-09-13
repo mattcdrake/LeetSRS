@@ -117,13 +117,13 @@ describe('document Gist sync', () => {
       vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('status failed'));
       expect(await documentSync.setupGistSync({ mode: 'create', pat: 'entered' })).toEqual({
         saved: true,
-        sync: { success: false, error: 'status failed' },
+        sync: { success: false, error: { code: 'unexpected' } },
       });
       expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created', enabled });
       expect(await documentSync.getGistSyncStatus()).toMatchObject({
         lastSyncTime: 'previous-sync',
         lastSyncDirection: 'pull',
-        lastError: 'status failed',
+        lastError: { code: 'unexpected' },
       });
       expect(await readLearningDocument()).toEqual(local);
       mockGistsGet.mockResolvedValue({
@@ -141,7 +141,7 @@ describe('document Gist sync', () => {
     vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(new Error('save failed'));
     expect(await documentSync.setupGistSync({ mode: 'create', pat: 'entered' })).toEqual({
       saved: false,
-      error: 'save failed',
+      error: { code: 'unexpected' },
       createdGistId: 'created',
     });
     expect(mockGistsCreate).toHaveBeenCalledExactlyOnceWith({
@@ -178,7 +178,7 @@ describe('document Gist sync', () => {
             ? { mode: 'create', pat: 'entered' }
             : { mode: 'existing', pat: 'entered', gistId: 'entered' }
         )
-      ).toMatchObject({ saved: false, error: expect.any(String) });
+      ).toMatchObject({ saved: false, error: expect.objectContaining({ code: expect.any(String) }) });
       expect(await readGistConnection()).toEqual(connection);
       expect(await readLearningDocument()).toEqual(local);
     }
@@ -201,7 +201,7 @@ describe('document Gist sync', () => {
         operation === 'setup'
           ? await documentSync.setupGistSync({ mode: 'existing', pat: 'entered', gistId: 'entered' })
           : await documentSync.setGistSyncEnabled(true);
-      expect(result).toEqual({ saved: true, sync: { success: false, error: 'status failed' } });
+      expect(result).toEqual({ saved: true, sync: { success: false, error: { code: 'unexpected' } } });
       expect(await readGistConnection()).toEqual(
         operation === 'setup' ? { pat: 'entered', gistId: 'entered', enabled: true } : { ...connection, enabled: true }
       );
@@ -212,7 +212,7 @@ describe('document Gist sync', () => {
   it('keeps manual sync usable while disabled and awaits an immediate sync when enabled', async () => {
     mockGistsGet.mockResolvedValue({ data: { files: {} } });
     vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(new Error('save failed'));
-    expect(await documentSync.setGistSyncEnabled(true)).toEqual({ saved: false, error: 'save failed' });
+    expect(await documentSync.setGistSyncEnabled(true)).toEqual({ saved: false, error: { code: 'unexpected' } });
     expect(await readGistConnection()).toEqual(connection);
     expect(mockGistsGet).not.toHaveBeenCalled();
     expect(await documentSync.setGistSyncEnabled(true)).toEqual({
@@ -337,7 +337,10 @@ describe('document Gist sync', () => {
   ])('rejects %s before a newer local document can overwrite the remote', async (_name, content) => {
     mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content } } } });
     const writes = vi.spyOn(storage, 'setItem');
-    expect(await documentSync.triggerGistSync()).toMatchObject({ success: false, error: expect.any(String) });
+    expect(await documentSync.triggerGistSync()).toMatchObject({
+      success: false,
+      error: expect.objectContaining({ code: expect.any(String) }),
+    });
     expect(writes).not.toHaveBeenCalled();
     expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(local);
@@ -346,7 +349,7 @@ describe('document Gist sync', () => {
       lastSyncTime: 'previous-sync',
       lastSyncDirection: 'pull',
       syncInProgress: false,
-      lastError: expect.any(String),
+      lastError: expect.objectContaining({ code: expect.any(String) }),
     });
   });
 
@@ -354,7 +357,7 @@ describe('document Gist sync', () => {
     const remote = { ...local, settings: { language: 'zh-CN' }, dataUpdatedAt: '2025-01-01' };
     mockGistsGet.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } } });
     vi.spyOn(storage, 'setItem').mockRejectedValueOnce(new Error('replacement failed'));
-    expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: 'replacement failed' });
+    expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: { code: 'unexpected' } });
     expect(await readLearningDocument()).toEqual(local);
     expect(await readGistConnection()).toEqual(connection);
     expect(await documentSync.getGistSyncStatus()).toMatchObject({
@@ -375,13 +378,18 @@ describe('document Gist sync', () => {
       started.resolve();
       return request.promise;
     });
-    mockGistsUpdate.mockRejectedValueOnce(new Error('403 rate limit exceeded'));
+    mockGistsUpdate.mockRejectedValueOnce(
+      Object.assign(new Error('remote response omitted'), {
+        status: 403,
+        response: { headers: { 'x-ratelimit-remaining': '0' } },
+      })
+    );
     const syncing = documentSync.triggerGistSync();
     await started.promise;
     expect((await documentSync.getGistSyncStatus()).syncInProgress).toBe(true);
     await writeGistConnection({ pat: 'replacement-pat', gistId: 'replacement-gist', enabled: false });
     request.resolve({ data: { files: {} } });
-    expect(await syncing).toEqual({ success: false, error: 'GitHub API rate limit exceeded. Please try again later.' });
+    expect(await syncing).toEqual({ success: false, error: { code: 'github_rate_limited' } });
     expect(mockGistsUpdate.mock.calls[0][0].gist_id).toBe('gist123');
     expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
     expect(await readLearningDocument()).toEqual(local);
@@ -396,8 +404,8 @@ describe('document Gist sync', () => {
   });
 
   it.each([
-    [{ pat: '' }, 'PAT is not configured'],
-    [{ gistId: null }, 'Gist ID is not configured'],
+    [{ pat: '' }, { code: 'gist_token_required' }],
+    [{ gistId: null }, { code: 'gist_id_required' }],
   ] as const)('rejects missing configuration %j', async (config, error) => {
     await writeGistConnection({ ...connection, ...config });
     expect(await documentSync.triggerGistSync()).toEqual({ success: false, error });
@@ -405,8 +413,8 @@ describe('document Gist sync', () => {
   });
 
   it('reports a missing Gist without replacing either dataset', async () => {
-    mockGistsGet.mockRejectedValue(new Error('404 Not Found'));
-    expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: 'Gist not found' });
+    mockGistsGet.mockRejectedValue(Object.assign(new Error('remote response omitted'), { status: 404 }));
+    expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: { code: 'gist_not_found' } });
     expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(local);
   });
@@ -433,12 +441,12 @@ describe('document Gist sync', () => {
         }
         await write(items);
       });
-      expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: 'status failed' });
+      expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: { code: 'unexpected' } });
       expect(await documentSync.getGistSyncStatus()).toEqual({
         lastSyncTime: 'previous-sync',
         lastSyncDirection: 'pull',
         syncInProgress: false,
-        lastError: 'status failed',
+        lastError: { code: 'unexpected' },
       });
       // A status failure does not roll back a completed data transfer.
       expect(await readLearningDocument()).toEqual(action === 'pull' ? remote : local);

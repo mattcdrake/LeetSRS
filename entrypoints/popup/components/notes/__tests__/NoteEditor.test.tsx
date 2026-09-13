@@ -153,15 +153,20 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('does not show another card’s save failure', async () => {
+  it.each(['save', 'delete'] as const)('does not show another card’s %s failure', async (action) => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
+    messages.handle('deleteNote', () => Promise.reject(new Error('Delete failed')));
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+    );
     const { wrapper } = createTestWrapper();
     const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     await waitFor(() => expect(textarea).toBeEnabled());
     fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    fireEvent.click(screen.getByRole('button', { name: action === 'save' ? 'Save' : 'Delete' }));
+    if (action === 'delete') fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
     await screen.findByRole('alert');
 
     view.rerender(<NoteEditor slug="another-card" variant={variant} />);
@@ -182,7 +187,14 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
-    await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to delete note:', error));
+    await waitFor(() =>
+      expect(log).toHaveBeenCalledWith('Application operation failed', {
+        operation: 'deleteNote',
+        code: 'unexpected',
+        status: undefined,
+      })
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
     expect(await screen.findByRole('button', { name: 'Delete' })).toBeEnabled();
     expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Stored note');
   });

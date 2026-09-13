@@ -1,4 +1,5 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
+import { ApplicationError } from '@/domain/application-error';
 import { addLocalDays, formatLocalDate } from '@/domain/calendar';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { findCard, type LearningDocument } from '@/domain/learning-document';
@@ -16,7 +17,7 @@ async function saveLocalLearningDocument(document: LearningDocument, now: Date):
 function requireCard(document: LearningDocument, slug: string): Card {
   const card = findCard(document, slug);
   if (!card) {
-    throw new Error(`Card with slug "${slug}" not found`);
+    throw new ApplicationError({ code: 'card_not_found' });
   }
   return card;
 }

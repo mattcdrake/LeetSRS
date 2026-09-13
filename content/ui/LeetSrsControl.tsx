@@ -2,13 +2,17 @@ import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import type { Translations } from '@/i18n';
+import { translateApplicationError } from '@/i18n/application-errors';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
 import { RatingMenu } from './RatingMenu';
+import { Toast } from './Toast';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 
 export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
@@ -24,23 +28,36 @@ export function LeetSrsControl() {
 
   if (!t) return null;
 
+  const run = async (action: () => Promise<void>) => {
+    setFailure(null);
+    try {
+      await action();
+    } catch (error) {
+      reportApplicationError('contentAction', error);
+      setFailure({ error });
+    }
+  };
+
   return (
-    <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
-      <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
-        <LeetSrsButton t={t} ref={buttonRef} />
-        <Tooltip text={t.app.name} />
-      </TooltipTrigger>
-      <Popover placement="bottom end" offset={8} className="z-50">
-        <Dialog aria-label={t.app.name}>
-          <RatingMenu
-            t={t}
-            onRate={rateCurrentProblem}
-            onAddWithoutRating={addCurrentProblem}
-            onSelect={() => setMenuOpen(false)}
-          />
-        </Dialog>
-      </Popover>
-    </DialogTrigger>
+    <>
+      {failure && <Toast message={translateApplicationError(failure.error, t)} onDismiss={() => setFailure(null)} />}
+      <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
+        <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
+          <LeetSrsButton t={t} ref={buttonRef} />
+          <Tooltip text={t.app.name} />
+        </TooltipTrigger>
+        <Popover placement="bottom end" offset={8} className="z-50">
+          <Dialog aria-label={t.app.name}>
+            <RatingMenu
+              t={t}
+              onRate={(rating) => void run(() => rateCurrentProblem(rating))}
+              onAddWithoutRating={() => void run(addCurrentProblem)}
+              onSelect={() => setMenuOpen(false)}
+            />
+          </Dialog>
+        </Popover>
+      </DialogTrigger>
+    </>
   );
 }
 

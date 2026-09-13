@@ -1,7 +1,10 @@
 /** @vitest-environment happy-dom */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
+import { ApplicationError } from '@/domain/application-error';
+import { I18nProvider } from '@/entrypoints/popup/contexts/I18nContext';
 import { settingsQueryKeys } from '@/entrypoints/popup/queries/settings';
+import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { updateSettings } from '@/services/learning';
@@ -56,4 +59,27 @@ it('keeps an unfinished limit while incoming settings refresh and saves the draf
   await waitFor(() => expect(input).toHaveAttribute('placeholder', '9'));
   await act(() => replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 7 } }));
   await waitFor(() => expect(input).toHaveValue(7));
+});
+
+it('translates rejected settings while retaining the draft and clears feedback after retry', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const messages = createMessageMock(vi.mocked(sendMessage));
+  messages.handle('updateSettings', () => Promise.reject(new ApplicationError({ code: 'invalid_settings' })));
+  const { wrapper, queryClient } = createTestWrapper();
+  await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { language: 'de' } });
+  queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ language: 'de' }));
+  render(
+    <I18nProvider>
+      <ReviewSettingsSection />
+    </I18nProvider>,
+    { wrapper }
+  );
+  const input = screen.getByRole('spinbutton');
+  fireEvent.change(input, { target: { value: '8' } });
+  fireEvent.blur(input);
+  expect(await screen.findByRole('alert')).toHaveTextContent(translations.de.applicationErrors.invalid_settings);
+  expect(input).toHaveValue(8);
+  messages.resolve('updateSettings', undefined);
+  fireEvent.blur(input);
+  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
 });

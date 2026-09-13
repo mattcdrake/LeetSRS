@@ -97,10 +97,10 @@ describe('file and Gist transfers through registered background commands', () =>
       });
       vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Document unavailable'));
       if (source === 'file') {
-        await expect(dispatch('importData', { jsonData })).rejects.toThrow('Document unavailable');
+        await expect(dispatch('importData', { jsonData })).rejects.toMatchObject({ failure: { code: 'unexpected' } });
       } else {
         github.get.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: jsonData } } } });
-        await expect(dispatch('triggerGistSync')).resolves.toEqual({ success: false, error: 'Document unavailable' });
+        await expect(dispatch('triggerGistSync')).resolves.toEqual({ success: false, error: { code: 'unexpected' } });
       }
       expect(await readLearningDocument()).toEqual(before);
       expect(await readGistConnection()).toEqual(config);
@@ -169,7 +169,7 @@ describe('file and Gist transfers through registered background commands', () =>
         expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
       } else {
         expect(github.update).not.toHaveBeenCalled();
-        expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastError: 'Network failed' });
+        expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastError: { code: 'unexpected' } });
       }
       await dispatch('resetAllData');
       expect(await dispatch('getGistSyncStatus')).toEqual({
@@ -259,7 +259,7 @@ describe('file and Gist transfers through registered background commands', () =>
     const badge = vi.spyOn(browser.action, 'setBadgeText');
     expect(await dispatch('setupGistSync', { mode: 'existing', pat: 'entered', gistId: 'entered' })).toEqual({
       saved: true,
-      sync: { success: false, error: 'status failed' },
+      sync: { success: false, error: { code: 'unexpected' } },
     });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     expect(badge).toHaveBeenLastCalledWith({ text: '' });

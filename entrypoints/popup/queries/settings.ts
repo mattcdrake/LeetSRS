@@ -1,5 +1,6 @@
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { Settings } from '@/domain/settings';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { getSettings } from '@/infrastructure/storage/learning-queries';
 
@@ -19,5 +20,6 @@ export function useUpdateSettingsMutation() {
   return useMutation({
     networkMode: 'always',
     mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
+    onError: (error) => reportApplicationError('updateSettings', error),
   });
 }

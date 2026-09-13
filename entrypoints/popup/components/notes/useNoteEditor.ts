@@ -3,6 +3,7 @@ import { NOTES_MAX_LENGTH } from '@/domain/cards';
 import { useDraftUntilSaved } from '@/entrypoints/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/entrypoints/popup/queries/notes';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 
 export interface NoteEditor {
   text: string;
@@ -18,6 +19,7 @@ export interface NoteEditor {
   isSaving: boolean;
   isDeleting: boolean;
   saveError: unknown;
+  deleteError: unknown;
   error: unknown;
 }
 
@@ -37,11 +39,12 @@ export function useNoteEditor(slug: string): NoteEditor {
   }, [slug, resetConfirmation]);
 
   const save = async () => {
+    deleteNoteMutation.reset();
     try {
       await saveNoteMutation.mutateAsync(text);
       draft.markSaved();
     } catch (error) {
-      console.error('Failed to save note:', error);
+      reportApplicationError('saveNote', error);
     }
   };
 
@@ -52,7 +55,7 @@ export function useNoteEditor(slug: string): NoteEditor {
         await deleteNoteMutation.mutateAsync();
         draft.discard();
       } catch (error) {
-        console.error('Failed to delete note:', error);
+        reportApplicationError('deleteNote', error);
       }
     });
 
@@ -75,6 +78,7 @@ export function useNoteEditor(slug: string): NoteEditor {
     isSaving: saveNoteMutation.isPending,
     isDeleting: deleteNoteMutation.isPending,
     saveError: saveNoteMutation.error,
+    deleteError: deleteNoteMutation.error,
     error,
   };
 }

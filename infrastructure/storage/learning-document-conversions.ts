@@ -1,3 +1,5 @@
+import { ZodError } from 'zod';
+import { ApplicationError } from '@/domain/application-error';
 import {
   LEARNING_DOCUMENT_VERSION,
   type LearningDocument,
@@ -32,7 +34,7 @@ export function convertLearningDocument(input: unknown): LearningDocument {
   const { schemaVersion, ...data } = versionedInputSchema.parse(input);
 
   if (schemaVersion > LEARNING_DOCUMENT_VERSION) {
-    throw new Error(`Unsupported schema version: ${schemaVersion}`);
+    throw new ApplicationError({ code: 'unsupported_backup_version', params: { version: schemaVersion } });
   }
 
   // Versions 0–5 stored the version separately; v6 introduced the document envelope.
@@ -57,13 +59,18 @@ export function convertLearningDocument(input: unknown): LearningDocument {
 }
 
 export function parseLearningDocumentBackup(json: string): LearningDocument {
-  let decodedBackup: unknown;
-
   try {
-    decodedBackup = JSON.parse(json);
-  } catch {
-    throw new Error('Invalid JSON format');
+    return parseBackup(json);
+  } catch (error) {
+    if (error instanceof SyntaxError || error instanceof ZodError) {
+      throw new ApplicationError({ code: 'invalid_backup' });
+    }
+    throw error;
   }
+}
+
+function parseBackup(json: string): LearningDocument {
+  const decodedBackup: unknown = JSON.parse(json);
 
   const { schemaVersion } = versionedInputSchema.parse(decodedBackup);
 

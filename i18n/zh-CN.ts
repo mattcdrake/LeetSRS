@@ -50,6 +50,23 @@ const zhCN: Translations = {
     [Rating.Easy]: '简单',
   },
 
+  applicationErrors: {
+    unexpected: '出了点问题，请重试。',
+    invalid_input: '请检查输入后重试。',
+    invalid_settings: '请检查设置后重试。',
+    card_not_found: '此卡片已不存在，请刷新后重试。',
+    invalid_backup: '请选择有效的 LeetSRS 备份文件。',
+    gist_token_required: '请输入 GitHub 个人访问令牌。',
+    gist_id_required: '请输入 Gist ID。',
+    gist_not_found: '未找到 Gist，请检查 ID 和访问权限。',
+    gist_backup_missing: '此 Gist 不包含 LeetSRS 备份。',
+    github_unauthorized: 'GitHub 拒绝了该令牌，请检查或更换令牌。',
+    github_forbidden: 'GitHub 拒绝访问，请检查令牌权限和 Gist 访问权限。',
+    github_rate_limited: '已达到 GitHub 请求限制，请稍后重试。',
+    github_unavailable: 'GitHub 暂时不可用，请稍后重试。',
+    note_too_long: '笔记请勿超过 {limit} 个字符。',
+    unsupported_backup_version: '备份版本 {version} 需要更新版本的 LeetSRS，请更新扩展后重试。',
+  },
   errors: {
     somethingWentWrong: '出了点问题',
     unexpectedError: '发生了意外错误',

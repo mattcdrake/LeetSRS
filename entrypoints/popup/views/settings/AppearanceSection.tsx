@@ -1,6 +1,7 @@
 import { Button, Label, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import { FaChevronDown, FaCircleHalfStroke } from 'react-icons/fa6';
 import type { Theme } from '@/domain/settings';
+import { ApplicationErrorMessage } from '@/entrypoints/popup/components/ApplicationErrorMessage';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
@@ -60,6 +61,7 @@ export function AppearanceSection() {
           onChange={setBadgeEnabled}
         />
       </div>
+      <ApplicationErrorMessage error={updateSettingsMutation.error} />
     </div>
   );
 }

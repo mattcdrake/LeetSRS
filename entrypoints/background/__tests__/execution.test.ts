@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { ZodError } from 'zod';
 import { formatLocalDate } from '@/domain/calendar';
 import { type MessageName, messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
 import { readGistConnection } from '@/infrastructure/storage/gist-connection';
@@ -99,7 +98,7 @@ describe('registered background execution', () => {
       } else {
         vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
       }
-      await expect(dispatch('resetAllData')).rejects.toBe(failure);
+      await expect(dispatch('resetAllData')).rejects.toMatchObject({ failure: { code: 'unexpected' } });
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       vi.mocked(onMessage).mockClear();
       background.main();
@@ -119,10 +118,14 @@ describe('registered background execution', () => {
     async (method) => {
       const failure = new Error('Badge unavailable');
       vi.spyOn(browser.action, method).mockRejectedValueOnce(failure);
-      const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const report = vi.spyOn(console, 'error').mockImplementation(() => {});
       await expect(dispatch('addCard', { problem })).resolves.toMatchObject(problem);
       expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
-      expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
+      expect(report).toHaveBeenCalledWith('Application operation failed', {
+        operation: 'refreshBadge',
+        code: 'unexpected',
+        status: undefined,
+      });
       await dispatch('saveNote', { slug: problem.slug, text: 'saved after badge failure' });
       expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBe('saved after badge failure');
     }
@@ -166,7 +169,11 @@ const invalidPayloads: [MessageName, unknown][] = [
 it.each(invalidPayloads)('rejects invalid %s input before mutation and recovers the queue', async (name, invalid) => {
   const writes = vi.spyOn(browser.storage.local, 'set');
   const badge = vi.spyOn(browser.action, 'setBadgeText');
-  await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
+  await expect(dispatch(name, invalid)).rejects.toMatchObject({
+    failure: {
+      code: name === 'saveNote' ? 'note_too_long' : name === 'updateSettings' ? 'invalid_settings' : 'invalid_input',
+    },
+  });
   expect(writes).not.toHaveBeenCalled();
   expect(badge).not.toHaveBeenCalled();
   await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });

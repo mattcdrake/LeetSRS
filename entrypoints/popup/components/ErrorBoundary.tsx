@@ -1,6 +1,7 @@
-import type { ErrorInfo, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Component } from 'react';
 import { translations } from '@/i18n';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 
 // ErrorBoundary is a class component and renders outside of I18nProvider,
 // so it uses English translations directly for error messages
@@ -25,8 +26,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+  public override componentDidCatch(error: Error) {
+    reportApplicationError('popupRender', error);
   }
 
   public override render() {
@@ -35,12 +36,6 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="flex flex-col items-center justify-center h-full p-4 text-center">
           <h1 className="text-xl font-semibold mb-2">{t.errors.somethingWentWrong}</h1>
           <p className="text-sm text-muted-foreground mb-4">{t.errors.unexpectedError}</p>
-          <details className="text-xs text-muted-foreground max-w-full">
-            <summary className="cursor-pointer mb-2">{t.errors.errorDetails}</summary>
-            <pre className="text-left overflow-auto p-2 bg-muted rounded">
-              {this.state.error?.stack || this.state.error?.message}
-            </pre>
-          </details>
           <button
             type="button"
             onClick={() => window.location.reload()}

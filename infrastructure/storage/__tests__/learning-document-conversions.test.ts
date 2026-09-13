@@ -157,7 +157,7 @@ describe('parseLearningDocumentBackup', () => {
   });
 
   it('rejects invalid JSON and malformed owned notes even when an embedded note wins', () => {
-    expect(() => parseLearningDocumentBackup('{')).toThrow('Invalid JSON format');
+    expect(() => parseLearningDocumentBackup('{')).toThrow('invalid_backup');
     const { accepted } = mixedRecordBackup();
     const card = { ...accepted.cards['two-sum'], note: 'Embedded' };
     expect(() =>

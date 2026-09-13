@@ -56,6 +56,24 @@ const en = {
   },
 
   // Error boundary
+  applicationErrors: {
+    unexpected: 'Something went wrong. Please try again.',
+    invalid_input: 'Check your input and try again.',
+    invalid_settings: 'Check your settings and try again.',
+    card_not_found: 'This card no longer exists. Refresh and try again.',
+    invalid_backup: 'Choose a valid LeetSRS backup file.',
+    gist_token_required: 'Enter a GitHub personal access token.',
+    gist_id_required: 'Enter a Gist ID.',
+    gist_not_found: 'Gist not found. Check the ID and your access.',
+    gist_backup_missing: 'This Gist does not contain a LeetSRS backup.',
+    github_unauthorized: 'GitHub rejected the token. Check or replace it.',
+    github_forbidden: 'GitHub denied access. Check the token permissions and Gist access.',
+    github_rate_limited: 'GitHub rate limit reached. Try again later.',
+    github_unavailable: 'GitHub is temporarily unavailable. Try again later.',
+    note_too_long: 'Keep your note within {limit} characters.',
+    unsupported_backup_version:
+      'Backup version {version} requires a newer LeetSRS version. Update the extension and try again.',
+  },
   errors: {
     somethingWentWrong: 'Something went wrong',
     unexpectedError: 'An unexpected error occurred',

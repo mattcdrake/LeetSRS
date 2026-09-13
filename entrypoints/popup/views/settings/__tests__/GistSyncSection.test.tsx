@@ -2,10 +2,13 @@
  * @vitest-environment happy-dom
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
 import type { GistConnectionResult, GistSyncConfig } from '@/domain/gist-sync';
+import { I18nProvider } from '@/entrypoints/popup/contexts/I18nContext';
 import { gistSyncQueryKeys } from '@/entrypoints/popup/queries/gist-sync';
+import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
@@ -153,7 +156,7 @@ describe('Gist setup form', () => {
     let attempts = 0;
     messages.handle('setupGistSync', async (input) => {
       attempts++;
-      if (attempts === 1) return { saved: false, error: 'Storage unavailable', createdGistId: 'created-gist' };
+      if (attempts === 1) return { saved: false, error: { code: 'unexpected' }, createdGistId: 'created-gist' };
       config = { pat: input.pat, gistId: 'created-gist', enabled: false };
       await storage.setItem(STORAGE_KEYS.gistConnection, config);
       return { saved: true };
@@ -164,7 +167,9 @@ describe('Gist setup form', () => {
     expect(screen.queryByLabelText('Gist ID')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent('Connection could not be saved: Storage unavailable')
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Connection could not be saved: Something went wrong. Please try again.'
+      )
     );
     expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
     expect(screen.getByLabelText('Gist ID')).toHaveValue('created-gist');
@@ -184,7 +189,7 @@ describe('Gist setup form', () => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
       messages.handle('setupGistSync', () => {
         if (failure === 'transport failure') throw new Error('Disconnected');
-        return { saved: false, error: 'Network unavailable' };
+        return { saved: false, error: { code: 'github_unavailable' } };
       });
       await open();
       enterCredentials();
@@ -215,7 +220,7 @@ describe('Gist setup form', () => {
       else
         messages.handle('triggerGistSync', async () => {
           await pending.promise;
-          return { success: false, error: 'Network unavailable' };
+          return { success: false, error: { code: 'github_unavailable' } };
         });
       await open(operation === 'setup');
       if (operation === 'setup') enterCredentials();
@@ -237,9 +242,11 @@ describe('Gist setup form', () => {
       }
       if (operation === 'enable') expect(sendMessage).toHaveBeenCalledWith('setGistSyncEnabled', { enabled: true });
       await act(async () => {
-        pending.resolve({ saved: false, error: 'Network unavailable' });
+        pending.resolve({ saved: false, error: { code: 'github_unavailable' } });
       });
-      await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Network unavailable'));
+      await waitFor(() =>
+        expect(screen.getByRole('alert')).toHaveTextContent('GitHub is temporarily unavailable. Try again later.')
+      );
       if (operation === 'setup') {
         expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
         expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
@@ -267,7 +274,7 @@ describe('Gist setup form', () => {
         await replaceLearningDocument(buildLearningDocument({ settings: { theme: 'light' } }));
         config = { pat: 'entered-pat', gistId: 'entered-gist', enabled: true };
         await storage.setItem(STORAGE_KEYS.gistConnection, config);
-        return { saved: true, sync: { success: false, error: 'Status unavailable' } } as const;
+        return { saved: true, sync: { success: false, error: { code: 'unexpected' } } } as const;
       };
       messages
         .handle('setupGistSync', afterPull)
@@ -275,7 +282,7 @@ describe('Gist setup form', () => {
         .handle('triggerGistSync', async () => {
           await afterPull();
           if (operation === 'lost response') throw new Error('Disconnected after pull');
-          return { success: false, error: 'Status unavailable' };
+          return { success: false, error: { code: 'unexpected' } };
         });
       await open(operation === 'setup');
       if (operation === 'setup') enterCredentials();
@@ -302,11 +309,15 @@ describe('Gist setup form', () => {
   );
 
   it('syncs manually while disabled and requires credentials when editing', async () => {
-    messages.resolve('triggerGistSync', { success: false, error: 'Network unavailable' });
+    messages.resolve('triggerGistSync', { success: false, error: { code: 'github_unavailable' } });
     await open(false);
     expect(screen.getByRole('button', { name: 'Sync Now' })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Sync Now' }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Sync failed: Network unavailable'));
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Sync failed: GitHub is temporarily unavailable. Try again later.'
+      )
+    );
     messages.resolve('triggerGistSync', { success: true, action: 'no-change', timestamp: '2026-09-12' });
     fireEvent.click(screen.getByRole('button', { name: 'Sync Now' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Sync complete'));
@@ -340,3 +351,26 @@ describe('Gist setup form', () => {
     expect(complete).toHaveBeenCalledOnce();
   });
 });
+
+it.each(['de', 'en', 'hi', 'pl', 'zh-CN'] as const)(
+  'translates Gist failures in %s and updates an existing outcome when language changes',
+  async (language) => {
+    await replaceLearningDocument(buildLearningDocument({ settings: { language } }));
+    await storage.setItem(STORAGE_KEYS.gistConnection, config);
+    messages.resolve('triggerGistSync', { success: false, error: { code: 'gist_not_found' } });
+    render(
+      <Suspense fallback={null}>
+        <I18nProvider>
+          <GistSyncSection />
+        </I18nProvider>
+      </Suspense>,
+      { wrapper: test.wrapper }
+    );
+    fireEvent.click(await screen.findByRole('button', { name: translations[language].settings.gistSync.syncNow }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(translations[language].applicationErrors.gist_not_found);
+    await act(() => replaceLearningDocument(buildLearningDocument({ settings: { language: 'pl' } })));
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(translations.pl.applicationErrors.gist_not_found)
+    );
+  }
+);

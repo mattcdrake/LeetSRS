@@ -1,3 +1,4 @@
+import { ApplicationError, type ApplicationFailure } from '@/domain/application-error';
 import {
   decideGistSync,
   type GistConnectionResult,
@@ -7,6 +8,7 @@ import {
   type SyncResult,
 } from '@/domain/gist-sync';
 import { translations } from '@/i18n';
+import { githubFailure, reportApplicationError } from '@/infrastructure/application-errors';
 import { detectBrowserLanguage } from '@/infrastructure/browser/language';
 import { createGitHubClient, GIST_FILENAME } from '@/infrastructure/github/client';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
@@ -16,7 +18,7 @@ import { readSyncMetadata, removeSyncStatus, writeSyncStatus } from '@/infrastru
 
 // In-memory state for sync status (not persisted)
 let syncInProgress = false;
-let lastError: string | null = null;
+let lastError: ApplicationFailure | null = null;
 
 export async function getGistSyncStatus(): Promise<GistSyncStatus> {
   const lastSyncTime = (await readSyncMetadata('lastSyncTime')) ?? null;
@@ -37,25 +39,16 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const config = await readGistConnection();
 
     if (!config.pat) {
-      return { success: false, error: 'PAT is not configured' };
+      throw new ApplicationError({ code: 'gist_token_required' });
     }
 
     if (!config.gistId) {
-      return { success: false, error: 'Gist ID is not configured' };
+      throw new ApplicationError({ code: 'gist_id_required' });
     }
 
     const github = createGitHubClient(config.pat);
 
-    let remoteGist: Awaited<ReturnType<typeof github.getGist>>['data'];
-    try {
-      const { data } = await github.getGist(config.gistId);
-      remoteGist = data;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('404')) {
-        return { success: false, error: 'Gist not found' };
-      }
-      throw error;
-    }
+    const { data: remoteGist } = await github.getGist(config.gistId);
 
     const remoteFile = remoteGist.files?.[GIST_FILENAME];
     // Validate even when local data would win, before either side can be overwritten.
@@ -82,14 +75,9 @@ export async function triggerGistSync(): Promise<SyncResult> {
     const resultActions = { push: 'pushed', pull: 'pulled', 'no-change': 'no-change' } as const;
     return { success: true, action: resultActions[action], timestamp: now };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
-    lastError = errorMessage;
-
-    if (errorMessage.includes('403') || errorMessage.includes('rate limit')) {
-      return { success: false, error: 'GitHub API rate limit exceeded. Please try again later.' };
-    }
-
-    return { success: false, error: errorMessage };
+    lastError = githubFailure(error);
+    reportApplicationError('triggerGistSync', error);
+    return { success: false, error: lastError };
   } finally {
     syncInProgress = false;
   }
@@ -98,14 +86,16 @@ export async function triggerGistSync(): Promise<SyncResult> {
 export async function setupGistSync(input: GistSetup): Promise<GistConnectionResult> {
   let createdGistId: string | undefined;
   try {
-    const setup = gistSetupSchema.parse(input);
+    const parsed = gistSetupSchema.safeParse(input);
+    if (!parsed.success) throw new ApplicationError({ code: 'invalid_input' });
+    const setup = parsed.data;
     const previous = await readGistConnection();
     const github = createGitHubClient(setup.pat);
     let gistId: string;
     if (setup.mode === 'existing') {
       const { data } = await github.getGist(setup.gistId);
       if (!data.files?.[GIST_FILENAME]) {
-        throw new Error(`Gist does not contain ${GIST_FILENAME}`);
+        throw new ApplicationError({ code: 'gist_backup_missing' });
       }
       gistId = setup.gistId;
     } else {
@@ -127,16 +117,17 @@ export async function setupGistSync(input: GistSetup): Promise<GistConnectionRes
         lastError = null;
         return { saved: true, sync: { success: true, action: 'pushed', timestamp } };
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Failed to record Gist creation';
+        lastError = githubFailure(error);
+        reportApplicationError('recordGistCreation', error);
         return { saved: true, sync: { success: false, error: lastError } };
       }
     }
     return { saved: true, ...(previous.enabled ? { sync: await triggerGistSync() } : {}) };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown Gist setup error';
+    reportApplicationError('setupGistSync', error);
     return {
       saved: false,
-      error: message.includes('404') ? 'Gist not found' : message,
+      error: githubFailure(error),
       ...(createdGistId ? { createdGistId } : {}),
     };
   }
@@ -146,11 +137,12 @@ export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnecti
   try {
     const config = await readGistConnection();
     if (enabled && (!config.pat.trim() || !config.gistId?.trim())) {
-      throw new Error('PAT and Gist ID are required to enable sync');
+      throw new ApplicationError({ code: !config.pat.trim() ? 'gist_token_required' : 'gist_id_required' });
     }
     await writeGistConnection({ ...config, enabled });
   } catch (error) {
-    return { saved: false, error: error instanceof Error ? error.message : 'Failed to save connection' };
+    reportApplicationError('setGistSyncEnabled', error);
+    return { saved: false, error: githubFailure(error) };
   }
   return { saved: true, ...(enabled ? { sync: await triggerGistSync() } : {}) };
 }

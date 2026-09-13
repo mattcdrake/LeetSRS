@@ -1,6 +1,9 @@
 import type { MaybePromise } from '@webext-core/messaging';
 import { browser } from 'wxt/browser';
 import type { z } from 'zod';
+import { ApplicationError } from '@/domain/application-error';
+import { NOTES_MAX_LENGTH } from '@/domain/cards';
+import { reportApplicationError, safeApplicationError } from '@/infrastructure/application-errors';
 import {
   type MessageData,
   type MessageName,
@@ -98,7 +101,7 @@ export default defineBackground(() => {
 
   // Report startup failure without replacing the rejected readiness promise.
   void readyPromise.catch((error) => {
-    console.error('Failed to initialize background:', error);
+    reportApplicationError('initializeBackground', error);
   });
 
   // Keep network work and post-handler effects in the same mutation queue.
@@ -116,7 +119,7 @@ export default defineBackground(() => {
     try {
       await updateBadge();
     } catch (error) {
-      console.warn('Failed to refresh badge:', error);
+      reportApplicationError('refreshBadge', error);
     }
   };
   const dispatch = <Name extends MessageName>(name: Name, data: unknown): Promise<MessageResult<Name>> => {
@@ -125,7 +128,18 @@ export default defineBackground(() => {
       await readyPromise;
       // The name selects both the payload schema and the corresponding typed handler.
       const schema: z.ZodType<MessageData<Name>> = payloadSchemas[name];
-      const payload = schema.parse(data);
+      const parsed = schema.safeParse(data);
+      if (!parsed.success) {
+        const noteTooLong =
+          name === 'saveNote' &&
+          parsed.error.issues.some((issue) => issue.code === 'too_big' && issue.path.join('.') === 'text');
+        throw new ApplicationError(
+          noteTooLong
+            ? { code: 'note_too_long', params: { limit: NOTES_MAX_LENGTH } }
+            : { code: name === 'updateSettings' ? 'invalid_settings' : 'invalid_input' }
+        );
+      }
+      const payload = parsed.data;
       const result = await command.handler(payload);
       if (command.kind === 'write' && command.refreshBadge) {
         await refreshBadge();
@@ -137,7 +151,11 @@ export default defineBackground(() => {
   };
 
   for (const name of Object.keys(commands) as MessageName[]) {
-    onMessage(name, ({ data }) => dispatch(name, data));
+    onMessage(name, ({ data }) =>
+      dispatch(name, data).catch((error) => {
+        throw safeApplicationError(name, error);
+      })
+    );
   }
 
   // Register synchronously during background startup so the MV3 service worker

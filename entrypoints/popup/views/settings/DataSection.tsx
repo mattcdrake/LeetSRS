@@ -7,6 +7,8 @@ import {
   useResetAllDataMutation,
 } from '@/entrypoints/popup/queries/data';
 import { bounceButton } from '@/entrypoints/popup/styles';
+import { translateApplicationError } from '@/i18n/application-errors';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {
@@ -30,8 +32,8 @@ export function DataSection() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Export failed:', error);
-      alert(t.errors.failedToExportData);
+      reportApplicationError('exportData', error);
+      alert(translateApplicationError(error, t, t.errors.failedToExportData));
     }
   };
 
@@ -54,8 +56,8 @@ export function DataSection() {
       await importDataMutation.mutateAsync(text);
       alert(t.settings.data.importSuccess);
     } catch (error) {
-      console.error('Import failed:', error);
-      alert(`${t.settings.data.importFailed} ${error instanceof Error ? error.message : t.errors.unknownError}`);
+      reportApplicationError('importData', error);
+      alert(`${t.settings.data.importFailed} ${translateApplicationError(error, t)}`);
     }
 
     // Reset the input so the same file can be selected again
@@ -77,8 +79,8 @@ export function DataSection() {
         await resetAllDataMutation.mutateAsync();
         alert(t.settings.data.resetSuccess);
       } catch (error) {
-        console.error('Reset failed:', error);
-        alert(t.errors.failedToResetData);
+        reportApplicationError('resetAllData', error);
+        alert(translateApplicationError(error, t, t.errors.failedToResetData));
       }
     });
 

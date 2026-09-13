@@ -1,5 +1,6 @@
 import { Input, Label, TextField } from 'react-aria-components';
 import { SETTINGS_CONSTRAINTS } from '@/domain/settings';
+import { ApplicationErrorMessage } from '@/entrypoints/popup/components/ApplicationErrorMessage';
 import { useDraftUntilSaved } from '@/entrypoints/popup/hooks/useDraftUntilSaved';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
 import { useI18n } from '../../contexts/I18nContext';
@@ -48,6 +49,7 @@ export function ReviewSettingsSection() {
           />
         </TextField>
       </div>
+      <ApplicationErrorMessage error={updateSettingsMutation.error} />
     </div>
   );
 }

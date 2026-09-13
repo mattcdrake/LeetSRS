@@ -105,7 +105,11 @@ describe('useNoteEditor', () => {
     act(() => result.current.setText('Edited note'));
     await act(() => result.current.save());
     expect(result.current.text).toBe('Edited note');
-    expect(consoleError).toHaveBeenCalledWith('Failed to save note:', error);
+    expect(consoleError).toHaveBeenCalledWith('Application operation failed', {
+      operation: 'saveNote',
+      code: 'unexpected',
+      status: undefined,
+    });
     consoleError.mockRestore();
   });
 
@@ -129,7 +133,11 @@ describe('useNoteEditor', () => {
     await act(() => result.current.remove());
     expect(result.current.text).toBe('Existing note');
     expect(result.current.deleteConfirm).toBe(false);
-    expect(consoleError).toHaveBeenCalledWith('Failed to delete note:', error);
+    expect(consoleError).toHaveBeenCalledWith('Application operation failed', {
+      operation: 'deleteNote',
+      code: 'unexpected',
+      status: undefined,
+    });
     consoleError.mockRestore();
   });
 

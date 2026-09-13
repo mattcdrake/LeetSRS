@@ -1,3 +1,4 @@
+import { ApplicationErrorMessage } from '@/entrypoints/popup/components/ApplicationErrorMessage';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
@@ -27,6 +28,7 @@ export function ProblemAutoClearSection() {
           onChange={(value) => updateSettingsMutation.mutate({ resetEditorOnDueReview: value })}
         />
       </div>
+      <ApplicationErrorMessage error={updateSettingsMutation.error} />
     </div>
   );
 }

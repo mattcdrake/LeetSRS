@@ -7,6 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
+import type { GistSyncStatus } from '@/domain/gist-sync';
 import type { LearningDocument } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import background from '@/entrypoints/background';
@@ -290,18 +291,18 @@ it('keeps a successful local save successful when refreshing the cache fails', a
 it('keeps polling background-only sync progress and errors without stored changes', async () => {
   await replaceLearningDocument(buildLearningDocument());
   vi.useFakeTimers();
-  const status = {
+  const status: GistSyncStatus = {
     lastSyncTime: null,
     lastSyncDirection: null,
     syncInProgress: true,
-    lastError: null as string | null,
+    lastError: null,
   };
   messages.handle('getGistSyncStatus', () => status);
   const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createTestWrapper().wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.data?.syncInProgress).toBe(true);
   status.syncInProgress = false;
-  status.lastError = 'Network unavailable';
+  status.lastError = { code: 'github_unavailable' };
   await act(() => vi.advanceTimersByTimeAsync(15_000));
   expect(view.result.current.data).toEqual(status);
   view.unmount();

@@ -134,7 +134,9 @@ describe('document learning through background commands', () => {
     expect(delayed).toEqual({ ...paused, fsrs: { ...paused.fsrs, due: new Date('2024-03-17T12:00:00').getTime() } });
     expect(await dispatch('setPauseStatus', { slug: card.slug, paused: false })).toEqual({ ...delayed, paused: false });
     await dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(500) });
-    await expect(dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(501) })).rejects.toThrow('maximum length');
+    await expect(dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(501) })).rejects.toMatchObject({
+      failure: { code: 'note_too_long', params: { limit: 500 } },
+    });
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('a'.repeat(500));
     await dispatch('saveNote', { slug: card.slug, text: '' });
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
@@ -240,7 +242,7 @@ describe('document learning through background commands', () => {
     const error = new Error('Write failed');
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(error);
 
-    await expect(edit()).rejects.toBe(error);
+    await expect(edit()).rejects.toMatchObject({ failure: { code: 'unexpected' } });
     expect(Object.values((await readLearningDocument()).cards)).toEqual(Object.values(document.cards));
     expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
     expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
@@ -288,9 +290,15 @@ describe('document learning through background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
     await dispatch('deleteNote', { slug: 'missing' });
-    await expect(dispatch('saveNote', { slug: 'missing', text: '' })).rejects.toThrow('not found');
-    await expect(dispatch('delayCard', { slug: 'missing', days: 1 })).rejects.toThrow('not found');
-    await expect(dispatch('setPauseStatus', { slug: 'missing', paused: true })).rejects.toThrow('not found');
+    await expect(dispatch('saveNote', { slug: 'missing', text: '' })).rejects.toMatchObject({
+      failure: { code: 'card_not_found' },
+    });
+    await expect(dispatch('delayCard', { slug: 'missing', days: 1 })).rejects.toMatchObject({
+      failure: { code: 'card_not_found' },
+    });
+    await expect(dispatch('setPauseStatus', { slug: 'missing', paused: true })).rejects.toMatchObject({
+      failure: { code: 'card_not_found' },
+    });
     expect(writes).not.toHaveBeenCalled();
     await dispatch('removeCard', { slug: 'missing' });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
@@ -311,7 +319,7 @@ describe('document learning through background commands', () => {
           ? dispatch(command, { problem })
           : dispatch(command, { input: { ...problem, rating: Rating.Good } });
 
-      await expect(edit).rejects.toThrow('not found');
+      await expect(edit).rejects.toMatchObject({ failure: { code: 'card_not_found' } });
       expect(writes).not.toHaveBeenCalled();
       expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       expect(await readLearningDocument()).toEqual(before);

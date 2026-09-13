@@ -57,6 +57,24 @@ const pl: Translations = {
   },
 
   // Error boundary
+  applicationErrors: {
+    unexpected: 'Coś poszło nie tak. Spróbuj ponownie.',
+    invalid_input: 'Sprawdź wprowadzone dane i spróbuj ponownie.',
+    invalid_settings: 'Sprawdź ustawienia i spróbuj ponownie.',
+    card_not_found: 'Ta karta już nie istnieje. Odśwież widok i spróbuj ponownie.',
+    invalid_backup: 'Wybierz prawidłowy plik kopii zapasowej LeetSRS.',
+    gist_token_required: 'Wprowadź osobisty token dostępu GitHub.',
+    gist_id_required: 'Wprowadź identyfikator Gista.',
+    gist_not_found: 'Nie znaleziono Gista. Sprawdź identyfikator i uprawnienia dostępu.',
+    gist_backup_missing: 'Ten Gist nie zawiera kopii zapasowej LeetSRS.',
+    github_unauthorized: 'GitHub odrzucił token. Sprawdź go lub zastąp nowym.',
+    github_forbidden: 'GitHub odmówił dostępu. Sprawdź uprawnienia tokenu i dostęp do Gista.',
+    github_rate_limited: 'Osiągnięto limit żądań GitHub. Spróbuj ponownie później.',
+    github_unavailable: 'GitHub jest tymczasowo niedostępny. Spróbuj ponownie później.',
+    note_too_long: 'Notatka może zawierać maksymalnie {limit} znaków.',
+    unsupported_backup_version:
+      'Kopia zapasowa w wersji {version} wymaga nowszej wersji LeetSRS. Zaktualizuj rozszerzenie i spróbuj ponownie.',
+  },
   errors: {
     somethingWentWrong: 'Coś poszło nie tak',
     unexpectedError: 'Wystąpił nieoczekiwany błąd',

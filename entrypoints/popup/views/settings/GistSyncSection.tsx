@@ -11,13 +11,16 @@ import {
   useTriggerGistSyncMutation,
 } from '@/entrypoints/popup/queries/gist-sync';
 import { bounceButton } from '@/entrypoints/popup/styles';
+import { translateApplicationError } from '@/i18n/application-errors';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 
 const buttonClass = `px-3 py-2 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`;
 
 export function GistSyncSection() {
-  const t = useI18n().settings.gistSync;
+  const translations = useI18n();
+  const t = translations.settings.gistSync;
   const configQuery = useGistSyncConfigQuery();
   const { data: config } = configQuery;
   const { data: status } = useGistSyncStatusQuery();
@@ -25,16 +28,20 @@ export function GistSyncSection() {
   const enable = useSetGistSyncEnabledMutation();
   const sync = useTriggerGistSyncMutation();
   const { connected, editing, formKey, editButton, startEditing, closeEditing } = useGistEditingState(config);
-  const [outcome, setOutcome] = useState<{ error: boolean; text: string } | null>(null);
+  const [outcome, setOutcome] = useState<
+    | { error: false; label: 'saved' | 'synced' }
+    | { error: true; label: 'saveFailed' | 'savedSyncFailed' | 'syncFailed'; failure: unknown }
+    | null
+  >(null);
   const busy = setup.isPending || enable.isPending || sync.isPending || !!status?.syncInProgress;
 
   function showConnectionResult(result: GistConnectionResult) {
     setOutcome(
       !result.saved
-        ? { error: true, text: `${t.saveFailed}: ${result.error}` }
+        ? { error: true, label: 'saveFailed', failure: result.error }
         : result.sync && !result.sync.success
-          ? { error: true, text: `${t.savedSyncFailed}: ${result.sync.error}` }
-          : { error: false, text: t.saved }
+          ? { error: true, label: 'savedSyncFailed', failure: result.sync.error }
+          : { error: false, label: 'saved' }
     );
   }
 
@@ -45,8 +52,9 @@ export function GistSyncSection() {
       if (result.saved) closeEditing();
       showConnectionResult(result);
       return result;
-    } catch {
-      setOutcome({ error: true, text: t.saveFailed });
+    } catch (error) {
+      reportApplicationError('saveGistConnection', error);
+      setOutcome({ error: true, label: 'saveFailed', failure: error });
     }
   }
 
@@ -54,8 +62,9 @@ export function GistSyncSection() {
     setOutcome(null);
     try {
       showConnectionResult(await enable.mutateAsync(enabled));
-    } catch {
-      setOutcome({ error: true, text: t.saveFailed });
+    } catch (error) {
+      reportApplicationError('saveGistConnection', error);
+      setOutcome({ error: true, label: 'saveFailed', failure: error });
     }
   }
 
@@ -64,13 +73,17 @@ export function GistSyncSection() {
     try {
       const result = await sync.mutateAsync();
       setOutcome(
-        result.success ? { error: false, text: t.synced } : { error: true, text: `${t.syncFailed}: ${result.error}` }
+        result.success ? { error: false, label: 'synced' } : { error: true, label: 'syncFailed', failure: result.error }
       );
-    } catch {
-      setOutcome({ error: true, text: t.syncFailed });
+    } catch (error) {
+      reportApplicationError('triggerGistSync', error);
+      setOutcome({ error: true, label: 'syncFailed', failure: error });
     }
   }
 
+  const outcomeText = outcome
+    ? t[outcome.label] + (outcome.error ? `: ${translateApplicationError(outcome.failure, translations)}` : '')
+    : undefined;
   const isError = outcome ? outcome.error : !!status?.lastError;
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
@@ -148,7 +161,7 @@ export function GistSyncSection() {
           role={isError ? 'alert' : 'status'}
           className={`mt-3 text-sm break-words ${isError ? 'text-red-700 [.dark_&]:text-red-400' : 'text-primary'}`}
         >
-          {outcome?.text ?? `${t.syncFailed}: ${status?.lastError}`}
+          {outcomeText ?? `${t.syncFailed}: ${translateApplicationError(status?.lastError, translations)}`}
         </p>
       )}
     </div>

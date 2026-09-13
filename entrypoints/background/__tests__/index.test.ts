@@ -65,11 +65,17 @@ describe('document startup through registered background commands', () => {
         expect(writeResult).toMatchObject({ status: 'fulfilled', value: buildProblem() });
         expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
       } else {
-        expect(readResult).toEqual({ status: 'rejected', reason: failure });
-        expect(writeResult).toEqual({ status: 'rejected', reason: failure });
-        await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
-        await expect(dispatch('removeCard', { slug: 'two-sum' })).rejects.toBe(failure);
-        expect(report).toHaveBeenCalledExactlyOnceWith('Failed to initialize background:', failure);
+        expect(readResult).toMatchObject({ status: 'rejected', reason: { failure: { code: 'unexpected' } } });
+        expect(writeResult).toMatchObject({ status: 'rejected', reason: { failure: { code: 'unexpected' } } });
+        await expect(dispatch('waitForInitialization')).rejects.toMatchObject({ failure: { code: 'unexpected' } });
+        await expect(dispatch('removeCard', { slug: 'two-sum' })).rejects.toMatchObject({
+          failure: { code: 'unexpected' },
+        });
+        expect(report).toHaveBeenCalledWith('Application operation failed', {
+          operation: 'initializeBackground',
+          code: 'unexpected',
+          status: undefined,
+        });
         expect(badge).not.toHaveBeenCalled();
         startBackground();
         await dispatch('waitForInitialization');
@@ -104,7 +110,7 @@ describe('document startup through registered background commands', () => {
       if (stage === 'cleanup') {
         await dispatch('updateSettings', { changes: { language: 'pl' } });
       } else {
-        await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
+        await expect(dispatch('waitForInitialization')).rejects.toMatchObject({ failure: { code: 'unexpected' } });
         expect(await fakeBrowser.storage.local.get(null)).toEqual(legacy);
       }
       startBackground();

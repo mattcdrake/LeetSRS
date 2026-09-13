@@ -3,6 +3,8 @@ import { Button, Label, TextArea, TextField } from 'react-aria-components';
 import { NOTES_MAX_LENGTH } from '@/domain/cards';
 import { useI18n } from '@/entrypoints/popup/contexts/I18nContext';
 import { bounceButton } from '@/entrypoints/popup/styles';
+import { translateApplicationError } from '@/i18n/application-errors';
+import { reportApplicationError } from '@/infrastructure/application-errors';
 import { useNoteEditor } from './useNoteEditor';
 
 const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
@@ -32,6 +34,7 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
     isSaving,
     isDeleting,
     saveError,
+    deleteError,
     error,
   } = useNoteEditor(slug);
 
@@ -48,7 +51,7 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
   }, [text, isCompact]);
 
   if (error) {
-    console.error('Failed to load note:', error);
+    reportApplicationError('loadNote', error);
   }
 
   return (
@@ -65,9 +68,9 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
           disabled={isLoading || isSaving}
         />
       </TextField>
-      {saveError != null && (
+      {(saveError != null || deleteError != null) && (
         <p role="alert" className="mt-2 text-xs text-danger">
-          {t.notes.saveFailed}
+          {translateApplicationError(saveError ?? deleteError, t, saveError != null ? t.notes.saveFailed : undefined)}
         </p>
       )}
       <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2'}`}>

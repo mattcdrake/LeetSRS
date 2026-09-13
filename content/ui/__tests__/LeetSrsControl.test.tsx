@@ -1,3 +1,4 @@
+import { ApplicationError } from '@/domain/application-error';
 // @vitest-environment happy-dom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -124,3 +125,31 @@ it('updates an open menu when stored language changes without resubscribing on c
   unmount();
   expect(unwatch).toHaveBeenCalledOnce();
 });
+
+it.each(['rate', 'add'] as const)(
+  'shows a translated content failure for %s without exposing exception text',
+  async (action) => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(watchDocumentTranslations).mockImplementation((onChange) => {
+      onChange(translations.de);
+      return unwatch;
+    });
+    const error = action === 'rate' ? new ApplicationError({ code: 'card_not_found' }) : new Error('secret response');
+    vi.mocked(rateCurrentProblem).mockRejectedValue(error);
+    vi.mocked(addCurrentProblem).mockRejectedValue(error);
+    const { button } = setup();
+    fireEvent.click(button);
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: action === 'rate' ? translations.de.ratings[Rating.Good] : translations.de.contentScript.addToSrsNoRating,
+      })
+    );
+    const toast = await screen.findByRole('status');
+    expect(toast).toHaveTextContent(
+      action === 'rate'
+        ? translations.de.applicationErrors.card_not_found
+        : translations.de.applicationErrors.unexpected
+    );
+    expect(toast).not.toHaveTextContent('secret response');
+  }
+);
