@@ -3,6 +3,17 @@ import type { Translations } from './index';
 
 const hi: Translations = {
   // App branding
+  syncNotices: {
+    unavailable: 'आप सीखना जारी रख सकते हैं। GitHub उपलब्ध होने पर सिंक अपने आप फिर शुरू होगा।',
+    rateLimit: 'GitHub API की सीमा पूरी हो गई है। बाद में फिर कोशिश करें। आप सीखना जारी रख सकते हैं।',
+    authentication: 'सेटिंग्स में अपना GitHub टोकन और उसकी Gist अनुमति जाँचें।',
+    missingToken: 'टोकन सेट नहीं है। सेटिंग्स में अपना GitHub टोकन जोड़ें।',
+    missingGist: 'Gist ID सेट नहीं है। सेटिंग्स में एक Gist चुनें।',
+    gistNotFound: 'Gist नहीं मिला। सेटिंग्स में Gist ID और टोकन की पहुँच जाँचें।',
+    obsolete: 'डेटा या कनेक्शन बदलने के कारण सिंक रुक गया।',
+    setupStopped: 'डेटा या कनेक्शन बदलने के कारण Gist सेटअप रुक गया।',
+    refreshFailed: 'सिंक रीफ़्रेश नहीं हो सका।',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',

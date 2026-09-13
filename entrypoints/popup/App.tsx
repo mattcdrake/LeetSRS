@@ -42,12 +42,7 @@ function App() {
           {refresh.pending ? t.settings.gistSync.syncing : refresh.notice}
         </p>
       )}
-      <fieldset
-        disabled={refresh.pending}
-        className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]"
-      >
-        {views[activeView]}
-      </fieldset>
+      <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
       <BottomNav activeView={activeView} onNavigate={setActiveView} />
     </div>
   );

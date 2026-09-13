@@ -3,6 +3,17 @@ import type { Translations } from './index';
 
 // Simplified Chinese translations
 const zhCN: Translations = {
+  syncNotices: {
+    unavailable: '你可以继续学习。GitHub 恢复可用后将自动继续同步。',
+    rateLimit: '已达到 GitHub API 请求上限。请稍后重试。你可以继续学习。',
+    authentication: '请在设置中检查 GitHub 令牌及其 Gist 权限。',
+    missingToken: '尚未配置令牌。请在设置中添加 GitHub 令牌。',
+    missingGist: '尚未配置 Gist ID。请在设置中选择 Gist。',
+    gistNotFound: '未找到 Gist。请在设置中检查 Gist ID 和令牌访问权限。',
+    obsolete: '数据或连接已更改，同步已停止。',
+    setupStopped: '数据或连接已更改，Gist 设置已停止。',
+    refreshFailed: '无法刷新同步。',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',

@@ -264,3 +264,37 @@ it.each(['existing', 'create'] as const)(
     expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastSyncTime: null, lastError: null });
   }
 );
+
+it('uses the selected language for temporary sync failures', async () => {
+  await dispatch('setGistSyncEnabled', { enabled: false });
+  await dispatch('updateSettings', { changes: { language: 'de' } });
+  await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
+  github.get.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  expect(await dispatch('refreshGistOnArrival')).toEqual({
+    success: false,
+    error: 'Du kannst weiterlernen. Die Synchronisierung wird automatisch fortgesetzt, sobald GitHub verfügbar ist.',
+  });
+});
+
+it('retains a save follow-up when arrival times out an existing upload', async () => {
+  vi.useFakeTimers();
+  const started = Promise.withResolvers<void>();
+  const upload = Promise.withResolvers<void>();
+  github.update.mockImplementationOnce(() => {
+    started.resolve();
+    return upload.promise;
+  });
+  await dispatch('addCard', { problem: buildProblem() });
+  await started.promise;
+  await dispatch('saveNote', { slug: 'two-sum', text: 'follow up after timeout' });
+  const arrival = dispatch('refreshGistOnArrival');
+  await vi.advanceTimersByTimeAsync(3000);
+  expect(await arrival).toMatchObject({ success: false });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(github.update).toHaveBeenCalledTimes(2);
+  expect(JSON.parse(github.update.mock.calls[1][0].files['leetsrs-backup.json'].content).cards['two-sum'].note).toBe(
+    'follow up after timeout'
+  );
+  upload.resolve();
+  await vi.advanceTimersByTimeAsync(0);
+});

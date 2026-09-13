@@ -1,7 +1,9 @@
 import { browser } from 'wxt/browser';
+import { storage } from '#imports';
 import { messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
 import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
 import { getReviewQueue, getSettings } from '@/infrastructure/storage/learning-queries';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import {
   getGistSyncStatus,
   invalidateGistSync,
@@ -157,11 +159,9 @@ export default defineBackground(() => {
     return refreshGistOnArrival();
   });
 
-  browser.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && 'leetsrs:gistConnection' in changes) invalidateGistSync();
-    if (area === 'local' && 'leetsrs:learningDocument' in changes) {
-      void readyPromise.then(refreshBadge, () => {});
-    }
+  storage.watch(STORAGE_KEYS.gistConnection, () => invalidateGistSync());
+  storage.watch(STORAGE_KEYS.learningDocument, () => {
+    void readyPromise.then(refreshBadge, () => {});
   });
 
   // Register synchronously during background startup so the MV3 service worker

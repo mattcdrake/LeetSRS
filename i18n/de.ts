@@ -2,6 +2,18 @@ import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
 
 const de: Translations = {
+  syncNotices: {
+    unavailable:
+      'Du kannst weiterlernen. Die Synchronisierung wird automatisch fortgesetzt, sobald GitHub verfügbar ist.',
+    rateLimit: 'Das GitHub-API-Limit wurde erreicht. Versuche es später erneut. Du kannst weiterlernen.',
+    authentication: 'Prüfe dein GitHub-Token und dessen Gist-Berechtigung in den Einstellungen.',
+    missingToken: 'Kein Token eingerichtet. Füge dein GitHub-Token in den Einstellungen hinzu.',
+    missingGist: 'Keine Gist-ID eingerichtet. Wähle einen Gist in den Einstellungen.',
+    gistNotFound: 'Gist nicht gefunden. Prüfe Gist-ID und Token-Zugriff in den Einstellungen.',
+    obsolete: 'Synchronisierung beendet, da sich Daten oder Verbindung geändert haben.',
+    setupStopped: 'Gist-Einrichtung beendet, da sich Daten oder Verbindung geändert haben.',
+    refreshFailed: 'Synchronisierung konnte nicht aktualisiert werden.',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',

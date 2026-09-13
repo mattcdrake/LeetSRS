@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { translations } from '@/i18n';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { getDocumentTranslations } from '@/infrastructure/storage/translations';
 
 export interface ArrivalRefreshState {
   pending: boolean;
@@ -19,8 +21,12 @@ export function watchArrivalRefresh(onChange: (state: ArrivalRefreshState) => vo
         onChange({ pending: false, notice: result && !result.success ? result.error : null });
       }
     } catch (error) {
+      const t = await getDocumentTranslations().catch(() => translations.en);
       if (!disposed && request === latestRequest) {
-        onChange({ pending: false, notice: error instanceof Error ? error.message : 'Unable to refresh sync.' });
+        onChange({
+          pending: false,
+          notice: error instanceof Error ? error.message : t.syncNotices.refreshFailed,
+        });
       }
     }
   };

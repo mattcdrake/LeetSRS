@@ -55,7 +55,8 @@ it('refreshes on opening, keeps saved data visible, and releases edits with the 
   render(<App />);
   expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival');
   expect(screen.getByText('Saved cards')).toBeVisible();
-  expect(screen.getByRole('button', { name: 'Save note' })).toBeDisabled();
+  expect(screen.getByRole('status')).toHaveTextContent('Syncing...');
+  expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();
   await act(async () => refresh.resolve(undefined));
   expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();
 });
