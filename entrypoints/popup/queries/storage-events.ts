@@ -13,8 +13,7 @@ export function useStorageQueryEvents() {
   useEffect(() => {
     let stopped = false;
     const refresh = async (queryKeys: readonly (readonly string[])[]) => {
-      // An interrupted explicit refresh must not resolve with reverted, stale data.
-      await Promise.all(queryKeys.map((queryKey) => queryClient.cancelQueries({ queryKey }, { silent: true })));
+      await Promise.all(queryKeys.map((queryKey) => queryClient.cancelQueries({ queryKey })));
       if (stopped) return;
       await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     };
