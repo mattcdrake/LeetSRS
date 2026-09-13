@@ -2,11 +2,14 @@
  * @vitest-environment happy-dom
  */
 
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { storage } from '#imports';
+import type { LearningDocument } from '@/domain/learning-document';
 import type { UpcomingReviewStats } from '@/domain/statistics';
 import { sendMessage } from '@/integrations/browser/messages';
 import { statsQueryKeys } from '@/popup/queries/stats';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { UpcomingReviewsChart } from '../UpcomingReviewsChart';
@@ -23,6 +26,8 @@ vi.mock('react-chartjs-2', () => ({
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('UpcomingReviewsChart', () => {
+  afterEach(() => vi.restoreAllMocks());
+
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   // Default mock data
@@ -73,12 +78,18 @@ describe('UpcomingReviewsChart', () => {
     expect(chartData.datasets[0].data).toEqual([]);
   });
 
-  it('should handle loading state gracefully', () => {
-    const pending = Promise.withResolvers<UpcomingReviewStats[]>();
+  it('should handle loading state gracefully', async () => {
+    const pending = Promise.withResolvers<LearningDocument>();
+    const read = vi.spyOn(storage, 'getItem').mockReturnValue(pending.promise);
     messages.reset();
-    const { wrapper } = createTestWrapper();
+    const { wrapper, queryClient } = createTestWrapper();
     const view = render(<UpcomingReviewsChart />, { wrapper });
 
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    expect(queryClient.getQueryState(statsQueryKeys.nextNDays.detail(14))).toMatchObject({
+      status: 'pending',
+      fetchStatus: 'fetching',
+    });
     // Chart should still render with empty data
     const chart = screen.getByTestId('line-chart');
     expect(chart).toBeInTheDocument();
@@ -86,7 +97,8 @@ describe('UpcomingReviewsChart', () => {
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
     expect(chartData.labels).toEqual([]);
     expect(chartData.datasets[0].data).toEqual([]);
+    pending.resolve(buildLearningDocument());
+    await waitFor(() => expect(queryClient.getQueryState(statsQueryKeys.nextNDays.detail(14))?.status).toBe('success'));
     view.unmount();
-    pending.resolve([]);
   });
 });
