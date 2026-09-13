@@ -1,31 +1,17 @@
-import type { ReactNode } from 'react';
-
 interface SettingsSwitchProps {
   label: string;
   isSelected: boolean;
   isDisabled?: boolean;
   onChange: (isSelected: boolean) => void;
-  leftIcon?: (isSelected: boolean) => ReactNode;
-  rightIcon?: (isSelected: boolean) => ReactNode;
 }
 
-export function SettingsSwitch({
-  label,
-  isSelected,
-  isDisabled = false,
-  onChange,
-  leftIcon,
-  rightIcon,
-}: SettingsSwitchProps) {
-  const hasIcons = leftIcon || rightIcon;
-
+export function SettingsSwitch({ label, isSelected, isDisabled = false, onChange }: SettingsSwitchProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-col">
         <span>{label}</span>
       </div>
-      <div className={`inline-flex items-center ${hasIcons ? 'gap-2' : ''}`}>
-        {leftIcon?.(isSelected)}
+      <div className="inline-flex items-center">
         <button
           type="button"
           role="switch"
@@ -43,7 +29,6 @@ export function SettingsSwitch({
             }`}
           />
         </button>
-        {rightIcon?.(isSelected)}
       </div>
     </div>
   );

@@ -34,8 +34,8 @@ describe('document settings through background commands', () => {
   it('resolves defaults and browser language without storing them or reading stale settings', async () => {
     vi.stubGlobal('navigator', { languages: ['pl'] });
     await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { theme: 'dark' } });
-    await storage.setItem(STORAGE_KEYS.theme, 'light');
-    await storage.setItem(STORAGE_KEYS.language, 'de');
+    await storage.setItem('sync:leetsrs:theme', 'light');
+    await storage.setItem('sync:leetsrs:language', 'de');
     background.main();
 
     expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'pl' }));
@@ -81,7 +81,7 @@ describe('document settings through background commands', () => {
     expect(writes).toHaveBeenCalledOnce();
     expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
     expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
-    expect(await storage.getItem(STORAGE_KEYS.dataUpdatedAt)).toBeNull();
+    expect(await storage.getItem('local:leetsrs:dataUpdatedAt')).toBeNull();
   });
 
   it.each(['validation', 'clock', 'write'] as const)(

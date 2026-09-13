@@ -47,19 +47,11 @@ const en = {
 
   // Common states
   states: {
-    loading: 'Loading...',
     new: 'New',
     learning: 'Learning',
     review: 'Review',
     relearning: 'Relearning',
     unknown: 'Unknown',
-  },
-
-  // Difficulty levels
-  difficulty: {
-    easy: 'Easy',
-    medium: 'Medium',
-    hard: 'Hard',
   },
 
   // Rating buttons

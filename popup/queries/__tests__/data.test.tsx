@@ -28,7 +28,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
     { key: STORAGE_KEYS.gistConnection, value: { pat: 'private-pat', gistId: 'local-gist', enabled: true } },
     { key: STORAGE_KEYS.lastSyncTime, value: 'previous-sync' },
     { key: STORAGE_KEYS.lastSyncDirection, value: 'pull' },
-    { key: STORAGE_KEYS.theme, value: 'light' },
+    { key: 'sync:leetsrs:theme', value: 'light' },
   ]);
   const { result } = renderHook(() => useExportDataMutation(), { wrapper: createTestWrapper().wrapper });
   await act(async () => expect(JSON.parse(await result.current.mutateAsync())).toEqual(document));

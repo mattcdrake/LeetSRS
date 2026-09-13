@@ -44,18 +44,11 @@ const hi: Translations = {
   },
   // Common states
   states: {
-    loading: 'लोड हो रहा है...',
     new: 'नया',
     learning: 'लर्निंग',
     review: 'रिव्यु',
     relearning: 'री-लर्निंग',
     unknown: 'अज्ञात',
-  },
-  // Difficulty levels
-  difficulty: {
-    easy: 'आसान',
-    medium: 'मीडियम',
-    hard: 'हार्ड',
   },
   // Rating buttons
   ratings: {
