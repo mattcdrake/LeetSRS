@@ -7,15 +7,20 @@ const syncMetadataSchema = z.object({
   lastSyncTime: z.string(),
   lastSyncDirection: z.enum(['push', 'pull']),
 });
-type SyncMetadata = z.infer<typeof syncMetadataSchema>;
 
 const syncStatusUpdateSchema = syncMetadataSchema.partial({ lastSyncDirection: true });
+const storedSyncStatusSchema = z.object({
+  lastSyncTime: syncMetadataSchema.shape.lastSyncTime.nullable(),
+  lastSyncDirection: syncMetadataSchema.shape.lastSyncDirection.nullable(),
+});
 
-const fields: { [K in keyof SyncMetadata]: z.ZodType<SyncMetadata[K]> } = syncMetadataSchema.shape;
+export async function readSyncStatus(): Promise<z.infer<typeof storedSyncStatusSchema>> {
+  const [{ value: lastSyncTime = null }, { value: lastSyncDirection = null }] = await storage.getItems([
+    STORAGE_KEYS.lastSyncTime,
+    STORAGE_KEYS.lastSyncDirection,
+  ]);
 
-export async function readSyncMetadata<K extends keyof SyncMetadata>(key: K): Promise<SyncMetadata[K] | null> {
-  const value = await storage.getItem<unknown>(STORAGE_KEYS[key]);
-  return value == null ? null : fields[key].parse(value);
+  return storedSyncStatusSchema.parse({ lastSyncTime, lastSyncDirection });
 }
 
 export async function writeSyncStatus(status: z.infer<typeof syncStatusUpdateSchema>): Promise<void> {
