@@ -23,15 +23,11 @@ export function ReviewQueue() {
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();
   const pauseCardMutation = usePauseCardMutation();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
-  const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
+  const [transition, setTransition] = useState<{ card: Card; phase: 'saving' | 'left' | 'right' } | null>(null);
+  const isProcessing = transition !== null;
+  const slideDirection = transition?.phase === 'saving' ? null : transition?.phase;
 
-  const finishCardAction = () => {
-    setSlideDirection(null);
-    setIsProcessing(false);
-    setAnimatingCard(null);
-  };
+  const finishCardAction = () => setTransition(null);
 
   const handleCardAction = async <T,>(
     action: () => Promise<T>,
@@ -42,8 +38,8 @@ export function ReviewQueue() {
   ) => {
     if (queue.length === 0 || isProcessing) return;
 
-    setAnimatingCard(queue[0]);
-    setIsProcessing(true);
+    const card = queue[0];
+    setTransition({ card, phase: 'saving' });
 
     try {
       const result = await action();
@@ -54,12 +50,10 @@ export function ReviewQueue() {
       }
 
       const direction = options.getSlideDirection(result);
-      setSlideDirection(direction);
+      setTransition({ card, phase: direction });
     } catch (error) {
       console.error(options.errorMessage, error);
-      setSlideDirection(null);
-      setIsProcessing(false);
-      setAnimatingCard(null);
+      finishCardAction();
     }
   };
 
@@ -119,7 +113,7 @@ export function ReviewQueue() {
     );
   }
 
-  const currentCard = animatingCard ?? queue[0];
+  const currentCard = transition?.card ?? queue[0];
 
   if (!currentCard) {
     return (
