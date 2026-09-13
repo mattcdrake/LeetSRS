@@ -18,7 +18,6 @@ export function useTodayStatsQuery() {
   return useQuery({
     queryKey: statsQueryKeys.today,
     refetchInterval: 15_000,
-    networkMode: 'always',
     queryFn: async () => {
       const now = new Date();
       const document = await readLearningDocument(true);
@@ -31,7 +30,6 @@ export function useLastNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: statsQueryKeys.lastNDays.detail(days),
     refetchInterval: 15_000,
-    networkMode: 'always',
     queryFn: async () => {
       const now = new Date();
       return calculateHistoryStats((await readLearningDocument(true)).stats, days, now);
@@ -43,7 +41,6 @@ export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: statsQueryKeys.nextNDays.detail(days),
     refetchInterval: 15_000,
-    networkMode: 'always',
     queryFn: async () => {
       const now = new Date();
       return calculateUpcomingStats(Object.values((await readLearningDocument(true)).cards), days, now);

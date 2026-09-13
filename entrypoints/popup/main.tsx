@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -7,6 +7,7 @@ import { ErrorBoundary } from '../../popup/components/ErrorBoundary';
 import { I18nProvider } from '../../popup/contexts/I18nContext';
 import { useLeetcodeCnPermissionEvents } from '../../popup/queries/leetcode-cn';
 import { useStorageQueryEvents } from '../../popup/queries/storage-events';
+import { createPopupQueryClient } from '../../popup/query-client';
 
 function PopupStorageObserver() {
   useStorageQueryEvents();
@@ -18,7 +19,7 @@ function PopupPermissionObserver() {
   return null;
 }
 
-const queryClient = new QueryClient({
+const queryClient = createPopupQueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5,

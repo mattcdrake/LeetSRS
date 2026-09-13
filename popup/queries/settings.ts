@@ -10,14 +10,12 @@ export const settingsQueryKeys = {
 export function useSettingsQuery() {
   return useSuspenseQuery({
     queryKey: settingsQueryKeys.all,
-    networkMode: 'always',
     queryFn: () => getSettings(true),
   });
 }
 
 export function useUpdateSettingsMutation() {
   return useMutation({
-    networkMode: 'always',
     mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
   });
 }

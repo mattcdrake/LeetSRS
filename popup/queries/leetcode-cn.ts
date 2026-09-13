@@ -33,14 +33,12 @@ export function useLeetcodeCnCapability() {
   const permission = useQuery({
     queryKey: permissionQueryKey,
     queryFn: () => browser.permissions.contains({ origins: [LEETCODE_CN_ORIGIN] }),
-    networkMode: 'always',
     refetchOnMount: 'always', // Permissions may change while the popup is closed.
   });
 
   const requestMutation = useMutation({
     mutationFn: (request: Promise<boolean>) => request,
     retry: false,
-    networkMode: 'always',
     onSuccess: async () => {
       await queryClient.cancelQueries({ queryKey: permissionQueryKey });
       await queryClient.invalidateQueries({ queryKey: permissionQueryKey });
