@@ -11,11 +11,10 @@ import { STORAGE_KEYS } from './storage-keys';
 export async function readLearningDocument(waitForInitialization = false): Promise<LearningDocument> {
   let document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
   const version = learningDocumentVersionSchema.safeParse(document);
+  const needsInitialization =
+    document == null || (version.success && version.data.schemaVersion < LEARNING_DOCUMENT_VERSION);
 
-  if (
-    waitForInitialization &&
-    (document == null || (version.success && version.data.schemaVersion < LEARNING_DOCUMENT_VERSION))
-  ) {
+  if (waitForInitialization && needsInitialization) {
     await sendMessage('waitForInitialization');
     document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
   }
