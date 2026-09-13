@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "files": {
     "includes": [
       "**",
@@ -10,6 +10,8 @@
       "!coverage",
       "!experiments",
       "!public",
+      "!stats.html",
+      "!stats-*.json",
       "!package-lock.json",
       "!pnpm-lock.yaml",
       "!**/*.min.js",
