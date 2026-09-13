@@ -55,10 +55,10 @@ Use a single-context layout. Before exploring the domain, read `docs/agents/doma
 
 Keep `docs/agents/architecture.md` focused on details that materially affect architecture: ownership, boundaries, and cross-cutting constraints. If a change fits the documented patterns, leave the reference unchanged rather than adding a PR summary.
 
-- Domain owns explicit-input policy and models; services own workflows and side effects; infrastructure owns external I/O and persistence.
-- Infrastructure must not depend on services or UI. Domain must not depend on browser, storage, services, messaging, or translation catalogs.
+- Domain owns explicit-input policy and models; background owns write workflows and sync; data owns persistence; integrations own external access.
+- Data and integrations must not depend on background workflows or UI. Domain must not depend on browser, storage, background, messaging, or translation catalogs.
 - Popup and content writes call typed background messages; persisted-data reads use validated storage adapters.
-- Background owns learning-data writes. Services compose domain rules and adapters without dependency cycles.
+- Background owns learning-data writes and composes domain rules, data, and integrations without dependency cycles.
 - UI owns presentation and user interactions; keep domain logic outside components. Dependency rules also apply to type-only imports.
 
 Before changing module dependencies, background execution, content lifecycle, persistence, imports, or sync, read the relevant sections of `docs/agents/architecture.md` and the ADRs they reference.

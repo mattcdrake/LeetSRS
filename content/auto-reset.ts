@@ -1,10 +1,10 @@
+import { readLearningDocument } from '@/data/learning-document';
 import { findCard } from '@/domain/learning-document';
 import { shouldResetCardEditor } from '@/domain/review';
 import { resolveSettings } from '@/domain/settings';
-import { detectBrowserLanguage } from '@/infrastructure/browser/language';
-import { readLearningDocument } from '@/infrastructure/storage/learning-document';
-import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
-import { resetLeetcodeEditor } from './reset-leetcode-editor';
+import { detectBrowserLanguage } from '@/integrations/browser/language';
+import { getCurrentDomain, getCurrentProblemSlug } from '../integrations/leetcode/page-context';
+import { resetLeetcodeEditor } from '../integrations/leetcode/reset-leetcode-editor';
 
 const RESET_CHECK_INTERVAL_MS = 1000;
 

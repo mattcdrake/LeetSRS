@@ -1,11 +1,11 @@
 import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/infrastructure/browser/messages';
+import { sendMessage } from '@/integrations/browser/messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createMockCard } from '../card-mocks';
 import { createMessageMock } from '../message-mocks';
 
-vi.mock('@/infrastructure/browser/messages', () => ({
+vi.mock('@/integrations/browser/messages', () => ({
   sendMessage: vi.fn(),
 }));
 

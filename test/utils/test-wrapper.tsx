@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useEffect } from 'react';
-import { useStorageQueryEvents } from '@/entrypoints/popup/queries/storage-events';
+import { useStorageQueryEvents } from '@/popup/queries/storage-events';
 
 /**
  * Creates a new QueryClient with test-friendly defaults

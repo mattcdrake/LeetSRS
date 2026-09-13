@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import { type MessageData, type MessageName, type MessageResult, onMessage } from '@/infrastructure/browser/messages';
+import { type MessageData, type MessageName, type MessageResult, onMessage } from '@/integrations/browser/messages';
 
 // Accept untrusted payloads so tests exercise validation in registered handlers.
 export function dispatchBackgroundCommand<Name extends MessageName>(

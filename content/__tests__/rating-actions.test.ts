@@ -1,13 +1,13 @@
 import { Rating, State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/infrastructure/browser/messages';
+import { sendMessage } from '@/integrations/browser/messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { getCurrentProblem } from '../problem-data';
+import { getCurrentProblem } from '../../integrations/leetcode/problem-data';
 import { addCurrentProblem, rateCurrentProblem } from '../rating-actions';
 
-vi.mock('../problem-data', () => ({ getCurrentProblem: vi.fn() }));
-vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('../../integrations/leetcode/problem-data', () => ({ getCurrentProblem: vi.fn() }));
+vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
 const problem = buildProblem();

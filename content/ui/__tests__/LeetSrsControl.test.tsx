@@ -4,10 +4,10 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
+import { watchDocumentTranslations } from '@/data/translations';
 import { translations } from '@/i18n';
-import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
 
-vi.mock('@/infrastructure/storage/translations', () => ({
+vi.mock('@/data/translations', () => ({
   watchDocumentTranslations: vi.fn(),
 }));
 vi.mock('@/content/rating-actions', () => ({ addCurrentProblem: vi.fn(), rateCurrentProblem: vi.fn() }));

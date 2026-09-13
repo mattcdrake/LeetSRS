@@ -4,15 +4,15 @@ import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeAutoReset } from '@/content/auto-reset';
+import { watchDocumentTranslations } from '@/data/translations';
 import { translations } from '@/i18n';
-import { sendMessage } from '@/infrastructure/browser/messages';
-import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
+import { sendMessage } from '@/integrations/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
-vi.mock('@/infrastructure/storage/translations', () => ({ watchDocumentTranslations: vi.fn() }));
-vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/data/translations', () => ({ watchDocumentTranslations: vi.fn() }));
+vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 let ctx: ContentScriptContext;
 let notifyMutation: () => void;
