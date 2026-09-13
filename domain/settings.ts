@@ -18,8 +18,7 @@ function boundedWholeNumber(label: string, bounds: { min: number; max: number })
 export const settingsSchema = z.object({
   maxNewCardsPerDay: boundedWholeNumber('Max new cards per day', SETTINGS_CONSTRAINTS.maxNewCardsPerDay),
   theme: z.enum(['system', 'light', 'dark'], { error: 'Theme must be "system", "light", or "dark"' }),
-  resetEditorOnEveryProblem: z.boolean({ error: 'Reset editor on every problem must be a boolean' }),
-  resetEditorOnDueReview: z.boolean({ error: 'Reset editor on due review must be a boolean' }),
+  resetEditorOnReviewQueue: z.boolean({ error: 'Reset editor on review queue must be a boolean' }),
   badgeEnabled: z.boolean({ error: 'Badge enabled must be a boolean' }),
   language: languageSchema,
 });
@@ -30,8 +29,7 @@ export type Theme = Settings['theme'];
 export const DEFAULT_SETTINGS = {
   maxNewCardsPerDay: 3,
   theme: 'system',
-  resetEditorOnEveryProblem: false,
-  resetEditorOnDueReview: false,
+  resetEditorOnReviewQueue: false,
   badgeEnabled: true,
 } satisfies Omit<Settings, 'language'>;
 

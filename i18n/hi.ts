@@ -152,10 +152,9 @@ const hi: Translations = {
       newCardsPerDay: 'प्रति दिन नए कार्ड',
     },
     problemAutoClear: {
-      title: 'प्रॉब्लम ऑटो रीसेट',
-      description: 'LeetCode प्रॉब्लम खोलने पर कोड ऑटोमैटिकली रीसेट करें।',
-      resetEditorOnEveryProblem: 'हर प्रश्न पर संपादक रीसेट करें',
-      resetEditorOnDueReview: 'नियत समीक्षा पर संपादक रीसेट करें',
+      title: 'प्रश्न संपादक रीसेट',
+      description: 'केवल समीक्षा कतार से प्रश्न खोलते समय कोड रीसेट करें।',
+      resetEditorOnReviewQueue: 'समीक्षा कतार से खोलने पर संपादक रीसेट करें',
     },
 
     leetcodeCn: {

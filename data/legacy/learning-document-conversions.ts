@@ -10,6 +10,7 @@ import * as removeDayStart from './document-conversions/003-remove-day-start';
 import * as embedNotes from './document-conversions/004-embed-notes';
 import * as combineGistConnection from './document-conversions/005-combine-gist-connection';
 import * as learningDocument from './document-conversions/006-learning-document';
+import * as resetEditorOnReviewQueue from './document-conversions/007-reset-editor-on-review-queue';
 import { legacyBackupSchema } from './document-conversions/legacy-backup-envelope';
 
 const conversions = [
@@ -19,6 +20,7 @@ const conversions = [
   embedNotes,
   combineGistConnection,
   learningDocument,
+  resetEditorOnReviewQueue,
 ] as const;
 
 const LAST_LEGACY_DATASET_VERSION = 5;

@@ -136,10 +136,9 @@ const de: Translations = {
       newCardsPerDay: 'Neue Karten pro Tag',
     },
     problemAutoClear: {
-      title: 'Aufgabe automatisch zurücksetzen',
-      description: 'Setzt den Code beim Öffnen einer LeetCode-Aufgabe automatisch zurück.',
-      resetEditorOnEveryProblem: 'Editor bei jeder Aufgabe zurücksetzen',
-      resetEditorOnDueReview: 'Editor bei einer fälligen Wiederholung zurücksetzen',
+      title: 'Aufgaben-Editor zurücksetzen',
+      description: 'Setzt den Code nur beim Öffnen einer Aufgabe aus der Wiederholungswarteschlange zurück.',
+      resetEditorOnReviewQueue: 'Editor beim Öffnen aus der Wiederholungswarteschlange zurücksetzen',
     },
     leetcodeCn: {
       title: 'LeetCode China',

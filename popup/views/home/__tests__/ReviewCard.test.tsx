@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { translations } from '@/i18n';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import { settingsQueryKeys } from '@/popup/queries/settings';
+import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
 
@@ -24,10 +26,10 @@ describe('ReviewCard', () => {
     domain: 'leetcode.com',
   };
 
-  const { wrapper: TestWrapper } = createPopupTestWrapper();
-
-  const renderWithProviders = (card = mockCard, onRate = mockOnRate) => {
-    return render(<ReviewCard card={card} onRate={onRate} />, { wrapper: TestWrapper });
+  const renderWithProviders = (card = mockCard, onRate = mockOnRate, resetEditorOnReviewQueue = false) => {
+    const { wrapper, queryClient } = createPopupTestWrapper();
+    queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ resetEditorOnReviewQueue }));
+    return render(<ReviewCard card={card} onRate={onRate} />, { wrapper });
   };
 
   beforeEach(() => {
@@ -57,7 +59,7 @@ describe('ReviewCard', () => {
       }
     );
 
-    it('renders the problem identity and its external LeetCode link', () => {
+    it('renders the problem identity and an unauthorized external link when reset is disabled', () => {
       renderWithProviders();
       expect(screen.getByText('#1')).toBeInTheDocument();
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
@@ -65,6 +67,14 @@ describe('ReviewCard', () => {
       expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/two-sum/description/');
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    });
+
+    it.each(['leetcode.com', 'leetcode.cn'] as const)('authorizes a queue opening on %s', (domain) => {
+      renderWithProviders({ ...mockCard, domain }, mockOnRate, true);
+      expect(screen.getByRole('link', { name: /LeetCode/i })).toHaveAttribute(
+        'href',
+        `https://${domain}/problems/two-sum/description/#leetsrs-reset-editor`
+      );
     });
   });
 

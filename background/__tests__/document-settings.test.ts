@@ -67,8 +67,7 @@ describe('document settings through background commands', () => {
       theme: 'system',
       language: 'en',
       badgeEnabled: false,
-      resetEditorOnEveryProblem: false,
-      resetEditorOnDueReview: true,
+      resetEditorOnReviewQueue: true,
     } as const;
     await dispatch('updateSettings', { changes });
 
@@ -133,7 +132,10 @@ describe('document settings through background commands', () => {
     expect(await readLearningDocument()).toEqual(before);
     vi.useRealTimers();
     await dispatch('updateSettings', { changes: { theme: undefined, maxNewCardsPerDay: 5 } });
-    expect((await readLearningDocument())?.settings).toEqual({ maxNewCardsPerDay: 5 });
+    expect((await readLearningDocument())?.settings).toEqual({
+      maxNewCardsPerDay: 5,
+      resetEditorOnReviewQueue: false,
+    });
   });
 
   it('resolves each read from its captured document and follows replacement without retained overrides', async () => {

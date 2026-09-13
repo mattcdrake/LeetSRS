@@ -21,7 +21,9 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual(buildLearningDocument());
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({ settings: { resetEditorOnReviewQueue: false } })
+    );
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
   });
@@ -70,8 +72,7 @@ describe('learning document startup', () => {
         theme: 'light',
         maxNewCardsPerDay: 0,
         badgeEnabled: false,
-        resetEditorOnDueReview: false,
-        resetEditorOnEveryProblem: false,
+        resetEditorOnReviewQueue: false,
       },
     });
     expect(await readLearningDocument()).toEqual(expected);
@@ -91,7 +92,7 @@ describe('learning document startup', () => {
     });
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6])('treats a saved version %i document as authoritative', async (schemaVersion) => {
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
     const { backup, converted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {
@@ -111,7 +112,10 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
         ...converted,
-        settings: { language: 'de' },
+        settings: {
+          language: 'de',
+          ...(schemaVersion < LEARNING_DOCUMENT_VERSION && { resetEditorOnReviewQueue: false }),
+        },
         dataUpdatedAt: backup.dataUpdatedAt,
       })
     );
@@ -185,7 +189,7 @@ describe('learning document startup', () => {
       buildLearningDocument({
         ...converted,
         dataUpdatedAt: backup.dataUpdatedAt,
-        settings: { theme: 'dark', resetEditorOnEveryProblem: false },
+        settings: { theme: 'dark', resetEditorOnReviewQueue: false },
       })
     );
     expect(await readGistConnection()).toEqual(shared);
@@ -203,7 +207,7 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
         cards: converted.cards,
-        settings: { language: 'de' },
+        settings: { language: 'de', resetEditorOnReviewQueue: false },
       })
     );
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: null, enabled: false });
@@ -296,7 +300,7 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
         cards: { 'two-sum': { ...card, ...(note && { note }) } },
-        settings: { resetEditorOnEveryProblem: false, language: 'de' },
+        settings: { resetEditorOnReviewQueue: false, language: 'de' },
       })
     );
   });
@@ -318,7 +322,9 @@ describe('learning document startup', () => {
     await initializeLearningDocument();
 
     const { schemaVersion: _savedSchemaVersion, ...savedData } = saved;
-    expect(await readLearningDocument()).toEqual(buildLearningDocument({ ...savedData, settings: {} }));
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({ ...savedData, settings: { resetEditorOnReviewQueue: false } })
+    );
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 });

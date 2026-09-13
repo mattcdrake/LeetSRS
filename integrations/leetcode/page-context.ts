@@ -1,5 +1,7 @@
 import type { LeetcodeDomain } from '@/domain/cards';
 
+const EDITOR_RESET_AUTHORIZATION_HASH = '#leetsrs-reset-editor';
+
 type LeetCodeWindow = Window & {
   next?: {
     router?: {
@@ -17,4 +19,12 @@ export function getCurrentDomain(): LeetcodeDomain {
 export function getCurrentProblemSlug(): string | null {
   const routerSlug = (window as LeetCodeWindow).next?.router?.query?.slug;
   return routerSlug || window.location.pathname.match(/\/problems\/([^/]+)/)?.[1] || null;
+}
+
+export function authorizeEditorReset(url: string): string {
+  return `${url}${EDITOR_RESET_AUTHORIZATION_HASH}`;
+}
+
+export function isEditorResetAuthorized(): boolean {
+  return window.location.hash === EDITOR_RESET_AUTHORIZATION_HASH;
 }
