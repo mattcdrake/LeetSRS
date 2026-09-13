@@ -35,4 +35,4 @@ The learner's text attached to a card, with at most one note per card. Empty tex
 An exported snapshot of cards, their notes, review statistics, and settings that can be restored into LeetSRS. The Gist connection is separate from the backup.
 
 **Gist connection**:
-The learner's saved GitHub access token, destination Gist, and automatic-sync setting. It is separate from the learning data included in a backup.
+The learner's saved GitHub access token, destination Gist, and syncing setting. It is separate from the learning data included in a backup.

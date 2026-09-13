@@ -6,7 +6,6 @@ const de: Translations = {
     missingBackup: 'Der Gist enthält keine LeetSRS-Sicherung. Wähle einen anderen Gist in den Einstellungen.',
     creationFailed:
       'GitHub hat keine ID für den erstellten Gist zurückgegeben. Prüfe deine Gists, bevor du es erneut versuchst.',
-    creationStatusFailed: 'Der Gist wurde erstellt, aber der Synchronisierungsstatus konnte nicht gespeichert werden.',
     connectionSaveFailed: 'Die Verbindung konnte nicht gespeichert werden.',
     unavailable:
       'Du kannst weiterlernen. Die Synchronisierung wird automatisch fortgesetzt, sobald GitHub verfügbar ist.',
@@ -15,9 +14,7 @@ const de: Translations = {
     missingToken: 'Kein Token eingerichtet. Füge dein GitHub-Token in den Einstellungen hinzu.',
     missingGist: 'Keine Gist-ID eingerichtet. Wähle einen Gist in den Einstellungen.',
     gistNotFound: 'Gist nicht gefunden. Prüfe Gist-ID und Token-Zugriff in den Einstellungen.',
-    obsolete: 'Synchronisierung beendet, da sich Daten oder Verbindung geändert haben.',
-    setupStopped: 'Gist-Einrichtung beendet, da sich Daten oder Verbindung geändert haben.',
-    refreshFailed: 'Synchronisierung konnte nicht aktualisiert werden.',
+    unknown: 'Synchronisierung fehlgeschlagen. Versuche es später erneut.',
   },
   app: {
     name: 'LeetSRS',
@@ -168,16 +165,13 @@ const de: Translations = {
     gistSync: {
       title: 'GitHub-Gist-Synchronisierung',
       gistDescription: 'LeetSRS-Sicherung – Daten zum verteilten Lernen',
-      description: 'Synchronisiere deine Daten über GitHub Gists zwischen Browsern',
       patLabel: 'Personal Access Token',
       patPlaceholder: 'ghp_xxxxxxxxxxxx',
-      patHelpText: 'Erstelle ein Token mit dem Scope "gist" unter',
-      patHelpLink: 'GitHub-Einstellungen',
+      patHelpLink: 'GitHub-Token erstellen',
       gistIdLabel: 'Gist-ID',
       gistIdPlaceholder: 'Vorhandene Gist-ID eingeben',
       createNewGist: 'Neuen Gist erstellen',
-      enableSync: 'Automatische Synchronisierung aktivieren',
-      syncNow: 'Jetzt synchronisieren',
+      syncEnabled: 'Synchronisierung',
       syncing: 'Wird synchronisiert...',
       lastSync: 'Letzte Synchronisierung',
       lastSyncNever: 'Nie',
@@ -185,17 +179,17 @@ const de: Translations = {
       edit: 'Bearbeiten',
       cancel: 'Abbrechen',
       latestEditNotice:
-        'Es werden die vollständigen Daten des zuletzt bearbeiteten Browsers verwendet; Änderungen anderer Browser können ersetzt werden.',
-      connectionHelp:
-        'Dein Browser synchronisiert die Verbindung und die Einstellung zur automatischen Synchronisierung. Der letzte Synchronisierungsstatus gilt nur für diesen Browser.',
+        'Die neueste Änderung gewinnt für den gesamten Datensatz. Gleichzeitige Änderungen in einem anderen Browser können verloren gehen.',
+      howSyncWorks: 'So funktioniert die Synchronisierung',
+      syncDetails:
+        'LeetSRS vergleicht den Änderungszeitpunkt der vollständigen Datensätze und ersetzt den älteren. Einzelne Karten werden nicht zusammengeführt.',
+      openGist: 'Backup-Gist öffnen',
       destination: 'Ziel',
       existingGist: 'Vorhandenen Gist verwenden',
       save: 'Speichern',
       saving: 'Wird gespeichert…',
       saved: 'Verbindung gespeichert',
       saveFailed: 'Verbindung konnte nicht gespeichert werden',
-      savedSyncFailed: 'Verbindung gespeichert, aber Synchronisierung fehlgeschlagen',
-      synced: 'Synchronisierung abgeschlossen',
       configFailed: 'Gespeicherte Verbindung konnte nicht geladen werden',
     },
     about: {

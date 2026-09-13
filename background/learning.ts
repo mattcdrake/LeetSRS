@@ -12,7 +12,7 @@ const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short
 
 async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<LearningDocument> {
   const saved = await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
-  void triggerGistSync('save');
+  void triggerGistSync();
   return saved;
 }
 

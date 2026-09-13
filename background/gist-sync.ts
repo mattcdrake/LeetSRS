@@ -2,232 +2,166 @@ import { readGistConnection, writeGistConnection } from '@/data/gist-connection'
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { parseLearningDocumentBackup } from '@/data/legacy/learning-document-conversions';
 import { readSyncMetadata, removeSyncStatus, writeSyncStatus } from '@/data/sync-metadata';
-import { getDocumentTranslations } from '@/data/translations';
 import {
   decideGistSync,
   type GistConnectionResult,
   type GistSetup,
   type GistSyncConfig,
+  type GistSyncErrorCode,
   type GistSyncStatus,
-  type SyncResult,
 } from '@/domain/gist-sync';
-import { type Translations, translations } from '@/i18n';
+import { translations } from '@/i18n';
 import { detectBrowserLanguage } from '@/integrations/browser/language';
 import { createGitHubClient, GIST_FILENAME } from '@/integrations/github/client';
 
-type SyncAttempt = {
-  promise: Promise<SyncResult | undefined>;
-  resolve: (result: SyncResult | undefined) => void;
-  connection: Promise<GistSyncConfig>;
-  arrival?: Promise<SyncResult | undefined>;
-  manual: boolean;
-  followUp: boolean;
-  notices: Translations['syncNotices'];
-  deadline?: ReturnType<typeof setTimeout>;
-};
-let activeAttempt: SyncAttempt | undefined;
+let activeSync: Promise<void> | undefined;
 let generation = 0;
-let lastError: string | null = null;
+let lastError: GistSyncErrorCode | null = null;
 
-function canSyncAutomatically(config: GistSyncConfig) {
-  return config.enabled && !!config.pat.trim() && !!config.gistId?.trim();
-}
-
-async function getSyncNotices() {
-  return getDocumentTranslations().then(
-    (t) => t.syncNotices,
-    () => translations[detectBrowserLanguage()].syncNotices
-  );
-}
-
-function finishSync(attempt: SyncAttempt, result?: SyncResult) {
-  if (activeAttempt !== attempt) return;
-  clearTimeout(attempt.deadline);
-  activeAttempt = undefined;
-  attempt.resolve(result);
-  if (attempt.followUp) void triggerGistSync('alarm');
-}
+// Sync is deliberately just whole-document last-write-wins. Startup, local saves,
+// enabling, and the minute alarm all call the same function; overlapping calls share
+// one promise. A generation change stops document sync started before a reset, import,
+// or connection change from applying a stale result.
 
 export function invalidateGistSync(): void {
   generation++;
-  if (!activeAttempt) return;
-  activeAttempt.followUp = false;
-  finishSync(activeAttempt, { success: false, error: activeAttempt.notices.obsolete });
+  activeSync = undefined;
 }
 
-export async function waitForArrivalRefresh(): Promise<void> {
-  await activeAttempt?.arrival;
+export function triggerGistSync(): Promise<void> {
+  if (activeSync) {
+    return activeSync;
+  }
+
+  const sync = runSync(generation);
+  activeSync = sync;
+  void sync.finally(() => {
+    if (activeSync === sync) {
+      activeSync = undefined;
+    }
+  });
+  return sync;
+}
+
+async function runSync(startGeneration: number): Promise<void> {
+  try {
+    const config = await readGistConnection();
+    if (generation !== startGeneration || !canSync(config)) {
+      return;
+    }
+
+    lastError = null;
+    await syncDocument(config, startGeneration);
+  } catch (error) {
+    if (generation === startGeneration) {
+      lastError = syncErrorCode(error);
+    }
+  }
+}
+
+async function syncDocument(config: GistSyncConfig & { gistId: string }, startGeneration: number): Promise<void> {
+  const github = createGitHubClient(config.pat);
+  const { data } = await github.getGist(config.gistId);
+  if (generation !== startGeneration) return;
+
+  const remoteFile = data.files?.[GIST_FILENAME];
+  const remote = remoteFile ? parseLearningDocumentBackup(remoteFile.content ?? '') : undefined;
+  const local = await readLearningDocument();
+  if (generation !== startGeneration) return;
+
+  const { action } = decideGistSync(
+    remote ? { state: 'parsed', dataUpdatedAt: remote.dataUpdatedAt } : { state: 'missing' },
+    local.dataUpdatedAt
+  );
+
+  if (action === 'push') await github.updateGist(config.gistId, JSON.stringify(local, null, 2));
+  if (action === 'pull' && remote) await replaceLearningDocument(remote);
+  if (generation !== startGeneration) return;
+
+  const timestamp = new Date().toISOString();
+  await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: action === 'no-change' ? undefined : action });
+}
+
+function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: string } {
+  return config.enabled && !!config.pat.trim() && !!config.gistId?.trim();
 }
 
 export async function getGistSyncStatus(): Promise<GistSyncStatus> {
   return {
     lastSyncTime: (await readSyncMetadata('lastSyncTime')) ?? null,
     lastSyncDirection: (await readSyncMetadata('lastSyncDirection')) ?? null,
-    syncInProgress: activeAttempt !== undefined,
+    syncInProgress: activeSync !== undefined,
     lastError,
   };
 }
 
-export function triggerGistSync(): Promise<SyncResult>;
-export function triggerGistSync(reason: 'arrival' | 'save' | 'alarm'): Promise<SyncResult | undefined>;
-export function triggerGistSync(reason = 'manual'): Promise<SyncResult | undefined> {
-  if (!activeAttempt) {
-    activeAttempt = {
-      ...Promise.withResolvers<SyncResult | undefined>(),
-      connection: readGistConnection(),
-      manual: reason === 'manual',
-      followUp: false,
-      notices: translations[detectBrowserLanguage()].syncNotices,
-    };
-    void runSync(activeAttempt);
-  } else if (reason === 'save') {
-    activeAttempt.followUp = true;
-  }
-  const attempt = activeAttempt;
-  if (reason === 'manual') attempt.manual = true;
-  const result =
-    reason === 'manual'
-      ? attempt.promise
-      : Promise.race([
-          attempt.promise,
-          attempt.connection.then(
-            (config) => (canSyncAutomatically(config) ? attempt.promise : undefined),
-            () => attempt.promise
-          ),
-        ]);
-  if (reason === 'arrival' && !attempt.arrival) {
-    attempt.arrival = result;
-    attempt.deadline = setTimeout(() => {
-      lastError = attempt.notices.unavailable;
-      finishSync(attempt, { success: false, error: lastError });
-    }, 3000);
-    void result.then(() => clearTimeout(attempt.deadline));
-  }
-  return result;
-}
-
-async function runSync(attempt: SyncAttempt): Promise<void> {
-  try {
-    const [config, notices] = await Promise.all([attempt.connection, getSyncNotices()]);
-    if (activeAttempt !== attempt) return;
-    attempt.notices = notices;
-    if (!attempt.manual && !canSyncAutomatically(config)) {
-      finishSync(attempt);
-      return;
-    }
-    lastError = null;
-    if (!config.pat.trim()) throw new Error(notices.missingToken);
-    if (!config.gistId?.trim()) throw new Error(notices.missingGist);
-    const github = createGitHubClient(config.pat);
-    const { data } = await github.getGist(config.gistId);
-    if (activeAttempt !== attempt) return;
-    const remoteFile = data.files?.[GIST_FILENAME];
-    // Validate the remote even when local data wins, then compare fresh local data.
-    const remote = remoteFile ? parseLearningDocumentBackup(remoteFile.content ?? '') : undefined;
-    const local = await readLearningDocument();
-    if (activeAttempt !== attempt) return;
-    const { action } = decideGistSync(
-      remote ? { state: 'parsed', dataUpdatedAt: remote.dataUpdatedAt } : { state: 'missing' },
-      local.dataUpdatedAt
-    );
-    if (action === 'push') await github.updateGist(config.gistId, JSON.stringify(local, null, 2));
-    else if (action === 'pull' && remote) await replaceLearningDocument(remote);
-    if (activeAttempt !== attempt) return;
-    const timestamp = new Date().toISOString();
-    await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: action === 'no-change' ? undefined : action });
-    const resultActions = { push: 'pushed', pull: 'pulled', 'no-change': 'no-change' } as const;
-    finishSync(attempt, { success: true, action: resultActions[action], timestamp });
-  } catch (error) {
-    if (activeAttempt !== attempt) return;
-    const message = error instanceof Error ? error.message : attempt.notices.refreshFailed;
-    const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
-    const notices = attempt.notices;
-    lastError =
-      /rate limit/i.test(message) || status === 429
-        ? notices.rateLimit
-        : status === 401 || status === 403 || /401|403|bad credentials/i.test(message)
-          ? notices.authentication
-          : status === 404 || /404/.test(message)
-            ? notices.gistNotFound
-            : /fetch|network|offline|timeout/i.test(message) || (typeof status === 'number' && status >= 500)
-              ? notices.unavailable
-              : message;
-    finishSync(attempt, { success: false, error: lastError });
-  }
-}
-
 export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
-  let createdGistId: string | undefined;
-  const setupGeneration = generation;
-  const notices = await getSyncNotices();
-  function requireCurrentSetup() {
-    if (generation !== setupGeneration) throw new Error(notices.setupStopped);
-  }
   try {
-    const previous = await readGistConnection();
-    requireCurrentSetup();
     const github = createGitHubClient(setup.pat);
     let gistId: string;
+
     if (setup.mode === 'existing') {
       const { data } = await github.getGist(setup.gistId);
       if (!data.files?.[GIST_FILENAME]) {
-        throw new Error(notices.missingBackup);
+        return { saved: false, error: 'missingBackup' };
       }
       gistId = setup.gistId;
     } else {
       const document = await readLearningDocument();
-      requireCurrentSetup();
       const language = document.settings.language ?? detectBrowserLanguage();
       const { data } = await github.createGist(
         translations[language].settings.gistSync.gistDescription,
         JSON.stringify(document, null, 2)
       );
-      if (!data.id) throw new Error(notices.creationFailed);
-      gistId = data.id;
-      createdGistId = gistId;
-    }
-    requireCurrentSetup();
-    invalidateGistSync();
-    await writeGistConnection({ pat: setup.pat, gistId, enabled: previous.enabled });
-    if (createdGistId) {
-      try {
-        const timestamp = new Date().toISOString();
-        await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: 'push' });
-        lastError = null;
-        return { saved: true, sync: { success: true, action: 'pushed', timestamp } };
-      } catch (error) {
-        lastError = error instanceof Error ? error.message : notices.creationStatusFailed;
-        return { saved: true, sync: { success: false, error: lastError } };
+      if (!data.id) {
+        return { saved: false, error: 'creationFailed' };
       }
+      gistId = data.id;
     }
-    return { saved: true, ...(previous.enabled ? { sync: await triggerGistSync() } : {}) };
+
+    invalidateGistSync();
+    await writeGistConnection({ pat: setup.pat, gistId, enabled: true });
+    return { saved: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : notices.refreshFailed;
-    return {
-      saved: false,
-      error: message.includes('404') ? notices.gistNotFound : message,
-      ...(createdGistId ? { createdGistId } : {}),
-    };
+    return { saved: false, error: syncErrorCode(error, 'connectionSaveFailed') };
   }
 }
 
 export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
-  const connectionGeneration = generation;
-  const notices = await getSyncNotices();
   try {
     const config = await readGistConnection();
-    if (generation !== connectionGeneration) return { saved: false, error: notices.obsolete };
-    if (enabled && !config.pat.trim()) throw new Error(notices.missingToken);
-    if (enabled && !config.gistId?.trim()) throw new Error(notices.missingGist);
+    if (enabled && !config.pat.trim()) {
+      return { saved: false, error: 'missingToken' };
+    }
+    if (enabled && !config.gistId?.trim()) {
+      return { saved: false, error: 'missingGist' };
+    }
+
     invalidateGistSync();
     await writeGistConnection({ ...config, enabled });
+    return { saved: true };
   } catch (error) {
-    return { saved: false, error: error instanceof Error ? error.message : notices.connectionSaveFailed };
+    return { saved: false, error: syncErrorCode(error, 'connectionSaveFailed') };
   }
-  return { saved: true, ...(enabled ? { sync: await triggerGistSync() } : {}) };
 }
 
 export async function resetGistSyncStatus(): Promise<void> {
   await removeSyncStatus();
   lastError = null;
+}
+
+function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'): GistSyncErrorCode {
+  const message = error instanceof Error ? error.message : '';
+  let status: unknown;
+  if (error && typeof error === 'object' && 'status' in error) {
+    status = error.status;
+  }
+
+  if (/rate limit/i.test(message) || status === 429) return 'rateLimit';
+  if (status === 401 || status === 403 || /401|403|bad credentials/i.test(message)) return 'authentication';
+  if (status === 404 || /404/.test(message)) return 'gistNotFound';
+  if (/fetch|network|offline|timeout/i.test(message) || (typeof status === 'number' && status >= 500)) {
+    return 'unavailable';
+  }
+  return fallback;
 }
