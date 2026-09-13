@@ -4,9 +4,11 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { readGistConnection } from '@/data/gist-connection';
 import { readLearningDocument } from '@/data/learning-document';
 import { getSettings } from '@/data/learning-queries';
+import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import background from '../../entrypoints/background/index';
 
 vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
@@ -148,20 +150,19 @@ describe('document startup through registered background commands', () => {
       expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'pl' : 'de' });
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       if (stage !== 'cleanup') {
-        expect(await readLearningDocument()).toEqual({
-          schemaVersion: 6,
-          cards: {},
-          stats: {},
-          settings: { language: 'de' },
-          dataUpdatedAt: legacy['leetsrs:dataUpdatedAt'],
-        });
+        expect(await readLearningDocument()).toEqual(
+          buildLearningDocument({
+            settings: { language: 'de' },
+            dataUpdatedAt: legacy['leetsrs:dataUpdatedAt'],
+          })
+        );
       }
     }
   );
 
   it.each([
-    { schemaVersion: 7, cards: {}, stats: {}, settings: {} },
-    { schemaVersion: 6, cards: 'corrupt', stats: {}, settings: {} },
+    { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
+    { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
   ])('rejects a saved invalid document without falling back to legacy data: %j', async (document) => {
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': document,

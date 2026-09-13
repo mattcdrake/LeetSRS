@@ -3,10 +3,12 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { readGistConnection } from '@/data/gist-connection';
 import { readLearningDocument } from '@/data/learning-document';
 import { getSettings } from '@/data/learning-queries';
+import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import background from '../../entrypoints/background/index';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
@@ -56,12 +58,13 @@ describe('document transfers through background commands', () => {
 
     await dispatch('importData', { jsonData: JSON.stringify(input) });
 
-    expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
-      ...converted,
-      settings: {},
-      dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
-    });
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({
+        ...converted,
+        settings: {},
+        dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
+      })
+    );
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
   });
 
@@ -72,13 +75,7 @@ describe('document transfers through background commands', () => {
 
     await expect(
       dispatch('importData', {
-        jsonData: JSON.stringify({
-          schemaVersion: 6,
-          cards: {},
-          stats: {},
-          settings: {},
-          dataUpdatedAt: '2099-01-01T00:00:00.000Z',
-        }),
+        jsonData: JSON.stringify(buildLearningDocument({ dataUpdatedAt: '2099-01-01T00:00:00.000Z' })),
       })
     ).rejects.toThrow('Document unavailable');
 
@@ -93,7 +90,7 @@ describe('document transfers through background commands', () => {
 
     await expect(
       dispatch('importData', {
-        jsonData: JSON.stringify({ schemaVersion: 7, cards: {}, stats: {}, settings: {} }),
+        jsonData: JSON.stringify({ schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} }),
       })
     ).rejects.toThrow();
 

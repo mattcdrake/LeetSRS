@@ -5,6 +5,7 @@ import { updateSettings } from '@/background/learning';
 import { replaceLearningDocument } from '@/data/learning-document';
 import { sendMessage } from '@/integrations/browser/messages';
 import { settingsQueryKeys } from '@/popup/queries/settings';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -30,7 +31,7 @@ it('offers only the daily new-card limit and saves changes', async () => {
 });
 
 it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
-  const document = { schemaVersion: 6 as const, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 3 } };
+  const document = buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } });
   await replaceLearningDocument(document);
   const save = Promise.withResolvers<void>();
   createMessageMock(vi.mocked(sendMessage)).handle('updateSettings', async ({ changes }) => {

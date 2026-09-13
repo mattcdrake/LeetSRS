@@ -8,6 +8,7 @@ import { formatLocalDate } from '@/domain/calendar';
 import { type MessageName, messagePayloadSchemas, onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import background from '../../entrypoints/background/index';
 
 vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
@@ -66,7 +67,7 @@ describe('registered background execution', () => {
 
     await dispatch('resetAllData');
 
-    const empty = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    const empty = buildLearningDocument();
     expect(await readLearningDocument()).toEqual(empty);
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await dispatch('getGistSyncStatus')).toEqual({

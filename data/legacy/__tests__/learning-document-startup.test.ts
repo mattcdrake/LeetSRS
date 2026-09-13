@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { readGistConnection, writeGistConnection } from '../../gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '../../learning-document';
 import { initializeLearningDocument } from '../learning-document-startup';
@@ -19,7 +21,7 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
+    expect(await readLearningDocument()).toEqual(buildLearningDocument());
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
   });
@@ -61,8 +63,7 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    const expected = {
-      schemaVersion: 6,
+    const expected = buildLearningDocument({
       ...converted,
       dataUpdatedAt: backup.dataUpdatedAt,
       settings: {
@@ -72,7 +73,7 @@ describe('learning document startup', () => {
         resetEditorOnDueReview: false,
         resetEditorOnEveryProblem: false,
       },
-    };
+    });
     expect(await readLearningDocument()).toEqual(expected);
     expect(await readGistConnection()).toEqual({ pat: ' token ', gistId: 'legacy-gist', enabled: true });
     expect(await fakeBrowser.storage.local.get()).toEqual({
@@ -107,12 +108,13 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({
-      ...converted,
-      schemaVersion: 6,
-      settings: { language: 'de' },
-      dataUpdatedAt: backup.dataUpdatedAt,
-    });
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({
+        ...converted,
+        settings: { language: 'de' },
+        dataUpdatedAt: backup.dataUpdatedAt,
+      })
+    );
     expect(await fakeBrowser.storage.sync.get()).toEqual({ 'leetsrs:gistConnection': 'do not read or replace' });
   });
 
@@ -124,8 +126,8 @@ describe('learning document startup', () => {
     {},
     { schemaVersion: null },
     { schemaVersion: 5, cards: null },
-    { schemaVersion: 6, cards: {}, stats: {} },
-    { schemaVersion: 7, cards: {}, stats: {}, settings: {} },
+    { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
+    { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
   ])('reports corrupt or future saved documents without legacy fallback: %j', async (document) => {
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': document,
@@ -179,12 +181,13 @@ describe('learning document startup', () => {
     await writeGistConnection(shared);
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({
-      ...converted,
-      schemaVersion: 6,
-      dataUpdatedAt: backup.dataUpdatedAt,
-      settings: { theme: 'dark', resetEditorOnEveryProblem: false },
-    });
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({
+        ...converted,
+        dataUpdatedAt: backup.dataUpdatedAt,
+        settings: { theme: 'dark', resetEditorOnEveryProblem: false },
+      })
+    );
     expect(await readGistConnection()).toEqual(shared);
   });
 
@@ -197,16 +200,16 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
-      cards: converted.cards,
-      stats: {},
-      settings: { language: 'de' },
-    });
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({
+        cards: converted.cards,
+        settings: { language: 'de' },
+      })
+    );
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: null, enabled: false });
 
     // Editing the authoritative document then restarting must not resurrect retained legacy data.
-    const edited = { schemaVersion: 6 as const, cards: {}, stats: {}, settings: {} };
+    const edited = buildLearningDocument();
     await replaceLearningDocument(edited);
     await initializeLearningDocument();
 
@@ -290,12 +293,12 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
-      cards: { 'two-sum': { ...card, ...(note && { note }) } },
-      stats: {},
-      settings: { resetEditorOnEveryProblem: false, language: 'de' },
-    });
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({
+        cards: { 'two-sum': { ...card, ...(note && { note }) } },
+        settings: { resetEditorOnEveryProblem: false, language: 'de' },
+      })
+    );
   });
 
   it('retries a rejected supported-document conversion without falling back to legacy storage', async () => {
@@ -314,7 +317,8 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({ ...saved, schemaVersion: 6, settings: {} });
+    const { schemaVersion: _savedSchemaVersion, ...savedData } = saved;
+    expect(await readLearningDocument()).toEqual(buildLearningDocument({ ...savedData, settings: {} }));
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 });

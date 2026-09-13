@@ -6,7 +6,7 @@ import { readLearningDocument, replaceLearningDocument } from '@/data/learning-d
 import { getReviewQueue } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import { formatLocalDate } from '@/domain/calendar';
-import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
+import { learningDocumentSchema } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/integrations/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
@@ -29,7 +29,7 @@ describe('document learning through background commands', () => {
     vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementation(async (keys) => structuredClone(await get(keys)));
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2024-03-15T12:00:00'));
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { badgeEnabled: false } });
+    await replaceLearningDocument(buildLearningDocument({ settings: { badgeEnabled: false } }));
     background.main();
     await dispatch('waitForInitialization');
   });
@@ -200,12 +200,11 @@ describe('document learning through background commands', () => {
       }
       return card;
     });
-    const document: LearningDocument = {
-      schemaVersion: 6,
+    const document = buildLearningDocument({
       cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
       stats: { '2024-03-14': { ...createDailyStats('2024-03-14', undefined), newCards: 1 } },
       settings: { maxNewCardsPerDay: 2 },
-    };
+    });
     await replaceLearningDocument(document);
     const get = storage.getItem.bind(storage);
     vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
@@ -266,14 +265,13 @@ describe('document learning through background commands', () => {
     'rejects %s before any write and preserves the previous document',
     async (failure) => {
       const card = createMockCard(State.New, buildProblem());
-      const document: LearningDocument = {
-        schemaVersion: 6,
+      const document = buildLearningDocument({
         cards: { [card.slug]: card },
         settings: { badgeEnabled: false },
         stats: {
           '2024-03-15': { ...createDailyStats('2024-03-15', undefined), totalReviews: Number.MAX_SAFE_INTEGER },
         },
-      };
+      });
       await replaceLearningDocument(document);
       const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
       if (failure === 'invalid clock') {
@@ -421,14 +419,13 @@ describe('document learning through background commands', () => {
     async (instant, yesterday, today, tomorrow) => {
       const now = new Date(instant);
       vi.setSystemTime(now);
-      const document: LearningDocument = {
-        schemaVersion: 6,
+      const document = buildLearningDocument({
         cards: {},
         settings: { badgeEnabled: false },
         stats: {
           [yesterday]: { ...createDailyStats(yesterday, undefined), totalReviews: 1, reviewedCards: 1, streak: 7 },
         },
-      };
+      });
       await replaceLearningDocument(document);
       const get = storage.getItem.bind(storage);
       vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {

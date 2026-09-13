@@ -8,6 +8,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { updateSettings } from '@/background/learning';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { sendMessage } from '@/integrations/browser/messages';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
@@ -21,7 +22,7 @@ describe('popup settings with the prepared document workflows', () => {
     fakeBrowser.reset();
     const messages = createMessageMock(vi.mocked(sendMessage));
     messages.reset().handle('updateSettings', ({ changes }) => updateSettings(changes));
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
+    await replaceLearningDocument(buildLearningDocument());
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -38,7 +39,7 @@ describe('popup settings with the prepared document workflows', () => {
     await waitFor(() => expect(result.current.settings.data.theme).toBe('dark'));
     expect((await readLearningDocument())?.settings).toEqual({ theme: 'dark' });
 
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 0 } });
+    await replaceLearningDocument(buildLearningDocument({ settings: { maxNewCardsPerDay: 0 } }));
     await waitFor(() => expect(result.current.settings.data.theme).toBe('system'));
     expect(result.current.settings.data.maxNewCardsPerDay).toBe(0);
   });

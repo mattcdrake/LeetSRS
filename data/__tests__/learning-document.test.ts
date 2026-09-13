@@ -1,7 +1,7 @@
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { LearningDocument } from '@/domain/learning-document';
+import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
@@ -13,7 +13,7 @@ describe('learning document persistence', () => {
 
   it('requires initialization and returns the current validated document once available', async () => {
     await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
-    const document: LearningDocument = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    const document = buildLearningDocument();
     await replaceLearningDocument(document);
     expect(await readLearningDocument()).toEqual(document);
   });
@@ -30,7 +30,7 @@ describe('learning document persistence', () => {
     const connection = await fakeBrowser.storage.sync.get();
     await replaceLearningDocument(document);
     expect(await readLearningDocument()).toEqual(document);
-    const empty: LearningDocument = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    const empty = buildLearningDocument();
     await replaceLearningDocument(empty);
     expect(await readLearningDocument()).toEqual(empty);
     expect(await fakeBrowser.storage.sync.get()).toEqual(connection);
@@ -85,7 +85,7 @@ describe('learning document persistence', () => {
     await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
   });
 
-  it.each([{}, { schemaVersion: 5 }, { schemaVersion: 7 }])(
+  it.each([{}, { schemaVersion: 5 }, { schemaVersion: LEARNING_DOCUMENT_VERSION + 1 }])(
     'reports invalid saved data %j without falling back to legacy keys',
     async (invalid) => {
       await fakeBrowser.storage.local.set({

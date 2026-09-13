@@ -2,11 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
 import { translations } from '@/i18n';
 import { getDocumentTranslations as read, watchDocumentTranslations as watch } from '../translations';
 
 const key = STORAGE_KEYS.learningDocument;
-const storedValue = (language: unknown) => ({ schemaVersion: 6, cards: {}, stats: {}, settings: { language } });
+const storedValue = (language: unknown) => ({
+  schemaVersion: LEARNING_DOCUMENT_VERSION,
+  cards: {},
+  stats: {},
+  settings: { language },
+});
 
 describe('stored translations from the learning document', () => {
   beforeEach(() => {
