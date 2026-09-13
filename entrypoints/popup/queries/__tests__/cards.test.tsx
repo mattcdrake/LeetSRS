@@ -6,23 +6,16 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { storage } from '#imports';
 import type { Card } from '@/domain/cards';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/infrastructure/browser/messages';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
-import {
-  cardQueryKeys,
-  useCardsQuery,
-  useDelayCardMutation,
-  usePauseCardMutation,
-  useRateCardMutation,
-  useRemoveCardMutation,
-  useReviewQueueQuery,
-} from '../cards';
-import { statsQueryKeys } from '../stats';
+import { useCardsQuery, usePauseCardMutation, useRateCardMutation, useReviewQueueQuery } from '../cards';
 
 vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/infrastructure/browser/messages')>()),
@@ -31,57 +24,15 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
 }));
 
 describe('useCardsQuery', () => {
-  it('sends a message without a payload', async () => {
-    vi.mocked(sendMessage).mockResolvedValue([]);
-
-    const { result } = renderHook(() => useCardsQuery(), {
-      wrapper: createTestWrapper().wrapper,
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(sendMessage).toHaveBeenCalledWith('getAllCards');
-  });
-});
-
-describe('card mutation invalidation', () => {
-  it('invalidates only the queries affected by each mutation', async () => {
-    const problem = buildProblem();
-    const { wrapper, queryClient } = createTestWrapper();
-    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
-    const { result } = renderHook(
-      () => ({
-        remove: useRemoveCardMutation(),
-        rate: useRateCardMutation(),
-        delay: useDelayCardMutation(),
-        pause: usePauseCardMutation(),
-      }),
-      { wrapper }
-    );
-
-    const expectInvalidations = async (mutate: () => Promise<unknown>, queryKeys: readonly (readonly unknown[])[]) => {
-      invalidateQueries.mockClear();
-      await act(mutate);
-      expect(invalidateQueries.mock.calls.map(([filters]) => filters)).toEqual(
-        queryKeys.map((queryKey) => ({ queryKey }))
-      );
-    };
-
-    await expectInvalidations(
-      () => result.current.remove.mutateAsync(problem.slug),
-      [cardQueryKeys.all, statsQueryKeys.all]
-    );
-    await expectInvalidations(
-      () => result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }),
-      [cardQueryKeys.all, statsQueryKeys.all]
-    );
-    await expectInvalidations(
-      () => result.current.pause.mutateAsync({ slug: problem.slug, paused: true }),
-      [cardQueryKeys.all, statsQueryKeys.all]
-    );
-    await expectInvalidations(
-      () => result.current.rate.mutateAsync({ ...problem, rating: Rating.Good }),
-      [cardQueryKeys.all, statsQueryKeys.all]
-    );
+  it('shows saved cards and refreshes when another context removes them', async () => {
+    fakeBrowser.reset();
+    const card = createMockCard(State.New);
+    const document = { schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} };
+    await storage.setItem(STORAGE_KEYS.learningDocument, document);
+    const { result } = renderHook(() => useCardsQuery(), { wrapper: createTestWrapper().wrapper });
+    await waitFor(() => expect(result.current.data).toEqual([card]));
+    await storage.setItem(STORAGE_KEYS.learningDocument, { ...document, cards: {} });
+    await waitFor(() => expect(result.current.data).toEqual([]));
   });
 });
 
@@ -144,7 +95,7 @@ describe('card queries through JSON messaging and background handlers', () => {
     for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
       messaging.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
     }
-    await sendMessage('getSettings');
+    await sendMessage('waitForInitialization');
   });
 
   it.each([State.Learning, State.Relearning])(

@@ -86,6 +86,7 @@ const zhCN: Translations = {
   },
 
   notes: {
+    saveFailed: '无法保存笔记。草稿已保留，请重新保存。',
     title: '笔记',
     ariaLabel: '笔记内容',
     placeholderLoading: '加载中...',

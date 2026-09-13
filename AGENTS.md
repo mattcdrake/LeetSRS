@@ -57,7 +57,7 @@ Keep `docs/agents/architecture.md` focused on details that materially affect arc
 
 - Domain owns explicit-input policy and models; services own workflows and side effects; infrastructure owns external I/O and persistence.
 - Infrastructure must not depend on services or UI. Domain must not depend on browser, storage, services, messaging, or translation catalogs.
-- Popup and content workflows call typed background messages. Content may read translations through its storage adapter.
+- Popup and content writes call typed background messages; persisted-data reads use validated storage adapters.
 - Background owns learning-data writes. Services compose domain rules and adapters without dependency cycles.
 - UI owns presentation and user interactions; keep domain logic outside components. Dependency rules also apply to type-only imports.
 

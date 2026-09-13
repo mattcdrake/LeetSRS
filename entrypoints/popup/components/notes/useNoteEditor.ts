@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { NOTES_MAX_LENGTH } from '@/domain/cards';
+import { useDraftUntilSaved } from '@/entrypoints/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/entrypoints/popup/queries/notes';
 
@@ -16,36 +17,40 @@ export interface NoteEditor {
   isLoading: boolean;
   isSaving: boolean;
   isDeleting: boolean;
+  saveError: unknown;
   error: unknown;
 }
 
 export function useNoteEditor(slug: string): NoteEditor {
-  const [text, setText] = useState('');
   const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
   const { data: note, isLoading, error } = useNoteQuery(slug);
   const saveNoteMutation = useSaveNoteMutation(slug);
   const deleteNoteMutation = useDeleteNoteMutation(slug);
 
+  const draft = useDraftUntilSaved(slug, note ?? '');
+  const { value: text, setValue: setText } = draft;
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Switching cards must clear the deletion confirmation.
   useEffect(() => {
-    setText(note ?? '');
     resetConfirmation();
-  }, [note, resetConfirmation]);
+  }, [slug, resetConfirmation]);
 
   const save = async () => {
     try {
       await saveNoteMutation.mutateAsync(text);
+      draft.markSaved();
     } catch (error) {
       console.error('Failed to save note:', error);
-      setText(note ?? '');
     }
   };
 
   const remove = () =>
     startOrConfirm(async () => {
+      saveNoteMutation.reset();
       try {
         await deleteNoteMutation.mutateAsync();
-        setText('');
+        draft.discard();
       } catch (error) {
         console.error('Failed to delete note:', error);
       }
@@ -69,6 +74,7 @@ export function useNoteEditor(slug: string): NoteEditor {
     isLoading,
     isSaving: saveNoteMutation.isPending,
     isDeleting: deleteNoteMutation.isPending,
+    saveError: saveNoteMutation.error,
     error,
   };
 }

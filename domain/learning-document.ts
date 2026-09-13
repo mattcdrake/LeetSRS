@@ -5,6 +5,8 @@ import { dailyStatsSchema } from './statistics';
 
 export const LEARNING_DOCUMENT_VERSION = 6;
 
+export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
+
 export const learningDocumentSchema = z
   .object({
     schemaVersion: z.literal(LEARNING_DOCUMENT_VERSION),

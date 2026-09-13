@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import type { Settings } from '@/domain/settings';
 import { sendMessage } from '@/infrastructure/browser/messages';
-import { cardQueryKeys } from './cards';
+import { getSettings } from '@/infrastructure/storage/learning-queries';
 
 export const settingsQueryKeys = {
   all: ['settings'] as const,
@@ -10,21 +10,14 @@ export const settingsQueryKeys = {
 export function useSettingsQuery() {
   return useSuspenseQuery({
     queryKey: settingsQueryKeys.all,
-    queryFn: () => sendMessage('getSettings'),
+    networkMode: 'always',
+    queryFn: () => getSettings(true),
   });
 }
 
 export function useUpdateSettingsMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    networkMode: 'always',
     mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
-    onSuccess: (_data, changes) => {
-      queryClient.invalidateQueries({ queryKey: settingsQueryKeys.all });
-
-      if ('maxNewCardsPerDay' in changes) {
-        queryClient.invalidateQueries({ queryKey: cardQueryKeys.all });
-      }
-    },
   });
 }

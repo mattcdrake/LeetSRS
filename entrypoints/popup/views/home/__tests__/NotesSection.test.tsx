@@ -1,3 +1,8 @@
+import { State } from 'ts-fsrs';
+import { storage } from '#imports';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
  */
@@ -19,10 +24,18 @@ describe('NotesSection', () => {
   let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
   let queryClient: QueryClient;
 
-  const seedNote = (note: string | null) => queryClient.setQueryData(noteQueryKeys.detail(mockSlug), note);
+  const seedNote = (note: string | null) => {
+    void storage.setItem(
+      STORAGE_KEYS.learningDocument,
+      buildLearningDocument({
+        cards: { [mockSlug]: createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }) },
+      })
+    );
+    queryClient.setQueryData(noteQueryKeys.detail(mockSlug), note);
+  };
 
   beforeEach(() => {
-    messages.reset().resolve('getNote', null).resolve('saveNote', undefined).resolve('deleteNote', undefined);
+    messages.reset().resolve('saveNote', undefined).resolve('deleteNote', undefined);
     ({ wrapper, queryClient } = createTestWrapper());
     seedNote(null);
   });
@@ -74,7 +87,10 @@ describe('NotesSection', () => {
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {
     const save = Promise.withResolvers<void>();
-    messages.resolve('saveNote', save.promise).resolve('getNote', 'Saved draft');
+    messages.handle('saveNote', async ({ text }) => {
+      await save.promise;
+      seedNote(text);
+    });
     render(<NotesSection slug={mockSlug} />, { wrapper });
     const toggle = screen.getByRole('button', { expanded: false });
     fireEvent.click(toggle);
@@ -96,10 +112,12 @@ describe('NotesSection', () => {
 
   it('loads the supplied card while collapsed and saves edits to that card', async () => {
     const slug = 'another-home-card';
-    messages.resolve('getNote', 'This card note');
+    await storage.setItem(
+      STORAGE_KEYS.learningDocument,
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'This card note' }) } })
+    );
     render(<NotesSection slug={slug} />, { wrapper });
 
-    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('getNote', { slug }));
     await waitFor(() => expect(screen.getByRole('textbox', { hidden: true })).toHaveValue('This card note'));
     fireEvent.click(screen.getByRole('button', { expanded: false }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Note text' }), { target: { value: 'Edited card note' } });

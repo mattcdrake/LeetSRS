@@ -10,10 +10,10 @@ These rules apply to runtime and type-only imports:
 - `content/` owns LeetCode DOM/GraphQL integration. `content/ui/` owns presentation; `content/rating-actions.ts` owns problem lookup and background RPC orchestration; `content/bootstrap.tsx` owns mounting and lifecycle.
 - `domain/` owns application models and schemas, current document invariants, scheduling, review days, settings, language, and Gist conflict policy. Pass explicit inputs; keep browser, storage, service, messaging, and translation-catalog dependencies out. `ts-fsrs` is allowed.
 - `services/` owns write workflows, edit clocks, FSRS lifetime, write order, and sync execution. Services may compose domain rules, adapters, and other services without cycles.
-- `infrastructure/storage/learning-queries.ts` owns validated current-data reads and export serialization. Time-derived reads capture one document and time and use shared domain policy for settings, review eligibility, statistics, and editor reset. Readers remain independent of learning-write services, FSRS initialization, and historical conversions.
+- Popup query hooks read validated storage directly. `infrastructure/storage/learning-queries.ts` shares settings resolution and review-queue policy with background; single-use projections and export serialization live in query functions. Time-derived reads capture one document and time and call pure domain policy. Readers remain independent of learning-write services, FSRS initialization, and historical conversions.
 - `infrastructure/` owns storage keys, codecs, document conversions, backup parsing and historical validation, GitHub requests, browser messaging, and language detection. It must not depend on services or UI.
 - `i18n/` owns translation catalogs and the `Translations` type. It may import the domain language type, but has no browser, storage, service, or UI dependencies. Settings policy uses the domain language registry without loading dictionaries.
-- Popup and content workflows use `infrastructure/browser/messages.ts` rather than importing services or persistence. Content may use the read-only `infrastructure/storage/translations.ts` adapter.
+- Popup and content writes use `infrastructure/browser/messages.ts`; background owns learning-data writes. Their persisted-data reads use storage adapters directly. Content translations use `infrastructure/storage/translations.ts`.
 - The popup owns permissions, active-tab inspection, and banner dismissal state. Permission requests originate from user interactions.
 
 ## Background execution
@@ -22,7 +22,7 @@ Before changing background commands or sync execution, read [ADR-0001](../adr/00
 
 - RPC contracts and transport belong in `infrastructure/browser/messages.ts`.
 - `entrypoints/background/index.ts` owns startup, listener registration, and an exhaustive typed command registry. Its private dispatcher validates payloads by message name and shares one write queue between messages and alarms, including network work and ordered post-handler effects. Reads may overlap writes. Prepared document writes include local-edit timestamps; imported timestamps remain unchanged. Badge failures must not overturn a successful data write.
-- Register message and alarm listeners synchronously during startup. Handlers wait for startup readiness before accessing storage.
+- Register message and alarm listeners synchronously during startup. Handlers wait for startup readiness before accessing storage. UI readers display valid current documents directly; missing or older documents await `waitForInitialization` before rereading. Initialization and conversions remain background-owned, and failed or invalid documents surface errors instead of empty defaults.
 
 ## Content UI lifecycle
 

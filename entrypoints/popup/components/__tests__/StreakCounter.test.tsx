@@ -24,7 +24,7 @@ describe('StreakCounter', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   const renderStats = (data: DailyStats | null) => {
-    messages.reset().resolve('getTodayStats', data);
+    messages.reset();
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(statsQueryKeys.today, data);
     return render(<StreakCounter />, { wrapper });
@@ -43,7 +43,7 @@ describe('StreakCounter', () => {
 
   it('renders nothing while loading', () => {
     const pending = Promise.withResolvers<DailyStats | null>();
-    messages.reset().resolve('getTodayStats', pending.promise);
+    messages.reset();
     const { wrapper } = createTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
     expect(view.container.firstChild).toBeNull();
@@ -52,7 +52,7 @@ describe('StreakCounter', () => {
   });
 
   it('renders nothing after an error', async () => {
-    messages.reset().handle('getTodayStats', () => Promise.reject(new Error('Failed to fetch stats')));
+    messages.reset().handle('waitForInitialization', () => Promise.reject(new Error('Failed to fetch stats')));
     const { wrapper } = createTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
     expect(view.container.firstChild).toBeNull();

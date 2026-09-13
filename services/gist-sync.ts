@@ -95,8 +95,6 @@ export async function triggerGistSync(): Promise<SyncResult> {
   }
 }
 
-export { readGistConnection as getGistSyncConfig } from '@/infrastructure/storage/gist-connection';
-
 export async function setupGistSync(input: GistSetup): Promise<GistConnectionResult> {
   let createdGistId: string | undefined;
   try {

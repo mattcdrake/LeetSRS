@@ -1,5 +1,9 @@
-import { z } from 'zod';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
+import {
+  LEARNING_DOCUMENT_VERSION,
+  type LearningDocument,
+  learningDocumentSchema,
+  learningDocumentVersionSchema,
+} from '@/domain/learning-document';
 import * as addCardDomain from './document-conversions/001-add-card-domain';
 import * as addSystemTheme from './document-conversions/002-add-system-theme';
 import * as removeDayStart from './document-conversions/003-remove-day-start';
@@ -19,7 +23,9 @@ const conversions = [
 
 const LAST_LEGACY_DATASET_VERSION = 5;
 
-const versionedInputSchema = z.looseObject({ schemaVersion: z.int().nonnegative().default(0) });
+const versionedInputSchema = learningDocumentVersionSchema.loose().extend({
+  schemaVersion: learningDocumentVersionSchema.shape.schemaVersion.default(0),
+});
 
 // Accepts an in-memory legacy installation or an already-versioned document.
 export function convertLearningDocument(input: unknown): LearningDocument {

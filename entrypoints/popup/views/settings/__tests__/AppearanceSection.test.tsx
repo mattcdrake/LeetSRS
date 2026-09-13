@@ -15,7 +15,7 @@ describe('AppearanceSection', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   beforeEach(() => {
-    messages.reset().resolve('getSettings', buildSettings()).resolve('updateSettings', undefined);
+    messages.reset().resolve('updateSettings', undefined);
   });
 
   it.each([

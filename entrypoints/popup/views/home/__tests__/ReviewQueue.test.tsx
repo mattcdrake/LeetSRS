@@ -1,3 +1,5 @@
+import { storage } from '#imports';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
  */
@@ -105,19 +107,28 @@ describe('ReviewQueue', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
-  const seedQueue = (cards: Card[]) => queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
+  const seedQueue = (cards: Card[]) => {
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
+    );
+    queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
+  };
 
   beforeEach(() => {
+    vi.spyOn(storage, 'getItem');
     messages
       .reset()
       .handle('rateCard', mockMutateAsync)
-      .resolve('getReviewQueue', mockCards)
+
       .resolve('removeCard', undefined)
       .resolve('delayCard', mockCards[0])
       .resolve('setPauseStatus', mockCards[0]);
     mockMutateAsync.mockReset();
 
     ({ wrapper, queryClient } = createTestWrapper());
+    mockCards.forEach((card, index) => {
+      card.fsrs.due = index;
+    });
     seedQueue(mockCards);
     mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
   });
@@ -190,36 +201,6 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
-    it('should wait for the queue refresh before finishing with reduced motion', async () => {
-      vi.spyOn(window, 'matchMedia').mockImplementation(
-        (query) =>
-          ({
-            matches: query === '(prefers-reduced-motion: reduce)',
-            media: query,
-          }) as MediaQueryList
-      );
-      render(<ReviewQueue />, { wrapper });
-
-      const goodButton = await screen.findByRole('button', { name: 'Good' });
-      let resolveQueueRefresh: (cards: Card[]) => void = () => {};
-      const queueRefresh = new Promise<Card[]>((resolve) => {
-        resolveQueueRefresh = resolve;
-      });
-      messages.resolve('getReviewQueue', queueRefresh);
-
-      fireEvent.click(goodButton);
-
-      await waitFor(() => expect(mockMutateAsync).toHaveBeenCalledOnce());
-      expect(goodButton).toBeDisabled();
-      expect(screen.getByText('Two Sum')).toBeInTheDocument();
-
-      resolveQueueRefresh(mockCards.slice(1));
-
-      await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
-      expect(screen.getByRole('button', { name: 'Good' })).not.toBeDisabled();
-      expect(screen.getByTestId('review-card').parentElement).not.toHaveClass('animate-slide-right');
-    });
-
     it('should finish processing when the slide animation ends', async () => {
       render(<ReviewQueue />, { wrapper });
 
@@ -352,6 +333,7 @@ describe('ReviewQueue', () => {
     let mockRemoveMutateAsync: Mock<(data: { slug: string }) => Promise<void>>;
 
     beforeEach(() => {
+      vi.spyOn(storage, 'getItem');
       mockRemoveMutateAsync = vi.fn();
       messages.handle('removeCard', mockRemoveMutateAsync);
     });
@@ -470,6 +452,7 @@ describe('ReviewQueue', () => {
     let mockDelayMutateAsync: Mock<(data: { slug: string; days: number }) => Promise<Card>>;
 
     beforeEach(() => {
+      vi.spyOn(storage, 'getItem');
       mockDelayMutateAsync = vi.fn();
       messages.handle('delayCard', mockDelayMutateAsync);
     });

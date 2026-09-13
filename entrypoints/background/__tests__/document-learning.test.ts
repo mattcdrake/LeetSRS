@@ -2,10 +2,12 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
+import { formatLocalDate } from '@/domain/calendar';
 import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/infrastructure/browser/messages';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { getReviewQueue } from '@/infrastructure/storage/learning-queries';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
@@ -28,7 +30,7 @@ describe('document learning through background commands', () => {
     vi.setSystemTime(new Date('2024-03-15T12:00:00'));
     await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { badgeEnabled: false } });
     background.main();
-    await dispatch('getSettings');
+    await dispatch('waitForInitialization');
   });
 
   afterEach(() => {
@@ -52,8 +54,8 @@ describe('document learning through background commands', () => {
     await started.promise;
 
     expect(settled).not.toHaveBeenCalled();
-    expect(await dispatch('getAllCards')).toEqual([]);
-    expect(await dispatch('getTodayStats')).toBeNull();
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
+    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
     const result = await pending;
@@ -72,8 +74,8 @@ describe('document learning through background commands', () => {
       state: State.Learning,
     });
     expect(result.shouldRequeue).toBe(false);
-    expect(await dispatch('getAllCards')).toEqual([result.card]);
-    const stats = await dispatch('getTodayStats');
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([result.card]);
+    const stats = (await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null;
     expect(stats).toEqual({
       date: '2024-03-15',
       totalReviews: 1,
@@ -106,7 +108,7 @@ describe('document learning through background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const problem = buildProblem({ slug: 'new-problem' });
     const card = await dispatch('addCard', { problem });
-    expect(await dispatch('getAllCards')).toEqual([...others, card]);
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([...others, card]);
     expect(card.fsrs).toEqual({
       due: Date.now(),
       stability: 0,
@@ -124,7 +126,7 @@ describe('document learning through background commands', () => {
     );
     expect(writes).toHaveBeenCalledTimes(1);
     await dispatch('saveNote', { slug: card.slug, text: '  solution\n\t' });
-    expect(await dispatch('getNote', { slug: card.slug })).toBe('  solution\n\t');
+    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('  solution\n\t');
     const paused = await dispatch('setPauseStatus', { slug: card.slug, paused: true });
     expect(paused).toEqual({ ...card, paused: true, note: '  solution\n\t' });
     vi.setSystemTime(new Date('2024-03-16T12:00:00'));
@@ -133,16 +135,16 @@ describe('document learning through background commands', () => {
     expect(await dispatch('setPauseStatus', { slug: card.slug, paused: false })).toEqual({ ...delayed, paused: false });
     await dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(500) });
     await expect(dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(501) })).rejects.toThrow('maximum length');
-    expect(await dispatch('getNote', { slug: card.slug })).toBe('a'.repeat(500));
+    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('a'.repeat(500));
     await dispatch('saveNote', { slug: card.slug, text: '' });
-    expect(await dispatch('getNote', { slug: card.slug })).toBeNull();
+    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
     await dispatch('saveNote', { slug: card.slug, text: 'replacement' });
     await dispatch('deleteNote', { slug: card.slug });
-    expect(await dispatch('getNote', { slug: card.slug })).toBeNull();
+    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
     await dispatch('saveNote', { slug: card.slug, text: 'removed with card' });
     await dispatch('removeCard', { slug: card.slug });
-    expect(await dispatch('getAllCards')).toEqual(others);
-    expect(await dispatch('getNote', { slug: card.slug })).toBeNull();
+    expect(Object.values((await readLearningDocument()).cards)).toEqual(others);
+    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
     expect(await readLearningDocument()).toEqual({ ...original, dataUpdatedAt: new Date().toISOString() });
     expect(writes).toHaveBeenCalledTimes(11);
     for (const [index, [items]] of writes.mock.calls.entries()) {
@@ -177,7 +179,7 @@ describe('document learning through background commands', () => {
       stats: { '2024-03-15': { totalReviews: 1, newCards: 1 } },
       dataUpdatedAt: now.toISOString(),
     });
-    expect(await dispatch('getTodayStats')).toBeNull();
+    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
   });
 
   it('uses one document and time for queue eligibility and the daily allowance across midnight', async () => {
@@ -204,93 +206,13 @@ describe('document learning through background commands', () => {
       return result;
     });
 
-    expect((await dispatch('getReviewQueue')).map((card) => card.slug)).toEqual(['new-a', 'review']);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'review']);
     expect(reads).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument);
-    expect((await dispatch('getReviewQueue')).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
     await replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 0 } });
-    expect((await dispatch('getReviewQueue')).map((card) => card.slug)).toEqual(['review']);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['review']);
     await replaceLearningDocument({ ...document, settings: {} });
-    expect((await dispatch('getReviewQueue')).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
-  });
-
-  it('uses captured settings and the exact due time for editor reset, including domain and pause checks', async () => {
-    const card = createMockCard(State.Relearning);
-    card.fsrs.due = Date.now() + 1;
-    const document: LearningDocument = {
-      schemaVersion: 6,
-      cards: { [card.slug]: card },
-      stats: {},
-      settings: { resetEditorOnDueReview: true },
-    };
-    await replaceLearningDocument(document);
-    const get = storage.getItem.bind(storage);
-    const reads = vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
-      const result = await get(key);
-      vi.setSystemTime(card.fsrs.due);
-      await replaceLearningDocument({ ...document, settings: { resetEditorOnEveryProblem: true } });
-      return result;
-    });
-
-    expect(await dispatch('shouldResetEditor', card)).toBe(false);
-    expect(reads).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument);
-    await replaceLearningDocument(document);
-    expect(await dispatch('shouldResetEditor', card)).toBe(true);
-    expect(await dispatch('shouldResetEditor', { ...card, domain: 'leetcode.cn' })).toBe(false);
-    expect(await dispatch('shouldResetEditor', { ...card, slug: 'missing' })).toBe(false);
-    await replaceLearningDocument({ ...document, cards: { [card.slug]: { ...card, paused: true } } });
-    expect(await dispatch('shouldResetEditor', card)).toBe(false);
-    await replaceLearningDocument({ ...document, settings: {} });
-    expect(await dispatch('shouldResetEditor', card)).toBe(false);
-    await replaceLearningDocument({ ...document, cards: {}, settings: { resetEditorOnEveryProblem: true } });
-    expect(await dispatch('shouldResetEditor', card)).toBe(true);
-  });
-
-  it('preserves card-state, history, and upcoming statistics results', async () => {
-    expect(await dispatch('getCardStateStats')).toEqual({ 0: 0, 1: 0, 2: 0, 3: 0 });
-    const cards = [
-      createMockCard(State.New, { slug: 'overdue' }),
-      createMockCard(State.Learning, { slug: 'today' }),
-      createMockCard(State.Review, { slug: 'tomorrow' }),
-      createMockCard(State.Relearning, { slug: 'paused', paused: true }),
-      createMockCard(State.Review, { slug: 'outside' }),
-    ];
-    cards[0].fsrs.due = new Date('2024-03-14T12:00:00').getTime();
-    cards[2].fsrs.due = new Date('2024-03-16T00:00:00').getTime();
-    cards[4].fsrs.due = new Date('2024-03-17T00:00:00').getTime();
-    const yesterday = {
-      date: '2024-03-14',
-      streak: 7,
-      totalReviews: 3,
-      newCards: 1,
-      reviewedCards: 2,
-      gradeBreakdown: { 1: 1, 2: 0, 3: 2, 4: 0 },
-    };
-    await replaceLearningDocument({
-      schemaVersion: 6,
-      cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
-      stats: { '2024-03-14': yesterday },
-      settings: {},
-    });
-
-    expect(await dispatch('getCardStateStats')).toEqual({ 0: 1, 1: 1, 2: 2, 3: 1 });
-    expect(await dispatch('getTodayStats')).toBeNull();
-    expect(await dispatch('getLastNDaysStats', { days: 2 })).toEqual([
-      yesterday,
-      {
-        date: '2024-03-15',
-        streak: 0,
-        totalReviews: 0,
-        newCards: 0,
-        reviewedCards: 0,
-        gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
-      },
-    ]);
-    expect(await dispatch('getNextNDaysStats', { days: 2 })).toEqual([
-      { date: '2024-03-15', count: 2 },
-      { date: '2024-03-16', count: 1 },
-    ]);
-    expect(await dispatch('getLastNDaysStats', { days: 0 })).toEqual([]);
-    expect(await dispatch('getNextNDaysStats', { days: 0 })).toEqual([]);
+    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
   });
 
   it.each([
@@ -319,9 +241,9 @@ describe('document learning through background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(error);
 
     await expect(edit()).rejects.toBe(error);
-    expect(await dispatch('getAllCards')).toEqual(Object.values(document.cards));
-    expect(await dispatch('getNote', { slug: 'two-sum' })).toBe('Keep this note');
-    expect(await dispatch('getTodayStats')).toBeNull();
+    expect(Object.values((await readLearningDocument()).cards)).toEqual(Object.values(document.cards));
+    expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
+    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
     expect(await fakeBrowser.storage.local.get()).toEqual(localBefore);
     expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
     expect(writes).toHaveBeenCalledOnce();
@@ -357,21 +279,21 @@ describe('document learning through background commands', () => {
 
       await expect(edit).rejects.toThrow();
       expect(writes).not.toHaveBeenCalled();
-      expect(await dispatch('getAllCards')).toEqual([card]);
+      expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
       expect(await readLearningDocument()).toEqual(document);
     }
   );
 
   it('preserves missing-card errors and harmless note deletion', async () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    expect(await dispatch('getNote', { slug: 'missing' })).toBeNull();
+    expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
     await dispatch('deleteNote', { slug: 'missing' });
     await expect(dispatch('saveNote', { slug: 'missing', text: '' })).rejects.toThrow('not found');
     await expect(dispatch('delayCard', { slug: 'missing', days: 1 })).rejects.toThrow('not found');
     await expect(dispatch('setPauseStatus', { slug: 'missing', paused: true })).rejects.toThrow('not found');
     expect(writes).not.toHaveBeenCalled();
     await dispatch('removeCard', { slug: 'missing' });
-    expect(await dispatch('getAllCards')).toEqual([]);
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     const card = await dispatch('addCard', { problem: buildProblem() });
     writes.mockClear();
     await dispatch('deleteNote', { slug: card.slug });
@@ -391,7 +313,7 @@ describe('document learning through background commands', () => {
 
       await expect(edit).rejects.toThrow('not found');
       expect(writes).not.toHaveBeenCalled();
-      expect(await dispatch('getAllCards')).toEqual([]);
+      expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       expect(await readLearningDocument()).toEqual(before);
     }
   );
@@ -413,15 +335,15 @@ describe('document learning through background commands', () => {
       expect(first.card.fsrs.due).toBeGreaterThan(card.createdAt);
       expect(first.shouldRequeue).toBe(false);
       vi.setSystemTime(first.card.fsrs.due - 1);
-      expect(await dispatch('getReviewQueue')).toEqual([]);
+      expect(await getReviewQueue()).toEqual([]);
       vi.setSystemTime(first.card.fsrs.due);
-      expect(await dispatch('getReviewQueue')).toEqual([first.card]);
+      expect(await getReviewQueue()).toEqual([first.card]);
       // Another attempt on the same review day counts as a reviewed card.
       vi.setSystemTime(card.createdAt);
       const second = await dispatch('rateCard', { input: { ...buildProblem(), rating } });
       expect(second.card.fsrs.reps).toBe(2);
-      expect(await dispatch('getAllCards')).toEqual([second.card]);
-      expect(await dispatch('getTodayStats')).toEqual({
+      expect(Object.values((await readLearningDocument()).cards)).toEqual([second.card]);
+      expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toEqual({
         date: '2024-03-15',
         streak: 1,
         totalReviews: 2,
@@ -461,37 +383,11 @@ describe('document learning through background commands', () => {
       const { card } = await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
       expect(card.createdAt).toBe(now.getTime());
       expect(card.fsrs.last_review).toBe(now.getTime());
-      expect(await dispatch('getTodayStats')).toBeNull();
+      expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
       expect(await readLearningDocument()).toMatchObject({
         dataUpdatedAt: now.toISOString(),
         stats: { ...document.stats, [today]: { newCards: 1, totalReviews: 1, streak: 8 } },
       });
-    }
-  );
-
-  it.each(['getLastNDaysStats', 'getNextNDaysStats'] as const)(
-    '%s uses the captured document and day when storage changes during a read',
-    async (command) => {
-      const card = createMockCard(State.Review);
-      const document: LearningDocument = {
-        schemaVersion: 6,
-        cards: { [card.slug]: card },
-        settings: {},
-        stats: { '2024-03-15': { ...createDailyStats('2024-03-15', undefined), totalReviews: 3 } },
-      };
-      await replaceLearningDocument(document);
-      const get = storage.getItem.bind(storage);
-      const reads = vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
-        const result = await get(key);
-        vi.setSystemTime(new Date('2024-03-16T00:00:00'));
-        await replaceLearningDocument({ ...document, cards: {}, stats: {} });
-        return result;
-      });
-
-      const expected =
-        command === 'getLastNDaysStats' ? document.stats['2024-03-15'] : { date: '2024-03-15', count: 1 };
-      expect(await dispatch(command, { days: 1 })).toEqual([expected]);
-      expect(reads).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument);
     }
   );
 });

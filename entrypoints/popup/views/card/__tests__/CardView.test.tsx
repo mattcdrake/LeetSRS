@@ -1,3 +1,5 @@
+import { storage } from '#imports';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
  */
@@ -26,7 +28,6 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 describe('CardView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   const seedCards = (cards: Card[]) => {
-    messages.resolve('getAllCards', cards);
     queryClient.setQueryData(cardQueryKeys.all, cards);
   };
 
@@ -37,7 +38,11 @@ describe('CardView', () => {
 
   it('should render loading state', () => {
     const pending = Promise.withResolvers<Card[]>();
-    messages.resolve('getAllCards', pending.promise);
+    vi.spyOn(storage, 'getItem').mockReturnValue(
+      pending.promise.then((cards) =>
+        buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
+      )
+    );
     const view = renderWithQueryClient(<CardView />);
     expect(screen.getByText('Loading cards...')).toBeInTheDocument();
     view.unmount();
@@ -385,7 +390,11 @@ describe('CardView', () => {
 
     it('should not show filter input during loading', () => {
       const pending = Promise.withResolvers<Card[]>();
-      messages.resolve('getAllCards', pending.promise);
+      vi.spyOn(storage, 'getItem').mockReturnValue(
+        pending.promise.then((cards) =>
+          buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
+        )
+      );
       const view = renderWithQueryClient(<CardView />);
 
       expect(screen.queryByPlaceholderText('Filter by name or ID...')).not.toBeInTheDocument();

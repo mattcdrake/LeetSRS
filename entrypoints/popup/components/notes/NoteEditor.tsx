@@ -31,6 +31,7 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
     isLoading,
     isSaving,
     isDeleting,
+    saveError,
     error,
   } = useNoteEditor(slug);
 
@@ -64,6 +65,11 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
           disabled={isLoading || isSaving}
         />
       </TextField>
+      {saveError != null && (
+        <p role="alert" className="mt-2 text-xs text-danger">
+          {t.notes.saveFailed}
+        </p>
+      )}
       <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2'}`}>
         <span className={`text-xs ${isOverLimit ? 'text-danger' : 'text-secondary'}`}>
           {t.format.characterCount(characterCount, NOTES_MAX_LENGTH)}

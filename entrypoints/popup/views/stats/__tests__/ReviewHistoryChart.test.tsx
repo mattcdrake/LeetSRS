@@ -62,7 +62,7 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
 
   const renderChart = (data: DailyStats[] = mockLast30DaysStats, language: 'en' | 'pl' = 'en') => {
     const settings = buildSettings({ theme: 'light', language });
-    messages.reset().resolve('getLastNDaysStats', data).resolve('getSettings', settings);
+    messages.reset();
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(statsQueryKeys.lastNDays.detail(30), data);
     queryClient.setQueryData(settingsQueryKeys.all, settings);
@@ -82,7 +82,6 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
     expect(chartData.labels).toEqual(['5/15', '5/16']);
-    expect(sendMessage).toHaveBeenCalledWith('getLastNDaysStats', { days: 30 });
 
     // Check datasets
     expect(chartData.datasets).toHaveLength(4);

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { sendMessage } from '@/infrastructure/browser/messages';
+import { formatLocalDate } from '@/domain/calendar';
+import { calculateHistoryStats, calculateUpcomingStats, countCardStates } from '@/domain/statistics';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 
 export const statsQueryKeys = {
   all: ['stats'] as const,
@@ -18,27 +20,44 @@ export const statsQueryKeys = {
 export function useTodayStatsQuery() {
   return useQuery({
     queryKey: statsQueryKeys.today,
-    queryFn: () => sendMessage('getTodayStats'),
+    refetchInterval: 15_000,
+    networkMode: 'always',
+    queryFn: async () => {
+      const now = new Date();
+      const document = await readLearningDocument(true);
+      return document.stats[formatLocalDate(now)] ?? null;
+    },
   });
 }
 
 export function useCardStateStatsQuery() {
   return useQuery({
     queryKey: statsQueryKeys.cardState,
-    queryFn: () => sendMessage('getCardStateStats'),
+    networkMode: 'always',
+    queryFn: async () => countCardStates(Object.values((await readLearningDocument(true)).cards)),
   });
 }
 
 export function useLastNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: statsQueryKeys.lastNDays.detail(days),
-    queryFn: () => sendMessage('getLastNDaysStats', { days }),
+    refetchInterval: 15_000,
+    networkMode: 'always',
+    queryFn: async () => {
+      const now = new Date();
+      return calculateHistoryStats((await readLearningDocument(true)).stats, days, now);
+    },
   });
 }
 
 export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
     queryKey: statsQueryKeys.nextNDays.detail(days),
-    queryFn: () => sendMessage('getNextNDaysStats', { days }),
+    refetchInterval: 15_000,
+    networkMode: 'always',
+    queryFn: async () => {
+      const now = new Date();
+      return calculateUpcomingStats(Object.values((await readLearningDocument(true)).cards), days, now);
+    },
   });
 }
