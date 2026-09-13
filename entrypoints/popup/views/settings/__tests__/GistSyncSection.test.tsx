@@ -96,7 +96,7 @@ describe('Gist setup form', () => {
       'https://gist.github.com/entered-gist'
     );
     expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
   });
   it.each([false, true])(
     'isolates an edit session from refetches and reopens the latest configuration (changed: %s)',

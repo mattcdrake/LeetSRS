@@ -1,7 +1,7 @@
 import { useIsMutating } from '@tanstack/react-query';
 import { FaArrowsRotate } from 'react-icons/fa6';
-import { gistSyncQueryKeys } from '../queries/gist-sync';
 import { useI18n } from '../contexts/I18nContext';
+import { gistSyncQueryKeys } from '../queries/gist-sync';
 
 interface HeaderProps {
   title: string;

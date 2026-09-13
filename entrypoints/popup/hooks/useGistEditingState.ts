@@ -21,9 +21,11 @@ export function useGistEditingState(config: GistSyncConfig | undefined) {
   }
 
   useEffect(() => {
-    if (wasEditing.current && !editing) editButton.current?.focus();
-    wasEditing.current = editing;
-  }, [editing]);
+    if (wasEditing.current && !editing && connected) {
+      editButton.current?.focus();
+      wasEditing.current = false;
+    } else if (editing) wasEditing.current = true;
+  }, [editing, connected]);
 
   return {
     connected,
