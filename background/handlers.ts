@@ -11,7 +11,6 @@ import { importData, resetAllData } from '@/background/import-export';
 import {
   addCard,
   delayCard,
-  deleteNote,
   rateCard,
   removeCard,
   saveNote,
@@ -95,7 +94,7 @@ export function startBackground() {
   });
   onMessage('deleteNote', async ({ data }) => {
     await readyPromise;
-    return deleteNote(messagePayloadSchemas.deleteNote.parse(data).slug);
+    return saveNote(messagePayloadSchemas.deleteNote.parse(data).slug, '');
   });
   onMessage('updateSettings', async ({ data }) => {
     await readyPromise;
