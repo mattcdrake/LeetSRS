@@ -1,7 +1,9 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { buildReviewQueue, calculateDelayedDueDate, isDue } from '../review';
 
 describe('isDue', () => {
@@ -35,12 +37,47 @@ function dueCard(slug: string, due: string, state = State.New) {
 }
 
 function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
-  return buildReviewQueue(cards, limit, completed);
+  const document = buildLearningDocument({
+    cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
+    settings: { maxNewCardsPerDay: limit },
+    stats: { '2024-01-15': { ...createDailyStats('2024-01-15', undefined), newCards: completed } },
+  });
+  const before = structuredClone(document);
+  const queue = buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'));
+  expect(document).toEqual(before);
+  return queue;
 }
 
 describe('review queue calculations', () => {
-  it('returns an empty queue for an empty readonly collection', () => {
-    expect(buildReviewQueue(Object.freeze([]), 3, 0)).toEqual([]);
+  it('returns an empty queue for an empty document', () => {
+    expect(buildReviewQueue(buildLearningDocument(), new Date('2024-01-15T12:00:00'))).toEqual([]);
+  });
+
+  it.each([State.New, State.Learning, State.Review, State.Relearning])(
+    'excludes paused and future cards and includes exact due times in state %i',
+    (state) => {
+      const due = dueCard('due', '2024-01-15T12:00:00', state);
+      const future = dueCard('future', '2024-01-15T12:00:00.001', state);
+      const paused = { ...dueCard('paused', '2024-01-15T11:00:00', state), paused: true };
+      const document = buildLearningDocument({ cards: { due, future, paused } });
+      expect(buildReviewQueue(document, new Date('2024-01-15T12:00:00')).map((card) => card.slug)).toEqual(['due']);
+    }
+  );
+
+  it('uses the default limit and restores the allowance at local midnight', () => {
+    const cards = Object.fromEntries(['a', 'b', 'c', 'd'].map((slug) => [slug, dueCard(slug, '2024-01-15T12:00:00')]));
+    const document = buildLearningDocument({
+      cards,
+      stats: { '2024-01-15': { ...createDailyStats('2024-01-15', undefined), newCards: 3 } },
+    });
+    const before = structuredClone(document);
+    expect(buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'))).toEqual([]);
+    expect(buildReviewQueue(document, new Date('2024-01-16T00:00:00')).map((card) => card.slug)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(document).toEqual(before);
   });
 
   it('retains only non-new cards when the daily new-card limit is zero', () => {
@@ -51,7 +88,7 @@ describe('review queue calculations', () => {
       dueCard('relearning', '2024-01-15T09:00:00', State.Relearning),
     ];
 
-    expect(buildReviewQueue(cards, 0, 0).map((card) => card.slug)).toEqual(['learning', 'relearning', 'review']);
+    expect(queueFor(cards, 0, 0).map((card) => card.slug)).toEqual(['learning', 'relearning', 'review']);
   });
 
   it.each([0, 1705312800000])('sorts equal due timestamps %i by slug', (timestamp) => {

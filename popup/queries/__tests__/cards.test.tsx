@@ -7,12 +7,13 @@ import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
+import { getBadgeState } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import type { Card } from '@/domain/cards';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/integrations/browser/messages';
-
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, usePauseCardMutation, useRateCardMutation, useReviewQueueQuery } from '../cards';
@@ -34,6 +35,38 @@ describe('useCardsQuery', () => {
     await storage.setItem(STORAGE_KEYS.learningDocument, { ...document, cards: {} });
     await waitFor(() => expect(result.current.data).toEqual([]));
   });
+});
+
+it('keeps popup and badge queues consistent without reading browser language', async () => {
+  fakeBrowser.reset();
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+  const languages = vi.fn(() => ['pl']);
+  vi.stubGlobal('navigator', {
+    get languages() {
+      return languages();
+    },
+  });
+  const cards = ['new-a', 'new-b', 'review', 'future', 'paused'].map((slug) => {
+    const card = createMockCard(slug === 'review' ? State.Review : State.New, { slug, paused: slug === 'paused' });
+    card.fsrs.due = slug === 'future' ? Date.now() + 1000 : Date.now();
+    return card;
+  });
+  const document = buildLearningDocument({
+    cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
+    settings: { maxNewCardsPerDay: 1 },
+  });
+  await storage.setItem(STORAGE_KEYS.learningDocument, document);
+  const view = renderHook(() => useReviewQueueQuery(), { wrapper: createTestWrapper().wrapper });
+  try {
+    await waitFor(() => expect(view.result.current.data?.map((card) => card.slug)).toEqual(['new-a', 'review']));
+    expect(await getBadgeState()).toEqual({ count: 2, nextDueAt: Date.now() + 1000 });
+    expect(languages).not.toHaveBeenCalled();
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  }
 });
 
 describe('usePauseCardMutation', () => {
