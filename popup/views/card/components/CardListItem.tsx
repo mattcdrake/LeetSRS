@@ -3,13 +3,13 @@ import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-
 import { State as FsrsState } from 'ts-fsrs';
 import type { Card } from '@/domain/cards';
 import type { Translations } from '@/i18n';
+import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { getLeetcodeProblemUrl } from '@/popup/leetcode';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
 import { bounceButton } from '@/popup/styles';
 import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
 import { useI18n } from '../../../contexts/I18nContext';
-import { CardNotes } from './CardNotes';
 
 const getStateLabel = (state: FsrsState, t: Translations) => {
   switch (state) {
@@ -149,7 +149,10 @@ export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardList
             </Button>
           </div>
 
-          <CardNotes slug={card.slug} />
+          <div className="mt-3 pt-3 border-t border-current">
+            <span className="text-xs text-secondary">{t.notes.title}</span>
+            <NoteEditor slug={card.slug} variant="compact" />
+          </div>
         </div>
       )}
     </div>

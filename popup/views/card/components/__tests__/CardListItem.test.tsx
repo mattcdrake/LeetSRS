@@ -13,7 +13,7 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { CardListItem } from '../CardListItem';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
-vi.mock('../CardNotes', () => ({ CardNotes: () => null }));
+vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
 let queryClient: QueryClient;
