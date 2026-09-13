@@ -5,7 +5,7 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
  */
 
 import type { QueryClient } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
@@ -201,30 +201,43 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
-    it('should finish processing when the slide animation ends', async () => {
-      render(<ReviewQueue />, { wrapper });
+    it.each([
+      [false, 'animate-slide-right'],
+      [true, 'animate-slide-left'],
+    ] as const)(
+      'should finish processing after rating with shouldRequeue=%s',
+      async (shouldRequeue, animationClass) => {
+        mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue });
+        render(<ReviewQueue />, { wrapper });
 
-      const goodButton = await screen.findByRole('button', { name: 'Good' });
-      fireEvent.click(goodButton);
+        const goodButton = await screen.findByRole('button', { name: 'Good' });
+        fireEvent.click(goodButton);
 
-      const cardContainer = screen.getByTestId('review-card').parentElement;
-      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
-      expect(goodButton).toBeDisabled();
+        const cardContainer = screen.getByTestId('review-card').parentElement;
+        await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
+        expect(goodButton).toBeDisabled();
 
-      fireEvent.animationEnd(cardContainer as HTMLElement);
+        fireEvent.animationEnd(cardContainer as HTMLElement);
 
-      await waitFor(() => expect(goodButton).not.toBeDisabled());
-      expect(cardContainer).not.toHaveClass('animate-slide-right');
-    });
+        await waitFor(() => expect(goodButton).not.toBeDisabled());
+        expect(cardContainer).not.toHaveClass(animationClass);
+      }
+    );
 
     it('should retain the outgoing card and disabled actions until the animation ends', async () => {
+      const mutation = Promise.withResolvers<{ card: Card; shouldRequeue: boolean }>();
+      mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       const cardContainer = screen.getByTestId('review-card').parentElement as HTMLElement;
-      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
+      await act(async () => seedQueue(mockCards.slice(1)));
+      fireEvent.animationEnd(cardContainer);
+      expect(screen.getByRole('button', { name: 'Good' })).toBeDisabled();
 
-      seedQueue(mockCards.slice(1));
+      mutation.resolve({ card: mockCards[0], shouldRequeue: false });
+      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
+      fireEvent.animationEnd(screen.getByTestId('review-card'));
 
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
       expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
@@ -236,6 +249,28 @@ describe('ReviewQueue', () => {
 
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
       expect(screen.getByTestId('delete-button')).not.toBeDisabled();
+    });
+
+    it('should advance after saving without waiting for animation when motion is reduced', async () => {
+      vi.spyOn(window, 'matchMedia').mockReturnValue({
+        ...window.matchMedia('(prefers-reduced-motion: reduce)'),
+        matches: true,
+      });
+      const mutation = Promise.withResolvers<{ card: Card; shouldRequeue: boolean }>();
+      mockMutateAsync.mockReturnValue(mutation.promise);
+      render(<ReviewQueue />, { wrapper });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
+      await act(async () => seedQueue(mockCards.slice(1)));
+      expect(screen.getByText('Two Sum')).toBeInTheDocument();
+      expect(screen.getByTestId('pause-button')).toBeDisabled();
+
+      mutation.resolve({ card: mockCards[0], shouldRequeue: false });
+
+      await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
+      expect(screen.getByRole('button', { name: 'Good' })).not.toBeDisabled();
+      expect(screen.getByTestId('pause-button')).not.toBeDisabled();
+      expect(screen.getByTestId('review-card').parentElement).toHaveClass('animate-slide-in');
     });
 
     it('should disable rating buttons while processing', async () => {
