@@ -1,6 +1,7 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode, useEffect } from 'react';
 import { useStorageQueryEvents } from '@/popup/queries/storage-events';
+import { createPopupQueryClient } from '@/popup/query-client';
 
 /**
  * Creates a new QueryClient with test-friendly defaults
@@ -9,7 +10,7 @@ import { useStorageQueryEvents } from '@/popup/queries/storage-events';
  * - Sets stale time to 0 for predictable behavior
  */
 export function createTestQueryClient() {
-  return new QueryClient({
+  return createPopupQueryClient({
     defaultOptions: {
       queries: {
         retry: false,

@@ -11,7 +11,6 @@ export const cardQueryKeys = {
 
 export const cardsQueryOptions = queryOptions({
   queryKey: cardQueryKeys.all,
-  networkMode: 'always',
   queryFn: async () => Object.values((await readLearningDocument(true)).cards),
 });
 
@@ -23,7 +22,6 @@ export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }
   const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
     queryKey: cardQueryKeys.reviewQueue,
-    networkMode: 'always',
     queryFn: () => getReviewQueue(true),
     staleTime: 0,
     gcTime: 0,
@@ -35,7 +33,6 @@ export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }
 function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {
   const queryClient = useQueryClient();
   return useMutation<void, Error, TVariables>({
-    networkMode: 'always',
     mutationFn,
     onSettled: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
   });

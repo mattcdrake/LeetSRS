@@ -12,7 +12,6 @@ export const gistSyncQueryKeys = {
 export function useGistSyncConfigQuery() {
   return useQuery({
     queryKey: gistSyncQueryKeys.config,
-    networkMode: 'always',
     queryFn: async () => {
       await readLearningDocument(true);
       return readGistConnection();
@@ -23,7 +22,6 @@ export function useGistSyncConfigQuery() {
 export function useGistSyncStatusQuery() {
   return useQuery({
     queryKey: gistSyncQueryKeys.status,
-    networkMode: 'always',
     queryFn: () => sendMessage('getGistSyncStatus'),
     refetchInterval: 15000,
   });
@@ -37,7 +35,6 @@ export function useSetupGistSyncMutation() {
 
 export function useSetGistSyncEnabledMutation() {
   return useMutation({
-    networkMode: 'always',
     mutationFn: (enabled: boolean) => sendMessage('setGistSyncEnabled', { enabled }),
   });
 }

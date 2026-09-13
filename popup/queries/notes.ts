@@ -13,14 +13,12 @@ export function useNoteQuery(slug: string) {
 export function useSaveNoteMutation(slug: string) {
   return useMutation({
     mutationKey: [...cardQueryKeys.all, 'notes', slug, 'save'],
-    networkMode: 'always',
     mutationFn: (text: string) => sendMessage('saveNote', { slug, text }),
   });
 }
 
 export function useDeleteNoteMutation(slug: string) {
   return useMutation({
-    networkMode: 'always',
     mutationFn: () => sendMessage('deleteNote', { slug }),
   });
 }
