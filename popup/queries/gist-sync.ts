@@ -6,7 +6,6 @@ import type { GistSetup } from '@/domain/gist-sync';
 import { sendMessage } from '@/integrations/browser/messages';
 
 export const gistSyncQueryKeys = {
-  all: ['gistSync'] as const,
   config: ['gistSync', 'config'] as const,
   status: ['gistSync', 'status'] as const,
   arrival: ['gistSync', 'arrival'] as const,
