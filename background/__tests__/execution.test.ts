@@ -121,7 +121,7 @@ describe('registered background execution', () => {
       const failure = new Error('Badge unavailable');
       vi.spyOn(browser.action, method).mockRejectedValueOnce(failure);
       const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      await expect(dispatch('addCard', { problem })).resolves.toMatchObject(problem);
+      await expect(dispatch('addCard', { problem })).resolves.toBeUndefined();
       expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
       expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
       await dispatch('saveNote', { slug: problem.slug, text: 'saved after badge failure' });

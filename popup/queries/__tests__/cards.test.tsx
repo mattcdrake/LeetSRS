@@ -7,9 +7,9 @@ import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
+import { readLearningDocument } from '@/data/learning-document';
 import { getBadgeState } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
-import type { Card } from '@/domain/cards';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/integrations/browser/messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -74,19 +74,7 @@ describe('usePauseCardMutation', () => {
     ['pausing', 'two-sum', true],
     ['unpausing', 'three-sum', false],
   ] as const)('sends the correct message when %s a card', async (_action, slug, paused) => {
-    const mockCard: Card = {
-      id: 'test-id',
-      slug,
-      name: 'Two Sum',
-      leetcodeId: '1',
-      difficulty: 'Easy',
-      domain: 'leetcode.com',
-      createdAt: Date.now(),
-      fsrs: createMockCard(State.New).fsrs,
-      paused,
-    };
-
-    vi.mocked(sendMessage).mockResolvedValue(mockCard);
+    vi.mocked(sendMessage).mockResolvedValue(undefined);
 
     const { result } = renderHook(() => usePauseCardMutation(), {
       wrapper: createTestWrapper().wrapper,
@@ -172,16 +160,17 @@ describe('card queries through JSON messaging and background handlers', () => {
     expect(result.current.data).toStrictEqual([card]);
   });
 
-  it('returns numeric dates from scheduling through a mutation', async () => {
+  it('acknowledges scheduling and refreshes the saved card with numeric dates', async () => {
     const { result } = renderHook(() => useRateCardMutation(), { wrapper: createTestWrapper().wrapper });
 
     await act(async () => {
-      const { card } = await result.current.mutateAsync({ ...buildProblem(), rating: Rating.Good });
+      await expect(result.current.mutateAsync({ ...buildProblem(), rating: Rating.Good })).resolves.toBeUndefined();
       expect(sendMessage).toHaveBeenCalledWith('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+      const card = (await readLearningDocument()).cards['two-sum'];
       expect(card).toMatchObject(buildProblem());
-      expect(card.createdAt).toEqual(expect.any(Number));
-      expect(card.fsrs.due).toEqual(expect.any(Number));
-      expect(card.fsrs.last_review).toEqual(expect.any(Number));
+      expect(card?.createdAt).toEqual(expect.any(Number));
+      expect(card?.fsrs.due).toEqual(expect.any(Number));
+      expect(card?.fsrs.last_review).toEqual(expect.any(Number));
     });
   });
 });

@@ -5,9 +5,10 @@ import { useI18n } from '../../contexts/I18nContext';
 
 interface NotesSectionProps {
   slug: string;
+  isDisabled?: boolean;
 }
 
-export function NotesSection({ slug }: NotesSectionProps) {
+export function NotesSection({ slug, isDisabled = false }: NotesSectionProps) {
   const t = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -17,6 +18,7 @@ export function NotesSection({ slug }: NotesSectionProps) {
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-tertiary transition-colors"
         onPress={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
+        isDisabled={isDisabled}
       >
         <span className="text-sm font-semibold text-primary">{t.notes.title}</span>
         <span className={`text-xs text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
@@ -25,7 +27,7 @@ export function NotesSection({ slug }: NotesSectionProps) {
       </Button>
 
       <div className="px-4 pb-4 border-t border-current" hidden={!isExpanded}>
-        <NoteEditor slug={slug} variant="regular" />
+        <NoteEditor slug={slug} variant="regular" isDisabled={isDisabled} />
       </div>
     </div>
   );

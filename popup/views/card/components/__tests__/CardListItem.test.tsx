@@ -29,7 +29,7 @@ const renderItem = (card: Card, onDeleted = vi.fn()) => {
 
 describe('CardListItem', () => {
   beforeEach(() => {
-    messages.reset().resolve('setPauseStatus', createMockCard(State.New)).resolve('removeCard', undefined);
+    messages.reset().resolve('setPauseStatus', undefined).resolve('removeCard', undefined);
     queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   });
 
@@ -136,7 +136,7 @@ describe('CardListItem', () => {
   });
 
   it('keeps overlapping operations on different cards independent', async () => {
-    const pauseResult = Promise.withResolvers<Card>();
+    const pauseResult = Promise.withResolvers<void>();
     const deleteResult = Promise.withResolvers<void>();
     messages.handle('setPauseStatus', () => pauseResult.promise).handle('removeCard', () => deleteResult.promise);
     const cards = [
@@ -166,7 +166,7 @@ describe('CardListItem', () => {
     });
 
     await act(async () => {
-      pauseResult.resolve(cards[0]);
+      pauseResult.resolve();
       deleteResult.resolve();
       await Promise.all([pauseResult.promise, deleteResult.promise]);
     });

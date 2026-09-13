@@ -46,7 +46,14 @@ vi.mock('../ReviewCard', () => ({
 }));
 
 vi.mock('../NotesSection', () => ({
-  NotesSection: ({ slug }: { slug: string }) => <div data-testid="notes-section">Notes for {slug}</div>,
+  NotesSection: ({ slug, isDisabled }: { slug: string; isDisabled: boolean }) => (
+    <div data-testid="notes-section">
+      Notes for {slug}
+      <button type="button" disabled={isDisabled}>
+        Edit note
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('../ActionsSection', () => ({
@@ -119,10 +126,9 @@ describe('ReviewQueue', () => {
     messages
       .reset()
       .handle('rateCard', mockMutateAsync)
-
       .resolve('removeCard', undefined)
-      .resolve('delayCard', mockCards[0])
-      .resolve('setPauseStatus', mockCards[0]);
+      .resolve('delayCard', undefined)
+      .resolve('setPauseStatus', undefined);
     mockMutateAsync.mockReset();
 
     ({ wrapper, queryClient } = createTestWrapper());
@@ -130,7 +136,7 @@ describe('ReviewQueue', () => {
       card.fsrs.due = index;
     });
     seedQueue(mockCards);
-    mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue: false });
+    mockMutateAsync.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -170,11 +176,6 @@ describe('ReviewQueue', () => {
 
   describe('Card Rating', () => {
     it('should call mutation with correct parameters when rated', async () => {
-      mockMutateAsync.mockResolvedValue({
-        card: { ...mockCards[0], fsrs: { ...mockCards[0].fsrs, due: Date.now() + 86400000 } },
-        shouldRequeue: false,
-      });
-
       render(<ReviewQueue />, { wrapper });
 
       // Wait for initial render
@@ -201,76 +202,55 @@ describe('ReviewQueue', () => {
   });
 
   describe('Processing State', () => {
-    it.each([
-      [false, 'animate-slide-right'],
-      [true, 'animate-slide-left'],
-    ] as const)(
-      'should finish processing after rating with shouldRequeue=%s',
-      async (shouldRequeue, animationClass) => {
-        mockMutateAsync.mockResolvedValue({ card: mockCards[0], shouldRequeue });
-        render(<ReviewQueue />, { wrapper });
-
-        const goodButton = await screen.findByRole('button', { name: 'Good' });
-        fireEvent.click(goodButton);
-
-        const cardContainer = screen.getByTestId('review-card').parentElement;
-        await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
-        expect(goodButton).toBeDisabled();
-
-        fireEvent.animationEnd(cardContainer as HTMLElement);
-
-        await waitFor(() => expect(goodButton).not.toBeDisabled());
-        expect(cardContainer).not.toHaveClass(animationClass);
-      }
-    );
-
-    it('should retain the outgoing card and disabled actions until the animation ends', async () => {
-      const mutation = Promise.withResolvers<{ card: Card; shouldRequeue: boolean }>();
+    it('keeps controls disabled after the command until the queue refresh completes', async () => {
+      const mutation = Promise.withResolvers<void>();
+      const refresh = Promise.withResolvers<ReturnType<typeof buildLearningDocument>>();
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
-      fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
-      const cardContainer = screen.getByTestId('review-card').parentElement as HTMLElement;
-      await act(async () => seedQueue(mockCards.slice(1)));
-      fireEvent.animationEnd(cardContainer);
-      expect(screen.getByRole('button', { name: 'Good' })).toBeDisabled();
-
-      mutation.resolve({ card: mockCards[0], shouldRequeue: false });
-      await waitFor(() => expect(cardContainer).toHaveClass('animate-slide-right'));
-      fireEvent.animationEnd(screen.getByTestId('review-card'));
-
+      const goodButton = await screen.findByRole('button', { name: 'Good' });
+      vi.mocked(storage.getItem).mockReturnValue(refresh.promise);
+      fireEvent.click(goodButton);
+      mutation.resolve();
+      await act(async () => Promise.resolve());
+      expect(goodButton).toBeDisabled();
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-      expect(screen.getByTestId('delete-button')).toBeDisabled();
-      expect(screen.getByTestId('delay-1-button')).toBeDisabled();
-      expect(screen.getByTestId('pause-button')).toBeDisabled();
 
-      fireEvent.animationEnd(cardContainer);
-
+      refresh.resolve(
+        buildLearningDocument({ cards: Object.fromEntries(mockCards.slice(1).map((card) => [card.slug, card])) })
+      );
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
-      expect(screen.getByTestId('delete-button')).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
     });
 
-    it('should advance after saving without waiting for animation when motion is reduced', async () => {
-      vi.spyOn(window, 'matchMedia').mockReturnValue({
-        ...window.matchMedia('(prefers-reduced-motion: reduce)'),
-        matches: true,
-      });
-      const mutation = Promise.withResolvers<{ card: Card; shouldRequeue: boolean }>();
+    it('does not render a cache update until the command also completes', async () => {
+      const mutation = Promise.withResolvers<void>();
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue(mockCards.slice(1)));
-      expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      expect(screen.getByTestId('pause-button')).toBeDisabled();
 
-      mutation.resolve({ card: mockCards[0], shouldRequeue: false });
+      await waitFor(() => expect(screen.getByText('Loading review queue...')).toBeInTheDocument());
+      expect(screen.queryByText('Two Sum')).not.toBeInTheDocument();
+      expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
+
+      mutation.resolve();
 
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
       expect(screen.getByRole('button', { name: 'Good' })).not.toBeDisabled();
       expect(screen.getByTestId('pause-button')).not.toBeDisabled();
-      expect(screen.getByTestId('review-card').parentElement).toHaveClass('animate-slide-in');
+    });
+
+    it('shows the empty state after the final card command and queue refresh complete', async () => {
+      render(<ReviewQueue />, { wrapper });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
+      await act(async () => seedQueue([]));
+
+      await waitFor(() => expect(screen.getByText('No cards to review!')).toBeInTheDocument());
+      expect(screen.queryByTestId('review-card')).not.toBeInTheDocument();
     });
   });
 
@@ -362,7 +342,7 @@ describe('ReviewQueue', () => {
   });
 
   describe('Card Delay', () => {
-    let mockDelayMutateAsync: Mock<(data: { slug: string; days: number }) => Promise<Card>>;
+    let mockDelayMutateAsync: Mock<(data: { slug: string; days: number }) => Promise<void>>;
 
     beforeEach(() => {
       vi.spyOn(storage, 'getItem');
@@ -371,14 +351,7 @@ describe('ReviewQueue', () => {
     });
 
     it('should call delay mutation when delay buttons are clicked', async () => {
-      const delayedCard = {
-        ...mockCards[0],
-        fsrs: {
-          ...mockCards[0].fsrs,
-          due: new Date(Date.now() + 86400000).getTime(),
-        },
-      };
-      mockDelayMutateAsync.mockResolvedValue(delayedCard);
+      mockDelayMutateAsync.mockResolvedValue(undefined);
 
       render(<ReviewQueue />, { wrapper });
 
@@ -431,14 +404,14 @@ describe('ReviewQueue', () => {
 
   describe('Card Actions', () => {
     it.each([
-      ['Good', 'rateCard', { card: mockCards[0], shouldRequeue: false }, 'animate-slide-right'],
-      ['Delete', 'removeCard', undefined, 'animate-slide-left'],
-      ['Delay 1 day', 'delayCard', mockCards[0], 'animate-slide-right'],
-      ['Pause', 'setPauseStatus', mockCards[0], 'animate-slide-right'],
+      ['Good', 'rateCard'],
+      ['Delete', 'removeCard'],
+      ['Delay 1 day', 'delayCard'],
+      ['Pause', 'setPauseStatus'],
     ] as const)(
       'should disable controls and prevent duplicate actions while %s is pending',
-      async (buttonName, message, result, animationClass) => {
-        const mutation = Promise.withResolvers<typeof result>();
+      async (buttonName, message) => {
+        const mutation = Promise.withResolvers<void>();
         messages.handle(message, () => mutation.promise);
         render(<ReviewQueue />, { wrapper });
 
@@ -455,16 +428,10 @@ describe('ReviewQueue', () => {
         expect(sendMessage).toHaveBeenCalledWith(message, expect.any(Object));
         for (const control of controls) expect(control).toBeDisabled();
 
-        mutation.resolve(result);
-        const cardContainer = screen.getByTestId('review-card').parentElement as HTMLElement;
-        await waitFor(() => expect(cardContainer).toHaveClass(animationClass));
-        for (const control of controls) expect(control).toBeDisabled();
-
-        fireEvent.animationEnd(cardContainer);
+        mutation.resolve();
         await waitFor(() => {
           for (const control of controls) expect(control).toBeEnabled();
         });
-        expect(cardContainer).not.toHaveClass(animationClass);
         expect(sendMessage).toHaveBeenCalledTimes(1);
       }
     );

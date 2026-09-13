@@ -98,7 +98,7 @@ describe('document startup through registered background commands', () => {
       expect(alarmResult).toEqual({ status: 'fulfilled', value: undefined });
       if (outcome === 'success') {
         expect(readResult).toEqual({ status: 'fulfilled', value: undefined });
-        expect(writeResult).toMatchObject({ status: 'fulfilled', value: buildProblem() });
+        expect(writeResult).toEqual({ status: 'fulfilled', value: undefined });
         expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
       } else {
         expect(readResult).toEqual({ status: 'rejected', reason: failure });
