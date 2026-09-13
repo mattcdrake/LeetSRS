@@ -175,6 +175,8 @@ const de: Translations = {
       syncFailed: 'Synchronisierung fehlgeschlagen',
       edit: 'Bearbeiten',
       cancel: 'Abbrechen',
+      latestEditNotice:
+        'Es werden die vollständigen Daten des zuletzt bearbeiteten Browsers verwendet; Änderungen anderer Browser können ersetzt werden.',
       connectionHelp:
         'Dein Browser synchronisiert die Verbindung und die Einstellung zur automatischen Synchronisierung. Der letzte Synchronisierungsstatus gilt nur für diesen Browser.',
       destination: 'Ziel',

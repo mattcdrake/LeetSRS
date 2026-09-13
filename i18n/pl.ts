@@ -224,6 +224,8 @@ const pl: Translations = {
       syncFailed: 'Synchronizacja nie powiodła się',
       edit: 'Edytuj',
       cancel: 'Anuluj',
+      latestEditNotice:
+        'Używane są pełne dane z przeglądarki, w której ostatnio wprowadzono zmiany; zmiany z innych przeglądarek mogą zostać zastąpione.',
       connectionHelp:
         'Przeglądarka synchronizuje połączenie i ustawienie automatycznej synchronizacji. Stan ostatniej synchronizacji dotyczy tylko tej przeglądarki.',
       destination: 'Miejsce docelowe',

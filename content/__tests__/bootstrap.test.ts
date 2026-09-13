@@ -72,10 +72,10 @@ describe('content startup', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('mounts, observes, and sets up auto-reset without messaging the worker', async () => {
+  it('mounts controls and requests arrival refresh', async () => {
     await act(() => bootstrapContent(ctx));
 
-    expect(sendMessage).not.toHaveBeenCalled();
+    expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival');
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
     expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
     expect(disposeReset).not.toHaveBeenCalled();
@@ -124,4 +124,17 @@ describe('content startup', () => {
     expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
     expect(unwatchTranslations).toHaveBeenCalledOnce();
   });
+});
+
+it('refreshes on return to an existing tab and disposes arrival listeners', async () => {
+  await act(() => bootstrapContent(ctx));
+  vi.mocked(sendMessage).mockClear();
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+  await act(async () => document.dispatchEvent(new Event('visibilitychange')));
+  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('refreshGistOnArrival');
+  await act(async () => window.dispatchEvent(new Event('focus')));
+  expect(sendMessage).toHaveBeenCalledTimes(2);
+  act(() => ctx.notifyInvalidated());
+  await act(async () => window.dispatchEvent(new Event('focus')));
+  expect(sendMessage).toHaveBeenCalledTimes(2);
 });

@@ -197,6 +197,7 @@ const zhCN: Translations = {
       syncFailed: '同步失败',
       edit: '编辑',
       cancel: '取消',
+      latestEditNotice: '使用最近编辑的浏览器中的完整数据；其他浏览器的更改可能被替换。',
       connectionHelp: '连接和自动同步设置由浏览器同步。上次同步状态仅保存在此浏览器中。',
       destination: '目标',
       existingGist: '使用现有 Gist',

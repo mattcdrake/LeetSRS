@@ -7,10 +7,14 @@ import type { SettingsUpdate } from '@/domain/settings';
 import { createDailyStats, recordReview } from '@/domain/statistics';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
+import { requestAutomaticSync } from './gist-sync';
+
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000 }));
 
 async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<LearningDocument> {
-  return replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
+  const saved = await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
+  void requestAutomaticSync(true);
+  return saved;
 }
 
 function requireCard(document: LearningDocument, slug: string): Card {
@@ -49,6 +53,7 @@ export async function addCard(problem: ProblemDescriptor): Promise<Card> {
 export async function removeCard(slug: string): Promise<void> {
   const now = new Date();
   const document = await readLearningDocument();
+  if (!findCard(document, slug)) return;
   delete document.cards[slug];
   await saveLocalLearningDocument(document, now);
 }
@@ -57,6 +62,7 @@ export async function delayCard(slug: string, days: number): Promise<Card> {
   const now = new Date();
   const document = await readLearningDocument();
   const card = requireCard(document, slug);
+  if (days === 0) return card;
   card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
   const saved = await saveLocalLearningDocument(document, now);
   return saved.cards[slug];
@@ -66,6 +72,7 @@ export async function setPauseStatus(slug: string, paused: boolean): Promise<Car
   const now = new Date();
   const document = await readLearningDocument();
   const card = requireCard(document, slug);
+  if (card.paused === paused) return card;
   card.paused = paused;
   const saved = await saveLocalLearningDocument(document, now);
   return saved.cards[slug];
@@ -101,6 +108,7 @@ export async function saveNote(slug: string, text: string): Promise<void> {
   const now = new Date();
   const document = await readLearningDocument();
   const card = requireCard(document, slug);
+  if ((card.note ?? '') === text) return;
   if (text === '') {
     delete card.note;
   } else {
@@ -128,5 +136,6 @@ export async function updateSettings(changes: SettingsUpdate): Promise<void> {
 
   const now = new Date();
   const document = await readLearningDocument();
+  if (Object.entries(changes).every(([key, value]) => document.settings[key as keyof SettingsUpdate] === value)) return;
   await saveLocalLearningDocument({ ...document, settings: { ...document.settings, ...changes } }, now);
 }

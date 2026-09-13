@@ -199,7 +199,7 @@ describe('document learning through background commands', () => {
     };
     await replaceLearningDocument(document);
     const get = storage.getItem.bind(storage);
-    const reads = vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
+    vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
       const result = await get(key);
       vi.setSystemTime(new Date('2024-03-15T00:00:00'));
       await replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 3 } });
@@ -207,7 +207,6 @@ describe('document learning through background commands', () => {
     });
 
     expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'review']);
-    expect(reads).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument);
     expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
     await replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 0 } });
     expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['review']);

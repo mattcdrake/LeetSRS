@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded by ADR-0004
 ---
 
 # Centralize background command execution
+
+Superseded by [ADR-0004](0004-background-sync-lifecycle.md), which separates local saves from network and badge work.
 
 Popup, content, and alarm-driven operations can mutate the same learning data; manually selected wrappers previously allowed mutations such as import and reset to bypass serialization and shared side effects. Declare command behavior in an exhaustive typed registry and execute writes through one background queue, including Gist sync and its network requests, so each mutation waits for the previous one and sync tracking and badge refresh follow explicit ownership. Reads may overlap writes, and a slow sync delays subsequent writes.
 

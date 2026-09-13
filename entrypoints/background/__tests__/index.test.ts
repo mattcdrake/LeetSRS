@@ -14,6 +14,12 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
+vi.mock('octokit', () => ({
+  Octokit: vi.fn(() => {
+    throw new Error('Network unavailable');
+  }),
+}));
+
 function startBackground() {
   vi.mocked(onMessage).mockClear();
   const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
@@ -149,6 +155,7 @@ describe('document startup through registered background commands', () => {
     const fireAlarm = startBackground();
     await dispatch('waitForInitialization');
     expect(create.mock.calls).toEqual(exists ? [] : [['gist-sync', { periodInMinutes: 1 }]]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const badge = vi.spyOn(browser.action, 'setBadgeText');
     await fireAlarm();
     expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });

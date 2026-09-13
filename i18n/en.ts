@@ -223,6 +223,8 @@ const en = {
       syncFailed: 'Sync failed',
       edit: 'Edit',
       cancel: 'Cancel',
+      latestEditNotice:
+        'The most recently edited browser’s complete data is used; changes from other browsers may be replaced.',
       connectionHelp:
         'The connection and automatic-sync setting are synced by your browser. Last sync is local to this browser.',
       destination: 'Destination',

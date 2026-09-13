@@ -381,7 +381,10 @@ describe('document Gist sync', () => {
     expect((await documentSync.getGistSyncStatus()).syncInProgress).toBe(true);
     await writeGistConnection({ pat: 'replacement-pat', gistId: 'replacement-gist', enabled: false });
     request.resolve({ data: { files: {} } });
-    expect(await syncing).toEqual({ success: false, error: 'GitHub API rate limit exceeded. Please try again later.' });
+    expect(await syncing).toEqual({
+      success: false,
+      error: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
+    });
     expect(mockGistsUpdate.mock.calls[0][0].gist_id).toBe('gist123');
     expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
     expect(await readLearningDocument()).toEqual(local);
@@ -396,8 +399,8 @@ describe('document Gist sync', () => {
   });
 
   it.each([
-    [{ pat: '' }, 'PAT is not configured'],
-    [{ gistId: null }, 'Gist ID is not configured'],
+    [{ pat: '' }, 'PAT is not configured. Add your GitHub token in Settings.'],
+    [{ gistId: null }, 'Gist ID is not configured. Choose a Gist in Settings.'],
   ] as const)('rejects missing configuration %j', async (config, error) => {
     await writeGistConnection({ ...connection, ...config });
     expect(await documentSync.triggerGistSync()).toEqual({ success: false, error });
@@ -406,7 +409,10 @@ describe('document Gist sync', () => {
 
   it('reports a missing Gist without replacing either dataset', async () => {
     mockGistsGet.mockRejectedValue(new Error('404 Not Found'));
-    expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: 'Gist not found' });
+    expect(await documentSync.triggerGistSync()).toEqual({
+      success: false,
+      error: 'Gist not found. Check the Gist ID and token access in Settings.',
+    });
     expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(local);
   });

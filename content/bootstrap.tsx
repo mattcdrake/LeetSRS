@@ -1,5 +1,6 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
+import { type ArrivalRefreshState, watchArrivalRefresh } from '@/ui/useArrivalRefresh';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 import { createContentRoot } from './ui/shadow-root';
@@ -7,8 +8,9 @@ import { Toast } from './ui/Toast';
 import './ui/shadow.css';
 
 export async function bootstrapContent(ctx: ContentScriptContext) {
-  await setupLeetSrsControl(ctx);
-  if (ctx.isInvalid) return;
+  const showRefresh = await setupLeetSrsControl(ctx);
+  if (ctx.isInvalid || !showRefresh) return;
+  ctx.onInvalidated(watchArrivalRefresh(showRefresh, true));
   const disposeReset = setupLeetcodeAutoReset(() => {
     void showResetToast(ctx);
   });
@@ -16,17 +18,22 @@ export async function bootstrapContent(ctx: ContentScriptContext) {
 }
 
 async function setupLeetSrsControl(ctx: ContentScriptContext) {
+  let refresh: ArrivalRefreshState = { pending: true, notice: null };
+  let root: ReturnType<typeof createContentRoot> | undefined;
   const ui = await createShadowRootUi(ctx, {
     name: 'leetsrs-control',
     position: 'inline',
     anchor: '#ide-top-btns',
     append: (toolbar, host) => toolbar.insertBefore(host, toolbar.lastElementChild),
     onMount(container) {
-      const root = createContentRoot(container);
-      root.render(<LeetSrsControl />);
+      root = createContentRoot(container);
+      root.render(<LeetSrsControl refresh={refresh} />);
       return root;
     },
-    onRemove: (root) => root?.unmount(),
+    onRemove: (mountedRoot) => {
+      mountedRoot?.unmount();
+      root = undefined;
+    },
   });
   ui.shadowHost.id = 'leetsrs-control';
   if (ctx.isInvalid) return;
@@ -42,6 +49,10 @@ async function setupLeetSrsControl(ctx: ContentScriptContext) {
   const observer = new MutationObserver(mountControl);
   observer.observe(document.body, { childList: true, subtree: true });
   ctx.onInvalidated(() => observer.disconnect());
+  return (state: ArrivalRefreshState) => {
+    refresh = state;
+    root?.render(<LeetSrsControl refresh={refresh} />);
+  };
 }
 
 async function showResetToast(ctx: ContentScriptContext) {

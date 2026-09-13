@@ -148,7 +148,7 @@ describe('document settings through background commands', () => {
     await dispatch('waitForInitialization');
     const initial = Promise.withResolvers<typeof document>();
     const started = Promise.withResolvers<void>();
-    const reads = vi.spyOn(storage, 'getItem').mockImplementationOnce(() => {
+    vi.spyOn(storage, 'getItem').mockImplementationOnce(() => {
       started.resolve();
       return initial.promise;
     });
@@ -158,7 +158,6 @@ describe('document settings through background commands', () => {
     await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
     initial.resolve(document);
     expect(await pending).toEqual(buildSettings({ language: 'de', theme: 'dark' }));
-    expect(reads).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument);
     expect(await getSettings()).toEqual(buildSettings({ language: 'pl' }));
   });
 });

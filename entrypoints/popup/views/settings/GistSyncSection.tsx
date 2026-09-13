@@ -79,6 +79,7 @@ export function GistSyncSection() {
         {t.title}
       </h3>
       <p className="text-sm text-secondary mb-4">{t.description}</p>
+      <p className="text-sm text-secondary mb-4">{t.latestEditNotice}</p>
       <p className="text-xs text-secondary mb-4">{t.connectionHelp}</p>
       {config && editing && (
         <GistSetupForm
