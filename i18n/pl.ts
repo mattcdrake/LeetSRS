@@ -4,6 +4,21 @@ import type { Translations } from './index';
 // Polish translations
 const pl: Translations = {
   // App branding
+  syncNotices: {
+    missingBackup: 'Gist nie zawiera kopii zapasowej LeetSRS. Wybierz inny Gist w ustawieniach.',
+    creationFailed: 'GitHub nie zwrócił identyfikatora utworzonego Gist. Sprawdź swoje Gisty przed ponowną próbą.',
+    creationStatusFailed: 'Gist został utworzony, ale nie udało się zapisać stanu synchronizacji.',
+    connectionSaveFailed: 'Nie udało się zapisać połączenia.',
+    unavailable: 'Możesz kontynuować naukę. Synchronizacja wznowi się automatycznie, gdy GitHub będzie dostępny.',
+    rateLimit: 'Osiągnięto limit API GitHub. Spróbuj później. Możesz kontynuować naukę.',
+    authentication: 'Sprawdź token GitHub i jego uprawnienia do Gist w ustawieniach.',
+    missingToken: 'Brak tokenu. Dodaj token GitHub w ustawieniach.',
+    missingGist: 'Brak identyfikatora Gist. Wybierz Gist w ustawieniach.',
+    gistNotFound: 'Nie znaleziono Gist. Sprawdź identyfikator i dostęp tokenu w ustawieniach.',
+    obsolete: 'Synchronizacja zatrzymana, ponieważ dane lub połączenie się zmieniły.',
+    setupStopped: 'Konfiguracja Gist zatrzymana, ponieważ dane lub połączenie się zmieniły.',
+    refreshFailed: 'Nie udało się odświeżyć synchronizacji.',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',
@@ -224,6 +239,8 @@ const pl: Translations = {
       syncFailed: 'Synchronizacja nie powiodła się',
       edit: 'Edytuj',
       cancel: 'Anuluj',
+      latestEditNotice:
+        'Używane są pełne dane z przeglądarki, w której ostatnio wprowadzono zmiany; zmiany z innych przeglądarek mogą zostać zastąpione.',
       connectionHelp:
         'Przeglądarka synchronizuje połączenie i ustawienie automatycznej synchronizacji. Stan ostatniej synchronizacji dotyczy tylko tej przeglądarki.',
       destination: 'Miejsce docelowe',

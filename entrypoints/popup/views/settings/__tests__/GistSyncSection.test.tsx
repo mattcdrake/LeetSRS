@@ -3,6 +3,7 @@
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import type { GistConnectionResult, GistSyncConfig } from '@/domain/gist-sync';
 import { gistSyncQueryKeys } from '@/entrypoints/popup/queries/gist-sync';
@@ -53,16 +54,24 @@ function enterCredentials() {
 }
 
 describe('Gist setup form', () => {
-  it('resets initial setup on Cancel and shows the saved connection after Save', async () => {
+  it.each([false, true])('shows the saved connection after Save with delayed refresh=%s', async (delayed) => {
+    const refresh = Promise.withResolvers<void>();
     config = { pat: '', gistId: null, enabled: false };
     messages.handle('setupGistSync', async (input) => {
       config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: false };
+      if (delayed) {
+        vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementationOnce(async () => {
+          await refresh.promise;
+          return { 'leetsrs:gistConnection': config };
+        });
+      }
       await storage.setItem(STORAGE_KEYS.gistConnection, config);
       return { saved: true };
     });
     await storage.setItem(STORAGE_KEYS.gistConnection, config);
     render(<GistSyncSection />, { wrapper: test.wrapper });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toBeEnabled());
+    expect(screen.getByLabelText('Personal Access Token')).not.toHaveFocus();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     enterCredentials();
     fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
@@ -76,17 +85,18 @@ describe('Gist setup form', () => {
     enterCredentials();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Connection saved'));
+    await act(async () => refresh.resolve());
     expect(sendMessage).toHaveBeenCalledWith('setupGistSync', {
       mode: 'existing',
       pat: 'entered-pat',
       gistId: 'entered-gist',
     });
-    expect(screen.getByRole('link', { name: /entered-gist/ })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: /entered-gist/ })).toHaveAttribute(
       'href',
       'https://gist.github.com/entered-gist'
     );
     expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit' })).toHaveFocus();
   });
   it.each([false, true])(
     'isolates an edit session from refetches and reopens the latest configuration (changed: %s)',

@@ -23,6 +23,7 @@ export const messagePayloadSchemas = {
   setGistSyncEnabled: z.object({ enabled: z.boolean() }),
   getGistSyncStatus: z.undefined(),
   triggerGistSync: z.undefined(),
+  refreshGistOnArrival: z.undefined(),
 };
 
 type MessagePayload<Name extends keyof typeof messagePayloadSchemas> = z.infer<(typeof messagePayloadSchemas)[Name]>;
@@ -43,6 +44,7 @@ export interface ExtensionMessageMap {
   setGistSyncEnabled(data: MessagePayload<'setGistSyncEnabled'>): GistConnectionResult;
   getGistSyncStatus(): GistSyncStatus;
   triggerGistSync(): SyncResult;
+  refreshGistOnArrival(): SyncResult | undefined;
 }
 
 export type MessageName = keyof ExtensionMessageMap;

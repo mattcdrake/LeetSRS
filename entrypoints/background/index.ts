@@ -1,17 +1,17 @@
-import type { MaybePromise } from '@webext-core/messaging';
 import { browser } from 'wxt/browser';
-import type { z } from 'zod';
-import {
-  type MessageData,
-  type MessageName,
-  type MessageResult,
-  messagePayloadSchemas,
-  onMessage,
-} from '@/infrastructure/browser/messages';
-import { readGistConnection } from '@/infrastructure/storage/gist-connection';
+import { storage } from '#imports';
+import { messagePayloadSchemas, onMessage } from '@/infrastructure/browser/messages';
 import { initializeLearningDocument } from '@/infrastructure/storage/learning-document-startup';
-import { getReviewQueue, getSettings } from '@/infrastructure/storage/learning-queries';
-import { getGistSyncStatus, setGistSyncEnabled, setupGistSync, triggerGistSync } from '@/services/gist-sync';
+import { getBadgeState } from '@/infrastructure/storage/learning-queries';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import {
+  getGistSyncStatus,
+  invalidateGistSync,
+  setGistSyncEnabled,
+  setupGistSync,
+  triggerGistSync,
+  waitForArrivalRefresh,
+} from '@/services/gist-sync';
 import { importData, resetAllData } from '@/services/import-export';
 import {
   addCard,
@@ -24,61 +24,21 @@ import {
   updateSettings,
 } from '@/services/learning';
 
-type Command<Name extends MessageName> = {
-  handler: (data: MessageData<Name>) => MaybePromise<MessageResult<Name>>;
-} & ({ kind: 'read' } | { kind: 'write'; refreshBadge: boolean });
-
-const payloadSchemas: { [Name in MessageName]: z.ZodType<MessageData<Name>> } = messagePayloadSchemas;
-
-function read<Data, Result>(handler: (data: Data) => MaybePromise<Result>) {
-  return { kind: 'read' as const, handler };
-}
-
-type WriteOptions = {
-  refreshBadge?: boolean;
-};
-
-function write<Data, Result>(
-  handler: (data: Data) => MaybePromise<Result>,
-  { refreshBadge = false }: WriteOptions = {}
-) {
-  return { kind: 'write' as const, handler, refreshBadge };
-}
-
-const commands: { [Name in MessageName]: Command<Name> } = {
-  waitForInitialization: read(() => undefined),
-  addCard: write(({ problem }) => addCard(problem), { refreshBadge: true }),
-  removeCard: write(({ slug }) => removeCard(slug), { refreshBadge: true }),
-  delayCard: write(({ slug, days }) => delayCard(slug, days), { refreshBadge: true }),
-  setPauseStatus: write(({ slug, paused }) => setPauseStatus(slug, paused), {
-    refreshBadge: true,
-  }),
-  rateCard: write(({ input }) => rateCard(input), { refreshBadge: true }),
-  saveNote: write(({ slug, text }) => saveNote(slug, text)),
-  deleteNote: write(({ slug }) => deleteNote(slug)),
-  updateSettings: write(({ changes }) => updateSettings(changes), { refreshBadge: true }),
-  importData: write(({ jsonData }) => importData(jsonData), { refreshBadge: true }),
-  resetAllData: write(resetAllData, { refreshBadge: true }),
-  setupGistSync: write(setupGistSync, { refreshBadge: true }),
-  setGistSyncEnabled: write(({ enabled }) => setGistSyncEnabled(enabled), { refreshBadge: true }),
-  getGistSyncStatus: read(getGistSyncStatus),
-  triggerGistSync: write(triggerGistSync, { refreshBadge: true }),
-};
-
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
+const BADGE_ALARM_NAME = 'badge-refresh';
 
-async function updateBadge() {
-  const settings = await getSettings();
-  if (settings.badgeEnabled) {
-    const queue = await getReviewQueue();
-    if (queue.length > 0) {
-      await browser.action.setBadgeText({ text: String(queue.length) });
-      await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
-      return;
-    }
+async function refreshBadge() {
+  try {
+    const { count, nextDueAt } = await getBadgeState();
+    const alarm = await browser.alarms.get(BADGE_ALARM_NAME);
+    if (nextDueAt === undefined) await browser.alarms.clear(BADGE_ALARM_NAME);
+    else if (alarm?.scheduledTime !== nextDueAt) await browser.alarms.create(BADGE_ALARM_NAME, { when: nextDueAt });
+    await browser.action.setBadgeText({ text: count ? String(count) : '' });
+    if (count) await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
+  } catch (error) {
+    console.warn('Failed to refresh badge:', error);
   }
-  await browser.action.setBadgeText({ text: '' });
 }
 
 export default defineBackground(() => {
@@ -93,7 +53,7 @@ export default defineBackground(() => {
       });
     }
 
-    await updateBadge();
+    void refreshBadge();
   })();
 
   // Report startup failure without replacing the rejected readiness promise.
@@ -101,49 +61,93 @@ export default defineBackground(() => {
     console.error('Failed to initialize background:', error);
   });
 
-  // Keep network work and post-handler effects in the same mutation queue.
-  // Recover its tail after rejection while returning the original error to callers.
-  let writeQueue = Promise.resolve();
-  const enqueue = <Result>(run: () => Promise<Result>): Promise<Result> => {
-    const result = writeQueue.then(run);
-    writeQueue = result.then(
-      () => undefined,
-      () => undefined
-    );
-    return result;
-  };
-  const refreshBadge = async () => {
-    try {
-      await updateBadge();
-    } catch (error) {
-      console.warn('Failed to refresh badge:', error);
-    }
-  };
-  const dispatch = <Name extends MessageName>(name: Name, data: unknown): Promise<MessageResult<Name>> => {
-    const command = commands[name];
-    const run = async () => {
-      await readyPromise;
-      // The name selects both the payload schema and the corresponding typed handler.
-      const schema: z.ZodType<MessageData<Name>> = payloadSchemas[name];
-      const payload = schema.parse(data);
-      const result = await command.handler(payload);
-      if (command.kind === 'write' && command.refreshBadge) {
-        await refreshBadge();
-      }
-      return result;
-    };
-    if (command.kind === 'read') return run();
-    return enqueue(run);
-  };
-
-  for (const name of Object.keys(commands) as MessageName[]) {
-    onMessage(name, ({ data }) => dispatch(name, data));
+  async function readyToEdit() {
+    await readyPromise;
+    await waitForArrivalRefresh();
   }
+  onMessage('waitForInitialization', async ({ data }) => {
+    await readyPromise;
+    messagePayloadSchemas.waitForInitialization.parse(data);
+    return undefined;
+  });
+  onMessage('addCard', async ({ data }) => {
+    await readyToEdit();
+    return addCard(messagePayloadSchemas.addCard.parse(data).problem);
+  });
+  onMessage('removeCard', async ({ data }) => {
+    await readyToEdit();
+    return removeCard(messagePayloadSchemas.removeCard.parse(data).slug);
+  });
+  onMessage('delayCard', async ({ data }) => {
+    await readyToEdit();
+    const payload = messagePayloadSchemas.delayCard.parse(data);
+    return delayCard(payload.slug, payload.days);
+  });
+  onMessage('setPauseStatus', async ({ data }) => {
+    await readyToEdit();
+    const payload = messagePayloadSchemas.setPauseStatus.parse(data);
+    return setPauseStatus(payload.slug, payload.paused);
+  });
+  onMessage('rateCard', async ({ data }) => {
+    await readyToEdit();
+    return rateCard(messagePayloadSchemas.rateCard.parse(data).input);
+  });
+  onMessage('saveNote', async ({ data }) => {
+    await readyToEdit();
+    const payload = messagePayloadSchemas.saveNote.parse(data);
+    return saveNote(payload.slug, payload.text);
+  });
+  onMessage('deleteNote', async ({ data }) => {
+    await readyToEdit();
+    return deleteNote(messagePayloadSchemas.deleteNote.parse(data).slug);
+  });
+  onMessage('updateSettings', async ({ data }) => {
+    await readyToEdit();
+    return updateSettings(messagePayloadSchemas.updateSettings.parse(data).changes);
+  });
+  onMessage('importData', async ({ data }) => {
+    await readyPromise;
+    return importData(messagePayloadSchemas.importData.parse(data).jsonData);
+  });
+  onMessage('resetAllData', async ({ data }) => {
+    await readyPromise;
+    messagePayloadSchemas.resetAllData.parse(data);
+    return resetAllData();
+  });
+  onMessage('setupGistSync', async ({ data }) => {
+    await readyPromise;
+    return setupGistSync(messagePayloadSchemas.setupGistSync.parse(data));
+  });
+  onMessage('setGistSyncEnabled', async ({ data }) => {
+    await readyPromise;
+    return setGistSyncEnabled(messagePayloadSchemas.setGistSyncEnabled.parse(data).enabled);
+  });
+  onMessage('getGistSyncStatus', async ({ data }) => {
+    await readyPromise;
+    messagePayloadSchemas.getGistSyncStatus.parse(data);
+    return getGistSyncStatus();
+  });
+  onMessage('triggerGistSync', async ({ data }) => {
+    await readyPromise;
+    messagePayloadSchemas.triggerGistSync.parse(data);
+    return triggerGistSync();
+  });
+
+  onMessage('refreshGistOnArrival', async ({ data }) => {
+    await readyPromise;
+    messagePayloadSchemas.refreshGistOnArrival.parse(data);
+    return triggerGistSync('arrival');
+  });
+
+  storage.watch(STORAGE_KEYS.gistConnection, () => invalidateGistSync());
+  storage.watch(STORAGE_KEYS.learningDocument, () => {
+    void readyPromise.then(refreshBadge, () => {});
+  });
 
   // Register synchronously during background startup so the MV3 service worker
   // is ready to receive alarms immediately.
   browser.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name !== SYNC_ALARM_NAME) return;
+    if (alarm.name !== SYNC_ALARM_NAME && alarm.name !== BADGE_ALARM_NAME) return;
 
     try {
       await readyPromise;
@@ -152,12 +156,6 @@ export default defineBackground(() => {
       return;
     }
 
-    await enqueue(async () => {
-      const config = await readGistConnection();
-      if (config.enabled && config.pat.trim() && config.gistId?.trim()) {
-        await triggerGistSync();
-      }
-      await refreshBadge();
-    });
+    await Promise.all([alarm.name === SYNC_ALARM_NAME && triggerGistSync('alarm'), refreshBadge()]);
   });
 });

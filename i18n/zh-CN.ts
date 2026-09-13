@@ -3,6 +3,21 @@ import type { Translations } from './index';
 
 // Simplified Chinese translations
 const zhCN: Translations = {
+  syncNotices: {
+    missingBackup: '此 Gist 不含 LeetSRS 备份。请在设置中选择其他 Gist。',
+    creationFailed: 'GitHub 未返回已创建 Gist 的 ID。重试前请检查你的 Gist。',
+    creationStatusFailed: 'Gist 已创建，但无法保存其同步状态。',
+    connectionSaveFailed: '无法保存连接。',
+    unavailable: '你可以继续学习。GitHub 恢复可用后将自动继续同步。',
+    rateLimit: '已达到 GitHub API 请求上限。请稍后重试。你可以继续学习。',
+    authentication: '请在设置中检查 GitHub 令牌及其 Gist 权限。',
+    missingToken: '尚未配置令牌。请在设置中添加 GitHub 令牌。',
+    missingGist: '尚未配置 Gist ID。请在设置中选择 Gist。',
+    gistNotFound: '未找到 Gist。请在设置中检查 Gist ID 和令牌访问权限。',
+    obsolete: '数据或连接已更改，同步已停止。',
+    setupStopped: '数据或连接已更改，Gist 设置已停止。',
+    refreshFailed: '无法刷新同步。',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',
@@ -197,6 +212,7 @@ const zhCN: Translations = {
       syncFailed: '同步失败',
       edit: '编辑',
       cancel: '取消',
+      latestEditNotice: '使用最近编辑的浏览器中的完整数据；其他浏览器的更改可能被替换。',
       connectionHelp: '连接和自动同步设置由浏览器同步。上次同步状态仅保存在此浏览器中。',
       destination: '目标',
       existingGist: '使用现有 Gist',

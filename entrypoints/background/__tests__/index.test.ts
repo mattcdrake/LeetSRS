@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { onMessage } from '@/infrastructure/browser/messages';
@@ -14,6 +14,12 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
+vi.mock('octokit', () => ({
+  Octokit: vi.fn(() => {
+    throw new Error('Network unavailable');
+  }),
+}));
+
 function startBackground() {
   vi.mocked(onMessage).mockClear();
   const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
@@ -27,6 +33,36 @@ function startBackground() {
 beforeEach(() => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
+});
+afterEach(() => vi.useRealTimers());
+
+it('refreshes the badge when an Again card becomes due without another save or sync tick', async () => {
+  vi.useFakeTimers();
+  const fireAlarm = startBackground();
+  await dispatch('waitForInitialization');
+  await dispatch('addCard', { problem: buildProblem() });
+  await vi.advanceTimersByTimeAsync(0);
+  const badge = vi.spyOn(browser.action, 'setBadgeText');
+  await dispatch('rateCard', { input: { ...buildProblem(), rating: 1 } });
+  const card = (await readLearningDocument()).cards['two-sum'];
+  await vi.advanceTimersByTimeAsync(0);
+  expect(badge).toHaveBeenLastCalledWith({ text: '' });
+  expect(await browser.alarms.get('badge-refresh')).toMatchObject({ scheduledTime: card.fsrs.due });
+  const create = vi.spyOn(browser.alarms, 'create');
+  await fireAlarm();
+  expect(create).not.toHaveBeenCalled();
+  const writes = vi.spyOn(browser.storage.local, 'set');
+  vi.setSystemTime(card.fsrs.due);
+  await fireAlarm('badge-refresh');
+  expect(badge).toHaveBeenLastCalledWith({ text: '1' });
+  expect(writes).not.toHaveBeenCalled();
+  expect(await browser.alarms.get('badge-refresh')).toBeUndefined();
+  await dispatch('rateCard', { input: { ...buildProblem(), rating: 1 } });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(await browser.alarms.get('badge-refresh')).toBeDefined();
+  await dispatch('updateSettings', { changes: { badgeEnabled: false } });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(await browser.alarms.get('badge-refresh')).toBeUndefined();
 });
 
 describe('document startup through registered background commands', () => {
@@ -149,6 +185,7 @@ describe('document startup through registered background commands', () => {
     const fireAlarm = startBackground();
     await dispatch('waitForInitialization');
     expect(create.mock.calls).toEqual(exists ? [] : [['gist-sync', { periodInMinutes: 1 }]]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const badge = vi.spyOn(browser.action, 'setBadgeText');
     await fireAlarm();
     expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });

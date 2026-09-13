@@ -3,6 +3,21 @@ import type { Translations } from './index';
 
 const hi: Translations = {
   // App branding
+  syncNotices: {
+    missingBackup: 'इस Gist में LeetSRS बैकअप नहीं है। सेटिंग्स में कोई दूसरा Gist चुनें।',
+    creationFailed: 'GitHub ने बनाए गए Gist का ID नहीं लौटाया। फिर कोशिश करने से पहले अपने Gist जाँचें।',
+    creationStatusFailed: 'Gist बन गया, लेकिन उसकी सिंक स्थिति सहेजी नहीं जा सकी।',
+    connectionSaveFailed: 'कनेक्शन सहेजा नहीं जा सका।',
+    unavailable: 'आप सीखना जारी रख सकते हैं। GitHub उपलब्ध होने पर सिंक अपने आप फिर शुरू होगा।',
+    rateLimit: 'GitHub API की सीमा पूरी हो गई है। बाद में फिर कोशिश करें। आप सीखना जारी रख सकते हैं।',
+    authentication: 'सेटिंग्स में अपना GitHub टोकन और उसकी Gist अनुमति जाँचें।',
+    missingToken: 'टोकन सेट नहीं है। सेटिंग्स में अपना GitHub टोकन जोड़ें।',
+    missingGist: 'Gist ID सेट नहीं है। सेटिंग्स में एक Gist चुनें।',
+    gistNotFound: 'Gist नहीं मिला। सेटिंग्स में Gist ID और टोकन की पहुँच जाँचें।',
+    obsolete: 'डेटा या कनेक्शन बदलने के कारण सिंक रुक गया।',
+    setupStopped: 'डेटा या कनेक्शन बदलने के कारण Gist सेटअप रुक गया।',
+    refreshFailed: 'सिंक रीफ़्रेश नहीं हो सका।',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',
@@ -202,6 +217,8 @@ const hi: Translations = {
       syncFailed: 'सिंक फेल हो गया',
       edit: 'संपादित करें',
       cancel: 'रद्द करें',
+      latestEditNotice:
+        'जिस ब्राउज़र में सबसे हाल में बदलाव किए गए हैं, उसका पूरा डेटा उपयोग किया जाता है; दूसरे ब्राउज़रों के बदलाव बदले जा सकते हैं।',
       connectionHelp: 'कनेक्शन और ऑटोमैटिक सिंक सेटिंग आपके ब्राउज़र द्वारा सिंक की जाती हैं। लास्ट सिंक की स्थिति केवल इस ब्राउज़र की है।',
       destination: 'गंतव्य',
       existingGist: 'मौजूदा Gist का उपयोग करें',

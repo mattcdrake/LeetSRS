@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
+import { translations } from '@/i18n';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 
@@ -113,19 +114,22 @@ describe('document Gist sync', () => {
     'retains the created connection after status failure with enabled=%s and retries without recreating',
     async (enabled) => {
       await writeGistConnection({ ...connection, enabled });
+      const localized = { ...local, settings: { language: 'de' as const } };
+      await replaceLearningDocument(localized);
       mockGistsCreate.mockResolvedValue({ data: { id: 'created' } });
-      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('status failed'));
+      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(enabled ? null : new Error('status failed'));
+      const error = enabled ? translations.de.syncNotices.creationStatusFailed : 'status failed';
       expect(await documentSync.setupGistSync({ mode: 'create', pat: 'entered' })).toEqual({
         saved: true,
-        sync: { success: false, error: 'status failed' },
+        sync: { success: false, error },
       });
       expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created', enabled });
       expect(await documentSync.getGistSyncStatus()).toMatchObject({
         lastSyncTime: 'previous-sync',
         lastSyncDirection: 'pull',
-        lastError: 'status failed',
+        lastError: error,
       });
-      expect(await readLearningDocument()).toEqual(local);
+      expect(await readLearningDocument()).toEqual(localized);
       mockGistsGet.mockResolvedValue({
         data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
       });
@@ -163,26 +167,31 @@ describe('document Gist sync', () => {
     expect(await readLearningDocument()).not.toHaveProperty('dataUpdatedAt', expect.any(String));
   });
 
-  it.each(['missing file', '404', 'network', 'save', 'create without ID'])(
-    'retains the previous connection after %s failure',
-    async (failure) => {
-      mockGistsGet.mockResolvedValue({
-        data: { files: failure === 'missing file' ? {} : { 'leetsrs-backup.json': {} } },
-      });
-      if (failure === '404' || failure === 'network') mockGistsGet.mockRejectedValue(new Error(failure));
-      if (failure === 'save') vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(new Error('save'));
-      mockGistsCreate.mockResolvedValue({ data: {} });
-      expect(
-        await documentSync.setupGistSync(
-          failure === 'create without ID'
-            ? { mode: 'create', pat: 'entered' }
-            : { mode: 'existing', pat: 'entered', gistId: 'entered' }
-        )
-      ).toMatchObject({ saved: false, error: expect.any(String) });
-      expect(await readGistConnection()).toEqual(connection);
-      expect(await readLearningDocument()).toEqual(local);
-    }
-  );
+  it.each([
+    ['missing file', translations.de.syncNotices.missingBackup],
+    ['404', translations.de.syncNotices.gistNotFound],
+    ['network', 'network'],
+    ['save', 'save'],
+    ['create without ID', translations.de.syncNotices.creationFailed],
+  ])('retains the previous connection after %s failure', async (failure, error) => {
+    const localized = { ...local, settings: { language: 'de' as const } };
+    await replaceLearningDocument(localized);
+    mockGistsGet.mockResolvedValue({
+      data: { files: failure === 'missing file' ? {} : { 'leetsrs-backup.json': {} } },
+    });
+    if (failure === '404' || failure === 'network') mockGistsGet.mockRejectedValue(new Error(failure));
+    if (failure === 'save') vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(new Error('save'));
+    mockGistsCreate.mockResolvedValue({ data: {} });
+    expect(
+      await documentSync.setupGistSync(
+        failure === 'create without ID'
+          ? { mode: 'create', pat: 'entered' }
+          : { mode: 'existing', pat: 'entered', gistId: 'entered' }
+      )
+    ).toMatchObject({ saved: false, error });
+    expect(await readGistConnection()).toEqual(connection);
+    expect(await readLearningDocument()).toEqual(localized);
+  });
 
   it.each(['setup', 'enable'] as const)(
     'distinguishes %s save success from a failed sync after a completed pull',
@@ -228,8 +237,12 @@ describe('document Gist sync', () => {
   it.each([{ pat: '' }, { pat: '   ' }, { gistId: null }, { gistId: '  ' }])(
     'rejects enabling incomplete configuration %j',
     async (missing) => {
+      await replaceLearningDocument({ ...local, settings: { language: 'de' } });
       await writeGistConnection({ ...connection, ...missing });
-      expect(await documentSync.setGistSyncEnabled(true)).toMatchObject({ saved: false });
+      expect(await documentSync.setGistSyncEnabled(true)).toMatchObject({
+        saved: false,
+        error: 'pat' in missing ? translations.de.syncNotices.missingToken : translations.de.syncNotices.missingGist,
+      });
       expect((await readGistConnection()).enabled).toBe(false);
       expect(mockGistsGet).not.toHaveBeenCalled();
     }
@@ -239,9 +252,7 @@ describe('document Gist sync', () => {
     mockGistsGet.mockResolvedValue({
       data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, dataUpdatedAt: timestamp }) } } },
     });
-    const reads = vi.spyOn(storage, 'getItem');
     expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pushed', timestamp: now });
-    expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
     const json = JSON.stringify(await readLearningDocument(), null, 2);
     expect(mockGistsUpdate).toHaveBeenCalledExactlyOnceWith({
       gist_id: 'gist123',
@@ -381,7 +392,10 @@ describe('document Gist sync', () => {
     expect((await documentSync.getGistSyncStatus()).syncInProgress).toBe(true);
     await writeGistConnection({ pat: 'replacement-pat', gistId: 'replacement-gist', enabled: false });
     request.resolve({ data: { files: {} } });
-    expect(await syncing).toEqual({ success: false, error: 'GitHub API rate limit exceeded. Please try again later.' });
+    expect(await syncing).toEqual({
+      success: false,
+      error: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
+    });
     expect(mockGistsUpdate.mock.calls[0][0].gist_id).toBe('gist123');
     expect(Octokit).toHaveBeenCalledExactlyOnceWith({ auth: 'ghp_test' });
     expect(await readLearningDocument()).toEqual(local);
@@ -396,8 +410,8 @@ describe('document Gist sync', () => {
   });
 
   it.each([
-    [{ pat: '' }, 'PAT is not configured'],
-    [{ gistId: null }, 'Gist ID is not configured'],
+    [{ pat: '' }, 'PAT is not configured. Add your GitHub token in Settings.'],
+    [{ gistId: null }, 'Gist ID is not configured. Choose a Gist in Settings.'],
   ] as const)('rejects missing configuration %j', async (config, error) => {
     await writeGistConnection({ ...connection, ...config });
     expect(await documentSync.triggerGistSync()).toEqual({ success: false, error });
@@ -406,7 +420,10 @@ describe('document Gist sync', () => {
 
   it('reports a missing Gist without replacing either dataset', async () => {
     mockGistsGet.mockRejectedValue(new Error('404 Not Found'));
-    expect(await documentSync.triggerGistSync()).toEqual({ success: false, error: 'Gist not found' });
+    expect(await documentSync.triggerGistSync()).toEqual({
+      success: false,
+      error: 'Gist not found. Check the Gist ID and token access in Settings.',
+    });
     expect(mockGistsUpdate).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(local);
   });

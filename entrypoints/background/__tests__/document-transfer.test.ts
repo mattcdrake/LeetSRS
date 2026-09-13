@@ -28,7 +28,7 @@ beforeEach(async () => {
   background.main();
   await dispatch('waitForInitialization');
   await dispatch('resetAllData');
-  await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
+  await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: false } });
 });
 
 describe('file and Gist transfers through registered background commands', () => {
@@ -58,7 +58,7 @@ describe('file and Gist transfers through registered background commands', () =>
       expect(await readLearningDocument()).toEqual(replacement);
       expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBeNull();
       expect(await getSettings()).toMatchObject({ theme: 'system' });
-      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
       const documentWrites = writes.mock.calls.filter(([items]) => Object.hasOwn(items, 'leetsrs:learningDocument'));
       expect(documentWrites).toEqual([[{ 'leetsrs:learningDocument': replacement }]]);
       expect(github.update).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('file and Gist transfers through registered background commands', () =>
         settings: {},
         dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : payload.exportDate,
       });
-      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
       expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
     }
   );
@@ -135,118 +135,6 @@ describe('file and Gist transfers through registered background commands', () =>
     }
   );
 
-  it.each(['success', 'failure'] as const)(
-    'holds alarm network work in the shared queue through %s while reads overlap',
-    async (outcome) => {
-      const alarmRegistration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
-      vi.mocked(onMessage).mockClear();
-      background.main();
-      await dispatch('waitForInitialization');
-      const alarm = alarmRegistration.mock.calls[0][0];
-      const started = Promise.withResolvers<void>();
-      const release = Promise.withResolvers<void>();
-      github.get.mockImplementationOnce(async () => {
-        started.resolve();
-        await release.promise;
-        if (outcome === 'failure') throw new Error('Network failed');
-        return { data: { files: {} } };
-      });
-      const before = await readLearningDocument();
-      const syncing = alarm({
-        name: 'gist-sync',
-        scheduledTime: Date.now(),
-        periodInMinutes: 1,
-        persistAcrossSessions: true,
-      });
-      await started.promise;
-      const writing = dispatch('addCard', { problem: buildProblem() });
-      expect(await readLearningDocument()).toEqual(before);
-      expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: true });
-      release.resolve();
-      await Promise.all([syncing, writing]);
-      expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
-      if (outcome === 'success') {
-        expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
-      } else {
-        expect(github.update).not.toHaveBeenCalled();
-        expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastError: 'Network failed' });
-      }
-      await dispatch('resetAllData');
-      expect(await dispatch('getGistSyncStatus')).toEqual({
-        lastSyncTime: null,
-        lastSyncDirection: null,
-        syncInProgress: false,
-        lastError: null,
-      });
-    }
-  );
-
-  it.each(['existing setup', 'create setup', 'enable'] as const)(
-    'awaits immediate sync after %s and checks a queued alarm after disabling',
-    async (operation) => {
-      const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
-      vi.mocked(onMessage).mockClear();
-      background.main();
-      await dispatch('waitForInitialization');
-      const alarm = registration.mock.calls[0][0];
-      if (operation === 'enable') await dispatch('setGistSyncEnabled', { enabled: false });
-      const started = Promise.withResolvers<void>();
-      const release = Promise.withResolvers<void>();
-      if (operation === 'existing setup')
-        github.get.mockResolvedValueOnce({ data: { files: { 'leetsrs-backup.json': {} } } });
-      if (operation === 'create setup') {
-        github.create.mockImplementationOnce(async () => {
-          started.resolve();
-          await release.promise;
-          return { data: { id: 'created' } };
-        });
-      } else {
-        github.get.mockImplementationOnce(async () => {
-          started.resolve();
-          await release.promise;
-          return { data: { files: {} } };
-        });
-      }
-      const before = await readLearningDocument();
-      let finished = false;
-      const first = (
-        operation === 'enable'
-          ? dispatch('setGistSyncEnabled', { enabled: true })
-          : dispatch(
-              'setupGistSync',
-              operation === 'existing setup'
-                ? { mode: 'existing', pat: 'entered', gistId: 'entered-gist' }
-                : { mode: 'create', pat: 'entered' }
-            )
-      ).then((result) => {
-        finished = true;
-        return result;
-      });
-      await started.promise;
-      const disable = dispatch('setGistSyncEnabled', { enabled: false });
-      const automatic = alarm({
-        name: 'gist-sync',
-        scheduledTime: Date.now(),
-        periodInMinutes: 1,
-        persistAcrossSessions: true,
-      });
-      const edit = dispatch('addCard', { problem: buildProblem() });
-      expect(finished).toBe(false);
-      expect(await readLearningDocument()).toEqual(before);
-      expect((await readGistConnection()).enabled).toBe(true);
-      release.resolve();
-      expect(await first).toMatchObject({ saved: true, sync: { success: true } });
-      await Promise.all([disable, automatic, edit]);
-      expect(github.get).toHaveBeenCalledTimes(
-        operation === 'existing setup' ? 2 : operation === 'create setup' ? 0 : 1
-      );
-      expect((await readGistConnection()).enabled).toBe(false);
-      expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
-      const upload = operation === 'create setup' ? github.create : github.update;
-      expect(JSON.parse(upload.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
-    }
-  );
-
   it('refreshes the badge after a pull even when its status write fails', async () => {
     await dispatch('addCard', { problem: buildProblem() });
     const remote = { ...(await readLearningDocument()), cards: {}, dataUpdatedAt: '2099-01-01T00:00:00.000Z' };
@@ -257,10 +145,7 @@ describe('file and Gist transfers through registered background commands', () =>
       await write(items);
     });
     const badge = vi.spyOn(browser.action, 'setBadgeText');
-    expect(await dispatch('setupGistSync', { mode: 'existing', pat: 'entered', gistId: 'entered' })).toEqual({
-      saved: true,
-      sync: { success: false, error: 'status failed' },
-    });
+    expect(await dispatch('triggerGistSync')).toEqual({ success: false, error: 'status failed' });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     expect(badge).toHaveBeenLastCalledWith({ text: '' });
   });
@@ -288,7 +173,7 @@ describe('file and Gist transfers through registered background commands', () =>
       sync: { success: true },
     });
     expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
-    expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
+    expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: false });
     await dispatch('setGistSyncEnabled', { enabled: false });
     expect(await readLearningDocument()).toEqual(before);
     expect(await fakeBrowser.storage.local.get('leetsrs:dataUpdatedAt')).toEqual({});

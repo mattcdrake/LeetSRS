@@ -24,7 +24,8 @@ export function GistSyncSection() {
   const setup = useSetupGistSyncMutation();
   const enable = useSetGistSyncEnabledMutation();
   const sync = useTriggerGistSyncMutation();
-  const { connected, editing, formKey, editButton, startEditing, closeEditing } = useGistEditingState(config);
+  const { connected, editing, formKey, editButton, startEditing, finishSaving, closeEditing } =
+    useGistEditingState(config);
   const [outcome, setOutcome] = useState<{ error: boolean; text: string } | null>(null);
   const busy = setup.isPending || enable.isPending || sync.isPending || !!status?.syncInProgress;
 
@@ -42,7 +43,7 @@ export function GistSyncSection() {
     setOutcome(null);
     try {
       const result = await setup.mutateAsync(input);
-      if (result.saved) closeEditing();
+      if (result.saved) finishSaving();
       showConnectionResult(result);
       return result;
     } catch {
@@ -79,11 +80,13 @@ export function GistSyncSection() {
         {t.title}
       </h3>
       <p className="text-sm text-secondary mb-4">{t.description}</p>
+      <p className="text-sm text-secondary mb-4">{t.latestEditNotice}</p>
       <p className="text-xs text-secondary mb-4">{t.connectionHelp}</p>
       {config && editing && (
         <GistSetupForm
           key={formKey}
           config={config}
+          autoFocus={connected || formKey > 0}
           busy={busy}
           saving={setup.isPending}
           onSave={save}
@@ -157,12 +160,14 @@ export function GistSyncSection() {
 
 function GistSetupForm({
   config,
+  autoFocus,
   busy,
   saving,
   onSave,
   onCancel,
 }: {
   config: GistSyncConfig;
+  autoFocus: boolean;
   busy: boolean;
   saving: boolean;
   onSave: (input: GistSetup) => Promise<GistConnectionResult | undefined>;
@@ -199,7 +204,7 @@ function GistSetupForm({
       <TextField className="flex flex-col gap-1" isRequired isDisabled={busy}>
         <Label className="text-sm">{t.patLabel}</Label>
         <Input
-          autoFocus
+          autoFocus={autoFocus}
           type="password"
           value={inputs.pat}
           onChange={(event) => setDraft({ ...inputs, pat: event.target.value })}

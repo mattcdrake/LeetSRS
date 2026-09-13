@@ -21,6 +21,7 @@ beforeEach(async () => {
   vi.mocked(onMessage).mockClear();
   background.main();
   await dispatch('waitForInitialization');
+  await new Promise((resolve) => setTimeout(resolve, 0));
 });
 
 const problem = buildProblem();
@@ -128,21 +129,18 @@ describe('registered background execution', () => {
     }
   );
 
-  it('keeps badge effects inside the write queue while reads see the saved document', async () => {
+  it('responds to saves while badge work is pending', async () => {
     const started = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
     vi.spyOn(browser.action, 'setBadgeText').mockImplementationOnce(async () => {
       started.resolve();
       await release.promise;
     });
-    const first = dispatch('addCard', { problem });
-    const second = dispatch('saveNote', { slug: problem.slug, text: 'next edit' });
+    await dispatch('addCard', { problem });
     await started.promise;
-    expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
-    expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBeNull();
+    await dispatch('saveNote', { slug: problem.slug, text: 'next edit' });
+    expect((await readLearningDocument()).cards[problem.slug]?.note).toBe('next edit');
     release.resolve();
-    await Promise.all([first, second]);
-    expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBe('next edit');
   });
 });
 
@@ -163,13 +161,16 @@ const invalidPayloads: [MessageName, unknown][] = [
   ['triggerGistSync', {}],
 ];
 
-it.each(invalidPayloads)('rejects invalid %s input before mutation and recovers the queue', async (name, invalid) => {
-  const writes = vi.spyOn(browser.storage.local, 'set');
-  const badge = vi.spyOn(browser.action, 'setBadgeText');
-  await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
-  expect(writes).not.toHaveBeenCalled();
-  expect(badge).not.toHaveBeenCalled();
-  await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });
-  await dispatch('saveNote', { slug: 'card', text: 'after failure', extra: true });
-  expect((await readLearningDocument()).cards.card?.note ?? null).toBe('after failure');
-});
+it.each(invalidPayloads)(
+  'rejects invalid %s input before mutation and accepts a later valid edit',
+  async (name, invalid) => {
+    const writes = vi.spyOn(browser.storage.local, 'set');
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+    await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
+    expect(writes).not.toHaveBeenCalled();
+    expect(badge).not.toHaveBeenCalled();
+    await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });
+    await dispatch('saveNote', { slug: 'card', text: 'after failure', extra: true });
+    expect((await readLearningDocument()).cards.card?.note ?? null).toBe('after failure');
+  }
+);

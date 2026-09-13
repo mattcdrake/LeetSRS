@@ -2,6 +2,23 @@ import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
 
 const de: Translations = {
+  syncNotices: {
+    missingBackup: 'Der Gist enthält keine LeetSRS-Sicherung. Wähle einen anderen Gist in den Einstellungen.',
+    creationFailed:
+      'GitHub hat keine ID für den erstellten Gist zurückgegeben. Prüfe deine Gists, bevor du es erneut versuchst.',
+    creationStatusFailed: 'Der Gist wurde erstellt, aber der Synchronisierungsstatus konnte nicht gespeichert werden.',
+    connectionSaveFailed: 'Die Verbindung konnte nicht gespeichert werden.',
+    unavailable:
+      'Du kannst weiterlernen. Die Synchronisierung wird automatisch fortgesetzt, sobald GitHub verfügbar ist.',
+    rateLimit: 'Das GitHub-API-Limit wurde erreicht. Versuche es später erneut. Du kannst weiterlernen.',
+    authentication: 'Prüfe dein GitHub-Token und dessen Gist-Berechtigung in den Einstellungen.',
+    missingToken: 'Kein Token eingerichtet. Füge dein GitHub-Token in den Einstellungen hinzu.',
+    missingGist: 'Keine Gist-ID eingerichtet. Wähle einen Gist in den Einstellungen.',
+    gistNotFound: 'Gist nicht gefunden. Prüfe Gist-ID und Token-Zugriff in den Einstellungen.',
+    obsolete: 'Synchronisierung beendet, da sich Daten oder Verbindung geändert haben.',
+    setupStopped: 'Gist-Einrichtung beendet, da sich Daten oder Verbindung geändert haben.',
+    refreshFailed: 'Synchronisierung konnte nicht aktualisiert werden.',
+  },
   app: {
     name: 'LeetSRS',
     namePart1: 'Leet',
@@ -175,6 +192,8 @@ const de: Translations = {
       syncFailed: 'Synchronisierung fehlgeschlagen',
       edit: 'Bearbeiten',
       cancel: 'Abbrechen',
+      latestEditNotice:
+        'Es werden die vollständigen Daten des zuletzt bearbeiteten Browsers verwendet; Änderungen anderer Browser können ersetzt werden.',
       connectionHelp:
         'Dein Browser synchronisiert die Verbindung und die Einstellung zur automatischen Synchronisierung. Der letzte Synchronisierungsstatus gilt nur für diesen Browser.',
       destination: 'Ziel',
