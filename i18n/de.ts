@@ -42,17 +42,11 @@ const de: Translations = {
     reload: 'Erweiterung neu laden',
   },
   states: {
-    loading: 'Wird geladen...',
     new: 'Neu',
     learning: 'Lernen',
     review: 'Wiederholen',
     relearning: 'Erneut lernen',
     unknown: 'Unbekannt',
-  },
-  difficulty: {
-    easy: 'Einfach',
-    medium: 'Mittel',
-    hard: 'Schwer',
   },
   ratings: {
     [Rating.Again]: 'Nochmal',

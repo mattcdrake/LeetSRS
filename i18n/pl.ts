@@ -48,19 +48,11 @@ const pl: Translations = {
 
   // Common states
   states: {
-    loading: 'Ładowanie...',
     new: 'Nowa',
     learning: 'Nauka',
     review: 'Powtórka',
     relearning: 'Powtórna nauka',
     unknown: 'Nieznany',
-  },
-
-  // Difficulty levels
-  difficulty: {
-    easy: 'Łatwy',
-    medium: 'Średni',
-    hard: 'Trudny',
   },
 
   // Rating buttons

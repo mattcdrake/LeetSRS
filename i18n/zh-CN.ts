@@ -44,18 +44,11 @@ const zhCN: Translations = {
   },
 
   states: {
-    loading: '加载中...',
     new: '新卡片',
     learning: '学习中',
     review: '复习',
     relearning: '重新学习',
     unknown: '未知',
-  },
-
-  difficulty: {
-    easy: '简单',
-    medium: '中等',
-    hard: '困难',
   },
 
   ratings: {

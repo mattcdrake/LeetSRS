@@ -45,20 +45,3 @@ export const createMockCard = (state: State, overrides: Partial<Card> = {}): Car
     ...overrides,
   };
 };
-
-/**
- * Creates multiple mock cards with the same state
- * @param state - The FSRS state for all cards
- * @param count - Number of cards to create
- * @returns Array of Card objects
- */
-export const createMockCards = (state: State, count: number): Card[] => {
-  return Array(count)
-    .fill(null)
-    .map((_, index) =>
-      createMockCard(state, {
-        id: `mock-id-${state}-${index}`,
-        slug: `mock-slug-${index}`,
-      })
-    );
-};

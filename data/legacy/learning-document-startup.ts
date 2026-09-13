@@ -93,10 +93,10 @@ export async function initializeLearningDocument(): Promise<void> {
 export async function removeLegacyLearningData(): Promise<void> {
   const local = await storage.snapshot('local');
   await storage.removeItems([
-    STORAGE_KEYS.cards,
-    STORAGE_KEYS.stats,
-    STORAGE_KEYS.dataUpdatedAt,
-    STORAGE_KEYS.schemaVersion,
+    'local:leetsrs:cards',
+    'local:leetsrs:stats',
+    'local:leetsrs:dataUpdatedAt',
+    'local:leetsrs:schemaVersion',
     ...Object.keys(local)
       .filter((key) => key.startsWith('leetsrs:notes:'))
       .map((key): `local:${string}` => `local:${key}`),
