@@ -85,6 +85,7 @@ export function GistSyncSection() {
         <GistSetupForm
           key={formKey}
           config={config}
+          autoFocus={connected || formKey > 0}
           busy={busy}
           saving={setup.isPending}
           onSave={save}
@@ -158,12 +159,14 @@ export function GistSyncSection() {
 
 function GistSetupForm({
   config,
+  autoFocus,
   busy,
   saving,
   onSave,
   onCancel,
 }: {
   config: GistSyncConfig;
+  autoFocus: boolean;
   busy: boolean;
   saving: boolean;
   onSave: (input: GistSetup) => Promise<GistConnectionResult | undefined>;
@@ -200,7 +203,7 @@ function GistSetupForm({
       <TextField className="flex flex-col gap-1" isRequired isDisabled={busy}>
         <Label className="text-sm">{t.patLabel}</Label>
         <Input
-          autoFocus
+          autoFocus={autoFocus}
           type="password"
           value={inputs.pat}
           onChange={(event) => setDraft({ ...inputs, pat: event.target.value })}

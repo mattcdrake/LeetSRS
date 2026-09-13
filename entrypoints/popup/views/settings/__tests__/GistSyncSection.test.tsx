@@ -63,6 +63,7 @@ describe('Gist setup form', () => {
     await storage.setItem(STORAGE_KEYS.gistConnection, config);
     render(<GistSyncSection />, { wrapper: test.wrapper });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toBeEnabled());
+    expect(screen.getByLabelText('Personal Access Token')).not.toHaveFocus();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     enterCredentials();
     fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
