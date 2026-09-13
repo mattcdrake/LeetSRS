@@ -10,8 +10,8 @@ import { type LearningDocument, learningDocumentSchema } from '@/domain/learning
 import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import background from '../../entrypoints/background/index';
 
 vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
@@ -96,13 +96,12 @@ describe('document learning through background commands', () => {
   });
 
   it('preserves card identity and unrelated data through card and note edits', async () => {
-    const { embedded, payload } = mixedRecordBackup();
-    const original: LearningDocument = {
-      ...embedded,
-      schemaVersion: 6,
+    const original = buildLearningDocument({
+      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
       settings: { badgeEnabled: false, theme: 'dark' },
-      dataUpdatedAt: payload.dataUpdatedAt,
-    };
+      dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+    });
     await replaceLearningDocument(original);
     const others = Object.values(original.cards);
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
@@ -224,16 +223,15 @@ describe('document learning through background commands', () => {
     ['save note', () => dispatch('saveNote', { slug: 'two-sum', text: '  new note\n' })],
     ['delete note', () => dispatch('deleteNote', { slug: 'two-sum' })],
   ])('leaves all saved data intact when %s is rejected and accepts the next command', async (_name, edit) => {
-    const { embedded, payload } = mixedRecordBackup();
-    const document: LearningDocument = {
-      ...embedded,
-      schemaVersion: 6,
+    const document = buildLearningDocument({
+      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
       settings: { badgeEnabled: false },
-      dataUpdatedAt: payload.dataUpdatedAt,
-    };
+      dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+    });
     await replaceLearningDocument(document);
     await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
-    await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
+    await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-01-15T10:00:00.000Z');
     const localBefore = await fakeBrowser.storage.local.get();
     const syncBefore = await fakeBrowser.storage.sync.get();
     const error = new Error('Write failed');
@@ -251,7 +249,7 @@ describe('document learning through background commands', () => {
     expect(writes).toHaveBeenCalledTimes(2);
     expect(await readLearningDocument()).not.toEqual(document);
     expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
-    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe(payload.dataUpdatedAt);
+    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
   });
 
   it.each(['delay overflow', 'statistics overflow', 'invalid clock'])(

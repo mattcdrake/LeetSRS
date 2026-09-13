@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { readGistConnection, writeGistConnection } from '../../gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '../../learning-document';
 import { initializeLearningDocument } from '../learning-document-startup';
@@ -25,16 +25,16 @@ describe('learning document startup', () => {
   });
 
   it.each([undefined, 0, 1, 2, 3, 4, 5])('preserves an installation at version %s', async (version) => {
-    const { accepted, embedded, payload } = mixedRecordBackup();
+    const { backup, converted } = validLegacyBackup();
     const schemaVersion = version ?? 0;
-    const cards = structuredClone(schemaVersion < 4 ? accepted.cards : embedded.cards);
+    const cards = structuredClone(schemaVersion < 4 ? backup.data.cards : converted.cards);
     if (schemaVersion === 0) {
       Reflect.deleteProperty(cards['two-sum'], 'domain');
     }
     const local: Record<string, unknown> = {
       'leetsrs:cards': cards,
-      'leetsrs:stats': accepted.stats,
-      'leetsrs:dataUpdatedAt': payload.dataUpdatedAt,
+      'leetsrs:stats': backup.data.stats,
+      'leetsrs:dataUpdatedAt': backup.dataUpdatedAt,
       'leetsrs:lastSyncTime': 'local-status',
       'leetsrs:lastSyncDirection': 'pull',
       unrelated: 'keep',
@@ -42,7 +42,7 @@ describe('learning document startup', () => {
     if (version !== undefined) {
       local['leetsrs:schemaVersion'] = version;
     }
-    for (const [id, note] of Object.entries(accepted.notes)) {
+    for (const [id, note] of Object.entries(backup.data.notes)) {
       local[`leetsrs:notes:${id}`] = note;
     }
     const sync = {
@@ -63,8 +63,8 @@ describe('learning document startup', () => {
 
     const expected = {
       schemaVersion: 6,
-      ...embedded,
-      dataUpdatedAt: payload.dataUpdatedAt,
+      ...converted,
+      dataUpdatedAt: backup.dataUpdatedAt,
       settings: {
         theme: 'light',
         maxNewCardsPerDay: 0,
@@ -91,13 +91,13 @@ describe('learning document startup', () => {
   });
 
   it.each([0, 1, 2, 3, 4, 5, 6])('treats a saved version %i document as authoritative', async (schemaVersion) => {
-    const { accepted, embedded, payload } = mixedRecordBackup();
+    const { backup, converted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {
-        ...(schemaVersion < 4 ? accepted : embedded),
+        ...(schemaVersion < 4 ? backup.data : converted),
         schemaVersion,
         settings: { language: 'de' },
-        dataUpdatedAt: payload.dataUpdatedAt,
+        dataUpdatedAt: backup.dataUpdatedAt,
       },
       'leetsrs:cards': 'invalid stale cards',
       'leetsrs:schemaVersion': 'invalid stale version',
@@ -108,10 +108,10 @@ describe('learning document startup', () => {
     await initializeLearningDocument();
 
     expect(await readLearningDocument()).toEqual({
-      ...embedded,
+      ...converted,
       schemaVersion: 6,
       settings: { language: 'de' },
-      dataUpdatedAt: payload.dataUpdatedAt,
+      dataUpdatedAt: backup.dataUpdatedAt,
     });
     expect(await fakeBrowser.storage.sync.get()).toEqual({ 'leetsrs:gistConnection': 'do not read or replace' });
   });
@@ -143,13 +143,13 @@ describe('learning document startup', () => {
   });
 
   it.each(['promotion', 'document'])('retries a rejected %s write from intact legacy data', async (stage) => {
-    const { accepted, embedded, payload } = mixedRecordBackup();
+    const { backup, converted } = validLegacyBackup();
     const local = {
       'leetsrs:schemaVersion': 2,
-      'leetsrs:cards': accepted.cards,
-      'leetsrs:stats': accepted.stats,
-      'leetsrs:notes:valid-com': accepted.notes['valid-com'],
-      'leetsrs:dataUpdatedAt': payload.dataUpdatedAt,
+      'leetsrs:cards': backup.data.cards,
+      'leetsrs:stats': backup.data.stats,
+      'leetsrs:notes:valid-com': backup.data.notes['valid-com'],
+      'leetsrs:dataUpdatedAt': backup.dataUpdatedAt,
     };
     const sync = {
       'leetsrs:theme': 'dark',
@@ -180,17 +180,17 @@ describe('learning document startup', () => {
     await initializeLearningDocument();
 
     expect(await readLearningDocument()).toEqual({
-      ...embedded,
+      ...converted,
       schemaVersion: 6,
-      dataUpdatedAt: payload.dataUpdatedAt,
+      dataUpdatedAt: backup.dataUpdatedAt,
       settings: { theme: 'dark', resetEditorOnEveryProblem: false },
     });
     expect(await readGistConnection()).toEqual(shared);
   });
 
   it.each(['local', 'sync'] as const)('keeps the saved document authoritative after %s cleanup fails', async (area) => {
-    const { embedded } = mixedRecordBackup();
-    await fakeBrowser.storage.local.set({ 'leetsrs:cards': embedded.cards, 'leetsrs:schemaVersion': 5 });
+    const { converted } = validLegacyBackup();
+    await fakeBrowser.storage.local.set({ 'leetsrs:cards': converted.cards, 'leetsrs:schemaVersion': 5 });
     await fakeBrowser.storage.sync.set({ 'leetsrs:language': 'de', 'leetsrs:githubPat': 'secret' });
     vi.spyOn(fakeBrowser.storage[area], 'remove').mockRejectedValueOnce(new Error('Cleanup unavailable'));
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -199,7 +199,7 @@ describe('learning document startup', () => {
 
     expect(await readLearningDocument()).toEqual({
       schemaVersion: 6,
-      cards: embedded.cards,
+      cards: converted.cards,
       stats: {},
       settings: { language: 'de' },
     });
@@ -228,11 +228,11 @@ describe('learning document startup', () => {
     ['sync', 'gistConnection', null],
     ['sync', 'gistConnection', {}],
   ])('rejects malformed %s %s before any writes', async (area, key, value) => {
-    const { accepted } = mixedRecordBackup();
+    const { backup } = validLegacyBackup();
     const local: Record<string, unknown> = {
       'leetsrs:schemaVersion': 2,
-      'leetsrs:cards': accepted.cards,
-      'leetsrs:notes:valid-com': accepted.notes['valid-com'],
+      'leetsrs:cards': backup.data.cards,
+      'leetsrs:notes:valid-com': backup.data.notes['valid-com'],
     };
     const sync: Record<string, unknown> = { 'leetsrs:githubPat': 'secret' };
     const invalidArea = area === 'local' ? local : sync;
@@ -274,8 +274,8 @@ describe('learning document startup', () => {
   });
 
   it.each(['', ' \t\n '])('preserves embedded-note and modern-setting precedence for note %j', async (note) => {
-    const { accepted } = mixedRecordBackup();
-    const card = accepted.cards['two-sum'];
+    const { backup } = validLegacyBackup();
+    const card = backup.data.cards['two-sum'];
     await fakeBrowser.storage.local.set({
       'leetsrs:schemaVersion': 2,
       'leetsrs:cards': { 'two-sum': { ...card, note } },
@@ -299,8 +299,8 @@ describe('learning document startup', () => {
   });
 
   it('retries a rejected supported-document conversion without falling back to legacy storage', async () => {
-    const { embedded, payload } = mixedRecordBackup();
-    const saved = { ...embedded, schemaVersion: 5, dataUpdatedAt: payload.dataUpdatedAt };
+    const { converted, backup } = validLegacyBackup();
+    const saved = { ...converted, schemaVersion: 5, dataUpdatedAt: backup.dataUpdatedAt };
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': saved,
       'leetsrs:cards': {},

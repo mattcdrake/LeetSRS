@@ -6,7 +6,7 @@ import { readGistConnection, writeGistConnection } from '@/data/gist-connection'
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import * as documentBackup from '../import-export';
 
@@ -24,12 +24,12 @@ describe('document import', () => {
   it.each([undefined, 0, 1, 2, 3, 4, 5])(
     'imports historical version %s with stored settings and the export-time fallback',
     async (schemaVersion) => {
-      const { accepted, embedded } = mixedRecordBackup();
+      const { backup, converted } = validLegacyBackup();
       const settings =
         schemaVersion === undefined || schemaVersion < 3
           ? { autoClearLeetcode: false, dayStartHour: 4, theme: 'dark' }
           : { resetEditorOnEveryProblem: false, theme: 'dark' };
-      const data = schemaVersion !== undefined && schemaVersion >= 4 ? embedded : accepted;
+      const data = schemaVersion !== undefined && schemaVersion >= 4 ? converted : backup.data;
       await documentBackup.importData(
         JSON.stringify({
           schemaVersion,
@@ -39,7 +39,7 @@ describe('document import', () => {
       );
       const expected = {
         schemaVersion: LEARNING_DOCUMENT_VERSION,
-        ...embedded,
+        ...converted,
         settings: { resetEditorOnEveryProblem: false, theme: 'dark' },
         dataUpdatedAt: timestamp,
       };

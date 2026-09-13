@@ -1,23 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { malformedBackupCases, mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { malformedBackupCases, validLegacyBackup } from '@/test/utils/backup-mocks';
 import { convertLearningDocument, parseLearningDocumentBackup } from '../learning-document-conversions';
 
 describe('convertLearningDocument', () => {
   it('prepares an unversioned installation without inventing settings or an edit timestamp', () => {
-    const { accepted, embedded } = mixedRecordBackup();
-    const { domain: _domain, ...legacyCard } = accepted.cards['two-sum'];
+    const { backup, converted } = validLegacyBackup();
+    const { domain: _domain, ...legacyCard } = backup.data.cards['two-sum'];
     expect(
       convertLearningDocument({
-        ...accepted,
-        cards: { ...accepted.cards, 'two-sum': legacyCard },
+        ...backup.data,
+        cards: { ...backup.data.cards, 'two-sum': legacyCard },
         settings: { autoClearLeetcode: false, dayStartHour: 4, githubPat: 'secret' },
         gistSync: { gistId: 'old-gist', enabled: true },
         lastSyncTime: '2024-01-01',
       })
     ).toEqual({
       schemaVersion: 6,
-      ...embedded,
+      ...converted,
       settings: { resetEditorOnEveryProblem: false },
     });
   });
@@ -25,16 +25,16 @@ describe('convertLearningDocument', () => {
   it.each([0, 1, 2, 3, 4, 5, 6])(
     'preserves the same learning data from installations and backups at version %i without I/O or a clock',
     (schemaVersion) => {
-      const { payload, accepted, embedded } = mixedRecordBackup();
-      const { domain: _domain, ...legacyCard } = accepted.cards['two-sum'];
+      const { backup, converted } = validLegacyBackup();
+      const { domain: _domain, ...legacyCard } = backup.data.cards['two-sum'];
       const data = {
-        ...(schemaVersion < 4 ? accepted : embedded),
-        ...(schemaVersion === 0 && { cards: { ...accepted.cards, 'two-sum': legacyCard } }),
+        ...(schemaVersion < 4 ? backup.data : converted),
+        ...(schemaVersion === 0 && { cards: { ...backup.data.cards, 'two-sum': legacyCard } }),
         settings: { theme: 'light', language: 'zh-CN', maxNewCardsPerDay: 7 },
       };
-      const installation = { ...data, schemaVersion, dataUpdatedAt: payload.dataUpdatedAt };
+      const installation = { ...data, schemaVersion, dataUpdatedAt: backup.dataUpdatedAt };
       const before = structuredClone(installation);
-      const backup = JSON.stringify(schemaVersion === 6 ? installation : { ...payload, schemaVersion, data });
+      const json = JSON.stringify(schemaVersion === 6 ? installation : { ...backup, schemaVersion, data });
       for (const area of ['local', 'sync'] as const) {
         for (const operation of ['get', 'set', 'remove', 'clear'] as const) {
           vi.spyOn(fakeBrowser.storage[area], operation).mockImplementation(() => {
@@ -51,11 +51,11 @@ describe('convertLearningDocument', () => {
         throw new Error('Conversion must not read the clock');
       });
 
-      const expected = { ...embedded, schemaVersion: 6, settings: data.settings, dataUpdatedAt: payload.dataUpdatedAt };
+      const expected = { ...converted, schemaVersion: 6, settings: data.settings, dataUpdatedAt: backup.dataUpdatedAt };
       expect(convertLearningDocument(installation)).toEqual(expected);
       expect(convertLearningDocument(installation)).toEqual(expected);
       expect(installation).toEqual(before);
-      expect(parseLearningDocumentBackup(backup)).toEqual(expected);
+      expect(parseLearningDocumentBackup(json)).toEqual(expected);
     }
   );
 
@@ -72,8 +72,8 @@ describe('convertLearningDocument', () => {
   );
 
   it.each([undefined, '', ' \t\n ', 'x'.repeat(500)])('preserves embedded-note precedence for %j', (note) => {
-    const { accepted } = mixedRecordBackup();
-    const card = accepted.cards['two-sum'];
+    const { backup } = validLegacyBackup();
+    const card = backup.data.cards['two-sum'];
     expect(
       convertLearningDocument({
         schemaVersion: 2,
@@ -90,8 +90,8 @@ describe('convertLearningDocument', () => {
   });
 
   it.each([null, '', false, 0])('defaults a falsy v0 domain %j but rejects it in v1', (domain) => {
-    const { accepted } = mixedRecordBackup();
-    const card = accepted.cards['two-sum'];
+    const { backup } = validLegacyBackup();
+    const card = backup.data.cards['two-sum'];
     const input = { cards: { 'two-sum': { ...card, domain } } };
     expect(convertLearningDocument(input).cards['two-sum']).toEqual(card);
     expect(() => convertLearningDocument({ ...input, schemaVersion: 1 })).toThrow();
@@ -109,11 +109,11 @@ describe('convertLearningDocument', () => {
   it.each(['slug', 'duplicate', 'date'] as const)(
     'rejects broken %s relationships in current installations and backups',
     (kind) => {
-      const { embedded } = mixedRecordBackup();
-      if (kind === 'slug') embedded.cards['two-sum'].slug = 'different';
-      if (kind === 'duplicate') embedded.cards['cn-problem'].id = 'valid-com';
-      if (kind === 'date') embedded.stats['2024-01-01'].date = '2024-01-02';
-      const document = { ...embedded, schemaVersion: 6, settings: {} };
+      const { converted } = validLegacyBackup();
+      if (kind === 'slug') converted.cards['two-sum'].slug = 'different';
+      if (kind === 'duplicate') converted.cards['cn-problem'].id = 'valid-com';
+      if (kind === 'date') converted.stats['2024-01-01'].date = '2024-01-02';
+      const document = { ...converted, schemaVersion: 6, settings: {} };
       expect(() => convertLearningDocument(document)).toThrow();
       expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
     }
@@ -158,8 +158,8 @@ describe('parseLearningDocumentBackup', () => {
 
   it('rejects invalid JSON and malformed owned notes even when an embedded note wins', () => {
     expect(() => parseLearningDocumentBackup('{')).toThrow('Invalid JSON format');
-    const { accepted } = mixedRecordBackup();
-    const card = { ...accepted.cards['two-sum'], note: 'Embedded' };
+    const { backup } = validLegacyBackup();
+    const card = { ...backup.data.cards['two-sum'], note: 'Embedded' };
     expect(() =>
       parseLearningDocumentBackup(
         JSON.stringify({

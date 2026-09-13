@@ -6,7 +6,7 @@ import { readLearningDocument } from '@/data/learning-document';
 import { getSettings } from '@/data/learning-queries';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
-import { mixedRecordBackup } from '@/test/utils/backup-mocks';
+import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../../entrypoints/background/index';
 
@@ -68,14 +68,14 @@ describe('file and Gist transfers through registered background commands', () =>
   it.each([true, false])(
     'imports historical data with an explicit timestamp: %s without importing its connection',
     async (hasTimestamp) => {
-      const { accepted, embedded, payload } = mixedRecordBackup();
-      const backup = { ...payload, data: accepted, dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : undefined };
-      await dispatch('importData', { jsonData: JSON.stringify(backup) });
+      const { backup, converted } = validLegacyBackup();
+      const input = { ...backup, dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : undefined };
+      await dispatch('importData', { jsonData: JSON.stringify(input) });
       expect(await readLearningDocument()).toEqual({
         schemaVersion: 6,
-        ...embedded,
+        ...converted,
         settings: {},
-        dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : payload.exportDate,
+        dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
       });
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
       expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
