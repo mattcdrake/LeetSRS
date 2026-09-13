@@ -190,7 +190,11 @@ describe('document learning through background commands', () => {
   it('uses one document and time for queue eligibility and the daily allowance across midnight', async () => {
     vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
     const cards = ['new-a', 'new-b', 'future', 'review', 'paused'].map((slug) => {
-      const card = createMockCard(slug === 'review' ? State.Review : State.New, { slug, paused: slug === 'paused' });
+      const card = createMockCard(slug === 'review' ? State.Review : State.New, {
+        id: slug,
+        slug,
+        paused: slug === 'paused',
+      });
       if (slug === 'future') {
         card.fsrs.due = new Date('2024-03-15T00:00:00').getTime();
       }

@@ -19,11 +19,11 @@ beforeEach(() => {
 });
 it('preserves history and upcoming statistics results', async () => {
   const cards = [
-    createMockCard(State.New, { slug: 'overdue' }),
-    createMockCard(State.Learning, { slug: 'today' }),
-    createMockCard(State.Review, { slug: 'tomorrow' }),
-    createMockCard(State.Relearning, { slug: 'paused', paused: true }),
-    createMockCard(State.Review, { slug: 'outside' }),
+    createMockCard(State.New, { id: 'overdue', slug: 'overdue' }),
+    createMockCard(State.Learning, { id: 'today', slug: 'today' }),
+    createMockCard(State.Review, { id: 'tomorrow', slug: 'tomorrow' }),
+    createMockCard(State.Relearning, { id: 'paused', slug: 'paused', paused: true }),
+    createMockCard(State.Review, { id: 'outside', slug: 'outside' }),
   ];
   cards[0].fsrs.due = new Date('2024-03-14T12:00:00').getTime();
   cards[2].fsrs.due = new Date('2024-03-16T00:00:00').getTime();

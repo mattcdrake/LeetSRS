@@ -302,8 +302,8 @@ describe('NoteEditor autosizing', () => {
 
 it('shares card reads across editors mounted separately and refreshes them with one read', async () => {
   fakeBrowser.reset();
-  const first = createMockCard(State.New, { slug: 'first', note: 'First note' });
-  const second = createMockCard(State.New, { slug: 'second', note: 'Second note' });
+  const first = createMockCard(State.New, { id: 'first', slug: 'first', note: 'First note' });
+  const second = createMockCard(State.New, { id: 'second', slug: 'second', note: 'Second note' });
   await replaceLearningDocument(buildLearningDocument({ cards: { first, second } }));
   const reads = vi.spyOn(storage, 'getItem');
   const { wrapper } = createTestWrapper();
