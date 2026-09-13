@@ -66,7 +66,7 @@ describe('registered background execution', () => {
 
     await dispatch('resetAllData');
 
-    const empty = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    const empty = { schemaVersion: 7, cards: {}, stats: {}, settings: {} };
     expect(await readLearningDocument()).toEqual(empty);
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await dispatch('getGistSyncStatus')).toEqual({

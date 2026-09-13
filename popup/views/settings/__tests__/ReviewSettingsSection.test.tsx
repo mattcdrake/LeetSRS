@@ -30,7 +30,7 @@ it('offers only the daily new-card limit and saves changes', async () => {
 });
 
 it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
-  const document = { schemaVersion: 6 as const, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 3 } };
+  const document = { schemaVersion: 7 as const, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 3 } };
   await replaceLearningDocument(document);
   const save = Promise.withResolvers<void>();
   createMessageMock(vi.mocked(sendMessage)).handle('updateSettings', async ({ changes }) => {

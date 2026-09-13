@@ -37,7 +37,7 @@ it('preserves history and upcoming statistics results', async () => {
     gradeBreakdown: { 1: 1, 2: 0, 3: 2, 4: 0 },
   };
   await replaceLearningDocument({
-    schemaVersion: 6,
+    schemaVersion: 7,
     cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
     stats: { '2024-03-14': yesterday },
     settings: {},

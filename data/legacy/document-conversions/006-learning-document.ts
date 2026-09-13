@@ -1,9 +1,17 @@
-import type { z } from 'zod';
-import { learningDocumentSchema as outputSchema } from '@/domain/learning-document';
+import { z } from 'zod';
 import { outputSchema as inputSchema } from './005-combine-gist-connection';
 import { assertSchema } from './schema-utils';
 
-export { inputSchema, outputSchema };
+export { inputSchema };
+
+// Frozen v6 document contract. Never import the evolving current document schema here.
+export const outputSchema = z.object({
+  schemaVersion: z.literal(6),
+  dataUpdatedAt: inputSchema.shape.dataUpdatedAt,
+  cards: inputSchema.shape.cards.unwrap(),
+  stats: inputSchema.shape.stats.unwrap(),
+  settings: inputSchema.shape.settings.unwrap(),
+});
 
 export type Input = z.infer<typeof inputSchema>;
 export type Output = z.infer<typeof outputSchema>;

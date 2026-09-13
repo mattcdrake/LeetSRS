@@ -21,7 +21,7 @@ describe('popup settings with the prepared document workflows', () => {
     fakeBrowser.reset();
     const messages = createMessageMock(vi.mocked(sendMessage));
     messages.reset().handle('updateSettings', ({ changes }) => updateSettings(changes));
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
+    await replaceLearningDocument({ schemaVersion: 7, cards: {}, stats: {}, settings: {} });
   });
 
   afterEach(() => vi.restoreAllMocks());
@@ -38,7 +38,7 @@ describe('popup settings with the prepared document workflows', () => {
     await waitFor(() => expect(result.current.settings.data.theme).toBe('dark'));
     expect((await readLearningDocument())?.settings).toEqual({ theme: 'dark' });
 
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 0 } });
+    await replaceLearningDocument({ schemaVersion: 7, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 0 } });
     await waitFor(() => expect(result.current.settings.data.theme).toBe('system'));
     expect(result.current.settings.data.maxNewCardsPerDay).toBe(0);
   });

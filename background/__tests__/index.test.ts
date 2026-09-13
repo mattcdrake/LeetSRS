@@ -149,10 +149,10 @@ describe('document startup through registered background commands', () => {
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       if (stage !== 'cleanup') {
         expect(await readLearningDocument()).toEqual({
-          schemaVersion: 6,
+          schemaVersion: 7,
           cards: {},
           stats: {},
-          settings: { language: 'de' },
+          settings: { language: 'de', resetEditorOnReviewQueue: false },
           dataUpdatedAt: legacy['leetsrs:dataUpdatedAt'],
         });
       }
@@ -160,7 +160,7 @@ describe('document startup through registered background commands', () => {
   );
 
   it.each([
-    { schemaVersion: 7, cards: {}, stats: {}, settings: {} },
+    { schemaVersion: 8, cards: {}, stats: {}, settings: {} },
     { schemaVersion: 6, cards: 'corrupt', stats: {}, settings: {} },
   ])('rejects a saved invalid document without falling back to legacy data: %j', async (document) => {
     await fakeBrowser.storage.local.set({

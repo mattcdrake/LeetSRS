@@ -3,7 +3,7 @@ import { type Card, cardSchema } from './cards';
 import { settingsSchema } from './settings';
 import { dailyStatsSchema } from './statistics';
 
-export const LEARNING_DOCUMENT_VERSION = 6;
+export const LEARNING_DOCUMENT_VERSION = 7;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
 

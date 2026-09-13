@@ -13,7 +13,7 @@ describe('learning document persistence', () => {
 
   it('requires initialization and returns the current validated document once available', async () => {
     await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
-    const document: LearningDocument = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    const document: LearningDocument = { schemaVersion: 7, cards: {}, stats: {}, settings: {} };
     await replaceLearningDocument(document);
     expect(await readLearningDocument()).toEqual(document);
   });
@@ -30,7 +30,7 @@ describe('learning document persistence', () => {
     const connection = await fakeBrowser.storage.sync.get();
     await replaceLearningDocument(document);
     expect(await readLearningDocument()).toEqual(document);
-    const empty: LearningDocument = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    const empty: LearningDocument = { schemaVersion: 7, cards: {}, stats: {}, settings: {} };
     await replaceLearningDocument(empty);
     expect(await readLearningDocument()).toEqual(empty);
     expect(await fakeBrowser.storage.sync.get()).toEqual(connection);

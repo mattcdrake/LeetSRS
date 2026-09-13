@@ -33,7 +33,7 @@ describe('document settings through background commands', () => {
 
   it('resolves defaults and browser language without storing them or reading stale settings', async () => {
     vi.stubGlobal('navigator', { languages: ['pl'] });
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { theme: 'dark' } });
+    await replaceLearningDocument({ schemaVersion: 7, cards: {}, stats: {}, settings: { theme: 'dark' } });
     await storage.setItem('sync:leetsrs:theme', 'light');
     await storage.setItem('sync:leetsrs:language', 'de');
     background.main();
@@ -42,7 +42,7 @@ describe('document settings through background commands', () => {
     vi.stubGlobal('navigator', { languages: ['de'] });
     expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'de' }));
     expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
+      schemaVersion: 7,
       cards: {},
       stats: {},
       settings: { theme: 'dark' },
@@ -71,8 +71,7 @@ describe('document settings through background commands', () => {
       theme: 'system',
       language: 'en',
       badgeEnabled: false,
-      resetEditorOnEveryProblem: false,
-      resetEditorOnDueReview: true,
+      resetEditorOnReviewQueue: true,
     } as const;
     await dispatch('updateSettings', { changes });
 
@@ -137,13 +136,16 @@ describe('document settings through background commands', () => {
     expect(await readLearningDocument()).toEqual(before);
     vi.useRealTimers();
     await dispatch('updateSettings', { changes: { theme: undefined, maxNewCardsPerDay: 5 } });
-    expect((await readLearningDocument())?.settings).toEqual({ maxNewCardsPerDay: 5 });
+    expect((await readLearningDocument())?.settings).toEqual({
+      maxNewCardsPerDay: 5,
+      resetEditorOnReviewQueue: false,
+    });
   });
 
   it('resolves each read from its captured document and follows replacement without retained overrides', async () => {
     vi.stubGlobal('navigator', { languages: ['pl'] });
     const document = {
-      schemaVersion: 6 as const,
+      schemaVersion: 7 as const,
       cards: {},
       stats: {},
       settings: { language: 'de' as const, theme: 'dark' as const },
@@ -160,7 +162,7 @@ describe('document settings through background commands', () => {
 
     const pending = getSettings();
     await started.promise;
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
+    await replaceLearningDocument({ schemaVersion: 7, cards: {}, stats: {}, settings: {} });
     initial.resolve(document);
     expect(await pending).toEqual(buildSettings({ language: 'de', theme: 'dark' }));
     expect(await getSettings()).toEqual(buildSettings({ language: 'pl' }));

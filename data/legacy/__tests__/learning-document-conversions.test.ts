@@ -4,6 +4,29 @@ import { malformedBackupCases, validLegacyBackup } from '@/test/utils/backup-moc
 import { convertLearningDocument, parseLearningDocumentBackup } from '../learning-document-conversions';
 
 describe('convertLearningDocument', () => {
+  it.each([
+    [{ resetEditorOnReviewQueue: false, resetEditorOnEveryProblem: true, resetEditorOnDueReview: true }, false],
+    [{ resetEditorOnReviewQueue: true, resetEditorOnEveryProblem: false, resetEditorOnDueReview: false }, true],
+    [{ resetEditorOnEveryProblem: true, resetEditorOnDueReview: false }, true],
+    [{ resetEditorOnEveryProblem: false, resetEditorOnDueReview: true }, true],
+    [{ resetEditorOnEveryProblem: false, resetEditorOnDueReview: false }, false],
+    [{}, false],
+  ] as const)('converts legacy editor-reset settings %j to the queue-opening preference', (settings, expected) => {
+    expect(
+      convertLearningDocument({
+        schemaVersion: 6,
+        cards: {},
+        stats: {},
+        settings,
+      })
+    ).toEqual({
+      schemaVersion: 7,
+      cards: {},
+      stats: {},
+      settings: { resetEditorOnReviewQueue: expected },
+    });
+  });
+
   it('prepares an unversioned installation without inventing settings or an edit timestamp', () => {
     const { backup, converted } = validLegacyBackup();
     const { domain: _domain, ...legacyCard } = backup.data.cards['two-sum'];
@@ -16,13 +39,13 @@ describe('convertLearningDocument', () => {
         lastSyncTime: '2024-01-01',
       })
     ).toEqual({
-      schemaVersion: 6,
+      schemaVersion: 7,
       ...converted,
-      settings: { resetEditorOnEveryProblem: false },
+      settings: { resetEditorOnReviewQueue: false },
     });
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6])(
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])(
     'preserves the same learning data from installations and backups at version %i without I/O or a clock',
     (schemaVersion) => {
       const { backup, converted } = validLegacyBackup();
@@ -30,11 +53,16 @@ describe('convertLearningDocument', () => {
       const data = {
         ...(schemaVersion < 4 ? backup.data : converted),
         ...(schemaVersion === 0 && { cards: { ...backup.data.cards, 'two-sum': legacyCard } }),
-        settings: { theme: 'light', language: 'zh-CN', maxNewCardsPerDay: 7 },
+        settings: {
+          theme: 'light',
+          language: 'zh-CN',
+          maxNewCardsPerDay: 7,
+          resetEditorOnReviewQueue: false,
+        },
       };
       const installation = { ...data, schemaVersion, dataUpdatedAt: backup.dataUpdatedAt };
       const before = structuredClone(installation);
-      const json = JSON.stringify(schemaVersion === 6 ? installation : { ...backup, schemaVersion, data });
+      const json = JSON.stringify(schemaVersion >= 6 ? installation : { ...backup, schemaVersion, data });
       for (const area of ['local', 'sync'] as const) {
         for (const operation of ['get', 'set', 'remove', 'clear'] as const) {
           vi.spyOn(fakeBrowser.storage[area], operation).mockImplementation(() => {
@@ -51,7 +79,7 @@ describe('convertLearningDocument', () => {
         throw new Error('Conversion must not read the clock');
       });
 
-      const expected = { ...converted, schemaVersion: 6, settings: data.settings, dataUpdatedAt: backup.dataUpdatedAt };
+      const expected = { ...converted, schemaVersion: 7, settings: data.settings, dataUpdatedAt: backup.dataUpdatedAt };
       expect(convertLearningDocument(installation)).toEqual(expected);
       expect(convertLearningDocument(installation)).toEqual(expected);
       expect(installation).toEqual(before);
@@ -59,17 +87,27 @@ describe('convertLearningDocument', () => {
     }
   );
 
-  it.each([undefined, 0, 1, 2, 3, 4, 5])(
-    'leaves empty installation version %s unedited with no overrides',
+  it.each([undefined, 0, 1, 2, 3, 4, 5, 6])(
+    'disables queue-opening reset when installation version %s has no reset overrides',
     (schemaVersion) => {
-      expect(convertLearningDocument({ schemaVersion })).toEqual({
-        schemaVersion: 6,
+      const input = schemaVersion === 6 ? { schemaVersion, cards: {}, stats: {}, settings: {} } : { schemaVersion };
+      expect(convertLearningDocument(input)).toEqual({
+        schemaVersion: 7,
         cards: {},
         stats: {},
-        settings: {},
+        settings: { resetEditorOnReviewQueue: false },
       });
     }
   );
+
+  it('preserves an absent reset override in the current document format', () => {
+    expect(convertLearningDocument({ schemaVersion: 7, cards: {}, stats: {}, settings: {} })).toEqual({
+      schemaVersion: 7,
+      cards: {},
+      stats: {},
+      settings: {},
+    });
+  });
 
   it.each([undefined, '', ' \t\n ', 'x'.repeat(500)])('preserves embedded-note precedence for %j', (note) => {
     const { backup } = validLegacyBackup();
@@ -82,10 +120,10 @@ describe('convertLearningDocument', () => {
         settings: { resetEditorOnEveryProblem: false, autoClearLeetcode: 'ignored', dayStartHour: null },
       })
     ).toEqual({
-      schemaVersion: 6,
+      schemaVersion: 7,
       cards: { 'two-sum': { ...card, ...(note === undefined ? { note: 'Legacy note' } : note ? { note } : {}) } },
       stats: {},
-      settings: { resetEditorOnEveryProblem: false },
+      settings: { resetEditorOnReviewQueue: false },
     });
   });
 
@@ -113,13 +151,13 @@ describe('convertLearningDocument', () => {
       if (kind === 'slug') converted.cards['two-sum'].slug = 'different';
       if (kind === 'duplicate') converted.cards['cn-problem'].id = 'valid-com';
       if (kind === 'date') converted.stats['2024-01-01'].date = '2024-01-02';
-      const document = { ...converted, schemaVersion: 6, settings: {} };
+      const document = { ...converted, schemaVersion: 7, settings: {} };
       expect(() => convertLearningDocument(document)).toThrow();
       expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
     }
   );
 
-  it.each([-1, 0.5, null, '5', 7])('rejects unsupported schema version %j', (schemaVersion) => {
+  it.each([-1, 0.5, null, '5', 8])('rejects unsupported schema version %j', (schemaVersion) => {
     const input = { schemaVersion, cards: {}, stats: {}, settings: {} };
     expect(() => convertLearningDocument(input)).toThrow();
     expect(() => parseLearningDocumentBackup(JSON.stringify(input))).toThrow();
@@ -151,7 +189,7 @@ describe('parseLearningDocumentBackup', () => {
   it('does not apply legacy export-time fallback to an unedited current document', () => {
     expect(
       parseLearningDocumentBackup(
-        JSON.stringify({ schemaVersion: 6, cards: {}, stats: {}, settings: {}, exportDate: '2024-01-01' })
+        JSON.stringify({ schemaVersion: 7, cards: {}, stats: {}, settings: {}, exportDate: '2024-01-01' })
       )
     ).not.toHaveProperty('dataUpdatedAt');
   });

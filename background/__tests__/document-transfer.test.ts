@@ -39,7 +39,7 @@ describe('document transfers through background commands', () => {
     const replacement = {
       ...(await readLearningDocument()),
       cards: {},
-      settings: {},
+      settings: { resetEditorOnReviewQueue: false },
       dataUpdatedAt: '2099-01-01T00:00:00.000Z',
     };
 
@@ -57,9 +57,9 @@ describe('document transfers through background commands', () => {
     await dispatch('importData', { jsonData: JSON.stringify(input) });
 
     expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
+      schemaVersion: 7,
       ...converted,
-      settings: {},
+      settings: { resetEditorOnReviewQueue: false },
       dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
     });
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
@@ -73,7 +73,7 @@ describe('document transfers through background commands', () => {
     await expect(
       dispatch('importData', {
         jsonData: JSON.stringify({
-          schemaVersion: 6,
+          schemaVersion: 7,
           cards: {},
           stats: {},
           settings: {},
@@ -93,7 +93,7 @@ describe('document transfers through background commands', () => {
 
     await expect(
       dispatch('importData', {
-        jsonData: JSON.stringify({ schemaVersion: 7, cards: {}, stats: {}, settings: {} }),
+        jsonData: JSON.stringify({ schemaVersion: 8, cards: {}, stats: {}, settings: {} }),
       })
     ).rejects.toThrow();
 

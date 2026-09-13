@@ -3,13 +3,13 @@
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
-import { setupLeetcodeAutoReset } from '@/content/auto-reset';
+import { setupLeetcodeEditorReset } from '@/content/editor-reset';
 import { watchDocumentTranslations } from '@/data/translations';
 import { translations } from '@/i18n';
 import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 
-vi.mock('@/content/auto-reset', () => ({ setupLeetcodeAutoReset: vi.fn() }));
+vi.mock('@/content/editor-reset', () => ({ setupLeetcodeEditorReset: vi.fn() }));
 vi.mock('@/data/translations', () => ({ watchDocumentTranslations: vi.fn() }));
 
 let ctx: ContentScriptContext;
@@ -39,7 +39,7 @@ beforeEach(() => {
     onChange(translations.en);
     return unwatchTranslations;
   });
-  vi.mocked(setupLeetcodeAutoReset).mockReturnValue(disposeReset);
+  vi.mocked(setupLeetcodeEditorReset).mockReturnValue(disposeReset);
 });
 
 afterEach(() => {
@@ -57,7 +57,7 @@ describe('content startup', () => {
     await act(() => bootstrapContent(ctx));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
-    const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeAutoReset).mock.calls[0]);
+    const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeEditorReset).mock.calls[0]);
     await act(async () => onResetConfirmed());
 
     const container = requireDefined(document.querySelector('leetsrs-toast'));
@@ -73,7 +73,7 @@ describe('content startup', () => {
     await act(() => bootstrapContent(ctx));
 
     expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
-    expect(setupLeetcodeAutoReset).toHaveBeenCalledOnce();
+    expect(setupLeetcodeEditorReset).toHaveBeenCalledOnce();
     expect(disposeReset).not.toHaveBeenCalled();
     expect(disconnect).not.toHaveBeenCalled();
     expect(document.querySelector('#last-group')?.previousElementSibling?.id).toBe('leetsrs-control');

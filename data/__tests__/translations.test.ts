@@ -6,7 +6,7 @@ import { translations } from '@/i18n';
 import { getDocumentTranslations as read, watchDocumentTranslations as watch } from '../translations';
 
 const key = STORAGE_KEYS.learningDocument;
-const storedValue = (language: unknown) => ({ schemaVersion: 6, cards: {}, stats: {}, settings: { language } });
+const storedValue = (language: unknown) => ({ schemaVersion: 7, cards: {}, stats: {}, settings: { language } });
 
 describe('stored translations from the learning document', () => {
   beforeEach(() => {

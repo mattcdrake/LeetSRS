@@ -28,7 +28,7 @@ describe('useCardsQuery', () => {
   it('shows saved cards and refreshes when another context removes them', async () => {
     fakeBrowser.reset();
     const card = createMockCard(State.New);
-    const document = { schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} };
+    const document = { schemaVersion: 7, cards: { [card.slug]: card }, stats: {}, settings: {} };
     await storage.setItem(STORAGE_KEYS.learningDocument, document);
     const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(result.current.data).toEqual([card]));
@@ -131,7 +131,7 @@ describe('card queries through JSON messaging and background handlers', () => {
       const card = createMockCard(state);
       card.fsrs.due = Date.now() + 10_000;
       await sendMessage('importData', {
-        jsonData: JSON.stringify({ schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} }),
+        jsonData: JSON.stringify({ schemaVersion: 7, cards: { [card.slug]: card }, stats: {}, settings: {} }),
       });
       const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
 
@@ -155,7 +155,7 @@ describe('card queries through JSON messaging and background handlers', () => {
     if (lastReview === undefined) delete card.fsrs.last_review;
     else card.fsrs.last_review = lastReview;
     await sendMessage('importData', {
-      jsonData: JSON.stringify({ schemaVersion: 6, cards: { [card.slug]: card }, stats: {}, settings: {} }),
+      jsonData: JSON.stringify({ schemaVersion: 7, cards: { [card.slug]: card }, stats: {}, settings: {} }),
     });
 
     const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });

@@ -29,7 +29,7 @@ describe('document learning through background commands', () => {
     vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementation(async (keys) => structuredClone(await get(keys)));
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2024-03-15T12:00:00'));
-    await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: { badgeEnabled: false } });
+    await replaceLearningDocument({ schemaVersion: 7, cards: {}, stats: {}, settings: { badgeEnabled: false } });
     background.main();
     await dispatch('waitForInitialization');
   });
@@ -201,7 +201,7 @@ describe('document learning through background commands', () => {
       return card;
     });
     const document: LearningDocument = {
-      schemaVersion: 6,
+      schemaVersion: 7,
       cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
       stats: { '2024-03-14': { ...createDailyStats('2024-03-14', undefined), newCards: 1 } },
       settings: { maxNewCardsPerDay: 2 },
@@ -267,7 +267,7 @@ describe('document learning through background commands', () => {
     async (failure) => {
       const card = createMockCard(State.New, buildProblem());
       const document: LearningDocument = {
-        schemaVersion: 6,
+        schemaVersion: 7,
         cards: { [card.slug]: card },
         settings: { badgeEnabled: false },
         stats: {
@@ -422,7 +422,7 @@ describe('document learning through background commands', () => {
       const now = new Date(instant);
       vi.setSystemTime(now);
       const document: LearningDocument = {
-        schemaVersion: 6,
+        schemaVersion: 7,
         cards: {},
         settings: { badgeEnabled: false },
         stats: {

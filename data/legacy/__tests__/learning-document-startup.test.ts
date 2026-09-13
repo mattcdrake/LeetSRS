@@ -19,7 +19,12 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
+    expect(await readLearningDocument()).toEqual({
+      schemaVersion: 7,
+      cards: {},
+      stats: {},
+      settings: { resetEditorOnReviewQueue: false },
+    });
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
   });
@@ -62,15 +67,14 @@ describe('learning document startup', () => {
     await initializeLearningDocument();
 
     const expected = {
-      schemaVersion: 6,
+      schemaVersion: 7,
       ...converted,
       dataUpdatedAt: backup.dataUpdatedAt,
       settings: {
         theme: 'light',
         maxNewCardsPerDay: 0,
         badgeEnabled: false,
-        resetEditorOnDueReview: false,
-        resetEditorOnEveryProblem: false,
+        resetEditorOnReviewQueue: false,
       },
     };
     expect(await readLearningDocument()).toEqual(expected);
@@ -90,7 +94,7 @@ describe('learning document startup', () => {
     });
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6])('treats a saved version %i document as authoritative', async (schemaVersion) => {
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
     const { backup, converted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {
@@ -109,8 +113,8 @@ describe('learning document startup', () => {
 
     expect(await readLearningDocument()).toEqual({
       ...converted,
-      schemaVersion: 6,
-      settings: { language: 'de' },
+      schemaVersion: 7,
+      settings: { language: 'de', ...(schemaVersion < 7 && { resetEditorOnReviewQueue: false }) },
       dataUpdatedAt: backup.dataUpdatedAt,
     });
     expect(await fakeBrowser.storage.sync.get()).toEqual({ 'leetsrs:gistConnection': 'do not read or replace' });
@@ -125,7 +129,7 @@ describe('learning document startup', () => {
     { schemaVersion: null },
     { schemaVersion: 5, cards: null },
     { schemaVersion: 6, cards: {}, stats: {} },
-    { schemaVersion: 7, cards: {}, stats: {}, settings: {} },
+    { schemaVersion: 8, cards: {}, stats: {}, settings: {} },
   ])('reports corrupt or future saved documents without legacy fallback: %j', async (document) => {
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': document,
@@ -181,9 +185,9 @@ describe('learning document startup', () => {
 
     expect(await readLearningDocument()).toEqual({
       ...converted,
-      schemaVersion: 6,
+      schemaVersion: 7,
       dataUpdatedAt: backup.dataUpdatedAt,
-      settings: { theme: 'dark', resetEditorOnEveryProblem: false },
+      settings: { theme: 'dark', resetEditorOnReviewQueue: false },
     });
     expect(await readGistConnection()).toEqual(shared);
   });
@@ -198,15 +202,15 @@ describe('learning document startup', () => {
     await initializeLearningDocument();
 
     expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
+      schemaVersion: 7,
       cards: converted.cards,
       stats: {},
-      settings: { language: 'de' },
+      settings: { language: 'de', resetEditorOnReviewQueue: false },
     });
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: null, enabled: false });
 
     // Editing the authoritative document then restarting must not resurrect retained legacy data.
-    const edited = { schemaVersion: 6 as const, cards: {}, stats: {}, settings: {} };
+    const edited = { schemaVersion: 7 as const, cards: {}, stats: {}, settings: {} };
     await replaceLearningDocument(edited);
     await initializeLearningDocument();
 
@@ -285,16 +289,17 @@ describe('learning document startup', () => {
       'leetsrs:dayStartHour': 4,
       'leetsrs:autoClearLeetcode': 'ignored',
       'leetsrs:resetEditorOnEveryProblem': false,
+      'leetsrs:resetEditorOnReviewQueue': true,
       'leetsrs:language': 'de',
     });
 
     await initializeLearningDocument();
 
     expect(await readLearningDocument()).toEqual({
-      schemaVersion: 6,
+      schemaVersion: 7,
       cards: { 'two-sum': { ...card, ...(note && { note }) } },
       stats: {},
-      settings: { resetEditorOnEveryProblem: false, language: 'de' },
+      settings: { resetEditorOnReviewQueue: true, language: 'de' },
     });
   });
 
@@ -314,7 +319,11 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readLearningDocument()).toEqual({ ...saved, schemaVersion: 6, settings: {} });
+    expect(await readLearningDocument()).toEqual({
+      ...saved,
+      schemaVersion: 7,
+      settings: { resetEditorOnReviewQueue: false },
+    });
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 });

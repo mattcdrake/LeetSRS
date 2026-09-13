@@ -12,6 +12,7 @@ const legacySettingNames = [
   'theme',
   'resetEditorOnEveryProblem',
   'resetEditorOnDueReview',
+  'resetEditorOnReviewQueue',
   'badgeEnabled',
   'language',
   'dayStartHour',

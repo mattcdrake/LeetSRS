@@ -98,7 +98,7 @@ it('ignores a download that finishes after an import', async () => {
   await dispatch('addCard', { problem: buildProblem() });
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 
-  const imported = { schemaVersion: 6, cards: {}, stats: {}, settings: { theme: 'dark' }, dataUpdatedAt: '2030-01-01' };
+  const imported = { schemaVersion: 7, cards: {}, stats: {}, settings: { theme: 'dark' }, dataUpdatedAt: '2030-01-01' };
   await dispatch('importData', { jsonData: JSON.stringify(imported) });
   download.resolve({
     data: {
