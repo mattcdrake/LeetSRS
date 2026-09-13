@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from '@/data/storage-keys';
 import type { GistConnectionResult, GistSyncConfig } from '@/domain/gist-sync';
 import { sendMessage } from '@/integrations/browser/messages';
 import { gistSyncQueryKeys } from '@/popup/queries/gist-sync';
+import { requireDefined } from '@/test/utils/assertions';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
@@ -74,9 +75,13 @@ describe('Gist setup form', () => {
     expect(screen.getByLabelText('Personal Access Token')).not.toHaveFocus();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     enterCredentials();
+    fireEvent.change(screen.getByLabelText('Personal Access Token'), { target: { value: '' } });
+    expect(screen.getByLabelText('Personal Access Token')).toHaveAttribute('aria-invalid', 'true');
     fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    // Happy DOM calls the overridden form.reset() on click; dispatch the browser's native reset event.
+    fireEvent.reset(requireDefined(screen.getByRole('button', { name: 'Cancel' }).closest('form')));
     expect(screen.getByLabelText('Personal Access Token')).toHaveValue('');
+    expect(screen.getByLabelText('Personal Access Token')).not.toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText('Personal Access Token')).toHaveFocus();
     expect(screen.getByLabelText('Gist ID')).toHaveValue('');
     expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
@@ -85,6 +90,7 @@ describe('Gist setup form', () => {
     enterCredentials();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Connection saved'));
+    expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
     await act(async () => refresh.resolve());
     expect(sendMessage).toHaveBeenCalledWith('setupGistSync', {
       mode: 'existing',
@@ -146,6 +152,7 @@ describe('Gist setup form', () => {
   it('can cancel drafts after browser sync removes the connection during editing', async () => {
     await open();
     enterCredentials();
+    fireEvent.click(screen.getByRole('radio', { name: 'Create New Gist' }));
     config = { pat: '', gistId: null, enabled: false };
     await act(async () => {
       await storage.setItem(STORAGE_KEYS.gistConnection, config);
@@ -154,7 +161,9 @@ describe('Gist setup form', () => {
     expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByLabelText('Personal Access Token')).toHaveValue('');
+    expect(screen.getByLabelText('Personal Access Token')).toHaveFocus();
     expect(screen.getByLabelText('Gist ID')).toHaveValue('');
+    expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
   });
