@@ -64,12 +64,10 @@ export async function getNote(slug: string): Promise<string | null> {
 
 export async function getSettings(): Promise<Settings> {
   const document = await readLearningDocument();
-
   return resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
 }
 
 export async function exportData(): Promise<string> {
   const document = await readLearningDocument();
-
   return JSON.stringify(document, null, 2);
 }
