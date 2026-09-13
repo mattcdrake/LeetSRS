@@ -35,30 +35,65 @@ describe('statistics calculations', () => {
     expect(stats[44].date).toBe('2024-03-15');
   });
 
-  it('continues streaks and accumulates each grade and card category', () => {
-    const yesterday = createDailyStats('2024-03-14', undefined);
-    const today = createDailyStats('2024-03-15', yesterday);
-    recordReview(today, Rating.Again, true);
-    recordReview(today, Rating.Hard, false);
-    recordReview(today, Rating.Good, false);
-    recordReview(today, Rating.Easy, true);
-    expect(today).toEqual({
-      date: '2024-03-15',
-      streak: 2,
-      totalReviews: 4,
-      newCards: 2,
-      reviewedCards: 2,
-      gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 1, [Rating.Easy]: 1 },
+  it.each([
+    ['2024-03-15T00:00:00', undefined, '2024-03-15', 1],
+    ['2024-03-15T00:00:00', '2024-03-13', '2024-03-15', 1],
+    ['2025-01-01T00:00:00', '2024-12-31', '2025-01-01', 8],
+    ['2024-03-10T23:59:59.999', '2024-03-09', '2024-03-10', 8],
+    ['2024-11-03T23:59:59.999', '2024-11-02', '2024-11-03', 8],
+  ] as const)('records a review at %s with prior day %s', (instant, priorDay, today, streak) => {
+    const stats = priorDay
+      ? { [priorDay]: { ...createDailyStats(priorDay, undefined), totalReviews: 1, reviewedCards: 1, streak: 7 } }
+      : {};
+    const before = structuredClone(stats);
+    const now = new Date(instant);
+    const result = recordReview(stats, now, Rating.Good, true);
+
+    expect(result).toEqual({
+      ...before,
+      [today]: {
+        date: today,
+        streak,
+        totalReviews: 1,
+        newCards: 1,
+        reviewedCards: 0,
+        gradeBreakdown: { [Rating.Again]: 0, [Rating.Hard]: 0, [Rating.Good]: 1, [Rating.Easy]: 0 },
+      },
     });
-    expect(yesterday.totalReviews).toBe(0);
+    expect(stats).toEqual(before);
+    expect(now).toEqual(new Date(instant));
+  });
+
+  it('continues streaks and accumulates each grade and card category', () => {
+    const yesterday = recordReview({}, new Date('2024-03-14T12:00:00'), Rating.Good, true);
+    const before = structuredClone(yesterday);
+    const now = new Date('2024-03-15T12:00:00');
+    let stats = recordReview(yesterday, now, Rating.Again, true);
+    const firstReview = stats;
+    const firstReviewBefore = structuredClone(firstReview);
+    stats = recordReview(stats, now, Rating.Hard, false);
+    stats = recordReview(stats, now, Rating.Good, false);
+    stats = recordReview(stats, now, Rating.Easy, true);
+    expect(stats).toEqual({
+      ...before,
+      '2024-03-15': {
+        date: '2024-03-15',
+        streak: 2,
+        totalReviews: 4,
+        newCards: 2,
+        reviewedCards: 2,
+        gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 1, [Rating.Easy]: 1 },
+      },
+    });
+    expect(yesterday).toEqual(before);
+    expect(firstReview).toEqual(firstReviewBefore);
   });
 
   it('preserves saved history and inserts independent empty days using the supplied local date', () => {
-    const saved = createDailyStats('2024-03-14', undefined);
-    recordReview(saved, Rating.Good, true);
-    const result = calculateHistoryStats({ '2024-03-14': saved }, 3, new Date('2024-03-15T03:59:59'));
+    const stats = recordReview({}, new Date('2024-03-14T12:00:00'), Rating.Good, true);
+    const result = calculateHistoryStats(stats, 3, new Date('2024-03-15T03:59:59'));
     expect(result.map((day) => day.date)).toEqual(['2024-03-13', '2024-03-14', '2024-03-15']);
-    expect(result[1]).toBe(saved);
+    expect(result[1]).toBe(stats['2024-03-14']);
     expect(result[0].streak).toBe(0);
     expect(result[2].streak).toBe(0);
     expect(result[0].gradeBreakdown).not.toBe(result[2].gradeBreakdown);

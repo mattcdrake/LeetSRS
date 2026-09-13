@@ -1,11 +1,10 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { addLocalDays, formatLocalDate } from '@/domain/calendar';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
 import { findCard, type LearningDocument } from '@/domain/learning-document';
 import { calculateDelayedDueDate, isDue } from '@/domain/review';
 import type { SettingsUpdate } from '@/domain/settings';
-import { createDailyStats, recordReview } from '@/domain/statistics';
+import { recordReview } from '@/domain/statistics';
 
 import { triggerGistSync } from './gist-sync';
 
@@ -92,11 +91,7 @@ export async function rateCard(input: RateCardInput): Promise<{ card: Card; shou
   };
   document.cards[card.slug] = card;
 
-  const today = formatLocalDate(now);
-  const yesterday = formatLocalDate(addLocalDays(now, -1));
-  const todayStats = document.stats[today] ?? createDailyStats(today, document.stats[yesterday]);
-  recordReview(todayStats, rating, isNewCard);
-  document.stats[today] = todayStats;
+  document.stats = recordReview(document.stats, now, rating, isNewCard);
 
   requireCard(document, card.slug);
   const saved = await saveLocalLearningDocument(document, now);

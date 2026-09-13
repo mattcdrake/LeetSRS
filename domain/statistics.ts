@@ -52,15 +52,29 @@ export function createDailyStats(todayKey: string, yesterdayStats: DailyStats | 
   return { ...createEmptyBaseStats(), date: todayKey, streak };
 }
 
-export function recordReview(todayStats: DailyStats, grade: Grade, isNewCard: boolean): void {
-  todayStats.totalReviews++;
-  todayStats.gradeBreakdown[grade as keyof typeof todayStats.gradeBreakdown]++;
+export function recordReview(
+  stats: Record<string, DailyStats>,
+  now: Date,
+  grade: Grade,
+  isNewCard: boolean
+): Record<string, DailyStats> {
+  const today = formatLocalDate(now);
+  const yesterday = formatLocalDate(addLocalDays(now, -1));
+  const todayStats = stats[today] ?? createDailyStats(today, stats[yesterday]);
 
-  if (isNewCard) {
-    todayStats.newCards++;
-  } else {
-    todayStats.reviewedCards++;
-  }
+  return {
+    ...stats,
+    [today]: {
+      ...todayStats,
+      totalReviews: todayStats.totalReviews + 1,
+      newCards: todayStats.newCards + (isNewCard ? 1 : 0),
+      reviewedCards: todayStats.reviewedCards + (isNewCard ? 0 : 1),
+      gradeBreakdown: {
+        ...todayStats.gradeBreakdown,
+        [grade]: todayStats.gradeBreakdown[grade] + 1,
+      },
+    },
+  };
 }
 
 export function calculateHistoryStats(stats: Record<string, DailyStats>, days: number, today: Date): DailyStats[] {
