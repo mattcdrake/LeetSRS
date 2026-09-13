@@ -32,7 +32,11 @@ it('offers only the daily new-card limit and saves changes', async () => {
 it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
   const document = { schemaVersion: 6 as const, cards: {}, stats: {}, settings: { maxNewCardsPerDay: 3 } };
   await replaceLearningDocument(document);
-  createMessageMock(vi.mocked(sendMessage)).handle('updateSettings', ({ changes }) => updateSettings(changes));
+  const save = Promise.withResolvers<void>();
+  createMessageMock(vi.mocked(sendMessage)).handle('updateSettings', async ({ changes }) => {
+    await save.promise;
+    return updateSettings(changes);
+  });
   render(<ReviewSettingsSection />, { wrapper: createTestWrapper().wrapper });
   const input = await screen.findByRole('spinbutton');
   await waitFor(() => expect(input).toHaveValue(3));
@@ -44,7 +48,12 @@ it('keeps an unfinished limit while incoming settings refresh and saves the draf
   await waitFor(() =>
     expect(sendMessage).toHaveBeenCalledWith('updateSettings', { changes: { maxNewCardsPerDay: 8 } })
   );
+  fireEvent.change(input, { target: { value: '9' } });
+  await act(async () => save.resolve());
   await waitFor(() => expect(input).toHaveAttribute('placeholder', '8'));
+  expect(input).toHaveValue(9);
+  fireEvent.blur(input);
+  await waitFor(() => expect(input).toHaveAttribute('placeholder', '9'));
   await act(() => replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 7 } }));
   await waitFor(() => expect(input).toHaveValue(7));
 });

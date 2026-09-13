@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { NOTES_MAX_LENGTH } from '@/domain/cards';
+import { useDraftUntilSaved } from '@/entrypoints/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/entrypoints/popup/hooks/useTimedConfirmation';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/entrypoints/popup/queries/notes';
 
@@ -21,25 +22,24 @@ export interface NoteEditor {
 }
 
 export function useNoteEditor(slug: string): NoteEditor {
-  const [draft, setDraft] = useState<{ slug: string; text: string } | null>(null);
   const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
   const { data: note, isLoading, error } = useNoteQuery(slug);
   const saveNoteMutation = useSaveNoteMutation(slug);
   const deleteNoteMutation = useDeleteNoteMutation(slug);
 
-  const text = draft?.slug === slug ? draft.text : (note ?? '');
-  const setText = (text: string) => setDraft({ slug, text });
+  const draft = useDraftUntilSaved(slug, note ?? '');
+  const { value: text, setValue: setText } = draft;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Switching cards must clear the deletion confirmation.
   useEffect(() => {
-    setDraft((current) => (current?.slug === slug ? current : null));
     resetConfirmation();
   }, [slug, resetConfirmation]);
 
   const save = async () => {
     try {
       await saveNoteMutation.mutateAsync(text);
-      setDraft((current) => (current?.slug === slug && current.text === text ? null : current));
+      draft.markSaved();
     } catch (error) {
       console.error('Failed to save note:', error);
     }
@@ -50,7 +50,7 @@ export function useNoteEditor(slug: string): NoteEditor {
       saveNoteMutation.reset();
       try {
         await deleteNoteMutation.mutateAsync();
-        setDraft((current) => (current?.slug === slug ? null : current));
+        draft.discard();
       } catch (error) {
         console.error('Failed to delete note:', error);
       }
