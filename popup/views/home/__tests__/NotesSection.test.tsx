@@ -64,6 +64,22 @@ describe('NotesSection', () => {
     });
   });
 
+  it('disables an expanded note editor while its review action is pending', async () => {
+    seedNote('Stored note');
+    const view = render(<NotesSection slug={mockSlug} />, { wrapper });
+    fireEvent.click(screen.getByRole('button', { expanded: false }));
+    const textarea = await screen.findByRole('textbox', { name: 'Note text' });
+    fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+
+    view.rerender(<NotesSection slug={mockSlug} isDisabled />);
+
+    expect(screen.getByRole('button', { expanded: true })).toBeDisabled();
+    expect(textarea).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
   it('retains the draft and delete confirmation across collapse and reopen', async () => {
     seedNote('Stored note');
     render(<NotesSection slug={mockSlug} />, { wrapper });

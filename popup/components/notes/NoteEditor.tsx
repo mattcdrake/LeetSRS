@@ -12,9 +12,10 @@ const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
 interface NoteEditorProps {
   slug: string;
   variant: 'regular' | 'compact';
+  isDisabled?: boolean;
 }
 
-export function NoteEditor({ slug, variant }: NoteEditorProps) {
+export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProps) {
   const t = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = variant === 'compact';
@@ -93,7 +94,7 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
           rows={isCompact ? 1 : 4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          disabled={isLoading || isSaving}
+          disabled={isDisabled || isLoading || isSaving}
         />
       </TextField>
       {saveError != null && (
@@ -110,7 +111,7 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
             <Button
               className={`${buttonSizing} rounded ${deleteConfirm ? 'bg-ultra-danger' : 'bg-danger'} text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
               onPress={remove}
-              isDisabled={isDeleting}
+              isDisabled={isDisabled || isDeleting}
             >
               {isDeleting ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
             </Button>
@@ -118,7 +119,7 @@ export function NoteEditor({ slug, variant }: NoteEditorProps) {
           <Button
             className={`${buttonSizing} rounded bg-accent text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
             onPress={save}
-            isDisabled={!canSave || isSaving}
+            isDisabled={isDisabled || !canSave || isSaving}
           >
             {isSaving ? t.actions.saving : t.actions.save}
           </Button>

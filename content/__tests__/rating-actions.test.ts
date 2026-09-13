@@ -1,7 +1,7 @@
-import { Rating, State } from 'ts-fsrs';
+import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
-import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { getCurrentProblem } from '../../integrations/leetcode/problem-data';
 import { addCurrentProblem, rateCurrentProblem } from '../rating-actions';
@@ -11,10 +11,8 @@ vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
 const problem = buildProblem();
-const card = createMockCard(State.New);
-
 beforeEach(() => {
-  messages.reset().resolve('rateCard', { card, shouldRequeue: false }).resolve('addCard', card);
+  messages.reset().resolve('rateCard', undefined).resolve('addCard', undefined);
   vi.mocked(getCurrentProblem).mockResolvedValue(problem);
 });
 

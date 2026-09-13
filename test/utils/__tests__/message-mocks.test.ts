@@ -1,8 +1,5 @@
-import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
-import { buildProblem } from '@/test/utils/card-mocks';
-import { createMockCard } from '../card-mocks';
 import { createMessageMock } from '../message-mocks';
 
 vi.mock('@/integrations/browser/messages', () => ({
@@ -39,31 +36,29 @@ describe('createMessageMock', () => {
   });
 
   it('JSON-round-trips resolved responses', async () => {
-    const card = createMockCard(State.New, { note: 'Remember this' });
-    const result = [{ ...card, omitted: undefined }];
-    messages.resolve('rateCard', Promise.resolve({ card: result[0], shouldRequeue: false }));
+    const result = { lastSyncTime: null, lastSyncDirection: 'push' as const, syncInProgress: false, lastError: null };
+    messages.resolve('getGistSyncStatus', Promise.resolve({ ...result, omitted: undefined }));
 
-    const received = await sendMessage('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+    const received = await sendMessage('getGistSyncStatus');
 
-    expect(received).toEqual({ card, shouldRequeue: false });
+    expect(received).toEqual(result);
     expect(received).not.toBe(result);
-    expect(received.card).not.toBe(result[0]);
-    expect(received.card).not.toHaveProperty('omitted');
+    expect(received).not.toHaveProperty('omitted');
   });
 
   it.each(['throw', 'reject'])('preserves errors when handlers %s', async (mode) => {
     const error = new Error('Handler failed');
-    messages.handle('rateCard', () => {
+    messages.handle('waitForInitialization', () => {
       if (mode === 'throw') throw error;
       return Promise.reject(error);
     });
 
-    await expect(sendMessage('rateCard', { input: { ...buildProblem(), rating: Rating.Good } })).rejects.toBe(error);
+    await expect(sendMessage('waitForInitialization')).rejects.toBe(error);
   });
 
   it('rejects unexpected messages', async () => {
-    await expect(sendMessage('rateCard', { input: { ...buildProblem(), rating: Rating.Good } })).rejects.toThrow(
-      'Unexpected extension message: rateCard'
+    await expect(sendMessage('waitForInitialization')).rejects.toThrow(
+      'Unexpected extension message: waitForInitialization'
     );
   });
 });

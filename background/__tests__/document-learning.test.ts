@@ -9,6 +9,7 @@ import { formatLocalDate } from '@/domain/calendar';
 import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/integrations/browser/messages';
+import { requireDefined } from '@/test/utils/assertions';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
@@ -58,10 +59,11 @@ describe('document learning through background commands', () => {
     expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
-    const result = await pending;
+    await expect(pending).resolves.toBeUndefined();
+    const card = requireDefined((await readLearningDocument()).cards['two-sum']);
 
-    expect(result.card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
-    expect(result.card.fsrs).toEqual({
+    expect(card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
+    expect(card?.fsrs).toEqual({
       due: new Date('2024-03-18T12:00:00').getTime(),
       last_review: Date.now(),
       stability: 2.3065,
@@ -73,8 +75,7 @@ describe('document learning through background commands', () => {
       learning_steps: 0,
       state: State.Review,
     });
-    expect(result.shouldRequeue).toBe(false);
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([result.card]);
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
     const stats = (await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null;
     expect(stats).toEqual({
       date: '2024-03-15',
@@ -86,7 +87,7 @@ describe('document learning through background commands', () => {
     });
     expect(await readLearningDocument()).toEqual({
       ...before,
-      cards: { [result.card.slug]: result.card },
+      cards: { [card.slug]: card },
       stats: { '2024-03-15': stats },
       dataUpdatedAt: new Date().toISOString(),
     });
@@ -106,7 +107,8 @@ describe('document learning through background commands', () => {
     const others = Object.values(original.cards);
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const problem = buildProblem({ slug: 'new-problem' });
-    const card = await dispatch('addCard', { problem });
+    await expect(dispatch('addCard', { problem })).resolves.toBeUndefined();
+    const card = requireDefined((await readLearningDocument()).cards[problem.slug]);
     expect(Object.values((await readLearningDocument()).cards)).toEqual([...others, card]);
     expect(card.fsrs).toEqual({
       due: Date.now(),
@@ -120,18 +122,21 @@ describe('document learning through background commands', () => {
       learning_steps: 0,
       last_review: undefined,
     });
-    expect(await dispatch('addCard', { problem: { ...problem, name: 'Changed', domain: 'leetcode.cn' } })).toEqual(
-      card
-    );
+    await expect(
+      dispatch('addCard', { problem: { ...problem, name: 'Changed', domain: 'leetcode.cn' } })
+    ).resolves.toBeUndefined();
     expect(writes).toHaveBeenCalledTimes(1);
     await dispatch('saveNote', { slug: card.slug, text: '  solution\n\t' });
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('  solution\n\t');
-    const paused = await dispatch('setPauseStatus', { slug: card.slug, paused: true });
+    await expect(dispatch('setPauseStatus', { slug: card.slug, paused: true })).resolves.toBeUndefined();
+    const paused = requireDefined((await readLearningDocument()).cards[card.slug]);
     expect(paused).toEqual({ ...card, paused: true, note: '  solution\n\t' });
     vi.setSystemTime(new Date('2024-03-16T12:00:00'));
-    const delayed = await dispatch('delayCard', { slug: card.slug, days: 2 });
+    await expect(dispatch('delayCard', { slug: card.slug, days: 2 })).resolves.toBeUndefined();
+    const delayed = requireDefined((await readLearningDocument()).cards[card.slug]);
     expect(delayed).toEqual({ ...paused, fsrs: { ...paused.fsrs, due: new Date('2024-03-17T12:00:00').getTime() } });
-    expect(await dispatch('setPauseStatus', { slug: card.slug, paused: false })).toEqual({ ...delayed, paused: false });
+    await expect(dispatch('setPauseStatus', { slug: card.slug, paused: false })).resolves.toBeUndefined();
+    expect((await readLearningDocument()).cards[card.slug]).toEqual({ ...delayed, paused: false });
     await dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(500) });
     await expect(dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(501) })).rejects.toThrow('maximum length');
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('a'.repeat(500));
@@ -168,7 +173,8 @@ describe('document learning through background commands', () => {
       return document;
     });
 
-    const { card } = await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+    await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+    const card = requireDefined((await readLearningDocument()).cards['two-sum']);
 
     expect(card.createdAt).toBe(now.getTime());
     expect(card.fsrs.last_review).toBe(now.getTime());
@@ -291,7 +297,8 @@ describe('document learning through background commands', () => {
     expect(writes).not.toHaveBeenCalled();
     await dispatch('removeCard', { slug: 'missing' });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-    const card = await dispatch('addCard', { problem: buildProblem() });
+    await dispatch('addCard', { problem: buildProblem() });
+    const card = requireDefined((await readLearningDocument()).cards['two-sum']);
     writes.mockClear();
     await dispatch('deleteNote', { slug: card.slug });
     expect(writes).not.toHaveBeenCalled();
@@ -318,34 +325,37 @@ describe('document learning through background commands', () => {
   it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
     'preserves repeated scheduling and daily statistics for rating %s',
     async (rating) => {
-      const card = await dispatch('addCard', { problem: buildProblem() });
+      await dispatch('addCard', { problem: buildProblem() });
+      const card = requireDefined((await readLearningDocument()).cards['two-sum']);
       await dispatch('saveNote', { slug: card.slug, text: '  retained\n' });
-      const first = await dispatch('rateCard', { input: { ...buildProblem({ name: 'Changed' }), rating } });
-      expect(first.card).toMatchObject({
+      await expect(
+        dispatch('rateCard', { input: { ...buildProblem({ name: 'Changed' }), rating } })
+      ).resolves.toBeUndefined();
+      const first = requireDefined((await readLearningDocument()).cards[card.slug]);
+      expect(first).toMatchObject({
         id: card.id,
         name: card.name,
         createdAt: card.createdAt,
         note: '  retained\n',
       });
-      expect(first.card.fsrs.reps).toBe(1);
-      expect(first.card.fsrs.last_review).toBe(card.createdAt);
-      expect(first.card.fsrs.state).toBe(State.Review);
-      expect(first.card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-      expect(first.card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-      expect(first.shouldRequeue).toBe(false);
-      vi.setSystemTime(first.card.fsrs.due - 1);
+      expect(first.fsrs.reps).toBe(1);
+      expect(first.fsrs.last_review).toBe(card.createdAt);
+      expect(first.fsrs.state).toBe(State.Review);
+      expect(first.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+      expect(first.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+      vi.setSystemTime(first.fsrs.due - 1);
       expect(await getReviewQueue()).toEqual([]);
-      vi.setSystemTime(first.card.fsrs.due);
-      expect(await getReviewQueue()).toEqual([first.card]);
+      vi.setSystemTime(first.fsrs.due);
+      expect(await getReviewQueue()).toEqual([first]);
       // Another attempt on the same review day counts as a reviewed card.
       vi.setSystemTime(card.createdAt);
-      const second = await dispatch('rateCard', { input: { ...buildProblem(), rating } });
-      expect(second.card.fsrs.reps).toBe(2);
-      expect(second.card.fsrs.state).toBe(State.Review);
-      expect(second.card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-      expect(second.card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-      expect(second.shouldRequeue).toBe(false);
-      expect(Object.values((await readLearningDocument()).cards)).toEqual([second.card]);
+      await expect(dispatch('rateCard', { input: { ...buildProblem(), rating } })).resolves.toBeUndefined();
+      const second = requireDefined((await readLearningDocument()).cards[card.slug]);
+      expect(second.fsrs.reps).toBe(2);
+      expect(second.fsrs.state).toBe(State.Review);
+      expect(second.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+      expect(second.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+      expect(Object.values((await readLearningDocument()).cards)).toEqual([second]);
       expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toEqual({
         date: '2024-03-15',
         streak: 1,
@@ -378,7 +388,8 @@ describe('document learning through background commands', () => {
           expect((await readLearningDocument()).cards[existing.slug]).toEqual(existing);
         }
 
-        const { card, shouldRequeue } = await dispatch('rateCard', { input: { ...problem, rating } });
+        await expect(dispatch('rateCard', { input: { ...problem, rating } })).resolves.toBeUndefined();
+        const card = requireDefined((await readLearningDocument()).cards[problem.slug]);
 
         expect(card.fsrs).toMatchObject({
           state: State.Review,
@@ -388,7 +399,6 @@ describe('document learning through background commands', () => {
         });
         expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
         expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-        expect(shouldRequeue).toBe(false);
         expect((await readLearningDocument()).cards[card.slug]).toEqual(card);
         if (existing) {
           expect(card).toMatchObject({ id: existing.id, createdAt: existing.createdAt, note: 'Retained' });
@@ -423,7 +433,8 @@ describe('document learning through background commands', () => {
         return result;
       });
 
-      const { card } = await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+      await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
+      const card = requireDefined((await readLearningDocument()).cards['two-sum']);
       expect(card.createdAt).toBe(now.getTime());
       expect(card.fsrs.last_review).toBe(now.getTime());
       expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();

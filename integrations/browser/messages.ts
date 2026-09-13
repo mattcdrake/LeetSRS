@@ -1,6 +1,6 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import { z } from 'zod';
-import { type Card, noteTextSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
+import { noteTextSchema, problemDescriptorSchema, rateCardInputSchema } from '@/domain/cards';
 import { type GistConnectionResult, type GistSyncStatus, gistSetupSchema } from '@/domain/gist-sync';
 import { settingsUpdateSchema } from '@/domain/settings';
 
@@ -28,11 +28,11 @@ type MessagePayload<Name extends keyof typeof messagePayloadSchemas> = z.infer<(
 
 export interface ExtensionMessageMap {
   waitForInitialization(): void;
-  addCard(data: MessagePayload<'addCard'>): Card;
+  addCard(data: MessagePayload<'addCard'>): void;
   removeCard(data: MessagePayload<'removeCard'>): void;
-  delayCard(data: MessagePayload<'delayCard'>): Card;
-  setPauseStatus(data: MessagePayload<'setPauseStatus'>): Card;
-  rateCard(data: MessagePayload<'rateCard'>): { card: Card; shouldRequeue: boolean };
+  delayCard(data: MessagePayload<'delayCard'>): void;
+  setPauseStatus(data: MessagePayload<'setPauseStatus'>): void;
+  rateCard(data: MessagePayload<'rateCard'>): void;
   saveNote(data: MessagePayload<'saveNote'>): void;
   deleteNote(data: MessagePayload<'deleteNote'>): void;
   updateSettings(data: MessagePayload<'updateSettings'>): void;

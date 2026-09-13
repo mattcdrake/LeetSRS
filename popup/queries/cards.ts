@@ -1,7 +1,7 @@
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { readLearningDocument } from '@/data/learning-document';
 import { getReviewQueue } from '@/data/learning-queries';
-import type { Card, RateCardInput } from '@/domain/cards';
+import type { RateCardInput } from '@/domain/cards';
 import { sendMessage } from '@/integrations/browser/messages';
 
 export const cardQueryKeys = {
@@ -32,44 +32,29 @@ export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }
   });
 }
 
-export function useRemoveCardMutation() {
-  return useMutation({
+function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, TVariables>({
     networkMode: 'always',
-    mutationFn: (slug: string) => sendMessage('removeCard', { slug }),
+    mutationFn,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
   });
+}
+
+export function useRemoveCardMutation() {
+  return useCardMutation((slug: string) => sendMessage('removeCard', { slug }));
 }
 
 export function useRateCardMutation() {
-  return useMutation<{ card: Card; shouldRequeue: boolean }, Error, RateCardInput>({
-    networkMode: 'always',
-    mutationFn: (input) => sendMessage('rateCard', { input }),
-  });
+  return useCardMutation((input: RateCardInput) => sendMessage('rateCard', { input }));
 }
 
 export function useDelayCardMutation() {
-  return useMutation<
-    Card,
-    Error,
-    {
-      slug: string;
-      days: number;
-    }
-  >({
-    networkMode: 'always',
-    mutationFn: ({ slug, days }) => sendMessage('delayCard', { slug, days }),
-  });
+  return useCardMutation(({ slug, days }: { slug: string; days: number }) => sendMessage('delayCard', { slug, days }));
 }
 
 export function usePauseCardMutation() {
-  return useMutation<
-    Card,
-    Error,
-    {
-      slug: string;
-      paused: boolean;
-    }
-  >({
-    networkMode: 'always',
-    mutationFn: ({ slug, paused }) => sendMessage('setPauseStatus', { slug, paused }),
-  });
+  return useCardMutation(({ slug, paused }: { slug: string; paused: boolean }) =>
+    sendMessage('setPauseStatus', { slug, paused })
+  );
 }

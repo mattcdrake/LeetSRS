@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Grade } from 'ts-fsrs';
-import type { Card, RateCardInput } from '@/domain/cards';
+import type { RateCardInput } from '@/domain/cards';
 import {
   useDelayCardMutation,
   usePauseCardMutation,
@@ -14,8 +14,6 @@ import { ActionsSection } from './ActionsSection';
 import { NotesSection } from './NotesSection';
 import { ReviewCard } from './ReviewCard';
 
-const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-
 export function ReviewQueue() {
   const t = useI18n();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
@@ -23,37 +21,20 @@ export function ReviewQueue() {
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();
   const pauseCardMutation = usePauseCardMutation();
-  const [transition, setTransition] = useState<{ card: Card; phase: 'saving' | 'left' | 'right' } | null>(null);
-  const isProcessing = transition !== null;
-  const slideDirection = transition?.phase === 'saving' ? null : transition?.phase;
+  const [processingCardId, setProcessingCardId] = useState<string | null>(null);
+  const isProcessing = processingCardId !== null;
 
-  const finishCardAction = () => setTransition(null);
-
-  const handleCardAction = async <T,>(
-    action: () => Promise<T>,
-    options: {
-      getSlideDirection: (result: T) => 'left' | 'right';
-      errorMessage: string;
-    }
-  ) => {
+  const handleCardAction = async (action: () => Promise<void>, errorMessage: string) => {
     if (queue.length === 0 || isProcessing) return;
 
-    const card = queue[0];
-    setTransition({ card, phase: 'saving' });
+    setProcessingCardId(queue[0].id);
 
     try {
-      const result = await action();
-
-      if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
-        finishCardAction();
-        return;
-      }
-
-      const direction = options.getSlideDirection(result);
-      setTransition({ card, phase: direction });
+      await action();
     } catch (error) {
-      console.error(options.errorMessage, error);
-      finishCardAction();
+      console.error(errorMessage, error);
+    } finally {
+      setProcessingCardId(null);
     }
   };
 
@@ -67,34 +48,28 @@ export function ReviewQueue() {
       domain: currentCard.domain,
       rating,
     };
-    await handleCardAction(() => rateCardMutation.mutateAsync(input), {
-      getSlideDirection: (result) => (result.shouldRequeue ? 'left' : 'right'),
-      errorMessage: 'Failed to rate card:',
-    });
+    await handleCardAction(() => rateCardMutation.mutateAsync(input), 'Failed to rate card:');
   };
 
   const handleDelete = async () => {
     const currentCard = queue[0];
-    await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.slug), {
-      getSlideDirection: () => 'left',
-      errorMessage: 'Failed to delete card:',
-    });
+    await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.slug), 'Failed to delete card:');
   };
 
   const handleDelay = async (days: number) => {
     const currentCard = queue[0];
-    await handleCardAction(() => delayCardMutation.mutateAsync({ slug: currentCard.slug, days }), {
-      getSlideDirection: () => 'right',
-      errorMessage: 'Failed to delay card:',
-    });
+    await handleCardAction(
+      () => delayCardMutation.mutateAsync({ slug: currentCard.slug, days }),
+      'Failed to delay card:'
+    );
   };
 
   const handlePause = async () => {
     const currentCard = queue[0];
-    await handleCardAction(() => pauseCardMutation.mutateAsync({ slug: currentCard.slug, paused: true }), {
-      getSlideDirection: () => 'right',
-      errorMessage: 'Failed to pause card:',
-    });
+    await handleCardAction(
+      () => pauseCardMutation.mutateAsync({ slug: currentCard.slug, paused: true }),
+      'Failed to pause card:'
+    );
   };
 
   if (isLoading) {
@@ -113,7 +88,15 @@ export function ReviewQueue() {
     );
   }
 
-  const currentCard = transition?.card ?? queue[0];
+  const currentCard = queue[0];
+
+  if (processingCardId && currentCard?.id !== processingCardId) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="text-secondary">{t.home.loadingReviewQueue}</div>
+      </div>
+    );
+  }
 
   if (!currentCard) {
     return (
@@ -127,30 +110,11 @@ export function ReviewQueue() {
     );
   }
 
-  const getAnimationClass = () => {
-    const baseClasses = 'transition-all duration-300 ease-out';
-
-    if (slideDirection === 'left') {
-      return `${baseClasses} animate-slide-left`;
-    }
-    if (slideDirection === 'right') {
-      return `${baseClasses} animate-slide-right`;
-    }
-    return `${baseClasses} animate-slide-in`;
-  };
-
   return (
     <div className="flex flex-col gap-4">
-      <div
-        className={getAnimationClass()}
-        onAnimationEnd={(event) => {
-          if (slideDirection && event.currentTarget === event.target) finishCardAction();
-        }}
-      >
-        {/* The key is important to ensure React re-mounts the component for a new card */}
-        <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
-      </div>
-      <NotesSection slug={currentCard.slug} />
+      {/* The key is important to ensure React re-mounts the component for a new card */}
+      <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
+      <NotesSection slug={currentCard.slug} isDisabled={isProcessing} />
       <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
     </div>
   );
