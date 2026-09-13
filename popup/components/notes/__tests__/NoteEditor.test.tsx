@@ -68,12 +68,12 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     await waitFor(() => expect(textarea).toHaveValue('Stored note'));
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
-    fireEvent.change(textarea, { target: { value: 'Edited note' } });
-    expect(screen.getByText('11/500')).toBeInTheDocument();
+    fireEvent.change(textarea, { target: { value: '  Edited note\n' } });
+    expect(screen.getByText('14/500')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByRole('button', { name: 'Saving...' })).toBeDisabled();
     expect(textarea).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug, text: 'Edited note' });
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug, text: '  Edited note\n' });
 
     await act(async () => save.resolve());
     await waitFor(() => expect(textarea).toBeEnabled());
@@ -94,7 +94,8 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it.each(['Stored note'])('confirms deletion of stored text "%s" and shows pending feedback', async (text) => {
+  it('confirms deletion and shows pending feedback', async () => {
+    const text = 'Stored note';
     const remove = Promise.withResolvers<void>();
     messages.handle('deleteNote', async () => {
       await remove.promise;
@@ -167,6 +168,34 @@ describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
     view.rerender(<NoteEditor slug="another-card" variant={variant} />);
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(textarea).toHaveValue('');
+  });
+
+  it('preserves a dirty draft during incoming updates and resets it and confirmation when switching cards', async () => {
+    const { wrapper, queryClient } = createTestWrapper();
+    queryClient.setQueryData(noteQueryKeys.detail(slug), 'Stored note');
+    queryClient.setQueryData(noteQueryKeys.detail('another-card'), 'Other note');
+    vi.mocked(storage.getItem).mockResolvedValue(
+      buildLearningDocument({
+        cards: {
+          [slug]: createMockCard(State.New, { slug, note: 'Incoming note' }),
+          'another-card': createMockCard(State.New, { slug: 'another-card', note: 'Other note' }),
+        },
+      })
+    );
+    const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    const textarea = screen.getByRole('textbox', { name: 'Note text' });
+    fireEvent.change(textarea, { target: { value: 'Dirty draft' } });
+    act(() => queryClient.setQueryData(noteQueryKeys.detail(slug), 'Incoming note'));
+    expect(textarea).toHaveValue('Dirty draft');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await screen.findByRole('button', { name: 'Confirm?' });
+
+    view.rerender(<NoteEditor slug="another-card" variant={variant} />);
+    expect(textarea).toHaveValue('Other note');
+    expect(screen.queryByRole('button', { name: 'Confirm?' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    view.rerender(<NoteEditor slug={slug} variant={variant} />);
+    expect(textarea).toHaveValue('Incoming note');
   });
 
   it('retains text and resets confirmation after a failed deletion', async () => {

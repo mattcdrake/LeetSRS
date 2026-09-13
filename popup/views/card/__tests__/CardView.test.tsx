@@ -17,7 +17,7 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { CardView } from '../CardView';
 
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
-vi.mock('../components/CardNotes', () => ({ CardNotes: () => null }));
+vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 let queryClient: QueryClient;
 
