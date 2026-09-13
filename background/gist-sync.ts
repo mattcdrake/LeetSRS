@@ -2,7 +2,6 @@ import { readGistConnection, writeGistConnection } from '@/data/gist-connection'
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { parseLearningDocumentBackup } from '@/data/legacy/learning-document-conversions';
 import { readSyncMetadata, removeSyncStatus, writeSyncStatus } from '@/data/sync-metadata';
-import { getDocumentTranslations } from '@/data/translations';
 import {
   decideGistSync,
   type GistConnectionResult,
@@ -14,6 +13,7 @@ import {
 import { type Translations, translations } from '@/i18n';
 import { detectBrowserLanguage } from '@/integrations/browser/language';
 import { createGitHubClient, GIST_FILENAME } from '@/integrations/github/client';
+import { getSyncNotices, presentSyncError } from './gist-sync-notices';
 
 type SyncAttempt = {
   promise: Promise<SyncResult | undefined>;
@@ -26,6 +26,7 @@ type SyncAttempt = {
   deadline?: ReturnType<typeof setTimeout>;
 };
 let activeAttempt: SyncAttempt | undefined;
+// Connection changes and explicit invalidation also obsolete pending setup work.
 let generation = 0;
 let lastError: string | null = null;
 
@@ -33,18 +34,13 @@ function canSyncAutomatically(config: GistSyncConfig) {
   return config.enabled && !!config.pat.trim() && !!config.gistId?.trim();
 }
 
-async function getSyncNotices() {
-  return getDocumentTranslations().then(
-    (t) => t.syncNotices,
-    () => translations[detectBrowserLanguage()].syncNotices
-  );
-}
-
 function finishSync(attempt: SyncAttempt, result?: SyncResult) {
+  // Identity is the lifetime token: late continuations cannot finish a newer attempt.
   if (activeAttempt !== attempt) return;
   clearTimeout(attempt.deadline);
   activeAttempt = undefined;
   attempt.resolve(result);
+  // Release this attempt before starting the single coalesced save follow-up.
   if (attempt.followUp) void triggerGistSync('alarm');
 }
 
@@ -85,25 +81,31 @@ export function triggerGistSync(reason = 'manual'): Promise<SyncResult | undefin
   }
   const attempt = activeAttempt;
   if (reason === 'manual') attempt.manual = true;
-  const result =
-    reason === 'manual'
-      ? attempt.promise
-      : Promise.race([
-          attempt.promise,
-          attempt.connection.then(
-            (config) => (canSyncAutomatically(config) ? attempt.promise : undefined),
-            () => attempt.promise
-          ),
-        ]);
-  if (reason === 'arrival' && !attempt.arrival) {
-    attempt.arrival = result;
-    attempt.deadline = setTimeout(() => {
-      lastError = attempt.notices.unavailable;
-      finishSync(attempt, { success: false, error: lastError });
-    }, 3000);
-    void result.then(() => clearTimeout(attempt.deadline));
-  }
+  const result = reason === 'manual' ? attempt.promise : automaticSyncResult(attempt);
+  if (reason === 'arrival') holdArrivalEdits(attempt, result);
   return result;
+}
+
+function automaticSyncResult(attempt: SyncAttempt): Promise<SyncResult | undefined> {
+  // A disabled automatic caller need not wait for a shared manual attempt.
+  // Race completion as well, so the arrival deadline still releases a pending connection read.
+  return Promise.race([
+    attempt.promise,
+    attempt.connection.then(
+      (config) => (canSyncAutomatically(config) ? attempt.promise : undefined),
+      () => attempt.promise
+    ),
+  ]);
+}
+
+function holdArrivalEdits(attempt: SyncAttempt, result: Promise<SyncResult | undefined>): void {
+  if (attempt.arrival) return;
+  attempt.arrival = result;
+  attempt.deadline = setTimeout(() => {
+    lastError = attempt.notices.unavailable;
+    finishSync(attempt, { success: false, error: lastError });
+  }, 3000);
+  void result.then(() => clearTimeout(attempt.deadline));
 }
 
 async function runSync(attempt: SyncAttempt): Promise<void> {
@@ -118,42 +120,35 @@ async function runSync(attempt: SyncAttempt): Promise<void> {
     lastError = null;
     if (!config.pat.trim()) throw new Error(notices.missingToken);
     if (!config.gistId?.trim()) throw new Error(notices.missingGist);
-    const github = createGitHubClient(config.pat);
-    const { data } = await github.getGist(config.gistId);
-    if (activeAttempt !== attempt) return;
-    const remoteFile = data.files?.[GIST_FILENAME];
-    // Validate the remote even when local data wins, then compare fresh local data.
-    const remote = remoteFile ? parseLearningDocumentBackup(remoteFile.content ?? '') : undefined;
-    const local = await readLearningDocument();
-    if (activeAttempt !== attempt) return;
-    const { action } = decideGistSync(
-      remote ? { state: 'parsed', dataUpdatedAt: remote.dataUpdatedAt } : { state: 'missing' },
-      local.dataUpdatedAt
-    );
-    if (action === 'push') await github.updateGist(config.gistId, JSON.stringify(local, null, 2));
-    else if (action === 'pull' && remote) await replaceLearningDocument(remote);
-    if (activeAttempt !== attempt) return;
-    const timestamp = new Date().toISOString();
-    await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: action === 'no-change' ? undefined : action });
-    const resultActions = { push: 'pushed', pull: 'pulled', 'no-change': 'no-change' } as const;
-    finishSync(attempt, { success: true, action: resultActions[action], timestamp });
+    const result = await syncDocument(attempt, config.pat, config.gistId);
+    finishSync(attempt, result);
   } catch (error) {
     if (activeAttempt !== attempt) return;
-    const message = error instanceof Error ? error.message : attempt.notices.refreshFailed;
-    const status = error && typeof error === 'object' && 'status' in error ? error.status : undefined;
-    const notices = attempt.notices;
-    lastError =
-      /rate limit/i.test(message) || status === 429
-        ? notices.rateLimit
-        : status === 401 || status === 403 || /401|403|bad credentials/i.test(message)
-          ? notices.authentication
-          : status === 404 || /404/.test(message)
-            ? notices.gistNotFound
-            : /fetch|network|offline|timeout/i.test(message) || (typeof status === 'number' && status >= 500)
-              ? notices.unavailable
-              : message;
+    lastError = presentSyncError(error, attempt.notices);
     finishSync(attempt, { success: false, error: lastError });
   }
+}
+
+async function syncDocument(attempt: SyncAttempt, pat: string, gistId: string): Promise<SyncResult | undefined> {
+  const github = createGitHubClient(pat);
+  const { data } = await github.getGist(gistId);
+  if (activeAttempt !== attempt) return;
+  const remoteFile = data.files?.[GIST_FILENAME];
+  // Validate the remote even when local data wins, then compare fresh local data.
+  const remote = remoteFile ? parseLearningDocumentBackup(remoteFile.content ?? '') : undefined;
+  const local = await readLearningDocument();
+  if (activeAttempt !== attempt) return;
+  const { action } = decideGistSync(
+    remote ? { state: 'parsed', dataUpdatedAt: remote.dataUpdatedAt } : { state: 'missing' },
+    local.dataUpdatedAt
+  );
+  if (action === 'push') await github.updateGist(gistId, JSON.stringify(local, null, 2));
+  else if (action === 'pull' && remote) await replaceLearningDocument(remote);
+  if (activeAttempt !== attempt) return;
+  const timestamp = new Date().toISOString();
+  await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: action === 'no-change' ? undefined : action });
+  const resultActions = { push: 'pushed', pull: 'pulled', 'no-change': 'no-change' } as const;
+  return { success: true, action: resultActions[action], timestamp };
 }
 
 export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
