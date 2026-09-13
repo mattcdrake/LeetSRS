@@ -4,6 +4,7 @@ import { readLearningDocument } from '@/data/learning-document';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import background from '../../entrypoints/background/index';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
@@ -98,7 +99,7 @@ it('ignores a download that finishes after an import', async () => {
   await dispatch('addCard', { problem: buildProblem() });
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 
-  const imported = { schemaVersion: 6, cards: {}, stats: {}, settings: { theme: 'dark' }, dataUpdatedAt: '2030-01-01' };
+  const imported = buildLearningDocument({ settings: { theme: 'dark' }, dataUpdatedAt: '2030-01-01' });
   await dispatch('importData', { jsonData: JSON.stringify(imported) });
   download.resolve({
     data: {

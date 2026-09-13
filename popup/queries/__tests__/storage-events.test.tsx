@@ -10,7 +10,7 @@ import { storage } from '#imports';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import type { GistSyncStatus } from '@/domain/gist-sync';
-import type { LearningDocument } from '@/domain/learning-document';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/integrations/browser/messages';
@@ -158,8 +158,8 @@ it('reports initialization failure without presenting an empty account', async (
 
 it.each([
   { schemaVersion: -1, cards: {}, stats: {}, settings: {} },
-  { schemaVersion: 7, cards: {}, stats: {}, settings: {} },
-  { schemaVersion: 6, cards: 'corrupt', stats: {}, settings: {} },
+  { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
+  { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
 ])('reports invalid current data directly: %j', async (document) => {
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
   messages.resolve('waitForInitialization', new Promise<void>(() => {}));
