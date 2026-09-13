@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { Button } from 'react-aria-components';
-import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/popup/queries/data';
 import { bounceButton } from '@/popup/styles';
 import { useI18n } from '../../contexts/I18nContext';
@@ -11,7 +10,6 @@ export function DataSection() {
   const importDataMutation = useImportDataMutation();
   const resetAllDataMutation = useResetAllDataMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
   const handleExport = async () => {
     try {
@@ -60,23 +58,17 @@ export function DataSection() {
     }
   };
 
-  const handleReset = () =>
-    startOrConfirm(async () => {
-      const confirmed = window.confirm(t.settings.data.resetConfirmMessage);
+  const handleReset = async () => {
+    if (!window.confirm(t.settings.data.resetConfirmMessage)) return;
 
-      if (!confirmed) {
-        resetConfirmation();
-        return;
-      }
-
-      try {
-        await resetAllDataMutation.mutateAsync();
-        alert(t.settings.data.resetSuccess);
-      } catch (error) {
-        console.error('Reset failed:', error);
-        alert(t.errors.failedToResetData);
-      }
-    });
+    try {
+      await resetAllDataMutation.mutateAsync();
+      alert(t.settings.data.resetSuccess);
+    } catch (error) {
+      console.error('Reset failed:', error);
+      alert(t.errors.failedToResetData);
+    }
+  };
 
   return (
     <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
@@ -109,11 +101,7 @@ export function DataSection() {
           isDisabled={resetAllDataMutation.isPending}
           className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 text-white bg-danger ${bounceButton}`}
         >
-          {resetAllDataMutation.isPending
-            ? t.settings.data.resetting
-            : isConfirming
-              ? t.settings.data.clickToConfirm
-              : t.settings.data.resetAllData}
+          {resetAllDataMutation.isPending ? t.settings.data.resetting : t.settings.data.resetAllData}
         </Button>
       </div>
     </div>

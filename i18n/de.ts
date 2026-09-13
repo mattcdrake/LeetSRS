@@ -157,7 +157,6 @@ const de: Translations = {
       importing: 'Wird importiert...',
       resetAllData: 'Alle Daten zurücksetzen',
       resetting: 'Wird zurückgesetzt...',
-      clickToConfirm: 'Zum Bestätigen erneut klicken',
       importConfirmMessage:
         'Möchtest du diese Daten wirklich importieren?\n\nDadurch werden ALLE aktuellen Daten ersetzt, einschließlich Karten, Wiederholungsverlauf und Notizen.',
       importSuccess: 'Daten wurden erfolgreich importiert!',

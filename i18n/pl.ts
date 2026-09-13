@@ -195,7 +195,6 @@ const pl: Translations = {
       importing: 'Importowanie...',
       resetAllData: 'Resetuj wszystkie dane',
       resetting: 'Resetowanie...',
-      clickToConfirm: 'Kliknij ponownie, aby potwierdzić',
       importConfirmMessage:
         'Czy na pewno chcesz zaimportować te dane?\n\nTo zastąpi WSZYSTKIE Twoje obecne dane, w tym karty, historię powtórek i notatki.',
       importSuccess: 'Dane zaimportowane pomyślnie!',
