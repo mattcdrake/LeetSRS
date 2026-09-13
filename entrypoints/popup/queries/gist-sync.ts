@@ -38,6 +38,7 @@ export function useSetupGistSyncMutation() {
 
 export function useSetGistSyncEnabledMutation() {
   return useMutation({
+    networkMode: 'always',
     mutationFn: (enabled: boolean) => sendMessage('setGistSyncEnabled', { enabled }),
   });
 }

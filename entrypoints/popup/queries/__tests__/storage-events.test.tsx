@@ -1,7 +1,7 @@
 /** @vitest-environment happy-dom */
 import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { type ReactNode, Suspense } from 'react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
@@ -10,6 +10,7 @@ import { storage } from '#imports';
 import type { LearningDocument } from '@/domain/learning-document';
 import { createDailyStats } from '@/domain/statistics';
 import background from '@/entrypoints/background';
+import { I18nProvider } from '@/entrypoints/popup/contexts/I18nContext';
 import { onMessage, sendMessage } from '@/infrastructure/browser/messages';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
@@ -20,7 +21,7 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
 import { cardQueryKeys, useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useExportDataMutation } from '../data';
-import { useGistSyncConfigQuery, useGistSyncStatusQuery } from '../gist-sync';
+import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 import { useLastNDaysStatsQuery, useNextNDaysStatsQuery, useTodayStatsQuery } from '../stats';
@@ -282,4 +283,40 @@ it('keeps polling background-only sync progress and errors without stored change
   await act(() => vi.advanceTimersByTimeAsync(15_000));
   expect(view.result.current.data).toEqual(status);
   view.unmount();
+});
+
+it('loads settings inside Suspense alongside the root storage observer', async () => {
+  await replaceLearningDocument(buildLearningDocument());
+  const queryClient = createTestQueryClient();
+  queryClient.setDefaultOptions({ queries: { staleTime: 300_000, retry: false } });
+  function Observer() {
+    useStorageQueryEvents();
+    return null;
+  }
+  render(
+    <QueryClientProvider client={queryClient}>
+      <Observer />
+      <Suspense fallback={<span>Loading settings</span>}>
+        <I18nProvider>
+          <span>Ready</span>
+        </I18nProvider>
+      </Suspense>
+    </QueryClientProvider>
+  );
+  await screen.findByText('Ready');
+  queryClient.clear();
+});
+
+it('disables automatic sync offline without attempting GitHub', async () => {
+  await startBackground();
+  await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
+  onlineManager.setOnline(false);
+  const { result } = renderHook(() => ({ config: useGistSyncConfigQuery(), toggle: useSetGistSyncEnabledMutation() }), {
+    wrapper: createTestWrapper().wrapper,
+  });
+  await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
+  act(() => result.current.toggle.mutate(false));
+  await waitFor(() => expect(result.current.config.data?.enabled).toBe(false));
+  expect(result.current.toggle.isSuccess).toBe(true);
+  expect(github.get).not.toHaveBeenCalled();
 });
