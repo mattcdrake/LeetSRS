@@ -171,7 +171,7 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
     if (setup.mode === 'existing') {
       const { data } = await github.getGist(setup.gistId);
       if (!data.files?.[GIST_FILENAME]) {
-        throw new Error(`Gist does not contain ${GIST_FILENAME}`);
+        throw new Error(notices.missingBackup);
       }
       gistId = setup.gistId;
     } else {
@@ -182,7 +182,7 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
         translations[language].settings.gistSync.gistDescription,
         JSON.stringify(document, null, 2)
       );
-      if (!data.id) throw new Error('Failed to create gist: no ID returned');
+      if (!data.id) throw new Error(notices.creationFailed);
       gistId = data.id;
       createdGistId = gistId;
     }
@@ -196,7 +196,7 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
         lastError = null;
         return { saved: true, sync: { success: true, action: 'pushed', timestamp } };
       } catch (error) {
-        lastError = error instanceof Error ? error.message : 'Failed to record Gist creation';
+        lastError = error instanceof Error ? error.message : notices.creationStatusFailed;
         return { saved: true, sync: { success: false, error: lastError } };
       }
     }
@@ -205,7 +205,7 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
     const message = error instanceof Error ? error.message : notices.refreshFailed;
     return {
       saved: false,
-      error: message.includes('404') ? 'Gist not found' : message,
+      error: message.includes('404') ? notices.gistNotFound : message,
       ...(createdGistId ? { createdGistId } : {}),
     };
   }
@@ -213,16 +213,16 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
 
 export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
   const connectionGeneration = generation;
+  const notices = await getSyncNotices();
   try {
     const config = await readGistConnection();
-    if (generation !== connectionGeneration) return { saved: false, error: (await getSyncNotices()).obsolete };
-    if (enabled && (!config.pat.trim() || !config.gistId?.trim())) {
-      throw new Error('PAT and Gist ID are required to enable sync');
-    }
+    if (generation !== connectionGeneration) return { saved: false, error: notices.obsolete };
+    if (enabled && !config.pat.trim()) throw new Error(notices.missingToken);
+    if (enabled && !config.gistId?.trim()) throw new Error(notices.missingGist);
     invalidateGistSync();
     await writeGistConnection({ ...config, enabled });
   } catch (error) {
-    return { saved: false, error: error instanceof Error ? error.message : 'Failed to save connection' };
+    return { saved: false, error: error instanceof Error ? error.message : notices.connectionSaveFailed };
   }
   return { saved: true, ...(enabled ? { sync: await triggerGistSync() } : {}) };
 }

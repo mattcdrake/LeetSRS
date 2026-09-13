@@ -4,6 +4,10 @@ import type { Translations } from './index';
 // Simplified Chinese translations
 const zhCN: Translations = {
   syncNotices: {
+    missingBackup: '此 Gist 不含 LeetSRS 备份。请在设置中选择其他 Gist。',
+    creationFailed: 'GitHub 未返回已创建 Gist 的 ID。重试前请检查你的 Gist。',
+    creationStatusFailed: 'Gist 已创建，但无法保存其同步状态。',
+    connectionSaveFailed: '无法保存连接。',
     unavailable: '你可以继续学习。GitHub 恢复可用后将自动继续同步。',
     rateLimit: '已达到 GitHub API 请求上限。请稍后重试。你可以继续学习。',
     authentication: '请在设置中检查 GitHub 令牌及其 Gist 权限。',

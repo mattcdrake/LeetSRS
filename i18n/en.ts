@@ -4,6 +4,10 @@ import { Rating } from 'ts-fsrs';
 const en = {
   // App branding
   syncNotices: {
+    missingBackup: 'The Gist contains no LeetSRS backup. Choose another Gist in Settings.',
+    creationFailed: 'GitHub returned no ID for the created Gist. Check your Gists before trying again.',
+    creationStatusFailed: 'The Gist was created, but its sync status could not be saved.',
+    connectionSaveFailed: 'The connection could not be saved.',
     unavailable: 'You can continue learning. Sync will resume automatically when GitHub is available.',
     rateLimit: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
     authentication: 'Check your GitHub token and its Gist permission in Settings.',

@@ -4,6 +4,10 @@ import type { Translations } from './index';
 const hi: Translations = {
   // App branding
   syncNotices: {
+    missingBackup: 'इस Gist में LeetSRS बैकअप नहीं है। सेटिंग्स में कोई दूसरा Gist चुनें।',
+    creationFailed: 'GitHub ने बनाए गए Gist का ID नहीं लौटाया। फिर कोशिश करने से पहले अपने Gist जाँचें।',
+    creationStatusFailed: 'Gist बन गया, लेकिन उसकी सिंक स्थिति सहेजी नहीं जा सकी।',
+    connectionSaveFailed: 'कनेक्शन सहेजा नहीं जा सका।',
     unavailable: 'आप सीखना जारी रख सकते हैं। GitHub उपलब्ध होने पर सिंक अपने आप फिर शुरू होगा।',
     rateLimit: 'GitHub API की सीमा पूरी हो गई है। बाद में फिर कोशिश करें। आप सीखना जारी रख सकते हैं।',
     authentication: 'सेटिंग्स में अपना GitHub टोकन और उसकी Gist अनुमति जाँचें।',

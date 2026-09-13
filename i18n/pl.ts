@@ -5,6 +5,10 @@ import type { Translations } from './index';
 const pl: Translations = {
   // App branding
   syncNotices: {
+    missingBackup: 'Gist nie zawiera kopii zapasowej LeetSRS. Wybierz inny Gist w ustawieniach.',
+    creationFailed: 'GitHub nie zwrócił identyfikatora utworzonego Gist. Sprawdź swoje Gisty przed ponowną próbą.',
+    creationStatusFailed: 'Gist został utworzony, ale nie udało się zapisać stanu synchronizacji.',
+    connectionSaveFailed: 'Nie udało się zapisać połączenia.',
     unavailable: 'Możesz kontynuować naukę. Synchronizacja wznowi się automatycznie, gdy GitHub będzie dostępny.',
     rateLimit: 'Osiągnięto limit API GitHub. Spróbuj później. Możesz kontynuować naukę.',
     authentication: 'Sprawdź token GitHub i jego uprawnienia do Gist w ustawieniach.',

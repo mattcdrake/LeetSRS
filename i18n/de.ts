@@ -3,6 +3,11 @@ import type { Translations } from './index';
 
 const de: Translations = {
   syncNotices: {
+    missingBackup: 'Der Gist enthält keine LeetSRS-Sicherung. Wähle einen anderen Gist in den Einstellungen.',
+    creationFailed:
+      'GitHub hat keine ID für den erstellten Gist zurückgegeben. Prüfe deine Gists, bevor du es erneut versuchst.',
+    creationStatusFailed: 'Der Gist wurde erstellt, aber der Synchronisierungsstatus konnte nicht gespeichert werden.',
+    connectionSaveFailed: 'Die Verbindung konnte nicht gespeichert werden.',
     unavailable:
       'Du kannst weiterlernen. Die Synchronisierung wird automatisch fortgesetzt, sobald GitHub verfügbar ist.',
     rateLimit: 'Das GitHub-API-Limit wurde erreicht. Versuche es später erneut. Du kannst weiterlernen.',

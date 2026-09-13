@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { translations } from '@/i18n';
 import { onMessage } from '@/infrastructure/browser/messages';
 import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
@@ -253,6 +254,11 @@ it('uses the selected language for temporary sync failures', async () => {
   expect(await dispatch('refreshGistOnArrival')).toEqual({
     success: false,
     error: 'Du kannst weiterlernen. Die Synchronisierung wird automatisch fortgesetzt, sobald GitHub verfügbar ist.',
+  });
+  vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(null);
+  expect(await dispatch('setGistSyncEnabled', { enabled: false })).toEqual({
+    saved: false,
+    error: translations.de.syncNotices.connectionSaveFailed,
   });
 });
 
