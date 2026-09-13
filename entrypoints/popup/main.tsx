@@ -2,11 +2,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { I18nProvider } from './contexts/I18nContext';
-import { useLeetcodeCnPermissionEvents } from './queries/leetcode-cn';
-import { useStorageQueryEvents } from './queries/storage-events';
+import App from '../../popup/App.tsx';
+import { ErrorBoundary } from '../../popup/components/ErrorBoundary';
+import { I18nProvider } from '../../popup/contexts/I18nContext';
+import { useLeetcodeCnPermissionEvents } from '../../popup/queries/leetcode-cn';
+import { useStorageQueryEvents } from '../../popup/queries/storage-events';
 
 function PopupStorageObserver() {
   useStorageQueryEvents();

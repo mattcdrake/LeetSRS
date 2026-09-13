@@ -1,6 +1,6 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
-import { sendMessage } from '@/infrastructure/browser/messages';
+import { sendMessage } from '@/integrations/browser/messages';
 import { setupLeetcodeAutoReset } from './auto-reset';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 import { createContentRoot } from './ui/shadow-root';

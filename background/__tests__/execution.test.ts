@@ -1,0 +1,176 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { browser } from 'wxt/browser';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { ZodError } from 'zod';
+import { readGistConnection } from '@/data/gist-connection';
+import { readLearningDocument } from '@/data/learning-document';
+import { formatLocalDate } from '@/domain/calendar';
+import { type MessageName, messagePayloadSchemas, onMessage } from '@/integrations/browser/messages';
+import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
+import { buildProblem } from '@/test/utils/card-mocks';
+import background from '../../entrypoints/background/index';
+
+vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+  onMessage: vi.fn(),
+}));
+
+beforeEach(async () => {
+  fakeBrowser.reset();
+  fakeBrowser.runtime.id = 'test';
+  vi.mocked(onMessage).mockClear();
+  background.main();
+  await dispatch('waitForInitialization');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+});
+
+const problem = buildProblem();
+
+describe('registered background execution', () => {
+  it('registers every message synchronously', () => {
+    expect(
+      vi
+        .mocked(onMessage)
+        .mock.calls.map(([name]) => name)
+        .sort()
+    ).toEqual(Object.keys(messagePayloadSchemas).sort());
+  });
+
+  it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
+    await dispatch('rateCard', { input: { ...problem, rating: 3 } });
+    await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });
+    await dispatch('updateSettings', { changes: { language: 'de' } });
+    await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
+    const staleLocal = {
+      'leetsrs:cards': { stale: 'invalid leftover' },
+      'leetsrs:stats': { stale: 'invalid leftover' },
+      'leetsrs:schemaVersion': 3,
+      'leetsrs:dataUpdatedAt': '2024-01-01T00:00:00.000Z',
+      'leetsrs:notes:old-id': { text: 'stale note' },
+    };
+    await fakeBrowser.storage.local.set({
+      ...staleLocal,
+      'leetsrs:lastSyncTime': 'old',
+      'leetsrs:lastSyncDirection': 'pull',
+      unrelated: 'keep',
+    });
+    await fakeBrowser.storage.sync.set({
+      'leetsrs:githubPat': 'legacy secret',
+      'leetsrs:gistId': 'old-gist',
+      'leetsrs:gistSyncEnabled': true,
+      'leetsrs:theme': 'dark',
+      'leetsrs:dayStartHour': 4,
+      'leetsrs:autoClearLeetcode': true,
+      unrelated: 'keep',
+    });
+
+    await dispatch('resetAllData');
+
+    const empty = { schemaVersion: 6, cards: {}, stats: {}, settings: {} };
+    expect(await readLearningDocument()).toEqual(empty);
+    expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await dispatch('getGistSyncStatus')).toEqual({
+      lastSyncTime: null,
+      lastSyncDirection: null,
+      syncInProgress: false,
+      lastError: null,
+    });
+    expect(await fakeBrowser.storage.local.get(null)).toEqual({ 'leetsrs:learningDocument': empty, unrelated: 'keep' });
+    expect(await fakeBrowser.storage.sync.get(null)).toEqual({ unrelated: 'keep' });
+
+    await fakeBrowser.storage.local.set(staleLocal);
+    vi.mocked(onMessage).mockClear();
+    background.main();
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
+    expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBeNull();
+    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
+    expect(await readLearningDocument()).toEqual(empty);
+  });
+  it.each(['document', 'connection cleanup'] as const)(
+    'reports reset failure at %s without resurrecting data on restart',
+    async (stage) => {
+      await dispatch('addCard', { problem });
+      await fakeBrowser.storage.sync.set({
+        'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true },
+      });
+      const before = JSON.stringify(await readLearningDocument(), null, 2);
+      const failure = new Error('Reset storage unavailable');
+      if (stage === 'document') {
+        vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
+      } else {
+        vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
+      }
+      await expect(dispatch('resetAllData')).rejects.toBe(failure);
+      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      vi.mocked(onMessage).mockClear();
+      background.main();
+      if (stage === 'document') {
+        expect(JSON.stringify(await readLearningDocument(), null, 2)).toBe(before);
+      } else {
+        expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
+      }
+      await dispatch('resetAllData');
+      expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
+      expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
+    }
+  );
+
+  it.each(['setBadgeText', 'setBadgeBackgroundColor'] as const)(
+    'keeps a saved card successful when %s fails and accepts the next write',
+    async (method) => {
+      const failure = new Error('Badge unavailable');
+      vi.spyOn(browser.action, method).mockRejectedValueOnce(failure);
+      const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      await expect(dispatch('addCard', { problem })).resolves.toMatchObject(problem);
+      expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
+      expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
+      await dispatch('saveNote', { slug: problem.slug, text: 'saved after badge failure' });
+      expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBe('saved after badge failure');
+    }
+  );
+
+  it('responds to saves while badge work is pending', async () => {
+    const started = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    vi.spyOn(browser.action, 'setBadgeText').mockImplementationOnce(async () => {
+      started.resolve();
+      await release.promise;
+    });
+    await dispatch('addCard', { problem });
+    await started.promise;
+    await dispatch('saveNote', { slug: problem.slug, text: 'next edit' });
+    expect((await readLearningDocument()).cards[problem.slug]?.note).toBe('next edit');
+    release.resolve();
+  });
+});
+
+const invalidPayloads: [MessageName, unknown][] = [
+  ['addCard', { problem: { ...problem, difficulty: 'Impossible' } }],
+  ['removeCard', { slug: '' }],
+  ['delayCard', { slug: problem.slug, days: 0.5 }],
+  ['setPauseStatus', { slug: problem.slug, paused: 'false' }],
+  ['rateCard', { input: { ...problem, rating: 0 } }],
+  ['saveNote', { slug: 'card', text: 'a'.repeat(501) }],
+  ['deleteNote', { slug: 42 }],
+  ['updateSettings', { changes: { language: 'constructor' } }],
+  ['importData', { jsonData: {} }],
+  ['setupGistSync', { mode: 'existing', gistId: 42, pat: 'token' }],
+  ['setupGistSync', { mode: 'create', pat: null }],
+  ['setupGistSync', { mode: 'existing', gistId: 'gist', pat: '  ' }],
+  ['setGistSyncEnabled', { enabled: 'true' }],
+  ['triggerGistSync', {}],
+];
+
+it.each(invalidPayloads)(
+  'rejects invalid %s input before mutation and accepts a later valid edit',
+  async (name, invalid) => {
+    const writes = vi.spyOn(browser.storage.local, 'set');
+    const badge = vi.spyOn(browser.action, 'setBadgeText');
+    await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
+    expect(writes).not.toHaveBeenCalled();
+    expect(badge).not.toHaveBeenCalled();
+    await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });
+    await dispatch('saveNote', { slug: 'card', text: 'after failure', extra: true });
+    expect((await readLearningDocument()).cards.card?.note ?? null).toBe('after failure');
+  }
+);

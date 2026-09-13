@@ -1,6 +1,6 @@
 import type { Grade } from 'ts-fsrs';
-import { sendMessage } from '@/infrastructure/browser/messages';
-import { getCurrentProblem } from './problem-data';
+import { sendMessage } from '@/integrations/browser/messages';
+import { getCurrentProblem } from '../integrations/leetcode/problem-data';
 
 export async function rateCurrentProblem(rating: Grade) {
   const problem = await getCurrentProblem();

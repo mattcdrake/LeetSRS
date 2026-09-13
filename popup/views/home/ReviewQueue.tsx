@@ -1,0 +1,163 @@
+import { useState } from 'react';
+import type { Grade } from 'ts-fsrs';
+import type { Card, RateCardInput } from '@/domain/cards';
+import {
+  useDelayCardMutation,
+  usePauseCardMutation,
+  useRateCardMutation,
+  useRemoveCardMutation,
+  useReviewQueueQuery,
+} from '@/popup/queries/cards';
+import { LeetSRSLogo } from '../../components/LeetSRSLogo';
+import { useI18n } from '../../contexts/I18nContext';
+import { ActionsSection } from './ActionsSection';
+import { NotesSection } from './NotesSection';
+import { ReviewCard } from './ReviewCard';
+
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+export function ReviewQueue() {
+  const t = useI18n();
+  const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
+  const rateCardMutation = useRateCardMutation();
+  const removeCardMutation = useRemoveCardMutation();
+  const delayCardMutation = useDelayCardMutation();
+  const pauseCardMutation = usePauseCardMutation();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [animatingCard, setAnimatingCard] = useState<Card | null>(null);
+
+  const finishCardAction = () => {
+    setSlideDirection(null);
+    setIsProcessing(false);
+    setAnimatingCard(null);
+  };
+
+  const handleCardAction = async <T,>(
+    action: () => Promise<T>,
+    options: {
+      getSlideDirection: (result: T) => 'left' | 'right';
+      errorMessage: string;
+    }
+  ) => {
+    if (queue.length === 0 || isProcessing) return;
+
+    setAnimatingCard(queue[0]);
+    setIsProcessing(true);
+
+    try {
+      const result = await action();
+
+      if (window.matchMedia(REDUCED_MOTION_QUERY).matches) {
+        finishCardAction();
+        return;
+      }
+
+      const direction = options.getSlideDirection(result);
+      setSlideDirection(direction);
+    } catch (error) {
+      console.error(options.errorMessage, error);
+      setSlideDirection(null);
+      setIsProcessing(false);
+      setAnimatingCard(null);
+    }
+  };
+
+  const handleRating = async (rating: Grade) => {
+    const currentCard = queue[0];
+    const input: RateCardInput = {
+      slug: currentCard.slug,
+      name: currentCard.name,
+      leetcodeId: currentCard.leetcodeId,
+      difficulty: currentCard.difficulty,
+      domain: currentCard.domain,
+      rating,
+    };
+    await handleCardAction(() => rateCardMutation.mutateAsync(input), {
+      getSlideDirection: (result) => (result.shouldRequeue ? 'left' : 'right'),
+      errorMessage: 'Failed to rate card:',
+    });
+  };
+
+  const handleDelete = async () => {
+    const currentCard = queue[0];
+    await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.slug), {
+      getSlideDirection: () => 'left',
+      errorMessage: 'Failed to delete card:',
+    });
+  };
+
+  const handleDelay = async (days: number) => {
+    const currentCard = queue[0];
+    await handleCardAction(() => delayCardMutation.mutateAsync({ slug: currentCard.slug, days }), {
+      getSlideDirection: () => 'right',
+      errorMessage: 'Failed to delay card:',
+    });
+  };
+
+  const handlePause = async () => {
+    const currentCard = queue[0];
+    await handleCardAction(() => pauseCardMutation.mutateAsync({ slug: currentCard.slug, paused: true }), {
+      getSlideDirection: () => 'right',
+      errorMessage: 'Failed to pause card:',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="text-secondary">{t.home.loadingReviewQueue}</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="text-red-500">{t.errors.failedToLoadReviewQueue}</div>
+      </div>
+    );
+  }
+
+  const currentCard = animatingCard ?? queue[0];
+
+  if (!currentCard) {
+    return (
+      <div className="flex flex-col items-center justify-center h-32 gap-3 px-4">
+        <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
+        <div className="text-base text-secondary text-center">
+          {t.home.addProblemsInstructions} <LeetSRSLogo />
+          {t.home.addProblemsButton}
+        </div>
+      </div>
+    );
+  }
+
+  const getAnimationClass = () => {
+    const baseClasses = 'transition-all duration-300 ease-out';
+
+    if (slideDirection === 'left') {
+      return `${baseClasses} animate-slide-left`;
+    }
+    if (slideDirection === 'right') {
+      return `${baseClasses} animate-slide-right`;
+    }
+    return `${baseClasses} animate-slide-in`;
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div
+        className={getAnimationClass()}
+        onAnimationEnd={(event) => {
+          if (slideDirection && event.currentTarget === event.target) finishCardAction();
+        }}
+      >
+        {/* The key is important to ensure React re-mounts the component for a new card */}
+        <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
+      </div>
+      <NotesSection slug={currentCard.slug} />
+      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
+    </div>
+  );
+}

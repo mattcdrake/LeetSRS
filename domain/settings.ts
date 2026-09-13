@@ -26,7 +26,7 @@ export const settingsSchema = z.object({
 export type Settings = z.infer<typeof settingsSchema>;
 export type Theme = Settings['theme'];
 
-// Language defaults are resolved from browser preferences by the service.
+// Language defaults are resolved from browser preferences by the caller.
 export const DEFAULT_SETTINGS = {
   maxNewCardsPerDay: 3,
   theme: 'system',

@@ -2,14 +2,14 @@
 
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { watchDocumentTranslations } from '@/data/translations';
 import { translations } from '@/i18n';
-import { watchDocumentTranslations } from '@/infrastructure/storage/translations';
 import { requireDefined } from '@/test/utils/assertions';
 import { LeetSrsControl } from '../LeetSrsControl';
 import { createContentRoot } from '../shadow-root';
 
-vi.mock('@/infrastructure/storage/translations', () => ({ watchDocumentTranslations: vi.fn() }));
-vi.mock('@/infrastructure/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/data/translations', () => ({ watchDocumentTranslations: vi.fn() }));
+vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 let root: ReturnType<typeof createContentRoot>;
 let host: HTMLElement;
