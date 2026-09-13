@@ -5,18 +5,16 @@ import { ratingSchema } from '@/domain/ratings';
 import type { Translations } from '@/i18n';
 import { THEME_COLORS, useDarkMode } from './theme';
 
-export type RatingCallback = (rating: Grade) => void;
-
 export function RatingMenu({
   t,
-  onRate,
-  onAddWithoutRating,
-  onSelect,
+  onAction,
+  isPending,
+  error,
 }: {
   t: Translations;
-  onRate: RatingCallback;
-  onAddWithoutRating: () => void;
-  onSelect: () => void;
+  onAction: (rating?: Grade) => Promise<void>;
+  isPending: boolean;
+  error?: string;
 }) {
   const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
@@ -41,9 +39,9 @@ export function RatingMenu({
               type="button"
               className="rating-menu-action min-w-16 flex-auto shrink-0 whitespace-nowrap border-0 px-2 py-1.5 text-white"
               style={{ '--button-bg': bg, '--button-hover': hover } as CSSProperties & Record<`--${string}`, string>}
+              isDisabled={isPending}
               onPress={() => {
-                onRate(rating);
-                onSelect();
+                void onAction(rating);
               }}
             >
               {label}
@@ -62,9 +60,9 @@ export function RatingMenu({
             border: `1px solid ${colors.borderAddButton}`,
           } as CSSProperties & Record<`--${string}`, string>
         }
+        isDisabled={isPending}
         onPress={() => {
-          onAddWithoutRating();
-          onSelect();
+          void onAction();
         }}
       >
         <span aria-hidden="true" style={{ filter: colors.addIconFilter }}>
@@ -72,6 +70,16 @@ export function RatingMenu({
         </span>{' '}
         {t.contentScript.addToSrsNoRating}
       </Button>
+      {error && (
+        <p role="alert" className="mt-2 max-w-72 text-sm text-red-500">
+          {error}
+        </p>
+      )}
+      {isPending && (
+        <p role="status" className="mt-2 text-sm">
+          {t.actions.saving}
+        </p>
+      )}
     </div>
   );
 }

@@ -257,6 +257,7 @@ const pl: Translations = {
 
   // Content script (LeetCode page integration)
   contentScript: {
+    saveFailed: 'Nie udało się zapisać tego zadania. Spróbuj ponownie.',
     addToSrsNoRating: 'Dodaj do SRS (bez oceny)',
   },
 

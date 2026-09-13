@@ -1,6 +1,7 @@
 import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
-import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
+import type { Grade } from 'ts-fsrs';
+import { saveCurrentProblem } from '@/content/rating-actions';
 import { watchDocumentTranslations } from '@/data/translations';
 import type { Translations } from '@/i18n';
 import { RatingMenu } from './RatingMenu';
@@ -10,6 +11,8 @@ import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [actionState, setActionState] = useState<'idle' | 'saving' | 'error'>('idle');
+  const isPending = actionState === 'saving';
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
 
@@ -21,6 +24,18 @@ export function LeetSrsControl() {
     if (wasMenuOpen.current && !menuOpen) buttonRef.current?.focus();
     wasMenuOpen.current = menuOpen;
   }, [menuOpen]);
+
+  async function handleAction(rating?: Grade) {
+    if (isPending) return;
+    setActionState('saving');
+    try {
+      await saveCurrentProblem(rating);
+      setMenuOpen(false);
+      setActionState('idle');
+    } catch {
+      setActionState('error');
+    }
+  }
 
   if (!t) return null;
 
@@ -34,9 +49,9 @@ export function LeetSrsControl() {
         <Dialog aria-label={t.app.name}>
           <RatingMenu
             t={t}
-            onRate={rateCurrentProblem}
-            onAddWithoutRating={addCurrentProblem}
-            onSelect={() => setMenuOpen(false)}
+            onAction={handleAction}
+            isPending={isPending}
+            error={actionState === 'error' ? t.contentScript.saveFailed : undefined}
           />
         </Dialog>
       </Popover>

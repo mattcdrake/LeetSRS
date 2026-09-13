@@ -2,18 +2,10 @@ import type { Grade } from 'ts-fsrs';
 import { sendMessage } from '@/integrations/browser/messages';
 import { getCurrentProblem } from '../integrations/leetcode/problem-data';
 
-export async function rateCurrentProblem(rating: Grade) {
+export async function saveCurrentProblem(rating?: Grade): Promise<void> {
   const problem = await getCurrentProblem();
-  if (!problem) return;
+  if (!problem) throw new Error('Current problem is unavailable');
 
-  await sendMessage('rateCard', {
-    input: { ...problem, rating },
-  });
-}
-
-export async function addCurrentProblem() {
-  const problem = await getCurrentProblem();
-  if (!problem) return;
-
-  await sendMessage('addCard', { problem });
+  if (rating === undefined) await sendMessage('addCard', { problem });
+  else await sendMessage('rateCard', { input: { ...problem, rating } });
 }

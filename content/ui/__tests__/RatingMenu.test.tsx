@@ -9,9 +9,7 @@ import { RatingMenu } from '../RatingMenu';
 it.each(['en', 'pl'] as const)('dispatches each rating and add action once in %s', (language) => {
   const t = translations[language];
   const onRate = vi.fn();
-  const onAddWithoutRating = vi.fn();
-  const onSelect = vi.fn();
-  render(<RatingMenu t={t} onRate={onRate} onAddWithoutRating={onAddWithoutRating} onSelect={onSelect} />);
+  render(<RatingMenu t={t} onAction={onRate} isPending={false} />);
   expect(
     screen
       .getAllByRole('button')
@@ -28,7 +26,6 @@ it.each(['en', 'pl'] as const)('dispatches each rating and add action once in %s
     }
   );
   fireEvent.click(screen.getByRole('button', { name: t.contentScript.addToSrsNoRating }));
-  expect(onRate).toHaveBeenCalledTimes(4);
-  expect(onAddWithoutRating).toHaveBeenCalledOnce();
-  expect(onSelect).toHaveBeenCalledTimes(5);
+  expect(onRate).toHaveBeenCalledTimes(5);
+  expect(onRate).toHaveBeenLastCalledWith();
 });

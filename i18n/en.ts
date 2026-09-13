@@ -256,6 +256,7 @@ const en = {
 
   // Content script (LeetCode page integration)
   contentScript: {
+    saveFailed: 'Could not save this problem. Please try again.',
     addToSrsNoRating: 'Add to SRS (no rating)',
   },
 

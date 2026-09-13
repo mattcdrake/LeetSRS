@@ -227,6 +227,7 @@ const zhCN: Translations = {
   },
 
   contentScript: {
+    saveFailed: '无法保存这道题目，请重试。',
     addToSrsNoRating: '添加到 SRS（无评分）',
   },
 

@@ -1,23 +1,51 @@
 // @vitest-environment happy-dom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Rating } from 'ts-fsrs';
-import { beforeEach, expect, it, vi } from 'vitest';
-import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
+import { Rating, State } from 'ts-fsrs';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { watchDocumentTranslations } from '@/data/translations';
 import { translations } from '@/i18n';
+import { sendMessage } from '@/integrations/browser/messages';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { createMessageMock } from '@/test/utils/message-mocks';
 
 vi.mock('@/data/translations', () => ({
   watchDocumentTranslations: vi.fn(),
 }));
-vi.mock('@/content/rating-actions', () => ({ addCurrentProblem: vi.fn(), rateCurrentProblem: vi.fn() }));
+vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+const messages = createMessageMock(vi.mocked(sendMessage));
+const problem = buildProblem();
+const card = createMockCard(State.New);
+
 const unwatch = vi.fn();
 beforeEach(() => {
+  messages.reset().resolve('rateCard', { card, shouldRequeue: false }).resolve('addCard', card);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockImplementation(async () =>
+      Response.json({
+        data: {
+          question: {
+            questionFrontendId: problem.leetcodeId,
+            title: problem.name,
+            titleSlug: problem.slug,
+            difficulty: problem.difficulty,
+          },
+        },
+      })
+    )
+  );
+  Object.defineProperty(window, 'location', {
+    value: { pathname: `/problems/${problem.slug}/`, hostname: 'leetcode.com' },
+    configurable: true,
+  });
   vi.mocked(watchDocumentTranslations).mockImplementation((onChange) => {
     onChange(translations.en);
     return unwatch;
   });
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 import { LeetSrsControl } from '../LeetSrsControl';
 
@@ -26,27 +54,87 @@ function setup() {
   return { ...view, button: screen.getByRole('button', { name: 'LeetSRS' }) };
 }
 
-it('toggles the menu and dispatches selections exactly once before closing', async () => {
+it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy, undefined] as const)(
+  'keeps choices disabled until the local save completes for rating %s',
+  async (rating) => {
+    const pending = Promise.withResolvers<typeof card>();
+    messages
+      .resolve(
+        'rateCard',
+        pending.promise.then((card) => ({ card, shouldRequeue: false }))
+      )
+      .resolve('addCard', pending.promise);
+    const { button } = setup();
+    fireEvent.click(button);
+    const choice = await screen.findByRole('button', {
+      name: rating === undefined ? translations.en.contentScript.addToSrsNoRating : translations.en.ratings[rating],
+    });
+    fireEvent.click(choice);
+    await waitFor(() =>
+      expect(sendMessage).toHaveBeenCalledWith(
+        ...(rating === undefined ? ['addCard', { problem }] : ['rateCard', { input: { ...problem, rating } }])
+      )
+    );
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('status')).toHaveTextContent(translations.en.actions.saving);
+    expect(choice).toBeDisabled();
+    expect(screen.getByRole('button', { name: translations.en.contentScript.addToSrsNoRating })).toBeDisabled();
+    fireEvent.click(choice);
+    expect(sendMessage).toHaveBeenCalledOnce();
+    await act(async () => pending.resolve(card));
+    await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'));
+    await waitFor(() => expect(button).toHaveFocus());
+  }
+);
+
+it('shows a failed add and lets the learner retry without a rating', async () => {
+  messages.handle('addCard', () => {
+    throw new Error('Storage unavailable');
+  });
   const { button } = setup();
-  expect(button).toHaveAttribute('type', 'button');
+  fireEvent.click(button);
+  fireEvent.click(await screen.findByRole('button', { name: translations.en.contentScript.addToSrsNoRating }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not save this problem. Please try again.');
+  expect(button).toHaveAttribute('aria-expanded', 'true');
+  const add = screen.getByRole('button', { name: translations.en.contentScript.addToSrsNoRating });
+  expect(add).not.toBeDisabled();
+  messages.resolve('addCard', card);
+  fireEvent.click(add);
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'));
+  expect(sendMessage).toHaveBeenLastCalledWith('addCard', { problem });
+  fireEvent.click(button);
+  await screen.findByRole('dialog');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('reports unavailable Problem data without saving, then retries the lookup', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json({ errors: [{ message: 'Unavailable' }] }));
+  const { button } = setup();
   fireEvent.click(button);
   fireEvent.click(await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] }));
-  expect(rateCurrentProblem).toHaveBeenCalledExactlyOnceWith(3);
-  expect(addCurrentProblem).not.toHaveBeenCalled();
-  expect(button).toHaveAttribute('aria-expanded', 'false');
+  expect(await screen.findByRole('alert')).toHaveTextContent(translations.en.contentScript.saveFailed);
+  expect(sendMessage).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: translations.en.ratings[Rating.Good] }));
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'));
+  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('rateCard', { input: { ...problem, rating: Rating.Good } });
+});
+
+it('retains a pending lookup when the menu is dismissed and reopened', async () => {
+  const lookup = Promise.withResolvers<Response>();
+  vi.mocked(fetch).mockReturnValueOnce(lookup.promise);
+  const { button } = setup();
   fireEvent.click(button);
-  fireEvent.click(
-    await screen.findByRole('button', {
-      name: translations.en.contentScript.addToSrsNoRating,
-    })
-  );
-  expect(addCurrentProblem).toHaveBeenCalledExactlyOnceWith();
-  expect(rateCurrentProblem).toHaveBeenCalledOnce();
-  expect(button).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] }));
+  expect(screen.getByRole('status')).toHaveTextContent(translations.en.actions.saving);
+  fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' });
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'));
   fireEvent.click(button);
-  await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] });
-  fireEvent.click(button);
-  expect(button).toHaveAttribute('aria-expanded', 'false');
+  expect(await screen.findByRole('button', { name: translations.en.ratings[Rating.Good] })).toBeDisabled();
+  expect(fetch).toHaveBeenCalledOnce();
+  expect(sendMessage).not.toHaveBeenCalled();
+  await act(async () => lookup.resolve(Response.json({ data: { question: null } })));
+  expect(await screen.findByRole('alert')).toHaveTextContent(translations.en.contentScript.saveFailed);
+  expect(screen.getByRole('button', { name: translations.en.ratings[Rating.Good] })).not.toBeDisabled();
 });
 
 it('dismisses outside clicks and reopens', async () => {
@@ -73,8 +161,7 @@ it.each(['Enter', ' '])('opens with %s, dismisses with Escape, and returns focus
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   await waitFor(() => expect(button).toHaveFocus());
-  expect(rateCurrentProblem).not.toHaveBeenCalled();
-  expect(addCurrentProblem).not.toHaveBeenCalled();
+  expect(sendMessage).not.toHaveBeenCalled();
 });
 
 it('keeps inside interactions open and removes the popover on unmount', async () => {
@@ -87,8 +174,7 @@ it('keeps inside interactions open and removes the popover on unmount', async ()
 
   unmount();
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  expect(rateCurrentProblem).not.toHaveBeenCalled();
-  expect(addCurrentProblem).not.toHaveBeenCalled();
+  expect(sendMessage).not.toHaveBeenCalled();
 });
 
 it('cycles focus through every choice with Tab after opening with the mouse', async () => {
@@ -109,16 +195,16 @@ it('cycles focus through every choice with Tab after opening with the mouse', as
     expect(choice).toHaveFocus();
     expect(choice).toHaveAttribute('data-focused', 'true');
   }
-  expect(rateCurrentProblem).not.toHaveBeenCalled();
-  expect(addCurrentProblem).not.toHaveBeenCalled();
+  expect(sendMessage).not.toHaveBeenCalled();
 });
 
-it('updates an open menu when stored language changes without resubscribing on clicks', () => {
+it('updates an open menu when stored language changes without resubscribing on clicks', async () => {
   const { button, unmount } = setup();
   fireEvent.click(button);
   const onChange = vi.mocked(watchDocumentTranslations).mock.calls[0][0];
   act(() => onChange(translations.pl));
   fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings[Rating.Good] }));
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'));
   fireEvent.click(button);
   expect(watchDocumentTranslations).toHaveBeenCalledOnce();
   unmount();
