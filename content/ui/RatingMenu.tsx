@@ -21,7 +21,7 @@ export function RatingMenu({
   const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
     <div
-      className="min-w-40 rounded-lg border border-(--menu-border) bg-(--menu-bg) p-3 shadow-(--menu-shadow)"
+      className="min-w-40 max-w-[calc(100vw-32px)] rounded-lg border border-(--menu-border) bg-(--menu-bg) p-3 shadow-(--menu-shadow)"
       style={
         {
           '--menu-bg': colors.bgSecondary,
@@ -31,7 +31,7 @@ export function RatingMenu({
         } as CSSProperties & Record<`--${string}`, string>
       }
     >
-      <div className="mb-2 flex gap-1">
+      <div className="mb-2 flex flex-wrap gap-1">
         {[...ratingSchema.values].map((rating) => {
           const { bg, hover } = colors.ratings[rating];
           const label = t.ratings[rating];
@@ -39,7 +39,7 @@ export function RatingMenu({
             <Button
               key={rating}
               type="button"
-              className="rating-menu-action w-16 border-0 p-2 text-white"
+              className="rating-menu-action min-w-16 flex-auto shrink-0 whitespace-nowrap border-0 px-2 py-1.5 text-white"
               style={{ '--button-bg': bg, '--button-hover': hover } as CSSProperties & Record<`--${string}`, string>}
               onPress={() => {
                 onRate(rating);

@@ -31,7 +31,7 @@
 
 @layer components {
   .rating-menu-action {
-    @apply h-8 cursor-pointer rounded-sm bg-(--button-bg) text-[13px] transition-[background-color] duration-200 ease-[ease] hover:bg-(--button-hover);
+    @apply min-h-8 cursor-pointer rounded-sm bg-(--button-bg) text-[13px] transition-[background-color] duration-200 ease-[ease] hover:bg-(--button-hover);
     @apply data-focused:outline-2 data-focused:outline-solid data-focused:outline-(--focus-ring) data-focused:outline-offset-2;
   }
 }
