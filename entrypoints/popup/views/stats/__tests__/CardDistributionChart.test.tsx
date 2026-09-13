@@ -34,7 +34,7 @@ describe('CardDistributionChart', () => {
   };
 
   const renderChart = (data: Record<FsrsState, number> = mockCardStateStats) => {
-    messages.reset().resolve('getCardStateStats', data);
+    messages.reset();
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(statsQueryKeys.cardState, data);
     return render(<CardDistributionChart />, { wrapper });
@@ -54,7 +54,7 @@ describe('CardDistributionChart', () => {
   describe('loading state', () => {
     it('should handle loading state gracefully', () => {
       const pending = Promise.withResolvers<Record<FsrsState, number>>();
-      messages.reset().resolve('getCardStateStats', pending.promise);
+      messages.reset();
       const { wrapper } = createTestWrapper();
       const view = render(<CardDistributionChart />, { wrapper });
 
@@ -71,7 +71,7 @@ describe('CardDistributionChart', () => {
 
   describe('error state', () => {
     it('should handle error state gracefully', async () => {
-      messages.reset().handle('getCardStateStats', () => Promise.reject(new Error('Failed to fetch stats')));
+      messages.reset().handle('waitForInitialization', () => Promise.reject(new Error('Failed to fetch stats')));
       const { wrapper, queryClient } = createTestWrapper();
       render(<CardDistributionChart />, { wrapper });
       await waitFor(() => expect(queryClient.getQueryState(statsQueryKeys.cardState)?.status).toBe('error'));

@@ -16,7 +16,7 @@ describe('StatsBar', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   const renderStats = (cards: Card[] = []) => {
-    messages.reset().resolve('getReviewQueue', cards);
+    messages.reset();
     const { wrapper, queryClient } = createTestWrapper();
     queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
     return render(<StatsBar />, { wrapper });

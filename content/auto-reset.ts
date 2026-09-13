@@ -1,4 +1,8 @@
-import { sendMessage } from '@/infrastructure/browser/messages';
+import { findCard } from '@/domain/learning-document';
+import { shouldResetCardEditor } from '@/domain/review';
+import { resolveSettings } from '@/domain/settings';
+import { detectBrowserLanguage } from '@/infrastructure/browser/language';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { getCurrentDomain, getCurrentProblemSlug } from './page-context';
 import { resetLeetcodeEditor } from './reset-leetcode-editor';
 
@@ -22,7 +26,10 @@ export function setupLeetcodeAutoReset(onResetConfirmed: () => void): () => void
     isResetting = true;
     try {
       if (currentVisit.status === 'unchecked') {
-        const shouldReset = await sendMessage('shouldResetEditor', { slug, domain: getCurrentDomain() });
+        const now = new Date();
+        const document = await readLearningDocument(true);
+        const settings = resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
+        const shouldReset = shouldResetCardEditor(findCard(document, slug), getCurrentDomain(), settings, now);
         if (!isCurrent()) return;
         currentVisit.status = shouldReset ? 'ready' : 'handled';
         if (!shouldReset) return;

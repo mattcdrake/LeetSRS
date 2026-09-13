@@ -1,7 +1,11 @@
 /** @vitest-environment happy-dom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardNotes } from '../CardNotes';
@@ -12,10 +16,13 @@ describe('CardNotes', () => {
   const slug = 'card-notes-card';
   const messages = createMessageMock(vi.mocked(sendMessage));
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await replaceLearningDocument(
+      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored card note' }) } })
+    );
     messages
       .reset()
-      .resolve('getNote', 'Stored card note')
+
       .resolve('saveNote', undefined)
       .resolve('deleteNote', undefined);
   });
@@ -32,7 +39,6 @@ describe('CardNotes', () => {
     expect(screen.getByText('Notes')).toBeInTheDocument();
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     await waitFor(() => expect(textarea).toHaveValue('Stored card note'));
-    expect(sendMessage).toHaveBeenCalledWith('getNote', { slug });
     expect(textarea.style.height).toBe('48px');
 
     fireEvent.change(textarea, { target: { value: 'Edited card note' } });

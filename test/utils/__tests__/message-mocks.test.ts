@@ -1,6 +1,7 @@
-import { State } from 'ts-fsrs';
+import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createMockCard } from '../card-mocks';
 import { createMessageMock } from '../message-mocks';
 
@@ -16,12 +17,12 @@ describe('createMessageMock', () => {
   });
 
   it('returns a configured protocol result', async () => {
-    messages.handle('exportData', (data) => {
+    messages.handle('waitForInitialization', (data) => {
       expect(data).toBeUndefined();
-      return '{"version":1}';
+      return undefined;
     });
 
-    await expect(sendMessage('exportData')).resolves.toBe('{"version":1}');
+    await expect(sendMessage('waitForInitialization')).resolves.toBe(undefined);
   });
 
   it('passes typed message data to a handler', async () => {
@@ -40,27 +41,29 @@ describe('createMessageMock', () => {
   it('JSON-round-trips resolved responses', async () => {
     const card = createMockCard(State.New, { note: 'Remember this' });
     const result = [{ ...card, omitted: undefined }];
-    messages.resolve('getAllCards', Promise.resolve(result));
+    messages.resolve('rateCard', Promise.resolve({ card: result[0], shouldRequeue: false }));
 
-    const received = await sendMessage('getAllCards');
+    const received = await sendMessage('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
 
-    expect(received).toEqual([card]);
+    expect(received).toEqual({ card, shouldRequeue: false });
     expect(received).not.toBe(result);
-    expect(received[0]).not.toBe(result[0]);
-    expect(received[0]).not.toHaveProperty('omitted');
+    expect(received.card).not.toBe(result[0]);
+    expect(received.card).not.toHaveProperty('omitted');
   });
 
   it.each(['throw', 'reject'])('preserves errors when handlers %s', async (mode) => {
     const error = new Error('Handler failed');
-    messages.handle('getAllCards', () => {
+    messages.handle('rateCard', () => {
       if (mode === 'throw') throw error;
       return Promise.reject(error);
     });
 
-    await expect(sendMessage('getAllCards')).rejects.toBe(error);
+    await expect(sendMessage('rateCard', { input: { ...buildProblem(), rating: Rating.Good } })).rejects.toBe(error);
   });
 
   it('rejects unexpected messages', async () => {
-    await expect(sendMessage('getAllCards')).rejects.toThrow('Unexpected extension message: getAllCards');
+    await expect(sendMessage('rateCard', { input: { ...buildProblem(), rating: Rating.Good } })).rejects.toThrow(
+      'Unexpected extension message: rateCard'
+    );
   });
 });

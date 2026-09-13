@@ -1,30 +1,24 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 
 export function useExportDataMutation() {
   return useMutation({
-    mutationFn: () => sendMessage('exportData'),
+    networkMode: 'always',
+    mutationFn: async () => JSON.stringify(await readLearningDocument(true), null, 2),
   });
 }
 
 export function useImportDataMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    networkMode: 'always',
     mutationFn: (jsonData: string) => sendMessage('importData', { jsonData }),
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-    },
   });
 }
 
 export function useResetAllDataMutation() {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    networkMode: 'always',
     mutationFn: () => sendMessage('resetAllData'),
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-    },
   });
 }

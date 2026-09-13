@@ -5,7 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
-import { exportData } from '@/infrastructure/storage/learning-queries';
+
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -36,7 +36,7 @@ describe('document import-export', () => {
     // Stale scattered keys must not become part of the exported snapshot.
     await storage.setItem(STORAGE_KEYS.theme, 'light');
     const reads = vi.spyOn(storage, 'getItem');
-    const json = await exportData();
+    const json = JSON.stringify(await readLearningDocument(), null, 2);
     expect(reads.mock.calls.map(([key]) => key)).toEqual([STORAGE_KEYS.learningDocument]);
     expect(JSON.parse(json)).toEqual(document);
 
@@ -70,8 +70,8 @@ describe('document import-export', () => {
         settings: { resetEditorOnEveryProblem: false, theme: 'dark' },
         dataUpdatedAt: timestamp,
       };
-      expect(JSON.parse(await exportData())).toEqual(expected);
-      await documentBackup.importData(await exportData());
+      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual(expected);
+      await documentBackup.importData(JSON.stringify(await readLearningDocument(), null, 2));
       expect(await readLearningDocument()).toEqual(expected);
       expect(await readGistConnection()).toEqual(connection);
       expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
@@ -103,7 +103,7 @@ describe('document import-export', () => {
         ...(format === 'historical' && { dataUpdatedAt: '2023-01-01' }),
       };
       expect(writes).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument, expected);
-      expect(JSON.parse(await exportData())).toEqual(expected);
+      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual(expected);
       expect(await readGistConnection()).toEqual(connection);
       expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('previous-sync');
       expect(await storage.getItem(STORAGE_KEYS.lastSyncDirection)).toBe('pull');
@@ -135,12 +135,12 @@ describe('document import-export', () => {
         expect(writes).not.toHaveBeenCalled();
       }
       await documentBackup.importData(JSON.stringify(next));
-      expect(JSON.parse(await exportData())).toEqual(next);
+      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual(next);
     }
   );
 
   it('rejects export before initialization without manufacturing a timestamp or document', async () => {
-    await expect(exportData()).rejects.toThrow('Learning document is not initialized');
+    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
     await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
   });
 });

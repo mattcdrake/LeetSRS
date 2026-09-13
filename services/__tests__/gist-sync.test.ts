@@ -5,7 +5,7 @@ import { storage } from 'wxt/utils/storage';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { readGistConnection, writeGistConnection } from '@/infrastructure/storage/gist-connection';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
-import { exportData } from '@/infrastructure/storage/learning-queries';
+
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import * as documentSync from '../gist-sync';
@@ -72,7 +72,7 @@ describe('document Gist sync', () => {
     expect(writes).toHaveBeenCalledExactlyOnceWith({
       'leetsrs:gistConnection': { pat: 'entered-pat', gistId: 'entered-gist', enabled: false },
     });
-    expect(await documentSync.getGistSyncConfig()).toEqual({
+    expect(await readGistConnection()).toEqual({
       pat: 'entered-pat',
       gistId: 'entered-gist',
       enabled: false,
@@ -102,7 +102,7 @@ describe('document Gist sync', () => {
       lastError: null,
       syncInProgress: false,
     });
-    expect(await documentSync.getGistSyncConfig()).toEqual({ pat: 'entered', gistId: 'created', enabled });
+    expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created', enabled });
     expect(await readLearningDocument()).toEqual(local);
     expect(mockGistsCreate).toHaveBeenCalledOnce();
     expect(mockGistsGet).not.toHaveBeenCalled();
@@ -119,7 +119,7 @@ describe('document Gist sync', () => {
         saved: true,
         sync: { success: false, error: 'status failed' },
       });
-      expect(await documentSync.getGistSyncConfig()).toEqual({ pat: 'entered', gistId: 'created', enabled });
+      expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created', enabled });
       expect(await documentSync.getGistSyncStatus()).toMatchObject({
         lastSyncTime: 'previous-sync',
         lastSyncDirection: 'pull',
@@ -147,9 +147,9 @@ describe('document Gist sync', () => {
     expect(mockGistsCreate).toHaveBeenCalledExactlyOnceWith({
       description: 'LeetSRS 备份 - 间隔重复数据',
       public: false,
-      files: { 'leetsrs-backup.json': { content: await exportData() } },
+      files: { 'leetsrs-backup.json': { content: JSON.stringify(await readLearningDocument(), null, 2) } },
     });
-    expect(await documentSync.getGistSyncConfig()).toEqual(connection);
+    expect(await readGistConnection()).toEqual(connection);
     expect(await documentSync.getGistSyncStatus()).toMatchObject({
       lastSyncTime: 'previous-sync',
       lastSyncDirection: 'pull',
@@ -158,7 +158,7 @@ describe('document Gist sync', () => {
     expect(await documentSync.setupGistSync({ mode: 'existing', pat: 'entered', gistId: 'created' })).toEqual({
       saved: true,
     });
-    expect(await documentSync.getGistSyncConfig()).toEqual({ pat: 'entered', gistId: 'created', enabled: false });
+    expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created', enabled: false });
     expect(mockGistsCreate).toHaveBeenCalledOnce();
     expect(await readLearningDocument()).not.toHaveProperty('dataUpdatedAt', expect.any(String));
   });
@@ -179,7 +179,7 @@ describe('document Gist sync', () => {
             : { mode: 'existing', pat: 'entered', gistId: 'entered' }
         )
       ).toMatchObject({ saved: false, error: expect.any(String) });
-      expect(await documentSync.getGistSyncConfig()).toEqual(connection);
+      expect(await readGistConnection()).toEqual(connection);
       expect(await readLearningDocument()).toEqual(local);
     }
   );
@@ -202,7 +202,7 @@ describe('document Gist sync', () => {
           ? await documentSync.setupGistSync({ mode: 'existing', pat: 'entered', gistId: 'entered' })
           : await documentSync.setGistSyncEnabled(true);
       expect(result).toEqual({ saved: true, sync: { success: false, error: 'status failed' } });
-      expect(await documentSync.getGistSyncConfig()).toEqual(
+      expect(await readGistConnection()).toEqual(
         operation === 'setup' ? { pat: 'entered', gistId: 'entered', enabled: true } : { ...connection, enabled: true }
       );
       expect(await readLearningDocument()).toEqual(remote);
@@ -213,7 +213,7 @@ describe('document Gist sync', () => {
     mockGistsGet.mockResolvedValue({ data: { files: {} } });
     vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(new Error('save failed'));
     expect(await documentSync.setGistSyncEnabled(true)).toEqual({ saved: false, error: 'save failed' });
-    expect(await documentSync.getGistSyncConfig()).toEqual(connection);
+    expect(await readGistConnection()).toEqual(connection);
     expect(mockGistsGet).not.toHaveBeenCalled();
     expect(await documentSync.setGistSyncEnabled(true)).toEqual({
       saved: true,
@@ -222,7 +222,7 @@ describe('document Gist sync', () => {
     expect(await documentSync.setGistSyncEnabled(false)).toEqual({ saved: true });
     expect(mockGistsGet).toHaveBeenCalledOnce();
     expect(await documentSync.triggerGistSync()).toMatchObject({ success: true });
-    expect(await documentSync.getGistSyncConfig()).toEqual(connection);
+    expect(await readGistConnection()).toEqual(connection);
   });
 
   it.each([{ pat: '' }, { pat: '   ' }, { gistId: null }, { gistId: '  ' }])(
@@ -230,7 +230,7 @@ describe('document Gist sync', () => {
     async (missing) => {
       await writeGistConnection({ ...connection, ...missing });
       expect(await documentSync.setGistSyncEnabled(true)).toMatchObject({ saved: false });
-      expect((await documentSync.getGistSyncConfig()).enabled).toBe(false);
+      expect((await readGistConnection()).enabled).toBe(false);
       expect(mockGistsGet).not.toHaveBeenCalled();
     }
   );
@@ -242,7 +242,7 @@ describe('document Gist sync', () => {
     const reads = vi.spyOn(storage, 'getItem');
     expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pushed', timestamp: now });
     expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
-    const json = await exportData();
+    const json = JSON.stringify(await readLearningDocument(), null, 2);
     expect(mockGistsUpdate).toHaveBeenCalledExactlyOnceWith({
       gist_id: 'gist123',
       files: { 'leetsrs-backup.json': { content: json } },
@@ -279,7 +279,7 @@ describe('document Gist sync', () => {
       });
       const writes = vi.spyOn(storage, 'setItem');
       expect(await documentSync.triggerGistSync()).toEqual({ success: true, action: 'pulled', timestamp: now });
-      expect(JSON.parse(await exportData())).toEqual({
+      expect(JSON.parse(JSON.stringify(await readLearningDocument(), null, 2))).toEqual({
         schemaVersion: LEARNING_DOCUMENT_VERSION,
         ...(format === 'current' ? { cards: {}, stats: {} } : embedded),
         settings: format === 'current' ? {} : { resetEditorOnEveryProblem: false, theme: 'light' },

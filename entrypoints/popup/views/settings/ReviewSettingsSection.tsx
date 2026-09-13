@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Input, Label, TextField } from 'react-aria-components';
 import { SETTINGS_CONSTRAINTS } from '@/domain/settings';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/entrypoints/popup/queries/settings';
@@ -8,22 +8,25 @@ export function ReviewSettingsSection() {
   const t = useI18n();
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
-  const [inputValue, setInputValue] = useState('');
-
-  useEffect(() => {
-    setInputValue(settings.maxNewCardsPerDay.toString());
-  }, [settings]);
+  const [draft, setDraft] = useState<string | null>(null);
+  const inputValue = draft ?? settings.maxNewCardsPerDay.toString();
 
   const handleBlur = () => {
+    if (draft === null) return;
     const value = parseInt(inputValue, 10);
     if (
       !Number.isNaN(value) &&
       value >= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min &&
       value <= SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max
     ) {
-      updateSettingsMutation.mutate({ maxNewCardsPerDay: value });
+      updateSettingsMutation.mutate(
+        { maxNewCardsPerDay: value },
+        {
+          onSuccess: () => setDraft((current) => (current === draft ? null : current)),
+        }
+      );
     } else {
-      setInputValue(settings.maxNewCardsPerDay.toString());
+      setDraft(null);
     }
   };
 
@@ -36,7 +39,7 @@ export function ReviewSettingsSection() {
           <Input
             type="number"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => setDraft(e.target.value)}
             onBlur={handleBlur}
             min={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min.toString()}
             max={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max.toString()}

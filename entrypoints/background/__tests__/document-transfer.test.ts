@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { type LearningDocument, learningDocumentSchema } from '@/domain/learning-document';
 import { onMessage } from '@/infrastructure/browser/messages';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
+import { getSettings } from '@/infrastructure/storage/learning-queries';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
@@ -19,16 +21,12 @@ vi.mock('@/infrastructure/browser/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
 }));
 
-async function exported(): Promise<LearningDocument> {
-  return learningDocumentSchema.parse(JSON.parse(await dispatch('exportData')));
-}
-
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
   vi.mocked(onMessage).mockClear();
   background.main();
-  await dispatch('getSettings');
+  await dispatch('waitForInitialization');
   await dispatch('resetAllData');
   await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
 });
@@ -41,7 +39,7 @@ describe('file and Gist transfers through registered background commands', () =>
       await dispatch('saveNote', { slug: 'two-sum', text: 'Omitted from replacement' });
       await dispatch('updateSettings', { changes: { theme: 'dark', language: 'de' } });
       await fakeBrowser.storage.local.set({ 'leetsrs:lastSyncTime': 'previous', 'leetsrs:lastSyncDirection': 'push' });
-      const before = await exported();
+      const before = await readLearningDocument();
       const replacement = { ...before, settings: {}, dataUpdatedAt: '2099-01-01T00:00:00.000Z' };
       delete replacement.cards['two-sum'].note;
       const jsonData = JSON.stringify(replacement);
@@ -57,10 +55,10 @@ describe('file and Gist transfers through registered background commands', () =>
         await expect(dispatch('triggerGistSync')).resolves.toMatchObject({ success: true, action: 'pulled' });
         expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastSyncDirection: 'pull' });
       }
-      expect(await exported()).toEqual(replacement);
-      expect(await dispatch('getNote', { slug: 'two-sum' })).toBeNull();
-      expect(await dispatch('getSettings')).toMatchObject({ theme: 'system' });
-      expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect(await readLearningDocument()).toEqual(replacement);
+      expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBeNull();
+      expect(await getSettings()).toMatchObject({ theme: 'system' });
+      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       const documentWrites = writes.mock.calls.filter(([items]) => Object.hasOwn(items, 'leetsrs:learningDocument'));
       expect(documentWrites).toEqual([[{ 'leetsrs:learningDocument': replacement }]]);
       expect(github.update).not.toHaveBeenCalled();
@@ -73,14 +71,14 @@ describe('file and Gist transfers through registered background commands', () =>
       const { accepted, embedded, payload } = mixedRecordBackup();
       const backup = { ...payload, data: accepted, dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : undefined };
       await dispatch('importData', { jsonData: JSON.stringify(backup) });
-      expect(await exported()).toEqual({
+      expect(await readLearningDocument()).toEqual({
         schemaVersion: 6,
         ...embedded,
         settings: {},
         dataUpdatedAt: hasTimestamp ? payload.dataUpdatedAt : payload.exportDate,
       });
-      expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
-      expect(await dispatch('getNote', { slug: 'two-sum' })).toBe('Keep this note');
+      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
     }
   );
 
@@ -88,8 +86,8 @@ describe('file and Gist transfers through registered background commands', () =>
     'retains all data after a rejected %s replacement and accepts a later command',
     async (source) => {
       await dispatch('addCard', { problem: buildProblem() });
-      const before = await exported();
-      const config = await dispatch('getGistSyncConfig');
+      const before = await readLearningDocument();
+      const config = await readGistConnection();
       const jsonData = JSON.stringify({
         schemaVersion: 6,
         cards: {},
@@ -104,11 +102,11 @@ describe('file and Gist transfers through registered background commands', () =>
         github.get.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: jsonData } } } });
         await expect(dispatch('triggerGistSync')).resolves.toEqual({ success: false, error: 'Document unavailable' });
       }
-      expect(await exported()).toEqual(before);
-      expect(await dispatch('getGistSyncConfig')).toEqual(config);
+      expect(await readLearningDocument()).toEqual(before);
+      expect(await readGistConnection()).toEqual(config);
       expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastSyncTime: null, lastSyncDirection: null });
       await dispatch('saveNote', { slug: 'two-sum', text: 'After failure' });
-      expect(await dispatch('getNote', { slug: 'two-sum' })).toBe('After failure');
+      expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('After failure');
     }
   );
 
@@ -116,7 +114,7 @@ describe('file and Gist transfers through registered background commands', () =>
     'rejects future %s data before overwriting either side, even when local data is newer',
     async (source) => {
       await dispatch('addCard', { problem: buildProblem() });
-      const before = await exported();
+      const before = await readLearningDocument();
       const jsonData = JSON.stringify({
         schemaVersion: 7,
         cards: {},
@@ -131,7 +129,7 @@ describe('file and Gist transfers through registered background commands', () =>
         github.get.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: jsonData } } } });
         await expect(dispatch('triggerGistSync')).resolves.toMatchObject({ success: false });
       }
-      expect(await exported()).toEqual(before);
+      expect(await readLearningDocument()).toEqual(before);
       expect(writes).not.toHaveBeenCalled();
       expect(github.update).not.toHaveBeenCalled();
     }
@@ -143,7 +141,7 @@ describe('file and Gist transfers through registered background commands', () =>
       const alarmRegistration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
       vi.mocked(onMessage).mockClear();
       background.main();
-      await dispatch('getSettings');
+      await dispatch('waitForInitialization');
       const alarm = alarmRegistration.mock.calls[0][0];
       const started = Promise.withResolvers<void>();
       const release = Promise.withResolvers<void>();
@@ -153,7 +151,7 @@ describe('file and Gist transfers through registered background commands', () =>
         if (outcome === 'failure') throw new Error('Network failed');
         return { data: { files: {} } };
       });
-      const before = await exported();
+      const before = await readLearningDocument();
       const syncing = alarm({
         name: 'gist-sync',
         scheduledTime: Date.now(),
@@ -162,11 +160,11 @@ describe('file and Gist transfers through registered background commands', () =>
       });
       await started.promise;
       const writing = dispatch('addCard', { problem: buildProblem() });
-      expect(await exported()).toEqual(before);
+      expect(await readLearningDocument()).toEqual(before);
       expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: true });
       release.resolve();
       await Promise.all([syncing, writing]);
-      expect(await dispatch('getAllCards')).toMatchObject([buildProblem()]);
+      expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
       if (outcome === 'success') {
         expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
       } else {
@@ -189,7 +187,7 @@ describe('file and Gist transfers through registered background commands', () =>
       const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
       vi.mocked(onMessage).mockClear();
       background.main();
-      await dispatch('getSettings');
+      await dispatch('waitForInitialization');
       const alarm = registration.mock.calls[0][0];
       if (operation === 'enable') await dispatch('setGistSyncEnabled', { enabled: false });
       const started = Promise.withResolvers<void>();
@@ -209,7 +207,7 @@ describe('file and Gist transfers through registered background commands', () =>
           return { data: { files: {} } };
         });
       }
-      const before = await exported();
+      const before = await readLearningDocument();
       let finished = false;
       const first = (
         operation === 'enable'
@@ -234,16 +232,16 @@ describe('file and Gist transfers through registered background commands', () =>
       });
       const edit = dispatch('addCard', { problem: buildProblem() });
       expect(finished).toBe(false);
-      expect(await exported()).toEqual(before);
-      expect((await dispatch('getGistSyncConfig')).enabled).toBe(true);
+      expect(await readLearningDocument()).toEqual(before);
+      expect((await readGistConnection()).enabled).toBe(true);
       release.resolve();
       expect(await first).toMatchObject({ saved: true, sync: { success: true } });
       await Promise.all([disable, automatic, edit]);
       expect(github.get).toHaveBeenCalledTimes(
         operation === 'existing setup' ? 2 : operation === 'create setup' ? 0 : 1
       );
-      expect((await dispatch('getGistSyncConfig')).enabled).toBe(false);
-      expect(await dispatch('getAllCards')).toMatchObject([buildProblem()]);
+      expect((await readGistConnection()).enabled).toBe(false);
+      expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
       const upload = operation === 'create setup' ? github.create : github.update;
       expect(JSON.parse(upload.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
     }
@@ -251,7 +249,7 @@ describe('file and Gist transfers through registered background commands', () =>
 
   it('refreshes the badge after a pull even when its status write fails', async () => {
     await dispatch('addCard', { problem: buildProblem() });
-    const remote = { ...(await exported()), cards: {}, dataUpdatedAt: '2099-01-01T00:00:00.000Z' };
+    const remote = { ...(await readLearningDocument()), cards: {}, dataUpdatedAt: '2099-01-01T00:00:00.000Z' };
     github.get.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } } });
     const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
     vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation(async (items) => {
@@ -263,7 +261,7 @@ describe('file and Gist transfers through registered background commands', () =>
       saved: true,
       sync: { success: false, error: 'status failed' },
     });
-    expect(await dispatch('getAllCards')).toEqual([]);
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     expect(badge).toHaveBeenLastCalledWith({ text: '' });
   });
 
@@ -282,7 +280,7 @@ describe('file and Gist transfers through registered background commands', () =>
 
   it('creates a Gist from the document without treating connection changes as learning edits', async () => {
     await dispatch('updateSettings', { changes: { language: 'de' } });
-    const before = await exported();
+    const before = await readLearningDocument();
     github.create.mockResolvedValueOnce({ data: { id: 'created-gist' } });
     github.get.mockResolvedValue({ data: { files: {} } });
     await expect(dispatch('setupGistSync', { mode: 'create', pat: 'entered' })).resolves.toMatchObject({
@@ -290,9 +288,9 @@ describe('file and Gist transfers through registered background commands', () =>
       sync: { success: true },
     });
     expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
-    expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
+    expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
     await dispatch('setGistSyncEnabled', { enabled: false });
-    expect(await exported()).toEqual(before);
+    expect(await readLearningDocument()).toEqual(before);
     expect(await fakeBrowser.storage.local.get('leetsrs:dataUpdatedAt')).toEqual({});
   });
 });

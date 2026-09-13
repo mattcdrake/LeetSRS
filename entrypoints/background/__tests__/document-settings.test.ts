@@ -3,6 +3,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { onMessage } from '@/infrastructure/browser/messages';
 import { readLearningDocument, replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { getSettings } from '@/infrastructure/storage/learning-queries';
 import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { mixedRecordBackup } from '@/test/utils/backup-mocks';
@@ -34,9 +35,9 @@ describe('document settings through background commands', () => {
     await storage.setItem(STORAGE_KEYS.language, 'de');
     background.main();
 
-    expect(await dispatch('getSettings')).toEqual(buildSettings({ theme: 'dark', language: 'pl' }));
+    expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'pl' }));
     vi.stubGlobal('navigator', { languages: ['de'] });
-    expect(await dispatch('getSettings')).toEqual(buildSettings({ theme: 'dark', language: 'de' }));
+    expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'de' }));
     expect(await readLearningDocument()).toEqual({
       schemaVersion: 6,
       cards: {},
@@ -52,7 +53,7 @@ describe('document settings through background commands', () => {
     await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
     await storage.setItem(STORAGE_KEYS.lastSyncTime, payload.dataUpdatedAt);
     background.main();
-    await dispatch('getSettings');
+    await dispatch('waitForInitialization');
     const sync = await fakeBrowser.storage.sync.get();
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const now = new Date('2026-09-12T12:00:00.000Z');
@@ -69,7 +70,7 @@ describe('document settings through background commands', () => {
     } as const;
     await dispatch('updateSettings', { changes });
 
-    expect(await dispatch('getSettings')).toEqual(changes);
+    expect(await getSettings()).toEqual(changes);
     expect(await readLearningDocument()).toEqual({ ...document, settings: changes, dataUpdatedAt: now.toISOString() });
     expect(writes).toHaveBeenCalledOnce();
     expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
@@ -89,7 +90,7 @@ describe('document settings through background commands', () => {
       };
       await replaceLearningDocument(document);
       background.main();
-      const before = await dispatch('getSettings');
+      const before = await getSettings();
       const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
       if (failure === 'write') {
         writes.mockRejectedValueOnce(new Error('Write failed'));
@@ -105,19 +106,19 @@ describe('document settings through background commands', () => {
         })
       ).rejects.toThrow();
       vi.useRealTimers();
-      expect(await dispatch('getSettings')).toEqual(before);
+      expect(await getSettings()).toEqual(before);
       expect(await readLearningDocument()).toEqual(document);
       expect(writes).toHaveBeenCalledTimes(failure === 'write' ? 1 : 0);
 
       await dispatch('updateSettings', { changes: { theme: 'light' } });
-      expect(await dispatch('getSettings')).toEqual(buildSettings({ theme: 'light', language: 'de' }));
+      expect(await getSettings()).toEqual(buildSettings({ theme: 'light', language: 'de' }));
       expect((await readLearningDocument())?.settings).toEqual({ theme: 'light', language: 'de' });
     }
   );
 
   it('ignores empty, undefined, unknown, and inherited updates without materializing defaults', async () => {
     background.main();
-    await dispatch('getSettings');
+    await dispatch('waitForInitialization');
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const changes = Object.assign(Object.create({ badgeEnabled: false }), { theme: undefined, unknown: 1 });
     const before = await readLearningDocument();
@@ -144,7 +145,7 @@ describe('document settings through background commands', () => {
     };
     await replaceLearningDocument(document);
     background.main();
-    await dispatch('getSettings');
+    await dispatch('waitForInitialization');
     const initial = Promise.withResolvers<typeof document>();
     const started = Promise.withResolvers<void>();
     const reads = vi.spyOn(storage, 'getItem').mockImplementationOnce(() => {
@@ -152,12 +153,12 @@ describe('document settings through background commands', () => {
       return initial.promise;
     });
 
-    const pending = dispatch('getSettings');
+    const pending = getSettings();
     await started.promise;
     await replaceLearningDocument({ schemaVersion: 6, cards: {}, stats: {}, settings: {} });
     initial.resolve(document);
     expect(await pending).toEqual(buildSettings({ language: 'de', theme: 'dark' }));
     expect(reads).toHaveBeenCalledExactlyOnceWith(STORAGE_KEYS.learningDocument);
-    expect(await dispatch('getSettings')).toEqual(buildSettings({ language: 'pl' }));
+    expect(await getSettings()).toEqual(buildSettings({ language: 'pl' }));
   });
 });

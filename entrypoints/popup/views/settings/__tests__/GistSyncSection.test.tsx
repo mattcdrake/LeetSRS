@@ -3,9 +3,13 @@
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { storage } from '#imports';
 import type { GistConnectionResult, GistSyncConfig } from '@/domain/gist-sync';
 import { gistSyncQueryKeys } from '@/entrypoints/popup/queries/gist-sync';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { replaceLearningDocument } from '@/infrastructure/storage/learning-document';
+import { STORAGE_KEYS } from '@/infrastructure/storage/storage-keys';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { GistSyncSection } from '../GistSyncSection';
@@ -16,11 +20,11 @@ const messages = createMessageMock(vi.mocked(sendMessage));
 let config: GistSyncConfig;
 let test: ReturnType<typeof createTestWrapper>;
 
-beforeEach(() => {
+beforeEach(async () => {
+  await replaceLearningDocument(buildLearningDocument());
   config = { pat: 'saved-pat', gistId: 'saved-gist', enabled: false };
   messages
     .reset()
-    .handle('getGistSyncConfig', () => config)
     .resolve('getGistSyncStatus', {
       lastSyncTime: null,
       lastSyncDirection: null,
@@ -36,6 +40,7 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 async function open(edit = true) {
+  await storage.setItem(STORAGE_KEYS.gistConnection, config);
   const view = render(<GistSyncSection />, { wrapper: test.wrapper });
   await screen.findByRole('button', { name: 'Edit' });
   if (edit) fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
@@ -50,10 +55,12 @@ function enterCredentials() {
 describe('Gist setup form', () => {
   it('resets initial setup on Cancel and shows the saved connection after Save', async () => {
     config = { pat: '', gistId: null, enabled: false };
-    messages.handle('setupGistSync', (input) => {
+    messages.handle('setupGistSync', async (input) => {
       config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: false };
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
       return { saved: true };
     });
+    await storage.setItem(STORAGE_KEYS.gistConnection, config);
     render(<GistSyncSection />, { wrapper: test.wrapper });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toBeEnabled());
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
@@ -91,8 +98,9 @@ describe('Gist setup form', () => {
       expect(screen.getByLabelText('Personal Access Token')).toHaveFocus();
       if (changed) enterCredentials();
       config = { pat: 'other-browser-pat', gistId: 'other-browser-gist', enabled: true };
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
       await act(async () => {
-        await test.queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
+        await storage.setItem(STORAGE_KEYS.gistConnection, config);
       });
       expect(screen.getByLabelText('Personal Access Token')).toHaveValue(changed ? 'entered-pat' : 'saved-pat');
       expect(screen.getByLabelText('Gist ID')).toHaveValue(changed ? 'entered-gist' : 'saved-gist');
@@ -113,12 +121,12 @@ describe('Gist setup form', () => {
     await open(false);
     config = { pat: '', gistId: null, enabled: false };
     await act(async () => {
-      await test.queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
     });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toHaveValue(''));
     config = { pat: 'remote-pat', gistId: 'remote-gist', enabled: true };
     await act(async () => {
-      await test.queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
     });
     await waitFor(() => expect(screen.getByLabelText('Personal Access Token')).toHaveValue(''));
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
@@ -130,7 +138,7 @@ describe('Gist setup form', () => {
     enterCredentials();
     config = { pat: '', gistId: null, enabled: false };
     await act(async () => {
-      await test.queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
     });
     await waitFor(() => expect(test.queryClient.getQueryData(gistSyncQueryKeys.config)).toEqual(config));
     expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
@@ -143,10 +151,11 @@ describe('Gist setup form', () => {
 
   it('recovers a created Gist ID after save failure and retries without creating again', async () => {
     let attempts = 0;
-    messages.handle('setupGistSync', (input) => {
+    messages.handle('setupGistSync', async (input) => {
       attempts++;
       if (attempts === 1) return { saved: false, error: 'Storage unavailable', createdGistId: 'created-gist' };
       config = { pat: input.pat, gistId: 'created-gist', enabled: false };
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
       return { saved: true };
     });
     await open();
@@ -170,7 +179,7 @@ describe('Gist setup form', () => {
   });
 
   it.each(['setup failure', 'transport failure'])(
-    'preserves drafts when polling discovers browser-sync updates and after %s',
+    'preserves drafts when storage events deliver browser-sync updates and after %s',
     async (failure) => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
       messages.handle('setupGistSync', () => {
@@ -180,8 +189,9 @@ describe('Gist setup form', () => {
       await open();
       enterCredentials();
       config = { pat: 'other-browser-pat', gistId: 'other-browser-gist', enabled: true };
+      await storage.setItem(STORAGE_KEYS.gistConnection, config);
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(15000);
+        await storage.setItem(STORAGE_KEYS.gistConnection, config);
       });
       await waitFor(() => expect(test.queryClient.getQueryData(gistSyncQueryKeys.config)).toEqual(config));
       expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
@@ -189,7 +199,7 @@ describe('Gist setup form', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
       await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Connection could not be saved'));
       await act(async () => {
-        await test.queryClient.invalidateQueries({ queryKey: gistSyncQueryKeys.config });
+        await storage.setItem(STORAGE_KEYS.gistConnection, config);
       });
       expect(screen.getByLabelText('Personal Access Token')).toHaveValue('entered-pat');
       expect(screen.getByLabelText('Gist ID')).toHaveValue('entered-gist');
@@ -252,16 +262,18 @@ describe('Gist setup form', () => {
       const { QueryObserver } = await import('@tanstack/react-query');
       const observer = new QueryObserver(test.queryClient, { queryKey: ['cards'], queryFn: learning });
       const unsubscribe = observer.subscribe(() => {});
-      const afterPull = () => {
+      const afterPull = async () => {
         pulled = true;
+        await replaceLearningDocument(buildLearningDocument({ settings: { theme: 'light' } }));
         config = { pat: 'entered-pat', gistId: 'entered-gist', enabled: true };
+        await storage.setItem(STORAGE_KEYS.gistConnection, config);
         return { saved: true, sync: { success: false, error: 'Status unavailable' } } as const;
       };
       messages
         .handle('setupGistSync', afterPull)
         .handle('setGistSyncEnabled', afterPull)
-        .handle('triggerGistSync', () => {
-          afterPull();
+        .handle('triggerGistSync', async () => {
+          await afterPull();
           if (operation === 'lost response') throw new Error('Disconnected after pull');
           return { success: false, error: 'Status unavailable' };
         });
@@ -278,8 +290,8 @@ describe('Gist setup form', () => {
           operation === 'setup' || operation === 'enable' ? 'Connection saved, but sync failed' : 'Sync failed'
         )
       );
-      expect(sendMessage).toHaveBeenCalledWith('getGistSyncConfig');
-      expect(sendMessage).toHaveBeenCalledWith('getGistSyncStatus');
+      expect(test.queryClient.getQueryData(gistSyncQueryKeys.config)).toEqual(config);
+
       expect(test.queryClient.getQueryData(['cards'])).toEqual(['pulled card']);
       expect(test.queryClient.getQueryState(['settings'])?.isInvalidated).toBe(true);
       expect(screen.getByRole('switch')).toBeChecked();

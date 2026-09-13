@@ -1,5 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { findCard } from '@/domain/learning-document';
 import { sendMessage } from '@/infrastructure/browser/messages';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
 import { cardQueryKeys } from './cards';
 
 export const noteQueryKeys = {
@@ -10,25 +12,22 @@ export const noteQueryKeys = {
 export function useNoteQuery(slug: string) {
   return useQuery({
     queryKey: noteQueryKeys.detail(slug),
-    queryFn: () => sendMessage('getNote', { slug }),
+    networkMode: 'always',
+    queryFn: async () => findCard(await readLearningDocument(true), slug)?.note ?? null,
     staleTime: 1000 * 60 * 5,
   });
 }
 
 export function useSaveNoteMutation(slug: string) {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    networkMode: 'always',
     mutationFn: (text: string) => sendMessage('saveNote', { slug, text }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
   });
 }
 
 export function useDeleteNoteMutation(slug: string) {
-  const queryClient = useQueryClient();
-
   return useMutation({
+    networkMode: 'always',
     mutationFn: () => sendMessage('deleteNote', { slug }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
   });
 }

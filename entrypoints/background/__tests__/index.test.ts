@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { onMessage } from '@/infrastructure/browser/messages';
+import { readGistConnection } from '@/infrastructure/storage/gist-connection';
+import { readLearningDocument } from '@/infrastructure/storage/learning-document';
+import { getSettings } from '@/infrastructure/storage/learning-queries';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import background from '../index';
@@ -43,7 +46,7 @@ describe('document startup through registered background commands', () => {
       const report = vi.spyOn(console, 'error').mockImplementation(() => {});
       const badge = vi.spyOn(browser.action, 'setBadgeText');
       const fireAlarm = startBackground();
-      const read = dispatch('getAllCards');
+      const read = dispatch('waitForInitialization');
       const write = dispatch('addCard', { problem: buildProblem() });
       const alarm = fireAlarm();
       const settled = vi.fn();
@@ -58,18 +61,19 @@ describe('document startup through registered background commands', () => {
       const [readResult, writeResult, alarmResult] = await results;
       expect(alarmResult).toEqual({ status: 'fulfilled', value: undefined });
       if (outcome === 'success') {
-        expect(readResult).toEqual({ status: 'fulfilled', value: [] });
+        expect(readResult).toEqual({ status: 'fulfilled', value: undefined });
         expect(writeResult).toMatchObject({ status: 'fulfilled', value: buildProblem() });
-        expect(await dispatch('getAllCards')).toMatchObject([buildProblem()]);
+        expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
       } else {
         expect(readResult).toEqual({ status: 'rejected', reason: failure });
         expect(writeResult).toEqual({ status: 'rejected', reason: failure });
-        await expect(dispatch('getSettings')).rejects.toBe(failure);
+        await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
         await expect(dispatch('removeCard', { slug: 'two-sum' })).rejects.toBe(failure);
         expect(report).toHaveBeenCalledExactlyOnceWith('Failed to initialize background:', failure);
         expect(badge).not.toHaveBeenCalled();
         startBackground();
-        expect(await dispatch('getAllCards')).toEqual([]);
+        await dispatch('waitForInitialization');
+        expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       }
     }
   );
@@ -100,14 +104,15 @@ describe('document startup through registered background commands', () => {
       if (stage === 'cleanup') {
         await dispatch('updateSettings', { changes: { language: 'pl' } });
       } else {
-        await expect(dispatch('getSettings')).rejects.toBe(failure);
+        await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
         expect(await fakeBrowser.storage.local.get(null)).toEqual(legacy);
       }
       startBackground();
-      expect(await dispatch('getSettings')).toMatchObject({ language: stage === 'cleanup' ? 'pl' : 'de' });
-      expect(await dispatch('getGistSyncConfig')).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      await dispatch('waitForInitialization');
+      expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'pl' : 'de' });
+      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       if (stage !== 'cleanup') {
-        expect(JSON.parse(await dispatch('exportData'))).toEqual({
+        expect(await readLearningDocument()).toEqual({
           schemaVersion: 6,
           cards: {},
           stats: {},
@@ -131,7 +136,7 @@ describe('document startup through registered background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const fireAlarm = startBackground();
-    await expect(dispatch('getAllCards')).rejects.toThrow();
+    await expect(dispatch('waitForInitialization')).rejects.toThrow();
     await expect(dispatch('addCard', { problem: buildProblem() })).rejects.toThrow();
     await fireAlarm();
     expect(writes).not.toHaveBeenCalled();
@@ -142,7 +147,7 @@ describe('document startup through registered background commands', () => {
     if (exists) await browser.alarms.create('gist-sync', { periodInMinutes: 1 });
     const create = vi.spyOn(browser.alarms, 'create');
     const fireAlarm = startBackground();
-    await dispatch('getSettings');
+    await dispatch('waitForInitialization');
     expect(create.mock.calls).toEqual(exists ? [] : [['gist-sync', { periodInMinutes: 1 }]]);
     const badge = vi.spyOn(browser.action, 'setBadgeText');
     await fireAlarm();
