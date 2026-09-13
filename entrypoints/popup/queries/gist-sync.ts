@@ -9,6 +9,7 @@ export const gistSyncQueryKeys = {
   all: ['gistSync'] as const,
   config: ['gistSync', 'config'] as const,
   status: ['gistSync', 'status'] as const,
+  arrival: ['gistSync', 'arrival'] as const,
 };
 
 export function useGistSyncConfigQuery() {
@@ -51,7 +52,11 @@ export function useTriggerGistSyncMutation() {
 }
 
 export function useArrivalRefresh() {
-  const refresh = useMutation({ networkMode: 'always', mutationFn: () => sendMessage('refreshGistOnArrival') });
+  const refresh = useMutation({
+    mutationKey: gistSyncQueryKeys.arrival,
+    networkMode: 'always',
+    mutationFn: () => sendMessage('refreshGistOnArrival'),
+  });
   useEffect(() => refresh.mutate(), [refresh.mutate]);
   return refresh;
 }

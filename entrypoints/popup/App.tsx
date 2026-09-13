@@ -3,7 +3,6 @@ import { useArrivalRefresh } from '@/entrypoints/popup/queries/gist-sync';
 import './App.css';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { BottomNav, type ViewId } from './components/BottomNav';
-import { useI18n } from './contexts/I18nContext';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';
 import { SettingsView } from './views/settings/SettingsView';
@@ -14,7 +13,6 @@ function App() {
   const theme = useTheme();
   const refresh = useArrivalRefresh();
   const notice = refresh.error?.message ?? (refresh.data && !refresh.data.success ? refresh.data.error : null);
-  const t = useI18n();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -38,9 +36,9 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      {(refresh.isPending || notice) && (
+      {notice && (
         <p role="status" className="px-4 py-2 text-sm">
-          {refresh.isPending ? t.settings.gistSync.syncing : notice}
+          {notice}
         </p>
       )}
       <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>

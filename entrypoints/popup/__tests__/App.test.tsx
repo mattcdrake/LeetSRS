@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Header } from '@/entrypoints/popup/components/Header';
 import { useTheme } from '@/entrypoints/popup/hooks/useTheme';
 import { sendMessage } from '@/infrastructure/browser/messages';
 import { buildSettings } from '@/test/utils/settings-mocks';
@@ -19,6 +20,7 @@ vi.mock('../views/card/CardView', () => ({ CardView: () => null }));
 vi.mock('../views/home/HomeView', () => ({
   HomeView: () => (
     <div>
+      <Header title="LeetSRS" />
       Saved cards<button type="button">Save note</button>
     </div>
   ),
@@ -57,7 +59,10 @@ it('refreshes on opening, keeps saved data visible, and releases edits with the 
   render(<App />, { wrapper: createTestWrapper().wrapper });
   await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('refreshGistOnArrival'));
   expect(screen.getByText('Saved cards')).toBeVisible();
-  expect(screen.getByRole('status')).toHaveTextContent('Syncing...');
+  expect(screen.getByRole('status', { name: 'Syncing...' }).parentElement?.previousElementSibling).toHaveTextContent(
+    'LeetSRS'
+  );
+  expect(screen.queryByText('Syncing...')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();
   await act(async () => refresh.resolve(undefined));
   expect(screen.getByRole('button', { name: 'Save note' })).toBeEnabled();

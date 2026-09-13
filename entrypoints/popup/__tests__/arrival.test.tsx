@@ -28,6 +28,6 @@ it('keeps card filtering, expansion, and saved notes available during arrival re
   fireEvent.change(filter, { target: { value: 'Two Sum' } });
   fireEvent.click(await screen.findByRole('button', { name: /Two Sum/ }));
   expect(await screen.findByText('Remember the complement')).toBeVisible();
-  expect(screen.getByRole('status')).toHaveTextContent('Syncing...');
+  expect(screen.getByRole('status')).toHaveAccessibleName('Syncing...');
   await act(async () => arrival.resolve(undefined));
 });
