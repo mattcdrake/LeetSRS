@@ -29,8 +29,8 @@ const SYNC_INTERVAL_MINUTES = 1;
 export function startBackground() {
   // Commands and alarms wait until both learning storage and the catalog are ready.
   const readyPromise = (async () => {
-    await initializeLearningDocument();
     await initializeCatalog();
+    await initializeLearningDocument();
 
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {
