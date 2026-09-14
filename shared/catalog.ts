@@ -49,6 +49,7 @@ export async function initializeCatalog(): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(['questions', 'metadata'], 'readwrite');
       transaction.oncomplete = () => resolve();
+      // Request errors abort the transaction by default, rolling back records and hash together.
       transaction.onabort = () => reject(transaction.error ?? new Error('Catalog transaction aborted'));
       try {
         const store = transaction.objectStore('questions');
