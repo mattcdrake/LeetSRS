@@ -20,12 +20,17 @@ import {
   setSyncEnabled,
   sync,
 } from '@/background/persistence';
+import { initializeCatalog } from '@/shared/catalog';
 import { messagePayloadSchemas, onMessage } from '@/shared/messages';
 import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 export function startBackground() {
+  void initializeCatalog().catch((error) => {
+    console.error('Failed to initialize catalog:', error);
+  });
+
   // Keep message and alarm handlers from accessing storage until the learning document is ready.
   const readyPromise = (async () => {
     await initializeLearningDocument();

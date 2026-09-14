@@ -1,6 +1,8 @@
+import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { type CatalogQuestion, getQuestionBySlug } from '@/shared/catalog';
 import { onMessage } from '@/shared/messages';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
@@ -34,8 +36,54 @@ function startBackground() {
 beforeEach(() => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
+  vi.stubGlobal('indexedDB', new IDBFactory());
+  // Learning tests leave catalog loading pending; catalog startup tests supply responses.
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>(() => new Promise(() => {}))
+  );
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+it.each(['success', 'failure'] as const)(
+  'initializes the catalog on startup without blocking learning commands: %s',
+  async (outcome) => {
+    const question: CatalogQuestion = {
+      frontendId: '1',
+      title: 'Two Sum',
+      translatedTitle: null,
+      slug: 'two-sum',
+      difficulty: 'easy',
+      isPaidOnly: false,
+      topics: ['array'],
+      sources: ['leetcode.com'],
+    };
+    const release = Promise.withResolvers<void>();
+    const failure = new Error('Catalog unavailable');
+    const report = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      await release.promise;
+      if (outcome === 'failure') throw failure;
+      return String(url).endsWith('.sha256') ? new Response('test-hash') : Response.json([question]);
+    });
+
+    startBackground();
+    await dispatch('addCard', { problem: buildProblem() });
+    expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
+    release.resolve();
+
+    if (outcome === 'success') {
+      await vi.waitFor(async () => expect(await getQuestionBySlug('two-sum', 'leetcode.com')).toEqual(question));
+    } else {
+      await vi.waitFor(() => expect(report).toHaveBeenCalledExactlyOnceWith('Failed to initialize catalog:', failure));
+      await dispatch('removeCard', { slug: 'two-sum' });
+      expect((await readLearningDocument()).cards).toEqual({});
+    }
+  }
+);
 
 it('refreshes the badge when an Again card becomes due without another save or sync tick', async () => {
   vi.useFakeTimers();
