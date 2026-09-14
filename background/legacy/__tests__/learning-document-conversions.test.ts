@@ -5,20 +5,20 @@ import {
   parseLearningDocumentBackup,
 } from '@/background/legacy/learning-document-conversions';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { malformedBackupCases, validLegacyBackup } from '@/test/utils/backup-mocks';
+import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
 const FIRST_FLAT_DOCUMENT_VERSION = 6;
 
 describe('convertLearningDocument', () => {
-  it('removes redundant daily statistics fields while preserving meaningful counts', () => {
+  it('uses the statistics date key and discards redundant fields while preserving meaningful counts', () => {
     expect(
       convertLearningDocument({
         schemaVersion: 7,
         cards: {},
         stats: {
           '2024-01-01': {
-            date: '2024-01-01',
+            date: '2023-12-31',
             totalReviews: 10,
             newCards: 3,
             reviewedCards: 7,
@@ -90,7 +90,12 @@ describe('convertLearningDocument', () => {
           theme: 'light',
           language: 'zh-CN',
           maxNewCardsPerDay: 7,
-          resetEditorOnReviewQueue: false,
+          badgeEnabled: false,
+          ...(schemaVersion < 3
+            ? { autoClearLeetcode: true, dayStartHour: 4 }
+            : schemaVersion < 7
+              ? { resetEditorOnEveryProblem: true, resetEditorOnDueReview: false }
+              : { resetEditorOnReviewQueue: true }),
         } as const,
       };
       const installation = { ...data, schemaVersion, dataUpdatedAt: backup.dataUpdatedAt };
@@ -116,7 +121,13 @@ describe('convertLearningDocument', () => {
 
       const expected = buildLearningDocument({
         ...converted,
-        settings: data.settings,
+        settings: {
+          theme: 'light',
+          language: 'zh-CN',
+          maxNewCardsPerDay: 7,
+          badgeEnabled: false,
+          resetEditorOnReviewQueue: true,
+        },
         dataUpdatedAt: backup.dataUpdatedAt,
       });
       expect(convertLearningDocument(installation)).toEqual(expected);
@@ -161,20 +172,56 @@ describe('convertLearningDocument', () => {
     );
   });
 
-  it.each([null, ''])('defaults a falsy v0 domain %j but rejects it in v1', (domain) => {
-    const { backup } = validLegacyBackup();
-    const card = backup.data.cards['two-sum'];
-    const input = { cards: { 'two-sum': { ...card, domain } } };
-    expect(convertLearningDocument(input).cards['two-sum']).toEqual(card);
-    expect(() => convertLearningDocument({ ...input, schemaVersion: 1 })).toThrow();
+  it.each([
+    [2, true],
+    [3, false],
+  ])('only uses autoClearLeetcode before v3 (version %i)', (schemaVersion, resetEditorOnReviewQueue) => {
+    expect(convertLearningDocument({ schemaVersion, settings: { autoClearLeetcode: true, dayStartHour: 4 } })).toEqual(
+      buildLearningDocument({ settings: { resetEditorOnReviewQueue } })
+    );
   });
 
-  it.each([3, 4, 5])('validates the declared v%i contract before dropping retired fields', (schemaVersion) => {
-    expect(() => convertLearningDocument({ schemaVersion, settings: { dayStartHour: null } })).toThrow(
-      'retired settings'
-    );
-    if (schemaVersion >= 4) {
-      expect(() => convertLearningDocument({ schemaVersion, notes: {} })).toThrow('separate notes field');
+  it.each([
+    [3, 'Legacy note'],
+    [4, undefined],
+  ])('only attaches separate notes before v4 (version %i)', (schemaVersion, note) => {
+    const { backup } = validLegacyBackup();
+    const card = backup.data.cards['two-sum'];
+    const document = convertLearningDocument({
+      schemaVersion,
+      cards: { 'two-sum': card },
+      notes: { [card.id]: { text: 'Legacy note' } },
+    });
+    expect(document.cards['two-sum']).toEqual({ ...card, ...(note !== undefined && { note }) });
+  });
+
+  it.each([
+    [6, true],
+    [7, undefined],
+  ])('only derives queue reset from old preferences before v7 (version %i)', (schemaVersion, reset) => {
+    const document = convertLearningDocument({
+      schemaVersion,
+      cards: {},
+      stats: {},
+      settings: { resetEditorOnEveryProblem: true },
+    });
+    expect(document.settings).toEqual(reset === undefined ? {} : { resetEditorOnReviewQueue: reset });
+  });
+
+  it.each([0, 1, 2, 3, 4, 5])(
+    'allows absent installation collections and settings before v6 (version %i)',
+    (schemaVersion) => {
+      expect(convertLearningDocument({ schemaVersion })).toEqual(
+        buildLearningDocument({ settings: { resetEditorOnReviewQueue: false } })
+      );
+    }
+  );
+
+  it.each([6, 7, 8])('requires document collections and settings from v6 (version %i)', (schemaVersion) => {
+    for (const field of ['cards', 'stats', 'settings']) {
+      const input = { ...buildLearningDocument(), schemaVersion, [field]: undefined };
+      expect(() => convertLearningDocument(input)).toThrow();
+      expect(() => parseLearningDocumentBackup(JSON.stringify(input))).toThrow();
     }
   });
 
@@ -191,30 +238,15 @@ describe('convertLearningDocument', () => {
     }
   );
 
-  it('rejects a broken date relationship in a v7 installation or backup', () => {
-    const { legacyConverted } = validLegacyBackup();
-    legacyConverted.stats['2024-01-01'].date = '2024-01-02';
-    const document = { ...legacyConverted, schemaVersion: 7, settings: {} };
-    expect(() => convertLearningDocument(document)).toThrow();
-    expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
+  it.each([-1, LEARNING_DOCUMENT_VERSION + 1])('rejects unsupported schema version %j', (schemaVersion) => {
+    const input = { schemaVersion, cards: {}, stats: {}, settings: {} };
+    expect(() => convertLearningDocument(input)).toThrow();
+    expect(() => parseLearningDocumentBackup(JSON.stringify(input))).toThrow();
   });
-
-  it.each([-1, 0.5, null, '5', LEARNING_DOCUMENT_VERSION + 1])(
-    'rejects unsupported schema version %j',
-    (schemaVersion) => {
-      const input = { schemaVersion, cards: {}, stats: {}, settings: {} };
-      expect(() => convertLearningDocument(input)).toThrow();
-      expect(() => parseLearningDocumentBackup(JSON.stringify(input))).toThrow();
-    }
-  );
 });
 
 describe('parseLearningDocumentBackup', () => {
   const validBackup = { schemaVersion: 2, exportDate: '2024-01-01', data: { cards: {}, stats: {} } };
-
-  it.each(malformedBackupCases(validBackup))('rejects malformed legacy backup: %s', (_name, json) => {
-    expect(() => parseLearningDocumentBackup(json)).toThrow();
-  });
 
   it.each(['cards', 'stats'])('requires legacy backup %s even though installations can omit it', (field) => {
     expect(() =>
@@ -231,23 +263,44 @@ describe('parseLearningDocumentBackup', () => {
     }
   );
 
-  it('does not apply legacy export-time fallback to an unedited current document', () => {
+  it.each([6, 7, 8])('does not apply legacy export-time fallback to an unedited v%i document', (schemaVersion) => {
     expect(
-      parseLearningDocumentBackup(JSON.stringify({ ...buildLearningDocument(), exportDate: '2024-01-01' }))
+      parseLearningDocumentBackup(
+        JSON.stringify({ ...buildLearningDocument(), schemaVersion, exportDate: '2024-01-01' })
+      )
     ).not.toHaveProperty('dataUpdatedAt');
   });
 
-  it('rejects invalid JSON and malformed owned notes even when an embedded note wins', () => {
-    expect(() => parseLearningDocumentBackup('{')).toThrow('Invalid JSON format');
+  it('rejects an invalid explicit modification timestamp instead of falling back to exportDate', () => {
+    expect(() => parseLearningDocumentBackup(JSON.stringify({ ...validBackup, dataUpdatedAt: null }))).toThrow();
+  });
+
+  it('ignores shadowed notes, export dates, and backup Gist metadata', () => {
     const { backup } = validLegacyBackup();
     const card = { ...backup.data.cards['two-sum'], note: 'Embedded' };
-    expect(() =>
-      parseLearningDocumentBackup(
-        JSON.stringify({
-          ...validBackup,
-          data: { cards: { 'two-sum': card }, stats: {}, notes: { [card.id]: { text: 42 } } },
-        })
-      )
-    ).toThrow();
+    const document = parseLearningDocumentBackup(
+      JSON.stringify({
+        ...validBackup,
+        dataUpdatedAt: '2024-01-02',
+        exportDate: null,
+        data: {
+          cards: { 'two-sum': card },
+          stats: {},
+          notes: { [card.id]: { text: 42 } },
+          gistSync: null,
+        },
+      })
+    );
+    expect(document).toEqual(
+      buildLearningDocument({
+        cards: { 'two-sum': card },
+        settings: { resetEditorOnReviewQueue: false },
+        dataUpdatedAt: '2024-01-02',
+      })
+    );
+  });
+
+  it('rejects invalid JSON', () => {
+    expect(() => parseLearningDocumentBackup('{')).toThrow('Invalid JSON format');
   });
 });

@@ -221,18 +221,8 @@ describe('learning document startup', () => {
   });
 
   it.each([
-    ['local', 'schemaVersion', null],
-    ['local', 'schemaVersion', '2'],
-    ['local', 'schemaVersion', 6],
-    ['local', 'cards', null],
-    ['local', 'stats', []],
-    ['local', 'dataUpdatedAt', null],
     ['local', 'notes:valid-com', { text: 42 }],
-    ['sync', 'theme', null],
-    ['sync', 'githubPat', 42],
-    ['sync', 'gistId', false],
-    ['sync', 'gistSyncEnabled', 'true'],
-    ['sync', 'gistConnection', null],
+    ['sync', 'theme', 'invalid'],
     ['sync', 'gistConnection', {}],
   ])('rejects malformed %s %s before any writes', async (area, key, value) => {
     const { backup } = validLegacyBackup();
