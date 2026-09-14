@@ -24,7 +24,6 @@ const hi: Translations = {
   nav: {
     home: 'होम',
     cards: 'कार्ड्स',
-    stats: 'स्टैट्स',
     settings: 'सेटिंग्स',
   },
   // Common actions
@@ -118,16 +117,6 @@ const hi: Translations = {
     due: 'ड्यू',
     last: 'लास्ट',
     added: 'जोड़ा गया',
-  },
-  // Stats view
-  statsView: {
-    title: 'स्टैट्स',
-  },
-  // Charts
-  charts: {
-    reviewHistory: 'पिछले 30 दिनों की रिव्यु हिस्ट्री',
-    upcomingReviews: 'आगामी रिव्युज़ (अगले 14 दिन)',
-    cardsDue: 'ड्यू कार्ड्स',
   },
   // Settings view
   settings: {

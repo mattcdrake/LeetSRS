@@ -18,7 +18,6 @@ vi.mock('../views/card/CardView', () => ({ CardView: () => null }));
 vi.mock('../views/home/ReviewQueue', () => ({ ReviewQueue: () => null }));
 vi.mock('../views/home/StatsBar', () => ({ StatsBar: () => null }));
 vi.mock('../views/settings/SettingsView', () => ({ SettingsView: () => null }));
-vi.mock('../views/stats/StatsView', () => ({ StatsView: () => null }));
 
 const contains = vi.fn<() => Promise<boolean>>();
 type QueriedTabs = Parameters<Parameters<typeof browser.tabs.query>[1]>[0];

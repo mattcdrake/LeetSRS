@@ -26,7 +26,6 @@ const pl: Translations = {
   nav: {
     home: 'Strona główna',
     cards: 'Karty',
-    stats: 'Statystyki',
     settings: 'Ustawienia',
   },
 
@@ -130,18 +129,6 @@ const pl: Translations = {
     due: 'Termin',
     last: 'Ostatnia',
     added: 'Dodano',
-  },
-
-  // Stats view
-  statsView: {
-    title: 'Statystyki',
-  },
-
-  // Charts
-  charts: {
-    reviewHistory: 'Historia powtórek z ostatnich 30 dni',
-    upcomingReviews: 'Nadchodzące powtórki (następne 14 dni)',
-    cardsDue: 'Karty do powtórki',
   },
 
   // Settings view

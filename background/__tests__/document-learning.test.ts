@@ -2,8 +2,6 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { createDailyStats } from '@/background/statistics';
-import { formatLocalDate } from '@/shared/calendar';
 import { onMessage } from '@/shared/messages';
 import { learningDocumentSchema } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
@@ -55,7 +53,7 @@ describe('document learning through background commands', () => {
 
     expect(settled).not.toHaveBeenCalled();
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
+    expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
     await expect(pending).resolves.toBeUndefined();
@@ -69,16 +67,16 @@ describe('document learning through background commands', () => {
       state: State.Review,
     });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
-    const stats = (await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null;
+    const stats = (await readLearningDocument()).reviewActivity;
     expect(stats).toEqual({
       newCards: 1,
       streak: 1,
-      gradeBreakdown: { 1: 0, 2: 0, 3: 1, 4: 0 },
+      date: '2024-03-15',
     });
     expect(await readLearningDocument()).toEqual({
       ...before,
       cards: { [card.slug]: card },
-      stats: { '2024-03-15': stats },
+      reviewActivity: stats,
       dataUpdatedAt: new Date().toISOString(),
     });
     expect(writes).toHaveBeenCalledExactlyOnceWith({
@@ -89,7 +87,7 @@ describe('document learning through background commands', () => {
   it('preserves card identity and unrelated data through card and note edits', async () => {
     const original = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats(undefined) },
+      reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
       settings: { badgeEnabled: false, theme: 'dark' },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
@@ -143,14 +141,18 @@ describe('document learning through background commands', () => {
       const document = learningDocumentSchema.parse(
         Reflect.get(items, STORAGE_KEYS.learningDocument.slice('local:'.length))
       );
-      expect(document).toMatchObject({ cards: original.cards, stats: original.stats, settings: original.settings });
+      expect(document).toMatchObject({
+        cards: original.cards,
+        reviewActivity: original.reviewActivity,
+        settings: original.settings,
+      });
       expect(document.dataUpdatedAt).toBe(
         new Date(index < 3 ? '2024-03-15T12:00:00' : '2024-03-16T12:00:00').toISOString()
       );
     }
   });
 
-  it('keeps a review schedule, statistics, and edit timestamp on the captured day when a read crosses midnight', async () => {
+  it('keeps a review schedule, activity, and edit timestamp on the captured day when a read crosses midnight', async () => {
     const now = new Date('2024-03-15T23:59:59.999');
     vi.setSystemTime(now);
     const get = storage.getItem.bind(storage);
@@ -168,10 +170,10 @@ describe('document learning through background commands', () => {
     expect(card.fsrs.due).toBe(new Date('2024-03-18T23:59:59.999').getTime());
     expect(await readLearningDocument()).toMatchObject({
       cards: { [card.slug]: card },
-      stats: { '2024-03-15': { newCards: 1 } },
+      reviewActivity: { date: '2024-03-15', newCards: 1 },
       dataUpdatedAt: now.toISOString(),
     });
-    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
+    expect((await readLearningDocument()).reviewActivity?.date).toBe('2024-03-15');
   });
 
   it('uses one document and time for queue eligibility and the daily allowance across midnight', async () => {
@@ -189,7 +191,7 @@ describe('document learning through background commands', () => {
     });
     const document = buildLearningDocument({
       cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
-      stats: { '2024-03-14': { ...createDailyStats(undefined), newCards: 1 } },
+      reviewActivity: { date: '2024-03-14', newCards: 1, streak: 1 },
       settings: { maxNewCardsPerDay: 2 },
     });
     await replaceLearningDocument(document);
@@ -215,7 +217,7 @@ describe('document learning through background commands', () => {
   ])('leaves all saved data intact when %s is rejected and accepts the next command', async (_name, edit) => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats(undefined) },
+      reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
       settings: { badgeEnabled: false },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
@@ -230,7 +232,7 @@ describe('document learning through background commands', () => {
     await expect(edit()).rejects.toBe(error);
     expect(Object.values((await readLearningDocument()).cards)).toEqual(Object.values(document.cards));
     expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
-    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
+    expect((await readLearningDocument()).reviewActivity).toEqual(document.reviewActivity);
     expect(await fakeBrowser.storage.local.get()).toEqual(localBefore);
     expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
     expect(writes).toHaveBeenCalledOnce();
@@ -242,19 +244,14 @@ describe('document learning through background commands', () => {
     expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
   });
 
-  it.each(['delay overflow', 'statistics overflow', 'invalid clock'])(
+  it.each(['delay overflow', 'allowance overflow', 'invalid clock'])(
     'rejects %s before any write and preserves the previous document',
     async (failure) => {
       const card = createMockCard(State.New, buildProblem());
       const document = buildLearningDocument({
         cards: { [card.slug]: card },
         settings: { badgeEnabled: false },
-        stats: {
-          '2024-03-15': {
-            ...createDailyStats(undefined),
-            gradeBreakdown: { 1: 0, 2: 0, 3: Number.MAX_SAFE_INTEGER, 4: 0 },
-          },
-        },
+        reviewActivity: { date: '2024-03-15', newCards: Number.MAX_SAFE_INTEGER, streak: 1 },
       });
       await replaceLearningDocument(document);
       const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
@@ -308,7 +305,7 @@ describe('document learning through background commands', () => {
   );
 
   it.each([Rating.Again, Rating.Good] as const)(
-    'preserves repeated scheduling and daily statistics for rating %s',
+    'preserves repeated scheduling and daily activity for rating %s',
     async (rating) => {
       await dispatch('addCard', { problem: buildProblem() });
       const card = requireDefined((await readLearningDocument()).cards['two-sum']);
@@ -341,10 +338,10 @@ describe('document learning through background commands', () => {
       expect(second.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
       expect(second.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
       expect(Object.values((await readLearningDocument()).cards)).toEqual([second]);
-      expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toEqual({
+      expect((await readLearningDocument()).reviewActivity).toEqual({
         streak: 1,
         newCards: 1,
-        gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0, [rating]: 2 },
+        date: '2024-03-15',
       });
     }
   );

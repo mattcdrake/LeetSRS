@@ -12,8 +12,8 @@ Popup and content send typed background messages for persisted changes. Runtime 
 
 ## State and coordination
 
-Cards, notes, scheduling state, statistics, and settings overrides form one validated local learning document. Learning operations compute related changes before replacing that document, so a review publishes its card and statistics together. Commands wait for background initialization; shared reads coordinate with that readiness when data is not ready. Message payloads and stored documents are validated at their boundaries.
+Cards, notes, scheduling state, review activity, and settings overrides form one validated local learning document. Learning operations compute related changes before replacing that document, so a review publishes its card and review activity together. Commands wait for background initialization; shared reads coordinate with that readiness when data is not ready. Message payloads and stored documents are validated at their boundaries.
 
-Queue selection is shared by popup and badge work. Daily statistics and the new-card allowance use local calendar dates, so date boundaries affect both views.
+Queue selection is shared by popup and badge work. Review activity retains only the latest review date, its new-card count, and its streak length. Legacy daily statistics are reduced to that latest day during installation and backup conversion. The new-card allowance and streak display use local calendar dates, so date boundaries affect both views.
 
 Gist sync compares document edit timestamps and replaces the entire older document; it does not merge individual records. Credentials and connection settings live separately in browser sync storage, and local sync status does not change the document's edit timestamp. Startup, local edits, connection changes, and alarms trigger sync. Overlapping sync calls share an attempt; import, reset, and connection changes invalidate stale attempts. Local queries and mutations remain usable offline. Local saves complete independently of network sync, whose failures are exposed through sync status.

@@ -24,7 +24,6 @@ const de: Translations = {
   nav: {
     home: 'Start',
     cards: 'Karten',
-    stats: 'Statistik',
     settings: 'Einstellungen',
   },
   actions: {
@@ -108,14 +107,6 @@ const de: Translations = {
     due: 'Fällig',
     last: 'Zuletzt',
     added: 'Hinzugefügt',
-  },
-  statsView: {
-    title: 'Statistik',
-  },
-  charts: {
-    reviewHistory: 'Wiederholungsverlauf der letzten 30 Tage',
-    upcomingReviews: 'Anstehende Wiederholungen (nächste 14 Tage)',
-    cardsDue: 'Fällige Karten',
   },
   settings: {
     title: 'Einstellungen',

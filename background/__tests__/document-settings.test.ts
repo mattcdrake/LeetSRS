@@ -2,7 +2,6 @@ import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { createDailyStats } from '@/background/statistics';
 import { onMessage } from '@/shared/messages';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
@@ -47,7 +46,7 @@ describe('document settings through background commands', () => {
   it('saves explicit overrides and their timestamp together while preserving learning data and connection state', async () => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats(undefined) },
+      reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
     await replaceLearningDocument(document);
@@ -83,7 +82,7 @@ describe('document settings through background commands', () => {
     async (failure) => {
       const document = buildLearningDocument({
         cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-        stats: { '2024-01-01': createDailyStats(undefined) },
+        reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
         dataUpdatedAt: '2024-01-15T10:00:00.000Z',
         settings: { language: 'de' as const, theme: 'dark' as const },
       });

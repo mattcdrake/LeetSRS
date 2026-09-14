@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
-import { formatLocalDate } from '@/shared/calendar';
 import { type MessageName, onMessage } from '@/shared/messages';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
@@ -76,7 +75,7 @@ describe('registered background execution', () => {
     background.main();
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBeNull();
-    expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
+    expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(empty);
   });
   it.each(['document', 'connection cleanup'] as const)(
