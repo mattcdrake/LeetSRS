@@ -13,7 +13,7 @@ export const learningDocumentQueryOptions = queryOptions({
   queryKey: learningDocumentQueryKey,
   queryFn: async () => {
     const now = new Date();
-    const document = await readLearningDocument(true);
+    const document = await readLearningDocument();
     return { document, now } satisfies PopupLearningDocumentSnapshot;
   },
   refetchOnMount: false,

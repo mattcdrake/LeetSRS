@@ -20,7 +20,7 @@ import {
 } from '@/background/learning';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { messagePayloadSchemas, onMessage } from '@/shared/messages';
-import { STORAGE_KEYS } from '@/shared/storage';
+import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -39,6 +39,7 @@ export function startBackground() {
     void refreshBadge();
     void triggerGistSync();
   })();
+  setBackgroundStorageReadiness(readyPromise);
 
   // Report startup failure without replacing the rejected readiness promise.
   void readyPromise.catch((error) => {

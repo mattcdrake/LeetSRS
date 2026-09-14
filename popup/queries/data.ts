@@ -4,7 +4,7 @@ import { readLearningDocument } from '@/shared/storage';
 
 export function useExportDataMutation() {
   return useMutation({
-    mutationFn: async () => JSON.stringify(await readLearningDocument(true), null, 2),
+    mutationFn: async () => JSON.stringify(await readLearningDocument(), null, 2),
   });
 }
 
