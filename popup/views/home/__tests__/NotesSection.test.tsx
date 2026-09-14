@@ -1,6 +1,6 @@
 import { State } from 'ts-fsrs';
 import { storage } from '#imports';
-import { STORAGE_KEYS } from '@/data/storage-keys';
+import { STORAGE_KEYS } from '@/shared/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
@@ -10,13 +10,13 @@ import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/ut
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/integrations/browser/messages';
 import { learningDocumentQueryKey, type PopupLearningDocumentSnapshot } from '@/popup/queries/learning-document';
+import { sendMessage } from '@/shared/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('NotesSection', () => {
   const mockSlug = 'test-card-123';

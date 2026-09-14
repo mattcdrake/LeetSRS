@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { storage } from '#imports';
-import { STORAGE_KEYS } from '@/data/storage-keys';
+import { STORAGE_KEYS } from '@/shared/storage';
 import { gistSyncQueryKeys } from './gist-sync';
 import { learningDocumentQueryKey } from './learning-document';
 

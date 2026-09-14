@@ -2,15 +2,15 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { updateSettings } from '@/background/learning';
-import { replaceLearningDocument } from '@/data/learning-document';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import { replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument, setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewSettingsSection } from '../ReviewSettingsSection';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 it('offers only the daily new-card limit and saves changes', async () => {
   createMessageMock(vi.mocked(sendMessage)).resolve('updateSettings', undefined);

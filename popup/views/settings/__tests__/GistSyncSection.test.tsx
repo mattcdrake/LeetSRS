@@ -5,18 +5,17 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { replaceLearningDocument } from '@/data/learning-document';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import type { GistConnectionResult, GistSyncConfig } from '@/domain/gist-sync';
-import { sendMessage } from '@/integrations/browser/messages';
 import { gistSyncQueryKeys } from '@/popup/queries/gist-sync';
+import { sendMessage } from '@/shared/messages';
+import type { GistConnectionResult, GistSyncConfig } from '@/shared/models';
+import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { GistSyncSection } from '../GistSyncSection';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
 let config: GistSyncConfig;

@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export function useNoteQuery(slug: string) {

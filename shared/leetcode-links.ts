@@ -1,0 +1,27 @@
+import type { LeetcodeDomain } from '@/shared/models';
+
+interface LeetcodeProblemLink {
+  domain: LeetcodeDomain;
+  slug: string;
+}
+
+export function getLeetcodeProblemUrl({ domain, slug }: LeetcodeProblemLink): string {
+  return `https://${domain}/problems/${slug}/description/`;
+}
+
+export function isLeetcodeCnUrl(url: string | null): boolean {
+  if (!url) return false;
+
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname === 'leetcode.cn' || hostname.endsWith('.leetcode.cn');
+  } catch {
+    return false;
+  }
+}
+
+export const EDITOR_RESET_AUTHORIZATION_HASH = '#leetsrs-reset-editor';
+
+export function authorizeEditorReset(url: string): string {
+  return `${url}${EDITOR_RESET_AUTHORIZATION_HASH}`;
+}

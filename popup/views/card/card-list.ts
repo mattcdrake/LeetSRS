@@ -1,4 +1,4 @@
-import type { Card } from '@/domain/cards';
+import type { Card } from '@/shared/models';
 
 const numericLeetcodeIdPattern = /^\d+$/;
 

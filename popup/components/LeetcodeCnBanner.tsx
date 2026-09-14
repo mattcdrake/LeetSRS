@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FaXmark } from 'react-icons/fa6';
 import { browser } from 'wxt/browser';
-import { isLeetcodeCnUrl } from '@/popup/leetcode';
+import { isLeetcodeCnUrl } from '@/shared/leetcode-links';
 import { useI18n } from '../contexts/I18nContext';
 import { useLeetcodeCnCapability } from '../queries/leetcode-cn';
 

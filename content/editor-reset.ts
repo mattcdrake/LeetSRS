@@ -1,4 +1,4 @@
-import { isEditorResetAuthorized } from '@/integrations/leetcode/page-context';
+import { isEditorResetAuthorized } from '@/content/page-context';
 
 const CONTROL_POLL_MS = 50;
 const CONTROL_TIMEOUT_MS = 10_000;

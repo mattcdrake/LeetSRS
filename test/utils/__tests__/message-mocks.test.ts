@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
 import { createMessageMock } from '../message-mocks';
 
-vi.mock('@/integrations/browser/messages', () => ({
+vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn(),
 }));
 

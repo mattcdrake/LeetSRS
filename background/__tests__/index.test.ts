@@ -1,18 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { readGistConnection } from '@/data/gist-connection';
-import { readLearningDocument } from '@/data/learning-document';
-import { getSettings } from '@/data/learning-queries';
-import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
-import { onMessage } from '@/integrations/browser/messages';
+import { onMessage } from '@/shared/messages';
+import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
+import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { getSettings } from '@/test/utils/learning-reads';
 import background from '../../entrypoints/background/index';
 
-vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
 }));
 

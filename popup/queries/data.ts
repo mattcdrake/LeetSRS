@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { readLearningDocument } from '@/data/learning-document';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import { readLearningDocument } from '@/shared/storage';
 
 export function useExportDataMutation() {
   return useMutation({

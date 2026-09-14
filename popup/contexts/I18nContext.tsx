@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext } from 'react';
-import { type Translations, translations } from '@/i18n';
 import { useSettingsQuery } from '@/popup/queries/settings';
+import { type Translations, translations } from '@/shared/i18n/index';
 
 const I18nContext = createContext<Translations>(translations.en);
 

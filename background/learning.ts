@@ -1,11 +1,9 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
-import { findCard, type LearningDocument } from '@/domain/learning-document';
-import { calculateDelayedDueDate } from '@/domain/review';
-import type { SettingsUpdate } from '@/domain/settings';
-import { recordReview } from '@/domain/statistics';
-
+import { recordReview } from '@/background/statistics';
+import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/models';
+import { findCard, type LearningDocument } from '@/shared/models';
+import type { SettingsUpdate } from '@/shared/settings';
+import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { triggerGistSync } from './gist-sync';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short_term: false }));
@@ -116,4 +114,10 @@ export async function updateSettings(changes: SettingsUpdate): Promise<void> {
   const document = await readLearningDocument();
   if (Object.entries(changes).every(([key, value]) => document.settings[key as keyof SettingsUpdate] === value)) return;
   await saveLocalLearningDocument({ ...document, settings: { ...document.settings, ...changes } }, now);
+}
+
+export function calculateDelayedDueDate(due: number, days: number): number {
+  const newDueDate = new Date(due);
+  newDueDate.setDate(newDueDate.getDate() + days);
+  return newDueDate.getTime();
 }

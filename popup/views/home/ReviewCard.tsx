@@ -1,15 +1,14 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
-import type { Card } from '@/domain/cards';
-import { ratingSchema } from '@/domain/ratings';
-import { authorizeEditorReset } from '@/integrations/leetcode/page-context';
 import { useTheme } from '@/popup/hooks/useTheme';
-import { getLeetcodeProblemUrl } from '@/popup/leetcode';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { bounceButton } from '@/popup/styles';
-import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
-import { RATING_COLORS } from '@/ui/rating-colors';
+import { authorizeEditorReset, getLeetcodeProblemUrl } from '@/shared/leetcode-links';
+import type { Card } from '@/shared/models';
+import { ratingSchema } from '@/shared/models';
+import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
+import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {

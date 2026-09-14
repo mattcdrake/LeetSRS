@@ -1,18 +1,23 @@
-import { readGistConnection, writeGistConnection } from '@/data/gist-connection';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { parseLearningDocumentBackup } from '@/data/legacy/learning-document-conversions';
-import { readSyncStatus, removeSyncStatus, writeSyncStatus } from '@/data/sync-metadata';
+import { createGitHubClient, GIST_FILENAME } from '@/background/github';
+import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
+import { translations } from '@/shared/i18n/index';
+import type {
+  GistConnectionResult,
+  GistSetup,
+  GistSyncConfig,
+  GistSyncErrorCode,
+  GistSyncStatus,
+} from '@/shared/models';
+import { detectBrowserLanguage } from '@/shared/settings';
 import {
-  decideGistSync,
-  type GistConnectionResult,
-  type GistSetup,
-  type GistSyncConfig,
-  type GistSyncErrorCode,
-  type GistSyncStatus,
-} from '@/domain/gist-sync';
-import { translations } from '@/i18n';
-import { detectBrowserLanguage } from '@/integrations/browser/language';
-import { createGitHubClient, GIST_FILENAME } from '@/integrations/github/client';
+  readGistConnection,
+  readLearningDocument,
+  readSyncStatus,
+  removeSyncStatus,
+  replaceLearningDocument,
+  writeGistConnection,
+  writeSyncStatus,
+} from '@/shared/storage';
 
 let activeSync: Promise<void> | undefined;
 let generation = 0;
@@ -164,4 +169,37 @@ function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'):
     return 'unavailable';
   }
   return fallback;
+}
+
+export type RemoteGistContent = { state: 'missing' } | { state: 'parsed'; dataUpdatedAt?: string | null };
+
+export type GistSyncDecision = { action: 'push' | 'pull' | 'no-change' };
+
+export function decideGistSync(
+  remote: RemoteGistContent,
+  localDataUpdatedAt: string | null | undefined
+): GistSyncDecision {
+  if (remote.state !== 'parsed') {
+    return { action: 'push' };
+  }
+
+  if (!remote.dataUpdatedAt) {
+    return { action: 'push' };
+  }
+
+  if (!localDataUpdatedAt) {
+    return { action: 'pull' };
+  }
+
+  const localUpdated = new Date(localDataUpdatedAt);
+  const remoteUpdated = new Date(remote.dataUpdatedAt);
+  if (localUpdated < remoteUpdated) {
+    return { action: 'pull' };
+  }
+  if (localUpdated > remoteUpdated) {
+    return { action: 'push' };
+  }
+
+  // Preserve existing comparisons: invalid dates, like equal dates, fall through.
+  return { action: 'no-change' };
 }

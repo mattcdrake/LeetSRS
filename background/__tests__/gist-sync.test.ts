@@ -1,10 +1,14 @@
 import { Octokit } from 'octokit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { readGistConnection, writeGistConnection } from '@/data/gist-connection';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import {
+  readGistConnection,
+  readLearningDocument,
+  replaceLearningDocument,
+  STORAGE_KEYS,
+  writeGistConnection,
+} from '@/shared/storage';
 import * as gistSync from '../gist-sync';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));

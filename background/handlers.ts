@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
+import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
 import {
   getGistSyncStatus,
   invalidateGistSync,
@@ -17,28 +18,12 @@ import {
   setPauseStatus,
   updateSettings,
 } from '@/background/learning';
-import { getBadgeState } from '@/data/learning-queries';
-import { initializeLearningDocument } from '@/data/legacy/learning-document-startup';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import { messagePayloadSchemas, onMessage } from '@/integrations/browser/messages';
+import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
+import { messagePayloadSchemas, onMessage } from '@/shared/messages';
+import { STORAGE_KEYS } from '@/shared/storage';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
-const BADGE_ALARM_NAME = 'badge-refresh';
-
-async function refreshBadge() {
-  try {
-    const { count, nextDueAt } = await getBadgeState();
-    const alarm = await browser.alarms.get(BADGE_ALARM_NAME);
-    if (nextDueAt === undefined) await browser.alarms.clear(BADGE_ALARM_NAME);
-    else if (alarm?.scheduledTime !== nextDueAt) await browser.alarms.create(BADGE_ALARM_NAME, { when: nextDueAt });
-    await browser.action.setBadgeText({ text: count ? String(count) : '' });
-    if (count) await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
-  } catch (error) {
-    console.warn('Failed to refresh badge:', error);
-  }
-}
-
 export function startBackground() {
   // Keep message and alarm handlers from accessing storage until the learning document is ready.
   const readyPromise = (async () => {

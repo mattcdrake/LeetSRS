@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { RateCardInput } from '@/domain/cards';
-import { buildReviewQueue } from '@/domain/review';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import type { RateCardInput } from '@/shared/models';
+import { buildReviewQueue } from '@/shared/review';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export function useCardsQuery() {

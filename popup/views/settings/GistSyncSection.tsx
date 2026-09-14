@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
 import { FaArrowsRotate, FaCloudArrowDown, FaCloudArrowUp, FaGithub } from 'react-icons/fa6';
-import type { GistConnectionResult, GistSetup, GistSyncConfig } from '@/domain/gist-sync';
 import {
   useGistSyncConfigQuery,
   useGistSyncStatusQuery,
@@ -9,6 +8,7 @@ import {
   useSetupGistSyncMutation,
 } from '@/popup/queries/gist-sync';
 import { bounceButton } from '@/popup/styles';
+import type { GistConnectionResult, GistSetup, GistSyncConfig } from '@/shared/models';
 import { useI18n } from '../../contexts/I18nContext';
 import { SettingsSwitch } from './SettingsSwitch';
 

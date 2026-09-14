@@ -2,17 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
-import { readGistConnection } from '@/data/gist-connection';
-import { readLearningDocument } from '@/data/learning-document';
-import { formatLocalDate } from '@/domain/calendar';
-import { type MessageName, messagePayloadSchemas, onMessage } from '@/integrations/browser/messages';
+import { formatLocalDate } from '@/shared/calendar';
+import { type MessageName, messagePayloadSchemas, onMessage } from '@/shared/messages';
+import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import background from '../../entrypoints/background/index';
 
-vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
 }));
 

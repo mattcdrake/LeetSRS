@@ -4,13 +4,13 @@ import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeEditorReset } from '@/content/editor-reset';
-import { watchDocumentTranslations } from '@/data/translations';
-import { translations } from '@/i18n';
+import { watchDocumentTranslations } from '@/content/translations';
+import { translations } from '@/shared/i18n/index';
 import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 
 vi.mock('@/content/editor-reset', () => ({ setupLeetcodeEditorReset: vi.fn() }));
-vi.mock('@/data/translations', () => ({ watchDocumentTranslations: vi.fn() }));
+vi.mock('@/content/translations', () => ({ watchDocumentTranslations: vi.fn() }));
 
 let ctx: ContentScriptContext;
 let notifyMutation: () => void;

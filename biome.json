@@ -18,7 +18,11 @@
       "!**/*.min.css"
     ]
   },
-  "css": { "parser": { "tailwindDirectives": true } },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -40,5 +44,161 @@
     "rules": {
       "preset": "recommended"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["shared/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/background/**",
+                      "@/popup/**",
+                      "@/content/**",
+                      "@/entrypoints/**",
+                      "**/background/**",
+                      "**/popup/**",
+                      "**/content/**",
+                      "**/entrypoints/**",
+                      "@/shared/i18n",
+                      "@/shared/i18n/**",
+                      "@/shared/ui/**",
+                      "**/i18n/**",
+                      "**/ui/**"
+                    ],
+                    "message": "Shared modules must remain independent of runtime owners and UI."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["shared/ui/**/*.ts", "shared/ui/**/*.tsx", "shared/i18n/**/*.ts", "!shared/**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/background/**",
+                      "@/popup/**",
+                      "@/content/**",
+                      "@/entrypoints/**",
+                      "**/background/**",
+                      "**/popup/**",
+                      "**/content/**",
+                      "**/entrypoints/**"
+                    ],
+                    "message": "Shared presentation modules must remain independent of runtime owners."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["popup/**/*.ts", "popup/**/*.tsx", "!popup/**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/background/**",
+                      "**/background/**",
+                      "@/content/**",
+                      "**/content/**",
+                      "@/entrypoints/**",
+                      "**/entrypoints/**"
+                    ],
+                    "message": "Import shared contracts instead of another runtime owner."
+                  },
+                  {
+                    "group": ["@/shared/storage", "**/shared/storage"],
+                    "importNamePattern": "(replaceLearningDocument|writeGistConnection|removeGistConnection|writeSyncStatus|removeSyncStatus)",
+                    "message": "Use typed background messages for persisted writes."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["content/**/*.ts", "content/**/*.tsx", "!content/**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/background/**",
+                      "**/background/**",
+                      "@/popup/**",
+                      "**/popup/**",
+                      "@/entrypoints/**",
+                      "**/entrypoints/**"
+                    ],
+                    "message": "Import shared contracts instead of another runtime owner."
+                  },
+                  {
+                    "group": ["@/shared/storage", "**/shared/storage"],
+                    "importNamePattern": "(replaceLearningDocument|writeGistConnection|removeGistConnection|writeSyncStatus|removeSyncStatus)",
+                    "message": "Use typed background messages for persisted writes."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["background/**/*.ts", "background/**/*.tsx", "!background/**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@/popup/**",
+                      "**/popup/**",
+                      "@/content/**",
+                      "**/content/**",
+                      "@/entrypoints/**",
+                      "**/entrypoints/**"
+                    ],
+                    "message": "Import shared contracts instead of another runtime owner."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

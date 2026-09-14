@@ -7,19 +7,18 @@ import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { readLearningDocument } from '@/data/learning-document';
-import { getBadgeState } from '@/data/learning-queries';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import background from '@/entrypoints/background';
-import { onMessage, sendMessage } from '@/integrations/browser/messages';
+import { getBadgeState } from '@/background/badge';
+import background from '@/entrypoints/background/index';
+import { onMessage, sendMessage } from '@/shared/messages';
+import { readLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, usePauseCardMutation, useRateCardMutation, useReviewQueueQuery } from '../cards';
 
-vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
