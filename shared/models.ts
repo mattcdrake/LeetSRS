@@ -151,3 +151,16 @@ export interface GistSyncStatus {
   syncInProgress: boolean;
   lastError: GistSyncErrorCode | null;
 }
+
+export function createEmptyDailyStats(streak: number): DailyStats {
+  return {
+    gradeBreakdown: {
+      [Rating.Again]: 0,
+      [Rating.Hard]: 0,
+      [Rating.Good]: 0,
+      [Rating.Easy]: 0,
+    },
+    newCards: 0,
+    streak,
+  };
+}

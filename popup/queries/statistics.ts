@@ -1,6 +1,6 @@
-import { Rating } from 'ts-fsrs';
 import { addLocalDays, formatLocalDate } from '@/shared/calendar';
 import type { Card, DailyStats } from '@/shared/models';
+import { createEmptyDailyStats } from '@/shared/models';
 export interface HistoryDailyStats extends DailyStats {
   date: string;
   totalReviews: number;
@@ -10,19 +10,6 @@ export interface HistoryDailyStats extends DailyStats {
 export interface UpcomingReviewStats {
   date: string;
   count: number;
-}
-
-function createEmptyDailyStats(streak: number): DailyStats {
-  return {
-    gradeBreakdown: {
-      [Rating.Again]: 0,
-      [Rating.Hard]: 0,
-      [Rating.Good]: 0,
-      [Rating.Easy]: 0,
-    },
-    newCards: 0,
-    streak,
-  };
 }
 
 function toHistoryDailyStats(date: string, stats: DailyStats): HistoryDailyStats {
