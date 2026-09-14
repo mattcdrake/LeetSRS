@@ -96,21 +96,40 @@ describe('document transfers through background commands', () => {
     expect(await readLearningDocument()).toEqual(before);
   });
 
-  it('creates a Gist without treating the connection change as a learning edit', async () => {
-    await dispatch('updateSettings', { changes: { language: 'de' } });
-    const before = await readLearningDocument();
-    github.create.mockResolvedValueOnce({ data: { id: 'created-gist' } });
-    github.get.mockResolvedValue({
-      data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(before) } } },
-    });
+  it.each([false, true])(
+    'creates a Gist with one sync and no learning edit (delayed write: %s)',
+    async (delayedWrite) => {
+      await dispatch('updateSettings', { changes: { language: 'de' } });
+      const before = await readLearningDocument();
+      github.create.mockResolvedValueOnce({ data: { id: 'created-gist' } });
+      github.get.mockResolvedValue({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(before) } } },
+      });
 
-    expect(await dispatch('setupGistSync', { mode: 'create', pat: 'entered' })).toEqual({ saved: true });
+      const releaseWrite = Promise.withResolvers<void>();
+      if (delayedWrite) {
+        const write = fakeBrowser.storage.sync.set.bind(fakeBrowser.storage.sync);
+        vi.spyOn(fakeBrowser.storage.sync, 'set').mockImplementationOnce(async (items) => {
+          await write(items);
+          await releaseWrite.promise;
+        });
+      }
+      const setup = dispatch('setupGistSync', { mode: 'create', pat: 'entered' });
+      await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
+      await vi.waitFor(async () =>
+        expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false })
+      );
+      releaseWrite.resolve();
+      expect(await setup).toEqual({ saved: true });
 
-    expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
-    expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
-    await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
-    await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
-    expect(github.get).toHaveBeenCalledOnce();
-    expect(await readLearningDocument()).toEqual(before);
-  });
+      expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
+      expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
+      await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
+      await vi.waitFor(async () =>
+        expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false })
+      );
+      expect(github.get).toHaveBeenCalledOnce();
+      expect(await readLearningDocument()).toEqual(before);
+    }
+  );
 });

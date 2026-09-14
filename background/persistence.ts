@@ -51,9 +51,14 @@ export function installPersistence(ready: Promise<void>): void {
 }
 
 async function saveConnection(connection: GistSyncConfig): Promise<void> {
+  const previousKey = connectionKey;
+  invalidateGistSync();
   await writeGistConnection(connection);
-  observeConnection(connection);
-  void sync();
+  // A notification may already have completed this connection's sync before the
+  // write resolves. An unchanged connection still needs the explicit trigger.
+  if (observeConnection(connection) || connectionKey === previousKey) {
+    void sync();
+  }
 }
 
 export async function saveEdit(document: LearningDocument, editedAt: Date): Promise<void> {
@@ -184,7 +189,6 @@ export async function connectGist(setup: GistSetup): Promise<GistConnectionResul
       gistId = data.id;
     }
 
-    invalidateGistSync();
     await saveConnection({ pat: setup.pat, gistId, enabled: true });
     return { saved: true };
   } catch (error) {
@@ -202,7 +206,6 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
       return { saved: false, error: 'missingGist' };
     }
 
-    invalidateGistSync();
     await saveConnection({ ...config, enabled });
     return { saved: true };
   } catch (error) {
