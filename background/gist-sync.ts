@@ -1,4 +1,4 @@
-import { createGitHubClient, GIST_FILENAME } from '@/background/github';
+import { Octokit } from 'octokit';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
 import { translations } from '@/shared/i18n/index';
 import type {
@@ -18,6 +18,8 @@ import {
   writeGistConnection,
   writeSyncStatus,
 } from '@/shared/storage';
+
+const GIST_FILENAME = 'leetsrs-backup.json';
 
 let activeSync: Promise<void> | undefined;
 let generation = 0;
@@ -65,8 +67,8 @@ async function runSync(startGeneration: number): Promise<void> {
 }
 
 async function syncDocument(config: GistSyncConfig & { gistId: string }, startGeneration: number): Promise<void> {
-  const github = createGitHubClient(config.pat);
-  const { data } = await github.getGist(config.gistId);
+  const github = new Octokit({ auth: config.pat });
+  const { data } = await github.rest.gists.get({ gist_id: config.gistId });
   if (generation !== startGeneration) return;
 
   const remoteFile = data.files?.[GIST_FILENAME];
@@ -74,17 +76,24 @@ async function syncDocument(config: GistSyncConfig & { gistId: string }, startGe
   const local = await readLearningDocument();
   if (generation !== startGeneration) return;
 
-  const { action } = decideGistSync(
-    remote ? { state: 'parsed', dataUpdatedAt: remote.dataUpdatedAt } : { state: 'missing' },
-    local.dataUpdatedAt
-  );
-
-  if (action === 'push') await github.updateGist(config.gistId, JSON.stringify(local, null, 2));
-  if (action === 'pull' && remote) await replaceLearningDocument(remote);
+  let direction: 'push' | 'pull' | undefined;
+  if (
+    !remote?.dataUpdatedAt ||
+    (local.dataUpdatedAt && Date.parse(local.dataUpdatedAt) > Date.parse(remote.dataUpdatedAt))
+  ) {
+    await github.rest.gists.update({
+      gist_id: config.gistId,
+      files: { [GIST_FILENAME]: { content: JSON.stringify(local, null, 2) } },
+    });
+    direction = 'push';
+  } else if (!local.dataUpdatedAt || Date.parse(local.dataUpdatedAt) < Date.parse(remote.dataUpdatedAt)) {
+    await replaceLearningDocument(remote);
+    direction = 'pull';
+  }
   if (generation !== startGeneration) return;
 
   const timestamp = new Date().toISOString();
-  await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: action === 'no-change' ? undefined : action });
+  await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: direction });
 }
 
 function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: string } {
@@ -102,11 +111,11 @@ export async function getGistSyncStatus(): Promise<GistSyncStatus> {
 
 export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
   try {
-    const github = createGitHubClient(setup.pat);
+    const github = new Octokit({ auth: setup.pat });
     let gistId: string;
 
     if (setup.mode === 'existing') {
-      const { data } = await github.getGist(setup.gistId);
+      const { data } = await github.rest.gists.get({ gist_id: setup.gistId });
       if (!data.files?.[GIST_FILENAME]) {
         return { saved: false, error: 'missingBackup' };
       }
@@ -114,10 +123,11 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
     } else {
       const document = await readLearningDocument();
       const language = document.settings.language ?? detectBrowserLanguage();
-      const { data } = await github.createGist(
-        translations[language].settings.gistSync.gistDescription,
-        JSON.stringify(document, null, 2)
-      );
+      const { data } = await github.rest.gists.create({
+        description: translations[language].settings.gistSync.gistDescription,
+        public: false,
+        files: { [GIST_FILENAME]: { content: JSON.stringify(document, null, 2) } },
+      });
       if (!data.id) {
         return { saved: false, error: 'creationFailed' };
       }
@@ -169,37 +179,4 @@ function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'):
     return 'unavailable';
   }
   return fallback;
-}
-
-export type RemoteGistContent = { state: 'missing' } | { state: 'parsed'; dataUpdatedAt?: string | null };
-
-export type GistSyncDecision = { action: 'push' | 'pull' | 'no-change' };
-
-export function decideGistSync(
-  remote: RemoteGistContent,
-  localDataUpdatedAt: string | null | undefined
-): GistSyncDecision {
-  if (remote.state !== 'parsed') {
-    return { action: 'push' };
-  }
-
-  if (!remote.dataUpdatedAt) {
-    return { action: 'push' };
-  }
-
-  if (!localDataUpdatedAt) {
-    return { action: 'pull' };
-  }
-
-  const localUpdated = new Date(localDataUpdatedAt);
-  const remoteUpdated = new Date(remote.dataUpdatedAt);
-  if (localUpdated < remoteUpdated) {
-    return { action: 'pull' };
-  }
-  if (localUpdated > remoteUpdated) {
-    return { action: 'push' };
-  }
-
-  // Preserve existing comparisons: invalid dates, like equal dates, fall through.
-  return { action: 'no-change' };
 }

@@ -149,31 +149,58 @@ describe('whole-document Gist sync', () => {
     });
   });
 
-  it('does nothing when local and remote timestamps match', async () => {
-    github.get.mockResolvedValue({
-      data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
-    });
+  it.each([
+    { localTime: undefined, remoteTime: undefined, direction: 'push' },
+    { localTime: '2026-09-12T12:00:00.000Z', remoteTime: undefined, direction: 'push' },
+    { localTime: undefined, remoteTime: '2026-09-12T12:00:00.000Z', direction: 'pull' },
+    { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-12T12:00:00.000Z', direction: null },
+    { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-12T04:00:00-08:00', direction: null },
+  ])(
+    'handles local $localTime and remote $remoteTime with direction $direction',
+    async ({ localTime, remoteTime, direction }) => {
+      const document = { ...local, dataUpdatedAt: localTime };
+      const remote = { ...local, settings: { theme: 'light' as const }, dataUpdatedAt: remoteTime };
+      await replaceLearningDocument(document);
+      github.get.mockResolvedValue({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },
+      });
 
-    await gistSync.triggerGistSync();
+      await gistSync.triggerGistSync();
 
-    expect(github.update).not.toHaveBeenCalled();
-    expect(await readLearningDocument()).toEqual(local);
-    expect(await gistSync.getGistSyncStatus()).toMatchObject({ lastSyncTime: now, lastSyncDirection: null });
-  });
+      if (direction === 'push') {
+        expect(github.update).toHaveBeenCalledExactlyOnceWith({
+          gist_id: 'gist',
+          files: { 'leetsrs-backup.json': { content: expect.any(String) } },
+        });
+        expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(document);
+      } else {
+        expect(github.update).not.toHaveBeenCalled();
+      }
+      expect(await readLearningDocument()).toEqual(direction === 'pull' ? remote : document);
+      expect(await gistSync.getGistSyncStatus()).toMatchObject({
+        lastSyncTime: now,
+        lastSyncDirection: direction,
+        lastError: null,
+      });
+    }
+  );
 
-  it('rejects an invalid remote document before overwriting either side', async () => {
-    github.get.mockResolvedValue({
-      data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, schemaVersion: 999 }) } } },
-    });
-    const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
+  it.each([{ schemaVersion: 999 }, { dataUpdatedAt: 'invalid' }])(
+    'rejects an invalid remote document %j before overwriting either side',
+    async (invalid) => {
+      github.get.mockResolvedValue({
+        data: { files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, ...invalid }) } } },
+      });
+      const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
 
-    await gistSync.triggerGistSync();
+      await gistSync.triggerGistSync();
 
-    expect(writes).not.toHaveBeenCalled();
-    expect(github.update).not.toHaveBeenCalled();
-    expect(await readLearningDocument()).toEqual(local);
-    expect(await gistSync.getGistSyncStatus()).toMatchObject({ lastError: 'unknown', syncInProgress: false });
-  });
+      expect(writes).not.toHaveBeenCalled();
+      expect(github.update).not.toHaveBeenCalled();
+      expect(await readLearningDocument()).toEqual(local);
+      expect(await gistSync.getGistSyncStatus()).toMatchObject({ lastError: 'unknown', syncInProgress: false });
+    }
+  );
 
   it.each([
     [Object.assign(new Error('Bad credentials'), { status: 401 }), 'authentication'],
