@@ -87,7 +87,6 @@ const pl: Translations = {
   statsBar: {
     review: 'powtórka',
     new: 'nowe',
-    learn: 'nauka',
   },
 
   // Home view - Actions section

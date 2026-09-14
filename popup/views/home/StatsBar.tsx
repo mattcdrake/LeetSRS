@@ -29,22 +29,20 @@ export function StatsBar() {
   const stats = cards.reduce(
     (acc, card) => {
       switch (card.fsrs?.state) {
+        case State.Learning:
+        case State.Relearning:
         case State.Review:
           acc.reviews++;
           break;
         case State.New:
           acc.new++;
           break;
-        case State.Learning:
-        case State.Relearning:
-          acc.learn++;
-          break;
         default:
           break;
       }
       return acc;
     },
-    { reviews: 0, new: 0, learn: 0 }
+    { reviews: 0, new: 0 }
   );
 
   return (
@@ -52,8 +50,6 @@ export function StatsBar() {
       <StatItem count={stats.reviews} label={t.statsBar.review} colorClass="text-info" testId="review" />
       <span className="text-tertiary">•</span>
       <StatItem count={stats.new} label={t.statsBar.new} colorClass="text-accent" testId="new" />
-      <span className="text-tertiary">•</span>
-      <StatItem count={stats.learn} label={t.statsBar.learn} colorClass="text-danger" testId="learn" />
     </div>
   );
 }
