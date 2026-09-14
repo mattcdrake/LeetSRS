@@ -1,12 +1,4 @@
-import * as addCardDomain from '@/background/legacy/document-conversions/001-add-card-domain';
-import * as addSystemTheme from '@/background/legacy/document-conversions/002-add-system-theme';
-import * as removeDayStart from '@/background/legacy/document-conversions/003-remove-day-start';
-import * as embedNotes from '@/background/legacy/document-conversions/004-embed-notes';
-import * as combineGistConnection from '@/background/legacy/document-conversions/005-combine-gist-connection';
-import * as learningDocument from '@/background/legacy/document-conversions/006-learning-document';
-import * as resetEditorOnReviewQueue from '@/background/legacy/document-conversions/007-reset-editor-on-review-queue';
-import * as removeRedundantDailyStatistics from '@/background/legacy/document-conversions/008-remove-redundant-daily-statistics';
-import { legacyBackupSchema } from '@/background/legacy/document-conversions/legacy-backup-envelope';
+import { z } from 'zod';
 import {
   LEARNING_DOCUMENT_VERSION,
   type LearningDocument,
@@ -14,21 +6,24 @@ import {
   learningDocumentVersionSchema,
 } from '@/shared/models';
 
-const conversions = [
-  addCardDomain,
-  addSystemTheme,
-  removeDayStart,
-  embedNotes,
-  combineGistConnection,
-  learningDocument,
-  resetEditorOnReviewQueue,
-  removeRedundantDailyStatistics,
-] as const;
-
-const LAST_LEGACY_DATASET_VERSION = 5;
-
+const FIRST_DOCUMENT_VERSION = 6;
 const versionedInputSchema = learningDocumentVersionSchema.loose().extend({
   schemaVersion: learningDocumentVersionSchema.shape.schemaVersion.default(0),
+});
+
+// Only describe the structure needed for translation. The current schema validates retained data.
+const legacyCollectionsSchema = z.object({
+  cards: z.record(z.string(), z.looseObject({ id: z.string() })),
+  stats: z.record(z.string(), z.unknown()),
+  settings: z.record(z.string(), z.unknown()),
+});
+const legacyNotesSchema = z.record(z.string(), z.unknown());
+const legacyNoteSchema = z.object({ text: z.string() });
+const legacyBackupSchema = z.looseObject({
+  data: z.looseObject({
+    cards: legacyCollectionsSchema.shape.cards,
+    stats: legacyCollectionsSchema.shape.stats,
+  }),
 });
 
 // Accepts an in-memory legacy installation or an already-versioned document.
@@ -38,26 +33,44 @@ export function convertLearningDocument(input: unknown): LearningDocument {
   if (schemaVersion > LEARNING_DOCUMENT_VERSION) {
     throw new Error(`Unsupported schema version: ${schemaVersion}`);
   }
-
-  // Versions 0–5 stored the version separately; v6 introduced the document envelope.
-  let convertedData: unknown = data;
-
-  if (schemaVersion > LAST_LEGACY_DATASET_VERSION) {
-    convertedData = input;
+  if (schemaVersion === LEARNING_DOCUMENT_VERSION) {
+    return learningDocumentSchema.parse(input);
   }
 
-  if (schemaVersion > 0) {
-    const declaredSchema = conversions[schemaVersion - 1].outputSchema;
-    declaredSchema.parse(convertedData);
+  const { cards, stats, settings } = legacyCollectionsSchema.parse(
+    schemaVersion < FIRST_DOCUMENT_VERSION ? { cards: {}, stats: {}, settings: {}, ...data } : data
+  );
+  const notes = schemaVersion < 4 && data.notes !== undefined ? legacyNotesSchema.parse(data.notes) : {};
+  const convertedCards = Object.fromEntries(
+    Object.entries(cards).map(([slug, card]) => {
+      const converted = { ...card };
+      if (schemaVersion === 0 && card.domain === undefined) {
+        converted.domain = 'leetcode.com';
+      }
+      if (schemaVersion < 4 && card.note === undefined && Object.hasOwn(notes, card.id)) {
+        converted.note = legacyNoteSchema.parse(notes[card.id]).text;
+      }
+      return [slug, converted];
+    })
+  );
+
+  if (schemaVersion < 7 && settings.resetEditorOnReviewQueue === undefined) {
+    const everyProblem =
+      schemaVersion < 3 && settings.resetEditorOnEveryProblem === undefined
+        ? settings.autoClearLeetcode
+        : settings.resetEditorOnEveryProblem;
+    const resetEveryProblem = z.boolean().default(false).parse(everyProblem);
+    const resetDueReview = z.boolean().default(false).parse(settings.resetEditorOnDueReview);
+    settings.resetEditorOnReviewQueue = resetEveryProblem || resetDueReview;
   }
 
-  const remainingConversions = conversions.slice(schemaVersion);
-
-  for (const conversion of remainingConversions) {
-    convertedData = conversion.convert(convertedData);
-  }
-
-  return learningDocumentSchema.parse(convertedData);
+  return learningDocumentSchema.parse({
+    ...data,
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+    cards: convertedCards,
+    stats,
+    settings,
+  });
 }
 
 export function parseLearningDocumentBackup(json: string): LearningDocument {
@@ -70,16 +83,14 @@ export function parseLearningDocumentBackup(json: string): LearningDocument {
   }
 
   const { schemaVersion } = versionedInputSchema.parse(decodedBackup);
-
-  if (schemaVersion > LAST_LEGACY_DATASET_VERSION) {
+  if (schemaVersion >= FIRST_DOCUMENT_VERSION) {
     return convertLearningDocument(decodedBackup);
   }
 
   const { data, dataUpdatedAt, exportDate } = legacyBackupSchema.parse(decodedBackup);
-
   return convertLearningDocument({
     ...data,
     schemaVersion,
-    dataUpdatedAt: dataUpdatedAt ?? exportDate,
+    dataUpdatedAt: dataUpdatedAt === undefined ? exportDate : dataUpdatedAt,
   });
 }
