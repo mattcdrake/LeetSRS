@@ -2,14 +2,6 @@ import { browser } from 'wxt/browser';
 import { storage } from '#imports';
 import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
 import {
-  getGistSyncStatus,
-  invalidateGistSync,
-  setGistSyncEnabled,
-  setupGistSync,
-  triggerGistSync,
-} from '@/background/gist-sync';
-import { importData, resetAllData } from '@/background/import-export';
-import {
   addCard,
   delayCard,
   rateCard,
@@ -19,6 +11,15 @@ import {
   updateSettings,
 } from '@/background/learning';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
+import {
+  connectGist,
+  getSyncStatus,
+  installPersistence,
+  resetAllData,
+  restoreBackup,
+  setSyncEnabled,
+  sync,
+} from '@/background/persistence';
 import { messagePayloadSchemas, onMessage } from '@/shared/messages';
 import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
@@ -37,7 +38,7 @@ export function startBackground() {
     }
 
     void refreshBadge();
-    void triggerGistSync();
+    void sync();
   })();
   setBackgroundStorageReadiness(readyPromise);
 
@@ -84,7 +85,7 @@ export function startBackground() {
   });
   onMessage('importData', async ({ data }) => {
     await readyPromise;
-    return importData(messagePayloadSchemas.importData.parse(data).jsonData);
+    return restoreBackup(messagePayloadSchemas.importData.parse(data).jsonData);
   });
   onMessage('resetAllData', async ({ data }) => {
     await readyPromise;
@@ -93,21 +94,18 @@ export function startBackground() {
   });
   onMessage('setupGistSync', async ({ data }) => {
     await readyPromise;
-    return setupGistSync(messagePayloadSchemas.setupGistSync.parse(data));
+    return connectGist(messagePayloadSchemas.setupGistSync.parse(data));
   });
   onMessage('setGistSyncEnabled', async ({ data }) => {
     await readyPromise;
-    return setGistSyncEnabled(messagePayloadSchemas.setGistSyncEnabled.parse(data).enabled);
+    return setSyncEnabled(messagePayloadSchemas.setGistSyncEnabled.parse(data).enabled);
   });
   onMessage('getGistSyncStatus', async ({ data }) => {
     await readyPromise;
     messagePayloadSchemas.getGistSyncStatus.parse(data);
-    return getGistSyncStatus();
+    return getSyncStatus();
   });
-  storage.watch(STORAGE_KEYS.gistConnection, () => {
-    invalidateGistSync();
-    void readyPromise.then(triggerGistSync, () => {});
-  });
+  installPersistence(readyPromise);
   storage.watch(STORAGE_KEYS.learningDocument, () => {
     void readyPromise.then(refreshBadge, () => {});
   });
@@ -124,6 +122,6 @@ export function startBackground() {
       return;
     }
 
-    await Promise.all([alarm.name === SYNC_ALARM_NAME && triggerGistSync(), refreshBadge()]);
+    await Promise.all([alarm.name === SYNC_ALARM_NAME && sync(), refreshBadge()]);
   });
 }
