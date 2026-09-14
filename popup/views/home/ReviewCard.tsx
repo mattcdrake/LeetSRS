@@ -7,8 +7,8 @@ import { bounceButton } from '@/popup/styles';
 import { authorizeEditorReset, getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { Card } from '@/shared/models';
 import { ratingSchema } from '@/shared/models';
-import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
-import { RATING_COLORS } from '@/ui/rating-colors';
+import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
+import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {

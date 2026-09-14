@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { getDocumentTranslations as read, watchDocumentTranslations as watch } from '@/content/translations';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { STORAGE_KEYS } from '@/shared/storage';
 

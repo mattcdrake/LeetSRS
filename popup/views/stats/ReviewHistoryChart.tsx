@@ -3,7 +3,7 @@ import { Bar } from 'react-chartjs-2';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { useLastNDaysStatsQuery } from '@/popup/queries/stats';
 import { ratingSchema } from '@/shared/models';
-import { RATING_COLORS } from '@/ui/rating-colors';
+import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);

@@ -1,5 +1,5 @@
 import { Rating } from 'ts-fsrs';
-import type { Translations } from '@/i18n/index';
+import type { Translations } from '@/shared/i18n/index';
 
 export const RATING_COLORS = {
   light: {

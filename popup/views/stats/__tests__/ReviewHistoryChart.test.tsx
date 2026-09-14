@@ -5,9 +5,9 @@
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import { translations } from '@/i18n/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
 import type { HistoryDailyStats } from '@/popup/queries/statistics';
+import { translations } from '@/shared/i18n/index';
 import { sendMessage } from '@/shared/messages';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';

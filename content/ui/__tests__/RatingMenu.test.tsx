@@ -3,7 +3,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { expect, it, vi } from 'vitest';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 import { RatingMenu } from '../RatingMenu';
 
 it.each(['en', 'pl'] as const)('dispatches each rating and add action once in %s', (language) => {

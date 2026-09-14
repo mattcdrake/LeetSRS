@@ -1,6 +1,6 @@
 import { createGitHubClient, GIST_FILENAME } from '@/background/github';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 import type {
   GistConnectionResult,
   GistSetup,

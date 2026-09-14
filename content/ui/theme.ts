@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Rating } from 'ts-fsrs';
-import { RATING_COLORS } from '@/ui/rating-colors';
+import { RATING_COLORS } from '@/shared/ui/rating-colors';
 
 export const THEME_COLORS = {
   light: {

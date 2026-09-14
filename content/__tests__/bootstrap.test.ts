@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeEditorReset } from '@/content/editor-reset';
 import { watchDocumentTranslations } from '@/content/translations';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 import { requireDefined } from '@/test/utils/assertions';
 import { bootstrapContent } from '../bootstrap';
 

@@ -5,7 +5,7 @@ import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { watchDocumentTranslations } from '@/content/translations';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 
 vi.mock('@/content/translations', () => ({
   watchDocumentTranslations: vi.fn(),

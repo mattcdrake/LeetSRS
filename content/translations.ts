@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { storage } from '#imports';
-import { type Translations, translations } from '@/i18n/index';
+import { type Translations, translations } from '@/shared/i18n/index';
 import { detectBrowserLanguage, languageSchema } from '@/shared/settings';
 import { STORAGE_KEYS } from '@/shared/storage';
 

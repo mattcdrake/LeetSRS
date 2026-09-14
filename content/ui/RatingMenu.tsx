@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { Button } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
-import type { Translations } from '@/i18n/index';
+import type { Translations } from '@/shared/i18n/index';
 import { ratingSchema } from '@/shared/models';
 import { THEME_COLORS, useDarkMode } from './theme';
 

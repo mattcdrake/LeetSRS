@@ -1,14 +1,14 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
-import type { Translations } from '@/i18n/index';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
 import { bounceButton } from '@/popup/styles';
+import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { Card } from '@/shared/models';
-import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
+import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { useI18n } from '../../../contexts/I18nContext';
 
 const getStateLabel = (state: FsrsState, t: Translations) => {

@@ -13,9 +13,9 @@ These rules apply to runtime and type-only imports:
 - `shared/models.ts` owns current card, rating, statistics, document, and Gist connection/status schemas/types and document invariants. `shared/settings.ts` owns settings and language resolution. Keep policy functions independent of storage and explicit about time and document inputs.
 - `shared/storage.ts` owns current storage keys and validated document, connection, and status access. `shared/messages.ts` owns typed RPC contracts and transport. Popup and content use typed messages for writes and validated storage for reads.
 - `shared/review.ts` owns the complete review-queue policy; `shared/calendar.ts` and `shared/leetcode-links.ts` hold shared date and link helpers. Review-queue links authorize one editor reset only when enabled; Cards-list links never authorize reset. Native link navigation handles mouse and keyboard interactions.
-- Shared modules remain independent of background, popup, content, UI, translation catalogs, scheduler initialization, and historical conversions. Biome import restrictions enforce runtime ownership, including type-only imports; tests may compose owners to verify behavior.
+- Shared modules remain independent of runtime owners, scheduler initialization, and historical conversions. Core shared modules also remain independent of presentation helpers and translation catalogs. Biome import restrictions enforce runtime ownership, including type-only imports; tests may compose owners to verify behavior.
 - `background/legacy/` retains historical schemas, backup parsing/conversions, and the startup bridge. Current storage readers remain independent of this code and display valid documents directly; initialization is requested through typed messages only when necessary.
-- `i18n/` owns translation catalogs and their type. It may import shared model/settings types, but has no browser, storage, background, or UI dependencies. `ui/` owns shared presentation helpers.
+- `shared/i18n/` owns translation catalogs and their type. It may import shared model/settings types, but has no browser, storage, background, or UI dependencies. `shared/ui/` owns shared presentation helpers.
 - The popup owns permissions, active-tab inspection, and banner dismissal state. Permission requests originate from user interactions.
 
 ## Background execution

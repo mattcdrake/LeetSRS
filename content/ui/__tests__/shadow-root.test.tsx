@@ -3,7 +3,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { watchDocumentTranslations } from '@/content/translations';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 import { requireDefined } from '@/test/utils/assertions';
 import { LeetSrsControl } from '../LeetSrsControl';
 import { createContentRoot } from '../shadow-root';

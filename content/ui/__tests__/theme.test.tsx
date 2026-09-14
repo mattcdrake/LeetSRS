@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { translations } from '@/i18n/index';
+import { translations } from '@/shared/i18n/index';
 import { LeetSrsButton } from '../LeetSrsControl';
 
 afterEach(() => {
