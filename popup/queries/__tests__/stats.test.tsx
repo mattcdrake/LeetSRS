@@ -53,13 +53,9 @@ it('preserves history and upcoming statistics results', async () => {
   await waitFor(() => expect(result.current.emptyUpcoming.isSuccess).toBe(true));
   expect(result.current.today.data).toBeNull();
   expect(result.current.history.data).toEqual([
-    { ...yesterday, date: '2024-03-14', totalReviews: 3, reviewedCards: 2 },
+    { date: '2024-03-14', gradeBreakdown: yesterday.gradeBreakdown },
     {
       date: '2024-03-15',
-      streak: 0,
-      totalReviews: 0,
-      newCards: 0,
-      reviewedCards: 0,
       gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
     },
   ]);
@@ -98,7 +94,7 @@ it.each(['history', 'upcoming'] as const)(
     await waitFor(() => expect(view.result.current.isSuccess).toBe(true));
     expect(view.result.current.data).toEqual([
       kind === 'history'
-        ? { ...document.stats['2024-03-15'], date: '2024-03-15', totalReviews: 3, reviewedCards: 3 }
+        ? { date: '2024-03-15', gradeBreakdown: { 1: 0, 2: 0, 3: 3, 4: 0 } }
         : { date: '2024-03-15', count: 1 },
     ]);
     view.unmount();

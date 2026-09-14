@@ -1,25 +1,14 @@
 import { addLocalDays, formatLocalDate } from '@/shared/calendar';
 import type { Card, DailyStats } from '@/shared/models';
 import { createEmptyDailyStats } from '@/shared/models';
-export interface HistoryDailyStats extends DailyStats {
+export interface HistoryDailyStats {
   date: string;
-  totalReviews: number;
-  reviewedCards: number;
+  gradeBreakdown: DailyStats['gradeBreakdown'];
 }
 
 export interface UpcomingReviewStats {
   date: string;
   count: number;
-}
-
-function toHistoryDailyStats(date: string, stats: DailyStats): HistoryDailyStats {
-  const totalReviews = Object.values(stats.gradeBreakdown).reduce((total, count) => total + count, 0);
-  return {
-    ...stats,
-    date,
-    totalReviews,
-    reviewedCards: totalReviews - stats.newCards,
-  };
 }
 
 export function calculateHistoryStats(
@@ -31,7 +20,7 @@ export function calculateHistoryStats(
   for (let i = days - 1; i >= 0; i--) {
     const dateKey = formatLocalDate(addLocalDays(today, -i));
     const dailyStats = stats[dateKey] ?? createEmptyDailyStats(0);
-    result.push(toHistoryDailyStats(dateKey, dailyStats));
+    result.push({ date: dateKey, gradeBreakdown: dailyStats.gradeBreakdown });
   }
 
   return result;
