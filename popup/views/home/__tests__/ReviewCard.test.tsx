@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { translations } from '@/i18n';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { settingsQueryKeys } from '@/popup/queries/settings';
+import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
@@ -28,7 +28,7 @@ describe('ReviewCard', () => {
 
   const renderWithProviders = (card = mockCard, onRate = mockOnRate, resetEditorOnReviewQueue = false) => {
     const { wrapper, queryClient } = createPopupTestWrapper();
-    queryClient.setQueryData(settingsQueryKeys.all, buildSettings({ resetEditorOnReviewQueue }));
+    setPopupLearningDocumentQueryData(queryClient, { settings: buildSettings({ resetEditorOnReviewQueue }) });
     return render(<ReviewCard card={card} onRate={onRate} />, { wrapper });
   };
 

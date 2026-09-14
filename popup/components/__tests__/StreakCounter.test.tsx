@@ -4,11 +4,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
+import { formatLocalDate } from '@/domain/calendar';
 import type { LearningDocument } from '@/domain/learning-document';
 import type { DailyStats } from '@/domain/statistics';
 import { sendMessage } from '@/integrations/browser/messages';
-import { statsQueryKeys } from '@/popup/queries/stats';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
+import { buildLearningDocument, setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StreakCounter } from '../StreakCounter';
@@ -29,7 +30,7 @@ describe('StreakCounter', () => {
   const renderStats = (data: DailyStats | null) => {
     messages.reset();
     const { wrapper, queryClient } = createPopupTestWrapper();
-    queryClient.setQueryData(statsQueryKeys.today, data);
+    setPopupLearningDocumentQueryData(queryClient, { stats: data ? { [formatLocalDate(new Date())]: data } : {} });
     return render(<StreakCounter />, { wrapper });
   };
 
@@ -51,13 +52,13 @@ describe('StreakCounter', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
     await waitFor(() => expect(read).toHaveBeenCalled());
-    expect(queryClient.getQueryState(statsQueryKeys.today)).toMatchObject({
+    expect(queryClient.getQueryState(learningDocumentQueryKey)).toMatchObject({
       status: 'pending',
       fetchStatus: 'fetching',
     });
     expect(view.container.firstChild).toBeNull();
     pending.resolve(buildLearningDocument());
-    await waitFor(() => expect(queryClient.getQueryState(statsQueryKeys.today)?.status).toBe('success'));
+    await waitFor(() => expect(queryClient.getQueryState(learningDocumentQueryKey)?.status).toBe('success'));
     view.unmount();
   });
 
@@ -68,7 +69,7 @@ describe('StreakCounter', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     const view = render(<StreakCounter />, { wrapper });
     await waitFor(() =>
-      expect(queryClient.getQueryState(statsQueryKeys.today)).toMatchObject({ status: 'error', error })
+      expect(queryClient.getQueryState(learningDocumentQueryKey)).toMatchObject({ status: 'error', error })
     );
     expect(view.container.firstChild).toBeNull();
   });

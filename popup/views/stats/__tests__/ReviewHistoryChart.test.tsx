@@ -9,8 +9,7 @@ import type { HistoryDailyStats } from '@/domain/statistics';
 import { translations } from '@/i18n';
 import { sendMessage } from '@/integrations/browser/messages';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
-import { settingsQueryKeys } from '@/popup/queries/settings';
-import { statsQueryKeys } from '@/popup/queries/stats';
+import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -64,8 +63,13 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     const settings = buildSettings({ theme: 'light', language });
     messages.reset();
     const { wrapper, queryClient } = createPopupTestWrapper();
-    queryClient.setQueryData(statsQueryKeys.lastNDays.detail(30), data);
-    queryClient.setQueryData(settingsQueryKeys.all, settings);
+    const stats = Object.fromEntries(
+      data.map(({ date, totalReviews: _totalReviews, reviewedCards: _reviewedCards, ...dailyStats }) => [
+        date,
+        dailyStats,
+      ])
+    );
+    setPopupLearningDocumentQueryData(queryClient, { settings, stats }, new Date('2024-05-16T12:00:00'));
     return render(
       <I18nProvider>
         <ReviewHistoryChart />
@@ -81,21 +85,21 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     const chart = screen.getByTestId('bar-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
-    expect(chartData.labels).toEqual(['5/15', '5/16']);
+    expect(chartData.labels.slice(-2)).toEqual(['5/15', '5/16']);
 
     // Check datasets
     expect(chartData.datasets).toHaveLength(4);
     expect(chartData.datasets[0].label).toBe(t.ratings[Rating.Again]);
-    expect(chartData.datasets[0].data).toEqual([1, 2]);
+    expect(chartData.datasets[0].data.slice(-2)).toEqual([1, 2]);
     expect(chartData.datasets[0].backgroundColor).toBe('#c73e3e');
     expect(chartData.datasets[1].label).toBe(t.ratings[Rating.Hard]);
-    expect(chartData.datasets[1].data).toEqual([2, 3]);
+    expect(chartData.datasets[1].data.slice(-2)).toEqual([2, 3]);
     expect(chartData.datasets[1].backgroundColor).toBe('#d97706');
     expect(chartData.datasets[2].label).toBe(t.ratings[Rating.Good]);
-    expect(chartData.datasets[2].data).toEqual([5, 7]);
+    expect(chartData.datasets[2].data.slice(-2)).toEqual([5, 7]);
     expect(chartData.datasets[2].backgroundColor).toBe('#4271c4');
     expect(chartData.datasets[3].label).toBe(t.ratings[Rating.Easy]);
-    expect(chartData.datasets[3].data).toEqual([4, 6]);
+    expect(chartData.datasets[3].data.slice(-2)).toEqual([4, 6]);
     expect(chartData.datasets[3].backgroundColor).toBe('#3d9156');
   });
 
@@ -105,10 +109,10 @@ describe('Bar Chart (Last 30 Days Review History)', () => {
     const chart = screen.getByTestId('bar-chart');
     const chartData = JSON.parse(chart.getAttribute('data-chart-data') || '{}');
 
-    expect(chartData.labels).toEqual([]);
-    expect(chartData.datasets[0].data).toEqual([]);
-    expect(chartData.datasets[1].data).toEqual([]);
-    expect(chartData.datasets[2].data).toEqual([]);
-    expect(chartData.datasets[3].data).toEqual([]);
+    expect(chartData.labels).toHaveLength(30);
+    expect(chartData.datasets[0].data).toEqual(Array(30).fill(0));
+    expect(chartData.datasets[1].data).toEqual(Array(30).fill(0));
+    expect(chartData.datasets[2].data).toEqual(Array(30).fill(0));
+    expect(chartData.datasets[3].data).toEqual(Array(30).fill(0));
   });
 });

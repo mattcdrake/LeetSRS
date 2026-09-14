@@ -1,49 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
-import { readLearningDocument } from '@/data/learning-document';
 import { formatLocalDate } from '@/domain/calendar';
 import { calculateHistoryStats, calculateUpcomingStats } from '@/domain/statistics';
-
-export const statsQueryKeys = {
-  all: ['stats'] as const,
-  today: ['stats', 'today'] as const,
-  lastNDays: {
-    detail: (days: number) => ['stats', 'lastNDays', days] as const,
-  },
-  nextNDays: {
-    detail: (days: number) => ['stats', 'nextNDays', days] as const,
-  },
-};
+import { learningDocumentQueryOptions } from './learning-document';
 
 export function useTodayStatsQuery() {
   return useQuery({
-    queryKey: statsQueryKeys.today,
-    refetchInterval: 15_000,
-    queryFn: async () => {
-      const now = new Date();
-      const document = await readLearningDocument(true);
-      return document.stats[formatLocalDate(now)] ?? null;
-    },
+    ...learningDocumentQueryOptions,
+    select: ({ document, now }) => document.stats[formatLocalDate(now)] ?? null,
   });
 }
 
 export function useLastNDaysStatsQuery(days: number) {
   return useQuery({
-    queryKey: statsQueryKeys.lastNDays.detail(days),
-    refetchInterval: 15_000,
-    queryFn: async () => {
-      const now = new Date();
-      return calculateHistoryStats((await readLearningDocument(true)).stats, days, now);
-    },
+    ...learningDocumentQueryOptions,
+    select: ({ document, now }) => calculateHistoryStats(document.stats, days, now),
   });
 }
 
 export function useNextNDaysStatsQuery(days: number) {
   return useQuery({
-    queryKey: statsQueryKeys.nextNDays.detail(days),
-    refetchInterval: 15_000,
-    queryFn: async () => {
-      const now = new Date();
-      return calculateUpcomingStats(Object.values((await readLearningDocument(true)).cards), days, now);
-    },
+    ...learningDocumentQueryOptions,
+    select: ({ document, now }) => calculateUpcomingStats(Object.values(document.cards), days, now),
   });
 }

@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
  */
@@ -10,7 +10,6 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/integrations/browser/messages';
-import { cardQueryKeys } from '@/popup/queries/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -118,7 +117,7 @@ describe('ReviewQueue', () => {
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
     );
-    queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
+    setPopupLearningCardsQueryData(queryClient, cards);
   };
 
   beforeEach(() => {

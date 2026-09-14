@@ -1,16 +1,13 @@
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { getSettings } from '@/data/learning-queries';
+import { resolveLearningDocumentSettings } from '@/data/learning-queries';
 import type { Settings } from '@/domain/settings';
 import { sendMessage } from '@/integrations/browser/messages';
-
-export const settingsQueryKeys = {
-  all: ['settings'] as const,
-};
+import { learningDocumentQueryOptions } from './learning-document';
 
 export function useSettingsQuery() {
   return useSuspenseQuery({
-    queryKey: settingsQueryKeys.all,
-    queryFn: () => getSettings(true),
+    ...learningDocumentQueryOptions,
+    select: ({ document }) => resolveLearningDocumentSettings(document),
   });
 }
 

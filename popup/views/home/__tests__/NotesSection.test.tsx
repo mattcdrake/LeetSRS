@@ -2,7 +2,7 @@ import { State } from 'ts-fsrs';
 import { storage } from '#imports';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
  */
@@ -11,7 +11,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/integrations/browser/messages';
-import { cardQueryKeys } from '@/popup/queries/cards';
+import { learningDocumentQueryKey, type PopupLearningDocumentSnapshot } from '@/popup/queries/learning-document';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
@@ -31,7 +31,7 @@ describe('NotesSection', () => {
         cards: { [mockSlug]: createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }) },
       })
     );
-    queryClient.setQueryData(cardQueryKeys.all, [
+    setPopupLearningCardsQueryData(queryClient, [
       createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }),
     ]);
   };
@@ -119,7 +119,9 @@ describe('NotesSection', () => {
     fireEvent.click(toggle);
     await act(async () => save.resolve());
     await waitFor(() =>
-      expect(queryClient.getQueryData(cardQueryKeys.all)).toMatchObject([{ slug: mockSlug, note: 'Saved draft' }])
+      expect(
+        queryClient.getQueryData<PopupLearningDocumentSnapshot>(learningDocumentQueryKey)?.document.cards[mockSlug]
+      ).toMatchObject({ slug: mockSlug, note: 'Saved draft' })
     );
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 

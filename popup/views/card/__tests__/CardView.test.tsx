@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
  */
@@ -10,7 +10,6 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/integrations/browser/messages';
-import { cardQueryKeys } from '@/popup/queries/cards';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -30,7 +29,7 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 describe('CardView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   const seedCards = (cards: Card[]) => {
-    queryClient.setQueryData(cardQueryKeys.all, cards);
+    setPopupLearningCardsQueryData(queryClient, cards);
   };
 
   beforeEach(() => {

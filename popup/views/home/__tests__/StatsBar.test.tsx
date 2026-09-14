@@ -4,8 +4,8 @@ import { State } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
 import { sendMessage } from '@/integrations/browser/messages';
-import { cardQueryKeys } from '@/popup/queries/cards';
 import { createMockCard } from '@/test/utils/card-mocks';
+import { setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StatsBar } from '../StatsBar';
@@ -18,7 +18,7 @@ describe('StatsBar', () => {
   const renderStats = (cards: Card[] = []) => {
     messages.reset();
     const { wrapper, queryClient } = createPopupTestWrapper();
-    queryClient.setQueryData(cardQueryKeys.reviewQueue, cards);
+    setPopupLearningCardsQueryData(queryClient, cards);
     return render(<StatsBar />, { wrapper });
   };
 
