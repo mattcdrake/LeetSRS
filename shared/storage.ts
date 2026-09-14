@@ -10,14 +10,25 @@ import {
   learningDocumentVersionSchema,
 } from '@/shared/models';
 
-export async function readLearningDocument(waitForInitialization = false): Promise<LearningDocument> {
+let backgroundReadiness: Promise<void> | undefined;
+
+// Background readers share startup's promise; other runtimes request it through RPC.
+export function setBackgroundStorageReadiness(readiness: Promise<void>): void {
+  backgroundReadiness = readiness;
+}
+
+function waitForStorageInitialization(): Promise<void> {
+  return backgroundReadiness ?? sendMessage('waitForInitialization');
+}
+
+export async function readLearningDocument(): Promise<LearningDocument> {
   let document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
   const version = learningDocumentVersionSchema.safeParse(document);
   const needsInitialization =
     document == null || (version.success && version.data.schemaVersion < LEARNING_DOCUMENT_VERSION);
 
-  if (waitForInitialization && needsInitialization) {
-    await sendMessage('waitForInitialization');
+  if (needsInitialization) {
+    await waitForStorageInitialization();
     document = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
   }
 
@@ -81,9 +92,13 @@ export function removeSyncStatus(): Promise<void> {
 }
 
 export async function readGistConnection(): Promise<GistSyncConfig> {
-  return gistSyncConfigSchema.parse(
-    (await storage.getItem<unknown>(STORAGE_KEYS.gistConnection)) ?? { pat: '', gistId: null, enabled: false }
-  );
+  let connection = await storage.getItem<unknown>(STORAGE_KEYS.gistConnection);
+  if (connection == null) {
+    await waitForStorageInitialization();
+    connection = await storage.getItem<unknown>(STORAGE_KEYS.gistConnection);
+  }
+
+  return gistSyncConfigSchema.parse(connection ?? { pat: '', gistId: null, enabled: false });
 }
 
 export function writeGistConnection(config: GistSyncConfig): Promise<void> {

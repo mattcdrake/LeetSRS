@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
+import { sendMessage } from '@/shared/messages';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import {
   readGistConnection,
@@ -11,6 +12,12 @@ import {
 } from '@/shared/storage';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+
+vi.mock('@/shared/messages', () => ({
+  sendMessage: vi.fn(() => {
+    throw new Error('Startup must not request readiness');
+  }),
+}));
 
 describe('learning document startup', () => {
   beforeEach(() => fakeBrowser.reset());
@@ -30,6 +37,7 @@ describe('learning document startup', () => {
     );
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
+    expect(sendMessage).not.toHaveBeenCalled();
   });
 
   it.each([undefined, 3, 5])('preserves an installation at version %s', async (version) => {
@@ -171,7 +179,7 @@ describe('learning document startup', () => {
 
     await expect(initializeLearningDocument()).rejects.toThrow('Storage unavailable');
 
-    await expect(readLearningDocument()).rejects.toThrow('Learning document is not initialized');
+    expect(await storage.getItem('local:leetsrs:learningDocument')).toBeNull();
     expect(await fakeBrowser.storage.local.get()).toEqual(local);
     expect(await fakeBrowser.storage.sync.get()).toEqual({
       ...sync,

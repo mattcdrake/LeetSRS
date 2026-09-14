@@ -58,8 +58,10 @@ describe('registered background execution', () => {
     await dispatch('resetAllData');
 
     const empty = buildLearningDocument();
+    const rpc = vi.spyOn(browser.runtime, 'sendMessage');
     expect(await readLearningDocument()).toEqual(empty);
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(rpc).not.toHaveBeenCalled();
     expect(await dispatch('getGistSyncStatus')).toEqual({
       lastSyncTime: null,
       lastSyncDirection: null,
