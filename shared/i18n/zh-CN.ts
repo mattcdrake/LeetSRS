@@ -79,7 +79,6 @@ const zhCN: Translations = {
   statsBar: {
     review: '复习',
     new: '新卡片',
-    learn: '学习',
   },
 
   actionsSection: {

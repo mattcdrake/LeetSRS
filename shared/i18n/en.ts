@@ -86,7 +86,6 @@ const en = {
   statsBar: {
     review: 'review',
     new: 'new',
-    learn: 'learn',
   },
 
   // Home view - Actions section

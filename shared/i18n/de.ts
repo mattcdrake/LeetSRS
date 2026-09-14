@@ -73,7 +73,6 @@ const de: Translations = {
   statsBar: {
     review: 'Fällig',
     new: 'Neu',
-    learn: 'Lernen',
   },
   actionsSection: {
     title: 'Aktionen',

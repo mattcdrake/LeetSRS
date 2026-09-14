@@ -79,7 +79,6 @@ const hi: Translations = {
   statsBar: {
     review: 'रिव्यु',
     new: 'नया',
-    learn: 'लर्न',
   },
   // Home view - Actions section
   actionsSection: {
