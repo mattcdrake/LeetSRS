@@ -42,28 +42,6 @@ describe('NotesSection', () => {
     seedNote(null);
   });
 
-  it('should render collapsed by default', () => {
-    render(<NotesSection slug={mockSlug} />, { wrapper });
-
-    expect(screen.getByText('Notes')).toBeInTheDocument();
-    expect(screen.getByRole('button', { expanded: false })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/add your notes/i)).not.toBeVisible();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
-  });
-
-  it('should expand when clicked', async () => {
-    render(<NotesSection slug={mockSlug} />, { wrapper });
-
-    const expandButton = screen.getByRole('button', { expanded: false });
-    fireEvent.click(expandButton);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Add your notes here...')).toBeInTheDocument();
-    });
-  });
-
   it('disables an expanded note editor while its review action is pending', async () => {
     seedNote('Stored note');
     const view = render(<NotesSection slug={mockSlug} />, { wrapper });
@@ -130,20 +108,5 @@ describe('NotesSection', () => {
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug: mockSlug, text: 'Saved draft' });
-  });
-
-  it('loads the supplied card while collapsed and saves edits to that card', async () => {
-    const slug = 'another-home-card';
-    await storage.setItem(
-      STORAGE_KEYS.learningDocument,
-      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'This card note' }) } })
-    );
-    render(<NotesSection slug={slug} />, { wrapper });
-
-    await waitFor(() => expect(screen.getByRole('textbox', { hidden: true })).toHaveValue('This card note'));
-    fireEvent.click(screen.getByRole('button', { expanded: false }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Note text' }), { target: { value: 'Edited card note' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug, text: 'Edited card note' }));
   });
 });

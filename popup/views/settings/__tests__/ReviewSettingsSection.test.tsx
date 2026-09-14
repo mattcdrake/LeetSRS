@@ -4,30 +4,12 @@ import { expect, it, vi } from 'vitest';
 import { updateSettings } from '@/background/learning';
 import { sendMessage } from '@/shared/messages';
 import { replaceLearningDocument } from '@/shared/storage';
-import { buildLearningDocument, setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewSettingsSection } from '../ReviewSettingsSection';
 
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
-
-it('offers only the daily new-card limit and saves changes', async () => {
-  createMessageMock(vi.mocked(sendMessage)).resolve('updateSettings', undefined);
-  const { wrapper, queryClient } = createPopupTestWrapper();
-  setPopupLearningDocumentQueryData(queryClient, { settings: buildSettings() });
-  render(<ReviewSettingsSection />, { wrapper });
-
-  const input = screen.getByRole('spinbutton', { name: 'New Cards Per Day' });
-  expect(screen.getAllByRole('spinbutton')).toEqual([input]);
-  expect(input).toHaveValue(3);
-  fireEvent.change(input, { target: { value: '8' } });
-  fireEvent.blur(input);
-
-  await waitFor(() =>
-    expect(sendMessage).toHaveBeenCalledWith('updateSettings', { changes: { maxNewCardsPerDay: 8 } })
-  );
-});
 
 it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
   const document = buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } });

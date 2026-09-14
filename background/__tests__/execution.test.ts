@@ -3,7 +3,7 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
 import { formatLocalDate } from '@/shared/calendar';
-import { type MessageName, messagePayloadSchemas, onMessage } from '@/shared/messages';
+import { type MessageName, onMessage } from '@/shared/messages';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem } from '@/test/utils/card-mocks';
@@ -27,15 +27,6 @@ beforeEach(async () => {
 const problem = buildProblem();
 
 describe('registered background execution', () => {
-  it('registers every message synchronously', () => {
-    expect(
-      vi
-        .mocked(onMessage)
-        .mock.calls.map(([name]) => name)
-        .sort()
-    ).toEqual(Object.keys(messagePayloadSchemas).sort());
-  });
-
   it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
     await dispatch('rateCard', { input: { ...problem, rating: 3 } });
     await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });

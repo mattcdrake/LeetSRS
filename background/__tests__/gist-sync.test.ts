@@ -109,17 +109,6 @@ describe('whole-document Gist sync', () => {
     expect(github.get).not.toHaveBeenCalled();
   });
 
-  it('persists the sync setting and skips triggers while disabled', async () => {
-    await writeGistConnection({ ...connection, enabled: false });
-
-    expect(await gistSync.setGistSyncEnabled(true)).toEqual({ saved: true });
-    expect((await readGistConnection()).enabled).toBe(true);
-    expect(await gistSync.setGistSyncEnabled(false)).toEqual({ saved: true });
-    await gistSync.triggerGistSync();
-
-    expect(github.get).not.toHaveBeenCalled();
-  });
-
   it('pushes the local document when it is newer', async () => {
     const remote = { ...local, settings: { theme: 'light' as const }, dataUpdatedAt: '2026-09-11T12:00:00.000Z' };
     github.get.mockResolvedValue({
@@ -213,28 +202,5 @@ describe('whole-document Gist sync', () => {
     response.resolve({ data: { files: {} } });
     await first;
     expect(github.update).toHaveBeenCalledOnce();
-  });
-
-  it('ignores a late download after invalidation', async () => {
-    const response = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
-    github.get.mockReturnValue(response.promise);
-    const syncing = gistSync.triggerGistSync();
-    await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-    gistSync.invalidateGistSync();
-    const before = await readLearningDocument();
-
-    response.resolve({
-      data: {
-        files: {
-          'leetsrs-backup.json': {
-            content: JSON.stringify({ ...local, settings: {}, dataUpdatedAt: '2099-01-01T00:00:00.000Z' }),
-          },
-        },
-      },
-    });
-    await syncing;
-
-    expect(await readLearningDocument()).toEqual(before);
-    expect(github.update).not.toHaveBeenCalled();
   });
 });

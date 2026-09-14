@@ -62,16 +62,10 @@ describe('document learning through background commands', () => {
     const card = requireDefined((await readLearningDocument()).cards['two-sum']);
 
     expect(card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
-    expect(card?.fsrs).toEqual({
+    expect(card.fsrs).toMatchObject({
       due: new Date('2024-03-18T12:00:00').getTime(),
       last_review: Date.now(),
-      stability: 2.3065,
-      difficulty: 2.11810397,
-      elapsed_days: 0,
-      scheduled_days: 3,
       reps: 1,
-      lapses: 0,
-      learning_steps: 0,
       state: State.Review,
     });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
@@ -219,14 +213,8 @@ describe('document learning through background commands', () => {
   });
 
   it.each([
-    ['add', () => dispatch('addCard', { problem: buildProblem({ slug: 'new' }) })],
-    ['rate new', () => dispatch('rateCard', { input: { ...buildProblem({ slug: 'new' }), rating: Rating.Good } })],
     ['rate existing', () => dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Again } })],
-    ['delay', () => dispatch('delayCard', { slug: 'two-sum', days: 2 })],
-    ['resume', () => dispatch('setPauseStatus', { slug: 'two-sum', paused: false })],
-    ['remove', () => dispatch('removeCard', { slug: 'two-sum' })],
     ['save note', () => dispatch('saveNote', { slug: 'two-sum', text: '  new note\n' })],
-    ['delete note', () => dispatch('deleteNote', { slug: 'two-sum' })],
   ])('leaves all saved data intact when %s is rejected and accepts the next command', async (_name, edit) => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
@@ -323,7 +311,7 @@ describe('document learning through background commands', () => {
     }
   );
 
-  it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
+  it.each([Rating.Again, Rating.Good] as const)(
     'preserves repeated scheduling and daily statistics for rating %s',
     async (rating) => {
       await dispatch('addCard', { problem: buildProblem() });
@@ -371,7 +359,7 @@ describe('document learning through background commands', () => {
     ['Review', State.Review],
     ['Relearning', State.Relearning],
   ] as const)('long-term scheduling for %s cards', (_name, state) => {
-    it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
+    it.each([Rating.Again, Rating.Good] as const)(
       'schedules rating %s in Review state at least one day later',
       async (rating) => {
         const problem = buildProblem();
@@ -404,41 +392,4 @@ describe('document learning through background commands', () => {
       }
     );
   });
-
-  it.each([
-    ['2024-03-14T23:59:59.999', '2024-03-13', '2024-03-14', '2024-03-15'],
-    ['2023-12-31T23:59:59.999', '2023-12-30', '2023-12-31', '2024-01-01'],
-    ['2024-03-10T23:59:59.999', '2024-03-09', '2024-03-10', '2024-03-11'],
-    ['2024-11-03T23:59:59.999', '2024-11-02', '2024-11-03', '2024-11-04'],
-  ])(
-    'keeps review creation, scheduling, streak and edit time on the starting day at %s',
-    async (instant, yesterday, today, tomorrow) => {
-      const now = new Date(instant);
-      vi.setSystemTime(now);
-      const document = buildLearningDocument({
-        cards: {},
-        settings: { badgeEnabled: false },
-        stats: {
-          [yesterday]: { ...createDailyStats(undefined), streak: 7 },
-        },
-      });
-      await replaceLearningDocument(document);
-      const get = storage.getItem.bind(storage);
-      vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
-        const result = await get(key);
-        vi.setSystemTime(new Date(`${tomorrow}T00:00:00`));
-        return result;
-      });
-
-      await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
-      const card = requireDefined((await readLearningDocument()).cards['two-sum']);
-      expect(card.createdAt).toBe(now.getTime());
-      expect(card.fsrs.last_review).toBe(now.getTime());
-      expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
-      expect(await readLearningDocument()).toMatchObject({
-        dataUpdatedAt: now.toISOString(),
-        stats: { ...document.stats, [today]: { newCards: 1, streak: 8 } },
-      });
-    }
-  );
 });

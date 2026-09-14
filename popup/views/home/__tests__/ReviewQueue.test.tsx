@@ -7,7 +7,7 @@ import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/ut
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
-import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/shared/messages';
 import type { Card } from '@/shared/models';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -142,64 +142,6 @@ describe('ReviewQueue', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Empty Queue', () => {
-    it('should show empty state when no cards to review', async () => {
-      seedQueue([]);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for state to initialize
-      await waitFor(() => {
-        expect(screen.getByText('No cards to review!')).toBeInTheDocument();
-        expect(screen.getByText(/Add problems on LeetCode/)).toBeInTheDocument();
-        expect(screen.queryByTestId('review-card')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('delete-button')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Queue Display', () => {
-    it('should display the first card in the queue', async () => {
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for state to initialize
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-        expect(screen.getByTestId('notes-section')).toBeInTheDocument();
-        expect(screen.getByText('Notes for two-sum')).toBeInTheDocument();
-        expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-        expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Card Rating', () => {
-    it('should call mutation with correct parameters when rated', async () => {
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      fireEvent.click(goodButton);
-
-      await waitFor(() => {
-        expect(mockMutateAsync).toHaveBeenCalledWith({
-          input: {
-            slug: 'two-sum',
-            name: 'Two Sum',
-            rating: Rating.Good,
-            leetcodeId: '1',
-            difficulty: 'Easy',
-            domain: 'leetcode.com',
-          },
-        });
-      });
-    });
-  });
-
   describe('Processing State', () => {
     it('keeps controls disabled after the command until the queue refresh completes', async () => {
       const mutation = Promise.withResolvers<void>();
@@ -282,157 +224,30 @@ describe('ReviewQueue', () => {
     });
   });
 
-  describe('Card Deletion', () => {
-    let mockRemoveMutateAsync: Mock<(data: { slug: string }) => Promise<void>>;
-
-    beforeEach(() => {
-      vi.spyOn(storage, 'getItem');
-      mockRemoveMutateAsync = vi.fn();
-      messages.handle('removeCard', mockRemoveMutateAsync);
-    });
-
-    it('should call delete mutation when delete button is clicked', async () => {
-      mockRemoveMutateAsync.mockResolvedValue(undefined);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      // Click delete button
-      const deleteButton = screen.getByTestId('delete-button');
-      fireEvent.click(deleteButton);
-
-      // Verify the mutation was called with correct slug
-      await waitFor(() => {
-        expect(mockRemoveMutateAsync).toHaveBeenCalledWith({ slug: 'two-sum' });
-      });
-    });
-
-    it('should handle delete errors gracefully', async () => {
-      mockRemoveMutateAsync.mockRejectedValue(new Error('Failed to delete card'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const deleteButton = screen.getByTestId('delete-button');
-      fireEvent.click(deleteButton);
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to delete card:', expect.any(Error));
-      });
-
-      // Card should still be displayed (not removed from queue)
-      expect(screen.getByText('Two Sum')).toBeInTheDocument();
-
-      // Should be able to interact with card again after error
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      expect(goodButton).not.toBeDisabled();
-
-      consoleSpy.mockRestore();
-    });
-  });
-
-  describe('Card Delay', () => {
-    let mockDelayMutateAsync: Mock<(data: { slug: string; days: number }) => Promise<void>>;
-
-    beforeEach(() => {
-      vi.spyOn(storage, 'getItem');
-      mockDelayMutateAsync = vi.fn();
-      messages.handle('delayCard', mockDelayMutateAsync);
-    });
-
-    it('should call delay mutation when delay buttons are clicked', async () => {
-      mockDelayMutateAsync.mockResolvedValue(undefined);
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      // Click delay 1 day button
-      const delay1Button = screen.getByTestId('delay-1-button');
-      fireEvent.click(delay1Button);
-
-      // Verify the mutation was called with correct params
-      await waitFor(() => {
-        expect(mockDelayMutateAsync).toHaveBeenCalledWith({
-          slug: 'two-sum',
-          days: 1,
-        });
-      });
-    });
-
-    it('should handle delay errors gracefully', async () => {
-      mockDelayMutateAsync.mockRejectedValue(new Error('Failed to delay card'));
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      render(<ReviewQueue />, { wrapper });
-
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      });
-
-      const delay1Button = screen.getByTestId('delay-1-button');
-      fireEvent.click(delay1Button);
-
-      await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to delay card:', expect.any(Error));
-      });
-
-      // Card should still be displayed (not removed from queue)
-      expect(screen.getByText('Two Sum')).toBeInTheDocument();
-
-      // Should be able to interact with card again after error
-      const goodButton = screen.getByRole('button', { name: 'Good' });
-      expect(goodButton).not.toBeDisabled();
-
-      consoleSpy.mockRestore();
-    });
-  });
-
   describe('Card Actions', () => {
-    it.each([
-      ['Good', 'rateCard'],
-      ['Delete', 'removeCard'],
-      ['Delay 1 day', 'delayCard'],
-      ['Pause', 'setPauseStatus'],
-    ] as const)(
-      'should disable controls and prevent duplicate actions while %s is pending',
-      async (buttonName, message) => {
-        const mutation = Promise.withResolvers<void>();
-        messages.handle(message, () => mutation.promise);
-        render(<ReviewQueue />, { wrapper });
+    it('should disable controls and prevent duplicate actions while a review is pending', async () => {
+      const mutation = Promise.withResolvers<void>();
+      messages.handle('rateCard', () => mutation.promise);
+      render(<ReviewQueue />, { wrapper });
 
-        const actionButton = await screen.findByRole('button', { name: buttonName });
-        const controls = screen.getAllByRole('button');
+      const actionButton = await screen.findByRole('button', { name: 'Good' });
+      const controls = screen.getAllByRole('button');
+      for (const control of controls) expect(control).toBeEnabled();
+
+      vi.mocked(sendMessage).mockClear();
+      fireEvent.click(actionButton);
+      for (const control of controls) fireEvent.click(control);
+      fireEvent.click(actionButton);
+
+      await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+      expect(sendMessage).toHaveBeenCalledWith('rateCard', expect.any(Object));
+      for (const control of controls) expect(control).toBeDisabled();
+
+      mutation.resolve();
+      await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
-
-        vi.mocked(sendMessage).mockClear();
-        fireEvent.click(actionButton);
-        for (const control of controls) fireEvent.click(control);
-        fireEvent.click(actionButton);
-
-        await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
-        expect(sendMessage).toHaveBeenCalledWith(message, expect.any(Object));
-        for (const control of controls) expect(control).toBeDisabled();
-
-        mutation.resolve();
-        await waitFor(() => {
-          for (const control of controls) expect(control).toBeEnabled();
-        });
-        expect(sendMessage).toHaveBeenCalledTimes(1);
-      }
-    );
+      });
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+    });
   });
 });

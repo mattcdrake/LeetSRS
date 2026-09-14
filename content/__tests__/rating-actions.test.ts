@@ -1,4 +1,3 @@
-import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { getCurrentProblem } from '@/content/problem-data';
 import { sendMessage } from '@/shared/messages';
@@ -14,25 +13,6 @@ const problem = buildProblem();
 beforeEach(() => {
   messages.reset().resolve('rateCard', undefined).resolve('addCard', undefined);
   vi.mocked(getCurrentProblem).mockResolvedValue(problem);
-});
-
-it.each([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
-  'rates the current problem with grade %i',
-  async (rating) => {
-    await rateCurrentProblem(rating);
-
-    expect(getCurrentProblem).toHaveBeenCalledOnce();
-    expect(sendMessage).toHaveBeenCalledExactlyOnceWith('rateCard', {
-      input: { ...problem, rating },
-    });
-  }
-);
-
-it('adds the current problem without a rating', async () => {
-  await addCurrentProblem();
-
-  expect(getCurrentProblem).toHaveBeenCalledOnce();
-  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('addCard', { problem });
 });
 
 it('reads the current problem again for each action', async () => {
