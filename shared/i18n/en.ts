@@ -25,7 +25,6 @@ const en = {
   nav: {
     home: 'Home',
     cards: 'Cards',
-    stats: 'Stats',
     settings: 'Settings',
   },
 
@@ -129,11 +128,6 @@ const en = {
     due: 'Due',
     last: 'Last',
     added: 'Added',
-  },
-
-  // Stats view
-  statsView: {
-    title: 'Statistics',
   },
 
   // Settings view

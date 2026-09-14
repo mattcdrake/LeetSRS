@@ -24,7 +24,6 @@ const zhCN: Translations = {
   nav: {
     home: '首页',
     cards: '卡片',
-    stats: '统计',
     settings: '设置',
   },
 
@@ -118,10 +117,6 @@ const zhCN: Translations = {
     due: '到期',
     last: '上次',
     added: '添加时间',
-  },
-
-  statsView: {
-    title: '统计',
   },
 
   settings: {

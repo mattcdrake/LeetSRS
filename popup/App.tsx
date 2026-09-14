@@ -5,7 +5,6 @@ import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardView } from './views/card/CardView';
 import { HomeView } from './views/home/HomeView';
 import { SettingsView } from './views/settings/SettingsView';
-import { StatsView } from './views/stats/StatsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
@@ -27,7 +26,6 @@ function App() {
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,
     card: <CardView />,
-    stats: <StatsView />,
     settings: <SettingsView />,
   };
 

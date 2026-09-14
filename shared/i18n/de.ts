@@ -24,7 +24,6 @@ const de: Translations = {
   nav: {
     home: 'Start',
     cards: 'Karten',
-    stats: 'Statistik',
     settings: 'Einstellungen',
   },
   actions: {
@@ -108,9 +107,6 @@ const de: Translations = {
     due: 'Fällig',
     last: 'Zuletzt',
     added: 'Hinzugefügt',
-  },
-  statsView: {
-    title: 'Statistik',
   },
   settings: {
     title: 'Einstellungen',

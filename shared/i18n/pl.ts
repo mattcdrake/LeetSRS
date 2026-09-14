@@ -26,7 +26,6 @@ const pl: Translations = {
   nav: {
     home: 'Strona główna',
     cards: 'Karty',
-    stats: 'Statystyki',
     settings: 'Ustawienia',
   },
 
@@ -130,11 +129,6 @@ const pl: Translations = {
     due: 'Termin',
     last: 'Ostatnia',
     added: 'Dodano',
-  },
-
-  // Stats view
-  statsView: {
-    title: 'Statystyki',
   },
 
   // Settings view

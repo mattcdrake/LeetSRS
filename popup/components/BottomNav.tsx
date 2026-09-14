@@ -1,9 +1,9 @@
 import { ToggleButton, ToggleButtonGroup } from 'react-aria-components';
-import { FaChartSimple, FaCode, FaGear, FaHouseChimney } from 'react-icons/fa6';
+import { FaCode, FaGear, FaHouseChimney } from 'react-icons/fa6';
 import { useReviewQueueQuery } from '@/popup/queries/cards';
 import { useI18n } from '../contexts/I18nContext';
 
-export type ViewId = 'home' | 'card' | 'stats' | 'settings';
+export type ViewId = 'home' | 'card' | 'settings';
 
 interface BottomNavProps {
   activeView: ViewId;
@@ -18,7 +18,6 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
   const navItems: Array<{ id: ViewId; label: string; Icon: typeof FaHouseChimney }> = [
     { id: 'home', label: t.nav.home, Icon: FaHouseChimney },
     { id: 'card', label: t.nav.cards, Icon: FaCode },
-    { id: 'stats', label: t.nav.stats, Icon: FaChartSimple },
     { id: 'settings', label: t.nav.settings, Icon: FaGear },
   ];
 

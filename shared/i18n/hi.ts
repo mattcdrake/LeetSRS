@@ -24,7 +24,6 @@ const hi: Translations = {
   nav: {
     home: 'होम',
     cards: 'कार्ड्स',
-    stats: 'स्टैट्स',
     settings: 'सेटिंग्स',
   },
   // Common actions
@@ -118,10 +117,6 @@ const hi: Translations = {
     due: 'ड्यू',
     last: 'लास्ट',
     added: 'जोड़ा गया',
-  },
-  // Stats view
-  statsView: {
-    title: 'स्टैट्स',
   },
   // Settings view
   settings: {
