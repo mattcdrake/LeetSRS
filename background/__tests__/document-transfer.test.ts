@@ -109,6 +109,8 @@ describe('document transfers through background commands', () => {
     expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
     expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
     await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
+    await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
+    expect(github.get).toHaveBeenCalledOnce();
     expect(await readLearningDocument()).toEqual(before);
   });
 });

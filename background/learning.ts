@@ -3,15 +3,10 @@ import { recordReview } from '@/background/statistics';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/models';
 import { findCard, type LearningDocument } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
-import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
-import { triggerGistSync } from './gist-sync';
+import { readLearningDocument } from '@/shared/storage';
+import { saveEdit } from './persistence';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short_term: false }));
-
-async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<void> {
-  await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
-  void triggerGistSync();
-}
 
 function requireCard(document: LearningDocument, slug: string): Card {
   const card = findCard(document, slug);
@@ -42,7 +37,7 @@ export async function addCard(problem: ProblemDescriptor): Promise<void> {
 
   document.cards[problem.slug] = createCard(problem, now);
   requireCard(document, problem.slug);
-  await saveLocalLearningDocument(document, now);
+  await saveEdit(document, now);
 }
 
 export async function removeCard(slug: string): Promise<void> {
@@ -50,7 +45,7 @@ export async function removeCard(slug: string): Promise<void> {
   const document = await readLearningDocument();
   if (!findCard(document, slug)) return;
   delete document.cards[slug];
-  await saveLocalLearningDocument(document, now);
+  await saveEdit(document, now);
 }
 
 export async function delayCard(slug: string, days: number): Promise<void> {
@@ -59,7 +54,7 @@ export async function delayCard(slug: string, days: number): Promise<void> {
   const card = requireCard(document, slug);
   if (days === 0) return;
   card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
-  await saveLocalLearningDocument(document, now);
+  await saveEdit(document, now);
 }
 
 export async function setPauseStatus(slug: string, paused: boolean): Promise<void> {
@@ -68,7 +63,7 @@ export async function setPauseStatus(slug: string, paused: boolean): Promise<voi
   const card = requireCard(document, slug);
   if (card.paused === paused) return;
   card.paused = paused;
-  await saveLocalLearningDocument(document, now);
+  await saveEdit(document, now);
 }
 
 export async function rateCard(input: RateCardInput): Promise<void> {
@@ -88,7 +83,7 @@ export async function rateCard(input: RateCardInput): Promise<void> {
   document.stats = recordReview(document.stats, now, rating, isNewCard);
 
   requireCard(document, card.slug);
-  await saveLocalLearningDocument(document, now);
+  await saveEdit(document, now);
 }
 
 export async function saveNote(slug: string, text: string): Promise<void> {
@@ -102,7 +97,7 @@ export async function saveNote(slug: string, text: string): Promise<void> {
   } else {
     card.note = text;
   }
-  await saveLocalLearningDocument(document, now);
+  await saveEdit(document, now);
 }
 
 export async function updateSettings(changes: SettingsUpdate): Promise<void> {
@@ -113,7 +108,7 @@ export async function updateSettings(changes: SettingsUpdate): Promise<void> {
   const now = new Date();
   const document = await readLearningDocument();
   if (Object.entries(changes).every(([key, value]) => document.settings[key as keyof SettingsUpdate] === value)) return;
-  await saveLocalLearningDocument({ ...document, settings: { ...document.settings, ...changes } }, now);
+  await saveEdit({ ...document, settings: { ...document.settings, ...changes } }, now);
 }
 
 export function calculateDelayedDueDate(due: number, days: number): number {

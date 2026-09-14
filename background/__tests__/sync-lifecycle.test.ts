@@ -1,5 +1,6 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { sync } from '@/background/persistence';
 import { onMessage } from '@/shared/messages';
 import { readLearningDocument } from '@/shared/storage';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
@@ -113,6 +114,42 @@ it('ignores a download that finishes after an import', async () => {
 
   await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
   expect(await readLearningDocument()).toEqual(imported);
+});
+
+it.each(['reset', 'disable', 'external connection'] as const)('ignores a pending download after %s', async (change) => {
+  const download = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
+  github.get.mockReturnValueOnce(download.promise);
+  const pending = sync();
+  await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
+
+  if (change === 'reset') {
+    await dispatch('resetAllData');
+  } else if (change === 'disable') {
+    await dispatch('setGistSyncEnabled', { enabled: false });
+  } else {
+    await fakeBrowser.storage.sync.set({
+      'leetsrs:gistConnection': { pat: 'other', gistId: 'other-gist', enabled: true },
+    });
+    await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'other-gist' }));
+    await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
+  }
+  const before = await readLearningDocument();
+  const status = await dispatch('getGistSyncStatus');
+  const uploads = github.update.mock.calls.length;
+  download.resolve({
+    data: {
+      files: {
+        'leetsrs-backup.json': {
+          content: JSON.stringify(buildLearningDocument({ settings: { theme: 'light' }, dataUpdatedAt: '2099-01-01' })),
+        },
+      },
+    },
+  });
+  await pending;
+
+  expect(await readLearningDocument()).toEqual(before);
+  expect(await dispatch('getGistSyncStatus')).toEqual(status);
+  expect(github.update).toHaveBeenCalledTimes(uploads);
 });
 
 it('retries a failed save from the minute alarm', async () => {

@@ -1,5 +1,7 @@
 import { Octokit } from 'octokit';
+import { storage } from '#imports';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
+import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
 import { translations } from '@/shared/i18n/index';
 import type {
   GistConnectionResult,
@@ -8,13 +10,16 @@ import type {
   GistSyncErrorCode,
   GistSyncStatus,
 } from '@/shared/models';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { detectBrowserLanguage } from '@/shared/settings';
 import {
   readGistConnection,
   readLearningDocument,
   readSyncStatus,
+  removeGistConnection,
   removeSyncStatus,
   replaceLearningDocument,
+  STORAGE_KEYS,
   writeGistConnection,
   writeSyncStatus,
 } from '@/shared/storage';
@@ -25,29 +30,74 @@ let activeSync: Promise<void> | undefined;
 let generation = 0;
 let lastError: GistSyncErrorCode | null = null;
 
+// Remember observed values so our own storage notification and completed operation
+// share a sync attempt, even when the notification arrives after the write resolves.
+let connectionKey: string | undefined;
+
+function observeConnection(connection: GistSyncConfig | null): boolean {
+  const key = JSON.stringify([connection?.pat, connection?.gistId, connection?.enabled]);
+  if (key === connectionKey) return false;
+  connectionKey = key;
+  invalidateGistSync();
+  return true;
+}
+
+export function installPersistence(ready: Promise<void>): void {
+  storage.watch<GistSyncConfig>(STORAGE_KEYS.gistConnection, (connection) => {
+    if (observeConnection(connection)) {
+      void ready.then(sync, () => {});
+    }
+  });
+}
+
+async function saveConnection(connection: GistSyncConfig): Promise<void> {
+  await writeGistConnection(connection);
+  observeConnection(connection);
+  void sync();
+}
+
+export async function saveEdit(document: LearningDocument, editedAt: Date): Promise<void> {
+  await replaceLearningDocument({ ...document, dataUpdatedAt: editedAt.toISOString() });
+  void sync();
+}
+
+export async function restoreBackup(json: string): Promise<void> {
+  const document = parseLearningDocumentBackup(json);
+  invalidateGistSync();
+  await replaceLearningDocument(document);
+}
+
+export async function resetAllData(): Promise<void> {
+  invalidateGistSync();
+  await replaceLearningDocument({ schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {}, settings: {} });
+  await removeGistConnection();
+  await resetGistSyncStatus();
+  await removeLegacyLearningData();
+}
+
 // Sync is deliberately just whole-document last-write-wins. Startup, local saves,
 // enabling, and the minute alarm all call the same function; overlapping calls share
 // one promise. A generation change stops document sync started before a reset, import,
 // or connection change from applying a stale result.
 
-export function invalidateGistSync(): void {
+function invalidateGistSync(): void {
   generation++;
   activeSync = undefined;
 }
 
-export function triggerGistSync(): Promise<void> {
+export function sync(): Promise<void> {
   if (activeSync) {
     return activeSync;
   }
 
-  const sync = runSync(generation);
-  activeSync = sync;
-  void sync.finally(() => {
-    if (activeSync === sync) {
+  const attempt = runSync(generation);
+  activeSync = attempt;
+  void attempt.finally(() => {
+    if (activeSync === attempt) {
       activeSync = undefined;
     }
   });
-  return sync;
+  return attempt;
 }
 
 async function runSync(startGeneration: number): Promise<void> {
@@ -100,7 +150,7 @@ function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: s
   return config.enabled && !!config.pat.trim() && !!config.gistId?.trim();
 }
 
-export async function getGistSyncStatus(): Promise<GistSyncStatus> {
+export async function getSyncStatus(): Promise<GistSyncStatus> {
   const status = await readSyncStatus();
   return {
     ...status,
@@ -109,7 +159,7 @@ export async function getGistSyncStatus(): Promise<GistSyncStatus> {
   };
 }
 
-export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
+export async function connectGist(setup: GistSetup): Promise<GistConnectionResult> {
   try {
     const github = new Octokit({ auth: setup.pat });
     let gistId: string;
@@ -135,14 +185,14 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
     }
 
     invalidateGistSync();
-    await writeGistConnection({ pat: setup.pat, gistId, enabled: true });
+    await saveConnection({ pat: setup.pat, gistId, enabled: true });
     return { saved: true };
   } catch (error) {
     return { saved: false, error: syncErrorCode(error, 'connectionSaveFailed') };
   }
 }
 
-export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
+export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
   try {
     const config = await readGistConnection();
     if (enabled && !config.pat.trim()) {
@@ -153,14 +203,14 @@ export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnecti
     }
 
     invalidateGistSync();
-    await writeGistConnection({ ...config, enabled });
+    await saveConnection({ ...config, enabled });
     return { saved: true };
   } catch (error) {
     return { saved: false, error: syncErrorCode(error, 'connectionSaveFailed') };
   }
 }
 
-export async function resetGistSyncStatus(): Promise<void> {
+async function resetGistSyncStatus(): Promise<void> {
   await removeSyncStatus();
   lastError = null;
 }
