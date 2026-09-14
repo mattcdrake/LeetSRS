@@ -136,13 +136,6 @@ const en = {
     title: 'Statistics',
   },
 
-  // Charts
-  charts: {
-    reviewHistory: 'Last 30 Days Review History',
-    upcomingReviews: 'Upcoming Reviews (Next 14 Days)',
-    cardsDue: 'Cards Due',
-  },
-
   // Settings view
   settings: {
     title: 'Settings',

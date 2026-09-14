@@ -4,6 +4,7 @@ import {
   type LearningDocument,
   learningDocumentSchema,
   learningDocumentVersionSchema,
+  reviewActivitySchema,
 } from '@/shared/models';
 
 const FIRST_DOCUMENT_VERSION = 6;
@@ -68,9 +69,19 @@ export function convertLearningDocument(input: unknown): LearningDocument {
     ...data,
     schemaVersion: LEARNING_DOCUMENT_VERSION,
     cards: convertedCards,
-    stats,
+    reviewActivity: convertStatistics(stats),
     settings,
   });
+}
+
+function convertStatistics(stats: Record<string, unknown>) {
+  let latest: LearningDocument['reviewActivity'] = null;
+  for (const [date, value] of Object.entries(stats)) {
+    const counts = reviewActivitySchema.omit({ date: true }).parse(value);
+    const activity = reviewActivitySchema.parse({ ...counts, date });
+    if (!latest || activity.date > latest.date) latest = activity;
+  }
+  return latest;
 }
 
 export function parseLearningDocumentBackup(json: string): LearningDocument {

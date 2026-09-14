@@ -123,12 +123,6 @@ const hi: Translations = {
   statsView: {
     title: 'स्टैट्स',
   },
-  // Charts
-  charts: {
-    reviewHistory: 'पिछले 30 दिनों की रिव्यु हिस्ट्री',
-    upcomingReviews: 'आगामी रिव्युज़ (अगले 14 दिन)',
-    cardsDue: 'ड्यू कार्ड्स',
-  },
   // Settings view
   settings: {
     title: 'सेटिंग्स',

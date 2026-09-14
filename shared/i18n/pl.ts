@@ -137,13 +137,6 @@ const pl: Translations = {
     title: 'Statystyki',
   },
 
-  // Charts
-  charts: {
-    reviewHistory: 'Historia powtórek z ostatnich 30 dni',
-    upcomingReviews: 'Nadchodzące powtórki (następne 14 dni)',
-    cardsDue: 'Karty do powtórki',
-  },
-
   // Settings view
   settings: {
     title: 'Ustawienia',

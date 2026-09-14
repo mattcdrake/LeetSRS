@@ -1,9 +1,9 @@
 import { FaFireFlameCurved } from 'react-icons/fa6';
-import { useTodayStatsQuery } from '@/popup/queries/stats';
+import { useTodayReviewActivityQuery } from '@/popup/queries/review-activity';
 
 export function StreakCounter() {
-  const { data: todayStats } = useTodayStatsQuery();
-  const streak = todayStats?.streak ?? 0;
+  const { data: activity } = useTodayReviewActivityQuery();
+  const streak = activity?.streak ?? 0;
 
   if (streak === 0) return null;
 

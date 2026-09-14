@@ -112,11 +112,6 @@ const de: Translations = {
   statsView: {
     title: 'Statistik',
   },
-  charts: {
-    reviewHistory: 'Wiederholungsverlauf der letzten 30 Tage',
-    upcomingReviews: 'Anstehende Wiederholungen (nächste 14 Tage)',
-    cardsDue: 'Fällige Karten',
-  },
   settings: {
     title: 'Einstellungen',
     language: {

@@ -59,28 +59,23 @@ export const rateCardInputSchema = problemDescriptorSchema.extend({ rating: rati
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
 export type FsrsCard = z.infer<typeof fsrsCardSchema>;
 export type Card = z.infer<typeof cardSchema>;
-export const dailyStatsSchema = z.object({
-  newCards: count,
-  streak: count,
-  gradeBreakdown: z.object({
-    [Rating.Again]: count,
-    [Rating.Hard]: count,
-    [Rating.Good]: count,
-    [Rating.Easy]: count,
-  }),
-});
-export type DailyStats = z.infer<typeof dailyStatsSchema>;
-
-export const LEARNING_DOCUMENT_VERSION = 8;
+export const LEARNING_DOCUMENT_VERSION = 9;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
-const statisticsDateSchema = z
+const reviewDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine((value) => {
     const date = new Date(value);
     return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
   });
+
+export const reviewActivitySchema = z.object({
+  date: reviewDateSchema,
+  newCards: count,
+  streak: count,
+});
+export type ReviewActivity = z.infer<typeof reviewActivitySchema>;
 
 export const learningDocumentSchema = z
   .object({
@@ -90,7 +85,7 @@ export const learningDocumentSchema = z
       .refine((value) => Number.isFinite(Date.parse(value)))
       .optional(),
     cards: z.record(z.string(), cardSchema),
-    stats: z.record(statisticsDateSchema, dailyStatsSchema),
+    reviewActivity: reviewActivitySchema.nullable(),
     settings: settingsSchema.partial(),
   })
   .superRefine(({ cards }, ctx) => {
@@ -150,17 +145,4 @@ export interface GistSyncStatus {
   lastSyncDirection: 'push' | 'pull' | null;
   syncInProgress: boolean;
   lastError: GistSyncErrorCode | null;
-}
-
-export function createEmptyDailyStats(streak: number): DailyStats {
-  return {
-    gradeBreakdown: {
-      [Rating.Again]: 0,
-      [Rating.Hard]: 0,
-      [Rating.Good]: 0,
-      [Rating.Easy]: 0,
-    },
-    newCards: 0,
-    streak,
-  };
 }

@@ -10,7 +10,7 @@ const key = STORAGE_KEYS.learningDocument;
 const storedValue = (language: unknown) => ({
   schemaVersion: LEARNING_DOCUMENT_VERSION,
   cards: {},
-  stats: {},
+  reviewActivity: null,
   settings: { language },
 });
 

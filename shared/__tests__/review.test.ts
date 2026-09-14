@@ -1,6 +1,5 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
-import { createDailyStats } from '@/background/statistics';
 import type { Card } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -16,7 +15,7 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
   const document = buildLearningDocument({
     cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
     settings: { maxNewCardsPerDay: limit },
-    stats: { '2024-01-15': { ...createDailyStats(undefined), newCards: completed } },
+    reviewActivity: { date: '2024-01-15', newCards: completed, streak: 1 },
   });
   const before = structuredClone(document);
   const queue = buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'));
@@ -40,7 +39,7 @@ describe('review queue calculations', () => {
     const cards = Object.fromEntries(['a', 'b', 'c', 'd'].map((slug) => [slug, dueCard(slug, '2024-01-15T12:00:00')]));
     const document = buildLearningDocument({
       cards,
-      stats: { '2024-01-15': { ...createDailyStats(undefined), newCards: 3 } },
+      reviewActivity: { date: '2024-01-15', newCards: 3, streak: 1 },
     });
     const before = structuredClone(document);
     expect(buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'))).toEqual([]);

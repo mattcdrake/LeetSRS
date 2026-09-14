@@ -1,5 +1,5 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
-import { recordReview } from '@/background/statistics';
+import { recordReview } from '@/background/review-activity';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/shared/models';
 import { findCard, type LearningDocument } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
@@ -80,7 +80,7 @@ export async function rateCard(input: RateCardInput): Promise<void> {
   };
   document.cards[card.slug] = card;
 
-  document.stats = recordReview(document.stats, now, rating, isNewCard);
+  document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
 
   requireCard(document, card.slug);
   await saveEdit(document, now);

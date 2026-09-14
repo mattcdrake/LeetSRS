@@ -124,12 +124,6 @@ const zhCN: Translations = {
     title: '统计',
   },
 
-  charts: {
-    reviewHistory: '近30天复习历史',
-    upcomingReviews: '未来14天待复习',
-    cardsDue: '到期卡片',
-  },
-
   settings: {
     title: '设置',
 

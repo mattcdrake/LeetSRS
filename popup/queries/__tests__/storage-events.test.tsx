@@ -8,7 +8,6 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
-import { createDailyStats } from '@/background/statistics';
 import background from '@/entrypoints/background/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
 import { onMessage, sendMessage } from '@/shared/messages';
@@ -24,8 +23,8 @@ import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../card
 import { useExportDataMutation } from '../data';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
 import { useNoteQuery } from '../notes';
+import { useTodayReviewActivityQuery } from '../review-activity';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
-import { useLastNDaysStatsQuery, useNextNDaysStatsQuery, useTodayStatsQuery } from '../stats';
 import { useStorageQueryEvents } from '../storage-events';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
@@ -291,20 +290,18 @@ it('advances the review day and queue allowance without a storage write', async 
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2024-03-15T23:59:55'));
   const card = createMockCard(State.New);
-  const stats = { ...createDailyStats(undefined), newCards: 1, gradeBreakdown: { 1: 0, 2: 0, 3: 1, 4: 0 } };
+  const stats = { date: '2024-03-15', newCards: 1, streak: 1 };
   await replaceLearningDocument(
     buildLearningDocument({
       cards: { [card.slug]: card },
-      stats: { '2024-03-15': stats },
+      reviewActivity: stats,
       settings: { maxNewCardsPerDay: 1 },
     })
   );
   const view = renderHook(
     () => ({
       queue: useReviewQueueQuery(),
-      today: useTodayStatsQuery(),
-      history: useLastNDaysStatsQuery(1),
-      upcoming: useNextNDaysStatsQuery(1),
+      today: useTodayReviewActivityQuery(),
     }),
     { wrapper: createPopupTestWrapper().wrapper }
   );
@@ -315,10 +312,6 @@ it('advances the review day and queue allowance without a storage write', async 
   await act(() => vi.advanceTimersByTimeAsync(15_000));
   expect(view.result.current.queue.data).toEqual([card]);
   expect(view.result.current.today.data).toBeNull();
-  expect(view.result.current.history.data).toMatchObject([
-    { date: '2024-03-16', gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 } },
-  ]);
-  expect(view.result.current.upcoming.data).toEqual([{ date: '2024-03-16', count: 1 }]);
   expect(writes).not.toHaveBeenCalled();
   view.unmount();
 });

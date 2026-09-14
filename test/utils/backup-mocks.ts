@@ -21,13 +21,6 @@ export function validLegacyBackup() {
       gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
     },
   };
-  const stats = {
-    '2024-01-01': {
-      newCards: 0,
-      streak: 1,
-      gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 },
-    },
-  };
   const notes = { 'valid-com': { text: 'Keep this note' }, 'valid-cn': { text: '' } };
   const convertedCards = { ...cards, 'two-sum': { ...card, note: 'Keep this note' } };
   return {
@@ -38,6 +31,6 @@ export function validLegacyBackup() {
       data: { cards, stats: legacyStats, notes },
     },
     legacyConverted: { cards: convertedCards, stats: legacyStats },
-    converted: { cards: convertedCards, stats },
+    converted: { cards: convertedCards, reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 } },
   };
 }

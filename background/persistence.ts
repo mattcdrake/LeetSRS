@@ -74,7 +74,12 @@ export async function restoreBackup(json: string): Promise<void> {
 
 export async function resetAllData(): Promise<void> {
   invalidateGistSync();
-  await replaceLearningDocument({ schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {}, settings: {} });
+  await replaceLearningDocument({
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+    cards: {},
+    reviewActivity: null,
+    settings: {},
+  });
   await removeGistConnection();
   await resetGistSyncStatus();
   await removeLegacyLearningData();

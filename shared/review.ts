@@ -16,7 +16,8 @@ const sortByDueDateThenSlug = (a: Card, b: Card): number => {
 export function buildReviewQueue(document: LearningDocument, now: Date): Card[] {
   const eligibleCards = Object.values(document.cards).filter((card) => !card.paused && isDue(card, now));
   const maxNewCardsPerDay = document.settings.maxNewCardsPerDay ?? DEFAULT_SETTINGS.maxNewCardsPerDay;
-  const newCardsCompletedToday = document.stats[formatLocalDate(now)]?.newCards ?? 0;
+  const newCardsCompletedToday =
+    document.reviewActivity?.date === formatLocalDate(now) ? document.reviewActivity.newCards : 0;
   let remainingNewCards = Math.max(0, maxNewCardsPerDay - newCardsCompletedToday);
   eligibleCards.sort(sortByDueDateThenSlug);
   const queue: Card[] = [];

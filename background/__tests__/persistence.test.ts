@@ -25,7 +25,7 @@ describe('whole-document Gist sync', () => {
   const local: LearningDocument = {
     schemaVersion: LEARNING_DOCUMENT_VERSION,
     cards: {},
-    stats: {},
+    reviewActivity: null,
     settings: { theme: 'dark' },
     dataUpdatedAt: '2026-09-12T12:00:00.000Z',
   };

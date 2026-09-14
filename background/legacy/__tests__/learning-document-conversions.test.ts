@@ -11,6 +11,28 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 const FIRST_FLAT_DOCUMENT_VERSION = 6;
 
 describe('convertLearningDocument', () => {
+  it('retires historical statistics while retaining the latest allowance and streak', () => {
+    const input = {
+      schemaVersion: 8,
+      dataUpdatedAt: '2024-03-15T12:00:00.000Z',
+      cards: {},
+      settings: {},
+      stats: {
+        '2024-03-15': { newCards: 3, streak: 9, gradeBreakdown: { 1: 0, 2: 0, 3: 4, 4: 0 } },
+        '2024-03-14': { newCards: 2, streak: 8, gradeBreakdown: { 1: 1, 2: 0, 3: 3, 4: 0 } },
+      },
+    };
+    const expected = {
+      schemaVersion: LEARNING_DOCUMENT_VERSION,
+      dataUpdatedAt: input.dataUpdatedAt,
+      cards: {},
+      settings: {},
+      reviewActivity: { date: '2024-03-15', newCards: 3, streak: 9 },
+    };
+    expect(convertLearningDocument(input)).toEqual(expected);
+    expect(parseLearningDocumentBackup(JSON.stringify(input))).toEqual(expected);
+  });
+
   it('uses the statistics date key and discards redundant fields while preserving meaningful counts', () => {
     expect(
       convertLearningDocument({
@@ -30,13 +52,7 @@ describe('convertLearningDocument', () => {
       })
     ).toEqual(
       buildLearningDocument({
-        stats: {
-          '2024-01-01': {
-            newCards: 3,
-            streak: 9,
-            gradeBreakdown: { 1: 1, 2: 2, 3: 3, 4: 4 },
-          },
-        },
+        reviewActivity: { date: '2024-01-01', newCards: 3, streak: 9 },
       })
     );
   });
@@ -219,7 +235,7 @@ describe('convertLearningDocument', () => {
 
   it.each([6, 7, 8])('requires document collections and settings from v6 (version %i)', (schemaVersion) => {
     for (const field of ['cards', 'stats', 'settings']) {
-      const input = { ...buildLearningDocument(), schemaVersion, [field]: undefined };
+      const input = { ...buildLearningDocument(), stats: {}, schemaVersion, [field]: undefined };
       expect(() => convertLearningDocument(input)).toThrow();
       expect(() => parseLearningDocumentBackup(JSON.stringify(input))).toThrow();
     }
@@ -231,7 +247,7 @@ describe('convertLearningDocument', () => {
       const { converted } = validLegacyBackup();
       if (kind === 'slug') converted.cards['two-sum'].slug = 'different';
       if (kind === 'duplicate') converted.cards['cn-problem'].id = 'valid-com';
-      if (kind === 'date') Object.assign(converted.stats, { invalid: converted.stats['2024-01-01'] });
+      if (kind === 'date') converted.reviewActivity.date = 'invalid';
       const document = buildLearningDocument({ ...converted, settings: {} });
       expect(() => convertLearningDocument(document)).toThrow();
       expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
@@ -266,7 +282,7 @@ describe('parseLearningDocumentBackup', () => {
   it.each([6, 7, 8])('does not apply legacy export-time fallback to an unedited v%i document', (schemaVersion) => {
     expect(
       parseLearningDocumentBackup(
-        JSON.stringify({ ...buildLearningDocument(), schemaVersion, exportDate: '2024-01-01' })
+        JSON.stringify({ ...buildLearningDocument(), stats: {}, schemaVersion, exportDate: '2024-01-01' })
       )
     ).not.toHaveProperty('dataUpdatedAt');
   });
