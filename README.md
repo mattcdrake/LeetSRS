@@ -34,11 +34,11 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 
 ### Review System
 
-- Review queue with exact due times and optimized problem ordering
+- Review queue ordered by due time
 - View statistics and streaks
 - Works directly on leetcode.com
 - Easily rate after solving problems, or add to review later
-- Optional editor reset when opening a Problem from the review queue; other navigation preserves your code
+- Optional editor reset when opening a problem from the review queue; other navigation preserves your code
 - Customizable daily new card limits
 - Daily limits, statistics, and streaks follow local calendar days beginning at midnight
 
@@ -73,13 +73,19 @@ LeetSRS is open source and accepts contributions.
 
 Sync uses last-write-wins for the entire dataset, not per-card merging. The browser with the newest edit replaces all Gist data, so concurrent changes in another browser can be lost. Enabled sync runs after local edits, when the extension starts, and at least once per minute for retry.
 
-### Upgrading to the learning-document format
+## Setup
 
-1. Turn off Gist syncing on every browser sharing the Gist before updating.
-2. Update LeetSRS on **every browser sharing that Gist** before resuming sync. Older extension versions cannot safely sync with the new format.
-3. Open the updated extension on each browser to let it convert existing cards, notes, review statistics, and stored preferences automatically. Existing file backups remain importable; the Gist connection is preserved.
-4. Once every browser is updated, resume sync. Stored preferences now travel with learning data through Gist. Sync still replaces the older dataset with the newer one; it does not merge independent edits.
+Use Node.js 24+.
+
+```sh
+npm install
+npm run dev
+```
+
+`npm run build` creates a production extension in `.output/chrome-mv3/`; load that directory as an unpacked extension in Chrome. `npm run zip` packages it for distribution.
+
+See [AGENTS.md](AGENTS.md) for development checks and workflow rules, and [Architecture](docs/architecture.md) for system boundaries.
 
 ## License
 
-MIT
+[MIT](LICENSE.md) · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)

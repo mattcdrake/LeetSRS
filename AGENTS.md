@@ -1,63 +1,31 @@
 # Repository Guidelines
 
-## Build, Test, and Development Commands
+## Commands and checks
 
-Use Node.js 24+ and install dependencies with `npm install`.
+See [README.md](README.md#setup) for setup, development, and packaging commands.
 
-- `npm run dev` starts WXT in development/watch mode.
-- `npm run build` creates a production extension build.
-- `npm run zip` packages the extension for distribution.
-- `npm test` runs the Vitest suite once.
-- `npm run compile` performs TypeScript checking without emitting files.
-- `npm run lint` and `npm run format:check` check style.
-- `npm run format:markdown` formats all Markdown files with Prettier, respecting `.prettierignore`.
-- `npm run check` checks formatting, lints, type-checks, and tests.
+- `npm test` runs Vitest once; `npm test -- <path>` runs a focused test file.
+- `npm run compile` checks TypeScript; `npm run lint` and `npm run format:check` check code style.
+- Before submitting code or configuration changes, run `npm run check`. It checks code style, Markdown formatting, types, and tests; CI also runs the production build separately.
+- After editing Markdown, run `npm run format:markdown` across the repository, including formatting fixes outside the edited files. For documentation-only changes, verify the diff and affected links; skip the full check and test suite.
 
-## Coding Style & Naming Conventions
+## Workflow
 
-After writing or editing any Markdown file, always run `npm run format:markdown` across the repository, including formatting fixes in files you did not edit.
+- Follow Biome formatting. Use PascalCase component names, `use` plus camelCase hook names, and kebab-case utility names.
+- Cover behavior changes and bugs in nearby `__tests__/*.test.ts` or `*.test.tsx` files. Reuse helpers from `test/utils/`; extend existing coverage and parameterize scenarios with the same setup and assertions.
+- Use concise Conventional Commit subjects and PR titles. Keep PR descriptions to concise bullets and linked or closing issues.
+- Use GitHub's native issue relationships when marking issues as blocked or blocking.
+- For local agent reviews, use Matt Pocock's installed `code-review` skill. Hosted Codex PR reviews use their native workflow and these repository rules.
+- Do not commit generated `.output/` or `.wxt/` content.
 
-Use TypeScript/TSX, ES modules, two-space indentation, single quotes, and semicolons; Biome enforces these rules. Avoid `any`; prefix intentionally unused names with `_`. Use PascalCase for components (`ReviewQueue.tsx`), `use` plus camelCase for hooks (`useNoteEditor.ts`), and kebab-case for utilities and services (`gist-sync.ts`). Keep domain logic out of UI components.
+## Gotchas
 
-When changing persistence workflows, calculate and validate related values before writing, and batch related updates to the same storage area into one write where practical.
+- TypeScript extends generated `.wxt/tsconfig.json`; the install postscript runs `wxt prepare` to create it.
+- In Codex, run `npm test` (including focused tests) and `npm run check` with `sandbox_permissions: "require_escalated"` from the first attempt. WXT's Vitest setup needs a localhost port blocked by the sandbox.
+- Shared test setup makes fake browser storage reads return snapshots. Use storage writes to update persisted test data; mutating a returned object does not persist it.
 
-## Testing Guidelines
+## Architecture maintenance
 
-In Codex, run `npm test` (including focused tests) and `npm run check` with `sandbox_permissions: "require_escalated"` from the first attempt. WXT's Vitest plugin requires a localhost port that the sandbox blocks. Use the normal tool approval flow; do not repeat the known sandbox failure or report it as a new issue each task.
+Before changing runtime responsibilities, dependencies, persistence, or cross-runtime behavior, read [Architecture](docs/architecture.md).
 
-Tests use Vitest, Happy DOM, Testing Library, and WXT's Vitest plugin. Name files `*.test.ts` or `*.test.tsx` and place them in a nearby `__tests__/`. Check `test/utils/` before adding local test helpers, and reuse an existing helper when it fits. Cover behavior changes and bug fixes. Before submitting code or configuration changes, run `npm run check`. For documentation-only changes, run Markdown formatting and check the diff and affected links; skip the full check and test suite. Don't mention this in the PR description.
-
-Prefer meaningful behavior coverage over test count. Parameterize scenarios that share setup and assertions, and merge overlapping tests when one clear scenario covers the same behavior. Extend existing coverage before adding another test; keep distinct failure paths and invariants explicit, and avoid tables or helpers that make tests harder to read.
-
-## Commit & Pull Request Guidelines
-
-Use Conventional Commits for commit subjects and pull request titles, such as `fix: clean up animation timeout`. Use standard lowercase types including `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, and `revert`; add an optional scope in parentheses. Mark breaking changes with `!` and explain them in a `BREAKING CHANGE:` footer. Keep subjects concise and imperative. For most pull requests, use concise bullet points followed by linked or closing issues; omit section headings such as `Summary` and `Testing` unless the change is genuinely complex. Do not commit generated `.output/` or `.wxt/` content.
-
-## Code Review Rules
-
-For local agent reviews, use Matt Pocock's installed `code-review` skill directly. Hosted Codex PR reviews use its native review workflow and this repo's documented standards. The skill's upstream source is [code-review/SKILL.md](https://github.com/mattpocock/skills/blob/main/skills/engineering/code-review/SKILL.md).
-
-## Agent skills
-
-### Issue tracker
-
-Issues live in GitHub Issues. Before tracker operations, read `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Use the default triage labels. Before triaging, read `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Use a single-context layout. Before exploring the domain, read `docs/agents/domain.md`.
-
-## Architecture boundaries
-
-Keep `docs/agents/architecture.md` focused on details that materially affect architecture: ownership, boundaries, and cross-cutting constraints. If a change fits the documented patterns, leave the reference unchanged rather than adding a PR summary.
-
-- Organize code by runtime owner: background owns learning-data writes, scheduling, sync, GitHub access, startup, and badge work; popup owns popup queries and UI; content owns page access and injected UI.
-- Shared modules own current models, settings, validated storage, typed messages, queue calculations, and link/calendar helpers. Keep their imports independent of runtime owners, initialization, historical conversions, and UI.
-- Popup and content writes call typed background messages; persisted-data reads use validated shared storage access.
-- UI owns presentation and user interactions; keep domain logic outside components. Dependency rules also apply to type-only imports.
-
-Before changing module dependencies, background execution, content lifecycle, persistence, imports, or sync, read the relevant sections of `docs/agents/architecture.md` and the ADRs they reference.
+Update the architecture doc only when a change materially alters a major responsibility, boundary, or cross-cutting constraint. Changes that fit the documented architecture require no doc update. The architecture doc must never become a collection of PR summaries.
