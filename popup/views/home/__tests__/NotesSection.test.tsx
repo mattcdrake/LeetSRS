@@ -37,7 +37,7 @@ describe('NotesSection', () => {
   };
 
   beforeEach(() => {
-    messages.reset().resolve('saveNote', undefined).resolve('deleteNote', undefined);
+    messages.reset().resolve('saveNote', undefined);
     ({ wrapper, queryClient } = createPopupTestWrapper());
     seedNote(null);
   });
@@ -78,7 +78,7 @@ describe('NotesSection', () => {
     expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Unsaved draft');
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
-    expect(sendMessage).not.toHaveBeenCalledWith('deleteNote', expect.anything());
+    expect(sendMessage).not.toHaveBeenCalledWith('saveNote', expect.anything());
   });
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {

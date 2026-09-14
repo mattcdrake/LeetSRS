@@ -22,7 +22,6 @@ export const messagePayloadSchemas = {
   setPauseStatus: z.object({ slug: slugSchema, paused: z.boolean() }),
   rateCard: z.object({ input: rateCardInputSchema }),
   saveNote: z.object({ slug: slugSchema, text: noteTextSchema }),
-  deleteNote: z.object({ slug: slugSchema }),
   updateSettings: z.object({ changes: settingsUpdateSchema }),
   importData: z.object({ jsonData: z.string() }),
   resetAllData: z.undefined(),
@@ -41,7 +40,6 @@ export interface ExtensionMessageMap {
   setPauseStatus(data: MessagePayload<'setPauseStatus'>): void;
   rateCard(data: MessagePayload<'rateCard'>): void;
   saveNote(data: MessagePayload<'saveNote'>): void;
-  deleteNote(data: MessagePayload<'deleteNote'>): void;
   updateSettings(data: MessagePayload<'updateSettings'>): void;
   importData(data: MessagePayload<'importData'>): void;
   resetAllData(): void;
