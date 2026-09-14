@@ -2,10 +2,14 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { readGistConnection, writeGistConnection } from '@/data/gist-connection';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import {
+  readGistConnection,
+  readLearningDocument,
+  replaceLearningDocument,
+  STORAGE_KEYS,
+  writeGistConnection,
+} from '@/shared/storage';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { createMockCard } from '@/test/utils/card-mocks';
 import * as documentBackup from '../import-export';

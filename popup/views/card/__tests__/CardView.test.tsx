@@ -8,15 +8,15 @@ import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Card } from '@/domain/cards';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import type { Card } from '@/shared/models';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardView } from '../CardView';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 let queryClient: QueryClient;

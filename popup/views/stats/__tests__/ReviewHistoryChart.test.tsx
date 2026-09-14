@@ -5,10 +5,10 @@
 import { render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import type { HistoryDailyStats } from '@/domain/statistics';
-import { translations } from '@/i18n';
-import { sendMessage } from '@/integrations/browser/messages';
+import { translations } from '@/i18n/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
+import type { HistoryDailyStats } from '@/popup/queries/statistics';
+import { sendMessage } from '@/shared/messages';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
@@ -24,7 +24,7 @@ vi.mock('react-chartjs-2', () => ({
   ),
 }));
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('Bar Chart (Last 30 Days Review History)', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));

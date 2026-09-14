@@ -4,18 +4,17 @@ import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { replaceLearningDocument } from '@/data/learning-document';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import { NOTES_MAX_LENGTH } from '@/domain/cards';
-import { sendMessage } from '@/integrations/browser/messages';
 import { useCardsQuery } from '@/popup/queries/cards';
+import { sendMessage } from '@/shared/messages';
+import { NOTES_MAX_LENGTH } from '@/shared/models';
+import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NoteEditor } from '../NoteEditor';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe.each(['regular', 'compact'] as const)('NoteEditor (%s)', (variant) => {
   const slug = 'editor-card';

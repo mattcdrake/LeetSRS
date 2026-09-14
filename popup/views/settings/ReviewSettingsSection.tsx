@@ -1,7 +1,7 @@
 import { Input, Label, TextField } from 'react-aria-components';
-import { SETTINGS_CONSTRAINTS } from '@/domain/settings';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
+import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function ReviewSettingsSection() {

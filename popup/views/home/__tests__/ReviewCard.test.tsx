@@ -5,9 +5,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Card } from '@/domain/cards';
-import { translations } from '@/i18n';
+import { translations } from '@/i18n/index';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import type { Card } from '@/shared/models';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';

@@ -2,15 +2,15 @@
 import { render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
-import type { Card } from '@/domain/cards';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import type { Card } from '@/shared/models';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StatsBar } from '../StatsBar';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('StatsBar', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));

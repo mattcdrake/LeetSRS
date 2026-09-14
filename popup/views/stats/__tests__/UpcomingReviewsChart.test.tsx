@@ -6,10 +6,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
-import type { LearningDocument } from '@/domain/learning-document';
-import type { UpcomingReviewStats } from '@/domain/statistics';
-import { sendMessage } from '@/integrations/browser/messages';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
+import type { UpcomingReviewStats } from '@/popup/queries/statistics';
+import { sendMessage } from '@/shared/messages';
+import type { LearningDocument } from '@/shared/models';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -25,7 +25,7 @@ vi.mock('react-chartjs-2', () => ({
   ),
 }));
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('UpcomingReviewsChart', () => {
   afterEach(() => vi.restoreAllMocks());

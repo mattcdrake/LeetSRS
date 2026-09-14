@@ -4,17 +4,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
-import { formatLocalDate } from '@/domain/calendar';
-import type { LearningDocument } from '@/domain/learning-document';
-import type { DailyStats } from '@/domain/statistics';
-import { sendMessage } from '@/integrations/browser/messages';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
+import { formatLocalDate } from '@/shared/calendar';
+import { sendMessage } from '@/shared/messages';
+import type { DailyStats, LearningDocument } from '@/shared/models';
 import { buildLearningDocument, setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { StreakCounter } from '../StreakCounter';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 const stats = (streak: number): DailyStats => ({
   gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 2, [Rating.Easy]: 1 },

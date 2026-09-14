@@ -2,21 +2,20 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { getReviewQueue } from '@/data/learning-queries';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import { formatLocalDate } from '@/domain/calendar';
-import { learningDocumentSchema } from '@/domain/learning-document';
-import { createDailyStats } from '@/domain/statistics';
-import { onMessage } from '@/integrations/browser/messages';
+import { createDailyStats } from '@/background/statistics';
+import { formatLocalDate } from '@/shared/calendar';
+import { onMessage } from '@/shared/messages';
+import { learningDocumentSchema } from '@/shared/models';
+import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { getReviewQueue } from '@/test/utils/learning-reads';
 import background from '../../entrypoints/background/index';
 
-vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
 }));
 

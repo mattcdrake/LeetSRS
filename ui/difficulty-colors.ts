@@ -1,4 +1,4 @@
-import type { Difficulty } from '@/domain/cards';
+import type { Difficulty } from '@/shared/models';
 
 export const DIFFICULTY_COLORS = {
   Easy: '#22c55e',

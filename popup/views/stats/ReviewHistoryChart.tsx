@@ -1,8 +1,8 @@
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { ratingSchema } from '@/domain/ratings';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { useLastNDaysStatsQuery } from '@/popup/queries/stats';
+import { ratingSchema } from '@/shared/models';
 import { RATING_COLORS } from '@/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 

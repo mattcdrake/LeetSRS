@@ -4,16 +4,15 @@ import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { replaceLearningDocument } from '@/data/learning-document';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import { createDailyStats } from '@/domain/statistics';
-import { sendMessage } from '@/integrations/browser/messages';
+import { createDailyStats } from '@/background/statistics';
+import { sendMessage } from '@/shared/messages';
+import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useExportDataMutation } from '../data';
 
-vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 beforeEach(() => fakeBrowser.reset());
 
 it('exports the current complete snapshot, preserving its timestamp and excluding connection, status, and legacy values', async () => {

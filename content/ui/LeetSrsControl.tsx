@@ -1,8 +1,8 @@
 import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
-import { watchDocumentTranslations } from '@/data/translations';
-import type { Translations } from '@/i18n';
+import { watchDocumentTranslations } from '@/content/translations';
+import type { Translations } from '@/i18n/index';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';

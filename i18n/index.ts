@@ -9,7 +9,7 @@
  * 5. Run `npm run compile` - TypeScript will catch any missing keys
  */
 
-import type { Language } from '@/domain/language';
+import type { Language } from '@/shared/settings';
 import de from './de';
 import en from './en';
 import hi from './hi';

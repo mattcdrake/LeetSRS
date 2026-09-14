@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import type { Grade } from 'ts-fsrs';
-import type { RateCardInput } from '@/domain/cards';
 import {
   useDelayCardMutation,
   usePauseCardMutation,
@@ -8,6 +7,7 @@ import {
   useRemoveCardMutation,
   useReviewQueueQuery,
 } from '@/popup/queries/cards';
+import type { RateCardInput } from '@/shared/models';
 import { LeetSRSLogo } from '../../components/LeetSRSLogo';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';

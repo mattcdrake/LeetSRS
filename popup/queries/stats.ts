@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { formatLocalDate } from '@/domain/calendar';
-import { calculateHistoryStats, calculateUpcomingStats } from '@/domain/statistics';
+import { calculateHistoryStats, calculateUpcomingStats } from '@/popup/queries/statistics';
+import { formatLocalDate } from '@/shared/calendar';
 import { learningDocumentQueryOptions } from './learning-document';
 
 export function useTodayStatsQuery() {

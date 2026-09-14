@@ -6,8 +6,8 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import background from '@/entrypoints/background';
-import { onMessage, sendMessage } from '@/integrations/browser/messages';
+import background from '@/entrypoints/background/index';
+import { onMessage, sendMessage } from '@/shared/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -16,8 +16,8 @@ import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQu
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '../notes';
 
-vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
   sendMessage: vi.fn(),
 }));

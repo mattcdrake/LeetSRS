@@ -1,5 +1,5 @@
 import type { State } from 'ts-fsrs';
-import type { Card, ProblemDescriptor } from '@/domain/cards';
+import type { Card, ProblemDescriptor } from '@/shared/models';
 
 const MOCK_TIMESTAMP = Date.parse('2024-01-01T00:00:00.000Z');
 

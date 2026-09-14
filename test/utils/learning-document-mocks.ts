@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { Card } from '@/domain/cards';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
+import type { Card } from '@/shared/models';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 
 type LearningDocumentOverrides = Partial<Omit<LearningDocument, 'schemaVersion'>>;
 

@@ -6,14 +6,14 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { updateSettings } from '@/background/learning';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
-vi.mock('@/integrations/browser/messages', () => ({
+vi.mock('@/shared/messages', () => ({
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
 

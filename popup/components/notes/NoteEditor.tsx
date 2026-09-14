@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { Button, Label, TextArea, TextField } from 'react-aria-components';
-import { NOTES_MAX_LENGTH } from '@/domain/cards';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
 import { bounceButton } from '@/popup/styles';
+import { NOTES_MAX_LENGTH } from '@/shared/models';
 
 const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
 

@@ -7,14 +7,13 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
-import { STORAGE_KEYS } from '@/data/storage-keys';
-import type { GistSyncStatus } from '@/domain/gist-sync';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
-import { createDailyStats } from '@/domain/statistics';
-import background from '@/entrypoints/background';
-import { onMessage, sendMessage } from '@/integrations/browser/messages';
+import { createDailyStats } from '@/background/statistics';
+import background from '@/entrypoints/background/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
+import { onMessage, sendMessage } from '@/shared/messages';
+import type { GistSyncStatus } from '@/shared/models';
+import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
@@ -34,8 +33,8 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@/integrations/browser/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/integrations/browser/messages')>()),
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
   sendMessage: vi.fn(),
 }));

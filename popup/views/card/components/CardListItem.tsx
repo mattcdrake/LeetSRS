@@ -1,13 +1,13 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
-import type { Card } from '@/domain/cards';
-import type { Translations } from '@/i18n';
+import type { Translations } from '@/i18n/index';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
-import { getLeetcodeProblemUrl } from '@/popup/leetcode';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
 import { bounceButton } from '@/popup/styles';
+import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
+import type { Card } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
 import { useI18n } from '../../../contexts/I18nContext';
 

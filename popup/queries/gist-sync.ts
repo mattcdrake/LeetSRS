@@ -1,8 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { readGistConnection } from '@/data/gist-connection';
-import { readLearningDocument } from '@/data/learning-document';
-import type { GistSetup } from '@/domain/gist-sync';
-import { sendMessage } from '@/integrations/browser/messages';
+import { sendMessage } from '@/shared/messages';
+import type { GistSetup } from '@/shared/models';
+import { readGistConnection, readLearningDocument } from '@/shared/storage';
 
 export const gistSyncQueryKeys = {
   config: ['gistSync', 'config'] as const,
