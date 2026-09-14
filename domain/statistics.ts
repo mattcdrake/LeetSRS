@@ -4,19 +4,9 @@ import { addLocalDays, formatLocalDate } from './calendar';
 import type { Card } from './cards';
 
 const count = z.int().nonnegative();
-const calendarDate = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine((value) => {
-    const date = new Date(value);
-    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
-  });
 
 export const dailyStatsSchema = z.object({
-  date: calendarDate,
-  totalReviews: count,
   newCards: count,
-  reviewedCards: count,
   streak: count,
   gradeBreakdown: z.object({
     [Rating.Again]: count,
@@ -26,16 +16,19 @@ export const dailyStatsSchema = z.object({
   }),
 });
 export type DailyStats = z.infer<typeof dailyStatsSchema>;
-type BaseStats = Omit<DailyStats, 'date' | 'streak'>;
+export interface HistoryDailyStats extends DailyStats {
+  date: string;
+  totalReviews: number;
+  reviewedCards: number;
+}
 
 export interface UpcomingReviewStats {
   date: string;
   count: number;
 }
 
-function createEmptyBaseStats(): BaseStats {
+function createEmptyDailyStats(streak: number): DailyStats {
   return {
-    totalReviews: 0,
     gradeBreakdown: {
       [Rating.Again]: 0,
       [Rating.Hard]: 0,
@@ -43,13 +36,13 @@ function createEmptyBaseStats(): BaseStats {
       [Rating.Easy]: 0,
     },
     newCards: 0,
-    reviewedCards: 0,
+    streak,
   };
 }
 
-export function createDailyStats(todayKey: string, yesterdayStats: DailyStats | undefined): DailyStats {
+export function createDailyStats(yesterdayStats: DailyStats | undefined): DailyStats {
   const streak = yesterdayStats ? yesterdayStats.streak + 1 : 1;
-  return { ...createEmptyBaseStats(), date: todayKey, streak };
+  return createEmptyDailyStats(streak);
 }
 
 export function recordReview(
@@ -60,15 +53,13 @@ export function recordReview(
 ): Record<string, DailyStats> {
   const today = formatLocalDate(now);
   const yesterday = formatLocalDate(addLocalDays(now, -1));
-  const todayStats = stats[today] ?? createDailyStats(today, stats[yesterday]);
+  const todayStats = stats[today] ?? createDailyStats(stats[yesterday]);
 
   return {
     ...stats,
     [today]: {
       ...todayStats,
-      totalReviews: todayStats.totalReviews + 1,
       newCards: todayStats.newCards + (isNewCard ? 1 : 0),
-      reviewedCards: todayStats.reviewedCards + (isNewCard ? 0 : 1),
       gradeBreakdown: {
         ...todayStats.gradeBreakdown,
         [grade]: todayStats.gradeBreakdown[grade] + 1,
@@ -77,21 +68,26 @@ export function recordReview(
   };
 }
 
-export function calculateHistoryStats(stats: Record<string, DailyStats>, days: number, today: Date): DailyStats[] {
-  const result: DailyStats[] = [];
+function toHistoryDailyStats(date: string, stats: DailyStats): HistoryDailyStats {
+  const totalReviews = Object.values(stats.gradeBreakdown).reduce((total, count) => total + count, 0);
+  return {
+    ...stats,
+    date,
+    totalReviews,
+    reviewedCards: totalReviews - stats.newCards,
+  };
+}
+
+export function calculateHistoryStats(
+  stats: Record<string, DailyStats>,
+  days: number,
+  today: Date
+): HistoryDailyStats[] {
+  const result: HistoryDailyStats[] = [];
   for (let i = days - 1; i >= 0; i--) {
     const dateKey = formatLocalDate(addLocalDays(today, -i));
-
-    if (stats[dateKey]) {
-      result.push(stats[dateKey]);
-    } else {
-      // Include empty days for continuity in the chart
-      result.push({
-        ...createEmptyBaseStats(),
-        date: dateKey,
-        streak: 0,
-      });
-    }
+    const dailyStats = stats[dateKey] ?? createEmptyDailyStats(0);
+    result.push(toHistoryDailyStats(dateKey, dailyStats));
   }
 
   return result;

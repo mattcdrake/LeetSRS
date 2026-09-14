@@ -3,9 +3,16 @@ import { type Card, cardSchema } from './cards';
 import { settingsSchema } from './settings';
 import { dailyStatsSchema } from './statistics';
 
-export const LEARNING_DOCUMENT_VERSION = 7;
+export const LEARNING_DOCUMENT_VERSION = 8;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
+const statisticsDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  });
 
 export const learningDocumentSchema = z
   .object({
@@ -15,10 +22,10 @@ export const learningDocumentSchema = z
       .refine((value) => Number.isFinite(Date.parse(value)))
       .optional(),
     cards: z.record(z.string(), cardSchema),
-    stats: z.record(z.string(), dailyStatsSchema),
+    stats: z.record(statisticsDateSchema, dailyStatsSchema),
     settings: settingsSchema.partial(),
   })
-  .superRefine(({ cards, stats }, ctx) => {
+  .superRefine(({ cards }, ctx) => {
     const ids = new Set<string>();
 
     for (const [slug, card] of Object.entries(cards)) {
@@ -31,12 +38,6 @@ export const learningDocumentSchema = z
       }
 
       ids.add(card.id);
-    }
-
-    for (const [date, entry] of Object.entries(stats)) {
-      if (entry.date !== date) {
-        ctx.addIssue({ code: 'custom', message: `Stats date does not match key: ${date}`, path: ['stats', date] });
-      }
     }
   });
 

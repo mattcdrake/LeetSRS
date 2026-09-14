@@ -78,10 +78,7 @@ describe('document learning through background commands', () => {
     expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
     const stats = (await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null;
     expect(stats).toEqual({
-      date: '2024-03-15',
-      totalReviews: 1,
       newCards: 1,
-      reviewedCards: 0,
       streak: 1,
       gradeBreakdown: { 1: 0, 2: 0, 3: 1, 4: 0 },
     });
@@ -99,7 +96,7 @@ describe('document learning through background commands', () => {
   it('preserves card identity and unrelated data through card and note edits', async () => {
     const original = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      stats: { '2024-01-01': createDailyStats(undefined) },
       settings: { badgeEnabled: false, theme: 'dark' },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
@@ -181,7 +178,7 @@ describe('document learning through background commands', () => {
     expect(card.fsrs.due).toBe(new Date('2024-03-18T23:59:59.999').getTime());
     expect(await readLearningDocument()).toMatchObject({
       cards: { [card.slug]: card },
-      stats: { '2024-03-15': { totalReviews: 1, newCards: 1 } },
+      stats: { '2024-03-15': { newCards: 1 } },
       dataUpdatedAt: now.toISOString(),
     });
     expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
@@ -202,7 +199,7 @@ describe('document learning through background commands', () => {
     });
     const document = buildLearningDocument({
       cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
-      stats: { '2024-03-14': { ...createDailyStats('2024-03-14', undefined), newCards: 1 } },
+      stats: { '2024-03-14': { ...createDailyStats(undefined), newCards: 1 } },
       settings: { maxNewCardsPerDay: 2 },
     });
     await replaceLearningDocument(document);
@@ -234,7 +231,7 @@ describe('document learning through background commands', () => {
   ])('leaves all saved data intact when %s is rejected and accepts the next command', async (_name, edit) => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      stats: { '2024-01-01': createDailyStats(undefined) },
       settings: { badgeEnabled: false },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
@@ -269,7 +266,10 @@ describe('document learning through background commands', () => {
         cards: { [card.slug]: card },
         settings: { badgeEnabled: false },
         stats: {
-          '2024-03-15': { ...createDailyStats('2024-03-15', undefined), totalReviews: Number.MAX_SAFE_INTEGER },
+          '2024-03-15': {
+            ...createDailyStats(undefined),
+            gradeBreakdown: { 1: 0, 2: 0, 3: Number.MAX_SAFE_INTEGER, 4: 0 },
+          },
         },
       });
       await replaceLearningDocument(document);
@@ -359,11 +359,8 @@ describe('document learning through background commands', () => {
       expect(second.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
       expect(Object.values((await readLearningDocument()).cards)).toEqual([second]);
       expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toEqual({
-        date: '2024-03-15',
         streak: 1,
-        totalReviews: 2,
         newCards: 1,
-        reviewedCards: 1,
         gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0, [rating]: 2 },
       });
     }
@@ -423,7 +420,7 @@ describe('document learning through background commands', () => {
         cards: {},
         settings: { badgeEnabled: false },
         stats: {
-          [yesterday]: { ...createDailyStats(yesterday, undefined), totalReviews: 1, reviewedCards: 1, streak: 7 },
+          [yesterday]: { ...createDailyStats(undefined), streak: 7 },
         },
       });
       await replaceLearningDocument(document);
@@ -441,7 +438,7 @@ describe('document learning through background commands', () => {
       expect((await readLearningDocument()).stats[formatLocalDate(new Date())] ?? null).toBeNull();
       expect(await readLearningDocument()).toMatchObject({
         dataUpdatedAt: now.toISOString(),
-        stats: { ...document.stats, [today]: { newCards: 1, totalReviews: 1, streak: 8 } },
+        stats: { ...document.stats, [today]: { newCards: 1, streak: 8 } },
       });
     }
   );

@@ -11,6 +11,7 @@ import * as embedNotes from './document-conversions/004-embed-notes';
 import * as combineGistConnection from './document-conversions/005-combine-gist-connection';
 import * as learningDocument from './document-conversions/006-learning-document';
 import * as resetEditorOnReviewQueue from './document-conversions/007-reset-editor-on-review-queue';
+import * as removeRedundantDailyStatistics from './document-conversions/008-remove-redundant-daily-statistics';
 import { legacyBackupSchema } from './document-conversions/legacy-backup-envelope';
 
 const conversions = [
@@ -21,6 +22,7 @@ const conversions = [
   combineGistConnection,
   learningDocument,
   resetEditorOnReviewQueue,
+  removeRedundantDailyStatistics,
 ] as const;
 
 const LAST_LEGACY_DATASET_VERSION = 5;

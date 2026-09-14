@@ -8,6 +8,36 @@ import { convertLearningDocument, parseLearningDocumentBackup } from '../learnin
 const FIRST_FLAT_DOCUMENT_VERSION = 6;
 
 describe('convertLearningDocument', () => {
+  it('removes redundant daily statistics fields while preserving meaningful counts', () => {
+    expect(
+      convertLearningDocument({
+        schemaVersion: 7,
+        cards: {},
+        stats: {
+          '2024-01-01': {
+            date: '2024-01-01',
+            totalReviews: 10,
+            newCards: 3,
+            reviewedCards: 7,
+            streak: 9,
+            gradeBreakdown: { 1: 1, 2: 2, 3: 3, 4: 4 },
+          },
+        },
+        settings: {},
+      })
+    ).toEqual(
+      buildLearningDocument({
+        stats: {
+          '2024-01-01': {
+            newCards: 3,
+            streak: 9,
+            gradeBreakdown: { 1: 1, 2: 2, 3: 3, 4: 4 },
+          },
+        },
+      })
+    );
+  });
+
   it.each([
     [{ resetEditorOnReviewQueue: false, resetEditorOnEveryProblem: true, resetEditorOnDueReview: true }, false],
     [{ resetEditorOnReviewQueue: true, resetEditorOnEveryProblem: false, resetEditorOnDueReview: false }, true],
@@ -45,13 +75,13 @@ describe('convertLearningDocument', () => {
     );
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6, 7])(
+  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8])(
     'preserves the same learning data from installations and backups at version %i without I/O or a clock',
     (schemaVersion) => {
-      const { backup, converted } = validLegacyBackup();
+      const { backup, converted, legacyConverted } = validLegacyBackup();
       const { domain: _domain, ...legacyCard } = backup.data.cards['two-sum'];
       const data = {
-        ...(schemaVersion < 4 ? backup.data : converted),
+        ...(schemaVersion < 4 ? backup.data : schemaVersion < LEARNING_DOCUMENT_VERSION ? legacyConverted : converted),
         ...(schemaVersion === 0 && { cards: { ...backup.data.cards, 'two-sum': legacyCard } }),
         settings: {
           theme: 'light',
@@ -151,12 +181,20 @@ describe('convertLearningDocument', () => {
       const { converted } = validLegacyBackup();
       if (kind === 'slug') converted.cards['two-sum'].slug = 'different';
       if (kind === 'duplicate') converted.cards['cn-problem'].id = 'valid-com';
-      if (kind === 'date') converted.stats['2024-01-01'].date = '2024-01-02';
+      if (kind === 'date') Object.assign(converted.stats, { invalid: converted.stats['2024-01-01'] });
       const document = buildLearningDocument({ ...converted, settings: {} });
       expect(() => convertLearningDocument(document)).toThrow();
       expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
     }
   );
+
+  it('rejects a broken date relationship in a v7 installation or backup', () => {
+    const { legacyConverted } = validLegacyBackup();
+    legacyConverted.stats['2024-01-01'].date = '2024-01-02';
+    const document = { ...legacyConverted, schemaVersion: 7, settings: {} };
+    expect(() => convertLearningDocument(document)).toThrow();
+    expect(() => parseLearningDocumentBackup(JSON.stringify(document))).toThrow();
+  });
 
   it.each([-1, 0.5, null, '5', LEARNING_DOCUMENT_VERSION + 1])(
     'rejects unsupported schema version %j',

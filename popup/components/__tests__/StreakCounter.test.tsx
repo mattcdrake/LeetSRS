@@ -16,11 +16,8 @@ import { StreakCounter } from '../StreakCounter';
 vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 
 const stats = (streak: number): DailyStats => ({
-  date: '2024-03-15',
-  totalReviews: 5,
   gradeBreakdown: { [Rating.Again]: 1, [Rating.Hard]: 1, [Rating.Good]: 2, [Rating.Easy]: 1 },
   newCards: 2,
-  reviewedCards: 3,
   streak,
 });
 

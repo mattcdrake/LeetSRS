@@ -24,12 +24,12 @@ describe('document import', () => {
   it.each([undefined, 0, 1, 2, 3, 4, 5])(
     'imports historical version %s with stored settings and the export-time fallback',
     async (schemaVersion) => {
-      const { backup, converted } = validLegacyBackup();
+      const { backup, converted, legacyConverted } = validLegacyBackup();
       const settings =
         schemaVersion === undefined || schemaVersion < 3
           ? { autoClearLeetcode: false, dayStartHour: 4, theme: 'dark' }
           : { resetEditorOnEveryProblem: false, theme: 'dark' };
-      const data = schemaVersion !== undefined && schemaVersion >= 4 ? converted : backup.data;
+      const data = schemaVersion !== undefined && schemaVersion >= 4 ? legacyConverted : backup.data;
       await documentBackup.importData(
         JSON.stringify({
           schemaVersion,

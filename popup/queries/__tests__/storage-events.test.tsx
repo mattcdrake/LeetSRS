@@ -237,11 +237,11 @@ it('advances the review day and queue allowance without a storage write', async 
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2024-03-15T23:59:55'));
   const card = createMockCard(State.New);
-  const stats = { ...createDailyStats('2024-03-15', undefined), newCards: 1, totalReviews: 1 };
+  const stats = { ...createDailyStats(undefined), newCards: 1, gradeBreakdown: { 1: 0, 2: 0, 3: 1, 4: 0 } };
   await replaceLearningDocument(
     buildLearningDocument({
       cards: { [card.slug]: card },
-      stats: { [stats.date]: stats },
+      stats: { '2024-03-15': stats },
       settings: { maxNewCardsPerDay: 1 },
     })
   );

@@ -93,10 +93,10 @@ describe('learning document startup', () => {
   });
 
   it.each([0, 1, 2, 3, 4, 5, 6, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
-    const { backup, converted } = validLegacyBackup();
+    const { backup, converted, legacyConverted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {
-        ...(schemaVersion < 4 ? backup.data : converted),
+        ...(schemaVersion < 4 ? backup.data : legacyConverted),
         schemaVersion,
         settings: { language: 'de' },
         dataUpdatedAt: backup.dataUpdatedAt,
@@ -114,7 +114,7 @@ describe('learning document startup', () => {
         ...converted,
         settings: {
           language: 'de',
-          ...(schemaVersion < LEARNING_DOCUMENT_VERSION && { resetEditorOnReviewQueue: false }),
+          ...(schemaVersion < 7 && { resetEditorOnReviewQueue: false }),
         },
         dataUpdatedAt: backup.dataUpdatedAt,
       })
@@ -306,8 +306,8 @@ describe('learning document startup', () => {
   });
 
   it('retries a rejected supported-document conversion without falling back to legacy storage', async () => {
-    const { converted, backup } = validLegacyBackup();
-    const saved = { ...converted, schemaVersion: 5, dataUpdatedAt: backup.dataUpdatedAt };
+    const { converted, legacyConverted, backup } = validLegacyBackup();
+    const saved = { ...legacyConverted, schemaVersion: 5, dataUpdatedAt: backup.dataUpdatedAt };
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': saved,
       'leetsrs:cards': {},
@@ -321,9 +321,12 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    const { schemaVersion: _savedSchemaVersion, ...savedData } = saved;
     expect(await readLearningDocument()).toEqual(
-      buildLearningDocument({ ...savedData, settings: { resetEditorOnReviewQueue: false } })
+      buildLearningDocument({
+        ...converted,
+        dataUpdatedAt: backup.dataUpdatedAt,
+        settings: { resetEditorOnReviewQueue: false },
+      })
     );
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });

@@ -21,7 +21,7 @@ describe('learning document persistence', () => {
   it('replaces the complete document, clearing omitted notes, settings, and timestamps', async () => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      stats: { '2024-01-01': createDailyStats(undefined) },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
       settings: { language: 'de' },
     });
@@ -42,7 +42,7 @@ describe('learning document persistence', () => {
   it('retains the previous document after invalid preparation or a rejected replacement', async () => {
     const document = buildLearningDocument({
       cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
-      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      stats: { '2024-01-01': createDailyStats(undefined) },
       settings: {},
     });
     await replaceLearningDocument(document);
@@ -66,7 +66,7 @@ describe('learning document persistence', () => {
   it('returns the normalized document that was persisted', async () => {
     const cardWithoutNote = createMockCard(State.New, { slug: 'two-sum' });
     const document = buildLearningDocument({
-      stats: { '2024-01-01': createDailyStats('2024-01-01', undefined) },
+      stats: { '2024-01-01': createDailyStats(undefined) },
       cards: { 'two-sum': { ...cardWithoutNote, note: '' } },
       settings: {},
     });

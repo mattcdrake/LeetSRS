@@ -29,11 +29,8 @@ it('preserves history and upcoming statistics results', async () => {
   cards[2].fsrs.due = new Date('2024-03-16T00:00:00').getTime();
   cards[4].fsrs.due = new Date('2024-03-17T00:00:00').getTime();
   const yesterday = {
-    date: '2024-03-14',
     streak: 7,
-    totalReviews: 3,
     newCards: 1,
-    reviewedCards: 2,
     gradeBreakdown: { 1: 1, 2: 0, 3: 2, 4: 0 },
   };
   await replaceLearningDocument(
@@ -56,7 +53,7 @@ it('preserves history and upcoming statistics results', async () => {
   await waitFor(() => expect(result.current.emptyUpcoming.isSuccess).toBe(true));
   expect(result.current.today.data).toBeNull();
   expect(result.current.history.data).toEqual([
-    yesterday,
+    { ...yesterday, date: '2024-03-14', totalReviews: 3, reviewedCards: 2 },
     {
       date: '2024-03-15',
       streak: 0,
@@ -80,7 +77,9 @@ it.each(['history', 'upcoming'] as const)(
     const card = createMockCard(State.Review);
     const document = buildLearningDocument({
       cards: { [card.slug]: card },
-      stats: { '2024-03-15': { ...createDailyStats('2024-03-15', undefined), totalReviews: 3 } },
+      stats: {
+        '2024-03-15': { ...createDailyStats(undefined), gradeBreakdown: { 1: 0, 2: 0, 3: 3, 4: 0 } },
+      },
     });
     await replaceLearningDocument(document);
     const get = storage.getItem.bind(storage);
@@ -98,7 +97,9 @@ it.each(['history', 'upcoming'] as const)(
     const view = renderHook(() => useStats(1), { wrapper });
     await waitFor(() => expect(view.result.current.isSuccess).toBe(true));
     expect(view.result.current.data).toEqual([
-      kind === 'history' ? document.stats['2024-03-15'] : { date: '2024-03-15', count: 1 },
+      kind === 'history'
+        ? { ...document.stats['2024-03-15'], date: '2024-03-15', totalReviews: 3, reviewedCards: 3 }
+        : { date: '2024-03-15', count: 1 },
     ]);
     view.unmount();
     queryClient.clear();
