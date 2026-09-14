@@ -18,9 +18,9 @@ vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }
 const messages = createMessageMock(vi.mocked(sendMessage));
 let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
-const renderItem = (card: Card, onDeleted = vi.fn()) => {
-  render(<CardListItem card={card} isExpanded onToggle={vi.fn()} onDeleted={onDeleted} />, { wrapper });
-  return onDeleted;
+const renderItem = (card: Card) => {
+  render(<CardListItem card={card} />, { wrapper });
+  fireEvent.click(screen.getByRole('button', { expanded: false }));
 };
 
 describe('CardListItem', () => {
@@ -72,8 +72,8 @@ describe('CardListItem', () => {
     );
   });
 
-  it('deletes only after confirmation and reports successful deletion', async () => {
-    const onDeleted = renderItem(createMockCard(State.New, { slug: 'test-problem' }));
+  it('deletes only after confirmation', async () => {
+    renderItem(createMockCard(State.New, { slug: 'test-problem' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
@@ -83,7 +83,6 @@ describe('CardListItem', () => {
 
     await vi.waitFor(() => {
       expect(sendMessage).toHaveBeenCalledWith('removeCard', { slug: 'test-problem' });
-      expect(onDeleted).toHaveBeenCalledOnce();
     });
   });
 
@@ -115,11 +114,11 @@ describe('CardListItem', () => {
     });
   });
 
-  it('restores delete confirmation after a failure without reporting deletion', async () => {
+  it('restores delete confirmation after a failure', async () => {
     const error = new Error('Delete failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('removeCard', () => Promise.reject(error));
-    const onDeleted = renderItem(createMockCard(State.New));
+    renderItem(createMockCard(State.New));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
@@ -128,7 +127,6 @@ describe('CardListItem', () => {
       expect(consoleError).toHaveBeenCalledWith('Failed to delete card:', error);
       expect(screen.getByRole('button', { name: 'Delete' })).not.toBeDisabled();
     });
-    expect(onDeleted).not.toHaveBeenCalled();
   });
 
   it('keeps overlapping operations on different cards independent', async () => {
@@ -141,10 +139,11 @@ describe('CardListItem', () => {
     ];
 
     render(
-      cards.map((card) => <CardListItem key={card.id} card={card} isExpanded onToggle={vi.fn()} onDeleted={vi.fn()} />),
+      cards.map((card) => <CardListItem key={card.id} card={card} />),
       { wrapper }
     );
 
+    for (const toggle of screen.getAllByRole('button', { expanded: false })) fireEvent.click(toggle);
     const pauseButtons = screen.getAllByRole('button', { name: 'Pause' });
     const deleteButtons = screen.getAllByRole('button', { name: 'Delete' });
     fireEvent.click(pauseButtons[0]);

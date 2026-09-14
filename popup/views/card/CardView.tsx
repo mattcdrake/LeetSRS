@@ -11,30 +11,9 @@ import { CardListItem } from './components/CardListItem';
 export function CardView() {
   const t = useI18n();
   const { data: cards = [], isLoading } = useCardsQuery();
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [filterText, setFilterText] = useState('');
 
   const sortedCards = filterAndSortCards(cards, filterText);
-
-  const toggleCard = (cardId: string) => {
-    setExpandedCards((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(cardId)) {
-        newSet.delete(cardId);
-      } else {
-        newSet.add(cardId);
-      }
-      return newSet;
-    });
-  };
-
-  const removeExpandedCard = (cardId: string) => {
-    setExpandedCards((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(cardId);
-      return newSet;
-    });
-  };
 
   return (
     <ViewLayout title={t.cardsView.title} headerContent={<StreakCounter />}>
@@ -70,13 +49,7 @@ export function CardView() {
         ) : (
           <div className="space-y-2">
             {sortedCards.map((card) => (
-              <CardListItem
-                key={card.id}
-                card={card}
-                isExpanded={expandedCards.has(card.id)}
-                onToggle={() => toggleCard(card.id)}
-                onDeleted={() => removeExpandedCard(card.id)}
-              />
+              <CardListItem key={card.id} card={card} />
             ))}
           </div>
         )}

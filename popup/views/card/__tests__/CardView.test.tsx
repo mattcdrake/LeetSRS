@@ -76,6 +76,9 @@ describe('CardView', () => {
     expect(screen.getByText('Longest Substring')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: /Two Sum/ }));
+    expect(screen.getByRole('button', { name: /Two Sum/ })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /Add Two Numbers/ })).toHaveAttribute('aria-expanded', 'false');
     const filterInput = screen.getByPlaceholderText('Filter by name or ID...');
     fireEvent.change(filterInput, { target: { value: 'Two' } });
 
@@ -84,6 +87,7 @@ describe('CardView', () => {
     expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Clear filter' })).toBeInTheDocument();
 
+    expect(screen.getByRole('button', { name: /Two Sum/ })).toHaveAttribute('aria-expanded', 'true');
     fireEvent.change(filterInput, { target: { value: 'xyz' } });
 
     expect(screen.getByText('No cards match your filter.')).toBeInTheDocument();
@@ -101,6 +105,7 @@ describe('CardView', () => {
     expect(screen.getByText('Longest Substring')).toBeInTheDocument();
     expect(screen.queryByText('No cards match your filter.')).not.toBeInTheDocument();
     expect(filterInput).toHaveValue('');
+    expect(screen.getByRole('button', { name: /Two Sum/ })).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
   });
 });

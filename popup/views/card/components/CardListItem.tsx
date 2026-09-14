@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
@@ -49,12 +50,10 @@ function StatRow({ label, value }: StatRowProps) {
 
 interface CardListItemProps {
   card: Card;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onDeleted: () => void;
 }
 
-export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardListItemProps) {
+export function CardListItem({ card }: CardListItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const t = useI18n();
   const pauseCardMutation = usePauseCardMutation();
   const removeCardMutation = useRemoveCardMutation();
@@ -71,7 +70,6 @@ export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardList
   const handleDelete = async () => {
     try {
       await removeCardMutation.mutateAsync(card.slug);
-      onDeleted();
     } catch (error) {
       console.error('Failed to delete card:', error);
     }
@@ -82,7 +80,7 @@ export function CardListItem({ card, isExpanded, onToggle, onDeleted }: CardList
       <div className="flex items-center hover:bg-tertiary transition-colors">
         <Button
           className="flex-1 flex items-center justify-between p-3 text-left"
-          onPress={onToggle}
+          onPress={() => setIsExpanded((expanded) => !expanded)}
           aria-expanded={isExpanded}
         >
           <div className="flex items-center gap-2">
