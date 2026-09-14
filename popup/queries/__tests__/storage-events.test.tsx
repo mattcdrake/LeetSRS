@@ -260,7 +260,9 @@ it('advances the review day and queue allowance without a storage write', async 
   await act(() => vi.advanceTimersByTimeAsync(15_000));
   expect(view.result.current.queue.data).toEqual([card]);
   expect(view.result.current.today.data).toBeNull();
-  expect(view.result.current.history.data).toMatchObject([{ date: '2024-03-16', totalReviews: 0 }]);
+  expect(view.result.current.history.data).toMatchObject([
+    { date: '2024-03-16', gradeBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0 } },
+  ]);
   expect(view.result.current.upcoming.data).toEqual([{ date: '2024-03-16', count: 1 }]);
   expect(writes).not.toHaveBeenCalled();
   view.unmount();
