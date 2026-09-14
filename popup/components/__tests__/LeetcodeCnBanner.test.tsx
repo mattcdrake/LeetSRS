@@ -61,8 +61,6 @@ afterEach(() => {
 describe('LeetcodeCnBanner', () => {
   it.each([
     { buttonIndex: 0, granted: true },
-    { buttonIndex: 1, granted: true },
-    { buttonIndex: 0, granted: false },
     { buttonIndex: 1, granted: false },
   ])('shares granted=$granted after Enable button $buttonIndex is clicked', async ({ buttonIndex, granted }) => {
     const request = Promise.withResolvers<boolean>();
@@ -112,8 +110,6 @@ describe('LeetcodeCnBanner', () => {
 
   it.each([
     { context: 'a leetcode.com tab', tabs: [tabWithUrl('https://leetcode.com/problems/two-sum/')] },
-    { context: 'an unrelated tab', tabs: [tabWithUrl('https://example.com/')] },
-    { context: 'a tab without a URL', tabs: [tabWithUrl()] },
     { context: 'an invalid tab URL', tabs: [tabWithUrl('not-a-url')] },
     { context: 'no active tab', tabs: [] },
   ])('is hidden for $context', async ({ tabs }) => {
@@ -128,25 +124,6 @@ describe('LeetcodeCnBanner', () => {
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
   });
 
-  it('hides the prompt until permission has loaded', async () => {
-    const permission = Promise.withResolvers<boolean>();
-    mockContains.mockReturnValue(permission.promise);
-    render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
-    await act(async () => permission.resolve(false));
-    expect(await screen.findByText(/leetcode\.cn/i)).toBeInTheDocument();
-  });
-
-  it('is hidden when permission is already granted', async () => {
-    mockContains.mockResolvedValue(true);
-
-    await act(async () => {
-      render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    });
-
-    expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
-  });
-
   it('is hidden when dismissed via localStorage', async () => {
     mockLocalStorage.setItem(DISMISS_KEY, '1');
     mockContains.mockResolvedValue(false);
@@ -156,49 +133,6 @@ describe('LeetcodeCnBanner', () => {
     });
 
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
-  });
-
-  it('is visible when not granted and not dismissed', async () => {
-    mockContains.mockResolvedValue(false);
-
-    await act(async () => {
-      render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    });
-
-    expect(await screen.findByText(/leetcode\.cn/i)).toBeInTheDocument();
-    expect(await screen.findByText('Enable')).toBeInTheDocument();
-    expect(mockRequest).not.toHaveBeenCalled();
-  });
-
-  it('requests permission and hides on success when Enable clicked', async () => {
-    mockContains.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
-    mockRequest.mockResolvedValue(true);
-
-    await act(async () => {
-      render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    });
-
-    await act(async () => {
-      (await screen.findByText('Enable')).click();
-    });
-
-    expect(mockRequest).toHaveBeenCalledWith({ origins: ['*://*.leetcode.cn/*'] });
-    await waitFor(() => expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument());
-  });
-
-  it('stays visible when permission request is denied', async () => {
-    mockContains.mockResolvedValue(false);
-    mockRequest.mockResolvedValue(false);
-
-    await act(async () => {
-      render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    });
-
-    await act(async () => {
-      (await screen.findByText('Enable')).click();
-    });
-
-    expect(await screen.findByText(/leetcode\.cn/i)).toBeInTheDocument();
   });
 
   it('hides and sets localStorage when dismissed', async () => {

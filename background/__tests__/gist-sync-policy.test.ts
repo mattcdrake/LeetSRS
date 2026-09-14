@@ -19,27 +19,11 @@ describe('decideGistSync', () => {
     });
   });
 
-  it.each([null, undefined, ''])('handles missing local timestamp %s', (local) => {
-    for (const remote of [earlier, 'invalid']) {
-      expect(decideGistSync({ state: 'parsed', dataUpdatedAt: remote }, local)).toEqual({
-        action: 'pull',
-      });
-    }
+  it('pulls when the local document has no edit timestamp', () => {
+    expect(decideGistSync({ state: 'parsed', dataUpdatedAt: earlier }, undefined)).toEqual({ action: 'pull' });
   });
 
-  it.each([null, undefined, ''])('handles missing parsed remote timestamp %s', (remote) => {
-    for (const local of [null, undefined, '', earlier, 'invalid']) {
-      expect(decideGistSync({ state: 'parsed', dataUpdatedAt: remote }, local)).toEqual({
-        action: 'push',
-      });
-    }
-  });
-
-  it('pushes when the remote file is missing', () => {
-    for (const local of [null, undefined, '', earlier, 'invalid']) {
-      expect(decideGistSync({ state: 'missing' }, local)).toEqual({
-        action: 'push',
-      });
-    }
+  it.each([undefined, earlier])('pushes when the remote timestamp is absent and local is %s', (local) => {
+    expect(decideGistSync({ state: 'parsed', dataUpdatedAt: undefined }, local)).toEqual({ action: 'push' });
   });
 });

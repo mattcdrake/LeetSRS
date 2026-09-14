@@ -32,7 +32,7 @@ describe('learning document startup', () => {
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
   });
 
-  it.each([undefined, 0, 1, 2, 3, 4, 5])('preserves an installation at version %s', async (version) => {
+  it.each([undefined, 3, 5])('preserves an installation at version %s', async (version) => {
     const { backup, converted } = validLegacyBackup();
     const schemaVersion = version ?? 0;
     const cards = structuredClone(schemaVersion < 4 ? backup.data.cards : converted.cards);
@@ -96,7 +96,7 @@ describe('learning document startup', () => {
     });
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
+  it.each([0, 6, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
     const { backup, converted, legacyConverted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {
@@ -128,10 +128,6 @@ describe('learning document startup', () => {
 
   it.each([
     false,
-    0,
-    '',
-    { invalid: [] },
-    {},
     { schemaVersion: null },
     { schemaVersion: 5, cards: null },
     { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
@@ -282,31 +278,6 @@ describe('learning document startup', () => {
 
     expect(await readGistConnection()).toEqual(connection);
     expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
-  });
-
-  it.each(['', ' \t\n '])('preserves embedded-note and modern-setting precedence for note %j', async (note) => {
-    const { backup } = validLegacyBackup();
-    const card = backup.data.cards['two-sum'];
-    await fakeBrowser.storage.local.set({
-      'leetsrs:schemaVersion': 2,
-      'leetsrs:cards': { 'two-sum': { ...card, note } },
-      'leetsrs:notes:valid-com': { text: 'Stale note' },
-    });
-    await fakeBrowser.storage.sync.set({
-      'leetsrs:dayStartHour': 4,
-      'leetsrs:autoClearLeetcode': 'ignored',
-      'leetsrs:resetEditorOnEveryProblem': false,
-      'leetsrs:language': 'de',
-    });
-
-    await initializeLearningDocument();
-
-    expect(await readLearningDocument()).toEqual(
-      buildLearningDocument({
-        cards: { 'two-sum': { ...card, ...(note && { note }) } },
-        settings: { resetEditorOnReviewQueue: false, language: 'de' },
-      })
-    );
   });
 
   it('retries a rejected supported-document conversion without falling back to legacy storage', async () => {

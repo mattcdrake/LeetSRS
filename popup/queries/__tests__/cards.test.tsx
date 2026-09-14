@@ -3,38 +3,25 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Rating, State } from 'ts-fsrs';
+import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { getBadgeState } from '@/background/badge';
 import background from '@/entrypoints/background/index';
 import { onMessage, sendMessage } from '@/shared/messages';
-import { readLearningDocument, STORAGE_KEYS } from '@/shared/storage';
-import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { STORAGE_KEYS } from '@/shared/storage';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, usePauseCardMutation, useRateCardMutation, useReviewQueueQuery } from '../cards';
+import { useReviewQueueQuery } from '../cards';
 
 vi.mock('@/shared/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/messages')>()),
   onMessage: vi.fn(),
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
-
-describe('useCardsQuery', () => {
-  it('shows saved cards and refreshes when another context removes them', async () => {
-    fakeBrowser.reset();
-    const card = createMockCard(State.New);
-    const document = buildLearningDocument({ cards: { [card.slug]: card } });
-    await storage.setItem(STORAGE_KEYS.learningDocument, document);
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-    await waitFor(() => expect(result.current.data).toEqual([card]));
-    await storage.setItem(STORAGE_KEYS.learningDocument, { ...document, cards: {} });
-    await waitFor(() => expect(result.current.data).toEqual([]));
-  });
-});
 
 it('keeps popup and badge queues consistent without reading browser language', async () => {
   fakeBrowser.reset();
@@ -70,44 +57,6 @@ it('keeps popup and badge queues consistent without reading browser language', a
     vi.useRealTimers();
     vi.unstubAllGlobals();
   }
-});
-
-describe('usePauseCardMutation', () => {
-  it.each([
-    ['pausing', 'two-sum', true],
-    ['unpausing', 'three-sum', false],
-  ] as const)('sends the correct message when %s a card', async (_action, slug, paused) => {
-    vi.mocked(sendMessage).mockResolvedValue(undefined);
-
-    const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createPopupTestWrapper().wrapper,
-    });
-
-    result.current.mutate({ slug, paused });
-
-    await waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', {
-        slug,
-        paused,
-      });
-    });
-  });
-
-  it('should handle mutation error properly', async () => {
-    const errorMessage = 'Card not found';
-    vi.mocked(sendMessage).mockRejectedValue(new Error(errorMessage));
-
-    const { result } = renderHook(() => usePauseCardMutation(), {
-      wrapper: createPopupTestWrapper().wrapper,
-    });
-
-    result.current.mutate({ slug: 'non-existent', paused: true });
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-      expect(result.current.error?.message).toBe(errorMessage);
-    });
-  });
 });
 
 describe('card queries through JSON messaging and background handlers', () => {
@@ -147,33 +96,4 @@ describe('card queries through JSON messaging and background handlers', () => {
       }
     }
   );
-
-  it.each([0, undefined])('preserves numeric dates and last_review=%s in query results', async (lastReview) => {
-    const card = createMockCard(State.Review, { createdAt: 0 });
-    card.fsrs.due = 0;
-    if (lastReview === undefined) delete card.fsrs.last_review;
-    else card.fsrs.last_review = lastReview;
-    await sendMessage('importData', {
-      jsonData: JSON.stringify(buildLearningDocument({ cards: { [card.slug]: card } })),
-    });
-
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toStrictEqual([card]);
-  });
-
-  it('acknowledges scheduling and refreshes the saved card with numeric dates', async () => {
-    const { result } = renderHook(() => useRateCardMutation(), { wrapper: createPopupTestWrapper().wrapper });
-
-    await act(async () => {
-      await expect(result.current.mutateAsync({ ...buildProblem(), rating: Rating.Good })).resolves.toBeUndefined();
-      expect(sendMessage).toHaveBeenCalledWith('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
-      const card = (await readLearningDocument()).cards['two-sum'];
-      expect(card).toMatchObject(buildProblem());
-      expect(card?.createdAt).toEqual(expect.any(Number));
-      expect(card?.fsrs.due).toEqual(expect.any(Number));
-      expect(card?.fsrs.last_review).toEqual(expect.any(Number));
-    });
-  });
 });

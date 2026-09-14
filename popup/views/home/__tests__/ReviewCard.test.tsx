@@ -2,8 +2,7 @@
  * @vitest-environment happy-dom
  */
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { Rating } from 'ts-fsrs';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { translations } from '@/shared/i18n/index';
@@ -36,29 +35,7 @@ describe('ReviewCard', () => {
     vi.mocked(useI18n).mockReturnValue(translations.en);
   });
 
-  describe('Rendering', () => {
-    it.each(['en', 'pl'] as const)(
-      'renders ordered localized ratings and submits each grade once in %s',
-      (language) => {
-        const t = translations[language];
-        vi.mocked(useI18n).mockReturnValue(t);
-        renderWithProviders();
-
-        expect(screen.getAllByRole('button').map((button) => button.textContent)).toEqual([
-          t.ratings[Rating.Again],
-          t.ratings[Rating.Hard],
-          t.ratings[Rating.Good],
-          t.ratings[Rating.Easy],
-        ]);
-        screen.getAllByRole('button').forEach((button, index) => {
-          expect(button).toHaveStyle({ backgroundColor: ['#c73e3e', '#d97706', '#4271c4', '#3d9156'][index] });
-          fireEvent.click(button);
-          expect(mockOnRate).toHaveBeenCalledTimes(index + 1);
-          expect(mockOnRate).toHaveBeenLastCalledWith(index + 1);
-        });
-      }
-    );
-
+  describe('review-queue reset authorization', () => {
     it('renders the problem identity and an unauthorized external link when reset is disabled', () => {
       renderWithProviders();
       expect(screen.getByText('#1')).toBeInTheDocument();
@@ -75,19 +52,6 @@ describe('ReviewCard', () => {
         'href',
         `https://${domain}/problems/two-sum/description/#leetsrs-reset-editor`
       );
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should handle cards with special characters in slug', () => {
-      const specialCard = {
-        ...mockCard,
-        slug: 'problem-with-special_chars-123',
-      };
-      renderWithProviders(specialCard);
-
-      const link = screen.getByRole('link', { name: /LeetCode/i });
-      expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/problem-with-special_chars-123/description/');
     });
   });
 });

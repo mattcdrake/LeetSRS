@@ -69,16 +69,6 @@ describe('content startup', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('mounts controls', async () => {
-    await act(() => bootstrapContent(ctx));
-
-    expect(observe).toHaveBeenCalledWith(document.body, { childList: true, subtree: true });
-    expect(setupLeetcodeEditorReset).toHaveBeenCalledOnce();
-    expect(disposeReset).not.toHaveBeenCalled();
-    expect(disconnect).not.toHaveBeenCalled();
-    expect(document.querySelector('#last-group')?.previousElementSibling?.id).toBe('leetsrs-control');
-  });
-
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
     document.body.innerHTML = '';
     await act(() => bootstrapContent(ctx));

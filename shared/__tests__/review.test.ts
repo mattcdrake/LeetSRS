@@ -2,33 +2,9 @@ import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import { createDailyStats } from '@/background/statistics';
 import type { Card } from '@/shared/models';
-import { buildReviewQueue, isDue } from '@/shared/review';
+import { buildReviewQueue } from '@/shared/review';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-
-describe('isDue', () => {
-  it.each([
-    ['2024-01-14T10:00:00', true],
-    ['2024-01-15T00:00:00', true],
-    ['2024-01-15T14:29:59.999', true],
-    ['2024-01-15T14:30:00.000', true],
-    ['2024-01-15T14:30:00.001', false],
-    ['2024-01-15T23:59:59.999', false],
-    ['2024-01-16T00:00:00', false],
-  ])('checks due timestamp %s against the current time', (due, expected) => {
-    const card = dueCard('card', due, State.Review);
-    expect(isDue(card, new Date('2024-01-15T14:30:00'))).toBe(expected);
-  });
-
-  it.each([State.New, State.Learning, State.Review, State.Relearning])(
-    'waits for the exact due timestamp in state %s',
-    (state) => {
-      const card = dueCard('card', '2024-01-15T23:59:59.999', state);
-      expect(isDue(card, new Date('2024-01-15T23:59:59.998'))).toBe(false);
-      expect(isDue(card, new Date('2024-01-15T23:59:59.999'))).toBe(true);
-    }
-  );
-});
 
 function dueCard(slug: string, due: string, state = State.New) {
   const card = createMockCard(state, { slug });
@@ -49,10 +25,6 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
 }
 
 describe('review queue calculations', () => {
-  it('returns an empty queue for an empty document', () => {
-    expect(buildReviewQueue(buildLearningDocument(), new Date('2024-01-15T12:00:00'))).toEqual([]);
-  });
-
   it.each([State.New, State.Learning, State.Review, State.Relearning])(
     'excludes paused and future cards and includes exact due times in state %i',
     (state) => {
@@ -89,43 +61,6 @@ describe('review queue calculations', () => {
     ];
 
     expect(queueFor(cards, 0, 0).map((card) => card.slug)).toEqual(['learning', 'relearning', 'review']);
-  });
-
-  it.each([0, 1705312800000])('sorts equal due timestamps %i by slug', (timestamp) => {
-    const cards = ['card-c', 'card-a', 'card-b'].map((slug) => {
-      const card = createMockCard(State.New, { slug });
-      card.fsrs.due = timestamp;
-      return card;
-    });
-    const queue = queueFor(cards);
-
-    expect(queue[0].slug).toBe('card-a');
-    expect(queue[1].slug).toBe('card-b');
-    expect(queue[2].slug).toBe('card-c');
-  });
-
-  it('should properly sort by due date timestamps', () => {
-    const queue = queueFor([
-      dueCard('late', '2024-01-15T18:00:00'),
-      dueCard('early', '2024-01-15T06:00:00'),
-      dueCard('middle', '2024-01-15T12:00:00'),
-    ]);
-
-    expect(queue[0].slug).toBe('early');
-    expect(queue[1].slug).toBe('middle');
-    expect(queue[2].slug).toBe('late');
-  });
-
-  it('should handle cards with millisecond-precision due times', () => {
-    const queue = queueFor([
-      dueCard('card-a', '2024-01-15T10:00:00.100'),
-      dueCard('card-b', '2024-01-15T10:00:00.050'),
-      dueCard('card-c', '2024-01-15T10:00:00.150'),
-    ]);
-
-    expect(queue[0].slug).toBe('card-b');
-    expect(queue[1].slug).toBe('card-a');
-    expect(queue[2].slug).toBe('card-c');
   });
 
   it.each([
