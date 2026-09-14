@@ -27,13 +27,10 @@ import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 export function startBackground() {
-  void initializeCatalog().catch((error) => {
-    console.error('Failed to initialize catalog:', error);
-  });
-
-  // Keep message and alarm handlers from accessing storage until the learning document is ready.
+  // Commands and alarms wait until both learning storage and the catalog are ready.
   const readyPromise = (async () => {
     await initializeLearningDocument();
+    await initializeCatalog();
 
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {
