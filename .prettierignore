@@ -1,5 +1,6 @@
 .wxt/
 .output/
+**/.venv/
 dist/
 coverage/
 experiments/
