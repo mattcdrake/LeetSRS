@@ -2,10 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { storage } from '#imports';
 import { STORAGE_KEYS } from '@/data/storage-keys';
-import { cardQueryKeys } from './cards';
 import { gistSyncQueryKeys } from './gist-sync';
-import { settingsQueryKeys } from './settings';
-import { statsQueryKeys } from './stats';
+import { learningDocumentQueryKey } from './learning-document';
 
 // Mount outside Suspense so initialization and the first query cannot hide subscriptions.
 export function useStorageQueryEvents() {
@@ -17,7 +15,7 @@ export function useStorageQueryEvents() {
       if (stopped) return;
       await Promise.all(queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     };
-    const learningKeys = [cardQueryKeys.all, statsQueryKeys.all, settingsQueryKeys.all];
+    const learningKeys = [learningDocumentQueryKey];
     const connectionKeys = [gistSyncQueryKeys.config, gistSyncQueryKeys.status];
     const watch = (key: Parameters<typeof storage.watch>[0], keys: readonly (readonly string[])[]) =>
       storage.watch(key, () => {

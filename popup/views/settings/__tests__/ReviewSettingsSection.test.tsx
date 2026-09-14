@@ -4,8 +4,7 @@ import { expect, it, vi } from 'vitest';
 import { updateSettings } from '@/background/learning';
 import { replaceLearningDocument } from '@/data/learning-document';
 import { sendMessage } from '@/integrations/browser/messages';
-import { settingsQueryKeys } from '@/popup/queries/settings';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { buildLearningDocument, setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -16,7 +15,7 @@ vi.mock('@/integrations/browser/messages', () => ({ sendMessage: vi.fn() }));
 it('offers only the daily new-card limit and saves changes', async () => {
   createMessageMock(vi.mocked(sendMessage)).resolve('updateSettings', undefined);
   const { wrapper, queryClient } = createPopupTestWrapper();
-  queryClient.setQueryData(settingsQueryKeys.all, buildSettings());
+  setPopupLearningDocumentQueryData(queryClient, { settings: buildSettings() });
   render(<ReviewSettingsSection />, { wrapper });
 
   const input = screen.getByRole('spinbutton', { name: 'New Cards Per Day' });

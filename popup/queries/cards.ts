@@ -1,31 +1,21 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { readLearningDocument } from '@/data/learning-document';
-import { getReviewQueue } from '@/data/learning-queries';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { RateCardInput } from '@/domain/cards';
+import { buildReviewQueue } from '@/domain/review';
 import { sendMessage } from '@/integrations/browser/messages';
-
-export const cardQueryKeys = {
-  all: ['cards'] as const,
-  reviewQueue: ['cards', 'reviewQueue'] as const,
-};
-
-export const cardsQueryOptions = queryOptions({
-  queryKey: cardQueryKeys.all,
-  queryFn: async () => Object.values((await readLearningDocument(true)).cards),
-});
+import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export function useCardsQuery() {
-  return useQuery(cardsQueryOptions);
+  return useQuery({
+    ...learningDocumentQueryOptions,
+    select: ({ document }) => Object.values(document.cards),
+  });
 }
 
 export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }) {
   const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
-    queryKey: cardQueryKeys.reviewQueue,
-    queryFn: () => getReviewQueue(true),
-    staleTime: 0,
-    gcTime: 0,
-    refetchInterval: 15_000,
+    ...learningDocumentQueryOptions,
+    select: ({ document, now }) => buildReviewQueue(document, now),
     refetchOnWindowFocus,
   });
 }
@@ -34,7 +24,7 @@ function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Prom
   const queryClient = useQueryClient();
   return useMutation<void, Error, TVariables>({
     mutationFn,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: cardQueryKeys.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey }),
   });
 }
 

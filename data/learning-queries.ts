@@ -1,4 +1,5 @@
 import type { Card } from '@/domain/cards';
+import type { LearningDocument } from '@/domain/learning-document';
 import { buildReviewQueue } from '@/domain/review';
 import { DEFAULT_SETTINGS, resolveSettings, type Settings } from '@/domain/settings';
 import { detectBrowserLanguage } from '@/integrations/browser/language';
@@ -26,5 +27,9 @@ export async function getBadgeState(): Promise<{ count: number; nextDueAt?: numb
 
 export async function getSettings(waitForInitialization = false): Promise<Settings> {
   const document = await readLearningDocument(waitForInitialization);
+  return resolveLearningDocumentSettings(document);
+}
+
+export function resolveLearningDocumentSettings(document: LearningDocument): Settings {
   return resolveSettings(document.settings, document.settings.language ?? detectBrowserLanguage());
 }
