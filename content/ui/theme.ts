@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { Rating } from 'ts-fsrs';
+import { Rating } from '@/domain/ratings';
 import { RATING_COLORS } from '@/ui/rating-colors';
 
 export const THEME_COLORS = {

@@ -1,7 +1,7 @@
-import { type Grade, Rating } from 'ts-fsrs';
 import { z } from 'zod';
 import { addLocalDays, formatLocalDate } from './calendar';
 import type { Card } from './cards';
+import { type Rating, Rating as RatingValue } from './ratings';
 
 const count = z.int().nonnegative();
 
@@ -9,10 +9,10 @@ export const dailyStatsSchema = z.object({
   newCards: count,
   streak: count,
   gradeBreakdown: z.object({
-    [Rating.Again]: count,
-    [Rating.Hard]: count,
-    [Rating.Good]: count,
-    [Rating.Easy]: count,
+    [RatingValue.Again]: count,
+    [RatingValue.Hard]: count,
+    [RatingValue.Good]: count,
+    [RatingValue.Easy]: count,
   }),
 });
 export type DailyStats = z.infer<typeof dailyStatsSchema>;
@@ -30,10 +30,10 @@ export interface UpcomingReviewStats {
 function createEmptyDailyStats(streak: number): DailyStats {
   return {
     gradeBreakdown: {
-      [Rating.Again]: 0,
-      [Rating.Hard]: 0,
-      [Rating.Good]: 0,
-      [Rating.Easy]: 0,
+      [RatingValue.Again]: 0,
+      [RatingValue.Hard]: 0,
+      [RatingValue.Good]: 0,
+      [RatingValue.Easy]: 0,
     },
     newCards: 0,
     streak,
@@ -48,7 +48,7 @@ export function createDailyStats(yesterdayStats: DailyStats | undefined): DailyS
 export function recordReview(
   stats: Record<string, DailyStats>,
   now: Date,
-  grade: Grade,
+  rating: Rating,
   isNewCard: boolean
 ): Record<string, DailyStats> {
   const today = formatLocalDate(now);
@@ -62,7 +62,7 @@ export function recordReview(
       newCards: todayStats.newCards + (isNewCard ? 1 : 0),
       gradeBreakdown: {
         ...todayStats.gradeBreakdown,
-        [grade]: todayStats.gradeBreakdown[grade] + 1,
+        [rating]: todayStats.gradeBreakdown[rating] + 1,
       },
     },
   };

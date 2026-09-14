@@ -1,4 +1,4 @@
-import { Rating } from 'ts-fsrs';
+import { Rating } from '@/domain/ratings';
 
 // English translations (base language - all other translations must match this structure)
 const en = {

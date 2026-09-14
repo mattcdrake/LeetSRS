@@ -1,7 +1,7 @@
-import { State as FsrsState } from 'ts-fsrs';
 import { formatLocalDate } from './calendar';
 import type { Card } from './cards';
 import type { LearningDocument } from './learning-document';
+import { LearningState } from './scheduling';
 import { DEFAULT_SETTINGS } from './settings';
 
 export function isDue(card: Card, now: Date): boolean {
@@ -15,8 +15,8 @@ const sortByDueDateThenSlug = (a: Card, b: Card): number => {
 };
 
 function partitionDueCards(dueCards: readonly Card[]): { reviewCards: Card[]; newCards: Card[] } {
-  const reviewCards = dueCards.filter((card) => card.fsrs.state !== FsrsState.New);
-  const newCards = dueCards.filter((card) => card.fsrs.state === FsrsState.New);
+  const reviewCards = dueCards.filter((card) => card.fsrs.state !== LearningState.New);
+  const newCards = dueCards.filter((card) => card.fsrs.state === LearningState.New);
   newCards.sort(sortByDueDateThenSlug);
   return { reviewCards, newCards };
 }

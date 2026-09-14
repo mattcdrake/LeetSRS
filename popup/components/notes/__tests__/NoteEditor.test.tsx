@@ -1,12 +1,12 @@
 /** @vitest-environment happy-dom */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { replaceLearningDocument } from '@/data/learning-document';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import { NOTES_MAX_LENGTH } from '@/domain/cards';
+import { LearningState as State } from '@/domain/scheduling';
 import { sendMessage } from '@/integrations/browser/messages';
 import { useCardsQuery } from '@/popup/queries/cards';
 import { createMockCard } from '@/test/utils/card-mocks';

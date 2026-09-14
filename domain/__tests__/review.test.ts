@@ -1,6 +1,6 @@
-import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { LearningState as State } from '@/domain/scheduling';
 import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';

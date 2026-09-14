@@ -1,7 +1,7 @@
-import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { LEARNING_DOCUMENT_VERSION } from '@/domain/learning-document';
+import { LearningState as State } from '@/domain/scheduling';
 import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';

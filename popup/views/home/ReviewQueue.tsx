@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Grade } from 'ts-fsrs';
 import type { RateCardInput } from '@/domain/cards';
+import type { Rating } from '@/domain/ratings';
 import {
   useDelayCardMutation,
   usePauseCardMutation,
@@ -38,7 +38,7 @@ export function ReviewQueue() {
     }
   };
 
-  const handleRating = async (rating: Grade) => {
+  const handleRating = async (rating: Rating) => {
     const currentCard = queue[0];
     const input: RateCardInput = {
       slug: currentCard.slug,

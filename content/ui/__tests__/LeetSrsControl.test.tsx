@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { watchDocumentTranslations } from '@/data/translations';
+import { Rating } from '@/domain/ratings';
 import { translations } from '@/i18n';
 
 vi.mock('@/data/translations', () => ({

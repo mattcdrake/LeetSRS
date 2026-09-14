@@ -1,5 +1,5 @@
-import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
+import { Rating } from '@/domain/ratings';
 import { sendMessage } from '@/integrations/browser/messages';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';

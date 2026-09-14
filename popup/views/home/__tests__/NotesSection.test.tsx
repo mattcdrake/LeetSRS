@@ -1,6 +1,6 @@
-import { State } from 'ts-fsrs';
 import { storage } from '#imports';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import { LearningState as State } from '@/domain/scheduling';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**

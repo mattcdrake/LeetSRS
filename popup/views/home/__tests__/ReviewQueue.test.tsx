@@ -6,9 +6,10 @@ import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/ut
 
 import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { Rating } from '@/domain/ratings';
+import { LearningState as State } from '@/domain/scheduling';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';

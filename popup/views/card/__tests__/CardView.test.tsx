@@ -6,9 +6,9 @@ import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/ut
 
 import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { LearningState as State } from '@/domain/scheduling';
 import { sendMessage } from '@/integrations/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';
 import { createMockCard } from '@/test/utils/card-mocks';
@@ -248,7 +248,7 @@ describe('CardView', () => {
     expect(within(requireDefined(lastRow)).getByText(/\w{3} \d{1,2}, \d{4}/)).toBeInTheDocument();
   });
 
-  it('should show all FSRS states correctly', () => {
+  it('should show all learning states correctly', () => {
     const cards = [
       createMockCard(State.New, { name: 'New Card' }),
       createMockCard(State.Learning, { name: 'Learning Card' }),

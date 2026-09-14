@@ -3,9 +3,9 @@
  */
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Rating } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { Rating } from '@/domain/ratings';
 import { translations } from '@/i18n';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';

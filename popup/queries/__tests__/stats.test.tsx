@@ -2,11 +2,11 @@ import { QueryClientProvider } from '@tanstack/react-query';
 /** @vitest-environment happy-dom */
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { replaceLearningDocument } from '@/data/learning-document';
+import { LearningState as State } from '@/domain/scheduling';
 import { createDailyStats } from '@/domain/statistics';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';

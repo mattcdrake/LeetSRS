@@ -2,7 +2,6 @@
 import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { type ReactNode, Suspense } from 'react';
-import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -11,6 +10,8 @@ import { readLearningDocument, replaceLearningDocument } from '@/data/learning-d
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import type { GistSyncStatus } from '@/domain/gist-sync';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/domain/learning-document';
+import { Rating } from '@/domain/ratings';
+import { LearningState as State } from '@/domain/scheduling';
 import { createDailyStats } from '@/domain/statistics';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/integrations/browser/messages';

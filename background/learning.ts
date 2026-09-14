@@ -1,14 +1,15 @@
-import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import type { Card, ProblemDescriptor, RateCardInput } from '@/domain/cards';
+import { createFsrsScheduler } from '@/domain/fsrs-scheduler';
 import { findCard, type LearningDocument } from '@/domain/learning-document';
 import { calculateDelayedDueDate } from '@/domain/review';
+import { LearningState } from '@/domain/scheduling';
 import type { SettingsUpdate } from '@/domain/settings';
 import { recordReview } from '@/domain/statistics';
 
 import { triggerGistSync } from './gist-sync';
 
-const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short_term: false }));
+const scheduler = createFsrsScheduler();
 
 async function saveLocalLearningDocument(document: LearningDocument, now: Date): Promise<void> {
   await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
@@ -24,12 +25,11 @@ function requireCard(document: LearningDocument, slug: string): Card {
 }
 
 function createCard(problem: ProblemDescriptor, now: Date): Card {
-  const initialFsrs = createEmptyCard(now);
   return {
     id: crypto.randomUUID(),
     ...problem,
     createdAt: now.getTime(),
-    fsrs: { ...initialFsrs, due: initialFsrs.due.getTime(), last_review: initialFsrs.last_review?.getTime() },
+    fsrs: scheduler.createSchedule(now),
     paused: false,
   };
 }
@@ -78,13 +78,8 @@ export async function rateCard(input: RateCardInput): Promise<void> {
   const document = await readLearningDocument();
   const { rating, ...problem } = input;
   const card = findCard(document, problem.slug) ?? createCard(problem, now);
-  const isNewCard = card.fsrs.state === FsrsState.New;
-  const schedulingResult = fsrs.next(card.fsrs, now, rating);
-  card.fsrs = {
-    ...schedulingResult.card,
-    due: schedulingResult.card.due.getTime(),
-    last_review: schedulingResult.card.last_review?.getTime(),
-  };
+  const isNewCard = card.fsrs.state === LearningState.New;
+  card.fsrs = scheduler.review(card.fsrs, rating, now);
   document.cards[card.slug] = card;
 
   document.stats = recordReview(document.stats, now, rating, isNewCard);

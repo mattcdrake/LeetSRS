@@ -1,5 +1,6 @@
-import { Rating, State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
+import { Rating } from '@/domain/ratings';
+import { LearningState as State } from '@/domain/scheduling';
 import { createMockCard } from '@/test/utils/card-mocks';
 import {
   calculateHistoryStats,

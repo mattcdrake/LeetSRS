@@ -1,6 +1,6 @@
 import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { ratingSchema } from '@/domain/ratings';
+import { RATINGS } from '@/domain/ratings';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { useLastNDaysStatsQuery } from '@/popup/queries/stats';
 import { RATING_COLORS } from '@/ui/rating-colors';
@@ -20,7 +20,7 @@ export function ReviewHistoryChart() {
         const [, month, day] = stat.date.split('-').map(Number);
         return `${month}/${day}`;
       }) || [],
-    datasets: [...ratingSchema.values].map((rating) => ({
+    datasets: RATINGS.map((rating) => ({
       label: t.ratings[rating],
       data: last30DaysStats?.map((stat) => stat.gradeBreakdown[rating]) || [],
       backgroundColor: colors[rating],

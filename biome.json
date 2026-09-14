@@ -38,7 +38,29 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "style": {
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "ts-fsrs": "Import the project-owned scheduling domain instead."
+            }
+          }
+        }
+      }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["domain/fsrs-scheduler.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ]
 }

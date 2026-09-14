@@ -1,4 +1,4 @@
-import { Rating } from 'ts-fsrs';
+import { Rating } from '@/domain/ratings';
 import type { Translations } from '@/i18n';
 
 export const RATING_COLORS = {

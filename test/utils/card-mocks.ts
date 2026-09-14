@@ -1,5 +1,5 @@
-import type { State } from 'ts-fsrs';
 import type { Card, ProblemDescriptor } from '@/domain/cards';
+import type { LearningState } from '@/domain/scheduling';
 
 const MOCK_TIMESTAMP = Date.parse('2024-01-01T00:00:00.000Z');
 
@@ -16,11 +16,11 @@ export function buildProblem(overrides: Partial<ProblemDescriptor> = {}): Proble
 
 /**
  * Creates a mock Card object for testing
- * @param state - The FSRS state for the card
+ * @param state - The learning state for the card
  * @param overrides - Optional overrides for any Card properties
  * @returns A complete Card object with sensible defaults
  */
-export const createMockCard = (state: State, overrides: Partial<Card> = {}): Card => {
+export const createMockCard = (state: LearningState, overrides: Partial<Card> = {}): Card => {
   return {
     id: 'mock-id',
     slug: 'mock-slug',

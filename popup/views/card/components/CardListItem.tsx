@@ -1,7 +1,7 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
-import { State as FsrsState } from 'ts-fsrs';
 import type { Card } from '@/domain/cards';
+import { LearningState } from '@/domain/scheduling';
 import type { Translations } from '@/i18n';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
@@ -11,15 +11,15 @@ import { bounceButton } from '@/popup/styles';
 import { DIFFICULTY_COLORS } from '@/ui/difficulty-colors';
 import { useI18n } from '../../../contexts/I18nContext';
 
-const getStateLabel = (state: FsrsState, t: Translations) => {
+const getStateLabel = (state: LearningState, t: Translations) => {
   switch (state) {
-    case FsrsState.New:
+    case LearningState.New:
       return t.states.new;
-    case FsrsState.Learning:
+    case LearningState.Learning:
       return t.states.learning;
-    case FsrsState.Review:
+    case LearningState.Review:
       return t.states.review;
-    case FsrsState.Relearning:
+    case LearningState.Relearning:
       return t.states.relearning;
     default:
       return t.states.unknown;

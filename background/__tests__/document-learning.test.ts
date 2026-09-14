@@ -1,4 +1,3 @@
-import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
@@ -7,6 +6,8 @@ import { getReviewQueue } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
 import { formatLocalDate } from '@/domain/calendar';
 import { learningDocumentSchema } from '@/domain/learning-document';
+import { Rating } from '@/domain/ratings';
+import { LearningState as State } from '@/domain/scheduling';
 import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/integrations/browser/messages';
 import { requireDefined } from '@/test/utils/assertions';

@@ -1,11 +1,10 @@
 import type { CSSProperties } from 'react';
 import { Button } from 'react-aria-components';
-import type { Grade } from 'ts-fsrs';
-import { ratingSchema } from '@/domain/ratings';
+import { RATINGS, type Rating } from '@/domain/ratings';
 import type { Translations } from '@/i18n';
 import { THEME_COLORS, useDarkMode } from './theme';
 
-export type RatingCallback = (rating: Grade) => void;
+export type RatingCallback = (rating: Rating) => void;
 
 export function RatingMenu({
   t,
@@ -32,7 +31,7 @@ export function RatingMenu({
       }
     >
       <div className="mb-2 flex flex-wrap gap-1">
-        {[...ratingSchema.values].map((rating) => {
+        {RATINGS.map((rating) => {
           const { bg, hover } = colors.ratings[rating];
           const label = t.ratings[rating];
           return (

@@ -1,8 +1,7 @@
 import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
-import type { Grade } from 'ts-fsrs';
 import type { Card } from '@/domain/cards';
-import { ratingSchema } from '@/domain/ratings';
+import { RATINGS, type Rating } from '@/domain/ratings';
 import { authorizeEditorReset } from '@/integrations/leetcode/page-context';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { getLeetcodeProblemUrl } from '@/popup/leetcode';
@@ -14,7 +13,7 @@ import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
   card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty' | 'domain'>;
-  onRate: (rating: Grade) => void;
+  onRate: (rating: Rating) => void;
   isProcessing?: boolean;
 };
 
@@ -49,7 +48,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
       </div>
 
       <div className="flex gap-2 justify-center">
-        {[...ratingSchema.values].map((rating) => (
+        {RATINGS.map((rating) => (
           <Button
             key={rating}
             onPress={() => onRate(rating)}

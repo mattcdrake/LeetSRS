@@ -3,9 +3,9 @@
  */
 
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { LearningState as State } from '@/domain/scheduling';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';

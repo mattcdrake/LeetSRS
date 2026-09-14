@@ -1,11 +1,11 @@
 /** @vitest-environment happy-dom */
 
 import { render, screen, waitFor } from '@testing-library/react';
-import { Rating } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
 import { formatLocalDate } from '@/domain/calendar';
 import type { LearningDocument } from '@/domain/learning-document';
+import { Rating } from '@/domain/ratings';
 import type { DailyStats } from '@/domain/statistics';
 import { sendMessage } from '@/integrations/browser/messages';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';

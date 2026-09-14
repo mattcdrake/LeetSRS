@@ -3,13 +3,14 @@
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { Rating, State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { readLearningDocument } from '@/data/learning-document';
 import { getBadgeState } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import { Rating } from '@/domain/ratings';
+import { LearningState as State } from '@/domain/scheduling';
 import background from '@/entrypoints/background';
 import { onMessage, sendMessage } from '@/integrations/browser/messages';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';

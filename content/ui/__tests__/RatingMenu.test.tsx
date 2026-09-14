@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Rating } from 'ts-fsrs';
 import { expect, it, vi } from 'vitest';
+import { Rating } from '@/domain/ratings';
 import { translations } from '@/i18n';
 import { RatingMenu } from '../RatingMenu';
 

@@ -1,4 +1,4 @@
-import { State } from 'ts-fsrs';
+import { LearningState as State } from '@/domain/scheduling';
 import { createMockCard } from './card-mocks';
 
 // Change one envelope field at a time to verify rejection before storage is changed.

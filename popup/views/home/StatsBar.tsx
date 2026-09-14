@@ -1,4 +1,4 @@
-import { State } from 'ts-fsrs';
+import { LearningState } from '@/domain/scheduling';
 import { useReviewQueueQuery } from '@/popup/queries/cards';
 import { useI18n } from '../../contexts/I18nContext';
 
@@ -29,14 +29,14 @@ export function StatsBar() {
   const stats = cards.reduce(
     (acc, card) => {
       switch (card.fsrs?.state) {
-        case State.Review:
+        case LearningState.Review:
           acc.reviews++;
           break;
-        case State.New:
+        case LearningState.New:
           acc.new++;
           break;
-        case State.Learning:
-        case State.Relearning:
+        case LearningState.Learning:
+        case LearningState.Relearning:
           acc.learn++;
           break;
         default:

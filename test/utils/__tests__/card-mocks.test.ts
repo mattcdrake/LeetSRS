@@ -1,5 +1,5 @@
-import { State } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { LearningState as State } from '@/domain/scheduling';
 import { createMockCard } from '../card-mocks';
 
 describe('createMockCard', () => {

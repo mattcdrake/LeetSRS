@@ -16,6 +16,12 @@ A rated attempt at a problem that updates its card's schedule and the learner's 
 **Rating**:
 The learner's assessment of a review: Again, Hard, Good, or Easy. This is distinct from the problem's Easy, Medium, or Hard difficulty.
 
+**Learning state**:
+A card's lifecycle stage: New, Learning, Review, or Relearning.
+
+**Schedule**:
+A card's due time and learning-progress values used to determine its next review.
+
 **New card**:
 A card that has not yet received its first rating.
 

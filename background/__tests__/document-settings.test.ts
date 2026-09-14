@@ -1,10 +1,10 @@
-import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { readLearningDocument, replaceLearningDocument } from '@/data/learning-document';
 import { getSettings } from '@/data/learning-queries';
 import { STORAGE_KEYS } from '@/data/storage-keys';
+import { LearningState as State } from '@/domain/scheduling';
 import { createDailyStats } from '@/domain/statistics';
 import { onMessage } from '@/integrations/browser/messages';
 import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';

@@ -3,10 +3,10 @@
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
-import { State } from 'ts-fsrs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
 import type { LearningDocument } from '@/domain/learning-document';
+import { LearningState as State } from '@/domain/scheduling';
 import type { UpcomingReviewStats } from '@/domain/statistics';
 import { sendMessage } from '@/integrations/browser/messages';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';

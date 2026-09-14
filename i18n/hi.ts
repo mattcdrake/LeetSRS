@@ -1,4 +1,4 @@
-import { Rating } from 'ts-fsrs';
+import { Rating } from '@/domain/ratings';
 import type { Translations } from './index';
 
 const hi: Translations = {

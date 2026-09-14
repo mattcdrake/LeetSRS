@@ -1,8 +1,8 @@
 /** @vitest-environment happy-dom */
 import { render, screen } from '@testing-library/react';
-import { State } from 'ts-fsrs';
 import { describe, expect, it, vi } from 'vitest';
 import type { Card } from '@/domain/cards';
+import { LearningState as State } from '@/domain/scheduling';
 import { sendMessage } from '@/integrations/browser/messages';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';

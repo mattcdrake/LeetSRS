@@ -1,23 +1,32 @@
-import { type CardInput, createEmptyCard, FSRS, Rating, State } from 'ts-fsrs';
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createMockCard } from '@/test/utils/card-mocks';
-import { cardSchema, type FsrsCard } from '../cards';
+import { cardSchema } from '../cards';
+import { LearningState, scheduleSchema } from '../scheduling';
 
 describe('card schemas', () => {
-  it('accepts an unreviewed numeric card as an FSRS input', () => {
+  it('accepts an unreviewed numeric schedule', () => {
     const now = 1_700_000_000_000;
-    const empty = createEmptyCard(now);
-    const card = cardSchema.parse({ ...createMockCard(State.New), fsrs: { ...empty, due: now } });
+    const card = cardSchema.parse({
+      ...createMockCard(LearningState.New),
+      fsrs: {
+        due: now,
+        state: LearningState.New,
+        stability: 0,
+        difficulty: 0,
+        elapsed_days: 0,
+        scheduled_days: 0,
+        reps: 0,
+        lapses: 0,
+        learning_steps: 0,
+      },
+    });
 
-    expectTypeOf<FsrsCard>().toExtend<CardInput>();
-    expect(card.fsrs).toEqual({ ...empty, due: now });
+    expect(scheduleSchema.parse(card.fsrs)).toEqual(card.fsrs);
     expect(card.fsrs.last_review).toBeUndefined();
-    const scheduler = new FSRS({ enable_fuzz: false });
-    expect(scheduler.next(card.fsrs, now, Rating.Good)).toEqual(scheduler.next(empty, now, Rating.Good));
   });
 
   it.each(['id', 'slug', 'name', 'leetcodeId'])('rejects empty %s without trimming valid values', (field) => {
-    const card = createMockCard(State.Review);
+    const card = createMockCard(LearningState.Review);
     const result = cardSchema.safeParse({ ...card, [field]: ' \t ' });
     expect(result.success).toBe(false);
     expect(result.error?.issues).toEqual([
@@ -48,18 +57,27 @@ describe('card schemas', () => {
     { fsrs: { lapses: -1 } },
     { fsrs: { learning_steps: 0.5 } },
   ])('rejects malformed fields: %j', (overrides) => {
-    const card = createMockCard(State.Review);
+    const card = createMockCard(LearningState.Review);
     expect(cardSchema.safeParse({ ...card, ...overrides, fsrs: { ...card.fsrs, ...overrides.fsrs } }).success).toBe(
       false
     );
   });
 
   it('retains numeric date boundaries and fractional scheduling values while stripping nested unknown fields', () => {
-    const card = createMockCard(State.Review, { createdAt: -8_640_000_000_000_000 });
+    const card = createMockCard(LearningState.Review, { createdAt: -8_640_000_000_000_000 });
     card.fsrs.due = 8_640_000_000_000_000;
     card.fsrs.last_review = -0.5;
     card.fsrs.elapsed_days = 0.5;
     card.fsrs.scheduled_days = 1.5;
     expect(cardSchema.parse({ ...card, extra: true, fsrs: { ...card.fsrs, extra: { value: 1 } } })).toEqual(card);
   });
+});
+
+describe('schedule schema', () => {
+  it.each([LearningState.New, LearningState.Learning, LearningState.Review, LearningState.Relearning])(
+    'accepts learning state %s',
+    (state) => {
+      expect(scheduleSchema.parse(createMockCard(state).fsrs).state).toBe(state);
+    }
+  );
 });
