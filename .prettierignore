@@ -1,6 +1,8 @@
 .wxt/
 .output/
+**/.venv/
 dist/
 coverage/
 experiments/
+automation/
 CHANGELOG.md
