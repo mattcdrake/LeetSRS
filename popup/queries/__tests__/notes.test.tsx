@@ -14,7 +14,7 @@ import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
-import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '../notes';
+import { useNoteQuery, useSaveNoteMutation } from '../notes';
 
 vi.mock('@/shared/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/messages')>()),
@@ -43,7 +43,6 @@ describe('note and card query coherence', () => {
         cards: useCardsQuery(),
         queue: useReviewQueueQuery(),
         save: useSaveNoteMutation(problem.slug),
-        remove: useDeleteNoteMutation(problem.slug),
       }),
       { wrapper: createPopupTestWrapper().wrapper }
     );
@@ -57,8 +56,8 @@ describe('note and card query coherence', () => {
       expect(result.current.cards.data).toMatchObject([{ slug: problem.slug, note: '  Use a map  ' }]);
       expect(result.current.queue.data).toMatchObject([{ slug: problem.slug, note: '  Use a map  ' }]);
     });
-    await act(() => result.current.remove.mutateAsync());
-    expect(sendMessage).toHaveBeenCalledWith('deleteNote', { slug: problem.slug });
+    await act(() => result.current.save.mutateAsync(''));
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug: problem.slug, text: '' });
     await waitFor(() => {
       expect(result.current.note.data).toBeNull();
       expect(result.current.cards.data?.[0]).not.toHaveProperty('note');
@@ -108,7 +107,7 @@ it('preserves a dirty rendered note through incoming replacement and saves its d
   await act(() => sendMessage('saveNote', { slug: problem.slug, text: 'Untouched update' }));
   await waitFor(() => expect(input).toHaveValue('Untouched update'));
   fireEvent.change(input, { target: { value: 'My draft' } });
-  await act(() => sendMessage('deleteNote', { slug: problem.slug }));
+  await act(() => sendMessage('saveNote', { slug: problem.slug, text: '' }));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument());
   expect(input).toHaveValue('My draft');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -135,7 +134,7 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
   await act(() => view.result.current.delay.mutateAsync({ slug: problem.slug, days: 1 }));
   await waitFor(() => expect(view.result.current.queue.data).toMatchObject([{ slug: next.slug }]));
   expect(view.result.current.note.data).toBe('Outgoing note');
-  await act(() => sendMessage('deleteNote', { slug: problem.slug }));
+  await act(() => sendMessage('saveNote', { slug: problem.slug, text: '' }));
   await waitFor(() => expect(view.result.current.note.data).toBeNull());
   view.rerender({ slug: next.slug });
   await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));

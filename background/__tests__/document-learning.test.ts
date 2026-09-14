@@ -132,15 +132,12 @@ describe('document learning through background commands', () => {
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('a'.repeat(500));
     await dispatch('saveNote', { slug: card.slug, text: '' });
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
-    await dispatch('saveNote', { slug: card.slug, text: 'replacement' });
-    await dispatch('deleteNote', { slug: card.slug });
-    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
     await dispatch('saveNote', { slug: card.slug, text: 'removed with card' });
     await dispatch('removeCard', { slug: card.slug });
     expect(Object.values((await readLearningDocument()).cards)).toEqual(others);
     expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
     expect(await readLearningDocument()).toEqual({ ...original, dataUpdatedAt: new Date().toISOString() });
-    expect(writes).toHaveBeenCalledTimes(11);
+    expect(writes).toHaveBeenCalledTimes(9);
     for (const [index, [items]] of writes.mock.calls.entries()) {
       expect(Object.keys(items)).toEqual([STORAGE_KEYS.learningDocument.slice('local:'.length)]);
       const document = learningDocumentSchema.parse(
@@ -279,7 +276,6 @@ describe('document learning through background commands', () => {
   it('preserves missing-card errors and harmless note deletion', async () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
-    await dispatch('deleteNote', { slug: 'missing' });
     await dispatch('saveNote', { slug: 'missing', text: '' });
     await expect(dispatch('delayCard', { slug: 'missing', days: 1 })).rejects.toThrow('not found');
     await expect(dispatch('setPauseStatus', { slug: 'missing', paused: true })).rejects.toThrow('not found');
@@ -289,7 +285,7 @@ describe('document learning through background commands', () => {
     await dispatch('addCard', { problem: buildProblem() });
     const card = requireDefined((await readLearningDocument()).cards['two-sum']);
     writes.mockClear();
-    await dispatch('deleteNote', { slug: card.slug });
+    await dispatch('saveNote', { slug: card.slug, text: '' });
     expect(writes).not.toHaveBeenCalled();
   });
 

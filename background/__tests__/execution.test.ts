@@ -142,7 +142,6 @@ const invalidPayloads: [MessageName, unknown][] = [
   ['setPauseStatus', { slug: problem.slug, paused: 'false' }],
   ['rateCard', { input: { ...problem, rating: 0 } }],
   ['saveNote', { slug: 'card', text: 'a'.repeat(501) }],
-  ['deleteNote', { slug: 42 }],
   ['updateSettings', { changes: { language: 'constructor' } }],
   ['importData', { jsonData: {} }],
   ['setupGistSync', { mode: 'existing', gistId: 42, pat: 'token' }],

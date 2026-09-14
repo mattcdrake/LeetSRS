@@ -77,10 +77,6 @@ export function startBackground() {
     const payload = messagePayloadSchemas.saveNote.parse(data);
     return saveNote(payload.slug, payload.text);
   });
-  onMessage('deleteNote', async ({ data }) => {
-    await readyPromise;
-    return saveNote(messagePayloadSchemas.deleteNote.parse(data).slug, '');
-  });
   onMessage('updateSettings', async ({ data }) => {
     await readyPromise;
     return updateSettings(messagePayloadSchemas.updateSettings.parse(data).changes);

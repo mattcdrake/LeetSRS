@@ -3,7 +3,7 @@ import { Button, Label, TextArea, TextField } from 'react-aria-components';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
-import { useDeleteNoteMutation, useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
+import { useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
 import { bounceButton } from '@/popup/styles';
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 
@@ -25,7 +25,6 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
 
   const { data: note, isLoading, error } = useNoteQuery(slug);
   const saveNoteMutation = useSaveNoteMutation(slug);
-  const deleteNoteMutation = useDeleteNoteMutation(slug);
 
   const draft = useDraftUntilSaved(slug, note ?? '');
   const { value: text, setValue: setText } = draft;
@@ -46,9 +45,8 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
 
   const remove = () =>
     startOrConfirm(async () => {
-      saveNoteMutation.reset();
       try {
-        await deleteNoteMutation.mutateAsync();
+        await saveNoteMutation.mutateAsync('');
         draft.discard();
       } catch (error) {
         console.error('Failed to delete note:', error);
@@ -63,8 +61,9 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
   const canSave = hasChanges && !isOverLimit && text.length > 0;
   const hasExistingNote = note != null;
   const deleteConfirm = isConfirming;
-  const isSaving = saveNoteMutation.isPending;
-  const isDeleting = deleteNoteMutation.isPending;
+  const isPending = saveNoteMutation.isPending;
+  const isDeleting = isPending && saveNoteMutation.variables === '';
+  const isSaving = isPending && !isDeleting;
   const saveError = saveNoteMutation.error;
 
   useEffect(() => {
@@ -94,7 +93,7 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
           rows={isCompact ? 1 : 4}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          disabled={isDisabled || isLoading || isSaving}
+          disabled={isDisabled || isLoading || isPending}
         />
       </TextField>
       {saveError != null && (
@@ -111,7 +110,7 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
             <Button
               className={`${buttonSizing} rounded ${deleteConfirm ? 'bg-ultra-danger' : 'bg-danger'} text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
               onPress={remove}
-              isDisabled={isDisabled || isDeleting}
+              isDisabled={isDisabled || isPending}
             >
               {isDeleting ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
             </Button>
@@ -119,7 +118,7 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
           <Button
             className={`${buttonSizing} rounded bg-accent text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
             onPress={save}
-            isDisabled={isDisabled || !canSave || isSaving}
+            isDisabled={isDisabled || !canSave || isPending}
           >
             {isSaving ? t.actions.saving : t.actions.save}
           </Button>

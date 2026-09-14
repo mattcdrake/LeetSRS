@@ -16,9 +16,3 @@ export function useSaveNoteMutation(slug: string) {
     mutationFn: (text: string) => sendMessage('saveNote', { slug, text }),
   });
 }
-
-export function useDeleteNoteMutation(slug: string) {
-  return useMutation({
-    mutationFn: () => sendMessage('deleteNote', { slug }),
-  });
-}
