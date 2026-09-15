@@ -35,14 +35,6 @@ export function useCardsQuery() {
   return useEnrichedCardsQuery((document) => Object.values(document.cards));
 }
 
-export function useRawReviewQueueQuery() {
-  const now = usePopupClock();
-  return useQuery({
-    ...learningDocumentQueryOptions,
-    select: ({ document }) => buildReviewQueue(document, new Date(now)),
-  });
-}
-
 export function useReviewQueueQuery() {
   const now = usePopupClock();
   return useEnrichedCardsQuery((document) => buildReviewQueue(document, new Date(now)));

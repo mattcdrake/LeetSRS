@@ -19,7 +19,7 @@ import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useRawReviewQueueQuery, useReviewQueueQuery } from '../cards';
+import { useCardsQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
@@ -114,7 +114,6 @@ describe('card queries through the background service', () => {
       () => ({
         cards: useCardsQuery(),
         queue: useReviewQueueQuery(),
-        rawQueue: useRawReviewQueueQuery(),
         note: useNoteQuery(card.frontendId),
       }),
       {
@@ -125,8 +124,6 @@ describe('card queries through the background service', () => {
     await waitFor(() => expect(view.result.current.cards.error?.message).toBe(error));
     expect(view.result.current.queue.error?.message).toBe(error);
     expect(view.result.current.note.data).toBe('Keep my solution');
-    expect(view.result.current.rawQueue.data?.map((card) => card.frontendId)).toContain(problem.frontendId);
-    expect(view.result.current.rawQueue.isSuccess).toBe(true);
     const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(settings.result.current.data.language).toBe('zh-CN'));
   });

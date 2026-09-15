@@ -1,6 +1,6 @@
 import { ToggleButton, ToggleButtonGroup } from 'react-aria-components';
 import { FaCode, FaGear, FaHouseChimney } from 'react-icons/fa6';
-import { useRawReviewQueueQuery } from '@/popup/queries/cards';
+import { useReviewQueueQuery } from '@/popup/queries/cards';
 import { useI18n } from '../contexts/I18nContext';
 
 export type ViewId = 'home' | 'card' | 'settings';
@@ -12,7 +12,7 @@ interface BottomNavProps {
 
 export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
   const t = useI18n();
-  const { data: dueCards = [] } = useRawReviewQueueQuery();
+  const { data: dueCards = [] } = useReviewQueueQuery();
   const dueCount = dueCards.length;
 
   const navItems: Array<{ id: ViewId; label: string; Icon: typeof FaHouseChimney }> = [
