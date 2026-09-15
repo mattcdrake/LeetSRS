@@ -1,42 +1,80 @@
-import { beforeEach, expect, it, vi } from 'vitest';
-import { getCurrentProblem } from '@/content/problem-data';
-import { sendMessage } from '@/shared/messages';
-import { buildProblem } from '@/test/utils/card-mocks';
+// @vitest-environment happy-dom
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
+import background from '@/entrypoints/background/index';
+import { onMessage, sendMessage } from '@/shared/messages';
 import { createMessageMock } from '@/test/utils/message-mocks';
-import { addCurrentProblem, rateCurrentProblem } from '../rating-actions';
 
-vi.mock('@/content/problem-data', () => ({ getCurrentProblem: vi.fn() }));
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/messages', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/messages')>()),
+  onMessage: vi.fn(),
+  sendMessage: vi.fn(),
+}));
 
-const messages = createMessageMock(vi.mocked(sendMessage));
-const problem = buildProblem();
-beforeEach(() => {
-  messages.reset().resolve('rateCard', undefined).resolve('addCard', undefined);
-  vi.mocked(getCurrentProblem).mockResolvedValue(problem);
+beforeEach(async () => {
+  fakeBrowser.reset();
+  fakeBrowser.runtime.id = 'test';
+  background.main();
+  const messages = createMessageMock(vi.mocked(sendMessage)).reset();
+  for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
+    messages.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
+  }
+  await sendMessage('waitForInitialization');
+  Object.defineProperty(window, 'location', {
+    value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },
+    writable: true,
+  });
+  vi.mocked(sendMessage).mockClear();
+  vi.mocked(fetch).mockClear();
 });
 
-it('reads the current problem again for each action', async () => {
-  const nextProblem = buildProblem({ frontendId: '15' });
-  vi.mocked(getCurrentProblem).mockResolvedValueOnce(problem).mockResolvedValueOnce(nextProblem);
+describe.each([
+  {
+    name: 'rate',
+    action: () => rateCurrentProblem(3),
+    command: 'rateCard',
+    firstPayload: { input: { frontendId: '1', domain: 'leetcode.com', rating: 3 } },
+    nextPayload: { input: { frontendId: '2', domain: 'leetcode.cn', rating: 3 } },
+  },
+  {
+    name: 'add',
+    action: addCurrentProblem,
+    command: 'addCard',
+    firstPayload: { problem: { frontendId: '1', domain: 'leetcode.com' } },
+    nextPayload: { problem: { frontendId: '2', domain: 'leetcode.cn' } },
+  },
+] as const)('$name current problem', ({ action, command, firstPayload, nextPayload }) => {
+  it('uses fresh page context for each action across both LeetCode domains', async () => {
+    await action();
 
-  await rateCurrentProblem(3);
-  await addCurrentProblem();
+    expect(sendMessage).toHaveBeenLastCalledWith(command, firstPayload);
 
-  expect(sendMessage).toHaveBeenNthCalledWith(1, 'rateCard', {
-    input: { frontendId: problem.frontendId, domain: problem.domain, rating: 3 },
+    window.location.pathname = '/problems/add-two-numbers/';
+    window.location.hostname = 'leetcode.cn';
+    await action();
+
+    expect(sendMessage).toHaveBeenCalledWith('getProblem', { slug: 'two-sum', domain: 'leetcode.com' });
+    expect(sendMessage).toHaveBeenCalledWith('getProblem', { slug: 'add-two-numbers', domain: 'leetcode.cn' });
+    expect(sendMessage).toHaveBeenLastCalledWith(command, nextPayload);
+    expect(fetch).not.toHaveBeenCalled();
   });
-  expect(sendMessage).toHaveBeenNthCalledWith(2, 'addCard', {
-    problem: { frontendId: nextProblem.frontendId, domain: nextProblem.domain },
+
+  it('rejects without sending a command when no problem slug exists', async () => {
+    window.location.pathname = '/home';
+
+    await expect(action()).rejects.toThrow('Expected a problem slug on the current page');
+
+    expect(sendMessage).not.toHaveBeenCalled();
   });
-});
 
-it.each([
-  ['rate', () => rateCurrentProblem(3)],
-  ['add', addCurrentProblem],
-] as const)('does not %s when the current problem is unavailable', async (_name, action) => {
-  vi.mocked(getCurrentProblem).mockRejectedValue(new Error('Unknown problem'));
+  it.each(['unknown-problem', 'com-only'])('rejects an unknown or unavailable problem: %s', async (slug) => {
+    window.location.pathname = `/problems/${slug}/`;
+    window.location.hostname = 'leetcode.cn';
 
-  await expect(action()).rejects.toThrow('Unknown problem');
+    await expect(action()).rejects.toThrow('Unknown problem');
 
-  expect(sendMessage).not.toHaveBeenCalled();
+    expect(sendMessage).toHaveBeenCalledExactlyOnceWith('getProblem', { slug, domain: 'leetcode.cn' });
+  });
 });
