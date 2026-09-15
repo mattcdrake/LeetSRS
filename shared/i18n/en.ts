@@ -1,7 +1,9 @@
 import { Rating } from 'ts-fsrs';
+import { getTopicLabel } from './topic-labels';
 
 // English translations (base language - all other translations must match this structure)
 const en = {
+  topicLabel: (topic: string) => getTopicLabel(topic, 'en'),
   // App branding
   syncNotices: {
     missingBackup: 'The Gist contains no LeetSRS backup. Choose another Gist in Settings.',

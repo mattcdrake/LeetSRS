@@ -1,8 +1,10 @@
 import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
+import { getTopicLabel } from './topic-labels';
 
 // Simplified Chinese translations
 const zhCN: Translations = {
+  topicLabel: (topic: string) => getTopicLabel(topic, 'zh-CN'),
   syncNotices: {
     missingBackup: '此 Gist 不含 LeetSRS 备份。请在设置中选择其他 Gist。',
     creationFailed: 'GitHub 未返回已创建 Gist 的 ID。重试前请检查你的 Gist。',
