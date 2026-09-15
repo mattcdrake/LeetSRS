@@ -6,7 +6,6 @@ import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { initializeCatalog } from '@/shared/catalog';
 import { replaceLearningDocument } from '@/shared/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
@@ -41,5 +40,3 @@ it('uses a captured document and day for activity when a read crosses midnight',
   view.unmount();
   queryClient.clear();
 });
-
-beforeEach(initializeCatalog);

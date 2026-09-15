@@ -1,4 +1,3 @@
-import { initializeCatalog } from '@/shared/catalog';
 /**
  * @vitest-environment happy-dom
  */
@@ -56,5 +55,3 @@ describe('ReviewCard', () => {
     });
   });
 });
-
-beforeEach(initializeCatalog);

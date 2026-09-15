@@ -1,6 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { getCardWithProblem } from '@/shared/catalog';
-import type { CardWithProblem, LearningDocument } from '@/shared/models';
+import type { LearningDocument } from '@/shared/models';
 import { readLearningDocument } from '@/shared/storage';
 
 export const learningDocumentQueryKey = ['popupLearningDocument'] as const;
@@ -8,17 +7,17 @@ export const learningDocumentQueryKey = ['popupLearningDocument'] as const;
 export interface PopupLearningDocumentSnapshot {
   document: LearningDocument;
   now: Date;
-  cards: CardWithProblem[];
+}
+
+export async function readPopupLearningDocument(): Promise<PopupLearningDocumentSnapshot> {
+  const now = new Date();
+  const document = await readLearningDocument();
+  return { document, now };
 }
 
 export const learningDocumentQueryOptions = queryOptions({
   queryKey: learningDocumentQueryKey,
-  queryFn: async () => {
-    const now = new Date();
-    const document = await readLearningDocument();
-    const cards = await Promise.all(Object.values(document.cards).map(getCardWithProblem));
-    return { document, now, cards } satisfies PopupLearningDocumentSnapshot;
-  },
+  queryFn: readPopupLearningDocument,
   refetchOnMount: false,
   refetchInterval: 15_000,
 });

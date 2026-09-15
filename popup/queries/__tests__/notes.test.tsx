@@ -1,5 +1,4 @@
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
-import { initializeCatalog } from '@/shared/catalog';
 /**
  * @vitest-environment happy-dom
  */
@@ -141,5 +140,3 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
   view.rerender({ frontendId: next.frontendId });
   await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));
 });
-
-beforeEach(initializeCatalog);

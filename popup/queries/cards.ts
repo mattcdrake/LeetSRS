@@ -1,12 +1,27 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCardWithProblem } from '@/shared/catalog';
 import { sendMessage } from '@/shared/messages';
 import type { RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
-import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
+import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
+
+export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
+
+const cardsQueryOptions = queryOptions({
+  refetchOnMount: false,
+  refetchInterval: 15_000,
+  queryKey: cardsQueryKey,
+  queryFn: async () => {
+    const snapshot = await readPopupLearningDocument();
+    await sendMessage('waitForInitialization');
+    const cards = await Promise.all(Object.values(snapshot.document.cards).map(getCardWithProblem));
+    return { ...snapshot, cards };
+  },
+});
 
 export function useCardsQuery() {
   return useQuery({
-    ...learningDocumentQueryOptions,
+    ...cardsQueryOptions,
     select: ({ cards }) => cards,
   });
 }
@@ -14,7 +29,7 @@ export function useCardsQuery() {
 export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }) {
   const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
-    ...learningDocumentQueryOptions,
+    ...cardsQueryOptions,
     select: ({ document, now, cards }) => {
       const byId = new Map(cards.map((card) => [card.frontendId, card]));
       return buildReviewQueue(document, now).map((card) => {

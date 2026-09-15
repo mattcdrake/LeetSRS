@@ -43,7 +43,7 @@ const messages = createMessageMock(vi.mocked(sendMessage));
 beforeEach(() => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  messages.reset();
+  messages.reset().resolve('waitForInitialization', undefined);
 });
 afterEach(() => {
   onlineManager.setOnline(true);
@@ -144,7 +144,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
   const view = renderHook(() => useCardsQuery(), { wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildProblemDescriptor() }]));
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(sendMessage).toHaveBeenCalledWith('waitForInitialization');
 
   const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
   await act(async () => {

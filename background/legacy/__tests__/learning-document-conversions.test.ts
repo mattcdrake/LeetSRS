@@ -21,6 +21,7 @@ describe('convertLearningDocument', () => {
         'two-sum': original,
         invalid: { ...original, leetcodeId: '' },
         broken: { ...original, leetcodeId: '2', fsrs: null },
+        invalidNote: { ...original, leetcodeId: '3', note: 42 },
         missing: null,
       },
       reviewActivity: { date: '2024-01-01', newCards: 2, streak: 3 },

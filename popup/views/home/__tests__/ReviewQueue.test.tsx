@@ -122,6 +122,7 @@ describe('ReviewQueue', () => {
     vi.spyOn(storage, 'getItem');
     messages
       .reset()
+      .resolve('waitForInitialization', undefined)
       .handle('rateCard', mockMutateAsync)
       .resolve('removeCard', undefined)
       .resolve('delayCard', undefined)
@@ -239,7 +240,9 @@ describe('ReviewQueue', () => {
       for (const control of controls) fireEvent.click(control);
       fireEvent.click(actionButton);
 
-      await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'rateCard')).toHaveLength(1)
+      );
       expect(sendMessage).toHaveBeenCalledWith('rateCard', expect.any(Object));
       for (const control of controls) expect(control).toBeDisabled();
 
@@ -247,7 +250,7 @@ describe('ReviewQueue', () => {
       await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
       });
-      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'rateCard')).toHaveLength(1);
     });
   });
 });

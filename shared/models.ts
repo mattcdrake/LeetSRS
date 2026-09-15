@@ -28,7 +28,6 @@ export const problemDescriptorSchema = problemReferenceSchema.extend({
   slug: nonemptyString,
   name: nonemptyString,
   difficulty: difficultySchema,
-  domain: leetcodeDomainSchema,
 });
 
 export const fsrsCardSchema = z.object({

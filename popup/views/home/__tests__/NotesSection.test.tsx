@@ -1,6 +1,5 @@
 import { State } from 'ts-fsrs';
 import { storage } from '#imports';
-import { initializeCatalog } from '@/shared/catalog';
 import { STORAGE_KEYS } from '@/shared/storage';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
@@ -111,5 +110,3 @@ describe('NotesSection', () => {
     expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId: mockSlug, text: 'Saved draft' });
   });
 });
-
-beforeEach(initializeCatalog);

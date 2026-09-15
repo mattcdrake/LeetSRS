@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { cardsQueryKey } from '@/popup/queries/cards';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
 import { type CardWithProblem, cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { buildProblemDescriptor } from './card-mocks';
@@ -15,7 +16,8 @@ export function setPopupLearningDocumentQueryData(
   now = new Date()
 ) {
   const document = buildLearningDocument(overrides);
-  queryClient.setQueryData(learningDocumentQueryKey, {
+  queryClient.setQueryData(learningDocumentQueryKey, { document, now });
+  queryClient.setQueryData(cardsQueryKey, {
     document,
     now,
     cards: Object.values(document.cards).map((card) => ({ ...buildProblemDescriptor(), ...card })),
@@ -29,11 +31,12 @@ export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: 
       seen.add(card.frontendId);
       return card;
     }
-    const slug = `${card.frontendId}-${index}`;
-    return { ...card, frontendId: slug };
+    const frontendId = `${card.frontendId}-${index}`;
+    return { ...card, frontendId };
   });
   const document = buildLearningDocument({
     cards: Object.fromEntries(uniqueCards.map((card) => [card.frontendId, cardSchema.parse(card)])),
   });
-  queryClient.setQueryData(learningDocumentQueryKey, { document, now, cards: uniqueCards });
+  queryClient.setQueryData(learningDocumentQueryKey, { document, now });
+  queryClient.setQueryData(cardsQueryKey, { document, now, cards: uniqueCards });
 }

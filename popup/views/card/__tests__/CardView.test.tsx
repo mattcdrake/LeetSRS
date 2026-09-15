@@ -32,7 +32,7 @@ describe('CardView', () => {
   };
 
   beforeEach(() => {
-    messages.reset();
+    messages.reset().resolve('waitForInitialization', undefined);
     ({ queryClient, wrapper } = createTestWrapper());
   });
 

@@ -16,7 +16,9 @@ import { buildProblemDescriptor, createMockCard } from '@/test/utils/card-mocks'
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useReviewQueueQuery } from '../cards';
+import { useCardsQuery, useReviewQueueQuery } from '../cards';
+import { useNoteQuery } from '../notes';
+import { useSettingsQuery } from '../settings';
 
 vi.mock('@/shared/messages', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/shared/messages')>()),
@@ -69,6 +71,20 @@ describe('card queries through JSON messaging and background handlers', () => {
       messaging.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
     }
     await sendMessage('waitForInitialization');
+  });
+
+  it('keeps learning data accessible when a saved problem is absent from the catalog', async () => {
+    const card = createMockCard(State.Review, { frontendId: 'unknown', note: 'Keep my solution' });
+    await sendMessage('importData', {
+      jsonData: JSON.stringify(buildLearningDocument({ cards: { unknown: card }, settings: { language: 'de' } })),
+    });
+    const view = renderHook(() => ({ cards: useCardsQuery(), note: useNoteQuery('unknown') }), {
+      wrapper: createPopupTestWrapper().wrapper,
+    });
+    await waitFor(() => expect(view.result.current.cards.error?.message).toContain('Unknown problem'));
+    expect(view.result.current.note.data).toBe('Keep my solution');
+    const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+    await waitFor(() => expect(settings.result.current.data.language).toBe('de'));
   });
 
   it.each([State.Learning, State.Relearning])(

@@ -4,7 +4,6 @@ import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { initializeCatalog } from '@/shared/catalog';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 import { STORAGE_KEYS } from '@/shared/storage';
@@ -237,5 +236,3 @@ describe('NoteEditor', () => {
     expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Stored note');
   });
 });
-
-beforeEach(initializeCatalog);
