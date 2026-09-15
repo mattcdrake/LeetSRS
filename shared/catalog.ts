@@ -118,9 +118,7 @@ export async function getQuestionsByFrontendIds(
     return await Promise.all(
       problems.map(async ({ frontendId, domain }) => {
         const value: unknown = await requestResult(store.get(frontendId));
-        if (value === undefined) return undefined;
-        const question = catalogQuestionSchema.parse(value);
-        return question.sources.includes(domain) ? question : undefined;
+        return parseQuestionForDomain(value, domain);
       })
     );
   } finally {
@@ -141,10 +139,14 @@ async function getQuestion(
   try {
     const store = database.transaction('questions').objectStore('questions');
     const value: unknown = await requestResult((field === 'slug' ? store.index('slug') : store).get(key));
-    if (value === undefined) return undefined;
-    const question = catalogQuestionSchema.parse(value);
-    return question.sources.includes(domain) ? question : undefined;
+    return parseQuestionForDomain(value, domain);
   } finally {
     database.close();
   }
+}
+
+function parseQuestionForDomain(value: unknown, domain: LeetcodeDomain): CatalogQuestion | undefined {
+  if (value === undefined) return undefined;
+  const question = catalogQuestionSchema.parse(value);
+  return question.sources.includes(domain) ? question : undefined;
 }
