@@ -16,7 +16,7 @@ import type { GistSyncStatus } from '@/shared/models';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
-import { buildCatalogQuestion, buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
@@ -114,12 +114,12 @@ it.each(['success', 'failure'] as const)(
     reads.mockRestore();
     const card = createMockCard(State.New);
     await replaceLearningDocument(buildLearningDocument({ cards: { [card.frontendId]: card } }));
-    await waitFor(() => expect(result.current.data).toEqual([{ ...card, ...buildCatalogQuestion() }]));
+    await waitFor(() => expect(result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
     await act(async () => {
       if (outcome === 'success') pending.resolve(buildLearningDocument());
       else pending.reject(new Error('Obsolete failure'));
     });
-    expect(result.current.data).toEqual([{ ...card, ...buildCatalogQuestion() }]);
+    expect(result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]);
     expect(result.current.error).toBeNull();
   }
 );
@@ -143,7 +143,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
   );
   const view = renderHook(() => useCardsQuery(), { wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
-  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogQuestion() }]));
+  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
   expect(sendMessage).toHaveBeenCalledWith('waitForInitialization');
 
   const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
@@ -151,7 +151,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
     await storage.setItem('local:unrelated', 'change');
     await vi.advanceTimersByTimeAsync(1);
   });
-  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogQuestion() }]));
+  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
   expect(view.result.current.error).toBeNull();
   reads.mockRestore();
 
@@ -161,7 +161,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
     await replaceLearningDocument(buildLearningDocument());
     await vi.advanceTimersByTimeAsync(1);
   });
-  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogQuestion() }]));
+  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
   observing = true;
   view.rerender();
   await act(() => vi.advanceTimersByTimeAsync(1));
@@ -311,7 +311,7 @@ it('advances the review day and queue allowance without a storage write', async 
   expect(view.result.current.today.data).toEqual(stats);
   const writes = vi.spyOn(storage, 'setItem');
   await act(() => vi.advanceTimersByTimeAsync(15_000));
-  await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([{ ...card, ...buildCatalogQuestion() }]));
+  await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
   expect(view.result.current.today.data).toBeNull();
   expect(writes).not.toHaveBeenCalled();
   view.unmount();

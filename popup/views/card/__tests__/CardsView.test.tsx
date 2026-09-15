@@ -8,9 +8,9 @@ import type { QueryClient } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CardWithQuestion } from '@/popup/queries/cards';
+import type { CardWithProblem } from '@/popup/queries/cards';
 import { sendMessage } from '@/shared/messages';
-import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardsView } from '../CardsView';
@@ -27,7 +27,7 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 
 describe('CardsView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
-  const seedCards = (cards: CardWithQuestion[]) => {
+  const seedCards = (cards: CardWithProblem[]) => {
     setPopupLearningCardsQueryData(queryClient, cards);
   };
 
@@ -38,8 +38,8 @@ describe('CardsView', () => {
 
   it('should link cards to their problem on the stored LeetCode domain', () => {
     const cards = [
-      createMockCardWithQuestion(State.New, { title: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),
-      createMockCardWithQuestion(State.New, {
+      createMockCardWithProblem(State.New, { title: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),
+      createMockCardWithProblem(State.New, {
         title: 'Chinese Problem',
         translatedTitle: '中文题目',
         slug: 'chinese-problem',
@@ -68,9 +68,9 @@ describe('CardsView', () => {
 
   it('should filter cards, show no matches, and restore all cards when cleared', () => {
     const cards = [
-      createMockCardWithQuestion(State.New, { title: 'Two Sum', frontendId: '1' }),
-      createMockCardWithQuestion(State.New, { title: 'Add Two Numbers', frontendId: '2' }),
-      createMockCardWithQuestion(State.New, { title: 'Longest Substring', frontendId: '3' }),
+      createMockCardWithProblem(State.New, { title: 'Two Sum', frontendId: '1' }),
+      createMockCardWithProblem(State.New, { title: 'Add Two Numbers', frontendId: '2' }),
+      createMockCardWithProblem(State.New, { title: 'Longest Substring', frontendId: '3' }),
     ];
 
     seedCards(cards);

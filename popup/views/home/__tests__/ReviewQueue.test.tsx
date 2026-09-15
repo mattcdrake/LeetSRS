@@ -9,9 +9,9 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CardWithQuestion } from '@/popup/queries/cards';
+import type { CardWithProblem } from '@/popup/queries/cards';
 import { sendMessage } from '@/shared/messages';
-import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -87,19 +87,19 @@ vi.mock('../ActionsSection', () => ({
 
 describe('ReviewQueue', () => {
   const mockCards = [
-    createMockCardWithQuestion(State.Learning, {
+    createMockCardWithProblem(State.Learning, {
       slug: 'two-sum',
       title: 'Two Sum',
       frontendId: '1',
       difficulty: 'easy',
     }),
-    createMockCardWithQuestion(State.Learning, {
+    createMockCardWithProblem(State.Learning, {
       slug: 'add-two-numbers',
       title: 'Add Two Numbers',
       frontendId: '2',
       difficulty: 'medium',
     }),
-    createMockCardWithQuestion(State.Learning, {
+    createMockCardWithProblem(State.Learning, {
       slug: 'longest-substring',
       title: 'Longest Substring',
       frontendId: '3',
@@ -111,7 +111,7 @@ describe('ReviewQueue', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
-  const seedQueue = (cards: CardWithQuestion[]) => {
+  const seedQueue = (cards: CardWithProblem[]) => {
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) })
     );

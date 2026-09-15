@@ -44,46 +44,59 @@ export function convertLearningDocument(input: unknown): LearningDocument {
       ? { cards: {}, stats: {}, settings: {}, ...data }
       : { ...data, ...(schemaVersion >= 9 && { stats: {} }) }
   );
-  const notes = schemaVersion < 4 && data.notes !== undefined ? legacyNotesSchema.parse(data.notes) : {};
-  const convertedCards = Object.fromEntries(
-    Object.values(cards).flatMap((value) => {
-      const parsed = z.looseObject({}).safeParse(value);
-      if (!parsed.success) return [];
-      const card = parsed.data;
-      const converted: Record<string, unknown> = { ...card, frontendId: card.leetcodeId };
-      if (schemaVersion === 0 && card.domain === undefined) {
-        converted.domain = 'leetcode.com';
-      }
-      if (
-        schemaVersion < 4 &&
-        card.note === undefined &&
-        typeof card.id === 'string' &&
-        Object.hasOwn(notes, card.id)
-      ) {
+  let convertedCards = Object.values(cards).flatMap((value) => {
+    const parsed = z.looseObject({}).safeParse(value);
+    return parsed.success ? [parsed.data] : [];
+  });
+
+  if (schemaVersion < 1) {
+    for (const card of convertedCards) {
+      if (card.domain === undefined) card.domain = 'leetcode.com';
+    }
+  }
+
+  if (schemaVersion < 3) {
+    if (settings.resetEditorOnEveryProblem === undefined) {
+      settings.resetEditorOnEveryProblem = settings.autoClearLeetcode;
+    }
+  }
+
+  if (schemaVersion < 4) {
+    const notes = data.notes === undefined ? {} : legacyNotesSchema.parse(data.notes);
+    convertedCards = convertedCards.flatMap((card) => {
+      if (card.note === undefined && typeof card.id === 'string' && Object.hasOwn(notes, card.id)) {
         const note = legacyNoteSchema.safeParse(notes[card.id]);
         if (!note.success) return [];
-        converted.note = note.data.text;
+        card.note = note.data.text;
       }
-      const result = cardSchema.safeParse(converted);
-      return result.success ? [[result.data.frontendId, result.data]] : [];
-    })
-  );
+      return [card];
+    });
+  }
 
-  if (schemaVersion < 7 && settings.resetEditorOnReviewQueue === undefined) {
-    const everyProblem =
-      schemaVersion < 3 && settings.resetEditorOnEveryProblem === undefined
-        ? settings.autoClearLeetcode
-        : settings.resetEditorOnEveryProblem;
-    const resetEveryProblem = z.boolean().default(false).parse(everyProblem);
-    const resetDueReview = z.boolean().default(false).parse(settings.resetEditorOnDueReview);
-    settings.resetEditorOnReviewQueue = resetEveryProblem || resetDueReview;
+  if (schemaVersion < 7) {
+    if (settings.resetEditorOnReviewQueue === undefined) {
+      const resetEveryProblem = z.boolean().default(false).parse(settings.resetEditorOnEveryProblem);
+      const resetDueReview = z.boolean().default(false).parse(settings.resetEditorOnDueReview);
+      settings.resetEditorOnReviewQueue = resetEveryProblem || resetDueReview;
+    }
+  }
+
+  if (schemaVersion < 9) {
+    data.reviewActivity = convertStatistics(stats);
+  }
+
+  if (schemaVersion < 10) {
+    data.cards = Object.fromEntries(
+      convertedCards.flatMap((card) => {
+        const result = cardSchema.safeParse({ ...card, frontendId: card.leetcodeId });
+        return result.success ? [[result.data.frontendId, result.data]] : [];
+      })
+    );
   }
 
   return learningDocumentSchema.parse({
     ...data,
     schemaVersion: LEARNING_DOCUMENT_VERSION,
-    cards: convertedCards,
-    reviewActivity: schemaVersion < 9 ? convertStatistics(stats) : data.reviewActivity,
     settings,
   });
 }

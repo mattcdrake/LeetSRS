@@ -13,7 +13,7 @@ import { getBadgeState } from '@/background/badge';
 import background from '@/entrypoints/background/index';
 import { onMessage, sendMessage } from '@/shared/messages';
 import { STORAGE_KEYS } from '@/shared/storage';
-import { buildCatalogQuestion, createMockCard } from '@/test/utils/card-mocks';
+import { buildCatalogProblem, createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
@@ -50,7 +50,7 @@ it.each([
       { ...testCatalog[1], ...cards[1] },
     ]);
     expect(open).toHaveBeenCalledTimes(1);
-    expect(transaction).toHaveBeenCalledExactlyOnceWith('questions', 'readonly');
+    expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
 
     await act(() => vi.advanceTimersByTimeAsync(15_000));
     await vi.waitFor(() => expect(view.result.current.isFetching).toBe(false));
@@ -154,7 +154,7 @@ describe('card queries through JSON messaging and background handlers', () => {
         expect(view.result.current.data).toEqual([]);
 
         await act(() => vi.advanceTimersByTimeAsync(15_000));
-        await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildCatalogQuestion() }]));
+        await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
       } finally {
         view.unmount();
         vi.useRealTimers();
