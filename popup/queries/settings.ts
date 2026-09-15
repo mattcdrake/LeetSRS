@@ -1,5 +1,5 @@
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import type { Settings } from '@/shared/settings';
 import { resolveLearningDocumentSettings } from '@/shared/settings';
 import { learningDocumentQueryOptions } from './learning-document';
@@ -13,6 +13,6 @@ export function useSettingsQuery() {
 
 export function useUpdateSettingsMutation() {
   return useMutation({
-    mutationFn: (changes: Partial<Settings>) => sendMessage('updateSettings', { changes }),
+    mutationFn: (changes: Partial<Settings>) => background.updateSettings(changes),
   });
 }

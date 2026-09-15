@@ -6,16 +6,23 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
+
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardListItem } from '../CardListItem';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service', async (importOriginal) => {
+  const { createMockBackground } = await import('@/test/utils/service-mocks');
+  return {
+    ...(await importOriginal<typeof import('@/shared/background-service')>()),
+    background: createMockBackground(),
+  };
+});
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
-const messages = createMessageMock(vi.mocked(sendMessage));
+const messages = createServiceMock(background);
 let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
 const renderItem = (card: CardWithProblem) => {
@@ -67,9 +74,7 @@ describe('CardListItem', () => {
 
     fireEvent.click(screen.getByRole('button', { name: action }));
 
-    await vi.waitFor(() =>
-      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { frontendId: '1', paused: nextPaused })
-    );
+    await vi.waitFor(() => expect(background.setPauseStatus).toHaveBeenCalledWith('1', nextPaused));
   });
 
   it('deletes only after confirmation', async () => {
@@ -77,12 +82,12 @@ describe('CardListItem', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
-    expect(sendMessage).not.toHaveBeenCalledWith('removeCard', expect.anything());
+    expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
 
     await vi.waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('removeCard', { frontendId: '1' });
+      expect(background.removeCard).toHaveBeenCalledWith('1');
     });
   });
 
@@ -96,7 +101,7 @@ describe('CardListItem', () => {
     act(() => vi.advanceTimersByTime(3000));
 
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    expect(sendMessage).not.toHaveBeenCalledWith('removeCard', expect.anything());
+    expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
   });
 
   it('restores its pause action after a failure', async () => {

@@ -2,20 +2,27 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { updateSettings } from '@/background/learning';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
+
 import { replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewSettingsSection } from '../ReviewSettingsSection';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service', async (importOriginal) => {
+  const { createMockBackground } = await import('@/test/utils/service-mocks');
+  return {
+    ...(await importOriginal<typeof import('@/shared/background-service')>()),
+    background: createMockBackground(),
+  };
+});
 
 it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
   const document = buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } });
   await replaceLearningDocument(document);
   const save = Promise.withResolvers<void>();
-  createMessageMock(vi.mocked(sendMessage)).handle('updateSettings', async ({ changes }) => {
+  createServiceMock(background).handle('updateSettings', async (changes) => {
     await save.promise;
     return updateSettings(changes);
   });
@@ -27,9 +34,7 @@ it('keeps an unfinished limit while incoming settings refresh and saves the draf
   await waitFor(() => expect(input).toHaveAttribute('placeholder', '12'));
   expect(input).toHaveValue(8);
   fireEvent.blur(input);
-  await waitFor(() =>
-    expect(sendMessage).toHaveBeenCalledWith('updateSettings', { changes: { maxNewCardsPerDay: 8 } })
-  );
+  await waitFor(() => expect(background.updateSettings).toHaveBeenCalledWith({ maxNewCardsPerDay: 8 }));
   fireEvent.change(input, { target: { value: '9' } });
   await act(async () => save.resolve());
   await waitFor(() => expect(input).toHaveAttribute('placeholder', '8'));

@@ -4,21 +4,28 @@ import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
+
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 import { STORAGE_KEYS } from '@/shared/storage';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NoteEditor } from '../NoteEditor';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service', async (importOriginal) => {
+  const { createMockBackground } = await import('@/test/utils/service-mocks');
+  return {
+    ...(await importOriginal<typeof import('@/shared/background-service')>()),
+    background: createMockBackground(),
+  };
+});
 
 describe('NoteEditor', () => {
   const variant = 'regular';
   const frontendId = 'editor-card';
-  const messages = createMessageMock(vi.mocked(sendMessage));
+  const messages = createServiceMock(background);
 
   beforeEach(() => {
     fakeBrowser.reset();
@@ -76,10 +83,10 @@ describe('NoteEditor', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const confirm = await screen.findByRole('button', { name: 'Confirm?' });
-    expect(sendMessage).not.toHaveBeenCalledWith('saveNote', expect.anything());
+    expect(background.saveNote).not.toHaveBeenCalledWith(expect.anything());
     fireEvent.click(confirm);
     expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId, text: '' });
+    expect(background.saveNote).toHaveBeenCalledWith(frontendId, '');
     expect(screen.getByRole('textbox', { name: 'Note text' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
@@ -114,7 +121,7 @@ describe('NoteEditor', () => {
     expect(textarea).toHaveValue('Failed draft');
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
 
-    messages.handle('saveNote', async ({ text }) => {
+    messages.handle('saveNote', async (_frontendId, text) => {
       const saved = buildLearningDocument({
         cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
       });

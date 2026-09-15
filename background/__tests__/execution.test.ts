@@ -1,25 +1,27 @@
+import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
-import { type MessageName, onMessage } from '@/shared/messages';
+import type { BackgroundService } from '@/shared/background-service';
+
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
-import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import background from '../../entrypoints/background/index';
+import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
+vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
+  registerService: vi.fn(),
 }));
 
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  vi.mocked(onMessage).mockClear();
-  background.main();
-  await dispatch('waitForInitialization');
+  vi.mocked(registerService).mockClear();
+  backgroundEntry.main();
+  await getRegisteredBackground().waitForInitialization();
   await new Promise((resolve) => setTimeout(resolve, 0));
 });
 
@@ -27,9 +29,9 @@ const problem = buildProblem();
 
 describe('registered background execution', () => {
   it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
-    await dispatch('rateCard', { input: { ...problem, rating: 3 } });
-    await dispatch('saveNote', { frontendId: problem.frontendId, text: 'Reset me' });
-    await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
+    await getRegisteredBackground().rateCard({ ...problem, rating: 3 });
+    await getRegisteredBackground().saveNote(problem.frontendId, 'Reset me');
+    await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
     await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
     const staleLocal = {
       'leetsrs:cards': { stale: 'invalid leftover' },
@@ -54,14 +56,14 @@ describe('registered background execution', () => {
       unrelated: 'keep',
     });
 
-    await dispatch('resetAllData');
+    await getRegisteredBackground().resetAllData();
 
     const empty = buildLearningDocument();
     const rpc = vi.spyOn(browser.runtime, 'sendMessage');
     expect(await readLearningDocument()).toEqual(empty);
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(rpc).not.toHaveBeenCalled();
-    expect(await dispatch('getGistSyncStatus')).toEqual({
+    expect(await getRegisteredBackground().getGistSyncStatus()).toEqual({
       lastSyncTime: null,
       lastSyncDirection: null,
       syncInProgress: false,
@@ -71,8 +73,8 @@ describe('registered background execution', () => {
     expect(await fakeBrowser.storage.sync.get(null)).toEqual({ unrelated: 'keep' });
 
     await fakeBrowser.storage.local.set(staleLocal);
-    vi.mocked(onMessage).mockClear();
-    background.main();
+    vi.mocked(registerService).mockClear();
+    backgroundEntry.main();
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBeNull();
     expect((await readLearningDocument()).reviewActivity).toBeNull();
@@ -81,7 +83,7 @@ describe('registered background execution', () => {
   it.each(['document', 'connection cleanup'] as const)(
     'reports reset failure at %s without resurrecting data on restart',
     async (stage) => {
-      await dispatch('addCard', { problem });
+      await getRegisteredBackground().addCard(problem);
       await fakeBrowser.storage.sync.set({
         'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true },
       });
@@ -92,16 +94,16 @@ describe('registered background execution', () => {
       } else {
         vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
       }
-      await expect(dispatch('resetAllData')).rejects.toBe(failure);
+      await expect(getRegisteredBackground().resetAllData()).rejects.toBe(failure);
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
-      vi.mocked(onMessage).mockClear();
-      background.main();
+      vi.mocked(registerService).mockClear();
+      backgroundEntry.main();
       if (stage === 'document') {
         expect(JSON.stringify(await readLearningDocument(), null, 2)).toBe(before);
       } else {
         expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       }
-      await dispatch('resetAllData');
+      await getRegisteredBackground().resetAllData();
       expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     }
@@ -113,10 +115,10 @@ describe('registered background execution', () => {
       const failure = new Error('Badge unavailable');
       vi.spyOn(browser.action, method).mockRejectedValueOnce(failure);
       const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      await expect(dispatch('addCard', { problem })).resolves.toBeUndefined();
+      await expect(getRegisteredBackground().addCard(problem)).resolves.toBeUndefined();
       expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
       expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
-      await dispatch('saveNote', { frontendId: problem.frontendId, text: 'saved after badge failure' });
+      await getRegisteredBackground().saveNote(problem.frontendId, 'saved after badge failure');
       expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBe('saved after badge failure');
     }
   );
@@ -128,39 +130,46 @@ describe('registered background execution', () => {
       started.resolve();
       await release.promise;
     });
-    await dispatch('addCard', { problem });
+    await getRegisteredBackground().addCard(problem);
     await started.promise;
-    await dispatch('saveNote', { frontendId: problem.frontendId, text: 'next edit' });
+    await getRegisteredBackground().saveNote(problem.frontendId, 'next edit');
     expect((await readLearningDocument()).cards[problem.frontendId]?.note).toBe('next edit');
     release.resolve();
   });
 });
 
-const invalidPayloads: [MessageName, unknown][] = [
-  ['addCard', { problem: { ...problem, frontendId: '' } }],
-  ['removeCard', { frontendId: '' }],
-  ['delayCard', { frontendId: problem.frontendId, days: 0.5 }],
-  ['setPauseStatus', { frontendId: problem.frontendId, paused: 'false' }],
-  ['rateCard', { input: { ...problem, rating: 0 } }],
-  ['saveNote', { frontendId: 'card', text: 'a'.repeat(501) }],
-  ['updateSettings', { changes: { language: 'constructor' } }],
-  ['importData', { jsonData: {} }],
-  ['setupGistSync', { mode: 'existing', gistId: 42, pat: 'token' }],
-  ['setupGistSync', { mode: 'create', pat: null }],
-  ['setupGistSync', { mode: 'existing', gistId: 'gist', pat: '  ' }],
-  ['setGistSyncEnabled', { enabled: 'true' }],
+const invalidArguments: [keyof BackgroundService, unknown[]][] = [
+  ['getProblem', ['', 'leetcode.com']],
+  ['getProblem', ['two-sum', 'invalid']],
+  ['addCard', [{ ...problem, frontendId: '' }]],
+  ['removeCard', ['']],
+  ['delayCard', [problem.frontendId, 0.5]],
+  ['setPauseStatus', [problem.frontendId, 'false']],
+  ['rateCard', [{ ...problem, rating: 0 }]],
+  ['saveNote', ['card', 'a'.repeat(501)]],
+  ['saveNote', ['card']],
+  ['saveNote', ['card', 'note', 'extra']],
+  ['updateSettings', [{ language: 'constructor' }]],
+  ['importData', [{}]],
+  ['setupGistSync', [{ mode: 'existing', gistId: 42, pat: 'token' }]],
+  ['setupGistSync', [{ mode: 'create', pat: null }]],
+  ['setupGistSync', [{ mode: 'existing', gistId: 'gist', pat: '  ' }]],
+  ['setGistSyncEnabled', ['true']],
+  ['waitForInitialization', ['extra']],
+  ['resetAllData', ['extra']],
+  ['getGistSyncStatus', ['extra']],
 ];
 
-it.each(invalidPayloads)(
+it.each(invalidArguments)(
   'rejects invalid %s input before mutation and accepts a later valid edit',
   async (name, invalid) => {
     const writes = vi.spyOn(browser.storage.local, 'set');
     const badge = vi.spyOn(browser.action, 'setBadgeText');
-    await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
+    await expect(Reflect.apply(getRegisteredBackground()[name], undefined, invalid)).rejects.toBeInstanceOf(ZodError);
     expect(writes).not.toHaveBeenCalled();
     expect(badge).not.toHaveBeenCalled();
-    await dispatch('addCard', { problem: buildProblem({ frontendId: 'card' }) });
-    await dispatch('saveNote', { frontendId: 'card', text: 'after failure', extra: true });
+    await getRegisteredBackground().addCard(buildProblem({ frontendId: 'card' }));
+    await getRegisteredBackground().saveNote('card', 'after failure');
     expect((await readLearningDocument()).cards.card?.note ?? null).toBe('after failure');
   }
 );

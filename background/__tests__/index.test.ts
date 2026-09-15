@@ -1,18 +1,19 @@
+import { registerService } from '@webext-core/proxy-service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { onMessage } from '@/shared/messages';
+
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
-import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getSettings } from '@/test/utils/learning-reads';
-import background from '../../entrypoints/background/index';
+import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
+vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
+  registerService: vi.fn(),
 }));
 
 vi.mock('octokit', () => ({
@@ -22,9 +23,9 @@ vi.mock('octokit', () => ({
 }));
 
 function startBackground() {
-  vi.mocked(onMessage).mockClear();
+  vi.mocked(registerService).mockClear();
   const registration = vi.spyOn(browser.alarms.onAlarm, 'addListener');
-  background.main();
+  backgroundEntry.main();
   const listener = registration.mock.calls.at(-1)?.[0];
   if (!listener) throw new Error('Alarm listener was not registered synchronously');
   return (name = 'gist-sync') =>
@@ -42,12 +43,12 @@ it('refreshes the badge when an Again card becomes due without another save or s
     'leetsrs:learningDocument': { ...buildLearningDocument(), settings: { badgeEnabled: false } },
   });
   const fireAlarm = startBackground();
-  await dispatch('waitForInitialization');
+  await getRegisteredBackground().waitForInitialization();
   vi.useFakeTimers();
-  await dispatch('addCard', { problem: buildProblem() });
+  await getRegisteredBackground().addCard(buildProblem());
   await vi.advanceTimersByTimeAsync(0);
   const badge = vi.spyOn(browser.action, 'setBadgeText');
-  await dispatch('rateCard', { input: { ...buildProblem(), rating: 1 } });
+  await getRegisteredBackground().rateCard({ ...buildProblem(), rating: 1 });
   const card = (await readLearningDocument()).cards['1'];
   await vi.advanceTimersByTimeAsync(0);
   expect(badge).toHaveBeenLastCalledWith({ text: '' });
@@ -61,10 +62,10 @@ it('refreshes the badge when an Again card becomes due without another save or s
   expect(badge).toHaveBeenLastCalledWith({ text: '1' });
   expect(writes).not.toHaveBeenCalled();
   expect(await browser.alarms.get('badge-refresh')).toBeUndefined();
-  await dispatch('rateCard', { input: { ...buildProblem(), rating: 1 } });
+  await getRegisteredBackground().rateCard({ ...buildProblem(), rating: 1 });
   await vi.advanceTimersByTimeAsync(0);
   expect(await browser.alarms.get('badge-refresh')).toBeDefined();
-  await dispatch('removeCard', { frontendId: '1' });
+  await getRegisteredBackground().removeCard('1');
   await vi.advanceTimersByTimeAsync(0);
   expect(await browser.alarms.get('badge-refresh')).toBeUndefined();
 });
@@ -86,8 +87,8 @@ describe('document startup through registered background commands', () => {
       const report = vi.spyOn(console, 'error').mockImplementation(() => {});
       const badge = vi.spyOn(browser.action, 'setBadgeText');
       const fireAlarm = startBackground();
-      const read = dispatch('waitForInitialization');
-      const write = dispatch('addCard', { problem: buildProblem() });
+      const read = getRegisteredBackground().waitForInitialization();
+      const write = getRegisteredBackground().addCard(buildProblem());
       const alarm = fireAlarm();
       const settled = vi.fn();
       const results = Promise.allSettled([read, write, alarm]).then((result) => {
@@ -107,12 +108,12 @@ describe('document startup through registered background commands', () => {
       } else {
         expect(readResult).toEqual({ status: 'rejected', reason: failure });
         expect(writeResult).toEqual({ status: 'rejected', reason: failure });
-        await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
-        await expect(dispatch('removeCard', { frontendId: '1' })).rejects.toBe(failure);
+        await expect(getRegisteredBackground().waitForInitialization()).rejects.toBe(failure);
+        await expect(getRegisteredBackground().removeCard('1')).rejects.toBe(failure);
         expect(report).toHaveBeenCalledExactlyOnceWith('Failed to initialize background:', failure);
         expect(badge).not.toHaveBeenCalled();
         startBackground();
-        await dispatch('waitForInitialization');
+        await getRegisteredBackground().waitForInitialization();
         expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       }
     }
@@ -142,13 +143,13 @@ describe('document startup through registered background commands', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       startBackground();
       if (stage === 'cleanup') {
-        await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
+        await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
       } else {
-        await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
+        await expect(getRegisteredBackground().waitForInitialization()).rejects.toBe(failure);
         expect(await fakeBrowser.storage.local.get(null)).toEqual(legacy);
       }
       startBackground();
-      await dispatch('waitForInitialization');
+      await getRegisteredBackground().waitForInitialization();
       expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'zh-CN' : 'en' });
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       if (stage !== 'cleanup') {
@@ -175,8 +176,8 @@ describe('document startup through registered background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const fireAlarm = startBackground();
-    await expect(dispatch('waitForInitialization')).rejects.toThrow();
-    await expect(dispatch('addCard', { problem: buildProblem() })).rejects.toThrow();
+    await expect(getRegisteredBackground().waitForInitialization()).rejects.toThrow();
+    await expect(getRegisteredBackground().addCard(buildProblem())).rejects.toThrow();
     await fireAlarm();
     expect(writes).not.toHaveBeenCalled();
     expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
@@ -186,7 +187,7 @@ describe('document startup through registered background commands', () => {
     if (exists) await browser.alarms.create('gist-sync', { periodInMinutes: 1 });
     const create = vi.spyOn(browser.alarms, 'create');
     const fireAlarm = startBackground();
-    await dispatch('waitForInitialization');
+    await getRegisteredBackground().waitForInitialization();
     expect(create.mock.calls).toEqual(exists ? [] : [['gist-sync', { periodInMinutes: 1 }]]);
     await new Promise((resolve) => setTimeout(resolve, 0));
     const badge = vi.spyOn(browser.action, 'setBadgeText');

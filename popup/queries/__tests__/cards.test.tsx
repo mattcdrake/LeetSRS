@@ -10,23 +10,30 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { getBadgeState } from '@/background/badge';
-import background from '@/entrypoints/background/index';
-import { onMessage, sendMessage } from '@/shared/messages';
+import backgroundEntry from '@/entrypoints/background/index';
+import { background } from '@/shared/background-service';
 import { STORAGE_KEYS } from '@/shared/storage';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildCatalogProblem, createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
-  sendMessage: vi.fn(() => Promise.resolve(undefined)),
+vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
+  registerService: vi.fn(),
 }));
+vi.mock('@/shared/background-service', async (importOriginal) => {
+  const { createMockBackground } = await import('@/test/utils/service-mocks');
+  return {
+    ...(await importOriginal<typeof import('@/shared/background-service')>()),
+    background: createMockBackground(),
+  };
+});
 
 it.each([
   { name: 'card list', useQuery: useCardsQuery },
@@ -101,12 +108,10 @@ describe('card queries through JSON messaging and background handlers', () => {
   beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
-    background.main();
-    const messaging = createMessageMock(vi.mocked(sendMessage)).reset();
-    for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
-      messaging.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
-    }
-    await sendMessage('waitForInitialization');
+    backgroundEntry.main();
+    const messaging = createServiceMock(background).reset();
+    messaging.use(getRegisteredBackground());
+    await background.waitForInitialization();
   });
 
   it.each([
@@ -114,14 +119,14 @@ describe('card queries through JSON messaging and background handlers', () => {
     { frontendId: '3', domain: 'leetcode.cn' as const },
   ])('keeps learning data accessible when $frontendId is unavailable on $domain', async (problem) => {
     const card = createMockCard(State.Review, { ...problem, note: 'Keep my solution' });
-    await sendMessage('importData', {
-      jsonData: JSON.stringify(
+    await background.importData(
+      JSON.stringify(
         buildLearningDocument({
           cards: { 1: createMockCard(State.Review), [card.frontendId]: card },
           settings: { language: 'zh-CN' },
         })
-      ),
-    });
+      )
+    );
     const view = renderHook(
       () => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery(card.frontendId) }),
       {
@@ -143,9 +148,7 @@ describe('card queries through JSON messaging and background handlers', () => {
       vi.setSystemTime(new Date('2024-03-15T10:00:00'));
       const card = createMockCard(state);
       card.fsrs.due = Date.now() + 10_000;
-      await sendMessage('importData', {
-        jsonData: JSON.stringify(buildLearningDocument({ cards: { [card.frontendId]: card } })),
-      });
+      await background.importData(JSON.stringify(buildLearningDocument({ cards: { [card.frontendId]: card } })));
       const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
 
       try {

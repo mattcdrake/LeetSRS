@@ -1,26 +1,27 @@
+import { registerService } from '@webext-core/proxy-service';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { onMessage } from '@/shared/messages';
+
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
-import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getSettings } from '@/test/utils/learning-reads';
 import { buildSettings } from '@/test/utils/settings-mocks';
-import background from '../../entrypoints/background/index';
+import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
+vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
+  registerService: vi.fn(),
 }));
 
 describe('document settings through background commands', () => {
   beforeEach(() => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
-    vi.mocked(onMessage).mockClear();
+    vi.mocked(registerService).mockClear();
   });
 
   afterEach(() => {
@@ -35,7 +36,7 @@ describe('document settings through background commands', () => {
     await replaceLearningDocument(document);
     await storage.setItem('sync:leetsrs:theme', 'light');
     await storage.setItem('sync:leetsrs:language', 'zh-CN');
-    background.main();
+    backgroundEntry.main();
 
     expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'en' }));
     vi.stubGlobal('navigator', { languages: ['zh-CN'] });
@@ -52,8 +53,8 @@ describe('document settings through background commands', () => {
     await replaceLearningDocument(document);
     await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
     await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-01-15T10:00:00.000Z');
-    background.main();
-    await dispatch('waitForInitialization');
+    backgroundEntry.main();
+    await getRegisteredBackground().waitForInitialization();
     const sync = await fakeBrowser.storage.sync.get();
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const now = new Date('2026-09-12T12:00:00.000Z');
@@ -66,7 +67,7 @@ describe('document settings through background commands', () => {
       language: 'en',
       resetEditorOnReviewQueue: true,
     } as const;
-    await dispatch('updateSettings', { changes });
+    await getRegisteredBackground().updateSettings(changes);
 
     expect(await getSettings()).toEqual(changes);
     expect(await readLearningDocument()).toEqual({ ...document, settings: changes, dataUpdatedAt: now.toISOString() });
@@ -86,7 +87,7 @@ describe('document settings through background commands', () => {
         settings: { language: 'zh-CN' as const, theme: 'dark' as const },
       });
       await replaceLearningDocument(document);
-      background.main();
+      backgroundEntry.main();
       const before = await getSettings();
       const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
       if (failure === 'write') {
@@ -98,8 +99,9 @@ describe('document settings through background commands', () => {
       }
 
       await expect(
-        dispatch('updateSettings', {
-          changes: { theme: 'light', maxNewCardsPerDay: failure === 'validation' ? -1 : 8 },
+        getRegisteredBackground().updateSettings({
+          theme: 'light',
+          maxNewCardsPerDay: failure === 'validation' ? -1 : 8,
         })
       ).rejects.toThrow();
       vi.useRealTimers();
@@ -107,28 +109,28 @@ describe('document settings through background commands', () => {
       expect(await readLearningDocument()).toEqual(document);
       expect(writes).toHaveBeenCalledTimes(failure === 'write' ? 1 : 0);
 
-      await dispatch('updateSettings', { changes: { theme: 'light' } });
+      await getRegisteredBackground().updateSettings({ theme: 'light' });
       expect(await getSettings()).toEqual(buildSettings({ theme: 'light', language: 'zh-CN' }));
       expect((await readLearningDocument())?.settings).toEqual({ theme: 'light', language: 'zh-CN' });
     }
   );
 
   it('ignores empty, undefined, unknown, and inherited updates without materializing defaults', async () => {
-    background.main();
-    await dispatch('waitForInitialization');
+    backgroundEntry.main();
+    await getRegisteredBackground().waitForInitialization();
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const changes = Object.assign(Object.create({ language: 'zh-CN' }), { theme: undefined, unknown: 1 });
     const before = await readLearningDocument();
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Number.NaN);
 
-    await dispatch('updateSettings', { changes: {} });
-    await dispatch('updateSettings', { changes });
+    await getRegisteredBackground().updateSettings({});
+    await getRegisteredBackground().updateSettings(changes);
 
     expect(writes).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(before);
     vi.useRealTimers();
-    await dispatch('updateSettings', { changes: { theme: undefined, maxNewCardsPerDay: 5 } });
+    await getRegisteredBackground().updateSettings({ theme: undefined, maxNewCardsPerDay: 5 });
     expect((await readLearningDocument())?.settings).toEqual({
       maxNewCardsPerDay: 5,
       resetEditorOnReviewQueue: false,
@@ -141,8 +143,8 @@ describe('document settings through background commands', () => {
       settings: { language: 'zh-CN' as const, theme: 'dark' as const },
     });
     await replaceLearningDocument(document);
-    background.main();
-    await dispatch('waitForInitialization');
+    backgroundEntry.main();
+    await getRegisteredBackground().waitForInitialization();
     const initial = Promise.withResolvers<typeof document>();
     const started = Promise.withResolvers<void>();
     vi.spyOn(storage, 'getItem').mockImplementationOnce(() => {

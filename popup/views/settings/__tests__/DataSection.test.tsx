@@ -3,15 +3,22 @@
  */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendMessage } from '@/shared/messages';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { background } from '@/shared/background-service';
+
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { DataSection } from '../DataSection';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service', async (importOriginal) => {
+  const { createMockBackground } = await import('@/test/utils/service-mocks');
+  return {
+    ...(await importOriginal<typeof import('@/shared/background-service')>()),
+    background: createMockBackground(),
+  };
+});
 
 describe('DataSection reset', () => {
-  const messages = createMessageMock(vi.mocked(sendMessage));
+  const messages = createServiceMock(background);
   let wrapper: ReturnType<typeof createPopupTestWrapper>['wrapper'];
 
   beforeEach(() => {
@@ -37,7 +44,7 @@ describe('DataSection reset', () => {
     );
     expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
     expect(window.alert).not.toHaveBeenCalled();
-    expect(sendMessage).not.toHaveBeenCalledWith('resetAllData');
+    expect(background.resetAllData).not.toHaveBeenCalledWith();
   });
 
   it('disables reset until the confirmed operation succeeds, then alerts success', async () => {
@@ -52,7 +59,7 @@ describe('DataSection reset', () => {
     expect(window.alert).not.toHaveBeenCalled();
     fireEvent.click(button);
     expect(window.confirm).toHaveBeenCalledTimes(1);
-    expect(sendMessage).toHaveBeenCalledExactlyOnceWith('resetAllData');
+    expect(background.resetAllData).toHaveBeenCalledExactlyOnceWith();
 
     reset.resolve();
 
