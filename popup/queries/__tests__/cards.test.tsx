@@ -23,17 +23,8 @@ import { useCardsQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@webext-core/proxy-service');
+vi.mock('@/shared/background-service');
 
 it.each([
   { name: 'card list', useQuery: useCardsQuery },
@@ -109,8 +100,8 @@ describe('card queries through the background service', () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
     backgroundEntry.main();
-    const messaging = createServiceMock(background).reset();
-    messaging.use(getRegisteredBackground());
+    const service = createServiceMock(background).reset();
+    service.use(getRegisteredBackground());
     await background.waitForInitialization();
   });
 

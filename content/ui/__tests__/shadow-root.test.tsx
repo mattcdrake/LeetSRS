@@ -9,13 +9,7 @@ import { LeetSrsControl } from '../LeetSrsControl';
 import { createContentRoot } from '../shadow-root';
 
 vi.mock('@/content/translations', () => ({ watchDocumentTranslations: vi.fn() }));
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 let root: ReturnType<typeof createContentRoot>;
 let host: HTMLElement;

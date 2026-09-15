@@ -15,13 +15,7 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardsView } from '../CardsView';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 let queryClient: QueryClient;
@@ -32,13 +26,13 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 };
 
 describe('CardsView', () => {
-  const messages = createServiceMock(background);
+  const service = createServiceMock(background);
   const seedCards = (cards: CardWithProblem[]) => {
     setPopupLearningCardsQueryData(queryClient, cards);
   };
 
   beforeEach(() => {
-    messages.reset().resolve('waitForInitialization', undefined);
+    service.reset().resolve('waitForInitialization', undefined);
     ({ queryClient, wrapper } = createTestWrapper());
   });
 

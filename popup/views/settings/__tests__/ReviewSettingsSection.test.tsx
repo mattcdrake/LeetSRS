@@ -9,13 +9,7 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewSettingsSection } from '../ReviewSettingsSection';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
   const document = buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } });

@@ -10,10 +10,7 @@ import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
 
 beforeEach(async () => {
   fakeBrowser.reset();

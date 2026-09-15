@@ -16,10 +16,7 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
 
 beforeEach(async () => {
   fakeBrowser.reset();

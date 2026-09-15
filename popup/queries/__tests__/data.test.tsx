@@ -11,13 +11,7 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useExportDataMutation } from '../data';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 beforeEach(() => fakeBrowser.reset());
 
 it('exports the current complete snapshot, preserving its timestamp and excluding connection, status, and legacy values', async () => {

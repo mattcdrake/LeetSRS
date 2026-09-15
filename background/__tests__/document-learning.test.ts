@@ -13,10 +13,7 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getReviewQueue } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
 
 describe('document learning through background commands', () => {
   beforeEach(async () => {

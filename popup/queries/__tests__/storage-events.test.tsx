@@ -35,22 +35,13 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
-const messages = createServiceMock(background);
+vi.mock('@webext-core/proxy-service');
+vi.mock('@/shared/background-service');
+const service = createServiceMock(background);
 beforeEach(() => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  messages.reset().resolve('waitForInitialization', undefined);
+  service.reset().resolve('waitForInitialization', undefined);
 });
 afterEach(() => {
   onlineManager.setOnline(true);
@@ -60,7 +51,7 @@ afterEach(() => {
 async function startBackground() {
   const alarms = vi.spyOn(browser.alarms.onAlarm, 'addListener');
   backgroundEntry.main();
-  messages.use(getRegisteredBackground());
+  service.use(getRegisteredBackground());
   await background.waitForInitialization();
   return requireDefined(alarms.mock.calls.at(-1)?.[0]);
 }
@@ -81,7 +72,7 @@ it.each([false, true])('initializes a missing connection before reading it (lega
       'leetsrs:gistSyncEnabled': true,
     });
   }
-  messages.handle('waitForInitialization', initializeLearningDocument);
+  service.handle('waitForInitialization', initializeLearningDocument);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() =>
     expect(result.current.data).toEqual(
@@ -95,7 +86,7 @@ it.each([false, true])('initializes a missing connection before reading it (lega
 
 it('returns the disabled connection after readiness when a current installation has none', async () => {
   await replaceLearningDocument(buildLearningDocument());
-  messages.handle('waitForInitialization', initializeLearningDocument);
+  service.handle('waitForInitialization', initializeLearningDocument);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual({ pat: '', gistId: null, enabled: false }));
   expect(background.waitForInitialization).toHaveBeenCalledExactlyOnceWith();
@@ -180,7 +171,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
   async (stored) => {
     await storage.setItem(STORAGE_KEYS.learningDocument, stored);
     const ready = Promise.withResolvers<void>();
-    messages.resolve('waitForInitialization', ready.promise);
+    service.resolve('waitForInitialization', ready.promise);
     const documentRead = readLearningDocument();
     const completed = vi.fn();
     void documentRead.then(completed, completed);
@@ -204,7 +195,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
 it.each([useCardsQuery, useGistSyncConfigQuery])(
   'reports initialization failure without presenting default data (%s)',
   async (useQuery) => {
-    messages.handle('waitForInitialization', () => {
+    service.handle('waitForInitialization', () => {
       throw new Error('Conversion failed');
     });
     const { result } = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
@@ -220,7 +211,7 @@ it.each([
   { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
 ])('reports invalid current data directly: %j', async (document) => {
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
-  messages.resolve('waitForInitialization', new Promise<void>(() => {}));
+  service.resolve('waitForInitialization', new Promise<void>(() => {}));
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
@@ -352,7 +343,7 @@ it('keeps polling background-only sync progress and errors without stored change
     syncInProgress: true,
     lastError: null,
   };
-  messages.handle('getGistSyncStatus', () => status);
+  service.handle('getGistSyncStatus', () => status);
   const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.data?.syncInProgress).toBe(true);

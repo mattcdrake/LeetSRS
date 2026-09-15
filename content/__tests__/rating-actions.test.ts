@@ -9,24 +9,15 @@ import { getRegisteredBackground } from '@/test/utils/background-service';
 
 import { createServiceMock } from '@/test/utils/service-mocks';
 
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@webext-core/proxy-service');
+vi.mock('@/shared/background-service');
 
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
   backgroundEntry.main();
-  const messages = createServiceMock(background).reset();
-  messages.use(getRegisteredBackground());
+  const service = createServiceMock(background).reset();
+  service.use(getRegisteredBackground());
   await background.waitForInitialization();
   Object.defineProperty(window, 'location', {
     value: { pathname: '/problems/two-sum/', hostname: 'leetcode.com' },

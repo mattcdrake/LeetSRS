@@ -8,20 +8,14 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { DataSection } from '../DataSection';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 describe('DataSection reset', () => {
-  const messages = createServiceMock(background);
+  const service = createServiceMock(background);
   let wrapper: ReturnType<typeof createPopupTestWrapper>['wrapper'];
 
   beforeEach(() => {
-    messages.reset().resolve('importData', undefined).resolve('resetAllData', undefined);
+    service.reset().resolve('importData', undefined).resolve('resetAllData', undefined);
     wrapper = createPopupTestWrapper().wrapper;
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     vi.stubGlobal('alert', vi.fn());
@@ -48,7 +42,7 @@ describe('DataSection reset', () => {
 
   it('disables reset until the confirmed operation succeeds, then alerts success', async () => {
     const reset = Promise.withResolvers<void>();
-    messages.handle('resetAllData', () => reset.promise);
+    service.handle('resetAllData', () => reset.promise);
     render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
@@ -69,7 +63,7 @@ describe('DataSection reset', () => {
   it('alerts the error and enables retry when reset fails', async () => {
     const error = new Error('Reset failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    messages.handle('resetAllData', () => Promise.reject(error));
+    service.handle('resetAllData', () => Promise.reject(error));
     render(<DataSection />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));

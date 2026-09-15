@@ -16,13 +16,7 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 // Mock the child components
 interface MockReviewCardProps {
@@ -114,7 +108,7 @@ describe('ReviewQueue', () => {
   ];
 
   const mockMutateAsync = vi.fn();
-  const messages = createServiceMock(background);
+  const service = createServiceMock(background);
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
   const seedQueue = (cards: CardWithProblem[]) => {
@@ -133,7 +127,7 @@ describe('ReviewQueue', () => {
 
   beforeEach(() => {
     vi.spyOn(storage, 'getItem');
-    messages
+    service
       .reset()
       .resolve('waitForInitialization', undefined)
       .handle('rateCard', mockMutateAsync)
@@ -242,7 +236,7 @@ describe('ReviewQueue', () => {
   describe('Card Actions', () => {
     it('should disable controls and prevent duplicate actions while a review is pending', async () => {
       const mutation = Promise.withResolvers<void>();
-      messages.handle('rateCard', () => mutation.promise);
+      service.handle('rateCard', () => mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
       const actionButton = await screen.findByRole('button', { name: 'Good' });

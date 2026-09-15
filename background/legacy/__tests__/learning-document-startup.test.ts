@@ -13,13 +13,7 @@ import {
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 describe('learning document startup', () => {
   beforeEach(() => {

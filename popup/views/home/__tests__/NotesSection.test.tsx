@@ -16,17 +16,11 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 describe('NotesSection', () => {
   const mockSlug = 'test-card-123';
-  const messages = createServiceMock(background);
+  const service = createServiceMock(background);
   let wrapper: ReturnType<typeof createPopupTestWrapper>['wrapper'];
   let queryClient: QueryClient;
 
@@ -43,7 +37,7 @@ describe('NotesSection', () => {
   };
 
   beforeEach(() => {
-    messages.reset().resolve('saveNote', undefined);
+    service.reset().resolve('saveNote', undefined);
     ({ wrapper, queryClient } = createPopupTestWrapper());
     seedNote(null);
   });
@@ -89,7 +83,7 @@ describe('NotesSection', () => {
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {
     const save = Promise.withResolvers<void>();
-    messages.handle('saveNote', async (_frontendId, text) => {
+    service.handle('saveNote', async (_frontendId, text) => {
       await save.promise;
       seedNote(text);
     });

@@ -12,10 +12,7 @@ import { getSettings } from '@/test/utils/learning-reads';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
 
 describe('document settings through background commands', () => {
   beforeEach(() => {

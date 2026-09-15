@@ -13,23 +13,17 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NoteEditor } from '../NoteEditor';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 describe('NoteEditor', () => {
   const variant = 'regular';
   const frontendId = 'editor-card';
-  const messages = createServiceMock(background);
+  const service = createServiceMock(background);
 
   beforeEach(() => {
     fakeBrowser.reset();
     vi.spyOn(storage, 'getItem').mockResolvedValue(buildLearningDocument());
-    messages.reset().resolve('saveNote', undefined);
+    service.reset().resolve('saveNote', undefined);
   });
 
   afterEach(() => {
@@ -66,7 +60,7 @@ describe('NoteEditor', () => {
   it('confirms deletion and shows pending feedback', async () => {
     const text = 'Stored note';
     const remove = Promise.withResolvers<void>();
-    messages.handle('saveNote', async () => {
+    service.handle('saveNote', async () => {
       await remove.promise;
       vi.mocked(storage.getItem).mockResolvedValue(buildLearningDocument());
       await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument());
@@ -99,7 +93,7 @@ describe('NoteEditor', () => {
   it('shows a save failure, retains the draft, and clears the error after a successful retry', async () => {
     const error = new Error('Save failed');
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    messages.handle('saveNote', () => Promise.reject(error));
+    service.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
@@ -120,7 +114,7 @@ describe('NoteEditor', () => {
     expect(textarea).toHaveValue('Failed draft');
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
 
-    messages.handle('saveNote', async (_frontendId, text) => {
+    service.handle('saveNote', async (_frontendId, text) => {
       const saved = buildLearningDocument({
         cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
       });
@@ -135,7 +129,7 @@ describe('NoteEditor', () => {
 
   it('does not show another card’s save failure', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
+    service.handle('saveNote', () => Promise.reject(new Error('Save failed')));
     const { wrapper } = createPopupTestWrapper();
     const view = render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -151,7 +145,7 @@ describe('NoteEditor', () => {
 
   it.each(['save', 'delete'] as const)('isolates a pending %s when switching cards', async (operation) => {
     const pending = Promise.withResolvers<void>();
-    messages.handle('saveNote', () => pending.promise);
+    service.handle('saveNote', () => pending.promise);
     const { wrapper, queryClient } = createPopupTestWrapper();
     const cards = [
       createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
@@ -223,7 +217,7 @@ describe('NoteEditor', () => {
   it('retains text and resets confirmation after a failed deletion', async () => {
     const error = new Error('Delete failed');
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
-    messages.handle('saveNote', () => Promise.reject(error));
+    service.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({

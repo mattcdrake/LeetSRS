@@ -15,22 +15,16 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { GistSyncSection } from '../GistSyncSection';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
-const messages = createServiceMock(background);
+const service = createServiceMock(background);
 let config: GistSyncConfig;
 let test: ReturnType<typeof createPopupTestWrapper>;
 
 beforeEach(async () => {
   await replaceLearningDocument(buildLearningDocument());
   config = { pat: 'saved-pat', gistId: 'saved-gist', enabled: false };
-  messages
+  service
     .reset()
     .resolve('getGistSyncStatus', {
       lastSyncTime: null,
@@ -62,7 +56,7 @@ describe('Gist setup form', () => {
   it.each([false, true])('shows the saved connection after Save with delayed refresh=%s', async (delayed) => {
     const refresh = Promise.withResolvers<void>();
     config = { pat: '', gistId: null, enabled: false };
-    messages.handle('setupGistSync', async (input) => {
+    service.handle('setupGistSync', async (input) => {
       config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: true };
       if (delayed) {
         vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementationOnce(async () => {
@@ -177,7 +171,7 @@ describe('Gist setup form', () => {
     'preserves drafts when storage events deliver browser-sync updates and after %s',
     async (failure) => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-      messages.handle('setupGistSync', () => {
+      service.handle('setupGistSync', () => {
         if (failure === 'transport failure') throw new Error('Disconnected');
         return { saved: false, error: 'unavailable' };
       });
@@ -205,8 +199,8 @@ describe('Gist setup form', () => {
     'locks conflicting controls while %s is pending and permits retry',
     async (operation) => {
       const pending = Promise.withResolvers<GistConnectionResult>();
-      if (operation === 'setup') messages.resolve('setupGistSync', pending.promise);
-      else messages.resolve('setGistSyncEnabled', pending.promise);
+      if (operation === 'setup') service.resolve('setupGistSync', pending.promise);
+      else service.resolve('setGistSyncEnabled', pending.promise);
       await open(operation === 'setup');
       if (operation === 'setup') enterCredentials();
       fireEvent.click(
@@ -261,7 +255,7 @@ describe('Gist setup form', () => {
   it('allows the background setup request to finish after the popup unmounts', async () => {
     const pending = Promise.withResolvers<GistConnectionResult>();
     const complete = vi.fn();
-    messages.handle('setupGistSync', async () => {
+    service.handle('setupGistSync', async () => {
       const result = await pending.promise;
       complete();
       return result;

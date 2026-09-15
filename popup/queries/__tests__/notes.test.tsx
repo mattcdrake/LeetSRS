@@ -18,17 +18,8 @@ import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQu
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useNoteQuery, useSaveNoteMutation } from '../notes';
 
-vi.mock('@webext-core/proxy-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@webext-core/proxy-service')>()),
-  registerService: vi.fn(),
-}));
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@webext-core/proxy-service');
+vi.mock('@/shared/background-service');
 
 const problem = buildProblem();
 
@@ -36,8 +27,8 @@ beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
   backgroundEntry.main();
-  const messaging = createServiceMock(background).reset();
-  messaging.use(getRegisteredBackground());
+  const service = createServiceMock(background).reset();
+  service.use(getRegisteredBackground());
   await background.addCard(problem);
 });
 

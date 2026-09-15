@@ -13,19 +13,13 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
-vi.mock('@/shared/background-service', async (importOriginal) => {
-  const { createMockBackground } = await import('@/test/utils/service-mocks');
-  return {
-    ...(await importOriginal<typeof import('@/shared/background-service')>()),
-    background: createMockBackground(),
-  };
-});
+vi.mock('@/shared/background-service');
 
 describe('popup settings with the prepared document workflows', () => {
   beforeEach(async () => {
     fakeBrowser.reset();
-    const messages = createServiceMock(background);
-    messages.reset().handle('updateSettings', updateSettings);
+    const service = createServiceMock(background);
+    service.reset().handle('updateSettings', updateSettings);
     await replaceLearningDocument(buildLearningDocument());
   });
 
