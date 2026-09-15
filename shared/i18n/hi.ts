@@ -122,12 +122,10 @@ const hi: Translations = {
     title: 'सेटिंग्स',
     // Language section
     language: {
-      title: 'भाषा',
       label: 'डिस्प्ले भाषा',
     },
     // Appearance section
     appearance: {
-      title: 'अपीयरेंस',
       theme: 'थीम',
       themeSystem: 'सिस्टम',
       themeLight: 'हल्का',
@@ -135,13 +133,10 @@ const hi: Translations = {
     },
     // Review settings section
     reviewSettings: {
-      title: 'रिव्यु सेटिंग्स',
       newCardsPerDay: 'प्रति दिन नए कार्ड',
     },
     editorReset: {
-      title: 'प्रश्न संपादक रीसेट',
-      description: 'केवल समीक्षा कतार से प्रश्न खोलते समय कोड रीसेट करें।',
-      resetEditorOnReviewQueue: 'समीक्षा कतार से खोलने पर संपादक रीसेट करें',
+      resetEditorOnReviewQueue: 'समीक्षा के समय कोड रीसेट करें',
     },
 
     leetcodeCn: {

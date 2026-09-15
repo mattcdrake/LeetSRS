@@ -136,13 +136,11 @@ const pl: Translations = {
 
     // Language section
     language: {
-      title: 'Język',
       label: 'Język wyświetlania',
     },
 
     // Appearance section
     appearance: {
-      title: 'Wygląd',
       theme: 'Motyw',
       themeSystem: 'Systemowy',
       themeLight: 'Jasny',
@@ -151,14 +149,11 @@ const pl: Translations = {
 
     // Review settings section
     reviewSettings: {
-      title: 'Ustawienia powtórek',
       newCardsPerDay: 'Nowe karty dziennie',
     },
 
     editorReset: {
-      title: 'Resetowanie edytora zadania',
-      description: 'Resetuj kod tylko podczas otwierania zadania z kolejki powtórek.',
-      resetEditorOnReviewQueue: 'Resetuj edytor przy otwieraniu z kolejki powtórek',
+      resetEditorOnReviewQueue: 'Resetuj kod przy powtórce',
     },
 
     leetcodeCn: {
