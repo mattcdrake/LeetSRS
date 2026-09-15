@@ -28,3 +28,9 @@ devex/
 .agents
 docs/local
 experiments/
+
+# OAuth secrets and local Worker state
+.dev.vars*
+.env*
+!.env.example
+.wrangler/

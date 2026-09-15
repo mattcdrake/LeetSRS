@@ -19,6 +19,7 @@ import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/s
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
@@ -58,14 +59,14 @@ async function startBackground() {
 }
 
 it('reads a current connection without waiting for a learning document or background RPC', async () => {
-  const connection = { pat: 'secret', gistId: 'gist', enabled: true };
+  const connection = { accountId: 1, gistId: 'gist', enabled: true };
   await storage.setItem(STORAGE_KEYS.gistConnection, connection);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual(connection));
   expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
-it.each([false, true])('initializes a missing connection before reading it (legacy: %s)', async (legacy) => {
+it.each([false, true])('does not revive a retired connection (legacy: %s)', async (legacy) => {
   if (legacy) {
     await fakeBrowser.storage.sync.set({
       'leetsrs:githubPat': 'legacy-secret',
@@ -75,22 +76,16 @@ it.each([false, true])('initializes a missing connection before reading it (lega
   }
   service.handle('waitForInitialization', initializeLearningDocument);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  await waitFor(() =>
-    expect(result.current.data).toEqual(
-      legacy
-        ? { pat: 'legacy-secret', gistId: 'legacy-gist', enabled: true }
-        : { pat: '', gistId: null, enabled: false }
-    )
-  );
-  expect(background.waitForInitialization).toHaveBeenCalledExactlyOnceWith();
+  await waitFor(() => expect(result.current.data).toEqual({ accountId: null, gistId: null, enabled: false }));
+  expect(background.waitForInitialization).not.toHaveBeenCalled();
 });
 
-it('returns the disabled connection after readiness when a current installation has none', async () => {
+it('returns a disabled connection when this installation has none', async () => {
   await replaceLearningDocument(buildLearningDocument());
   service.handle('waitForInitialization', initializeLearningDocument);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  await waitFor(() => expect(result.current.data).toEqual({ pat: '', gistId: null, enabled: false }));
-  expect(background.waitForInitialization).toHaveBeenCalledExactlyOnceWith();
+  await waitFor(() => expect(result.current.data).toEqual({ accountId: null, gistId: null, enabled: false }));
+  expect(background.waitForInitialization).not.toHaveBeenCalled();
 });
 
 it('reports invalid connection data without requesting initialization', async () => {
@@ -193,18 +188,15 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
   }
 );
 
-it.each([useCardsQuery, useGistSyncConfigQuery])(
-  'reports initialization failure without presenting default data (%s)',
-  async (useQuery) => {
-    service.handle('waitForInitialization', () => {
-      throw new Error('Conversion failed');
-    });
-    const { result } = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
-    await waitFor(() => expect(result.current.error?.message).toBe('Conversion failed'));
-    expect(result.current.data).toBeUndefined();
-    expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
-  }
-);
+it.each([useCardsQuery])('reports initialization failure without presenting default data (%s)', async (useQuery) => {
+  service.handle('waitForInitialization', () => {
+    throw new Error('Conversion failed');
+  });
+  const { result } = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  await waitFor(() => expect(result.current.error?.message).toBe('Conversion failed'));
+  expect(result.current.data).toBeUndefined();
+  expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
+});
 
 it.each([
   { schemaVersion: -1, cards: {}, stats: {}, settings: {} },
@@ -266,7 +258,8 @@ it('refreshes saved views after a content command and an alarm pull, including c
   // Content sends this same command without a popup mutation hook.
   await act(() => background.saveNote(problem.frontendId, 'Content edit'));
   await waitFor(() => expect(result.current.note.data).toBe('Content edit'));
-  await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
+  await seedGithubAuthorization();
+  await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
   await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
   const remote = buildLearningDocument({
     settings: { maxNewCardsPerDay: 9 },
@@ -394,7 +387,8 @@ it('loads settings inside Suspense alongside the root storage observer', async (
 
 it('disables automatic sync offline without attempting GitHub', async () => {
   await startBackground();
-  await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
+  await seedGithubAuthorization();
+  await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
   await waitFor(() => expect(github.get).toHaveBeenCalledOnce());
   github.get.mockClear();
   onlineManager.setOnline(false);

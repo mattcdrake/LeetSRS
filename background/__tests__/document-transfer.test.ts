@@ -1,12 +1,12 @@
 import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getSettings } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
@@ -26,8 +26,9 @@ beforeEach(async () => {
   backgroundEntry.main();
   await getRegisteredBackground().waitForInitialization();
   await getRegisteredBackground().resetAllData();
-  await fakeBrowser.storage.sync.set({
-    'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: false },
+  await seedGithubAuthorization();
+  await fakeBrowser.storage.local.set({
+    'leetsrs:gistConnection': { accountId: 1, gistId: 'gist', enabled: false },
   });
 });
 
@@ -46,7 +47,7 @@ describe('document transfers through background commands', () => {
 
     expect(await readLearningDocument()).toEqual(replacement);
     expect(await getSettings()).toMatchObject({ theme: 'system' });
-    expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
+    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'gist', enabled: false });
   });
 
   it.each([true, false])('imports historical data with an explicit timestamp: %s', async (hasTimestamp) => {
@@ -62,7 +63,7 @@ describe('document transfers through background commands', () => {
         dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
       })
     );
-    expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: false });
+    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'gist', enabled: false });
   });
 
   it('retains all data after a rejected import and accepts a later edit', async () => {
@@ -106,13 +107,13 @@ describe('document transfers through background commands', () => {
 
       const releaseWrite = Promise.withResolvers<void>();
       if (delayedWrite) {
-        const write = fakeBrowser.storage.sync.set.bind(fakeBrowser.storage.sync);
-        vi.spyOn(fakeBrowser.storage.sync, 'set').mockImplementationOnce(async (items) => {
+        const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+        vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
           await write(items);
           await releaseWrite.promise;
         });
       }
-      const setup = getRegisteredBackground().setupGistSync({ mode: 'create', pat: 'entered' });
+      const setup = getRegisteredBackground().setupGistSync({ mode: 'create' });
       await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
       await vi.waitFor(async () =>
         expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
@@ -121,7 +122,7 @@ describe('document transfers through background commands', () => {
       expect(await setup).toEqual({ saved: true });
 
       expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(before);
-      expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
+      expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'created-gist', enabled: true });
       await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
       await vi.waitFor(async () =>
         expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })

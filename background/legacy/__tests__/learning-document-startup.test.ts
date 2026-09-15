@@ -36,7 +36,7 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({ settings: { resetEditorOnReviewQueue: false } })
     );
-    expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
     expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
   });
@@ -88,7 +88,7 @@ describe('learning document startup', () => {
       },
     });
     expect(await readLearningDocument()).toEqual(expected);
-    expect(await readGistConnection()).toEqual({ pat: ' token ', gistId: 'legacy-gist', enabled: true });
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(await fakeBrowser.storage.local.get()).toEqual({
       'leetsrs:learningDocument': expected,
       'leetsrs:lastSyncTime': 'local-status',
@@ -99,7 +99,6 @@ describe('learning document startup', () => {
       'leetsrs:githubPat': ' token ',
       'leetsrs:gistId': 'legacy-gist',
       'leetsrs:gistSyncEnabled': true,
-      'leetsrs:gistConnection': { pat: ' token ', gistId: 'legacy-gist', enabled: true },
       unrelated: 'keep',
     });
   });
@@ -156,7 +155,7 @@ describe('learning document startup', () => {
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 
-  it.each(['promotion', 'document'])('retries a rejected %s write from intact legacy data', async (stage) => {
+  it.each(['document'])('retries a rejected %s write from intact legacy data', async (stage) => {
     const { backup, converted } = validLegacyBackup();
     const local = {
       'leetsrs:schemaVersion': 2,
@@ -183,13 +182,10 @@ describe('learning document startup', () => {
     expect(await fakeBrowser.storage.local.get()).toEqual(local);
     expect(await fakeBrowser.storage.sync.get()).toEqual({
       ...sync,
-      ...(stage === 'document' && {
-        'leetsrs:gistConnection': { pat: 'legacy-secret', gistId: 'legacy-gist', enabled: true },
-      }),
     });
 
     // A shared connection edit arriving before retry must win over the retained legacy fields.
-    const shared = { pat: '', gistId: null, enabled: false };
+    const shared = { accountId: null, gistId: null, enabled: false };
     await writeGistConnection(shared);
     await initializeLearningDocument();
 
@@ -218,7 +214,7 @@ describe('learning document startup', () => {
         settings: { language: 'en', resetEditorOnReviewQueue: false },
       })
     );
-    expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: null, enabled: false });
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
 
     // Editing the authoritative document then restarting must not resurrect retained legacy data.
     const edited = buildLearningDocument();
@@ -228,10 +224,7 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(edited);
   });
 
-  it.each([
-    ['sync', 'theme', 'invalid'],
-    ['sync', 'gistConnection', {}],
-  ])('rejects malformed %s %s before any writes', async (area, key, value) => {
+  it.each([['sync', 'theme', 'invalid']])('rejects malformed %s %s before any writes', async (area, key, value) => {
     const { backup } = validLegacyBackup();
     const local: Record<string, unknown> = {
       'leetsrs:schemaVersion': 2,
@@ -273,7 +266,7 @@ describe('learning document startup', () => {
 
     await initializeLearningDocument();
 
-    expect(await readGistConnection()).toEqual(connection);
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
   });
 

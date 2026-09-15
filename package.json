@@ -24,7 +24,9 @@
     "test:ui": "vitest --ui",
     "test:verbose": "vitest --run --reporter=verbose",
     "check": "biome check --error-on-warnings . && npm run format:markdown:check && npm run compile && npm test",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "backend:build": "wrangler deploy --dry-run --config backend/wrangler.jsonc",
+    "backend:deploy": "wrangler deploy --config backend/wrangler.jsonc"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
@@ -58,6 +60,7 @@
     "vite": "^8.2.2",
     "vitest": "^5.0.0",
     "web-ext": "^10.6.0",
+    "wrangler": "^4.132.0",
     "wxt": "^0.21.4"
   }
 }

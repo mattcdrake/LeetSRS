@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { storage } from '#imports';
 import { convertLearningDocument } from '@/background/legacy/learning-document-conversions';
-import { gistSyncConfigSchema, LEARNING_DOCUMENT_VERSION, learningDocumentVersionSchema } from '@/shared/models';
-import { replaceLearningDocument, STORAGE_KEYS, writeGistConnection } from '@/shared/storage';
+import { LEARNING_DOCUMENT_VERSION, learningDocumentVersionSchema } from '@/shared/models';
+import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 
 const legacySettingNames = [
   'maxNewCardsPerDay',
@@ -43,21 +43,6 @@ function gatherLegacyDocument(local: Record<string, unknown>, sync: Record<strin
   return convertLearningDocument(data);
 }
 
-async function promoteLegacyConnection(sync: Record<string, unknown>): Promise<void> {
-  if (Object.hasOwn(sync, 'leetsrs:gistConnection')) {
-    gistSyncConfigSchema.parse(sync['leetsrs:gistConnection']);
-    return;
-  }
-
-  const connection = gistSyncConfigSchema.parse({
-    pat: z.string().default('').parse(sync['leetsrs:githubPat']),
-    gistId: z.string().nullable().default(null).parse(sync['leetsrs:gistId']),
-    enabled: z.boolean().default(false).parse(sync['leetsrs:gistSyncEnabled']),
-  });
-
-  await writeGistConnection(connection);
-}
-
 export async function initializeLearningDocument(): Promise<void> {
   const saved = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
 
@@ -76,7 +61,6 @@ export async function initializeLearningDocument(): Promise<void> {
   const [local, sync] = await Promise.all([storage.snapshot('local'), storage.snapshot('sync')]);
   const document = gatherLegacyDocument(local, sync);
 
-  await promoteLegacyConnection(sync);
   await replaceLearningDocument(document);
 
   try {

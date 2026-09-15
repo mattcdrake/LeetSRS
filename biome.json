@@ -4,6 +4,7 @@
     "includes": [
       "**",
       "!.wxt",
+      "!**/.wrangler",
       "!.output",
       "!dist",
       "!node_modules",

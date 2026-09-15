@@ -3,12 +3,12 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-
 import { learningDocumentSchema } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getReviewQueue } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
@@ -219,7 +219,8 @@ describe('document learning through background commands', () => {
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
     await replaceLearningDocument(document);
-    await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
+    await seedGithubAuthorization();
+    await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
     await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-01-15T10:00:00.000Z');
     const localBefore = await fakeBrowser.storage.local.get();
     const syncBefore = await fakeBrowser.storage.sync.get();

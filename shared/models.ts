@@ -103,15 +103,15 @@ export function findCard(document: LearningDocument, frontendId: string): Card |
 }
 
 export const gistSyncConfigSchema = z.object({
-  pat: z.string(),
+  accountId: z.number().int().positive().nullable(),
   gistId: z.string().nullable(),
   enabled: z.boolean(),
 });
 export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
 
 export const gistSetupSchema = z.discriminatedUnion('mode', [
-  z.object({ mode: z.literal('existing'), pat: z.string().trim().min(1), gistId: z.string().trim().min(1) }),
-  z.object({ mode: z.literal('create'), pat: z.string().trim().min(1) }),
+  z.object({ mode: z.literal('existing'), gistId: z.string().trim().min(1) }),
+  z.object({ mode: z.literal('create') }),
 ]);
 export type GistSetup = z.infer<typeof gistSetupSchema>;
 

@@ -2,6 +2,7 @@ import { registerService } from '@webext-core/proxy-service';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
 import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
+import { migratePatConnection } from '@/background/legacy/github-pat';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { sync, watchGistConnectionChanges } from '@/background/persistence';
 import { createBackgroundService } from '@/background/service';
@@ -16,6 +17,7 @@ export function startBackground() {
   const readyPromise = (async () => {
     await initializeCatalog();
     await initializeLearningDocument();
+    await migratePatConnection();
 
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {

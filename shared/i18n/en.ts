@@ -1,4 +1,5 @@
 import { Rating } from 'ts-fsrs';
+import { patMigration } from './legacy/en';
 import { getTopicLabel } from './topic-labels';
 
 // English translations (base language - all other translations must match this structure)
@@ -11,10 +12,10 @@ const en = {
     connectionSaveFailed: 'The connection could not be saved.',
     unavailable: 'You can continue learning. Sync will resume automatically when GitHub is available.',
     rateLimit: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
-    authentication: 'Check your GitHub token and its Gist permission in Settings.',
-    missingToken: 'PAT is not configured. Add your GitHub token in Settings.',
+    authentication: 'Sign in with GitHub again in Settings.',
+    missingToken: 'Sign in with GitHub in Settings.',
     missingGist: 'Gist ID is not configured. Choose a Gist in Settings.',
-    gistNotFound: 'Gist not found. Check the Gist ID and token access in Settings.',
+    gistNotFound: 'Backup not found. Choose an available backup in Settings.',
     unknown: 'Sync failed. Try again later.',
   },
   app: {
@@ -183,18 +184,24 @@ const en = {
 
     // GitHub Gist Sync section
     gistSync: {
+      signIn: 'Sign in with GitHub',
+      signingIn: 'Signing in…',
+      signOut: 'Sign out',
+      signInFailed: 'Couldn’t sign in. Please try again.',
+      ...patMigration,
+      chooseBackup: 'Choose a backup',
+      previousBackup: 'Previous backup',
+      loadingBackups: 'Loading backups…',
+      loadBackupsFailed: 'Could not load backups.',
+      retry: 'Retry',
+      connectAndSync: 'Connect and sync',
+
       title: 'GitHub Gist Sync',
       gistDescription: 'LeetSRS Backup - Spaced Repetition Data',
-      // PAT field
-      patLabel: 'Personal Access Token',
-      patPlaceholder: 'ghp_xxxxxxxxxxxx',
-      patHelpLink: 'Create GitHub token',
       // Gist selection
-      gistIdLabel: 'Gist ID',
-      gistIdPlaceholder: 'Enter existing Gist ID',
       createNewGist: 'Create New Gist',
       // Sync controls
-      syncEnabled: 'Syncing',
+      syncEnabled: 'Sync automatically',
       syncing: 'Syncing...',
       // Status
       lastSync: 'Last sync',
@@ -209,7 +216,10 @@ const en = {
       syncDetails:
         'LeetSRS compares the edit time of each complete dataset and replaces the older one. It does not merge individual cards.',
       openGist: 'Open backup Gist',
-      destination: 'Destination',
+      open: 'Open',
+      change: 'Change',
+      destination: 'Backup Gist',
+      syncInfo: 'How sync works',
       existingGist: 'Use existing Gist',
       save: 'Save',
       saving: 'Saving…',
