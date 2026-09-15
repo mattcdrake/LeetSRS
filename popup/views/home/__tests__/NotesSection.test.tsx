@@ -12,7 +12,6 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { learningDocumentQueryKey, type PopupLearningDocumentSnapshot } from '@/popup/queries/learning-document';
 import { background } from '@/shared/background-service';
-
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
@@ -85,7 +84,7 @@ describe('NotesSection', () => {
     expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Unsaved draft');
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
-    expect(background.saveNote).not.toHaveBeenCalledWith(expect.anything());
+    expect(background.saveNote).not.toHaveBeenCalled();
   });
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {

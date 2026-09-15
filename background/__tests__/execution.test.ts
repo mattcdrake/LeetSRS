@@ -4,7 +4,6 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
 import type { BackgroundService } from '@/shared/background-service';
-
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';

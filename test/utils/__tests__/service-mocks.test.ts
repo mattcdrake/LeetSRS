@@ -47,9 +47,9 @@ describe('createServiceMock', () => {
     await expect(background.waitForInitialization()).rejects.toBe(error);
   });
 
-  it('rejects unexpected calls', async () => {
-    await expect(background.waitForInitialization()).rejects.toThrow(
-      'Unexpected background call: waitForInitialization'
-    );
+  it('rejects unexpected calls immediately after construction', async () => {
+    const fresh = createMockBackground();
+    createServiceMock(fresh);
+    await expect(fresh.waitForInitialization()).rejects.toThrow('Unexpected background call: waitForInitialization');
   });
 });

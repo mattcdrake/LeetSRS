@@ -5,7 +5,6 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { background } from '@/shared/background-service';
-
 import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';

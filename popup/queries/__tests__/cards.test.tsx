@@ -104,7 +104,7 @@ it('keeps popup and badge queues consistent without reading browser language', a
   }
 });
 
-describe('card queries through JSON messaging and background handlers', () => {
+describe('card queries through the background service', () => {
   beforeEach(async () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';

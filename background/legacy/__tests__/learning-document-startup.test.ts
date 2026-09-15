@@ -3,7 +3,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { background } from '@/shared/background-service';
-
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import {
   readGistConnection,
@@ -23,7 +22,12 @@ vi.mock('@/shared/background-service', async (importOriginal) => {
 });
 
 describe('learning document startup', () => {
-  beforeEach(() => fakeBrowser.reset());
+  beforeEach(() => {
+    fakeBrowser.reset();
+    vi.mocked(background.waitForInitialization).mockImplementation(async () => {
+      throw new Error('Startup must not request readiness');
+    });
+  });
 
   it.each(['missing', 'null'])('initializes an unedited installation with a %s document', async (presence) => {
     if (presence === 'null') {

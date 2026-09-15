@@ -11,7 +11,6 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
 import { background } from '@/shared/background-service';
-
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';

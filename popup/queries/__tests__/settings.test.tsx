@@ -7,7 +7,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { updateSettings } from '@/background/learning';
 import { background } from '@/shared/background-service';
-
 import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';

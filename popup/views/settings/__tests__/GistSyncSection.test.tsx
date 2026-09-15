@@ -7,7 +7,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { gistSyncQueryKeys } from '@/popup/queries/gist-sync';
 import { background } from '@/shared/background-service';
-
 import type { GistConnectionResult, GistSyncConfig } from '@/shared/models';
 import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';

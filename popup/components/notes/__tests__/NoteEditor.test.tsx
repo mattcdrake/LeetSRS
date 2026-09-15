@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { background } from '@/shared/background-service';
-
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 import { STORAGE_KEYS } from '@/shared/storage';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
@@ -83,7 +82,7 @@ describe('NoteEditor', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const confirm = await screen.findByRole('button', { name: 'Confirm?' });
-    expect(background.saveNote).not.toHaveBeenCalledWith(expect.anything());
+    expect(background.saveNote).not.toHaveBeenCalled();
     fireEvent.click(confirm);
     expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
     expect(background.saveNote).toHaveBeenCalledWith(frontendId, '');

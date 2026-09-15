@@ -4,7 +4,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { background } from '@/shared/background-service';
-
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { DataSection } from '../DataSection';

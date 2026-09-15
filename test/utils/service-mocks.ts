@@ -53,5 +53,5 @@ export function createServiceMock(background: BackgroundService) {
     return api;
   };
   const api = { handle, resolve, reset, use };
-  return api;
+  return reset();
 }
