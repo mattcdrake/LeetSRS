@@ -14,7 +14,7 @@ import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
+import { useCards, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useNoteQuery, useSaveNoteMutation } from '../notes';
 import { useSettingsQuery } from '../settings';
@@ -38,7 +38,7 @@ describe('note and card query coherence', () => {
     const { result } = renderHook(
       () => ({
         note: useNoteQuery(problem.frontendId),
-        cards: useCardsQuery(),
+        cards: useCards(),
         queue: useReviewQueueQuery(),
         save: useSaveNoteMutation(problem.frontendId),
       }),
@@ -68,7 +68,7 @@ describe('note and card query coherence', () => {
     const { result } = renderHook(
       () => ({
         note: useNoteQuery(problem.frontendId),
-        cards: useCardsQuery(),
+        cards: useCards(),
         queue: useReviewQueueQuery(),
         settings: useSettingsQuery(),
         remove: useRemoveCardMutation(),

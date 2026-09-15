@@ -19,7 +19,7 @@ import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useReviewQueueQuery } from '../cards';
+import { useCards, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
@@ -36,7 +36,7 @@ it('loads saved cards with one catalog batch', async () => {
   await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
   const open = vi.spyOn(indexedDB, 'open');
   const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
-  const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  const view = renderHook(() => useCards(), { wrapper: createPopupTestWrapper().wrapper });
   try {
     await act(() => vi.advanceTimersByTimeAsync(1));
     await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
@@ -112,7 +112,7 @@ describe('card queries through the background service', () => {
     );
     const view = renderHook(
       () => ({
-        cards: useCardsQuery(),
+        cards: useCards(),
         queue: useReviewQueueQuery(),
         note: useNoteQuery(card.frontendId),
       }),
@@ -130,7 +130,7 @@ describe('card queries through the background service', () => {
 
   it('loads new catalog references and rejects metadata from a previous domain', async () => {
     await background.importData(JSON.stringify(buildLearningDocument({ cards: { 1: createMockCard(State.Review) } })));
-    const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+    const view = renderHook(() => useCards(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(view.result.current.data?.[0].title).toBe('Two Sum'));
     const card = createMockCard(State.Review, { frontendId: '3' });
     await act(() => background.importData(JSON.stringify(buildLearningDocument({ cards: { 3: card } }))));
@@ -151,7 +151,7 @@ describe('card queries through the background service', () => {
   it('refreshes learning data using cached catalog metadata after a save', async () => {
     const card = createMockCard(State.Review, { note: 'Original' });
     await background.importData(JSON.stringify(buildLearningDocument({ cards: { 1: card } })));
-    const view = renderHook(() => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery('1') }), {
+    const view = renderHook(() => ({ cards: useCards(), queue: useReviewQueueQuery(), note: useNoteQuery('1') }), {
       wrapper: createPopupTestWrapper().wrapper,
     });
     await waitFor(() => expect(view.result.current.cards.data?.[0].note).toBe('Original'));

@@ -9,7 +9,9 @@ import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learni
 
 export type CardWithProblem = Card & CatalogProblem;
 
-function useEnrichedCardsQuery(selectCards: (document: LearningDocument) => Card[]) {
+export function useCards(
+  selectCards: (document: LearningDocument) => Card[] = (document) => Object.values(document.cards)
+) {
   const documentQuery = useQuery(learningDocumentQueryOptions);
   const document = documentQuery.data?.document;
   const catalogQuery = useQuery({
@@ -31,13 +33,9 @@ function useEnrichedCardsQuery(selectCards: (document: LearningDocument) => Card
   };
 }
 
-export function useCardsQuery() {
-  return useEnrichedCardsQuery((document) => Object.values(document.cards));
-}
-
 export function useReviewQueueQuery() {
   const now = usePopupClock();
-  return useEnrichedCardsQuery((document) => buildReviewQueue(document, new Date(now)));
+  return useCards((document) => buildReviewQueue(document, new Date(now)));
 }
 
 function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {

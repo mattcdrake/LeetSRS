@@ -22,7 +22,7 @@ import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
+import { useCards, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useExportDataMutation } from '../data';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
 import { useNoteQuery } from '../notes';
@@ -106,7 +106,7 @@ it.each(['success', 'failure'] as const)(
   async (outcome) => {
     const pending = Promise.withResolvers<LearningDocument>();
     const reads = vi.spyOn(storage, 'getItem').mockReturnValue(pending.promise);
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+    const { result } = renderHook(() => useCards(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(reads).toHaveBeenCalled());
     reads.mockRestore();
     const card = createMockCard(State.New);
@@ -138,7 +138,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
       {children}
     </QueryClientProvider>
   );
-  const view = renderHook(() => useCardsQuery(), { wrapper });
+  const view = renderHook(() => useCards(), { wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
   expect(background.waitForInitialization).toHaveBeenCalledWith();
@@ -177,7 +177,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
     const completed = vi.fn();
     void documentRead.then(completed, completed);
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-    const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+    const { result } = renderHook(() => useCards(), { wrapper: createPopupTestWrapper().wrapper });
     await act(() => vi.advanceTimersByTimeAsync(1));
     expect(completed).not.toHaveBeenCalled();
     expect(result.current.isLoading).toBe(true);
@@ -193,7 +193,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
   }
 );
 
-it.each([useCardsQuery, useGistSyncConfigQuery])(
+it.each([useCards, useGistSyncConfigQuery])(
   'reports initialization failure without presenting default data (%s)',
   async (useQuery) => {
     service.handle('waitForInitialization', () => {
@@ -213,7 +213,7 @@ it.each([
 ])('reports invalid current data directly: %j', async (document) => {
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
   service.resolve('waitForInitialization', new Promise<void>(() => {}));
-  const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  const { result } = renderHook(() => useCards(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
   expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
@@ -224,7 +224,7 @@ it('runs local queries, saves, and validated export while offline', async () => 
   onlineManager.setOnline(false);
   const { result } = renderHook(
     () => ({
-      cards: useCardsQuery(),
+      cards: useCards(),
       settings: useSettingsQuery(),
       config: useGistSyncConfigQuery(),
       rate: useRateCardMutation(),
@@ -254,7 +254,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
   await background.addCard(problem);
   const { result } = renderHook(
     () => ({
-      cards: useCardsQuery(),
+      cards: useCards(),
       note: useNoteQuery(problem.frontendId),
       settings: useSettingsQuery(),
       config: useGistSyncConfigQuery(),
@@ -331,7 +331,7 @@ it.each(['tick', 'visibility'] as const)(
 
 it('keeps a successful local save successful when refreshing the cache fails', async () => {
   await startBackground();
-  const { result } = renderHook(() => ({ cards: useCardsQuery(), rate: useRateCardMutation() }), {
+  const { result } = renderHook(() => ({ cards: useCards(), rate: useRateCardMutation() }), {
     wrapper: createPopupTestWrapper().wrapper,
   });
   await waitFor(() => expect(result.current.cards.isSuccess).toBe(true));

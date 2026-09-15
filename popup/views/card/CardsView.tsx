@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
 import { FaMagnifyingGlass, FaXmark } from 'react-icons/fa6';
-import { useCardsQuery } from '@/popup/queries/cards';
+import { useCards } from '@/popup/queries/cards';
 import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
 import { useI18n } from '../../contexts/I18nContext';
@@ -10,7 +10,7 @@ import { CardListItem } from './components/CardListItem';
 
 export function CardsView() {
   const t = useI18n();
-  const { data: cards = [], isLoading } = useCardsQuery();
+  const { data: cards = [], isLoading } = useCards();
   const [filterText, setFilterText] = useState('');
 
   const sortedCards = filterAndSortCards(cards, filterText);
