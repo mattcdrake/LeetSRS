@@ -15,24 +15,23 @@ interface NoteEditorProps {
   isDisabled?: boolean;
 }
 
-export function NoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorProps) {
+export function NoteEditor(props: NoteEditorProps) {
+  return <CardNoteEditor key={props.frontendId} {...props} />;
+}
+
+function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorProps) {
   const t = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = variant === 'compact';
   const buttonSizing = isCompact ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm';
 
-  const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
+  const { isConfirming, startOrConfirm } = useTimedConfirmation();
 
   const { data: note, isLoading, error } = useNoteQuery(frontendId);
   const saveNoteMutation = useSaveNoteMutation(frontendId);
 
-  const draft = useDraftUntilSaved(frontendId, note ?? '');
+  const draft = useDraftUntilSaved(note ?? '');
   const { value: text, setValue: setText } = draft;
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Switching cards must clear the deletion confirmation.
-  useEffect(() => {
-    resetConfirmation();
-  }, [frontendId, resetConfirmation]);
 
   const save = async () => {
     try {
