@@ -117,6 +117,13 @@ describe('ReviewQueue', () => {
     );
     setPopupLearningCardsQueryData(queryClient, cards);
   };
+  const waitForInitialQueueRefresh = async () => {
+    await waitFor(() => {
+      // The storage observer schedules its initial fetch asynchronously.
+      expect(sendMessage).toHaveBeenCalledWith('waitForInitialization');
+      expect(queryClient.isFetching()).toBe(0);
+    });
+  };
 
   beforeEach(() => {
     vi.spyOn(storage, 'getItem');
@@ -148,6 +155,7 @@ describe('ReviewQueue', () => {
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
+      await waitForInitialQueueRefresh();
       const goodButton = await screen.findByRole('button', { name: 'Good' });
       vi.mocked(storage.getItem).mockReturnValue(refresh.promise);
       fireEvent.click(goodButton);
@@ -168,7 +176,7 @@ describe('ReviewQueue', () => {
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
-      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      await waitForInitialQueueRefresh();
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue(mockCards.slice(1)));
 
@@ -187,7 +195,7 @@ describe('ReviewQueue', () => {
     it('shows the empty state after the final card command and queue refresh complete', async () => {
       render(<ReviewQueue />, { wrapper });
 
-      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+      await waitForInitialQueueRefresh();
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue([]));
 
