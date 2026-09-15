@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
 import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { IDBDatabase } from 'fake-indexeddb';
 import { type ReactNode, Suspense } from 'react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -283,35 +284,50 @@ it('refreshes saved views after a content command and an alarm pull, including c
   });
 });
 
-it('advances the review day and queue allowance without a storage write', async () => {
-  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-  vi.setSystemTime(new Date('2024-03-15T23:59:55'));
-  const card = createMockCard(State.New);
-  const stats = { date: '2024-03-15', newCards: 1, streak: 1 };
-  await replaceLearningDocument(
-    buildLearningDocument({
-      cards: { [card.frontendId]: card },
-      reviewActivity: stats,
-      settings: { maxNewCardsPerDay: 1 },
-    })
-  );
-  const view = renderHook(
-    () => ({
-      queue: useReviewQueueQuery(),
-      today: useTodayReviewActivityQuery(),
-    }),
-    { wrapper: createPopupTestWrapper().wrapper }
-  );
-  await act(() => vi.advanceTimersByTimeAsync(1));
-  await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([]));
-  expect(view.result.current.today.data).toEqual(stats);
-  const writes = vi.spyOn(storage, 'setItem');
-  await act(() => vi.advanceTimersByTimeAsync(15_000));
-  await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
-  expect(view.result.current.today.data).toBeNull();
-  expect(writes).not.toHaveBeenCalled();
-  view.unmount();
-});
+it.each(['tick', 'visibility'] as const)(
+  'advances the review day and queue allowance on %s without storage or catalog access',
+  async (trigger) => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(new Date('2024-03-15T23:59:55'));
+    const card = createMockCard(State.New);
+    const stats = { date: '2024-03-15', newCards: 1, streak: 1 };
+    await replaceLearningDocument(
+      buildLearningDocument({
+        cards: { [card.frontendId]: card },
+        reviewActivity: stats,
+        settings: { maxNewCardsPerDay: 1 },
+      })
+    );
+    const view = renderHook(
+      () => ({
+        queue: useReviewQueueQuery(),
+        today: useTodayReviewActivityQuery(),
+      }),
+      { wrapper: createPopupTestWrapper().wrapper }
+    );
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([]));
+    expect(view.result.current.today.data).toEqual(stats);
+    const writes = vi.spyOn(storage, 'setItem');
+    const reads = vi.spyOn(storage, 'getItem');
+    const transactions = vi.spyOn(IDBDatabase.prototype, 'transaction');
+    await act(async () => {
+      if (trigger === 'tick') {
+        await vi.advanceTimersByTimeAsync(15_000);
+      } else {
+        vi.setSystemTime(new Date('2024-03-16T00:00:10'));
+        document.dispatchEvent(new Event('visibilitychange'));
+        await vi.advanceTimersByTimeAsync(1);
+      }
+    });
+    await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
+    expect(view.result.current.today.data).toBeNull();
+    expect(writes).not.toHaveBeenCalled();
+    expect(reads).not.toHaveBeenCalled();
+    expect(transactions).not.toHaveBeenCalled();
+    view.unmount();
+  }
+);
 
 it('keeps a successful local save successful when refreshing the cache fails', async () => {
   await startBackground();

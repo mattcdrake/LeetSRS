@@ -3,6 +3,7 @@ import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { Card, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
+import { usePopupClock } from '../hooks/usePopupClock';
 import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
 
 export type CardWithProblem = Card & CatalogProblem;
@@ -11,7 +12,7 @@ export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
 
 const cardsQueryOptions = queryOptions({
   refetchOnMount: false,
-  refetchInterval: 15_000,
+  refetchOnWindowFocus: false,
   queryKey: cardsQueryKey,
   queryFn: async () => {
     const snapshot = await readPopupLearningDocument();
@@ -34,19 +35,18 @@ export function useCardsQuery() {
   });
 }
 
-export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }) {
-  const { refetchOnWindowFocus = false } = options || {};
+export function useReviewQueueQuery() {
+  const now = usePopupClock();
   return useQuery({
     ...cardsQueryOptions,
-    select: ({ document, now, cards }) => {
+    select: ({ document, cards }) => {
       const byId = new Map(cards.map((card) => [card.frontendId, card]));
-      return buildReviewQueue(document, now).map((card) => {
+      return buildReviewQueue(document, new Date(now)).map((card) => {
         const detailed = byId.get(card.frontendId);
         if (!detailed) throw new Error(`Missing problem details: ${card.frontendId}`);
         return detailed;
       });
     },
-    refetchOnWindowFocus,
   });
 }
 
