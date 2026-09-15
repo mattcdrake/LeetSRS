@@ -2,7 +2,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { storage } from '#imports';
-import { GithubMigrationNotice } from '@/popup/components/GithubMigrationNotice';
 import { background } from '@/shared/background-service';
 import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
@@ -44,44 +43,52 @@ it('requires an explicit sign-in and does not connect automatically', async () =
   await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledOnce());
   expect(background.setupGistSync).not.toHaveBeenCalled();
   expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
+  expect(screen.queryByText(/does not merge individual cards/)).not.toBeInTheDocument();
 });
 
 it.each(['backup', 'create'])('connects the selected destination %s only on request', async (value) => {
   open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
   await screen.findByRole('option', { name: /My backup/ });
   expect(background.setupGistSync).not.toHaveBeenCalled();
   fireEvent.change(screen.getByRole('combobox'), { target: { value } });
-  fireEvent.click(screen.getByRole('button', { name: 'Connect and sync' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() =>
     expect(background.setupGistSync).toHaveBeenCalledWith(
       value === 'create' ? { mode: 'create' } : { mode: 'existing', gistId: value }
     )
   );
   expect(await screen.findByText('Connection saved')).toBeInTheDocument();
-  expect(screen.getByText(/does not merge individual cards/)).toBeInTheDocument();
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.queryByText(/does not merge individual cards/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'How sync works' })).toBeInTheDocument();
 });
 
 it('preserves the connection and selection after a failed change, and allows retry', async () => {
   service.resolve('setupGistSync', { saved: false, error: 'unavailable' });
   open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
   await screen.findByRole('option', { name: /My backup/ });
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'backup' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Connect and sync' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await screen.findByText(/Connection could not be saved/);
   expect(screen.getByRole('combobox')).toHaveValue('backup');
+  expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Open backup Gist' })).toHaveAttribute(
     'href',
     'https://gist.github.com/saved'
   );
-  expect(screen.getByRole('button', { name: 'Connect and sync' })).toBeEnabled();
 });
 
 it('disables conflicting controls during connection but permits sign-out', async () => {
   const pending = Promise.withResolvers<{ saved: true }>();
   service.resolve('setupGistSync', pending.promise);
   open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
   await screen.findByRole('option', { name: /My backup/ });
-  fireEvent.click(screen.getByRole('button', { name: 'Connect and sync' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(screen.getByRole('combobox')).toBeDisabled());
   expect(screen.getByRole('switch')).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
@@ -97,29 +104,49 @@ it('exposes sign-out and the sync toggle through background commands', async () 
   await waitFor(() => expect(background.signOutGithub).toHaveBeenCalledOnce());
 });
 
-it('dismisses the migration notice', async () => {
+it('shows cancellable sign-in progress without a stale error or duplicate sign-in button', async () => {
   service
-    .resolve('getGithubAuthStatus', { ...signedIn, migrationNotice: true })
-    .resolve('dismissMigrationNotice', undefined);
+    .resolve('getGithubAuthStatus', { ...signedIn, account: null, signingIn: true, error: 'signInFailed' })
+    .resolve('signOutGithub', undefined);
   open();
-  fireEvent.click(await screen.findByRole('button', { name: 'Got it' }));
-  await waitFor(() => expect(background.dismissMigrationNotice).toHaveBeenCalledOnce());
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  expect(await screen.findByRole('status')).toHaveTextContent('Signing in…');
+  expect(screen.queryByRole('button', { name: 'Sign in with GitHub' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  await waitFor(() => expect(background.signOutGithub).toHaveBeenCalledOnce());
 });
 
-it('opens settings after saving the migration dismissal', async () => {
+it('shows a concise sign-in error and clears it from view while retrying', async () => {
   const pending = Promise.withResolvers<void>();
-  const onOpenSettings = vi.fn();
   service
-    .resolve('getGithubAuthStatus', { ...signedIn, migrationNotice: true })
-    .resolve('dismissMigrationNotice', pending.promise);
-  render(<GithubMigrationNotice onOpenSettings={onOpenSettings} />, {
-    wrapper: createPopupTestWrapper().wrapper,
-  });
-  fireEvent.click(await screen.findByRole('button', { name: 'Open settings' }));
-  await waitFor(() => expect(background.dismissMigrationNotice).toHaveBeenCalledOnce());
-  expect(onOpenSettings).not.toHaveBeenCalled();
+    .resolve('getGithubAuthStatus', { ...signedIn, account: null, error: 'signInFailed' })
+    .resolve('startGithubSignIn', pending.promise);
+  open();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t sign in. Please try again.');
+  fireEvent.click(screen.getByRole('button', { name: 'Sign in with GitHub' }));
+  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  expect(screen.getByRole('status')).toHaveTextContent('Signing in…');
   await act(async () => pending.resolve());
-  await waitFor(() => expect(onOpenSettings).toHaveBeenCalledOnce());
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+it('keeps a connected backup compact and cancels edits without saving', async () => {
+  open();
+  fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open backup Gist' })).toHaveAttribute(
+    'href',
+    'https://gist.github.com/saved'
+  );
+  expect(background.setupGistSync).not.toHaveBeenCalled();
+});
+
+it('shows the setup form when no backup is connected', async () => {
+  await storage.removeItem(STORAGE_KEYS.gistConnection);
+  open();
+  await screen.findByRole('option', { name: /My backup/ });
+  expect(screen.getByRole('button', { name: 'Connect and sync' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('switch')).not.toBeInTheDocument();
 });
