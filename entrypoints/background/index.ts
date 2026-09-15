@@ -1,3 +1,3 @@
-import { startBackground } from '@/background/handlers';
+import { startBackground } from '@/background/startup';
 
 export default defineBackground(startBackground);
