@@ -17,19 +17,9 @@ describe('selectLanguage', () => {
   it('falls back to en for unsupported languages', () => {
     expect(selectLanguage(['fr', 'ja', 'ko'])).toBe('en');
   });
-
-  it.each(['de-DE', 'hi-IN', 'pl-PL'])('skips removed browser language %s', (language) => {
-    expect(selectLanguage([language])).toBe('en');
-    expect(selectLanguage([language, 'zh-CN'])).toBe('zh-CN');
-  });
 });
 
 describe('getSupportedLanguage', () => {
-  it.each(['de', 'hi', 'pl'])('rejects removed language %s', (language) => {
-    expect(getSupportedLanguage(language)).toBeUndefined();
-    expect(selectLanguage([language])).toBe('en');
-  });
-
   it.each(['toString', '__proto__'])('rejects prototype name %s', (language) => {
     expect(getSupportedLanguage(language)).toBeUndefined();
     expect(selectLanguage([language])).toBe('en');

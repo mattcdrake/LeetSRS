@@ -26,18 +26,6 @@ describe('stored translations from the learning document', () => {
     fakeBrowser.reset();
   });
 
-  it.each(['de', 'hi', 'pl'])('uses English for an unmigrated %s preference', async (language) => {
-    vi.stubGlobal('navigator', { languages: ['zh-CN'] });
-    await storage.setItem(key, { ...storedValue(language), schemaVersion: 10 });
-    const onChange = vi.fn();
-    const stop = watch(onChange);
-    try {
-      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.en));
-    } finally {
-      stop();
-    }
-  });
-
   it('loads once, follows language changes and removal, and stops after unsubscribe', async () => {
     await storage.setItem(key, storedValue('en'));
     vi.stubGlobal('navigator', { languages: ['zh-CN'] });

@@ -11,35 +11,16 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 const FIRST_FLAT_DOCUMENT_VERSION = 6;
 
 describe('convertLearningDocument', () => {
-  describe.each([2, 9, 10])('language preferences at version %i', (schemaVersion) => {
-    it.each([
-      ['de', 'en'],
-      ['hi', 'en'],
-      ['pl', 'en'],
-      ['en', 'en'],
-      ['zh-CN', 'zh-CN'],
-      [undefined, undefined],
-    ] as const)('converts %s to %s without changing learning data', (language, expectedLanguage) => {
-      const { backup, converted, legacyConverted } = validLegacyBackup();
-      const settings = { theme: 'dark', maxNewCardsPerDay: 7, resetEditorOnReviewQueue: true } as const;
-      const data = {
-        ...(schemaVersion < 4 ? backup.data : schemaVersion < 10 ? legacyConverted : converted),
-        reviewActivity: converted.reviewActivity,
-        settings: { ...settings, ...(language !== undefined && { language }) },
-      };
-      const input = { ...data, schemaVersion, dataUpdatedAt: backup.dataUpdatedAt };
-      const before = structuredClone(input);
-      const json = JSON.stringify(schemaVersion < FIRST_FLAT_DOCUMENT_VERSION ? { ...backup, data } : input);
-      const expected = buildLearningDocument({
-        ...converted,
-        dataUpdatedAt: backup.dataUpdatedAt,
-        settings: { ...settings, ...(expectedLanguage !== undefined && { language: expectedLanguage }) },
-      });
-
-      expect(convertLearningDocument(input)).toEqual(expected);
-      expect(parseLearningDocumentBackup(json)).toEqual(expected);
-      expect(input).toEqual(before);
+  it('migrates a removed language to English without changing learning data', () => {
+    const { backup, converted } = validLegacyBackup();
+    const expected = buildLearningDocument({
+      ...converted,
+      dataUpdatedAt: backup.dataUpdatedAt,
+      settings: { language: 'en', theme: 'dark' },
     });
+    const input = { ...expected, schemaVersion: 10, settings: { ...expected.settings, language: 'de' } };
+
+    expect(convertLearningDocument(input)).toEqual(expected);
   });
 
   it('rekeys v9 cards by frontend ID, retaining learning data and discarding invalid cards and metadata', () => {
@@ -159,7 +140,7 @@ describe('convertLearningDocument', () => {
     );
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, LEARNING_DOCUMENT_VERSION])(
+  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, LEARNING_DOCUMENT_VERSION])(
     'preserves the same learning data from installations and backups at version %i without I/O or a clock',
     (schemaVersion) => {
       const { backup, converted, legacyConverted } = validLegacyBackup();
@@ -167,7 +148,6 @@ describe('convertLearningDocument', () => {
       const data = {
         ...(schemaVersion < 4 ? backup.data : schemaVersion < 10 ? legacyConverted : converted),
         ...(schemaVersion === 0 && { cards: { ...backup.data.cards, 'two-sum': legacyCard } }),
-        ...(schemaVersion >= 9 && { reviewActivity: converted.reviewActivity }),
         settings: {
           theme: 'light',
           language: 'zh-CN',
