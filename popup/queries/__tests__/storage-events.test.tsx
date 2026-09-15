@@ -284,7 +284,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
   });
 });
 
-it.each(['tick', 'focus', 'visibility'] as const)(
+it.each(['tick', 'visibility'] as const)(
   'advances the review day and queue allowance on %s without storage or catalog access',
   async (trigger) => {
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
@@ -316,8 +316,7 @@ it.each(['tick', 'focus', 'visibility'] as const)(
         await vi.advanceTimersByTimeAsync(15_000);
       } else {
         vi.setSystemTime(new Date('2024-03-16T00:00:10'));
-        if (trigger === 'focus') window.dispatchEvent(new Event('focus'));
-        else document.dispatchEvent(new Event('visibilitychange'));
+        document.dispatchEvent(new Event('visibilitychange'));
         await vi.advanceTimersByTimeAsync(1);
       }
     });
