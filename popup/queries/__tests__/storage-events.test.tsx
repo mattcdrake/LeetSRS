@@ -10,12 +10,13 @@ import { storage } from '#imports';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import background from '@/entrypoints/background/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
+import { initializeCatalog } from '@/shared/catalog';
 import { onMessage, sendMessage } from '@/shared/messages';
 import type { GistSyncStatus } from '@/shared/models';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
-import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildCatalogQuestion, buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
@@ -42,7 +43,7 @@ const messages = createMessageMock(vi.mocked(sendMessage));
 beforeEach(() => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  messages.reset();
+  messages.reset().resolve('waitForInitialization', undefined);
 });
 afterEach(() => {
   onlineManager.setOnline(true);
@@ -112,21 +113,21 @@ it.each(['success', 'failure'] as const)(
     await waitFor(() => expect(reads).toHaveBeenCalled());
     reads.mockRestore();
     const card = createMockCard(State.New);
-    await replaceLearningDocument(buildLearningDocument({ cards: { [card.slug]: card } }));
-    await waitFor(() => expect(result.current.data).toEqual([card]));
+    await replaceLearningDocument(buildLearningDocument({ cards: { [card.frontendId]: card } }));
+    await waitFor(() => expect(result.current.data).toEqual([{ ...card, ...buildCatalogQuestion() }]));
     await act(async () => {
       if (outcome === 'success') pending.resolve(buildLearningDocument());
       else pending.reject(new Error('Obsolete failure'));
     });
-    expect(result.current.data).toEqual([card]);
+    expect(result.current.data).toEqual([{ ...card, ...buildCatalogQuestion() }]);
     expect(result.current.error).toBeNull();
   }
 );
 
 it('keeps an open view unchanged for unrelated events or a disposed subscription, then refreshes on remount', async () => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
   const first = createMockCard(State.New);
-  await replaceLearningDocument(buildLearningDocument({ cards: { [first.slug]: first } }));
+  await replaceLearningDocument(buildLearningDocument({ cards: { [first.frontendId]: first } }));
   const queryClient = createTestQueryClient();
   queryClient.setDefaultOptions({ queries: { staleTime: Infinity, retry: false } });
   let observing = true;
@@ -142,15 +143,15 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
   );
   const view = renderHook(() => useCardsQuery(), { wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
-  expect(view.result.current.data).toEqual([first]);
-  expect(sendMessage).not.toHaveBeenCalled();
+  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogQuestion() }]));
+  expect(sendMessage).toHaveBeenCalledWith('waitForInitialization');
 
   const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
   await act(async () => {
     await storage.setItem('local:unrelated', 'change');
     await vi.advanceTimersByTimeAsync(1);
   });
-  expect(view.result.current.data).toEqual([first]);
+  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogQuestion() }]));
   expect(view.result.current.error).toBeNull();
   reads.mockRestore();
 
@@ -160,7 +161,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
     await replaceLearningDocument(buildLearningDocument());
     await vi.advanceTimersByTimeAsync(1);
   });
-  expect(view.result.current.data).toEqual([first]);
+  await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogQuestion() }]));
   observing = true;
   view.rerender();
   await act(() => vi.advanceTimersByTimeAsync(1));
@@ -178,7 +179,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
     const documentRead = readLearningDocument();
     const completed = vi.fn();
     void documentRead.then(completed, completed);
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
     const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await act(() => vi.advanceTimersByTimeAsync(1));
     expect(completed).not.toHaveBeenCalled();
@@ -257,7 +258,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
   const { result } = renderHook(
     () => ({
       cards: useCardsQuery(),
-      note: useNoteQuery(problem.slug),
+      note: useNoteQuery(problem.frontendId),
       settings: useSettingsQuery(),
       config: useGistSyncConfigQuery(),
       status: useGistSyncStatusQuery(),
@@ -266,7 +267,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
   );
   await waitFor(() => expect(result.current?.note.isSuccess).toBe(true));
   // Content sends this same command without a popup mutation hook.
-  await act(() => sendMessage('saveNote', { slug: problem.slug, text: 'Content edit' }));
+  await act(() => sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Content edit' }));
   await waitFor(() => expect(result.current.note.data).toBe('Content edit'));
   await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
   await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
@@ -287,13 +288,13 @@ it('refreshes saved views after a content command and an alarm pull, including c
 });
 
 it('advances the review day and queue allowance without a storage write', async () => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
   vi.setSystemTime(new Date('2024-03-15T23:59:55'));
   const card = createMockCard(State.New);
   const stats = { date: '2024-03-15', newCards: 1, streak: 1 };
   await replaceLearningDocument(
     buildLearningDocument({
-      cards: { [card.slug]: card },
+      cards: { [card.frontendId]: card },
       reviewActivity: stats,
       settings: { maxNewCardsPerDay: 1 },
     })
@@ -306,11 +307,11 @@ it('advances the review day and queue allowance without a storage write', async 
     { wrapper: createPopupTestWrapper().wrapper }
   );
   await act(() => vi.advanceTimersByTimeAsync(1));
-  expect(view.result.current.queue.data).toEqual([]);
+  await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([]));
   expect(view.result.current.today.data).toEqual(stats);
   const writes = vi.spyOn(storage, 'setItem');
   await act(() => vi.advanceTimersByTimeAsync(15_000));
-  expect(view.result.current.queue.data).toEqual([card]);
+  await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([{ ...card, ...buildCatalogQuestion() }]));
   expect(view.result.current.today.data).toBeNull();
   expect(writes).not.toHaveBeenCalled();
   view.unmount();
@@ -339,7 +340,7 @@ it('keeps a successful local save successful when refreshing the cache fails', a
 
 it('keeps polling background-only sync progress and errors without stored changes', async () => {
   await replaceLearningDocument(buildLearningDocument());
-  vi.useFakeTimers();
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
   const status: GistSyncStatus = {
     lastSyncTime: null,
     lastSyncDirection: null,
@@ -394,3 +395,5 @@ it('disables automatic sync offline without attempting GitHub', async () => {
   expect(result.current.toggle.isSuccess).toBe(true);
   expect(github.get).not.toHaveBeenCalled();
 });
+
+beforeEach(initializeCatalog);

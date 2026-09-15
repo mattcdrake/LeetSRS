@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser';
 import { z } from 'zod';
 import { type LeetcodeDomain, leetcodeDomainSchema } from '@/shared/models';
 
-const catalogQuestionSchema = z.looseObject({
+export const catalogQuestionSchema = z.looseObject({
   frontendId: z.string().min(1),
   title: z.string(),
   translatedTitle: z.string().nullable(),

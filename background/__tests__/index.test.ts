@@ -45,7 +45,7 @@ it('refreshes the badge when an Again card becomes due without another save or s
   await vi.advanceTimersByTimeAsync(0);
   const badge = vi.spyOn(browser.action, 'setBadgeText');
   await dispatch('rateCard', { input: { ...buildProblem(), rating: 1 } });
-  const card = (await readLearningDocument()).cards['two-sum'];
+  const card = (await readLearningDocument()).cards['1'];
   await vi.advanceTimersByTimeAsync(0);
   expect(badge).toHaveBeenLastCalledWith({ text: '' });
   expect(await browser.alarms.get('badge-refresh')).toMatchObject({ scheduledTime: card.fsrs.due });
@@ -105,7 +105,7 @@ describe('document startup through registered background commands', () => {
         expect(readResult).toEqual({ status: 'rejected', reason: failure });
         expect(writeResult).toEqual({ status: 'rejected', reason: failure });
         await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
-        await expect(dispatch('removeCard', { slug: 'two-sum' })).rejects.toBe(failure);
+        await expect(dispatch('removeCard', { frontendId: '1' })).rejects.toBe(failure);
         expect(report).toHaveBeenCalledExactlyOnceWith('Failed to initialize background:', failure);
         expect(badge).not.toHaveBeenCalled();
         startBackground();

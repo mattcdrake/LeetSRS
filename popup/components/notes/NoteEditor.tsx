@@ -10,12 +10,12 @@ import { NOTES_MAX_LENGTH } from '@/shared/models';
 const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
 
 interface NoteEditorProps {
-  slug: string;
+  frontendId: string;
   variant: 'regular' | 'compact';
   isDisabled?: boolean;
 }
 
-export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProps) {
+export function NoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorProps) {
   const t = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = variant === 'compact';
@@ -23,16 +23,16 @@ export function NoteEditor({ slug, variant, isDisabled = false }: NoteEditorProp
 
   const { isConfirming, startOrConfirm, resetConfirmation } = useTimedConfirmation();
 
-  const { data: note, isLoading, error } = useNoteQuery(slug);
-  const saveNoteMutation = useSaveNoteMutation(slug);
+  const { data: note, isLoading, error } = useNoteQuery(frontendId);
+  const saveNoteMutation = useSaveNoteMutation(frontendId);
 
-  const draft = useDraftUntilSaved(slug, note ?? '');
+  const draft = useDraftUntilSaved(frontendId, note ?? '');
   const { value: text, setValue: setText } = draft;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Switching cards must clear the deletion confirmation.
   useEffect(() => {
     resetConfirmation();
-  }, [slug, resetConfirmation]);
+  }, [frontendId, resetConfirmation]);
 
   const save = async () => {
     try {

@@ -49,7 +49,7 @@ export function CardView() {
         ) : (
           <div className="space-y-2">
             {sortedCards.map((card) => (
-              <CardListItem key={card.id} card={card} />
+              <CardListItem key={card.frontendId} card={card} />
             ))}
           </div>
         )}

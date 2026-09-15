@@ -20,7 +20,7 @@ import {
   setSyncEnabled,
   sync,
 } from '@/background/persistence';
-import { initializeCatalog } from '@/shared/catalog';
+import { getQuestionBySlug, initializeCatalog } from '@/shared/catalog';
 import { messagePayloadSchemas, onMessage } from '@/shared/messages';
 import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
@@ -54,23 +54,30 @@ export function startBackground() {
     messagePayloadSchemas.waitForInitialization.parse(data);
     return undefined;
   });
+  onMessage('getProblem', async ({ data }) => {
+    await readyPromise;
+    const { slug, domain } = messagePayloadSchemas.getProblem.parse(data);
+    const question = await getQuestionBySlug(slug, domain);
+    if (!question) throw new Error(`Unknown problem: ${slug} on ${domain}`);
+    return question;
+  });
   onMessage('addCard', async ({ data }) => {
     await readyPromise;
     return addCard(messagePayloadSchemas.addCard.parse(data).problem);
   });
   onMessage('removeCard', async ({ data }) => {
     await readyPromise;
-    return removeCard(messagePayloadSchemas.removeCard.parse(data).slug);
+    return removeCard(messagePayloadSchemas.removeCard.parse(data).frontendId);
   });
   onMessage('delayCard', async ({ data }) => {
     await readyPromise;
     const payload = messagePayloadSchemas.delayCard.parse(data);
-    return delayCard(payload.slug, payload.days);
+    return delayCard(payload.frontendId, payload.days);
   });
   onMessage('setPauseStatus', async ({ data }) => {
     await readyPromise;
     const payload = messagePayloadSchemas.setPauseStatus.parse(data);
-    return setPauseStatus(payload.slug, payload.paused);
+    return setPauseStatus(payload.frontendId, payload.paused);
   });
   onMessage('rateCard', async ({ data }) => {
     await readyPromise;
@@ -79,7 +86,7 @@ export function startBackground() {
   onMessage('saveNote', async ({ data }) => {
     await readyPromise;
     const payload = messagePayloadSchemas.saveNote.parse(data);
-    return saveNote(payload.slug, payload.text);
+    return saveNote(payload.frontendId, payload.text);
   });
   onMessage('updateSettings', async ({ data }) => {
     await readyPromise;

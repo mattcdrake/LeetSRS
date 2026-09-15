@@ -1,13 +1,13 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
-import type { Card } from '@/shared/models';
-import { createMockCard } from '@/test/utils/card-mocks';
+import type { CardWithQuestion } from '@/popup/queries/cards';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { filterAndSortCards } from '../card-list';
 
-const createCard = (id: string, leetcodeId: string, name = id): Card =>
-  createMockCard(State.New, { id, leetcodeId, name });
+const createCard = (id: string, frontendId: string, title = id): CardWithQuestion =>
+  createMockCardWithQuestion(State.New, { frontendId, title, slug: id });
 
-const getIds = (cards: Card[]) => cards.map((card) => card.id);
+const getIds = (cards: CardWithQuestion[]) => cards.map((card) => card.slug);
 
 describe('filterAndSortCards', () => {
   it('does not mutate the input', () => {
@@ -53,9 +53,9 @@ describe('filterAndSortCards', () => {
       expectedIds: ['two', 'hundred', 'safe-limit', 'large'],
     },
     {
-      description: 'orders equal numeric IDs by their original text and then card ID',
-      cards: [createCard('b', '1'), createCard('c', '01'), createCard('a', '1'), createCard('d', '001')],
-      expectedIds: ['d', 'c', 'a', 'b'],
+      description: 'orders equal numeric IDs by their original text',
+      cards: [createCard('b', '1'), createCard('c', '01'), createCard('d', '001')],
+      expectedIds: ['d', 'c', 'b'],
     },
     {
       description: 'places nonnumeric IDs after numeric IDs in deterministic lexical order',
@@ -63,10 +63,9 @@ describe('filterAndSortCards', () => {
         createCard('x-second', 'x'),
         createCard('contest', 'contest-2'),
         createCard('numeric', '10'),
-        createCard('x-first', 'x'),
         createCard('alpha', 'A'),
       ],
-      expectedIds: ['numeric', 'alpha', 'contest', 'x-first', 'x-second'],
+      expectedIds: ['numeric', 'alpha', 'contest', 'x-second'],
     },
   ])('$description', ({ cards, expectedIds }) => {
     expect(getIds(filterAndSortCards(cards, ''))).toEqual(expectedIds);

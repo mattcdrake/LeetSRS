@@ -5,15 +5,15 @@ import { buildReviewQueue } from '@/shared/review';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
-function dueCard(slug: string, due: string, state = State.New) {
-  const card = createMockCard(state, { slug });
+function dueCard(frontendId: string, due: string, state = State.New) {
+  const card = createMockCard(state, { frontendId });
   card.fsrs.due = new Date(due).getTime();
   return card;
 }
 
 function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
   const document = buildLearningDocument({
-    cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
+    cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])),
     settings: { maxNewCardsPerDay: limit },
     reviewActivity: { date: '2024-01-15', newCards: completed, streak: 1 },
   });
@@ -31,7 +31,9 @@ describe('review queue calculations', () => {
       const future = dueCard('future', '2024-01-15T12:00:00.001', state);
       const paused = { ...dueCard('paused', '2024-01-15T11:00:00', state), paused: true };
       const document = buildLearningDocument({ cards: { due, future, paused } });
-      expect(buildReviewQueue(document, new Date('2024-01-15T12:00:00')).map((card) => card.slug)).toEqual(['due']);
+      expect(buildReviewQueue(document, new Date('2024-01-15T12:00:00')).map((card) => card.frontendId)).toEqual([
+        'due',
+      ]);
     }
   );
 
@@ -43,7 +45,7 @@ describe('review queue calculations', () => {
     });
     const before = structuredClone(document);
     expect(buildReviewQueue(document, new Date('2024-01-15T23:59:59.999'))).toEqual([]);
-    expect(buildReviewQueue(document, new Date('2024-01-16T00:00:00')).map((card) => card.slug)).toEqual([
+    expect(buildReviewQueue(document, new Date('2024-01-16T00:00:00')).map((card) => card.frontendId)).toEqual([
       'a',
       'b',
       'c',
@@ -59,7 +61,7 @@ describe('review queue calculations', () => {
       dueCard('relearning', '2024-01-15T09:00:00', State.Relearning),
     ];
 
-    expect(queueFor(cards, 0, 0).map((card) => card.slug)).toEqual(['learning', 'relearning', 'review']);
+    expect(queueFor(cards, 0, 0).map((card) => card.frontendId)).toEqual(['learning', 'relearning', 'review']);
   });
 
   it.each([
@@ -78,7 +80,7 @@ describe('review queue calculations', () => {
     ]);
     const before = structuredClone(cards);
 
-    expect(queueFor(cards, 2, completed).map((card) => card.slug)).toEqual(expected);
+    expect(queueFor(cards, 2, completed).map((card) => card.frontendId)).toEqual(expected);
     expect(cards).toEqual(before);
   });
 });

@@ -1,4 +1,5 @@
 import { storage } from '#imports';
+import { initializeCatalog } from '@/shared/catalog';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
@@ -8,9 +9,9 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CardWithQuestion } from '@/popup/queries/cards';
 import { sendMessage } from '@/shared/messages';
-import type { Card } from '@/shared/models';
-import { createMockCard } from '@/test/utils/card-mocks';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -19,7 +20,7 @@ vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 // Mock the child components
 interface MockReviewCardProps {
-  card: { name: string };
+  card: { title: string };
   onRate: (rating: Rating) => void;
   isProcessing: boolean;
 }
@@ -27,7 +28,7 @@ interface MockReviewCardProps {
 vi.mock('../ReviewCard', () => ({
   ReviewCard: ({ card, onRate, isProcessing }: MockReviewCardProps) => (
     <div data-testid="review-card">
-      <div>{card.name}</div>
+      <div>{card.title}</div>
       <button type="button" onClick={() => onRate(Rating.Again)} disabled={isProcessing}>
         Again
       </button>
@@ -45,9 +46,9 @@ vi.mock('../ReviewCard', () => ({
 }));
 
 vi.mock('../NotesSection', () => ({
-  NotesSection: ({ slug, isDisabled }: { slug: string; isDisabled: boolean }) => (
+  NotesSection: ({ frontendId, isDisabled }: { frontendId: string; isDisabled: boolean }) => (
     <div data-testid="notes-section">
-      Notes for {slug}
+      Notes for {frontendId}
       <button type="button" disabled={isDisabled}>
         Edit note
       </button>
@@ -86,26 +87,23 @@ vi.mock('../ActionsSection', () => ({
 
 describe('ReviewQueue', () => {
   const mockCards = [
-    createMockCard(State.Learning, {
-      id: '1',
+    createMockCardWithQuestion(State.Learning, {
       slug: 'two-sum',
-      name: 'Two Sum',
-      leetcodeId: '1',
-      difficulty: 'Easy',
+      title: 'Two Sum',
+      frontendId: '1',
+      difficulty: 'easy',
     }),
-    createMockCard(State.Learning, {
-      id: '2',
+    createMockCardWithQuestion(State.Learning, {
       slug: 'add-two-numbers',
-      name: 'Add Two Numbers',
-      leetcodeId: '2',
-      difficulty: 'Medium',
+      title: 'Add Two Numbers',
+      frontendId: '2',
+      difficulty: 'medium',
     }),
-    createMockCard(State.Learning, {
-      id: '3',
+    createMockCardWithQuestion(State.Learning, {
       slug: 'longest-substring',
-      name: 'Longest Substring',
-      leetcodeId: '3',
-      difficulty: 'Medium',
+      title: 'Longest Substring',
+      frontendId: '3',
+      difficulty: 'medium',
     }),
   ];
 
@@ -113,9 +111,9 @@ describe('ReviewQueue', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
-  const seedQueue = (cards: Card[]) => {
+  const seedQueue = (cards: CardWithQuestion[]) => {
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
+      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) })
     );
     setPopupLearningCardsQueryData(queryClient, cards);
   };
@@ -124,6 +122,7 @@ describe('ReviewQueue', () => {
     vi.spyOn(storage, 'getItem');
     messages
       .reset()
+      .resolve('waitForInitialization', undefined)
       .handle('rateCard', mockMutateAsync)
       .resolve('removeCard', undefined)
       .resolve('delayCard', undefined)
@@ -158,7 +157,7 @@ describe('ReviewQueue', () => {
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
 
       refresh.resolve(
-        buildLearningDocument({ cards: Object.fromEntries(mockCards.slice(1).map((card) => [card.slug, card])) })
+        buildLearningDocument({ cards: Object.fromEntries(mockCards.slice(1).map((card) => [card.frontendId, card])) })
       );
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
       expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
@@ -169,6 +168,7 @@ describe('ReviewQueue', () => {
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue(mockCards.slice(1)));
 
@@ -187,6 +187,7 @@ describe('ReviewQueue', () => {
     it('shows the empty state after the final card command and queue refresh complete', async () => {
       render(<ReviewQueue />, { wrapper });
 
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue([]));
 
@@ -239,7 +240,9 @@ describe('ReviewQueue', () => {
       for (const control of controls) fireEvent.click(control);
       fireEvent.click(actionButton);
 
-      await waitFor(() => expect(sendMessage).toHaveBeenCalledTimes(1));
+      await waitFor(() =>
+        expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'rateCard')).toHaveLength(1)
+      );
       expect(sendMessage).toHaveBeenCalledWith('rateCard', expect.any(Object));
       for (const control of controls) expect(control).toBeDisabled();
 
@@ -247,7 +250,9 @@ describe('ReviewQueue', () => {
       await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
       });
-      expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'rateCard')).toHaveLength(1);
     });
   });
 });
+
+beforeEach(initializeCatalog);

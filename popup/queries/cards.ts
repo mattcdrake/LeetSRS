@@ -1,21 +1,51 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { type CatalogQuestion, getQuestionByFrontendId } from '@/shared/catalog';
 import { sendMessage } from '@/shared/messages';
-import type { RateCardInput } from '@/shared/models';
+import type { Card, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
-import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
+import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
+
+export type CardWithQuestion = Card & CatalogQuestion;
+
+export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
+
+const cardsQueryOptions = queryOptions({
+  refetchOnMount: false,
+  refetchInterval: 15_000,
+  queryKey: cardsQueryKey,
+  queryFn: async () => {
+    const snapshot = await readPopupLearningDocument();
+    await sendMessage('waitForInitialization');
+    const cards = await Promise.all(
+      Object.values(snapshot.document.cards).map(async (card): Promise<CardWithQuestion> => {
+        const question = await getQuestionByFrontendId(card.frontendId, card.domain);
+        if (!question) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
+        return { ...question, ...card };
+      })
+    );
+    return { ...snapshot, cards };
+  },
+});
 
 export function useCardsQuery() {
   return useQuery({
-    ...learningDocumentQueryOptions,
-    select: ({ document }) => Object.values(document.cards),
+    ...cardsQueryOptions,
+    select: ({ cards }) => cards,
   });
 }
 
 export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }) {
   const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
-    ...learningDocumentQueryOptions,
-    select: ({ document, now }) => buildReviewQueue(document, now),
+    ...cardsQueryOptions,
+    select: ({ document, now, cards }) => {
+      const byId = new Map(cards.map((card) => [card.frontendId, card]));
+      return buildReviewQueue(document, now).map((card) => {
+        const detailed = byId.get(card.frontendId);
+        if (!detailed) throw new Error(`Missing problem details: ${card.frontendId}`);
+        return detailed;
+      });
+    },
     refetchOnWindowFocus,
   });
 }
@@ -29,7 +59,7 @@ function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Prom
 }
 
 export function useRemoveCardMutation() {
-  return useCardMutation((slug: string) => sendMessage('removeCard', { slug }));
+  return useCardMutation((frontendId: string) => sendMessage('removeCard', { frontendId }));
 }
 
 export function useRateCardMutation() {
@@ -37,11 +67,13 @@ export function useRateCardMutation() {
 }
 
 export function useDelayCardMutation() {
-  return useCardMutation(({ slug, days }: { slug: string; days: number }) => sendMessage('delayCard', { slug, days }));
+  return useCardMutation(({ frontendId, days }: { frontendId: string; days: number }) =>
+    sendMessage('delayCard', { frontendId, days })
+  );
 }
 
 export function usePauseCardMutation() {
-  return useCardMutation(({ slug, paused }: { slug: string; paused: boolean }) =>
-    sendMessage('setPauseStatus', { slug, paused })
+  return useCardMutation(({ frontendId, paused }: { frontendId: string; paused: boolean }) =>
+    sendMessage('setPauseStatus', { frontendId, paused })
   );
 }

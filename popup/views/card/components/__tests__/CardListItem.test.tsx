@@ -5,9 +5,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CardWithQuestion } from '@/popup/queries/cards';
 import { sendMessage } from '@/shared/messages';
-import type { Card } from '@/shared/models';
-import { createMockCard } from '@/test/utils/card-mocks';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardListItem } from '../CardListItem';
@@ -18,7 +18,7 @@ vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }
 const messages = createMessageMock(vi.mocked(sendMessage));
 let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
-const renderItem = (card: Card) => {
+const renderItem = (card: CardWithQuestion) => {
   render(<CardListItem card={card} />, { wrapper });
   fireEvent.click(screen.getByRole('button', { expanded: false }));
 };
@@ -35,7 +35,7 @@ describe('CardListItem', () => {
   });
 
   it.each([0, undefined])('renders numeric dates with last_review=%s', (lastReview) => {
-    const card = createMockCard(State.Review, { createdAt: 0 });
+    const card = createMockCardWithQuestion(State.Review, { createdAt: 0 });
     card.fsrs.due = 0;
     if (lastReview === undefined) {
       delete card.fsrs.last_review;
@@ -62,18 +62,18 @@ describe('CardListItem', () => {
     { paused: false, action: 'Pause', nextPaused: true },
     { paused: true, action: 'Resume', nextPaused: false },
   ])('sends the $action mutation for its card', async ({ paused, action, nextPaused }) => {
-    const card = createMockCard(State.New, { slug: 'test-problem', paused });
+    const card = createMockCardWithQuestion(State.New, { slug: 'test-problem', paused });
     renderItem(card);
 
     fireEvent.click(screen.getByRole('button', { name: action }));
 
     await vi.waitFor(() =>
-      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { slug: 'test-problem', paused: nextPaused })
+      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { frontendId: '1', paused: nextPaused })
     );
   });
 
   it('deletes only after confirmation', async () => {
-    renderItem(createMockCard(State.New, { slug: 'test-problem' }));
+    renderItem(createMockCardWithQuestion(State.New, { slug: 'test-problem' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
@@ -82,13 +82,13 @@ describe('CardListItem', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
 
     await vi.waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('removeCard', { slug: 'test-problem' });
+      expect(sendMessage).toHaveBeenCalledWith('removeCard', { frontendId: '1' });
     });
   });
 
   it('expires delete confirmation', () => {
     vi.useFakeTimers();
-    renderItem(createMockCard(State.New));
+    renderItem(createMockCardWithQuestion(State.New));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe('CardListItem', () => {
     const error = new Error('Pause failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('setPauseStatus', () => Promise.reject(error));
-    renderItem(createMockCard(State.New));
+    renderItem(createMockCardWithQuestion(State.New));
 
     const pauseButton = screen.getByRole('button', { name: 'Pause' });
     fireEvent.click(pauseButton);
@@ -118,7 +118,7 @@ describe('CardListItem', () => {
     const error = new Error('Delete failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('removeCard', () => Promise.reject(error));
-    renderItem(createMockCard(State.New));
+    renderItem(createMockCardWithQuestion(State.New));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
@@ -134,12 +134,12 @@ describe('CardListItem', () => {
     const deleteResult = Promise.withResolvers<void>();
     messages.handle('setPauseStatus', () => pauseResult.promise).handle('removeCard', () => deleteResult.promise);
     const cards = [
-      createMockCard(State.New, { id: 'first', name: 'First', slug: 'first' }),
-      createMockCard(State.New, { id: 'second', name: 'Second', slug: 'second' }),
+      createMockCardWithQuestion(State.New, { frontendId: 'first', title: 'First', slug: 'first' }),
+      createMockCardWithQuestion(State.New, { frontendId: 'second', title: 'Second', slug: 'second' }),
     ];
 
     render(
-      cards.map((card) => <CardListItem key={card.id} card={card} />),
+      cards.map((card) => <CardListItem key={card.frontendId} card={card} />),
       { wrapper }
     );
 

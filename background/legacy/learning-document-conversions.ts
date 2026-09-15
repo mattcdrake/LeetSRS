@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  cardSchema,
   LEARNING_DOCUMENT_VERSION,
   type LearningDocument,
   learningDocumentSchema,
@@ -14,7 +15,7 @@ const versionedInputSchema = learningDocumentVersionSchema.loose().extend({
 
 // Only describe the structure needed for translation. The current schema validates retained data.
 const legacyCollectionsSchema = z.object({
-  cards: z.record(z.string(), z.looseObject({ id: z.string() })),
+  cards: z.record(z.string(), z.unknown()),
   stats: z.record(z.string(), z.unknown()),
   settings: z.record(z.string(), z.unknown()),
 });
@@ -39,19 +40,32 @@ export function convertLearningDocument(input: unknown): LearningDocument {
   }
 
   const { cards, stats, settings } = legacyCollectionsSchema.parse(
-    schemaVersion < FIRST_DOCUMENT_VERSION ? { cards: {}, stats: {}, settings: {}, ...data } : data
+    schemaVersion < FIRST_DOCUMENT_VERSION
+      ? { cards: {}, stats: {}, settings: {}, ...data }
+      : { ...data, ...(schemaVersion >= 9 && { stats: {} }) }
   );
   const notes = schemaVersion < 4 && data.notes !== undefined ? legacyNotesSchema.parse(data.notes) : {};
   const convertedCards = Object.fromEntries(
-    Object.entries(cards).map(([slug, card]) => {
-      const converted = { ...card };
+    Object.values(cards).flatMap((value) => {
+      const parsed = z.looseObject({}).safeParse(value);
+      if (!parsed.success) return [];
+      const card = parsed.data;
+      const converted: Record<string, unknown> = { ...card, frontendId: card.leetcodeId };
       if (schemaVersion === 0 && card.domain === undefined) {
         converted.domain = 'leetcode.com';
       }
-      if (schemaVersion < 4 && card.note === undefined && Object.hasOwn(notes, card.id)) {
-        converted.note = legacyNoteSchema.parse(notes[card.id]).text;
+      if (
+        schemaVersion < 4 &&
+        card.note === undefined &&
+        typeof card.id === 'string' &&
+        Object.hasOwn(notes, card.id)
+      ) {
+        const note = legacyNoteSchema.safeParse(notes[card.id]);
+        if (!note.success) return [];
+        converted.note = note.data.text;
       }
-      return [slug, converted];
+      const result = cardSchema.safeParse(converted);
+      return result.success ? [[result.data.frontendId, result.data]] : [];
     })
   );
 
@@ -69,7 +83,7 @@ export function convertLearningDocument(input: unknown): LearningDocument {
     ...data,
     schemaVersion: LEARNING_DOCUMENT_VERSION,
     cards: convertedCards,
-    reviewActivity: convertStatistics(stats),
+    reviewActivity: schemaVersion < 9 ? convertStatistics(stats) : data.reviewActivity,
     settings,
   });
 }

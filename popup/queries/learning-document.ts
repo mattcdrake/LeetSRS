@@ -9,13 +9,15 @@ export interface PopupLearningDocumentSnapshot {
   now: Date;
 }
 
+export async function readPopupLearningDocument(): Promise<PopupLearningDocumentSnapshot> {
+  const now = new Date();
+  const document = await readLearningDocument();
+  return { document, now };
+}
+
 export const learningDocumentQueryOptions = queryOptions({
   queryKey: learningDocumentQueryKey,
-  queryFn: async () => {
-    const now = new Date();
-    const document = await readLearningDocument();
-    return { document, now } satisfies PopupLearningDocumentSnapshot;
-  },
+  queryFn: readPopupLearningDocument,
   refetchOnMount: false,
   refetchInterval: 15_000,
 });

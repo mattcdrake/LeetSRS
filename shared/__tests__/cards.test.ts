@@ -16,7 +16,7 @@ describe('card schemas', () => {
     expect(scheduler.next(card.fsrs, now, Rating.Good)).toEqual(scheduler.next(empty, now, Rating.Good));
   });
 
-  it.each(['id', 'slug', 'name', 'leetcodeId'])('rejects empty %s without trimming valid values', (field) => {
+  it.each(['frontendId'])('rejects empty %s without trimming valid values', (field) => {
     const card = createMockCard(State.Review);
     const result = cardSchema.safeParse({ ...card, [field]: ' \t ' });
     expect(result.success).toBe(false);
@@ -31,7 +31,6 @@ describe('card schemas', () => {
 
   it.each([
     { domain: 'leetcode.org' },
-    { difficulty: 'easy' },
     { paused: 0 },
     { createdAt: '2024-01-01' },
     { createdAt: 8_640_000_000_000_001 },

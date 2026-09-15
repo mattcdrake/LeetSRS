@@ -23,9 +23,9 @@ describe('createMessageMock', () => {
   });
 
   it('passes typed message data to a handler', async () => {
-    const input = { slug: 'card-1', text: 'Remember this', omitted: undefined };
+    const input = { frontendId: 'card-1', text: 'Remember this', omitted: undefined };
     messages.handle('saveNote', (data) => {
-      expect(data).toEqual({ slug: 'card-1', text: 'Remember this' });
+      expect(data).toEqual({ frontendId: 'card-1', text: 'Remember this' });
       expect(data).not.toBe(input);
       expect(data).not.toHaveProperty('omitted');
       data.text = 'Changed by handler';

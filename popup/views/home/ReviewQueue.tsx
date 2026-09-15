@@ -27,7 +27,7 @@ export function ReviewQueue() {
   const handleCardAction = async (action: () => Promise<void>, errorMessage: string) => {
     if (queue.length === 0 || isProcessing) return;
 
-    setProcessingCardId(queue[0].id);
+    setProcessingCardId(queue[0].frontendId);
 
     try {
       await action();
@@ -41,10 +41,7 @@ export function ReviewQueue() {
   const handleRating = async (rating: Grade) => {
     const currentCard = queue[0];
     const input: RateCardInput = {
-      slug: currentCard.slug,
-      name: currentCard.name,
-      leetcodeId: currentCard.leetcodeId,
-      difficulty: currentCard.difficulty,
+      frontendId: currentCard.frontendId,
       domain: currentCard.domain,
       rating,
     };
@@ -53,13 +50,13 @@ export function ReviewQueue() {
 
   const handleDelete = async () => {
     const currentCard = queue[0];
-    await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.slug), 'Failed to delete card:');
+    await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.frontendId), 'Failed to delete card:');
   };
 
   const handleDelay = async (days: number) => {
     const currentCard = queue[0];
     await handleCardAction(
-      () => delayCardMutation.mutateAsync({ slug: currentCard.slug, days }),
+      () => delayCardMutation.mutateAsync({ frontendId: currentCard.frontendId, days }),
       'Failed to delay card:'
     );
   };
@@ -67,7 +64,7 @@ export function ReviewQueue() {
   const handlePause = async () => {
     const currentCard = queue[0];
     await handleCardAction(
-      () => pauseCardMutation.mutateAsync({ slug: currentCard.slug, paused: true }),
+      () => pauseCardMutation.mutateAsync({ frontendId: currentCard.frontendId, paused: true }),
       'Failed to pause card:'
     );
   };
@@ -90,7 +87,7 @@ export function ReviewQueue() {
 
   const currentCard = queue[0];
 
-  if (processingCardId && currentCard?.id !== processingCardId) {
+  if (processingCardId && currentCard?.frontendId !== processingCardId) {
     return (
       <div className="flex items-center justify-center h-32">
         <div className="text-secondary">{t.home.loadingReviewQueue}</div>
@@ -113,8 +110,8 @@ export function ReviewQueue() {
   return (
     <div className="flex flex-col gap-4">
       {/* The key is important to ensure React re-mounts the component for a new card */}
-      <ReviewCard key={currentCard.id} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
-      <NotesSection slug={currentCard.slug} isDisabled={isProcessing} />
+      <ReviewCard key={currentCard.frontendId} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
+      <NotesSection frontendId={currentCard.frontendId} isDisabled={isProcessing} />
       <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
     </div>
   );

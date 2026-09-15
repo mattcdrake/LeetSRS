@@ -28,7 +28,7 @@ const problem = buildProblem();
 describe('registered background execution', () => {
   it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
     await dispatch('rateCard', { input: { ...problem, rating: 3 } });
-    await dispatch('saveNote', { slug: problem.slug, text: 'Reset me' });
+    await dispatch('saveNote', { frontendId: problem.frontendId, text: 'Reset me' });
     await dispatch('updateSettings', { changes: { language: 'de' } });
     await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
     const staleLocal = {
@@ -74,7 +74,7 @@ describe('registered background execution', () => {
     vi.mocked(onMessage).mockClear();
     background.main();
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-    expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBeNull();
+    expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBeNull();
     expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(empty);
   });
@@ -116,8 +116,8 @@ describe('registered background execution', () => {
       await expect(dispatch('addCard', { problem })).resolves.toBeUndefined();
       expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
       expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
-      await dispatch('saveNote', { slug: problem.slug, text: 'saved after badge failure' });
-      expect((await readLearningDocument()).cards[problem.slug]?.note ?? null).toBe('saved after badge failure');
+      await dispatch('saveNote', { frontendId: problem.frontendId, text: 'saved after badge failure' });
+      expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBe('saved after badge failure');
     }
   );
 
@@ -130,19 +130,19 @@ describe('registered background execution', () => {
     });
     await dispatch('addCard', { problem });
     await started.promise;
-    await dispatch('saveNote', { slug: problem.slug, text: 'next edit' });
-    expect((await readLearningDocument()).cards[problem.slug]?.note).toBe('next edit');
+    await dispatch('saveNote', { frontendId: problem.frontendId, text: 'next edit' });
+    expect((await readLearningDocument()).cards[problem.frontendId]?.note).toBe('next edit');
     release.resolve();
   });
 });
 
 const invalidPayloads: [MessageName, unknown][] = [
-  ['addCard', { problem: { ...problem, difficulty: 'Impossible' } }],
-  ['removeCard', { slug: '' }],
-  ['delayCard', { slug: problem.slug, days: 0.5 }],
-  ['setPauseStatus', { slug: problem.slug, paused: 'false' }],
+  ['addCard', { problem: { ...problem, frontendId: '' } }],
+  ['removeCard', { frontendId: '' }],
+  ['delayCard', { frontendId: problem.frontendId, days: 0.5 }],
+  ['setPauseStatus', { frontendId: problem.frontendId, paused: 'false' }],
   ['rateCard', { input: { ...problem, rating: 0 } }],
-  ['saveNote', { slug: 'card', text: 'a'.repeat(501) }],
+  ['saveNote', { frontendId: 'card', text: 'a'.repeat(501) }],
   ['updateSettings', { changes: { language: 'constructor' } }],
   ['importData', { jsonData: {} }],
   ['setupGistSync', { mode: 'existing', gistId: 42, pat: 'token' }],
@@ -159,8 +159,8 @@ it.each(invalidPayloads)(
     await expect(dispatch(name, invalid)).rejects.toBeInstanceOf(ZodError);
     expect(writes).not.toHaveBeenCalled();
     expect(badge).not.toHaveBeenCalled();
-    await dispatch('addCard', { problem: buildProblem({ slug: 'card' }) });
-    await dispatch('saveNote', { slug: 'card', text: 'after failure', extra: true });
+    await dispatch('addCard', { problem: buildProblem({ frontendId: 'card' }) });
+    await dispatch('saveNote', { frontendId: 'card', text: 'after failure', extra: true });
     expect((await readLearningDocument()).cards.card?.note ?? null).toBe('after failure');
   }
 );

@@ -4,6 +4,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { testCatalog } from '@/test/utils/catalog-mocks';
 
 // The fake browser serializes writes, but shares stored objects on reads.
 // Browser storage returns snapshots; keep that behavior across mock resets.
@@ -25,7 +26,7 @@ beforeEach(() => {
   const fetchFromNetwork = globalThis.fetch;
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     if (input === browser.runtime.getURL('/data/leetcode-catalog.sha256')) return new Response('test-hash');
-    if (input === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json([]);
+    if (input === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json(testCatalog);
     return fetchFromNetwork(input, init);
   });
 });

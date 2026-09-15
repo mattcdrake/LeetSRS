@@ -4,13 +4,47 @@ import {
   convertLearningDocument,
   parseLearningDocumentBackup,
 } from '@/background/legacy/learning-document-conversions';
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
+import { cardSchema, LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
 const FIRST_FLAT_DOCUMENT_VERSION = 6;
 
 describe('convertLearningDocument', () => {
+  it('rekeys v9 cards by frontend ID, retaining learning data and discarding invalid cards and metadata', () => {
+    const { backup } = validLegacyBackup();
+    const original = { ...backup.data.cards['two-sum'], domain: 'leetcode.cn', note: 'Keep my approach' };
+    const input = {
+      schemaVersion: 9,
+      dataUpdatedAt: backup.dataUpdatedAt,
+      cards: {
+        'two-sum': original,
+        invalid: { ...original, leetcodeId: '' },
+        broken: { ...original, leetcodeId: '2', fsrs: null },
+        invalidNote: { ...original, leetcodeId: '3', note: 42 },
+        missing: null,
+      },
+      reviewActivity: { date: '2024-01-01', newCards: 2, streak: 3 },
+      settings: { theme: 'dark' },
+    };
+    const expected = {
+      ...input,
+      schemaVersion: 10,
+      cards: {
+        '1': {
+          frontendId: '1',
+          domain: 'leetcode.cn',
+          createdAt: original.createdAt,
+          fsrs: original.fsrs,
+          paused: original.paused,
+          note: original.note,
+        },
+      },
+    };
+    expect(convertLearningDocument(input)).toEqual(expected);
+    expect(parseLearningDocumentBackup(JSON.stringify(input))).toEqual(expected);
+  });
+
   it('retires historical statistics while retaining the latest allowance and streak', () => {
     const input = {
       schemaVersion: 8,
@@ -182,7 +216,13 @@ describe('convertLearningDocument', () => {
       })
     ).toEqual(
       buildLearningDocument({
-        cards: { 'two-sum': { ...card, ...(note === undefined ? { note: 'Legacy note' } : note ? { note } : {}) } },
+        cards: {
+          '1': cardSchema.parse({
+            ...card,
+            frontendId: '1',
+            ...(note === undefined ? { note: 'Legacy note' } : note ? { note } : {}),
+          }),
+        },
         settings: { resetEditorOnReviewQueue: false },
       })
     );
@@ -208,7 +248,9 @@ describe('convertLearningDocument', () => {
       cards: { 'two-sum': card },
       notes: { [card.id]: { text: 'Legacy note' } },
     });
-    expect(document.cards['two-sum']).toEqual({ ...card, ...(note !== undefined && { note }) });
+    expect(document.cards['1']).toEqual(
+      cardSchema.parse({ ...card, frontendId: '1', ...(note !== undefined && { note }) })
+    );
   });
 
   it.each([
@@ -241,12 +283,11 @@ describe('convertLearningDocument', () => {
     }
   });
 
-  it.each(['slug', 'duplicate', 'date'] as const)(
+  it.each(['frontendId', 'date'] as const)(
     'rejects broken %s relationships in current installations and backups',
     (kind) => {
       const { converted } = validLegacyBackup();
-      if (kind === 'slug') converted.cards['two-sum'].slug = 'different';
-      if (kind === 'duplicate') converted.cards['cn-problem'].id = 'valid-com';
+      if (kind === 'frontendId') converted.cards['1'].frontendId = 'different';
       if (kind === 'date') converted.reviewActivity.date = 'invalid';
       const document = buildLearningDocument({ ...converted, settings: {} });
       expect(() => convertLearningDocument(document)).toThrow();
@@ -309,7 +350,7 @@ describe('parseLearningDocumentBackup', () => {
     );
     expect(document).toEqual(
       buildLearningDocument({
-        cards: { 'two-sum': card },
+        cards: { '1': cardSchema.parse({ ...card, frontendId: '1' }) },
         settings: { resetEditorOnReviewQueue: false },
         dataUpdatedAt: '2024-01-02',
       })
