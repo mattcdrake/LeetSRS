@@ -135,13 +135,11 @@ const en = {
 
     // Language section
     language: {
-      title: 'Language',
       label: 'Display language',
     },
 
     // Appearance section
     appearance: {
-      title: 'Appearance',
       theme: 'Theme',
       themeSystem: 'System',
       themeLight: 'Light',
@@ -151,13 +149,10 @@ const en = {
 
     // Review settings section
     reviewSettings: {
-      title: 'Review Settings',
       newCardsPerDay: 'New Cards Per Day',
     },
 
     editorReset: {
-      title: 'Problem Editor Reset',
-      description: 'Reset code only when you open a Problem from the review queue.',
       resetEditorOnReviewQueue: 'Reset code on review',
     },
 
