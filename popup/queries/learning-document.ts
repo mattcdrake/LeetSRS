@@ -6,18 +6,16 @@ export const learningDocumentQueryKey = ['popupLearningDocument'] as const;
 
 export interface PopupLearningDocumentSnapshot {
   document: LearningDocument;
-  now: Date;
 }
 
 export async function readPopupLearningDocument(): Promise<PopupLearningDocumentSnapshot> {
-  const now = new Date();
   const document = await readLearningDocument();
-  return { document, now };
+  return { document };
 }
 
 export const learningDocumentQueryOptions = queryOptions({
   queryKey: learningDocumentQueryKey,
   queryFn: readPopupLearningDocument,
   refetchOnMount: false,
-  refetchInterval: 15_000,
+  refetchOnWindowFocus: false,
 });

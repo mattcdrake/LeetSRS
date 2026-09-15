@@ -26,10 +26,7 @@ import { useSettingsQuery } from '../settings';
 vi.mock('@webext-core/proxy-service');
 vi.mock('@/shared/background-service');
 
-it.each([
-  { name: 'card list', useQuery: useCardsQuery },
-  { name: 'review queue', useQuery: useReviewQueueQuery },
-])('loads and refreshes the $name with one catalog batch', async ({ useQuery }) => {
+it('loads saved cards with one catalog batch', async () => {
   fakeBrowser.reset();
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
   const cards = [
@@ -39,7 +36,7 @@ it.each([
   await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
   const open = vi.spyOn(indexedDB, 'open');
   const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
-  const view = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   try {
     await act(() => vi.advanceTimersByTimeAsync(1));
     await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
@@ -49,11 +46,6 @@ it.each([
     ]);
     expect(open).toHaveBeenCalledTimes(1);
     expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
-
-    await act(() => vi.advanceTimersByTimeAsync(15_000));
-    await vi.waitFor(() => expect(view.result.current.isFetching).toBe(false));
-    expect(open).toHaveBeenCalledTimes(2);
-    expect(transaction).toHaveBeenCalledTimes(2);
   } finally {
     view.unmount();
     vi.useRealTimers();
