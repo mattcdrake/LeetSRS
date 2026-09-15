@@ -190,6 +190,7 @@ const de: Translations = {
     },
   },
   contentScript: {
+    saveFailed: 'Diese Aufgabe konnte nicht gespeichert werden. Bitte versuche es erneut.',
     addToSrsNoRating: 'Zu SRS hinzufügen (ohne Bewertung)',
   },
   format: {

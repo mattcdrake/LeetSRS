@@ -60,3 +60,12 @@ it('updates an open menu when stored language changes without resubscribing on c
   unmount();
   expect(unwatch).toHaveBeenCalledOnce();
 });
+
+it('shows an error when saving a review fails', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.mocked(rateCurrentProblem).mockRejectedValueOnce(new Error('Unknown problem'));
+  const { button } = setup();
+  fireEvent.click(button);
+  fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
+  expect(await screen.findByRole('status')).toHaveTextContent('Could not save this problem. Please try again.');
+});

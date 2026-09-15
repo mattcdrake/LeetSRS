@@ -1,15 +1,19 @@
-import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type Ref, useCallback, useEffect, useRef, useState } from 'react';
+import { Overlay } from 'react-aria/Overlay';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { watchDocumentTranslations } from '@/content/translations';
 import type { Translations } from '@/shared/i18n/index';
 import { RatingMenu } from './RatingMenu';
+import { Toast } from './Toast';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 
 export function LeetSrsControl() {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const dismissError = useCallback(() => setShowError(false), []);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
 
@@ -22,25 +26,42 @@ export function LeetSrsControl() {
     wasMenuOpen.current = menuOpen;
   }, [menuOpen]);
 
+  const runAction = async (action: () => Promise<void>) => {
+    setShowError(false);
+    try {
+      await action();
+    } catch (error) {
+      console.error('Failed to save problem:', error);
+      setShowError(true);
+    }
+  };
+
   if (!t) return null;
 
   return (
-    <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
-      <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
-        <LeetSrsButton t={t} ref={buttonRef} />
-        <Tooltip text={t.app.name} />
-      </TooltipTrigger>
-      <Popover placement="bottom end" offset={8} className="z-50">
-        <Dialog aria-label={t.app.name}>
-          <RatingMenu
-            t={t}
-            onRate={rateCurrentProblem}
-            onAddWithoutRating={addCurrentProblem}
-            onSelect={() => setMenuOpen(false)}
-          />
-        </Dialog>
-      </Popover>
-    </DialogTrigger>
+    <>
+      <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
+        <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
+          <LeetSrsButton t={t} ref={buttonRef} />
+          <Tooltip text={t.app.name} />
+        </TooltipTrigger>
+        <Popover placement="bottom end" offset={8} className="z-50">
+          <Dialog aria-label={t.app.name}>
+            <RatingMenu
+              t={t}
+              onRate={(rating) => void runAction(() => rateCurrentProblem(rating))}
+              onAddWithoutRating={() => void runAction(addCurrentProblem)}
+              onSelect={() => setMenuOpen(false)}
+            />
+          </Dialog>
+        </Popover>
+      </DialogTrigger>
+      {showError && (
+        <Overlay disableFocusManagement>
+          <Toast message={t.contentScript.saveFailed} onDismiss={dismissError} />
+        </Overlay>
+      )}
+    </>
   );
 }
 

@@ -212,6 +212,7 @@ const hi: Translations = {
   },
   // Content script (LeetCode page integration)
   contentScript: {
+    saveFailed: 'यह समस्या सहेजी नहीं जा सकी। कृपया दोबारा कोशिश करें।',
     addToSrsNoRating: 'SRS में जोड़ें (बिना रेटिंग)',
   },
   // Formatting helpers (for interpolated strings)
