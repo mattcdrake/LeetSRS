@@ -33,37 +33,72 @@ function openCatalog(): Promise<IDBDatabase> {
 }
 
 export async function initializeCatalog(): Promise<void> {
-  const hashResponse = await fetch(browser.runtime.getURL('/data/leetcode-catalog.sha256'));
-  if (!hashResponse.ok) throw new Error(`Failed to load catalog hash: ${hashResponse.status}`);
-  const hash = (await hashResponse.text()).trim();
-  const database = await openCatalog();
-  try {
-    const storedHash: unknown = await requestResult(
-      database.transaction('metadata').objectStore('metadata').get('hash')
-    );
-    if (hash === storedHash) return;
+  const hashUrl = browser.runtime.getURL('/data/leetcode-catalog.sha256');
+  const hashResponse = await fetch(hashUrl);
 
-    const response = await fetch(browser.runtime.getURL('/data/leetcode-catalog.json'));
-    if (!response.ok) throw new Error(`Failed to load catalog JSON: ${response.status}`);
-    const questions = z.array(catalogQuestionSchema).parse(await response.json());
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(['questions', 'metadata'], 'readwrite');
-      transaction.oncomplete = () => resolve();
-      // Request errors abort the transaction by default, rolling back records and hash together.
-      transaction.onabort = () => reject(transaction.error ?? new Error('Catalog transaction aborted'));
-      try {
-        const store = transaction.objectStore('questions');
-        store.clear();
-        for (const question of questions) store.add(question);
-        transaction.objectStore('metadata').put(hash, 'hash');
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    });
+  if (!hashResponse.ok) {
+    throw new Error(`Failed to load catalog hash: ${hashResponse.status}`);
+  }
+
+  const hashText = await hashResponse.text();
+  const bundledHash = hashText.trim();
+  const database = await openCatalog();
+
+  try {
+    const readTransaction = database.transaction('metadata');
+    const metadataStore = readTransaction.objectStore('metadata');
+    const storedHash: unknown = await requestResult(metadataStore.get('hash'));
+
+    if (bundledHash === storedHash) {
+      return;
+    }
+
+    const catalogUrl = browser.runtime.getURL('/data/leetcode-catalog.json');
+    const catalogResponse = await fetch(catalogUrl);
+
+    if (!catalogResponse.ok) {
+      throw new Error(`Failed to load catalog JSON: ${catalogResponse.status}`);
+    }
+
+    const catalogData: unknown = await catalogResponse.json();
+    const questions = z.array(catalogQuestionSchema).parse(catalogData);
+
+    await replaceCatalog(database, questions, bundledHash);
   } finally {
     database.close();
   }
+}
+
+function replaceCatalog(database: IDBDatabase, questions: CatalogQuestion[], hash: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(['questions', 'metadata'], 'readwrite');
+
+    transaction.oncomplete = () => {
+      resolve();
+    };
+
+    // Request errors abort the transaction by default, rolling back records and hash together.
+    transaction.onabort = () => {
+      const error = transaction.error ?? new Error('Catalog transaction aborted');
+      reject(error);
+    };
+
+    try {
+      const questionsStore = transaction.objectStore('questions');
+      const metadataStore = transaction.objectStore('metadata');
+
+      questionsStore.clear();
+
+      for (const question of questions) {
+        questionsStore.add(question);
+      }
+
+      metadataStore.put(hash, 'hash');
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
+  });
 }
 
 export async function getQuestionByFrontendId(
