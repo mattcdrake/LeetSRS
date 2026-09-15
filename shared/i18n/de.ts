@@ -110,11 +110,9 @@ const de: Translations = {
   settings: {
     title: 'Einstellungen',
     language: {
-      title: 'Sprache',
       label: 'Anzeigesprache',
     },
     appearance: {
-      title: 'Darstellung',
       theme: 'Design',
       themeSystem: 'System',
       themeLight: 'Hell',
@@ -122,13 +120,10 @@ const de: Translations = {
       showBadge: 'Fällige Karten am Symbol anzeigen',
     },
     reviewSettings: {
-      title: 'Wiederholungseinstellungen',
       newCardsPerDay: 'Neue Karten pro Tag',
     },
     editorReset: {
-      title: 'Aufgaben-Editor zurücksetzen',
-      description: 'Setzt den Code nur beim Öffnen einer Aufgabe aus der Wiederholungswarteschlange zurück.',
-      resetEditorOnReviewQueue: 'Editor beim Öffnen aus der Wiederholungswarteschlange zurücksetzen',
+      resetEditorOnReviewQueue: 'Code bei der Wiederholung zurücksetzen',
     },
     leetcodeCn: {
       title: 'LeetCode China',

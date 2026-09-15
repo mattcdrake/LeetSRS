@@ -122,12 +122,10 @@ const zhCN: Translations = {
     title: '设置',
 
     language: {
-      title: '语言',
       label: '显示语言',
     },
 
     appearance: {
-      title: '外观',
       theme: '主题',
       themeSystem: '跟随系统',
       themeLight: '浅色',
@@ -136,14 +134,11 @@ const zhCN: Translations = {
     },
 
     reviewSettings: {
-      title: '复习设置',
       newCardsPerDay: '每日新卡片数量',
     },
 
     editorReset: {
-      title: '题目编辑器重置',
-      description: '仅在从复习队列打开题目时重置代码。',
-      resetEditorOnReviewQueue: '从复习队列打开时重置编辑器',
+      resetEditorOnReviewQueue: '复习时重置代码',
     },
 
     leetcodeCn: {
