@@ -125,7 +125,7 @@ const de: Translations = {
       title: 'Wiederholungseinstellungen',
       newCardsPerDay: 'Neue Karten pro Tag',
     },
-    problemAutoClear: {
+    editorReset: {
       title: 'Aufgaben-Editor zurücksetzen',
       description: 'Setzt den Code nur beim Öffnen einer Aufgabe aus der Wiederholungswarteschlange zurück.',
       resetEditorOnReviewQueue: 'Editor beim Öffnen aus der Wiederholungswarteschlange zurücksetzen',

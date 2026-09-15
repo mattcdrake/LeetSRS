@@ -156,7 +156,7 @@ const pl: Translations = {
       newCardsPerDay: 'Nowe karty dziennie',
     },
 
-    problemAutoClear: {
+    editorReset: {
       title: 'Resetowanie edytora zadania',
       description: 'Resetuj kod tylko podczas otwierania zadania z kolejki powtórek.',
       resetEditorOnReviewQueue: 'Resetuj edytor przy otwieraniu z kolejki powtórek',

@@ -155,7 +155,7 @@ const en = {
       newCardsPerDay: 'New Cards Per Day',
     },
 
-    problemAutoClear: {
+    editorReset: {
       title: 'Problem Editor Reset',
       description: 'Reset code only when you open a Problem from the review queue.',
       resetEditorOnReviewQueue: 'Reset editor when opening from the review queue',
