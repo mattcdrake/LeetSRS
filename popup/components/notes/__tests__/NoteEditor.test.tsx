@@ -140,7 +140,7 @@ describe('NoteEditor', () => {
 
     view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
-    expect(textarea).toHaveValue('');
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('');
   });
 
   it.each(['save', 'delete'] as const)('isolates a pending %s when switching cards', async (operation) => {
@@ -171,12 +171,13 @@ describe('NoteEditor', () => {
     expect(textarea).toBeDisabled();
 
     view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
-    await waitFor(() => expect(textarea).toBeEnabled());
-    fireEvent.change(textarea, { target: { value: 'Other draft' } });
+    const otherTextarea = screen.getByRole('textbox', { name: 'Note text' });
+    await waitFor(() => expect(otherTextarea).toBeEnabled());
+    fireEvent.change(otherTextarea, { target: { value: 'Other draft' } });
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
     await act(async () => pending.resolve());
-    expect(textarea).toHaveValue('Other draft');
+    expect(otherTextarea).toHaveValue('Other draft');
   });
 
   it('preserves a dirty draft during incoming updates and resets it and confirmation when switching cards', async () => {
@@ -207,11 +208,11 @@ describe('NoteEditor', () => {
     await screen.findByRole('button', { name: 'Confirm?' });
 
     view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
-    expect(textarea).toHaveValue('Other note');
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Other note');
     expect(screen.queryByRole('button', { name: 'Confirm?' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
     view.rerender(<NoteEditor frontendId={frontendId} variant={variant} />);
-    expect(textarea).toHaveValue('Incoming note');
+    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Incoming note');
   });
 
   it('retains text and resets confirmation after a failed deletion', async () => {
