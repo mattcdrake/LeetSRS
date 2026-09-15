@@ -4,6 +4,7 @@ import { initializeCatalog } from '@/shared/catalog';
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { IDBDatabase } from 'fake-indexeddb';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -13,6 +14,7 @@ import background from '@/entrypoints/background/index';
 import { onMessage, sendMessage } from '@/shared/messages';
 import { STORAGE_KEYS } from '@/shared/storage';
 import { buildCatalogQuestion, createMockCard } from '@/test/utils/card-mocks';
+import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -25,6 +27,40 @@ vi.mock('@/shared/messages', async (importOriginal) => ({
   onMessage: vi.fn(),
   sendMessage: vi.fn(() => Promise.resolve(undefined)),
 }));
+
+it.each([
+  { name: 'card list', useQuery: useCardsQuery },
+  { name: 'review queue', useQuery: useReviewQueueQuery },
+])('loads and refreshes the $name with one catalog batch', async ({ useQuery }) => {
+  fakeBrowser.reset();
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+  const cards = [
+    createMockCard(State.Review, { frontendId: '1', domain: 'leetcode.com' }),
+    createMockCard(State.Review, { frontendId: '2', domain: 'leetcode.cn' }),
+  ];
+  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
+  const open = vi.spyOn(indexedDB, 'open');
+  const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
+  const view = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  try {
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
+    expect(view.result.current.data).toEqual([
+      { ...testCatalog[0], ...cards[0] },
+      { ...testCatalog[1], ...cards[1] },
+    ]);
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(transaction).toHaveBeenCalledExactlyOnceWith('questions', 'readonly');
+
+    await act(() => vi.advanceTimersByTimeAsync(15_000));
+    await vi.waitFor(() => expect(view.result.current.isFetching).toBe(false));
+    expect(open).toHaveBeenCalledTimes(2);
+    expect(transaction).toHaveBeenCalledTimes(2);
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+  }
+});
 
 it('keeps popup and badge queues consistent without reading browser language', async () => {
   fakeBrowser.reset();
@@ -73,15 +109,28 @@ describe('card queries through JSON messaging and background handlers', () => {
     await sendMessage('waitForInitialization');
   });
 
-  it('keeps learning data accessible when a saved problem is absent from the catalog', async () => {
-    const card = createMockCard(State.Review, { frontendId: 'unknown', note: 'Keep my solution' });
+  it.each([
+    { frontendId: 'unknown', domain: 'leetcode.com' as const },
+    { frontendId: '3', domain: 'leetcode.cn' as const },
+  ])('keeps learning data accessible when $frontendId is unavailable on $domain', async (problem) => {
+    const card = createMockCard(State.Review, { ...problem, note: 'Keep my solution' });
     await sendMessage('importData', {
-      jsonData: JSON.stringify(buildLearningDocument({ cards: { unknown: card }, settings: { language: 'de' } })),
+      jsonData: JSON.stringify(
+        buildLearningDocument({
+          cards: { 1: createMockCard(State.Review), [card.frontendId]: card },
+          settings: { language: 'de' },
+        })
+      ),
     });
-    const view = renderHook(() => ({ cards: useCardsQuery(), note: useNoteQuery('unknown') }), {
-      wrapper: createPopupTestWrapper().wrapper,
-    });
-    await waitFor(() => expect(view.result.current.cards.error?.message).toContain('Unknown problem'));
+    const view = renderHook(
+      () => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery(card.frontendId) }),
+      {
+        wrapper: createPopupTestWrapper().wrapper,
+      }
+    );
+    const error = `Unknown problem: ${card.frontendId} on ${card.domain}`;
+    await waitFor(() => expect(view.result.current.cards.error?.message).toBe(error));
+    expect(view.result.current.queue.error?.message).toBe(error);
     expect(view.result.current.note.data).toBe('Keep my solution');
     const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(settings.result.current.data.language).toBe('de'));

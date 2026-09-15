@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { z } from 'zod';
-import { type LeetcodeDomain, leetcodeDomainSchema } from '@/shared/models';
+import { type LeetcodeDomain, leetcodeDomainSchema, type ProblemReference } from '@/shared/models';
 
 export const catalogQuestionSchema = z.looseObject({
   frontendId: z.string().min(1),
@@ -108,6 +108,24 @@ export async function getQuestionByFrontendId(
   return getQuestion(frontendId, domain, 'frontendId');
 }
 
+export async function getQuestionsByFrontendIds(
+  problems: readonly ProblemReference[]
+): Promise<(CatalogQuestion | undefined)[]> {
+  if (problems.length === 0) return [];
+  const database = await openCatalog();
+  try {
+    const store = database.transaction('questions', 'readonly').objectStore('questions');
+    return await Promise.all(
+      problems.map(async ({ frontendId, domain }) => {
+        const value: unknown = await requestResult(store.get(frontendId));
+        return parseQuestionForDomain(value, domain);
+      })
+    );
+  } finally {
+    database.close();
+  }
+}
+
 export async function getQuestionBySlug(slug: string, domain: LeetcodeDomain): Promise<CatalogQuestion | undefined> {
   return getQuestion(slug, domain, 'slug');
 }
@@ -121,10 +139,14 @@ async function getQuestion(
   try {
     const store = database.transaction('questions').objectStore('questions');
     const value: unknown = await requestResult((field === 'slug' ? store.index('slug') : store).get(key));
-    if (value === undefined) return undefined;
-    const question = catalogQuestionSchema.parse(value);
-    return question.sources.includes(domain) ? question : undefined;
+    return parseQuestionForDomain(value, domain);
   } finally {
     database.close();
   }
+}
+
+function parseQuestionForDomain(value: unknown, domain: LeetcodeDomain): CatalogQuestion | undefined {
+  if (value === undefined) return undefined;
+  const question = catalogQuestionSchema.parse(value);
+  return question.sources.includes(domain) ? question : undefined;
 }
