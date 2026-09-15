@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { IDBFactory } from 'fake-indexeddb';
+import { afterEach, beforeEach, vi } from 'vitest';
+import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 
 // The fake browser serializes writes, but shares stored objects on reads.
@@ -18,6 +20,17 @@ for (const area of ['local', 'sync', 'session', 'managed'] as const) {
   });
 }
 
+beforeEach(() => {
+  vi.stubGlobal('indexedDB', new IDBFactory());
+  const fetchFromNetwork = globalThis.fetch;
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+    if (input === browser.runtime.getURL('/data/leetcode-catalog.sha256')) return new Response('test-hash');
+    if (input === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json([]);
+    return fetchFromNetwork(input, init);
+  });
+});
+
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });

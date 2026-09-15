@@ -38,9 +38,9 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 it('refreshes the badge when an Again card becomes due without another save or sync tick', async () => {
-  vi.useFakeTimers();
   const fireAlarm = startBackground();
   await dispatch('waitForInitialization');
+  vi.useFakeTimers();
   await dispatch('addCard', { problem: buildProblem() });
   await vi.advanceTimersByTimeAsync(0);
   const badge = vi.spyOn(browser.action, 'setBadgeText');
