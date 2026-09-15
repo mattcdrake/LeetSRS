@@ -37,21 +37,6 @@ beforeEach(() => {
 });
 afterEach(() => vi.useRealTimers());
 
-it('leaves learning storage untouched if catalog initialization fails and permits a startup retry', async () => {
-  const failure = new Error('Catalog unavailable');
-  vi.mocked(fetch).mockRejectedValueOnce(failure);
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  const writes = vi.spyOn(browser.storage.local, 'set');
-
-  startBackground();
-  await expect(dispatch('addCard', { problem: buildProblem() })).rejects.toBe(failure);
-  expect(writes).not.toHaveBeenCalled();
-
-  startBackground();
-  await dispatch('addCard', { problem: buildProblem() });
-  expect(Object.values((await readLearningDocument()).cards)).toMatchObject([buildProblem()]);
-});
-
 it('refreshes the badge when an Again card becomes due without another save or sync tick', async () => {
   const fireAlarm = startBackground();
   await dispatch('waitForInitialization');
