@@ -2,18 +2,18 @@ import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import { useTheme } from '@/popup/hooks/useTheme';
-import type { CardWithQuestion } from '@/popup/queries/cards';
+import type { CardWithProblem } from '@/popup/queries/cards';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { bounceButton } from '@/popup/styles';
 import { authorizeEditorReset, getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { ratingSchema } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
-import { getQuestionTitle } from '@/shared/ui/question-title';
+import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
-  card: CardWithQuestion;
+  card: CardWithProblem;
   onRate: (rating: Grade) => void;
   isProcessing?: boolean;
 };
@@ -43,7 +43,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
           className="text-lg font-semibold text-primary group"
           aria-label="LeetCode problem"
         >
-          {getQuestionTitle(card, card.domain)}
+          {getProblemTitle(card, card.domain)}
           <FaArrowUpRightFromSquare className="inline ml-1.5 text-xs opacity-60 group-hover:opacity-100 transition-opacity" />
         </a>
       </div>

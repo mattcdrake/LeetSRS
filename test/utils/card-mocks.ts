@@ -1,6 +1,6 @@
 import type { State } from 'ts-fsrs';
-import type { CardWithQuestion } from '@/popup/queries/cards';
-import type { CatalogQuestion } from '@/shared/catalog';
+import type { CardWithProblem } from '@/popup/queries/cards';
+import type { CatalogProblem } from '@/shared/catalog';
 import type { Card, ProblemReference } from '@/shared/models';
 
 const MOCK_TIMESTAMP = Date.parse('2024-01-01T00:00:00.000Z');
@@ -9,7 +9,7 @@ export function buildProblem(overrides: Partial<ProblemReference> = {}): Problem
   return { frontendId: '1', domain: 'leetcode.com', ...overrides };
 }
 
-export function buildCatalogQuestion(overrides: Partial<CatalogQuestion> = {}): CatalogQuestion {
+export function buildCatalogProblem(overrides: Partial<CatalogProblem> = {}): CatalogProblem {
   return {
     slug: 'two-sum',
     title: 'Two Sum',
@@ -51,6 +51,6 @@ export const createMockCard = (state: State, overrides: Partial<Card> = {}): Car
   };
 };
 
-export function createMockCardWithQuestion(state: State, overrides: Partial<CardWithQuestion> = {}): CardWithQuestion {
-  return { ...createMockCard(state), ...buildCatalogQuestion(), ...overrides };
+export function createMockCardWithProblem(state: State, overrides: Partial<CardWithProblem> = {}): CardWithProblem {
+  return { ...createMockCard(state), ...buildCatalogProblem(), ...overrides };
 }

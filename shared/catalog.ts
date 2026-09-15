@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser';
 import { z } from 'zod';
 import { type LeetcodeDomain, leetcodeDomainSchema, type ProblemReference } from '@/shared/models';
 
-export const catalogQuestionSchema = z.looseObject({
+export const catalogProblemSchema = z.looseObject({
   frontendId: z.string().min(1),
   title: z.string(),
   translatedTitle: z.string().nullable(),
@@ -13,7 +13,7 @@ export const catalogQuestionSchema = z.looseObject({
   sources: z.array(leetcodeDomainSchema),
 });
 
-export type CatalogQuestion = z.infer<typeof catalogQuestionSchema>;
+export type CatalogProblem = z.infer<typeof catalogProblemSchema>;
 
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -25,8 +25,8 @@ function requestResult<T>(request: IDBRequest<T>): Promise<T> {
 function openCatalog(): Promise<IDBDatabase> {
   const request = indexedDB.open('leetcode-catalog', 1);
   request.onupgradeneeded = () => {
-    const questions = request.result.createObjectStore('questions', { keyPath: 'frontendId' });
-    questions.createIndex('slug', 'slug', { unique: true });
+    const problems = request.result.createObjectStore('problems', { keyPath: 'frontendId' });
+    problems.createIndex('slug', 'slug', { unique: true });
     request.result.createObjectStore('metadata');
   };
   return requestResult(request);
@@ -61,17 +61,17 @@ export async function initializeCatalog(): Promise<void> {
     }
 
     const catalogData: unknown = await catalogResponse.json();
-    const questions = z.array(catalogQuestionSchema).parse(catalogData);
+    const problems = z.array(catalogProblemSchema).parse(catalogData);
 
-    await replaceCatalog(database, questions, bundledHash);
+    await replaceCatalog(database, problems, bundledHash);
   } finally {
     database.close();
   }
 }
 
-function replaceCatalog(database: IDBDatabase, questions: CatalogQuestion[], hash: string): Promise<void> {
+function replaceCatalog(database: IDBDatabase, problems: CatalogProblem[], hash: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction(['questions', 'metadata'], 'readwrite');
+    const transaction = database.transaction(['problems', 'metadata'], 'readwrite');
 
     transaction.oncomplete = () => {
       resolve();
@@ -84,13 +84,13 @@ function replaceCatalog(database: IDBDatabase, questions: CatalogQuestion[], has
     };
 
     try {
-      const questionsStore = transaction.objectStore('questions');
+      const problemsStore = transaction.objectStore('problems');
       const metadataStore = transaction.objectStore('metadata');
 
-      questionsStore.clear();
+      problemsStore.clear();
 
-      for (const question of questions) {
-        questionsStore.add(question);
+      for (const problem of problems) {
+        problemsStore.add(problem);
       }
 
       metadataStore.put(hash, 'hash');
@@ -101,24 +101,24 @@ function replaceCatalog(database: IDBDatabase, questions: CatalogQuestion[], has
   });
 }
 
-export async function getQuestionByFrontendId(
+export async function getProblemByFrontendId(
   frontendId: string,
   domain: LeetcodeDomain
-): Promise<CatalogQuestion | undefined> {
-  return getQuestion(frontendId, domain, 'frontendId');
+): Promise<CatalogProblem | undefined> {
+  return getProblem(frontendId, domain, 'frontendId');
 }
 
-export async function getQuestionsByFrontendIds(
+export async function getProblemsByFrontendIds(
   problems: readonly ProblemReference[]
-): Promise<(CatalogQuestion | undefined)[]> {
+): Promise<(CatalogProblem | undefined)[]> {
   if (problems.length === 0) return [];
   const database = await openCatalog();
   try {
-    const store = database.transaction('questions', 'readonly').objectStore('questions');
+    const store = database.transaction('problems', 'readonly').objectStore('problems');
     return await Promise.all(
       problems.map(async ({ frontendId, domain }) => {
         const value: unknown = await requestResult(store.get(frontendId));
-        return parseQuestionForDomain(value, domain);
+        return parseProblemForDomain(value, domain);
       })
     );
   } finally {
@@ -126,27 +126,27 @@ export async function getQuestionsByFrontendIds(
   }
 }
 
-export async function getQuestionBySlug(slug: string, domain: LeetcodeDomain): Promise<CatalogQuestion | undefined> {
-  return getQuestion(slug, domain, 'slug');
+export async function getProblemBySlug(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem | undefined> {
+  return getProblem(slug, domain, 'slug');
 }
 
-async function getQuestion(
+async function getProblem(
   key: string,
   domain: LeetcodeDomain,
   field: 'frontendId' | 'slug'
-): Promise<CatalogQuestion | undefined> {
+): Promise<CatalogProblem | undefined> {
   const database = await openCatalog();
   try {
-    const store = database.transaction('questions').objectStore('questions');
+    const store = database.transaction('problems').objectStore('problems');
     const value: unknown = await requestResult((field === 'slug' ? store.index('slug') : store).get(key));
-    return parseQuestionForDomain(value, domain);
+    return parseProblemForDomain(value, domain);
   } finally {
     database.close();
   }
 }
 
-function parseQuestionForDomain(value: unknown, domain: LeetcodeDomain): CatalogQuestion | undefined {
+function parseProblemForDomain(value: unknown, domain: LeetcodeDomain): CatalogProblem | undefined {
   if (value === undefined) return undefined;
-  const question = catalogQuestionSchema.parse(value);
-  return question.sources.includes(domain) ? question : undefined;
+  const problem = catalogProblemSchema.parse(value);
+  return problem.sources.includes(domain) ? problem : undefined;
 }

@@ -2,14 +2,14 @@ import { IDBDatabase, IDBObjectStore } from 'fake-indexeddb';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import {
-  type CatalogQuestion,
-  getQuestionByFrontendId,
-  getQuestionBySlug,
-  getQuestionsByFrontendIds,
+  type CatalogProblem,
+  getProblemByFrontendId,
+  getProblemBySlug,
+  getProblemsByFrontendIds,
   initializeCatalog,
 } from '@/shared/catalog';
 
-const twoSum: CatalogQuestion = {
+const twoSum: CatalogProblem = {
   frontendId: '1',
   title: 'Two Sum',
   translatedTitle: '两数之和',
@@ -20,10 +20,10 @@ const twoSum: CatalogQuestion = {
   sources: ['leetcode.com'],
 };
 
-function bundle(questions: CatalogQuestion[], hash = 'first-hash') {
+function bundle(problems: CatalogProblem[], hash = 'first-hash') {
   vi.mocked(fetch).mockImplementation(async (url) => {
     if (url === browser.runtime.getURL('/data/leetcode-catalog.sha256')) return new Response(`${hash}\n`);
-    if (url === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json(questions);
+    if (url === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json(problems);
     throw new Error(`Unexpected fetch: ${url}`);
   });
 }
@@ -32,7 +32,7 @@ beforeEach(() => bundle([twoSum]));
 
 it('returns an empty batch without opening the catalog', async () => {
   const open = vi.spyOn(indexedDB, 'open');
-  expect(await getQuestionsByFrontendIds([])).toEqual([]);
+  expect(await getProblemsByFrontendIds([])).toEqual([]);
   expect(open).not.toHaveBeenCalled();
 });
 
@@ -59,7 +59,7 @@ it.each(['transaction', 'request', 'abort'] as const)(
       });
     }
 
-    const result = getQuestionsByFrontendIds([
+    const result = getProblemsByFrontendIds([
       { frontendId: '1', domain: 'leetcode.com' },
       { frontendId: 'missing', domain: 'leetcode.cn' },
     ]);
@@ -73,36 +73,36 @@ it.each(['transaction', 'request', 'abort'] as const)(
 );
 
 it('looks up mixed-domain and missing IDs in input order using one readonly transaction and connection', async () => {
-  const cnQuestion = {
+  const cnProblem = {
     ...twoSum,
     frontendId: '2',
-    slug: 'cn-question',
+    slug: 'cn-problem',
     sources: ['leetcode.cn'],
-  } satisfies CatalogQuestion;
-  bundle([twoSum, cnQuestion]);
+  } satisfies CatalogProblem;
+  bundle([twoSum, cnProblem]);
   await initializeCatalog();
   const open = vi.spyOn(indexedDB, 'open');
   const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
   const close = vi.spyOn(IDBDatabase.prototype, 'close');
 
   expect(
-    await getQuestionsByFrontendIds([
+    await getProblemsByFrontendIds([
       { frontendId: '2', domain: 'leetcode.cn' },
       { frontendId: '1', domain: 'leetcode.cn' },
       { frontendId: 'missing', domain: 'leetcode.com' },
       { frontendId: '1', domain: 'leetcode.com' },
       { frontendId: '2', domain: 'leetcode.com' },
     ])
-  ).toEqual([cnQuestion, undefined, undefined, twoSum, undefined]);
+  ).toEqual([cnProblem, undefined, undefined, twoSum, undefined]);
   expect(open).toHaveBeenCalledTimes(1);
-  expect(transaction).toHaveBeenCalledExactlyOnceWith('questions', 'readonly');
+  expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
   expect(close).toHaveBeenCalledTimes(1);
 });
 
 it.each([
-  { lookup: getQuestionByFrontendId, key: '1' },
-  { lookup: getQuestionBySlug, key: 'two-sum' },
-])('returns the complete question only for an available domain: $key', async ({ lookup, key }) => {
+  { lookup: getProblemByFrontendId, key: '1' },
+  { lookup: getProblemBySlug, key: 'two-sum' },
+])('returns the complete problem only for an available domain: $key', async ({ lookup, key }) => {
   await initializeCatalog();
 
   expect(await lookup(key, 'leetcode.com')).toEqual(twoSum);
@@ -118,19 +118,19 @@ it('skips loading JSON when the catalog hash is unchanged', async () => {
   });
   await initializeCatalog();
 
-  expect(await getQuestionBySlug('two-sum', 'leetcode.com')).toEqual(twoSum);
+  expect(await getProblemBySlug('two-sum', 'leetcode.com')).toEqual(twoSum);
 });
 
 it('replaces the catalog when the hash changes, including additions and removals', async () => {
   bundle([twoSum, { ...twoSum, frontendId: '2', slug: 'removed' }]);
   await initializeCatalog();
   const updated = { ...twoSum, title: 'Updated title' };
-  const added = { ...twoSum, frontendId: '3', slug: 'new-question' };
+  const added = { ...twoSum, frontendId: '3', slug: 'new-problem' };
   bundle([updated, added], 'second-hash');
 
   await initializeCatalog();
 
-  expect(await getQuestionByFrontendId('1', 'leetcode.com')).toEqual(updated);
-  expect(await getQuestionByFrontendId('2', 'leetcode.com')).toBeUndefined();
-  expect(await getQuestionBySlug('new-question', 'leetcode.com')).toEqual(added);
+  expect(await getProblemByFrontendId('1', 'leetcode.com')).toEqual(updated);
+  expect(await getProblemByFrontendId('2', 'leetcode.com')).toBeUndefined();
+  expect(await getProblemBySlug('new-problem', 'leetcode.com')).toEqual(added);
 });
