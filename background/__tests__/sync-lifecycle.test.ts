@@ -2,10 +2,10 @@ import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { sync } from '@/background/persistence';
-
 import { readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import backgroundEntry from '../../entrypoints/background/index';
 
@@ -27,8 +27,9 @@ beforeEach(async () => {
   backgroundEntry.main();
   await getRegisteredBackground().waitForInitialization();
   await getRegisteredBackground().resetAllData();
-  await fakeBrowser.storage.sync.set({
-    'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true },
+  await seedGithubAuthorization();
+  await fakeBrowser.storage.local.set({
+    'leetsrs:gistConnection': { accountId: 1, gistId: 'gist', enabled: true },
   });
   await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
   await vi.waitFor(async () =>
@@ -131,8 +132,8 @@ it.each(['reset', 'disable', 'external connection'] as const)('ignores a pending
   } else if (change === 'disable') {
     await getRegisteredBackground().setGistSyncEnabled(false);
   } else {
-    await fakeBrowser.storage.sync.set({
-      'leetsrs:gistConnection': { pat: 'other', gistId: 'other-gist', enabled: true },
+    await fakeBrowser.storage.local.set({
+      'leetsrs:gistConnection': { accountId: 1, gistId: 'other-gist', enabled: true },
     });
     await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'other-gist' }));
     await vi.waitFor(async () =>

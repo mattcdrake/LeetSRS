@@ -1,5 +1,6 @@
 import { createProxyService, type ProxyServiceKey } from '@webext-core/proxy-service';
 import type { CatalogProblem } from '@/shared/catalog';
+import type { GistDestination, GithubAuthStatus } from '@/shared/github-auth';
 import type {
   GistConnectionResult,
   GistSetup,
@@ -11,6 +12,11 @@ import type {
 import type { SettingsUpdate } from '@/shared/settings';
 
 export interface BackgroundService {
+  startGithubSignIn(): Promise<void>;
+  signOutGithub(): Promise<void>;
+  getGithubAuthStatus(): Promise<GithubAuthStatus>;
+  listGistDestinations(): Promise<GistDestination[]>;
+  dismissMigrationNotice(): Promise<void>;
   waitForInitialization(): Promise<void>;
   getProblem(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem>;
   addCard(problem: ProblemReference): Promise<void>;

@@ -23,7 +23,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
   });
   await replaceLearningDocument(document);
   await storage.setItems([
-    { key: STORAGE_KEYS.gistConnection, value: { pat: 'private-pat', gistId: 'local-gist', enabled: true } },
+    { key: STORAGE_KEYS.gistConnection, value: { accountId: 1, gistId: 'local-gist', enabled: true } },
     { key: STORAGE_KEYS.lastSyncTime, value: 'previous-sync' },
     { key: STORAGE_KEYS.lastSyncDirection, value: 'pull' },
     { key: 'sync:leetsrs:theme', value: 'light' },

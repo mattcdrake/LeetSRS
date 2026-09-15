@@ -41,6 +41,8 @@ jobs:
 
       - name: Build release ZIPs
         if: ${{ steps.release.outputs.release_created }}
+        env:
+          WXT_GITHUB_CLIENT_ID: ${{ secrets.WXT_GITHUB_CLIENT_ID }}
         run: npm run zip
 
       - name: Upload release ZIPs

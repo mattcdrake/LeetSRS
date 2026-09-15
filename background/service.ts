@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getGithubAuthStatus, startGithubSignIn } from '@/background/github-auth';
 import {
   addCard,
   delayCard,
@@ -8,7 +9,16 @@ import {
   setPauseStatus,
   updateSettings,
 } from '@/background/learning';
-import { connectGist, getSyncStatus, resetAllData, restoreBackup, setSyncEnabled } from '@/background/persistence';
+import { dismissMigrationNotice } from '@/background/legacy/github-pat';
+import {
+  connectGist,
+  disconnectGithub,
+  getSyncStatus,
+  listGistDestinations,
+  resetAllData,
+  restoreBackup,
+  setSyncEnabled,
+} from '@/background/persistence';
 import type { BackgroundService } from '@/shared/background-service';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
 import { gistSetupSchema, noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/models';
@@ -27,6 +37,11 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
 
   const frontendId = problemReferenceSchema.shape.frontendId;
   return {
+    startGithubSignIn: command(z.tuple([]), startGithubSignIn),
+    signOutGithub: command(z.tuple([]), disconnectGithub),
+    getGithubAuthStatus: command(z.tuple([]), getGithubAuthStatus),
+    dismissMigrationNotice: command(z.tuple([]), dismissMigrationNotice),
+    listGistDestinations: command(z.tuple([]), listGistDestinations),
     waitForInitialization: command(z.tuple([]), () => undefined),
     getProblem: command(
       z.tuple([catalogProblemSchema.shape.slug, problemReferenceSchema.shape.domain]),

@@ -116,7 +116,7 @@ describe('document startup through registered background commands', () => {
     }
   );
 
-  it.each(['write', 'cleanup', 'connection'] as const)(
+  it.each(['write', 'cleanup'] as const)(
     'preserves a legacy installation across a startup %s failure and retry',
     async (stage) => {
       const legacy = {
@@ -135,7 +135,6 @@ describe('document startup through registered background commands', () => {
       const failure = new Error('Storage unavailable');
       if (stage === 'write') vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
       if (stage === 'cleanup') vi.spyOn(fakeBrowser.storage.local, 'remove').mockRejectedValueOnce(failure);
-      if (stage === 'connection') vi.spyOn(fakeBrowser.storage.sync, 'set').mockRejectedValueOnce(failure);
       vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       startBackground();
@@ -148,7 +147,7 @@ describe('document startup through registered background commands', () => {
       startBackground();
       await getRegisteredBackground().waitForInitialization();
       expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'zh-CN' : 'en' });
-      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
       if (stage !== 'cleanup') {
         expect(await readLearningDocument()).toEqual(
           buildLearningDocument({

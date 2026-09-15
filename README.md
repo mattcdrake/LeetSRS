@@ -45,7 +45,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 ### Cross-Browser Sync
 
 - Optional sync via GitHub Gists
-- Requires a GitHub token with `gist` scope—configure in Settings
+- Sign in with GitHub and choose a backup in Settings
 - Your data stays in your own GitHub account
 
 ### Interface
@@ -63,26 +63,15 @@ LeetSRS is open source and accepts contributions.
 
 ### Setting Up GitHub Gist Sync (Optional)
 
-<div align="center">
-<img src="assets/screenshots/githubGistSyncScreen.png" width="30%" alt="GitHub Gist Sync settings screen" />
-</div>
+1. Select **Sign in with GitHub** in Settings. Signing in does not enable sync.
+2. Choose an existing backup or **Create New Gist**, then select **Connect and sync**.
+3. Sign in and select the same backup separately on each browser. Credentials and the selected destination stay local to each installation.
 
-1. **Create a GitHub Personal Access Token** with the `gist` scope
-2. Select **Create New Gist** and click **Save** in Settings, or select **Use existing Gist** and enter the ID of a Gist containing `leetsrs-backup.json` before saving. Saving the connection turns on syncing.
-3. The token, Gist ID, and syncing setting sync via Chrome when browser sync is enabled; otherwise configure the connection on each browser. Learning data and stored preferences sync together through Gist.
+Use the sync toggle to pause syncing. **Sign out** removes the local connection and credentials while keeping learning data and remote Gists. Upgrading from PAT setup requires signing in again; your previous backup is suggested only if it belongs to your account.
 
 Sync uses last-write-wins for the entire dataset, not per-card merging. The browser with the newest edit replaces all Gist data, so concurrent changes in another browser can be lost. Enabled sync runs after local edits, when the extension starts, and at least once per minute for retry.
 
-## Setup
-
-Use Node.js 24+.
-
-```sh
-npm install
-npm run dev
-```
-
-`npm run build` creates a production extension in `.output/chrome-mv3/`; load that directory as an unpacked extension in Chrome. `npm run zip` packages it for distribution.
+## Docs
 
 See [AGENTS.md](AGENTS.md) for development checks and workflow rules, and [Architecture](docs/architecture.md) for system boundaries.
 

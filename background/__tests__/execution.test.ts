@@ -28,7 +28,7 @@ describe('registered background execution', () => {
     await getRegisteredBackground().rateCard({ ...problem, rating: 3 });
     await getRegisteredBackground().saveNote(problem.frontendId, 'Reset me');
     await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
-    await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
+    await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { accountId: 1, gistId: 'gist', enabled: true } });
     const staleLocal = {
       'leetsrs:cards': { stale: 'invalid leftover' },
       'leetsrs:stats': { stale: 'invalid leftover' },
@@ -57,7 +57,7 @@ describe('registered background execution', () => {
     const empty = buildLearningDocument();
     const rpc = vi.spyOn(browser.runtime, 'sendMessage');
     expect(await readLearningDocument()).toEqual(empty);
-    expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(rpc).not.toHaveBeenCalled();
     expect(await getRegisteredBackground().getGistSyncStatus()).toEqual({
       lastSyncTime: null,
@@ -65,7 +65,11 @@ describe('registered background execution', () => {
       syncInProgress: false,
       lastError: null,
     });
-    expect(await fakeBrowser.storage.local.get(null)).toEqual({ 'leetsrs:learningDocument': empty, unrelated: 'keep' });
+    expect(await fakeBrowser.storage.local.get(null)).toEqual({
+      'leetsrs:learningDocument': empty,
+      'leetsrs:oauthMigration': { notice: false, previousGist: null },
+      unrelated: 'keep',
+    });
     expect(await fakeBrowser.storage.sync.get(null)).toEqual({ unrelated: 'keep' });
 
     await fakeBrowser.storage.local.set(staleLocal);
@@ -81,7 +85,7 @@ describe('registered background execution', () => {
     async (stage) => {
       await getRegisteredBackground().addCard(problem);
       await fakeBrowser.storage.sync.set({
-        'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true },
+        'leetsrs:gistConnection': { accountId: 1, gistId: 'gist', enabled: true },
       });
       const before = JSON.stringify(await readLearningDocument(), null, 2);
       const failure = new Error('Reset storage unavailable');
@@ -91,7 +95,7 @@ describe('registered background execution', () => {
         vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
       }
       await expect(getRegisteredBackground().resetAllData()).rejects.toBe(failure);
-      expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
+      expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
       vi.mocked(registerService).mockClear();
       backgroundEntry.main();
       if (stage === 'document') {
@@ -101,7 +105,7 @@ describe('registered background execution', () => {
       }
       await getRegisteredBackground().resetAllData();
       expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-      expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
+      expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     }
   );
 
@@ -148,8 +152,8 @@ const invalidArguments: [keyof BackgroundService, unknown[]][] = [
   ['updateSettings', [{ language: 'constructor' }]],
   ['importData', [{}]],
   ['setupGistSync', [{ mode: 'existing', gistId: 42, pat: 'token' }]],
-  ['setupGistSync', [{ mode: 'create', pat: null }]],
-  ['setupGistSync', [{ mode: 'existing', gistId: 'gist', pat: '  ' }]],
+  ['setupGistSync', [{ mode: 'invalid' }]],
+  ['setupGistSync', [{ mode: 'existing', gistId: '' }]],
   ['setGistSyncEnabled', ['true']],
   ['waitForInitialization', ['extra']],
   ['resetAllData', ['extra']],

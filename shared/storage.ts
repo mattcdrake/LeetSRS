@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { storage } from '#imports';
 import { background } from '@/shared/background-service';
+import { LEGACY_PAT_KEYS } from '@/shared/legacy/github-pat';
 import {
   type GistSyncConfig,
   gistSyncConfigSchema,
@@ -49,7 +50,7 @@ export async function replaceLearningDocument(document: LearningDocument): Promi
 export const STORAGE_KEYS = {
   learningDocument: 'local:leetsrs:learningDocument',
   // GitHub Gist Sync
-  gistConnection: 'sync:leetsrs:gistConnection',
+  gistConnection: 'local:leetsrs:gistConnection',
   lastSyncTime: 'local:leetsrs:lastSyncTime',
   lastSyncDirection: 'local:leetsrs:lastSyncDirection',
 } as const;
@@ -92,13 +93,9 @@ export function removeSyncStatus(): Promise<void> {
 }
 
 export async function readGistConnection(): Promise<GistSyncConfig> {
-  let connection = await storage.getItem<unknown>(STORAGE_KEYS.gistConnection);
-  if (connection == null) {
-    await waitForStorageInitialization();
-    connection = await storage.getItem<unknown>(STORAGE_KEYS.gistConnection);
-  }
+  const connection = await storage.getItem<unknown>(STORAGE_KEYS.gistConnection);
 
-  return gistSyncConfigSchema.parse(connection ?? { pat: '', gistId: null, enabled: false });
+  return gistSyncConfigSchema.parse(connection ?? { accountId: null, gistId: null, enabled: false });
 }
 
 export function writeGistConnection(config: GistSyncConfig): Promise<void> {
@@ -107,10 +104,5 @@ export function writeGistConnection(config: GistSyncConfig): Promise<void> {
 
 export function removeGistConnection(): Promise<void> {
   // Retained legacy keys must also be cleared so reset reaches older browsers.
-  return storage.removeItems([
-    STORAGE_KEYS.gistConnection,
-    'sync:leetsrs:githubPat',
-    'sync:leetsrs:gistId',
-    'sync:leetsrs:gistSyncEnabled',
-  ]);
+  return storage.removeItems([STORAGE_KEYS.gistConnection, ...LEGACY_PAT_KEYS]);
 }

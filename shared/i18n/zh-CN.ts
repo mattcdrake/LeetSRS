@@ -1,5 +1,6 @@
 import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
+import { patMigration } from './legacy/zh-CN';
 import { getTopicLabel } from './topic-labels';
 
 // Simplified Chinese translations
@@ -11,10 +12,10 @@ const zhCN: Translations = {
     connectionSaveFailed: '无法保存连接。',
     unavailable: '你可以继续学习。GitHub 恢复可用后将自动继续同步。',
     rateLimit: '已达到 GitHub API 请求上限。请稍后重试。你可以继续学习。',
-    authentication: '请在设置中检查 GitHub 令牌及其 Gist 权限。',
-    missingToken: '尚未配置令牌。请在设置中添加 GitHub 令牌。',
+    authentication: '请在设置中重新登录 GitHub。',
+    missingToken: '请在设置中登录 GitHub。',
     missingGist: '尚未配置 Gist ID。请在设置中选择 Gist。',
-    gistNotFound: '未找到 Gist。请在设置中检查 Gist ID 和令牌访问权限。',
+    gistNotFound: '未找到备份。请在设置中选择可用的备份。',
     unknown: '同步失败，请稍后重试。',
   },
   app: {
@@ -165,13 +166,20 @@ const zhCN: Translations = {
     },
 
     gistSync: {
+      signIn: '使用 GitHub 登录',
+      signingIn: '正在登录…',
+      signOut: '退出登录',
+      signInFailed: '登录未完成，请重试。',
+      ...patMigration,
+      chooseBackup: '选择备份',
+      previousBackup: '上次的备份',
+      loadingBackups: '正在加载备份…',
+      loadBackupsFailed: '无法加载备份。',
+      retry: '重试',
+      connectAndSync: '连接并同步',
+
       title: 'GitHub Gist 同步',
       gistDescription: 'LeetSRS 备份 - 间隔重复数据',
-      patLabel: '个人访问令牌',
-      patPlaceholder: 'ghp_xxxxxxxxxxxx',
-      patHelpLink: '创建 GitHub 令牌',
-      gistIdLabel: 'Gist ID',
-      gistIdPlaceholder: '输入已有的 Gist ID',
       createNewGist: '创建新 Gist',
       syncEnabled: '同步',
       syncing: '同步中...',
@@ -184,7 +192,10 @@ const zhCN: Translations = {
       howSyncWorks: '同步原理',
       syncDetails: 'LeetSRS 比较完整数据集的编辑时间，并用较新的数据替换较旧的数据。不会逐张卡片合并。',
       openGist: '打开备份 Gist',
-      destination: '目标',
+      open: '打开',
+      change: '更改',
+      destination: '备份 Gist',
+      syncInfo: '同步方式',
       existingGist: '使用现有 Gist',
       save: '保存',
       saving: '正在保存…',
