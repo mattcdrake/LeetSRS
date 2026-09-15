@@ -103,7 +103,7 @@ describe('LeetcodeCnBanner', () => {
     const dismiss = await screen.findByRole('button', { name: 'Dismiss' });
     act(() => dismiss.click());
     expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
-    expect(screen.getByText('LeetCode China')).toBeInTheDocument();
+    expect(screen.getByText(/Enable support for leetcode\.cn/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
   });

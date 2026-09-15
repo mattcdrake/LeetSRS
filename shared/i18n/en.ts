@@ -158,7 +158,7 @@ const en = {
     editorReset: {
       title: 'Problem Editor Reset',
       description: 'Reset code only when you open a Problem from the review queue.',
-      resetEditorOnReviewQueue: 'Reset editor when opening from the review queue',
+      resetEditorOnReviewQueue: 'Reset code on review',
     },
 
     leetcodeCn: {

@@ -31,8 +31,7 @@ export function ReviewSettingsSection() {
   };
 
   return (
-    <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">{t.settings.reviewSettings.title}</h3>
+    <div className="space-y-4">
       <div className="space-y-3">
         <TextField className="flex items-center justify-between">
           <Label>{t.settings.reviewSettings.newCardsPerDay}</Label>
