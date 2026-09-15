@@ -16,7 +16,7 @@ import { ReviewCard } from './ReviewCard';
 
 export function ReviewQueue() {
   const t = useI18n();
-  const { data: queue = [], isLoading, error } = useReviewQueueQuery({ refetchOnWindowFocus: true });
+  const { data: queue = [], isLoading, error } = useReviewQueueQuery();
   const rateCardMutation = useRateCardMutation();
   const removeCardMutation = useRemoveCardMutation();
   const delayCardMutation = useDelayCardMutation();

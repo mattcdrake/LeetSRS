@@ -5,7 +5,7 @@ LeetSRS runs as a WXT browser extension with three runtime owners and shared con
 ## Responsibilities and boundaries
 
 - **Background** initializes storage, validates incoming commands, applies learning changes and FSRS scheduling, and owns backup import, reset, GitHub Gist access, sync, and badge updates.
-- **Popup** presents the review queue, cards, notes, statistics, and settings. Its query layer reads validated storage and refreshes cached views on storage changes and as time passes.
+- **Popup** presents the review queue, cards, notes, statistics, and settings. Its query layer reads validated storage and refreshes cached data on storage changes. One shared popup clock advances queue eligibility and today’s activity without rereading storage or the catalog; it refreshes on mount, focus, visibility changes, and every 15 seconds while subscribed.
 - **Content** integrates with LeetCode pages: it reads problem context, injects review controls, and manages editor reset behavior. Its UI uses shadow roots; page navigation and DOM replacement require subscriptions and mounted UI to follow the content-script lifecycle.
 
 Popup and content call a typed background proxy service for persisted changes. Runtime owners depend on shared contracts rather than importing each other. Shared models, validation, storage access, and review/calendar calculations are independent of runtime owners and UI; shared presentation helpers are separate. Biome enforces these import boundaries.

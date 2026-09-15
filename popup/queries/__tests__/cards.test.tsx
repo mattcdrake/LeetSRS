@@ -29,7 +29,7 @@ vi.mock('@/shared/background-service');
 it.each([
   { name: 'card list', useQuery: useCardsQuery },
   { name: 'review queue', useQuery: useReviewQueueQuery },
-])('loads and refreshes the $name with one catalog batch', async ({ useQuery }) => {
+])('loads the $name once without polling storage or catalog', async ({ useQuery }) => {
   fakeBrowser.reset();
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
   const cards = [
@@ -50,10 +50,12 @@ it.each([
     expect(open).toHaveBeenCalledTimes(1);
     expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
 
+    const reads = vi.spyOn(storage, 'getItem');
     await act(() => vi.advanceTimersByTimeAsync(15_000));
     await vi.waitFor(() => expect(view.result.current.isFetching).toBe(false));
-    expect(open).toHaveBeenCalledTimes(2);
-    expect(transaction).toHaveBeenCalledTimes(2);
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(reads).not.toHaveBeenCalled();
   } finally {
     view.unmount();
     vi.useRealTimers();
