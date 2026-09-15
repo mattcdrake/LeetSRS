@@ -64,7 +64,6 @@ describe('document settings through background commands', () => {
       maxNewCardsPerDay: 0,
       theme: 'system',
       language: 'en',
-      badgeEnabled: false,
       resetEditorOnReviewQueue: true,
     } as const;
     await dispatch('updateSettings', { changes });
@@ -118,7 +117,7 @@ describe('document settings through background commands', () => {
     background.main();
     await dispatch('waitForInitialization');
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    const changes = Object.assign(Object.create({ badgeEnabled: false }), { theme: undefined, unknown: 1 });
+    const changes = Object.assign(Object.create({ language: 'de' }), { theme: undefined, unknown: 1 });
     const before = await readLearningDocument();
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Number.NaN);

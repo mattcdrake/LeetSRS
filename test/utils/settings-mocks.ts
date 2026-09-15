@@ -5,7 +5,6 @@ export function buildSettings(overrides: Partial<Settings> = {}): Settings {
     maxNewCardsPerDay: 3,
     theme: 'system',
     resetEditorOnReviewQueue: false,
-    badgeEnabled: true,
     language: 'en',
     ...overrides,
   };

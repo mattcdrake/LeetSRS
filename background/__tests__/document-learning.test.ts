@@ -26,7 +26,7 @@ describe('document learning through background commands', () => {
     vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementation(async (keys) => structuredClone(await get(keys)));
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2024-03-15T12:00:00'));
-    await replaceLearningDocument(buildLearningDocument({ settings: { badgeEnabled: false } }));
+    await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en' } }));
     background.main();
     await dispatch('waitForInitialization');
   });
@@ -88,7 +88,7 @@ describe('document learning through background commands', () => {
     const original = buildLearningDocument({
       cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
       reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
-      settings: { badgeEnabled: false, theme: 'dark' },
+      settings: { theme: 'dark' },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
     await replaceLearningDocument(original);
@@ -217,7 +217,7 @@ describe('document learning through background commands', () => {
     const document = buildLearningDocument({
       cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
       reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
-      settings: { badgeEnabled: false },
+      settings: { language: 'en' },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
     });
     await replaceLearningDocument(document);
@@ -249,7 +249,7 @@ describe('document learning through background commands', () => {
       const card = createMockCard(State.New, buildProblem());
       const document = buildLearningDocument({
         cards: { [card.frontendId]: card },
-        settings: { badgeEnabled: false },
+        settings: { language: 'en' },
         reviewActivity: { date: '2024-03-15', newCards: Number.MAX_SAFE_INTEGER, streak: 1 },
       });
       await replaceLearningDocument(document);

@@ -38,6 +38,9 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 it('refreshes the badge when an Again card becomes due without another save or sync tick', async () => {
+  await browser.storage.local.set({
+    'leetsrs:learningDocument': { ...buildLearningDocument(), settings: { badgeEnabled: false } },
+  });
   const fireAlarm = startBackground();
   await dispatch('waitForInitialization');
   vi.useFakeTimers();
@@ -61,7 +64,7 @@ it('refreshes the badge when an Again card becomes due without another save or s
   await dispatch('rateCard', { input: { ...buildProblem(), rating: 1 } });
   await vi.advanceTimersByTimeAsync(0);
   expect(await browser.alarms.get('badge-refresh')).toBeDefined();
-  await dispatch('updateSettings', { changes: { badgeEnabled: false } });
+  await dispatch('removeCard', { frontendId: '1' });
   await vi.advanceTimersByTimeAsync(0);
   expect(await browser.alarms.get('badge-refresh')).toBeUndefined();
 });

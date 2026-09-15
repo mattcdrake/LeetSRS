@@ -147,7 +147,6 @@ const pl: Translations = {
       themeSystem: 'Systemowy',
       themeLight: 'Jasny',
       themeDark: 'Ciemny',
-      showBadge: 'Pokaż liczbę powtórek na ikonie',
     },
 
     // Review settings section

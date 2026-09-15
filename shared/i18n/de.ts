@@ -119,7 +119,6 @@ const de: Translations = {
       themeSystem: 'System',
       themeLight: 'Hell',
       themeDark: 'Dunkel',
-      showBadge: 'Fällige Karten am Symbol anzeigen',
     },
     reviewSettings: {
       title: 'Wiederholungseinstellungen',

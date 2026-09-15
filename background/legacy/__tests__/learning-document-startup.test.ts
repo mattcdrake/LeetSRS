@@ -83,7 +83,6 @@ describe('learning document startup', () => {
       settings: {
         theme: 'light',
         maxNewCardsPerDay: 0,
-        badgeEnabled: false,
         resetEditorOnReviewQueue: false,
       },
     });

@@ -3,16 +3,11 @@ import { FaChevronDown, FaCircleHalfStroke } from 'react-icons/fa6';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
 import type { Theme } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
-import { SettingsSwitch } from './SettingsSwitch';
 
 export function AppearanceSection() {
   const t = useI18n();
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
-
-  const setBadgeEnabled = (isSelected: boolean) => {
-    updateSettingsMutation.mutate({ badgeEnabled: isSelected });
-  };
 
   return (
     <div className="space-y-4">
@@ -53,11 +48,6 @@ export function AppearanceSection() {
             </ListBox>
           </Popover>
         </Select>
-        <SettingsSwitch
-          label={t.settings.appearance.showBadge}
-          isSelected={settings.badgeEnabled}
-          onChange={setBadgeEnabled}
-        />
       </div>
     </div>
   );
