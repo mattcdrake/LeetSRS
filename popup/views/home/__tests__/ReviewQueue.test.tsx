@@ -10,13 +10,13 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 
 // Mock the child components
 interface MockReviewCardProps {
@@ -108,7 +108,7 @@ describe('ReviewQueue', () => {
   ];
 
   const mockMutateAsync = vi.fn();
-  const messages = createMessageMock(vi.mocked(sendMessage));
+  const service = createServiceMock(background);
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
   const seedQueue = (cards: CardWithProblem[]) => {
@@ -120,14 +120,14 @@ describe('ReviewQueue', () => {
   const waitForInitialQueueRefresh = async () => {
     await waitFor(() => {
       // The storage observer schedules its initial fetch asynchronously.
-      expect(sendMessage).toHaveBeenCalledWith('waitForInitialization');
+      expect(background.waitForInitialization).toHaveBeenCalledWith();
       expect(queryClient.isFetching()).toBe(0);
     });
   };
 
   beforeEach(() => {
     vi.spyOn(storage, 'getItem');
-    messages
+    service
       .reset()
       .resolve('waitForInitialization', undefined)
       .handle('rateCard', mockMutateAsync)
@@ -236,29 +236,27 @@ describe('ReviewQueue', () => {
   describe('Card Actions', () => {
     it('should disable controls and prevent duplicate actions while a review is pending', async () => {
       const mutation = Promise.withResolvers<void>();
-      messages.handle('rateCard', () => mutation.promise);
+      service.handle('rateCard', () => mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
       const actionButton = await screen.findByRole('button', { name: 'Good' });
       const controls = screen.getAllByRole('button');
       for (const control of controls) expect(control).toBeEnabled();
 
-      vi.mocked(sendMessage).mockClear();
+      for (const method of Object.values(background)) vi.mocked(method).mockClear();
       fireEvent.click(actionButton);
       for (const control of controls) fireEvent.click(control);
       fireEvent.click(actionButton);
 
-      await waitFor(() =>
-        expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'rateCard')).toHaveLength(1)
-      );
-      expect(sendMessage).toHaveBeenCalledWith('rateCard', expect.any(Object));
+      await waitFor(() => expect(vi.mocked(background.rateCard).mock.calls).toHaveLength(1));
+      expect(background.rateCard).toHaveBeenCalledWith(expect.any(Object));
       for (const control of controls) expect(control).toBeDisabled();
 
       mutation.resolve();
       await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
       });
-      expect(vi.mocked(sendMessage).mock.calls.filter(([name]) => name === 'rateCard')).toHaveLength(1);
+      expect(vi.mocked(background.rateCard).mock.calls).toHaveLength(1);
     });
   });
 });

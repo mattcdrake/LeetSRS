@@ -6,25 +6,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { gistSyncQueryKeys } from '@/popup/queries/gist-sync';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import type { GistConnectionResult, GistSyncConfig } from '@/shared/models';
 import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { GistSyncSection } from '../GistSyncSection';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 
-const messages = createMessageMock(vi.mocked(sendMessage));
+const service = createServiceMock(background);
 let config: GistSyncConfig;
 let test: ReturnType<typeof createPopupTestWrapper>;
 
 beforeEach(async () => {
   await replaceLearningDocument(buildLearningDocument());
   config = { pat: 'saved-pat', gistId: 'saved-gist', enabled: false };
-  messages
+  service
     .reset()
     .resolve('getGistSyncStatus', {
       lastSyncTime: null,
@@ -56,7 +56,7 @@ describe('Gist setup form', () => {
   it.each([false, true])('shows the saved connection after Save with delayed refresh=%s', async (delayed) => {
     const refresh = Promise.withResolvers<void>();
     config = { pat: '', gistId: null, enabled: false };
-    messages.handle('setupGistSync', async (input) => {
+    service.handle('setupGistSync', async (input) => {
       config = { pat: input.pat, gistId: input.mode === 'existing' ? input.gistId : 'created', enabled: true };
       if (delayed) {
         vi.spyOn(fakeBrowser.storage.sync, 'get').mockImplementationOnce(async () => {
@@ -84,13 +84,13 @@ describe('Gist setup form', () => {
     expect(screen.getByLabelText('Gist ID')).toHaveValue('');
     expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
+    expect(background.setupGistSync).not.toHaveBeenCalledWith(expect.anything());
     enterCredentials();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Connection saved'));
     expect(screen.queryByLabelText('Personal Access Token')).not.toBeInTheDocument();
     await act(async () => refresh.resolve());
-    expect(sendMessage).toHaveBeenCalledWith('setupGistSync', {
+    expect(background.setupGistSync).toHaveBeenCalledWith({
       mode: 'existing',
       pat: 'entered-pat',
       gistId: 'entered-gist',
@@ -128,7 +128,7 @@ describe('Gist setup form', () => {
       expect(screen.getByLabelText('Personal Access Token')).toHaveValue('other-browser-pat');
       expect(screen.getByLabelText('Gist ID')).toHaveValue('other-browser-gist');
       expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
-      expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
+      expect(background.setupGistSync).not.toHaveBeenCalledWith(expect.anything());
     }
   );
 
@@ -164,14 +164,14 @@ describe('Gist setup form', () => {
     expect(screen.getByLabelText('Gist ID')).toHaveValue('');
     expect(screen.getByRole('radio', { name: 'Use existing Gist' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    expect(sendMessage).not.toHaveBeenCalledWith('setupGistSync', expect.anything());
+    expect(background.setupGistSync).not.toHaveBeenCalledWith(expect.anything());
   });
 
   it.each(['setup failure', 'transport failure'])(
     'preserves drafts when storage events deliver browser-sync updates and after %s',
     async (failure) => {
       vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-      messages.handle('setupGistSync', () => {
+      service.handle('setupGistSync', () => {
         if (failure === 'transport failure') throw new Error('Disconnected');
         return { saved: false, error: 'unavailable' };
       });
@@ -199,8 +199,8 @@ describe('Gist setup form', () => {
     'locks conflicting controls while %s is pending and permits retry',
     async (operation) => {
       const pending = Promise.withResolvers<GistConnectionResult>();
-      if (operation === 'setup') messages.resolve('setupGistSync', pending.promise);
-      else messages.resolve('setGistSyncEnabled', pending.promise);
+      if (operation === 'setup') service.resolve('setupGistSync', pending.promise);
+      else service.resolve('setGistSyncEnabled', pending.promise);
       await open(operation === 'setup');
       if (operation === 'setup') enterCredentials();
       fireEvent.click(
@@ -216,7 +216,7 @@ describe('Gist setup form', () => {
         await waitFor(() => expect(screen.getByRole('switch')).toBeDisabled());
         expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled();
       }
-      if (operation === 'enable') expect(sendMessage).toHaveBeenCalledWith('setGistSyncEnabled', { enabled: true });
+      if (operation === 'enable') expect(background.setGistSyncEnabled).toHaveBeenCalledWith(true);
       await act(async () => {
         pending.resolve({ saved: false, error: 'unavailable' });
       });
@@ -255,14 +255,14 @@ describe('Gist setup form', () => {
   it('allows the background setup request to finish after the popup unmounts', async () => {
     const pending = Promise.withResolvers<GistConnectionResult>();
     const complete = vi.fn();
-    messages.handle('setupGistSync', async () => {
+    service.handle('setupGistSync', async () => {
       const result = await pending.promise;
       complete();
       return result;
     });
     const view = await open();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(sendMessage).toHaveBeenCalledWith('setupGistSync', expect.any(Object)));
+    await waitFor(() => expect(background.setupGistSync).toHaveBeenCalledWith(expect.any(Object)));
     view.unmount();
     await act(async () => {
       pending.resolve({ saved: true });

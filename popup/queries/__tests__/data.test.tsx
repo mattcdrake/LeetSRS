@@ -4,14 +4,14 @@ import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useExportDataMutation } from '../data';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 beforeEach(() => fakeBrowser.reset());
 
 it('exports the current complete snapshot, preserving its timestamp and excluding connection, status, and legacy values', async () => {
@@ -37,7 +37,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
 });
 
 it('reports initialization failure when exporting unavailable data without creating an empty backup', async () => {
-  vi.mocked(sendMessage).mockRejectedValue(new Error('Initialization failed'));
+  vi.mocked(background.waitForInitialization).mockRejectedValue(new Error('Initialization failed'));
   const { result } = renderHook(() => useExportDataMutation(), { wrapper: createPopupTestWrapper().wrapper });
   await act(async () => expect(result.current.mutateAsync()).rejects.toThrow('Initialization failed'));
   expect(result.current.data).toBeUndefined();

@@ -1,12 +1,13 @@
+import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { sync } from '@/background/persistence';
-import { onMessage } from '@/shared/messages';
+
 import { readLearningDocument } from '@/shared/storage';
-import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import background from '../../entrypoints/background/index';
+import backgroundEntry from '../../entrypoints/background/index';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
 
@@ -15,25 +16,24 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
 
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  vi.mocked(onMessage).mockClear();
+  vi.mocked(registerService).mockClear();
   github.get.mockResolvedValue({ data: { files: {} } });
   github.update.mockResolvedValue({});
-  background.main();
-  await dispatch('waitForInitialization');
-  await dispatch('resetAllData');
+  backgroundEntry.main();
+  await getRegisteredBackground().waitForInitialization();
+  await getRegisteredBackground().resetAllData();
   await fakeBrowser.storage.sync.set({
     'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true },
   });
   await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
-  await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
+  await vi.waitFor(async () =>
+    expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
+  );
   github.get.mockClear();
   github.update.mockClear();
 });
@@ -51,9 +51,9 @@ it('keeps local writes responsive while sync is in flight', async () => {
   const download = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
   github.get.mockReturnValueOnce(download.promise);
 
-  await dispatch('addCard', { problem: buildProblem() });
+  await getRegisteredBackground().addCard(buildProblem());
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-  await dispatch('saveNote', { frontendId: '1', text: 'Saved during sync' });
+  await getRegisteredBackground().saveNote('1', 'Saved during sync');
 
   expect((await readLearningDocument()).cards['1'].note).toBe('Saved during sync');
   download.resolve({ data: { files: {} } });
@@ -67,11 +67,13 @@ it('leaves edits made during an upload for the next minute sync', async () => {
   const upload = Promise.withResolvers<void>();
   github.update.mockReturnValueOnce(upload.promise);
 
-  await dispatch('addCard', { problem: buildProblem() });
+  await getRegisteredBackground().addCard(buildProblem());
   await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
-  await dispatch('saveNote', { frontendId: '1', text: 'Next sync' });
+  await getRegisteredBackground().saveNote('1', 'Next sync');
   upload.resolve();
-  await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
+  await vi.waitFor(async () =>
+    expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
+  );
   expect(github.update).toHaveBeenCalledOnce();
 
   await triggerSyncAlarm();
@@ -83,25 +85,25 @@ it('leaves edits made during an upload for the next minute sync', async () => {
 });
 
 it('does not sync while disabled and starts syncing when enabled', async () => {
-  await dispatch('setGistSyncEnabled', { enabled: false });
+  await getRegisteredBackground().setGistSyncEnabled(false);
   github.get.mockClear();
 
-  await dispatch('addCard', { problem: buildProblem() });
+  await getRegisteredBackground().addCard(buildProblem());
   await triggerSyncAlarm();
   expect(github.get).not.toHaveBeenCalled();
 
-  expect(await dispatch('setGistSyncEnabled', { enabled: true })).toEqual({ saved: true });
+  expect(await getRegisteredBackground().setGistSyncEnabled(true)).toEqual({ saved: true });
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 });
 
 it('ignores a download that finishes after an import', async () => {
   const download = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
   github.get.mockReturnValueOnce(download.promise);
-  await dispatch('addCard', { problem: buildProblem() });
+  await getRegisteredBackground().addCard(buildProblem());
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 
   const imported = buildLearningDocument({ settings: { theme: 'dark' }, dataUpdatedAt: '2030-01-01' });
-  await dispatch('importData', { jsonData: JSON.stringify(imported) });
+  await getRegisteredBackground().importData(JSON.stringify(imported));
   download.resolve({
     data: {
       files: {
@@ -112,7 +114,9 @@ it('ignores a download that finishes after an import', async () => {
     },
   });
 
-  await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
+  await vi.waitFor(async () =>
+    expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
+  );
   expect(await readLearningDocument()).toEqual(imported);
 });
 
@@ -123,18 +127,20 @@ it.each(['reset', 'disable', 'external connection'] as const)('ignores a pending
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 
   if (change === 'reset') {
-    await dispatch('resetAllData');
+    await getRegisteredBackground().resetAllData();
   } else if (change === 'disable') {
-    await dispatch('setGistSyncEnabled', { enabled: false });
+    await getRegisteredBackground().setGistSyncEnabled(false);
   } else {
     await fakeBrowser.storage.sync.set({
       'leetsrs:gistConnection': { pat: 'other', gistId: 'other-gist', enabled: true },
     });
     await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'other-gist' }));
-    await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
+    await vi.waitFor(async () =>
+      expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
+    );
   }
   const before = await readLearningDocument();
-  const status = await dispatch('getGistSyncStatus');
+  const status = await getRegisteredBackground().getGistSyncStatus();
   const uploads = github.update.mock.calls.length;
   download.resolve({
     data: {
@@ -148,19 +154,22 @@ it.each(['reset', 'disable', 'external connection'] as const)('ignores a pending
   await pending;
 
   expect(await readLearningDocument()).toEqual(before);
-  expect(await dispatch('getGistSyncStatus')).toEqual(status);
+  expect(await getRegisteredBackground().getGistSyncStatus()).toEqual(status);
   expect(github.update).toHaveBeenCalledTimes(uploads);
 });
 
 it('retries a failed save from the minute alarm', async () => {
   github.get.mockRejectedValueOnce(new TypeError('Failed to fetch'));
-  await dispatch('addCard', { problem: buildProblem() });
+  await getRegisteredBackground().addCard(buildProblem());
   await vi.waitFor(async () =>
-    expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastError: 'unavailable', syncInProgress: false })
+    expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({
+      lastError: 'unavailable',
+      syncInProgress: false,
+    })
   );
 
   await triggerSyncAlarm();
 
   expect(github.update).toHaveBeenCalledOnce();
-  expect(await dispatch('getGistSyncStatus')).toMatchObject({ lastError: null });
+  expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ lastError: null });
 });

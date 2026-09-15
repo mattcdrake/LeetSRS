@@ -1,14 +1,15 @@
+import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { onMessage } from '@/shared/messages';
+
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
-import { dispatchBackgroundCommand as dispatch } from '@/test/utils/background-messages';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getSettings } from '@/test/utils/learning-reads';
-import background from '../../entrypoints/background/index';
+import backgroundEntry from '../../entrypoints/background/index';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
 vi.mock('octokit', () => ({
@@ -16,18 +17,15 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
 
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  vi.mocked(onMessage).mockClear();
-  background.main();
-  await dispatch('waitForInitialization');
-  await dispatch('resetAllData');
+  vi.mocked(registerService).mockClear();
+  backgroundEntry.main();
+  await getRegisteredBackground().waitForInitialization();
+  await getRegisteredBackground().resetAllData();
   await fakeBrowser.storage.sync.set({
     'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: false },
   });
@@ -35,8 +33,8 @@ beforeEach(async () => {
 
 describe('document transfers through background commands', () => {
   it('replaces the whole document from a file without replacing the Gist connection', async () => {
-    await dispatch('addCard', { problem: buildProblem() });
-    await dispatch('saveNote', { frontendId: '1', text: 'Omitted from replacement' });
+    await getRegisteredBackground().addCard(buildProblem());
+    await getRegisteredBackground().saveNote('1', 'Omitted from replacement');
     const replacement = {
       ...(await readLearningDocument()),
       cards: {},
@@ -44,7 +42,7 @@ describe('document transfers through background commands', () => {
       dataUpdatedAt: '2099-01-01T00:00:00.000Z',
     };
 
-    await dispatch('importData', { jsonData: JSON.stringify(replacement) });
+    await getRegisteredBackground().importData(JSON.stringify(replacement));
 
     expect(await readLearningDocument()).toEqual(replacement);
     expect(await getSettings()).toMatchObject({ theme: 'system' });
@@ -55,7 +53,7 @@ describe('document transfers through background commands', () => {
     const { backup, converted } = validLegacyBackup();
     const input = { ...backup, dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : undefined };
 
-    await dispatch('importData', { jsonData: JSON.stringify(input) });
+    await getRegisteredBackground().importData(JSON.stringify(input));
 
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
@@ -68,29 +66,29 @@ describe('document transfers through background commands', () => {
   });
 
   it('retains all data after a rejected import and accepts a later edit', async () => {
-    await dispatch('addCard', { problem: buildProblem() });
+    await getRegisteredBackground().addCard(buildProblem());
     const before = await readLearningDocument();
     vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Document unavailable'));
 
     await expect(
-      dispatch('importData', {
-        jsonData: JSON.stringify(buildLearningDocument({ dataUpdatedAt: '2099-01-01T00:00:00.000Z' })),
-      })
+      getRegisteredBackground().importData(
+        JSON.stringify(buildLearningDocument({ dataUpdatedAt: '2099-01-01T00:00:00.000Z' }))
+      )
     ).rejects.toThrow('Document unavailable');
 
     expect(await readLearningDocument()).toEqual(before);
-    await dispatch('saveNote', { frontendId: '1', text: 'After failure' });
+    await getRegisteredBackground().saveNote('1', 'After failure');
     expect((await readLearningDocument()).cards['1']?.note).toBe('After failure');
   });
 
   it('rejects future data before overwriting the local document', async () => {
-    await dispatch('addCard', { problem: buildProblem() });
+    await getRegisteredBackground().addCard(buildProblem());
     const before = await readLearningDocument();
 
     await expect(
-      dispatch('importData', {
-        jsonData: JSON.stringify({ schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} }),
-      })
+      getRegisteredBackground().importData(
+        JSON.stringify({ schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} })
+      )
     ).rejects.toThrow();
 
     expect(await readLearningDocument()).toEqual(before);
@@ -99,7 +97,7 @@ describe('document transfers through background commands', () => {
   it.each([false, true])(
     'creates a Gist with one sync and no learning edit (delayed write: %s)',
     async (delayedWrite) => {
-      await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
+      await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
       const before = await readLearningDocument();
       github.create.mockResolvedValueOnce({ data: { id: 'created-gist' } });
       github.get.mockResolvedValue({
@@ -114,10 +112,10 @@ describe('document transfers through background commands', () => {
           await releaseWrite.promise;
         });
       }
-      const setup = dispatch('setupGistSync', { mode: 'create', pat: 'entered' });
+      const setup = getRegisteredBackground().setupGistSync({ mode: 'create', pat: 'entered' });
       await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
       await vi.waitFor(async () =>
-        expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false })
+        expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
       );
       releaseWrite.resolve();
       expect(await setup).toEqual({ saved: true });
@@ -126,7 +124,7 @@ describe('document transfers through background commands', () => {
       expect(await readGistConnection()).toEqual({ pat: 'entered', gistId: 'created-gist', enabled: true });
       await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'created-gist' }));
       await vi.waitFor(async () =>
-        expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false })
+        expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
       );
       expect(github.get).toHaveBeenCalledOnce();
       expect(await readLearningDocument()).toEqual(before);

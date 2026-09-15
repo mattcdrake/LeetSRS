@@ -9,13 +9,13 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardsView } from '../CardsView';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
 let queryClient: QueryClient;
@@ -26,13 +26,13 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 };
 
 describe('CardsView', () => {
-  const messages = createMessageMock(vi.mocked(sendMessage));
+  const service = createServiceMock(background);
   const seedCards = (cards: CardWithProblem[]) => {
     setPopupLearningCardsQueryData(queryClient, cards);
   };
 
   beforeEach(() => {
-    messages.reset().resolve('waitForInitialization', undefined);
+    service.reset().resolve('waitForInitialization', undefined);
     ({ queryClient, wrapper } = createTestWrapper());
   });
 

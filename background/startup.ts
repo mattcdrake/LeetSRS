@@ -1,27 +1,12 @@
+import { registerService } from '@webext-core/proxy-service';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
 import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
-import {
-  addCard,
-  delayCard,
-  rateCard,
-  removeCard,
-  saveNote,
-  setPauseStatus,
-  updateSettings,
-} from '@/background/learning';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
-import {
-  connectGist,
-  getSyncStatus,
-  resetAllData,
-  restoreBackup,
-  setSyncEnabled,
-  sync,
-  watchGistConnectionChanges,
-} from '@/background/persistence';
-import { getProblemBySlug, initializeCatalog } from '@/shared/catalog';
-import { messagePayloadSchemas, onMessage } from '@/shared/messages';
+import { sync, watchGistConnectionChanges } from '@/background/persistence';
+import { createBackgroundService } from '@/background/service';
+import { BACKGROUND_SERVICE_KEY } from '@/shared/background-service';
+import { initializeCatalog } from '@/shared/catalog';
 import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
 const SYNC_ALARM_NAME = 'gist-sync';
@@ -49,71 +34,7 @@ export function startBackground() {
     console.error('Failed to initialize background:', error);
   });
 
-  onMessage('waitForInitialization', async ({ data }) => {
-    await readyPromise;
-    messagePayloadSchemas.waitForInitialization.parse(data);
-    return undefined;
-  });
-  onMessage('getProblem', async ({ data }) => {
-    await readyPromise;
-    const { slug, domain } = messagePayloadSchemas.getProblem.parse(data);
-    const problem = await getProblemBySlug(slug, domain);
-    if (!problem) throw new Error(`Unknown problem: ${slug} on ${domain}`);
-    return problem;
-  });
-  onMessage('addCard', async ({ data }) => {
-    await readyPromise;
-    return addCard(messagePayloadSchemas.addCard.parse(data).problem);
-  });
-  onMessage('removeCard', async ({ data }) => {
-    await readyPromise;
-    return removeCard(messagePayloadSchemas.removeCard.parse(data).frontendId);
-  });
-  onMessage('delayCard', async ({ data }) => {
-    await readyPromise;
-    const payload = messagePayloadSchemas.delayCard.parse(data);
-    return delayCard(payload.frontendId, payload.days);
-  });
-  onMessage('setPauseStatus', async ({ data }) => {
-    await readyPromise;
-    const payload = messagePayloadSchemas.setPauseStatus.parse(data);
-    return setPauseStatus(payload.frontendId, payload.paused);
-  });
-  onMessage('rateCard', async ({ data }) => {
-    await readyPromise;
-    return rateCard(messagePayloadSchemas.rateCard.parse(data).input);
-  });
-  onMessage('saveNote', async ({ data }) => {
-    await readyPromise;
-    const payload = messagePayloadSchemas.saveNote.parse(data);
-    return saveNote(payload.frontendId, payload.text);
-  });
-  onMessage('updateSettings', async ({ data }) => {
-    await readyPromise;
-    return updateSettings(messagePayloadSchemas.updateSettings.parse(data).changes);
-  });
-  onMessage('importData', async ({ data }) => {
-    await readyPromise;
-    return restoreBackup(messagePayloadSchemas.importData.parse(data).jsonData);
-  });
-  onMessage('resetAllData', async ({ data }) => {
-    await readyPromise;
-    messagePayloadSchemas.resetAllData.parse(data);
-    return resetAllData();
-  });
-  onMessage('setupGistSync', async ({ data }) => {
-    await readyPromise;
-    return connectGist(messagePayloadSchemas.setupGistSync.parse(data));
-  });
-  onMessage('setGistSyncEnabled', async ({ data }) => {
-    await readyPromise;
-    return setSyncEnabled(messagePayloadSchemas.setGistSyncEnabled.parse(data).enabled);
-  });
-  onMessage('getGistSyncStatus', async ({ data }) => {
-    await readyPromise;
-    messagePayloadSchemas.getGistSyncStatus.parse(data);
-    return getSyncStatus();
-  });
+  registerService(BACKGROUND_SERVICE_KEY, createBackgroundService(readyPromise));
   watchGistConnectionChanges(readyPromise);
   storage.watch(STORAGE_KEYS.learningDocument, () => {
     void readyPromise.then(refreshBadge, () => {});

@@ -9,7 +9,7 @@ import { LeetSrsControl } from '../LeetSrsControl';
 import { createContentRoot } from '../shadow-root';
 
 vi.mock('@/content/translations', () => ({ watchDocumentTranslations: vi.fn() }));
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 
 let root: ReturnType<typeof createContentRoot>;
 let host: HTMLElement;

@@ -6,22 +6,20 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { updateSettings } from '@/background/learning';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
-vi.mock('@/shared/messages', () => ({
-  sendMessage: vi.fn(() => Promise.resolve(undefined)),
-}));
+vi.mock('@/shared/background-service');
 
 describe('popup settings with the prepared document workflows', () => {
   beforeEach(async () => {
     fakeBrowser.reset();
-    const messages = createMessageMock(vi.mocked(sendMessage));
-    messages.reset().handle('updateSettings', ({ changes }) => updateSettings(changes));
+    const service = createServiceMock(background);
+    service.reset().handle('updateSettings', updateSettings);
     await replaceLearningDocument(buildLearningDocument());
   });
 

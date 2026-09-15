@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { readLearningDocument } from '@/shared/storage';
 
 export function useExportDataMutation() {
@@ -10,12 +10,12 @@ export function useExportDataMutation() {
 
 export function useImportDataMutation() {
   return useMutation({
-    mutationFn: (jsonData: string) => sendMessage('importData', { jsonData }),
+    mutationFn: (jsonData: string) => background.importData(jsonData),
   });
 }
 
 export function useResetAllDataMutation() {
   return useMutation({
-    mutationFn: () => sendMessage('resetAllData'),
+    mutationFn: () => background.resetAllData(),
   });
 }

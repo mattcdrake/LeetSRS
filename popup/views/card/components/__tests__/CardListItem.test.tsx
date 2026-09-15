@@ -6,16 +6,16 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardListItem } from '../CardListItem';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
-const messages = createMessageMock(vi.mocked(sendMessage));
+const service = createServiceMock(background);
 let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
 const renderItem = (card: CardWithProblem) => {
@@ -25,7 +25,7 @@ const renderItem = (card: CardWithProblem) => {
 
 describe('CardListItem', () => {
   beforeEach(() => {
-    messages.reset().resolve('setPauseStatus', undefined).resolve('removeCard', undefined);
+    service.reset().resolve('setPauseStatus', undefined).resolve('removeCard', undefined);
     wrapper = createTestWrapper().wrapper;
   });
 
@@ -67,9 +67,7 @@ describe('CardListItem', () => {
 
     fireEvent.click(screen.getByRole('button', { name: action }));
 
-    await vi.waitFor(() =>
-      expect(sendMessage).toHaveBeenCalledWith('setPauseStatus', { frontendId: '1', paused: nextPaused })
-    );
+    await vi.waitFor(() => expect(background.setPauseStatus).toHaveBeenCalledWith('1', nextPaused));
   });
 
   it('deletes only after confirmation', async () => {
@@ -77,12 +75,12 @@ describe('CardListItem', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
-    expect(sendMessage).not.toHaveBeenCalledWith('removeCard', expect.anything());
+    expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
 
     await vi.waitFor(() => {
-      expect(sendMessage).toHaveBeenCalledWith('removeCard', { frontendId: '1' });
+      expect(background.removeCard).toHaveBeenCalledWith('1');
     });
   });
 
@@ -96,13 +94,13 @@ describe('CardListItem', () => {
     act(() => vi.advanceTimersByTime(3000));
 
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
-    expect(sendMessage).not.toHaveBeenCalledWith('removeCard', expect.anything());
+    expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
   });
 
   it('restores its pause action after a failure', async () => {
     const error = new Error('Pause failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    messages.handle('setPauseStatus', () => Promise.reject(error));
+    service.handle('setPauseStatus', () => Promise.reject(error));
     renderItem(createMockCardWithProblem(State.New));
 
     const pauseButton = screen.getByRole('button', { name: 'Pause' });
@@ -117,7 +115,7 @@ describe('CardListItem', () => {
   it('restores delete confirmation after a failure', async () => {
     const error = new Error('Delete failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    messages.handle('removeCard', () => Promise.reject(error));
+    service.handle('removeCard', () => Promise.reject(error));
     renderItem(createMockCardWithProblem(State.New));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -132,7 +130,7 @@ describe('CardListItem', () => {
   it('keeps overlapping operations on different cards independent', async () => {
     const pauseResult = Promise.withResolvers<void>();
     const deleteResult = Promise.withResolvers<void>();
-    messages.handle('setPauseStatus', () => pauseResult.promise).handle('removeCard', () => deleteResult.promise);
+    service.handle('setPauseStatus', () => pauseResult.promise).handle('removeCard', () => deleteResult.promise);
     const cards = [
       createMockCardWithProblem(State.New, { frontendId: 'first', title: 'First', slug: 'first' }),
       createMockCardWithProblem(State.New, { frontendId: 'second', title: 'Second', slug: 'second' }),

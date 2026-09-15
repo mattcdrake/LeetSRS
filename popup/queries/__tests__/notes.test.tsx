@@ -6,34 +6,30 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import background from '@/entrypoints/background/index';
-import { onMessage, sendMessage } from '@/shared/messages';
+import backgroundEntry from '@/entrypoints/background/index';
+import { background } from '@/shared/background-service';
 import { requireDefined } from '@/test/utils/assertions';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useNoteQuery, useSaveNoteMutation } from '../notes';
 
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
-  sendMessage: vi.fn(),
-}));
+vi.mock('@webext-core/proxy-service');
+vi.mock('@/shared/background-service');
 
 const problem = buildProblem();
 
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  background.main();
-  const messaging = createMessageMock(vi.mocked(sendMessage)).reset();
-  for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
-    messaging.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
-  }
-  await sendMessage('addCard', { problem });
+  backgroundEntry.main();
+  const service = createServiceMock(background).reset();
+  service.use(getRegisteredBackground());
+  await background.addCard(problem);
 });
 
 describe('note and card query coherence', () => {
@@ -51,14 +47,14 @@ describe('note and card query coherence', () => {
     expect(result.current.note.data).toBeNull();
 
     await act(() => result.current.save.mutateAsync('  Use a map  '));
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId: problem.frontendId, text: '  Use a map  ' });
+    expect(background.saveNote).toHaveBeenCalledWith(problem.frontendId, '  Use a map  ');
     await waitFor(() => {
       expect(result.current.note.data).toBe('  Use a map  ');
       expect(result.current.cards.data).toMatchObject([{ frontendId: problem.frontendId, note: '  Use a map  ' }]);
       expect(result.current.queue.data).toMatchObject([{ frontendId: problem.frontendId, note: '  Use a map  ' }]);
     });
     await act(() => result.current.save.mutateAsync(''));
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId: problem.frontendId, text: '' });
+    expect(background.saveNote).toHaveBeenCalledWith(problem.frontendId, '');
     await waitFor(() => {
       expect(result.current.note.data).toBeNull();
       expect(result.current.cards.data?.[0]).not.toHaveProperty('note');
@@ -67,7 +63,7 @@ describe('note and card query coherence', () => {
   });
 
   it.each(['remove', 'import', 'reset'] as const)('clears a cached note after %s', async (operation) => {
-    await sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Previous note' });
+    await background.saveNote(problem.frontendId, 'Previous note');
     const { result } = renderHook(
       () => ({
         note: useNoteQuery(problem.frontendId),
@@ -99,30 +95,30 @@ describe('note and card query coherence', () => {
 });
 
 it('preserves a dirty rendered note through incoming replacement and saves its draft', async () => {
-  await sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Original' });
+  await background.saveNote(problem.frontendId, 'Original');
   render(<NoteEditor frontendId={problem.frontendId} variant="regular" />, {
     wrapper: createPopupTestWrapper().wrapper,
   });
   const input = screen.getByRole('textbox', { name: 'Note text' });
   await waitFor(() => expect(input).toHaveValue('Original'));
-  await act(() => sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Untouched update' }));
+  await act(() => background.saveNote(problem.frontendId, 'Untouched update'));
   await waitFor(() => expect(input).toHaveValue('Untouched update'));
   fireEvent.change(input, { target: { value: 'My draft' } });
-  await act(() => sendMessage('saveNote', { frontendId: problem.frontendId, text: '' }));
+  await act(() => background.saveNote(problem.frontendId, ''));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument());
   expect(input).toHaveValue('My draft');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
   expect(input).toHaveValue('My draft');
-  await act(() => sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Later update' }));
+  await act(() => background.saveNote(problem.frontendId, 'Later update'));
   await waitFor(() => expect(input).toHaveValue('Later update'));
 });
 
 it('keeps the outgoing card note live after it leaves the review queue', async () => {
   const next = buildProblem({ frontendId: 'next-card' });
-  await sendMessage('addCard', { problem: next });
-  await sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Outgoing note' });
-  await sendMessage('saveNote', { frontendId: next.frontendId, text: 'Next note' });
+  await background.addCard(next);
+  await background.saveNote(problem.frontendId, 'Outgoing note');
+  await background.saveNote(next.frontendId, 'Next note');
   const view = renderHook(
     ({ frontendId }) => ({
       note: useNoteQuery(frontendId),
@@ -135,7 +131,7 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
   await act(() => view.result.current.delay.mutateAsync({ frontendId: problem.frontendId, days: 1 }));
   await waitFor(() => expect(view.result.current.queue.data).toMatchObject([{ frontendId: next.frontendId }]));
   expect(view.result.current.note.data).toBe('Outgoing note');
-  await act(() => sendMessage('saveNote', { frontendId: problem.frontendId, text: '' }));
+  await act(() => background.saveNote(problem.frontendId, ''));
   await waitFor(() => expect(view.result.current.note.data).toBeNull());
   view.rerender({ frontendId: next.frontendId });
   await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));

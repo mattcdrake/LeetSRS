@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import {
   readGistConnection,
@@ -13,14 +13,15 @@ import {
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
-vi.mock('@/shared/messages', () => ({
-  sendMessage: vi.fn(() => {
-    throw new Error('Startup must not request readiness');
-  }),
-}));
+vi.mock('@/shared/background-service');
 
 describe('learning document startup', () => {
-  beforeEach(() => fakeBrowser.reset());
+  beforeEach(() => {
+    fakeBrowser.reset();
+    vi.mocked(background.waitForInitialization).mockImplementation(async () => {
+      throw new Error('Startup must not request readiness');
+    });
+  });
 
   it.each(['missing', 'null'])('initializes an unedited installation with a %s document', async (presence) => {
     if (presence === 'null') {
@@ -37,7 +38,7 @@ describe('learning document startup', () => {
     );
     expect(await readGistConnection()).toEqual({ pat: '', gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
-    expect(sendMessage).not.toHaveBeenCalled();
+    expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
   });
 
   it.each([undefined, 3, 5])('preserves an installation at version %s', async (version) => {

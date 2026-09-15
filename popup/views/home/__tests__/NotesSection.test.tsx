@@ -11,16 +11,16 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { learningDocumentQueryKey, type PopupLearningDocumentSnapshot } from '@/popup/queries/learning-document';
-import { sendMessage } from '@/shared/messages';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { background } from '@/shared/background-service';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { NotesSection } from '../NotesSection';
 
-vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
+vi.mock('@/shared/background-service');
 
 describe('NotesSection', () => {
   const mockSlug = 'test-card-123';
-  const messages = createMessageMock(vi.mocked(sendMessage));
+  const service = createServiceMock(background);
   let wrapper: ReturnType<typeof createPopupTestWrapper>['wrapper'];
   let queryClient: QueryClient;
 
@@ -37,7 +37,7 @@ describe('NotesSection', () => {
   };
 
   beforeEach(() => {
-    messages.reset().resolve('saveNote', undefined);
+    service.reset().resolve('saveNote', undefined);
     ({ wrapper, queryClient } = createPopupTestWrapper());
     seedNote(null);
   });
@@ -78,12 +78,12 @@ describe('NotesSection', () => {
     expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Unsaved draft');
     expect(screen.getByRole('button', { name: 'Confirm?' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
-    expect(sendMessage).not.toHaveBeenCalledWith('saveNote', expect.anything());
+    expect(background.saveNote).not.toHaveBeenCalled();
   });
 
   it('finishes a pending save while collapsed and shows the saved note on reopening', async () => {
     const save = Promise.withResolvers<void>();
-    messages.handle('saveNote', async ({ text }) => {
+    service.handle('saveNote', async (_frontendId, text) => {
       await save.promise;
       seedNote(text);
     });
@@ -107,6 +107,6 @@ describe('NotesSection', () => {
     expect(screen.getByRole('textbox')).toHaveValue('Saved draft');
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId: mockSlug, text: 'Saved draft' });
+    expect(background.saveNote).toHaveBeenCalledWith(mockSlug, 'Saved draft');
   });
 });

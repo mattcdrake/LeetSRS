@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import { sendMessage } from '@/shared/messages';
 import type { Card, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
 import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
@@ -15,7 +15,7 @@ const cardsQueryOptions = queryOptions({
   queryKey: cardsQueryKey,
   queryFn: async () => {
     const snapshot = await readPopupLearningDocument();
-    await sendMessage('waitForInitialization');
+    await background.waitForInitialization();
     const savedCards = Object.values(snapshot.document.cards);
     const problems = await getProblemsByFrontendIds(savedCards);
     const cards = savedCards.map((card, index): CardWithProblem => {
@@ -59,21 +59,21 @@ function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Prom
 }
 
 export function useRemoveCardMutation() {
-  return useCardMutation((frontendId: string) => sendMessage('removeCard', { frontendId }));
+  return useCardMutation((frontendId: string) => background.removeCard(frontendId));
 }
 
 export function useRateCardMutation() {
-  return useCardMutation((input: RateCardInput) => sendMessage('rateCard', { input }));
+  return useCardMutation((input: RateCardInput) => background.rateCard(input));
 }
 
 export function useDelayCardMutation() {
   return useCardMutation(({ frontendId, days }: { frontendId: string; days: number }) =>
-    sendMessage('delayCard', { frontendId, days })
+    background.delayCard(frontendId, days)
   );
 }
 
 export function usePauseCardMutation() {
   return useCardMutation(({ frontendId, paused }: { frontendId: string; paused: boolean }) =>
-    sendMessage('setPauseStatus', { frontendId, paused })
+    background.setPauseStatus(frontendId, paused)
   );
 }

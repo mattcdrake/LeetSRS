@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { storage } from '#imports';
-import { sendMessage } from '@/shared/messages';
+import { background } from '@/shared/background-service';
 import {
   type GistSyncConfig,
   gistSyncConfigSchema,
@@ -18,7 +18,7 @@ export function setBackgroundStorageReadiness(readiness: Promise<void>): void {
 }
 
 function waitForStorageInitialization(): Promise<void> {
-  return backgroundReadiness ?? sendMessage('waitForInitialization');
+  return backgroundReadiness ?? background.waitForInitialization();
 }
 
 export async function readLearningDocument(): Promise<LearningDocument> {

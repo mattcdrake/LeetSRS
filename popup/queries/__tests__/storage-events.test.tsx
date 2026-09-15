@@ -8,17 +8,18 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
-import background from '@/entrypoints/background/index';
+import backgroundEntry from '@/entrypoints/background/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
+import { background } from '@/shared/background-service';
 import { initializeCatalog } from '@/shared/catalog';
-import { onMessage, sendMessage } from '@/shared/messages';
 import type { GistSyncStatus } from '@/shared/models';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
+import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { createMessageMock } from '@/test/utils/message-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useExportDataMutation } from '../data';
@@ -34,16 +35,13 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@/shared/messages', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/shared/messages')>()),
-  onMessage: vi.fn(),
-  sendMessage: vi.fn(),
-}));
-const messages = createMessageMock(vi.mocked(sendMessage));
+vi.mock('@webext-core/proxy-service');
+vi.mock('@/shared/background-service');
+const service = createServiceMock(background);
 beforeEach(() => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
-  messages.reset().resolve('waitForInitialization', undefined);
+  service.reset().resolve('waitForInitialization', undefined);
 });
 afterEach(() => {
   onlineManager.setOnline(true);
@@ -52,11 +50,9 @@ afterEach(() => {
 
 async function startBackground() {
   const alarms = vi.spyOn(browser.alarms.onAlarm, 'addListener');
-  background.main();
-  for (const [name, listener] of vi.mocked(onMessage).mock.calls) {
-    messages.handle(name, (data) => listener({ id: 1, type: name, data, timestamp: 0, sender: {} }));
-  }
-  await sendMessage('waitForInitialization');
+  backgroundEntry.main();
+  service.use(getRegisteredBackground());
+  await background.waitForInitialization();
   return requireDefined(alarms.mock.calls.at(-1)?.[0]);
 }
 
@@ -65,7 +61,7 @@ it('reads a current connection without waiting for a learning document or backgr
   await storage.setItem(STORAGE_KEYS.gistConnection, connection);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual(connection));
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
 it.each([false, true])('initializes a missing connection before reading it (legacy: %s)', async (legacy) => {
@@ -76,7 +72,7 @@ it.each([false, true])('initializes a missing connection before reading it (lega
       'leetsrs:gistSyncEnabled': true,
     });
   }
-  messages.handle('waitForInitialization', initializeLearningDocument);
+  service.handle('waitForInitialization', initializeLearningDocument);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() =>
     expect(result.current.data).toEqual(
@@ -85,15 +81,15 @@ it.each([false, true])('initializes a missing connection before reading it (lega
         : { pat: '', gistId: null, enabled: false }
     )
   );
-  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('waitForInitialization');
+  expect(background.waitForInitialization).toHaveBeenCalledExactlyOnceWith();
 });
 
 it('returns the disabled connection after readiness when a current installation has none', async () => {
   await replaceLearningDocument(buildLearningDocument());
-  messages.handle('waitForInitialization', initializeLearningDocument);
+  service.handle('waitForInitialization', initializeLearningDocument);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual({ pat: '', gistId: null, enabled: false }));
-  expect(sendMessage).toHaveBeenCalledExactlyOnceWith('waitForInitialization');
+  expect(background.waitForInitialization).toHaveBeenCalledExactlyOnceWith();
 });
 
 it('reports invalid connection data without requesting initialization', async () => {
@@ -101,7 +97,7 @@ it('reports invalid connection data without requesting initialization', async ()
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
 it.each(['success', 'failure'] as const)(
@@ -144,7 +140,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
   const view = renderHook(() => useCardsQuery(), { wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
-  expect(sendMessage).toHaveBeenCalledWith('waitForInitialization');
+  expect(background.waitForInitialization).toHaveBeenCalledWith();
 
   const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
   await act(async () => {
@@ -175,7 +171,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
   async (stored) => {
     await storage.setItem(STORAGE_KEYS.learningDocument, stored);
     const ready = Promise.withResolvers<void>();
-    messages.resolve('waitForInitialization', ready.promise);
+    service.resolve('waitForInitialization', ready.promise);
     const documentRead = readLearningDocument();
     const completed = vi.fn();
     void documentRead.then(completed, completed);
@@ -199,7 +195,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
 it.each([useCardsQuery, useGistSyncConfigQuery])(
   'reports initialization failure without presenting default data (%s)',
   async (useQuery) => {
-    messages.handle('waitForInitialization', () => {
+    service.handle('waitForInitialization', () => {
       throw new Error('Conversion failed');
     });
     const { result } = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
@@ -215,11 +211,11 @@ it.each([
   { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
 ])('reports invalid current data directly: %j', async (document) => {
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
-  messages.resolve('waitForInitialization', new Promise<void>(() => {}));
+  service.resolve('waitForInitialization', new Promise<void>(() => {}));
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.isError).toBe(true));
   expect(result.current.data).toBeUndefined();
-  expect(sendMessage).not.toHaveBeenCalled();
+  expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
 it('runs local queries, saves, and validated export while offline', async () => {
@@ -254,7 +250,7 @@ it('runs local queries, saves, and validated export while offline', async () => 
 it('refreshes saved views after a content command and an alarm pull, including connection and status changes', async () => {
   const alarm = await startBackground();
   const problem = buildProblem();
-  await sendMessage('addCard', { problem });
+  await background.addCard(problem);
   const { result } = renderHook(
     () => ({
       cards: useCardsQuery(),
@@ -267,7 +263,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
   );
   await waitFor(() => expect(result.current?.note.isSuccess).toBe(true));
   // Content sends this same command without a popup mutation hook.
-  await act(() => sendMessage('saveNote', { frontendId: problem.frontendId, text: 'Content edit' }));
+  await act(() => background.saveNote(problem.frontendId, 'Content edit'));
   await waitFor(() => expect(result.current.note.data).toBe('Content edit'));
   await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 'secret', gistId: 'gist', enabled: true });
   await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
@@ -347,7 +343,7 @@ it('keeps polling background-only sync progress and errors without stored change
     syncInProgress: true,
     lastError: null,
   };
-  messages.handle('getGistSyncStatus', () => status);
+  service.handle('getGistSyncStatus', () => status);
   const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.data?.syncInProgress).toBe(true);
