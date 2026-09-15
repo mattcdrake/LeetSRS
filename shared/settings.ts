@@ -49,7 +49,6 @@ export const settingsSchema = z.object({
   maxNewCardsPerDay: boundedWholeNumber('Max new cards per day', SETTINGS_CONSTRAINTS.maxNewCardsPerDay),
   theme: z.enum(['system', 'light', 'dark'], { error: 'Theme must be "system", "light", or "dark"' }),
   resetEditorOnReviewQueue: z.boolean({ error: 'Reset editor on review queue must be a boolean' }),
-  badgeEnabled: z.boolean({ error: 'Badge enabled must be a boolean' }),
   language: languageSchema,
 });
 export type Settings = z.infer<typeof settingsSchema>;
@@ -60,7 +59,6 @@ export const DEFAULT_SETTINGS = {
   maxNewCardsPerDay: 3,
   theme: 'system',
   resetEditorOnReviewQueue: false,
-  badgeEnabled: true,
 } satisfies Omit<Settings, 'language'>;
 
 export const SETTING_KEYS = settingsSchema.keyof().options;

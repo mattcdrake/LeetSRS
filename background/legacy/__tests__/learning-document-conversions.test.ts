@@ -128,7 +128,7 @@ describe('convertLearningDocument', () => {
     );
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8])(
+  it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, LEARNING_DOCUMENT_VERSION])(
     'preserves the same learning data from installations and backups at version %i without I/O or a clock',
     (schemaVersion) => {
       const { backup, converted, legacyConverted } = validLegacyBackup();
@@ -175,7 +175,6 @@ describe('convertLearningDocument', () => {
           theme: 'light',
           language: 'zh-CN',
           maxNewCardsPerDay: 7,
-          badgeEnabled: false,
           resetEditorOnReviewQueue: true,
         },
         dataUpdatedAt: backup.dataUpdatedAt,

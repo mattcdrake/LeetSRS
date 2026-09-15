@@ -130,7 +130,6 @@ const hi: Translations = {
       themeSystem: 'सिस्टम',
       themeLight: 'हल्का',
       themeDark: 'गहरा',
-      showBadge: 'आइकन पर ड्यू संख्या दिखाएँ',
     },
     // Review settings section
     reviewSettings: {

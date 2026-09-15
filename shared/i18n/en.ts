@@ -144,7 +144,6 @@ const en = {
       themeSystem: 'System',
       themeLight: 'Light',
       themeDark: 'Dark',
-      showBadge: 'Show due count on icon',
     },
 
     // Review settings section

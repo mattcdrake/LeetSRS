@@ -1,12 +1,10 @@
 import { browser } from 'wxt/browser';
 import { buildReviewQueue } from '@/shared/review';
-import { DEFAULT_SETTINGS } from '@/shared/settings';
 import { readLearningDocument } from '@/shared/storage';
 
 export async function getBadgeState(): Promise<{ count: number; nextDueAt?: number }> {
   const now = new Date();
   const document = await readLearningDocument();
-  if (!(document.settings.badgeEnabled ?? DEFAULT_SETTINGS.badgeEnabled)) return { count: 0 };
   const nextDueAt = Object.values(document.cards).reduce(
     (next, card) => (!card.paused && card.fsrs.due > now.getTime() ? Math.min(next, card.fsrs.due) : next),
     Infinity
