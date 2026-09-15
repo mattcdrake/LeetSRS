@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { BottomNav, type ViewId } from './components/BottomNav';
-import { CardView } from './views/card/CardView';
+import { CardsView } from './views/card/CardsView';
 import { HomeView } from './views/home/HomeView';
 import { SettingsView } from './views/settings/SettingsView';
 
@@ -25,7 +25,7 @@ function App() {
 
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,
-    card: <CardView />,
+    card: <CardsView />,
     settings: <SettingsView />,
   };
 
