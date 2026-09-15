@@ -7,7 +7,7 @@ import { storage } from '#imports';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 import { STORAGE_KEYS } from '@/shared/storage';
-import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -34,11 +34,11 @@ describe('NoteEditor', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }) },
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
       })
     );
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
     ]);
     render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -68,10 +68,10 @@ describe('NoteEditor', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithQuestion(State.New, { frontendId, note: text }) },
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
       })
     );
-    setPopupLearningCardsQueryData(queryClient, [createMockCardWithQuestion(State.New, { frontendId, note: text })]);
+    setPopupLearningCardsQueryData(queryClient, [createMockCardWithProblem(State.New, { frontendId, note: text })]);
     render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -97,11 +97,11 @@ describe('NoteEditor', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }) },
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
       })
     );
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
     ]);
     render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -116,7 +116,7 @@ describe('NoteEditor', () => {
 
     messages.handle('saveNote', async ({ text }) => {
       const saved = buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithQuestion(State.New, { frontendId, note: text }) },
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
       });
       vi.mocked(storage.getItem).mockResolvedValue(saved);
       await storage.setItem(STORAGE_KEYS.learningDocument, saved);
@@ -148,8 +148,8 @@ describe('NoteEditor', () => {
     messages.handle('saveNote', () => pending.promise);
     const { wrapper, queryClient } = createPopupTestWrapper();
     const cards = [
-      createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }),
-      createMockCardWithQuestion(State.New, { frontendId: 'another-card', note: 'Other note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
     ];
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) })
@@ -182,14 +182,14 @@ describe('NoteEditor', () => {
   it('preserves a dirty draft during incoming updates and resets it and confirmation when switching cards', async () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }),
-      createMockCardWithQuestion(State.New, { frontendId: 'another-card', note: 'Other note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
     ]);
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
         cards: {
-          [frontendId]: createMockCardWithQuestion(State.New, { frontendId, note: 'Incoming note' }),
-          'another-card': createMockCardWithQuestion(State.New, { frontendId: 'another-card', note: 'Other note' }),
+          [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Incoming note' }),
+          'another-card': createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
         },
       })
     );
@@ -198,8 +198,8 @@ describe('NoteEditor', () => {
     fireEvent.change(textarea, { target: { value: 'Dirty draft' } });
     act(() =>
       setPopupLearningCardsQueryData(queryClient, [
-        createMockCardWithQuestion(State.New, { frontendId, note: 'Incoming note' }),
-        createMockCardWithQuestion(State.New, { frontendId: 'another-card', note: 'Other note' }),
+        createMockCardWithProblem(State.New, { frontendId, note: 'Incoming note' }),
+        createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
       ])
     );
     expect(textarea).toHaveValue('Dirty draft');
@@ -221,11 +221,11 @@ describe('NoteEditor', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }) },
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
       })
     );
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithQuestion(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
     ]);
     render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
 

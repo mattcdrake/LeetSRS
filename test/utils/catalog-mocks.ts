@@ -1,6 +1,6 @@
-import type { CatalogQuestion } from '@/shared/catalog';
+import type { CatalogProblem } from '@/shared/catalog';
 
-export const testCatalog: CatalogQuestion[] = [
+export const testCatalog: CatalogProblem[] = [
   {
     frontendId: '1',
     slug: 'two-sum',
@@ -32,7 +32,7 @@ export const testCatalog: CatalogQuestion[] = [
     sources: ['leetcode.com'],
   },
   ...['new-a', 'new-b', 'review', 'future', 'paused', 'next-card', 'editor-card', 'other-card', 'com-only'].map(
-    (frontendId): CatalogQuestion => ({
+    (frontendId): CatalogProblem => ({
       frontendId,
       slug: frontendId,
       title: frontendId,

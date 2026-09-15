@@ -1,8 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { type CardWithQuestion, cardsQueryKey } from '@/popup/queries/cards';
+import { type CardWithProblem, cardsQueryKey } from '@/popup/queries/cards';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
 import { cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
-import { buildCatalogQuestion } from './card-mocks';
+import { buildCatalogProblem } from './card-mocks';
 
 type LearningDocumentOverrides = Partial<Omit<LearningDocument, 'schemaVersion'>>;
 
@@ -20,11 +20,11 @@ export function setPopupLearningDocumentQueryData(
   queryClient.setQueryData(cardsQueryKey, {
     document,
     now,
-    cards: Object.values(document.cards).map((card) => ({ ...buildCatalogQuestion(), ...card })),
+    cards: Object.values(document.cards).map((card) => ({ ...buildCatalogProblem(), ...card })),
   });
 }
 
-export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: CardWithQuestion[], now = new Date()) {
+export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: CardWithProblem[], now = new Date()) {
   const seen = new Set<string>();
   const uniqueCards = cards.map((card, index) => {
     if (!seen.has(card.frontendId)) {

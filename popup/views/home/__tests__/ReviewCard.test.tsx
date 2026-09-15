@@ -7,7 +7,7 @@ import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { translations } from '@/shared/i18n/index';
-import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -18,7 +18,7 @@ vi.mock('@/popup/contexts/I18nContext', () => ({ useI18n: vi.fn() }));
 
 describe('ReviewCard', () => {
   const mockOnRate = vi.fn();
-  const mockCard = createMockCardWithQuestion(State.New);
+  const mockCard = createMockCardWithProblem(State.New);
 
   const renderWithProviders = (card = mockCard, onRate = mockOnRate, resetEditorOnReviewQueue = false) => {
     const { wrapper, queryClient } = createPopupTestWrapper();

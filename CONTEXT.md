@@ -2,7 +2,14 @@
 
 Spaced repetition for LeetCode practice.
 
-**Problem / card**: A problem is a LeetCode question; a card is the learner's study record for it.
+**Problem**: A LeetCode programming exercise with a frontend ID, title, difficulty, and topic tags.
+_Avoid_: Question.
+
+**Problem reference**: A problem's frontend ID and LeetCode domain, identifying the problem and where it is practiced.
+
+**Catalog problem**: A problem's shared metadata, including its titles, slug, difficulty, topics, and available LeetCode domains.
+
+**Card**: The learner's study record for a problem.
 
 **Review / revisit**: Every rating is a review. Ratings after the first are revisits; repetition counts include the first.
 

@@ -1,11 +1,11 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type CatalogQuestion, getQuestionsByFrontendIds } from '@/shared/catalog';
+import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import { sendMessage } from '@/shared/messages';
 import type { Card, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
 import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
 
-export type CardWithQuestion = Card & CatalogQuestion;
+export type CardWithProblem = Card & CatalogProblem;
 
 export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
 
@@ -17,11 +17,11 @@ const cardsQueryOptions = queryOptions({
     const snapshot = await readPopupLearningDocument();
     await sendMessage('waitForInitialization');
     const savedCards = Object.values(snapshot.document.cards);
-    const questions = await getQuestionsByFrontendIds(savedCards);
-    const cards = savedCards.map((card, index): CardWithQuestion => {
-      const question = questions[index];
-      if (!question) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
-      return { ...question, ...card };
+    const problems = await getProblemsByFrontendIds(savedCards);
+    const cards = savedCards.map((card, index): CardWithProblem => {
+      const problem = problems[index];
+      if (!problem) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
+      return { ...problem, ...card };
     });
     return { ...snapshot, cards };
   },

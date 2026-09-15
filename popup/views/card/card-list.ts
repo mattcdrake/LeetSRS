@@ -1,5 +1,5 @@
-import type { CardWithQuestion } from '@/popup/queries/cards';
-import { getQuestionTitle } from '@/shared/ui/question-title';
+import type { CardWithProblem } from '@/popup/queries/cards';
+import { getProblemTitle } from '@/shared/ui/problem-title';
 
 const numericLeetcodeIdPattern = /^\d+$/;
 
@@ -9,7 +9,7 @@ const compareText = (a: string, b: string) => {
   return 0;
 };
 
-const compareCardsByLeetcodeId = (a: CardWithQuestion, b: CardWithQuestion) => {
+const compareCardsByLeetcodeId = (a: CardWithProblem, b: CardWithProblem) => {
   const aIsNumeric = numericLeetcodeIdPattern.test(a.frontendId);
   const bIsNumeric = numericLeetcodeIdPattern.test(b.frontendId);
 
@@ -24,14 +24,14 @@ const compareCardsByLeetcodeId = (a: CardWithQuestion, b: CardWithQuestion) => {
   return compareText(a.frontendId, b.frontendId);
 };
 
-export const filterAndSortCards = (cards: readonly CardWithQuestion[], filterText: string) => {
+export const filterAndSortCards = (cards: readonly CardWithProblem[], filterText: string) => {
   const searchLower = filterText.toLowerCase();
 
   return cards
     .filter(
       (card) =>
         !filterText ||
-        getQuestionTitle(card, card.domain).toLowerCase().includes(searchLower) ||
+        getProblemTitle(card, card.domain).toLowerCase().includes(searchLower) ||
         card.frontendId.includes(filterText)
     )
     .sort(compareCardsByLeetcodeId);
