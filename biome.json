@@ -134,7 +134,7 @@
                   {
                     "group": ["@/shared/storage", "**/shared/storage"],
                     "importNamePattern": "(replaceLearningDocument|writeGistConnection|removeGistConnection|writeSyncStatus|removeSyncStatus)",
-                    "message": "Use typed background messages for persisted writes."
+                    "message": "Use the background service for persisted writes."
                   }
                 ]
               }
@@ -166,7 +166,7 @@
                   {
                     "group": ["@/shared/storage", "**/shared/storage"],
                     "importNamePattern": "(replaceLearningDocument|writeGistConnection|removeGistConnection|writeSyncStatus|removeSyncStatus)",
-                    "message": "Use typed background messages for persisted writes."
+                    "message": "Use the background service for persisted writes."
                   }
                 ]
               }
