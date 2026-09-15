@@ -13,13 +13,15 @@ export function SettingsView() {
   const t = useI18n();
   return (
     <ViewLayout title={t.settings.title}>
-      <LanguageSection />
-      <AppearanceSection />
-      <EditorResetSection />
-      <ReviewSettingsSection />
+      <section className="mb-6 space-y-4 p-4 rounded-lg bg-secondary text-primary">
+        <LanguageSection />
+        <ReviewSettingsSection />
+        <AppearanceSection />
+        <EditorResetSection />
+        <LeetcodeCnSection />
+      </section>
       <GistSyncSection />
       <DataSection />
-      <LeetcodeCnSection />
       <AboutSection />
     </ViewLayout>
   );

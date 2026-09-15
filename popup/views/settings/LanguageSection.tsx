@@ -23,8 +23,7 @@ export function LanguageSection() {
   const selectedOption = LANGUAGE_OPTIONS.find((opt) => opt.code === settings.language);
 
   return (
-    <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">{t.settings.language.title}</h3>
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FaGlobe className="text-tertiary" />

@@ -8,8 +8,7 @@ export function LeetcodeCnSection() {
   if (granted !== false) return null;
 
   return (
-    <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-2">{t.settings.leetcodeCn.title}</h3>
+    <div className="space-y-4">
       <p className="text-sm text-tertiary mb-4">{t.settings.leetcodeCn.description}</p>
       <button
         type="button"

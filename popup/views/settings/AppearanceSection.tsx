@@ -15,8 +15,7 @@ export function AppearanceSection() {
   };
 
   return (
-    <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">{t.settings.appearance.title}</h3>
+    <div className="space-y-4">
       <div className="space-y-4">
         <Select
           className="flex items-center justify-between"
