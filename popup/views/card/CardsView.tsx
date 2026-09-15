@@ -8,7 +8,7 @@ import { useI18n } from '../../contexts/I18nContext';
 import { filterAndSortCards } from './card-list';
 import { CardListItem } from './components/CardListItem';
 
-export function CardView() {
+export function CardsView() {
   const t = useI18n();
   const { data: cards = [], isLoading } = useCardsQuery();
   const [filterText, setFilterText] = useState('');

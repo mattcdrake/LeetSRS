@@ -14,7 +14,7 @@ vi.mock('@/popup/queries/settings', async (importOriginal) => ({
 }));
 vi.mock('../components/BottomNav', () => ({ BottomNav: () => null }));
 vi.mock('../components/StreakCounter', () => ({ StreakCounter: () => null }));
-vi.mock('../views/card/CardView', () => ({ CardView: () => null }));
+vi.mock('../views/card/CardsView', () => ({ CardsView: () => null }));
 vi.mock('../views/home/ReviewQueue', () => ({ ReviewQueue: () => null }));
 vi.mock('../views/home/StatsBar', () => ({ StatsBar: () => null }));
 vi.mock('../views/settings/SettingsView', () => ({ SettingsView: () => null }));

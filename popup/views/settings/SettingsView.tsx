@@ -3,10 +3,10 @@ import { useI18n } from '../../contexts/I18nContext';
 import { AboutSection } from './AboutSection';
 import { AppearanceSection } from './AppearanceSection';
 import { DataSection } from './DataSection';
+import { EditorResetSection } from './EditorResetSection';
 import { GistSyncSection } from './GistSyncSection';
 import { LanguageSection } from './LanguageSection';
 import { LeetcodeCnSection } from './LeetcodeCnSection';
-import { ProblemAutoClearSection } from './ProblemAutoClearSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';
 
 export function SettingsView() {
@@ -15,7 +15,7 @@ export function SettingsView() {
     <ViewLayout title={t.settings.title}>
       <LanguageSection />
       <AppearanceSection />
-      <ProblemAutoClearSection />
+      <EditorResetSection />
       <ReviewSettingsSection />
       <GistSyncSection />
       <DataSection />
