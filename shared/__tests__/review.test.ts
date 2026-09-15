@@ -65,13 +65,13 @@ describe('review queue calculations', () => {
   });
 
   it.each([
-    [0, ['review', 'new-a', 'new-b', 'learning', 'relearning']],
-    [1, ['review', 'new-a', 'learning', 'relearning']],
+    [0, ['review', 'new-b', 'new-a', 'learning', 'relearning']],
+    [1, ['review', 'new-b', 'learning', 'relearning']],
     [2, ['review', 'learning', 'relearning']],
     [4, ['review', 'learning', 'relearning']],
   ])('limits only new cards after %i completions without modifying inputs', (completed, expected) => {
     const cards: readonly Card[] = Object.freeze([
-      dueCard('new-c', '2024-01-15T12:00:00'),
+      dueCard('new-c', '2024-01-15T11:00:00.001'),
       dueCard('new-b', '2024-01-15T11:00:00'),
       dueCard('new-a', '2024-01-15T11:00:00'),
       dueCard('relearning', '2024-01-15T13:00:00', State.Relearning),
