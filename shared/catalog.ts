@@ -23,7 +23,7 @@ function requestResult<T>(request: IDBRequest<T>): Promise<T> {
 }
 
 function openCatalog(): Promise<IDBDatabase> {
-  const request = indexedDB.open('leetsrs-catalog', 1);
+  const request = indexedDB.open('leetcode-catalog', 1);
   request.onupgradeneeded = () => {
     const questions = request.result.createObjectStore('questions', { keyPath: 'frontendId' });
     questions.createIndex('slug', 'slug', { unique: true });
