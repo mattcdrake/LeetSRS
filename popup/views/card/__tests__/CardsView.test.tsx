@@ -13,7 +13,7 @@ import { sendMessage } from '@/shared/messages';
 import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
-import { CardView } from '../CardView';
+import { CardsView } from '../CardsView';
 
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
@@ -25,7 +25,7 @@ const renderWithQueryClient = (component: React.ReactElement) => {
   return render(component, { wrapper });
 };
 
-describe('CardView', () => {
+describe('CardsView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   const seedCards = (cards: CardWithQuestion[]) => {
     setPopupLearningCardsQueryData(queryClient, cards);
@@ -49,7 +49,7 @@ describe('CardView', () => {
 
     seedCards(cards);
 
-    renderWithQueryClient(<CardView />);
+    renderWithQueryClient(<CardsView />);
 
     expect(screen.getByRole('link', { name: 'Open Two Sum on LeetCode' })).toHaveAttribute(
       'href',
@@ -75,7 +75,7 @@ describe('CardView', () => {
 
     seedCards(cards);
 
-    renderWithQueryClient(<CardView />);
+    renderWithQueryClient(<CardsView />);
 
     expect(screen.getByText('Two Sum')).toBeInTheDocument();
     expect(screen.getByText('Add Two Numbers')).toBeInTheDocument();

@@ -42,7 +42,7 @@ describe('whole-document Gist sync', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  it('saves an existing Gist connection and starts syncing without installation', async () => {
+  it('saves an existing Gist connection and starts syncing without watching connection changes', async () => {
     github.get.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } } });
 
     expect(await persistence.connectGist({ mode: 'existing', pat: 'new-token', gistId: 'new-gist' })).toEqual({
@@ -115,7 +115,7 @@ describe('whole-document Gist sync', () => {
     expect(github.get).not.toHaveBeenCalled();
   });
 
-  it('enables sync without installing connection observation and stops it when disabled', async () => {
+  it('enables sync without watching connection changes and stops it when disabled', async () => {
     await writeGistConnection({ ...connection, enabled: false });
     github.get.mockResolvedValue({ data: { files: {} } });
 

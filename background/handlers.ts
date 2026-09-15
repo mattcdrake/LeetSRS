@@ -14,11 +14,11 @@ import { initializeLearningDocument } from '@/background/legacy/learning-documen
 import {
   connectGist,
   getSyncStatus,
-  installPersistence,
   resetAllData,
   restoreBackup,
   setSyncEnabled,
   sync,
+  watchGistConnectionChanges,
 } from '@/background/persistence';
 import { getQuestionBySlug, initializeCatalog } from '@/shared/catalog';
 import { messagePayloadSchemas, onMessage } from '@/shared/messages';
@@ -114,7 +114,7 @@ export function startBackground() {
     messagePayloadSchemas.getGistSyncStatus.parse(data);
     return getSyncStatus();
   });
-  installPersistence(readyPromise);
+  watchGistConnectionChanges(readyPromise);
   storage.watch(STORAGE_KEYS.learningDocument, () => {
     void readyPromise.then(refreshBadge, () => {});
   });

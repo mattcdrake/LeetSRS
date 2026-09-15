@@ -42,7 +42,7 @@ function observeConnection(connection: GistSyncConfig | null): boolean {
   return true;
 }
 
-export function installPersistence(ready: Promise<void>): void {
+export function watchGistConnectionChanges(ready: Promise<void>): void {
   storage.watch<GistSyncConfig>(STORAGE_KEYS.gistConnection, (connection) => {
     if (observeConnection(connection)) {
       void ready.then(sync, () => {});
