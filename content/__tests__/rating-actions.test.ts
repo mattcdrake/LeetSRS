@@ -9,7 +9,7 @@ import { getRegisteredBackground } from '@/test/utils/background-service';
 
 import { createServiceMock } from '@/test/utils/service-mocks';
 
-vi.mock('@webext-core/proxy-service');
+vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 
 beforeEach(async () => {

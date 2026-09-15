@@ -18,7 +18,7 @@ import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQu
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useNoteQuery, useSaveNoteMutation } from '../notes';
 
-vi.mock('@webext-core/proxy-service');
+vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 
 const problem = buildProblem();
