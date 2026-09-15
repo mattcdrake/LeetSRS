@@ -120,7 +120,7 @@ describe('ReviewQueue', () => {
   const waitForInitialQueueRefresh = async () => {
     await waitFor(() => {
       // The storage observer schedules its initial fetch asynchronously.
-      expect(background.waitForInitialization).toHaveBeenCalledWith();
+      expect(storage.getItem).toHaveBeenCalled();
       expect(queryClient.isFetching()).toBe(0);
     });
   };

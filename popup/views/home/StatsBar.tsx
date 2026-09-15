@@ -1,5 +1,5 @@
 import { State } from 'ts-fsrs';
-import { useReviewQueueQuery } from '@/popup/queries/cards';
+import { useRawReviewQueueQuery } from '@/popup/queries/cards';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface StatItemProps {
@@ -24,7 +24,7 @@ function StatItem({ count, label, colorClass, testId }: StatItemProps) {
 
 export function StatsBar() {
   const t = useI18n();
-  const { data: cards = [] } = useReviewQueueQuery();
+  const { data: cards = [] } = useRawReviewQueueQuery();
 
   const stats = cards.reduce(
     (acc, card) => {

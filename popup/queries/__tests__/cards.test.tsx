@@ -19,7 +19,7 @@ import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useReviewQueueQuery } from '../cards';
+import { useCardsQuery, useRawReviewQueueQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
@@ -111,7 +111,12 @@ describe('card queries through the background service', () => {
       )
     );
     const view = renderHook(
-      () => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery(card.frontendId) }),
+      () => ({
+        cards: useCardsQuery(),
+        queue: useReviewQueueQuery(),
+        rawQueue: useRawReviewQueueQuery(),
+        note: useNoteQuery(card.frontendId),
+      }),
       {
         wrapper: createPopupTestWrapper().wrapper,
       }
@@ -120,8 +125,49 @@ describe('card queries through the background service', () => {
     await waitFor(() => expect(view.result.current.cards.error?.message).toBe(error));
     expect(view.result.current.queue.error?.message).toBe(error);
     expect(view.result.current.note.data).toBe('Keep my solution');
+    expect(view.result.current.rawQueue.data?.map((card) => card.frontendId)).toContain(problem.frontendId);
+    expect(view.result.current.rawQueue.isSuccess).toBe(true);
     const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
     await waitFor(() => expect(settings.result.current.data.language).toBe('zh-CN'));
+  });
+
+  it('loads new catalog references and rejects metadata from a previous domain', async () => {
+    await background.importData(JSON.stringify(buildLearningDocument({ cards: { 1: createMockCard(State.Review) } })));
+    const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+    await waitFor(() => expect(view.result.current.data?.[0].title).toBe('Two Sum'));
+    const card = createMockCard(State.Review, { frontendId: '3' });
+    await act(() => background.importData(JSON.stringify(buildLearningDocument({ cards: { 3: card } }))));
+    await waitFor(() => expect(view.result.current.data).toEqual([{ ...testCatalog[2], ...card }]));
+    await act(() =>
+      background.importData(
+        JSON.stringify(
+          buildLearningDocument({
+            cards: { 3: { ...card, domain: 'leetcode.cn' } },
+          })
+        )
+      )
+    );
+    await waitFor(() => expect(view.result.current.error?.message).toBe('Unknown problem: 3 on leetcode.cn'));
+    expect(view.result.current.data).toBeUndefined();
+  });
+
+  it('refreshes learning data using cached catalog metadata after a save', async () => {
+    const card = createMockCard(State.Review, { note: 'Original' });
+    await background.importData(JSON.stringify(buildLearningDocument({ cards: { 1: card } })));
+    const view = renderHook(() => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery('1') }), {
+      wrapper: createPopupTestWrapper().wrapper,
+    });
+    await waitFor(() => expect(view.result.current.cards.data?.[0].note).toBe('Original'));
+    const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementation(() => {
+      throw new Error('Catalog unavailable');
+    });
+    await act(() => background.saveNote('1', 'Updated'));
+    await waitFor(() => {
+      expect(view.result.current.note.data).toBe('Updated');
+      expect(view.result.current.cards.data?.[0].note).toBe('Updated');
+      expect(view.result.current.queue.data?.[0].note).toBe('Updated');
+    });
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it.each([State.Learning, State.Relearning])(

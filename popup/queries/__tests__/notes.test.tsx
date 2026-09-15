@@ -14,9 +14,16 @@ import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useCardsQuery, useDelayCardMutation, useRemoveCardMutation, useReviewQueueQuery } from '../cards';
+import {
+  useCardsQuery,
+  useDelayCardMutation,
+  useRawReviewQueueQuery,
+  useRemoveCardMutation,
+  useReviewQueueQuery,
+} from '../cards';
 import { useImportDataMutation, useResetAllDataMutation } from '../data';
 import { useNoteQuery, useSaveNoteMutation } from '../notes';
+import { useSettingsQuery } from '../settings';
 
 vi.mock('@webext-core/proxy-service');
 vi.mock('@/shared/background-service');
@@ -68,6 +75,8 @@ describe('note and card query coherence', () => {
       () => ({
         note: useNoteQuery(problem.frontendId),
         cards: useCardsQuery(),
+        queue: useRawReviewQueueQuery(),
+        settings: useSettingsQuery(),
         remove: useRemoveCardMutation(),
         import: useImportDataMutation(),
         reset: useResetAllDataMutation(),
@@ -83,13 +92,18 @@ describe('note and card query coherence', () => {
       if (operation === 'import')
         await result.current.import.mutateAsync(
           JSON.stringify({
-            ...buildLearningDocument({ cards: { [problem.frontendId]: replacement } }),
+            ...buildLearningDocument({
+              cards: { [problem.frontendId]: replacement },
+              settings: { maxNewCardsPerDay: 0 },
+            }),
           })
         );
     });
     await waitFor(() => {
       expect(result.current.note.data).toBeNull();
       expect(result.current.cards.data).toEqual(operation === 'import' ? [replacement] : []);
+      expect(result.current.queue.data).toEqual([]);
+      if (operation === 'import') expect(result.current.settings.data.maxNewCardsPerDay).toBe(0);
     });
   });
 });

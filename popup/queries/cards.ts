@@ -1,53 +1,51 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
-import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import type { Card, RateCardInput } from '@/shared/models';
+import type { CatalogProblem } from '@/shared/catalog';
+import type { Card, LearningDocument, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
 import { usePopupClock } from '../hooks/usePopupClock';
-import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
+import { catalogQueryOptions } from './catalog';
+import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export type CardWithProblem = Card & CatalogProblem;
 
-export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
-
-const cardsQueryOptions = queryOptions({
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  queryKey: cardsQueryKey,
-  queryFn: async () => {
-    const snapshot = await readPopupLearningDocument();
-    await background.waitForInitialization();
-    const savedCards = Object.values(snapshot.document.cards);
-    const problems = await getProblemsByFrontendIds(savedCards);
-    const cards = savedCards.map((card, index): CardWithProblem => {
-      const problem = problems[index];
-      if (!problem) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
-      return { ...problem, ...card };
-    });
-    return { ...snapshot, cards };
-  },
-});
+function useEnrichedCardsQuery(selectCards: (document: LearningDocument) => Card[]) {
+  const documentQuery = useQuery(learningDocumentQueryOptions);
+  const document = documentQuery.data?.document;
+  const catalogQuery = useQuery({
+    ...catalogQueryOptions(Object.values(document?.cards ?? {})),
+    enabled: document !== undefined,
+    select: (problems) =>
+      document ? selectCards(document).map((card): CardWithProblem => ({ ...problems[card.frontendId], ...card })) : [],
+  });
+  return {
+    data: document ? catalogQuery.data : undefined,
+    error: documentQuery.error ?? catalogQuery.error,
+    isLoading: documentQuery.isLoading || (document !== undefined && catalogQuery.isLoading),
+    isError: documentQuery.isError || catalogQuery.isError,
+    isSuccess: documentQuery.isSuccess && catalogQuery.isSuccess,
+    refetch: async () => {
+      await documentQuery.refetch();
+      await catalogQuery.refetch();
+    },
+  };
+}
 
 export function useCardsQuery() {
+  return useEnrichedCardsQuery((document) => Object.values(document.cards));
+}
+
+export function useRawReviewQueueQuery() {
+  const now = usePopupClock();
   return useQuery({
-    ...cardsQueryOptions,
-    select: ({ cards }) => cards,
+    ...learningDocumentQueryOptions,
+    select: ({ document }) => buildReviewQueue(document, new Date(now)),
   });
 }
 
 export function useReviewQueueQuery() {
   const now = usePopupClock();
-  return useQuery({
-    ...cardsQueryOptions,
-    select: ({ document, cards }) => {
-      const byId = new Map(cards.map((card) => [card.frontendId, card]));
-      return buildReviewQueue(document, new Date(now)).map((card) => {
-        const detailed = byId.get(card.frontendId);
-        if (!detailed) throw new Error(`Missing problem details: ${card.frontendId}`);
-        return detailed;
-      });
-    },
-  });
+  return useEnrichedCardsQuery((document) => buildReviewQueue(document, new Date(now)));
 }
 
 function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {
