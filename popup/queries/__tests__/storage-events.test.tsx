@@ -37,7 +37,7 @@ vi.mock('octokit', () => ({
     return { rest: { gists: github } };
   }),
 }));
-vi.mock('@webext-core/proxy-service');
+vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 const service = createServiceMock(background);
 beforeEach(() => {

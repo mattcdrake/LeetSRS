@@ -23,7 +23,7 @@ import { useCardsQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
-vi.mock('@webext-core/proxy-service');
+vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 
 it('loads saved cards with one catalog batch', async () => {

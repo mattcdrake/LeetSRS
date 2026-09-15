@@ -11,7 +11,7 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { getSettings } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
 
-vi.mock('@webext-core/proxy-service');
+vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 
 vi.mock('octokit', () => ({
   Octokit: vi.fn(() => {
