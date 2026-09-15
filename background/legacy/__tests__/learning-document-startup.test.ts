@@ -124,7 +124,7 @@ describe('learning document startup', () => {
       buildLearningDocument({
         ...converted,
         settings: {
-          language: 'de',
+          language: 'en',
           ...(schemaVersion < 7 && { resetEditorOnReviewQueue: false }),
         },
         dataUpdatedAt: backup.dataUpdatedAt,
@@ -214,7 +214,7 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
         cards: converted.cards,
-        settings: { language: 'de', resetEditorOnReviewQueue: false },
+        settings: { language: 'en', resetEditorOnReviewQueue: false },
       })
     );
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: null, enabled: false });

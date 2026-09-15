@@ -4,7 +4,8 @@ import { type Translations, translations } from '@/shared/i18n/index';
 import { detectBrowserLanguage, languageSchema } from '@/shared/settings';
 import { STORAGE_KEYS } from '@/shared/storage';
 
-const documentLanguageSchema = z.object({ settings: z.object({ language: languageSchema.optional() }) });
+// Content can read an old preference before background startup migrates the document.
+const documentLanguageSchema = z.object({ settings: z.object({ language: languageSchema.catch('en').optional() }) });
 
 function resolve(value: unknown): Translations {
   const language = documentLanguageSchema.safeParse(value).data?.settings.language;

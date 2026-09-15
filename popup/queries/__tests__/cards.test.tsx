@@ -66,7 +66,7 @@ it('keeps popup and badge queues consistent without reading browser language', a
   fakeBrowser.reset();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-  const languages = vi.fn(() => ['pl']);
+  const languages = vi.fn(() => ['en']);
   vi.stubGlobal('navigator', {
     get languages() {
       return languages();
@@ -118,7 +118,7 @@ describe('card queries through JSON messaging and background handlers', () => {
       jsonData: JSON.stringify(
         buildLearningDocument({
           cards: { 1: createMockCard(State.Review), [card.frontendId]: card },
-          settings: { language: 'de' },
+          settings: { language: 'zh-CN' },
         })
       ),
     });
@@ -133,7 +133,7 @@ describe('card queries through JSON messaging and background handlers', () => {
     expect(view.result.current.queue.error?.message).toBe(error);
     expect(view.result.current.note.data).toBe('Keep my solution');
     const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-    await waitFor(() => expect(settings.result.current.data.language).toBe('de'));
+    await waitFor(() => expect(settings.result.current.data.language).toBe('zh-CN'));
   });
 
   it.each([State.Learning, State.Relearning])(

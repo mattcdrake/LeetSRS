@@ -99,7 +99,7 @@ describe('document transfers through background commands', () => {
   it.each([false, true])(
     'creates a Gist with one sync and no learning edit (delayed write: %s)',
     async (delayedWrite) => {
-      await dispatch('updateSettings', { changes: { language: 'de' } });
+      await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
       const before = await readLearningDocument();
       github.create.mockResolvedValueOnce({ data: { id: 'created-gist' } });
       github.get.mockResolvedValue({

@@ -8,10 +8,7 @@ const LANGUAGE_OPTIONS: Array<{
   code: Language;
   nativeName: string;
 }> = [
-  { code: 'de', nativeName: 'Deutsch' },
   { code: 'en', nativeName: 'English' },
-  { code: 'hi', nativeName: 'हिन्दी' },
-  { code: 'pl', nativeName: 'Polski' },
   { code: 'zh-CN', nativeName: '简体中文' },
 ];
 

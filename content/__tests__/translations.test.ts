@@ -28,19 +28,19 @@ describe('stored translations from the learning document', () => {
 
   it('loads once, follows language changes and removal, and stops after unsubscribe', async () => {
     await storage.setItem(key, storedValue('en'));
-    vi.stubGlobal('navigator', { languages: ['de'] });
+    vi.stubGlobal('navigator', { languages: ['zh-CN'] });
     const onChange = vi.fn();
     const onError = vi.fn();
     const getItem = vi.spyOn(storage, 'getItem');
     const stop = watch(onChange, onError);
     try {
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.en));
-      await storage.setItem(key, storedValue('pl'));
-      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.pl));
+      await storage.setItem(key, storedValue('zh-CN'));
+      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations['zh-CN']));
       await storage.setItem(key, storedValue('toString'));
-      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
+      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.en));
       await storage.removeItem(key);
-      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.de));
+      await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations['zh-CN']));
       expect(getItem).toHaveBeenCalledOnce();
       expect(onError).not.toHaveBeenCalled();
     } finally {
@@ -57,8 +57,8 @@ describe('stored translations from the learning document', () => {
     const onChange = vi.fn();
     const stop = watch(onChange, vi.fn());
     try {
-      await storage.setItem(key, storedValue('pl'));
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations.pl));
+      await storage.setItem(key, storedValue('zh-CN'));
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations['zh-CN']));
       initial.resolve(storedValue('en'));
       await initial.promise;
       expect(onChange).toHaveBeenCalledOnce();
@@ -75,8 +75,8 @@ describe('stored translations from the learning document', () => {
     const stop = watch(onChange, onError);
     try {
       await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(error));
-      await storage.setItem(key, storedValue('pl'));
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations.pl));
+      await storage.setItem(key, storedValue('zh-CN'));
+      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations['zh-CN']));
     } finally {
       stop();
     }

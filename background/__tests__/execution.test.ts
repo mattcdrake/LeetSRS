@@ -29,7 +29,7 @@ describe('registered background execution', () => {
   it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
     await dispatch('rateCard', { input: { ...problem, rating: 3 } });
     await dispatch('saveNote', { frontendId: problem.frontendId, text: 'Reset me' });
-    await dispatch('updateSettings', { changes: { language: 'de' } });
+    await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
     await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret', gistId: 'gist', enabled: true } });
     const staleLocal = {
       'leetsrs:cards': { stale: 'invalid leftover' },

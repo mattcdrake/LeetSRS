@@ -142,19 +142,19 @@ describe('document startup through registered background commands', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       startBackground();
       if (stage === 'cleanup') {
-        await dispatch('updateSettings', { changes: { language: 'pl' } });
+        await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
       } else {
         await expect(dispatch('waitForInitialization')).rejects.toBe(failure);
         expect(await fakeBrowser.storage.local.get(null)).toEqual(legacy);
       }
       startBackground();
       await dispatch('waitForInitialization');
-      expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'pl' : 'de' });
+      expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'zh-CN' : 'en' });
       expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: 'gist', enabled: true });
       if (stage !== 'cleanup') {
         expect(await readLearningDocument()).toEqual(
           buildLearningDocument({
-            settings: { language: 'de', resetEditorOnReviewQueue: false },
+            settings: { language: 'en', resetEditorOnReviewQueue: false },
             dataUpdatedAt: legacy['leetsrs:dataUpdatedAt'],
           })
         );

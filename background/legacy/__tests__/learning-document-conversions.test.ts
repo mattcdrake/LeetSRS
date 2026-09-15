@@ -11,6 +11,18 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 const FIRST_FLAT_DOCUMENT_VERSION = 6;
 
 describe('convertLearningDocument', () => {
+  it('migrates a removed language to English without changing learning data', () => {
+    const { backup, converted } = validLegacyBackup();
+    const expected = buildLearningDocument({
+      ...converted,
+      dataUpdatedAt: backup.dataUpdatedAt,
+      settings: { language: 'en', theme: 'dark' },
+    });
+    const input = { ...expected, schemaVersion: 10, settings: { ...expected.settings, language: 'de' } };
+
+    expect(convertLearningDocument(input)).toEqual(expected);
+  });
+
   it('rekeys v9 cards by frontend ID, retaining learning data and discarding invalid cards and metadata', () => {
     const { backup } = validLegacyBackup();
     const original = { ...backup.data.cards['two-sum'], domain: 'leetcode.cn', note: 'Keep my approach' };
@@ -29,7 +41,7 @@ describe('convertLearningDocument', () => {
     };
     const expected = {
       ...input,
-      schemaVersion: 10,
+      schemaVersion: LEARNING_DOCUMENT_VERSION,
       cards: {
         '1': {
           frontendId: '1',
@@ -134,7 +146,7 @@ describe('convertLearningDocument', () => {
       const { backup, converted, legacyConverted } = validLegacyBackup();
       const { domain: _domain, ...legacyCard } = backup.data.cards['two-sum'];
       const data = {
-        ...(schemaVersion < 4 ? backup.data : schemaVersion < LEARNING_DOCUMENT_VERSION ? legacyConverted : converted),
+        ...(schemaVersion < 4 ? backup.data : schemaVersion < 10 ? legacyConverted : converted),
         ...(schemaVersion === 0 && { cards: { ...backup.data.cards, 'two-sum': legacyCard } }),
         settings: {
           theme: 'light',
