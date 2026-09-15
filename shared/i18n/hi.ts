@@ -139,7 +139,7 @@ const hi: Translations = {
       title: 'रिव्यु सेटिंग्स',
       newCardsPerDay: 'प्रति दिन नए कार्ड',
     },
-    problemAutoClear: {
+    editorReset: {
       title: 'प्रश्न संपादक रीसेट',
       description: 'केवल समीक्षा कतार से प्रश्न खोलते समय कोड रीसेट करें।',
       resetEditorOnReviewQueue: 'समीक्षा कतार से खोलने पर संपादक रीसेट करें',

@@ -140,7 +140,7 @@ const zhCN: Translations = {
       newCardsPerDay: '每日新卡片数量',
     },
 
-    problemAutoClear: {
+    editorReset: {
       title: '题目编辑器重置',
       description: '仅在从复习队列打开题目时重置代码。',
       resetEditorOnReviewQueue: '从复习队列打开时重置编辑器',
