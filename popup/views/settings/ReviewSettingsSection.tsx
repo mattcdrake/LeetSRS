@@ -8,7 +8,7 @@ export function ReviewSettingsSection() {
   const t = useI18n();
   const { data: settings } = useSettingsQuery();
   const updateSettingsMutation = useUpdateSettingsMutation();
-  const draft = useDraftUntilSaved('maxNewCardsPerDay', settings.maxNewCardsPerDay.toString());
+  const draft = useDraftUntilSaved(settings.maxNewCardsPerDay.toString());
   const inputValue = draft.value;
 
   const handleBlur = () => {
