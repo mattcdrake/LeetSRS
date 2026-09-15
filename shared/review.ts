@@ -3,12 +3,8 @@ import { formatLocalDate } from '@/shared/calendar';
 import type { Card, LearningDocument } from '@/shared/models';
 import { DEFAULT_SETTINGS } from '@/shared/settings';
 
-export function isDue(card: Card, now: Date): boolean {
-  return card.fsrs.due <= now.getTime();
-}
-
 export function buildReviewQueue(document: LearningDocument, now: Date): Card[] {
-  const eligibleCards = Object.values(document.cards).filter((card) => !card.paused && isDue(card, now));
+  const eligibleCards = Object.values(document.cards).filter((card) => !card.paused && card.fsrs.due <= now.getTime());
   const maxNewCardsPerDay = document.settings.maxNewCardsPerDay ?? DEFAULT_SETTINGS.maxNewCardsPerDay;
   const newCardsCompletedToday =
     document.reviewActivity?.date === formatLocalDate(now) ? document.reviewActivity.newCards : 0;

@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { settingsSchema } from '@/shared/settings';
 
 export const ratingSchema = z.literal([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy]) satisfies z.ZodType<Grade>;
-export type ReviewRating = z.infer<typeof ratingSchema>;
 
 export const NOTES_MAX_LENGTH = 500;
 export const noteTextSchema = z.string().max(NOTES_MAX_LENGTH, {

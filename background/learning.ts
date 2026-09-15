@@ -36,7 +36,6 @@ export async function addCard(problem: ProblemReference): Promise<void> {
   }
 
   document.cards[problem.frontendId] = createCard(problem, now);
-  requireCard(document, problem.frontendId);
   await saveEdit(document, now);
 }
 
@@ -82,7 +81,6 @@ export async function rateCard(input: RateCardInput): Promise<void> {
 
   document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
 
-  requireCard(document, card.frontendId);
   await saveEdit(document, now);
 }
 
