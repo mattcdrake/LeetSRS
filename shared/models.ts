@@ -52,7 +52,7 @@ export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratin
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
 export type FsrsCard = z.infer<typeof fsrsCardSchema>;
 export type Card = z.infer<typeof cardSchema>;
-export const LEARNING_DOCUMENT_VERSION = 10;
+export const LEARNING_DOCUMENT_VERSION = 11;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
 const reviewDateSchema = z

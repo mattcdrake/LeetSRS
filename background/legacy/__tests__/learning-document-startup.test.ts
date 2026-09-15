@@ -22,6 +22,27 @@ vi.mock('@/shared/messages', () => ({
 describe('learning document startup', () => {
   beforeEach(() => fakeBrowser.reset());
 
+  it.each(['de', 'hi', 'pl'])('persists the English fallback for a saved %s preference once', async (language) => {
+    const { backup, converted } = validLegacyBackup();
+    const expected = buildLearningDocument({
+      ...converted,
+      dataUpdatedAt: backup.dataUpdatedAt,
+      settings: { language: 'en', theme: 'dark' },
+    });
+    await storage.setItem('local:leetsrs:learningDocument', {
+      ...expected,
+      schemaVersion: 10,
+      settings: { ...expected.settings, language },
+    });
+    const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
+
+    await initializeLearningDocument();
+    await initializeLearningDocument();
+
+    expect(await readLearningDocument()).toEqual(expected);
+    expect(writes).toHaveBeenCalledOnce();
+  });
+
   it.each(['missing', 'null'])('initializes an unedited installation with a %s document', async (presence) => {
     if (presence === 'null') {
       // The fake browser drops null values; expose raw null at the storage boundary.
@@ -124,7 +145,7 @@ describe('learning document startup', () => {
       buildLearningDocument({
         ...converted,
         settings: {
-          language: 'de',
+          language: 'en',
           ...(schemaVersion < 7 && { resetEditorOnReviewQueue: false }),
         },
         dataUpdatedAt: backup.dataUpdatedAt,
@@ -214,7 +235,7 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(
       buildLearningDocument({
         cards: converted.cards,
-        settings: { language: 'de', resetEditorOnReviewQueue: false },
+        settings: { language: 'en', resetEditorOnReviewQueue: false },
       })
     );
     expect(await readGistConnection()).toEqual({ pat: 'secret', gistId: null, enabled: false });

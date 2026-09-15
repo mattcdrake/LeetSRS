@@ -94,6 +94,12 @@ export function convertLearningDocument(input: unknown): LearningDocument {
     );
   }
 
+  if (schemaVersion < 11) {
+    if (settings.language === 'de' || settings.language === 'hi' || settings.language === 'pl') {
+      settings.language = 'en';
+    }
+  }
+
   return learningDocumentSchema.parse({
     ...data,
     schemaVersion: LEARNING_DOCUMENT_VERSION,

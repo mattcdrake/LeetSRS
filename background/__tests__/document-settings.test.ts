@@ -30,16 +30,16 @@ describe('document settings through background commands', () => {
   });
 
   it('resolves defaults and browser language without storing them or reading stale settings', async () => {
-    vi.stubGlobal('navigator', { languages: ['pl'] });
+    vi.stubGlobal('navigator', { languages: ['en'] });
     const document = buildLearningDocument({ settings: { theme: 'dark' } });
     await replaceLearningDocument(document);
     await storage.setItem('sync:leetsrs:theme', 'light');
-    await storage.setItem('sync:leetsrs:language', 'de');
+    await storage.setItem('sync:leetsrs:language', 'zh-CN');
     background.main();
 
-    expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'pl' }));
-    vi.stubGlobal('navigator', { languages: ['de'] });
-    expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'de' }));
+    expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'en' }));
+    vi.stubGlobal('navigator', { languages: ['zh-CN'] });
+    expect(await getSettings()).toEqual(buildSettings({ theme: 'dark', language: 'zh-CN' }));
     expect(await readLearningDocument()).toEqual(document);
   });
 
@@ -83,7 +83,7 @@ describe('document settings through background commands', () => {
         cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
         reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
         dataUpdatedAt: '2024-01-15T10:00:00.000Z',
-        settings: { language: 'de' as const, theme: 'dark' as const },
+        settings: { language: 'zh-CN' as const, theme: 'dark' as const },
       });
       await replaceLearningDocument(document);
       background.main();
@@ -108,8 +108,8 @@ describe('document settings through background commands', () => {
       expect(writes).toHaveBeenCalledTimes(failure === 'write' ? 1 : 0);
 
       await dispatch('updateSettings', { changes: { theme: 'light' } });
-      expect(await getSettings()).toEqual(buildSettings({ theme: 'light', language: 'de' }));
-      expect((await readLearningDocument())?.settings).toEqual({ theme: 'light', language: 'de' });
+      expect(await getSettings()).toEqual(buildSettings({ theme: 'light', language: 'zh-CN' }));
+      expect((await readLearningDocument())?.settings).toEqual({ theme: 'light', language: 'zh-CN' });
     }
   );
 
@@ -117,7 +117,7 @@ describe('document settings through background commands', () => {
     background.main();
     await dispatch('waitForInitialization');
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    const changes = Object.assign(Object.create({ language: 'de' }), { theme: undefined, unknown: 1 });
+    const changes = Object.assign(Object.create({ language: 'zh-CN' }), { theme: undefined, unknown: 1 });
     const before = await readLearningDocument();
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Number.NaN);
@@ -136,9 +136,9 @@ describe('document settings through background commands', () => {
   });
 
   it('resolves each read from its captured document and follows replacement without retained overrides', async () => {
-    vi.stubGlobal('navigator', { languages: ['pl'] });
+    vi.stubGlobal('navigator', { languages: ['en'] });
     const document = buildLearningDocument({
-      settings: { language: 'de' as const, theme: 'dark' as const },
+      settings: { language: 'zh-CN' as const, theme: 'dark' as const },
     });
     await replaceLearningDocument(document);
     background.main();
@@ -154,7 +154,7 @@ describe('document settings through background commands', () => {
     await started.promise;
     await replaceLearningDocument(buildLearningDocument());
     initial.resolve(document);
-    expect(await pending).toEqual(buildSettings({ language: 'de', theme: 'dark' }));
-    expect(await getSettings()).toEqual(buildSettings({ language: 'pl' }));
+    expect(await pending).toEqual(buildSettings({ language: 'zh-CN', theme: 'dark' }));
+    expect(await getSettings()).toEqual(buildSettings({ language: 'en' }));
   });
 });

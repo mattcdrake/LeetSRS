@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { LearningDocument } from '@/shared/models';
 
-export const SUPPORTED_LANGUAGES = ['de', 'en', 'hi', 'pl', 'zh-CN'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'zh-CN'] as const;
 
 export const languageSchema = z.enum(SUPPORTED_LANGUAGES, {
   error: (issue) =>

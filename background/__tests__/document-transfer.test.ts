@@ -34,6 +34,39 @@ beforeEach(async () => {
 });
 
 describe('document transfers through background commands', () => {
+  it.each(['file', 'Gist'])(
+    'migrates a removed language from a v10 %s without losing learning data',
+    async (source) => {
+      const { converted } = validLegacyBackup();
+      const expected = buildLearningDocument({
+        ...converted,
+        settings: { language: 'en', theme: 'dark' },
+        dataUpdatedAt: '2099-01-01T00:00:00.000Z',
+      });
+      const jsonData = JSON.stringify({
+        ...expected,
+        schemaVersion: 10,
+        settings: { ...expected.settings, language: 'de' },
+      });
+
+      if (source === 'file') {
+        await dispatch('importData', { jsonData });
+      } else {
+        github.get.mockResolvedValueOnce({ data: { files: { 'leetsrs-backup.json': { content: jsonData } } } });
+        await dispatch('setGistSyncEnabled', { enabled: true });
+        await vi.waitFor(async () =>
+          expect(await dispatch('getGistSyncStatus')).toMatchObject({
+            lastSyncDirection: 'pull',
+            syncInProgress: false,
+          })
+        );
+      }
+
+      expect(await readLearningDocument()).toEqual(expected);
+      expect(await getSettings()).toMatchObject({ language: 'en', theme: 'dark' });
+    }
+  );
+
   it('replaces the whole document from a file without replacing the Gist connection', async () => {
     await dispatch('addCard', { problem: buildProblem() });
     await dispatch('saveNote', { frontendId: '1', text: 'Omitted from replacement' });
@@ -99,7 +132,7 @@ describe('document transfers through background commands', () => {
   it.each([false, true])(
     'creates a Gist with one sync and no learning edit (delayed write: %s)',
     async (delayedWrite) => {
-      await dispatch('updateSettings', { changes: { language: 'de' } });
+      await dispatch('updateSettings', { changes: { language: 'zh-CN' } });
       const before = await readLearningDocument();
       github.create.mockResolvedValueOnce({ data: { id: 'created-gist' } });
       github.get.mockResolvedValue({

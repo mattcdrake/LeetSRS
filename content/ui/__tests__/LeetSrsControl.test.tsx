@@ -53,8 +53,8 @@ it('updates an open menu when stored language changes without resubscribing on c
   const { button, unmount } = setup();
   fireEvent.click(button);
   const onChange = vi.mocked(watchDocumentTranslations).mock.calls[0][0];
-  act(() => onChange(translations.pl));
-  fireEvent.click(screen.getByRole('button', { name: translations.pl.ratings[Rating.Good] }));
+  act(() => onChange(translations['zh-CN']));
+  fireEvent.click(screen.getByRole('button', { name: translations['zh-CN'].ratings[Rating.Good] }));
   fireEvent.click(button);
   expect(watchDocumentTranslations).toHaveBeenCalledOnce();
   unmount();
