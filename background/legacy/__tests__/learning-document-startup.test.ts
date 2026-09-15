@@ -41,9 +41,9 @@ describe('learning document startup', () => {
   });
 
   it.each([undefined, 3, 5])('preserves an installation at version %s', async (version) => {
-    const { backup, converted } = validLegacyBackup();
+    const { backup, converted, legacyConverted } = validLegacyBackup();
     const schemaVersion = version ?? 0;
-    const cards = structuredClone(schemaVersion < 4 ? backup.data.cards : converted.cards);
+    const cards = structuredClone(schemaVersion < 4 ? backup.data.cards : legacyConverted.cards);
     if (schemaVersion === 0) {
       Reflect.deleteProperty(cards['two-sum'], 'domain');
     }
@@ -204,8 +204,8 @@ describe('learning document startup', () => {
   });
 
   it.each(['local', 'sync'] as const)('keeps the saved document authoritative after %s cleanup fails', async (area) => {
-    const { converted } = validLegacyBackup();
-    await fakeBrowser.storage.local.set({ 'leetsrs:cards': converted.cards, 'leetsrs:schemaVersion': 5 });
+    const { converted, legacyConverted } = validLegacyBackup();
+    await fakeBrowser.storage.local.set({ 'leetsrs:cards': legacyConverted.cards, 'leetsrs:schemaVersion': 5 });
     await fakeBrowser.storage.sync.set({ 'leetsrs:language': 'de', 'leetsrs:githubPat': 'secret' });
     vi.spyOn(fakeBrowser.storage[area], 'remove').mockRejectedValueOnce(new Error('Cleanup unavailable'));
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -229,7 +229,6 @@ describe('learning document startup', () => {
   });
 
   it.each([
-    ['local', 'notes:valid-com', { text: 42 }],
     ['sync', 'theme', 'invalid'],
     ['sync', 'gistConnection', {}],
   ])('rejects malformed %s %s before any writes', async (area, key, value) => {

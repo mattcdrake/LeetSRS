@@ -5,14 +5,14 @@ import { useTheme } from '@/popup/hooks/useTheme';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { bounceButton } from '@/popup/styles';
 import { authorizeEditorReset, getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import type { Card } from '@/shared/models';
+import type { CardWithProblem } from '@/shared/models';
 import { ratingSchema } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
-  card: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty' | 'domain'>;
+  card: Pick<CardWithProblem, 'slug' | 'frontendId' | 'name' | 'difficulty' | 'domain'>;
   onRate: (rating: Grade) => void;
   isProcessing?: boolean;
 };
@@ -28,7 +28,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
   return (
     <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-secondary">#{card.leetcodeId}</span>
+        <span className="text-sm font-semibold text-secondary">#{card.frontendId}</span>
         <span className="text-xs px-2 py-1 rounded text-white" style={{ backgroundColor: difficultyColor }}>
           {card.difficulty}
         </span>

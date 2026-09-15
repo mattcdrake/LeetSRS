@@ -4,16 +4,14 @@ import { sendMessage } from '@/shared/messages';
 
 export async function rateCurrentProblem(rating: Grade) {
   const problem = await getCurrentProblem();
-  if (!problem) return;
 
   await sendMessage('rateCard', {
-    input: { ...problem, rating },
+    input: { frontendId: problem.frontendId, domain: problem.domain, rating },
   });
 }
 
 export async function addCurrentProblem() {
   const problem = await getCurrentProblem();
-  if (!problem) return;
 
-  await sendMessage('addCard', { problem });
+  await sendMessage('addCard', { problem: { frontendId: problem.frontendId, domain: problem.domain } });
 }

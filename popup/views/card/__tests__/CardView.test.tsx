@@ -1,3 +1,4 @@
+import { initializeCatalog } from '@/shared/catalog';
 import { setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
@@ -8,8 +9,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/shared/messages';
-import type { Card } from '@/shared/models';
-import { createMockCard } from '@/test/utils/card-mocks';
+import type { CardWithProblem } from '@/shared/models';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createTestWrapper } from '@/test/utils/test-wrapper';
 import { CardView } from '../CardView';
@@ -26,7 +27,7 @@ const renderWithQueryClient = (component: React.ReactElement) => {
 
 describe('CardView', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
-  const seedCards = (cards: Card[]) => {
+  const seedCards = (cards: CardWithProblem[]) => {
     setPopupLearningCardsQueryData(queryClient, cards);
   };
 
@@ -37,8 +38,8 @@ describe('CardView', () => {
 
   it('should link cards to their problem on the stored LeetCode domain', () => {
     const cards = [
-      createMockCard(State.New, { name: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),
-      createMockCard(State.New, { name: 'Chinese Problem', slug: 'chinese-problem', domain: 'leetcode.cn' }),
+      createMockCardWithProblem(State.New, { name: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),
+      createMockCardWithProblem(State.New, { name: 'Chinese Problem', slug: 'chinese-problem', domain: 'leetcode.cn' }),
     ];
 
     seedCards(cards);
@@ -62,9 +63,9 @@ describe('CardView', () => {
 
   it('should filter cards, show no matches, and restore all cards when cleared', () => {
     const cards = [
-      createMockCard(State.New, { name: 'Two Sum', leetcodeId: '1' }),
-      createMockCard(State.New, { name: 'Add Two Numbers', leetcodeId: '2' }),
-      createMockCard(State.New, { name: 'Longest Substring', leetcodeId: '3' }),
+      createMockCardWithProblem(State.New, { name: 'Two Sum', frontendId: '1' }),
+      createMockCardWithProblem(State.New, { name: 'Add Two Numbers', frontendId: '2' }),
+      createMockCardWithProblem(State.New, { name: 'Longest Substring', frontendId: '3' }),
     ];
 
     seedCards(cards);
@@ -109,3 +110,5 @@ describe('CardView', () => {
     expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
   });
 });
+
+beforeEach(initializeCatalog);

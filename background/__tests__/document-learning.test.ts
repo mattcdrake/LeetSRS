@@ -57,7 +57,7 @@ describe('document learning through background commands', () => {
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
     await expect(pending).resolves.toBeUndefined();
-    const card = requireDefined((await readLearningDocument()).cards['two-sum']);
+    const card = requireDefined((await readLearningDocument()).cards['1']);
 
     expect(card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
     expect(card.fsrs).toMatchObject({
@@ -75,7 +75,7 @@ describe('document learning through background commands', () => {
     });
     expect(await readLearningDocument()).toEqual({
       ...before,
-      cards: { [card.slug]: card },
+      cards: { [card.frontendId]: card },
       reviewActivity: stats,
       dataUpdatedAt: new Date().toISOString(),
     });
@@ -86,7 +86,7 @@ describe('document learning through background commands', () => {
 
   it('preserves card identity and unrelated data through card and note edits', async () => {
     const original = buildLearningDocument({
-      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
       reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
       settings: { badgeEnabled: false, theme: 'dark' },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
@@ -94,9 +94,9 @@ describe('document learning through background commands', () => {
     await replaceLearningDocument(original);
     const others = Object.values(original.cards);
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    const problem = buildProblem({ slug: 'new-problem' });
+    const problem = buildProblem({ frontendId: 'new-problem' });
     await expect(dispatch('addCard', { problem })).resolves.toBeUndefined();
-    const card = requireDefined((await readLearningDocument()).cards[problem.slug]);
+    const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
     expect(Object.values((await readLearningDocument()).cards)).toEqual([...others, card]);
     expect(card.fsrs).toEqual({
       due: Date.now(),
@@ -110,30 +110,30 @@ describe('document learning through background commands', () => {
       learning_steps: 0,
       last_review: undefined,
     });
-    await expect(
-      dispatch('addCard', { problem: { ...problem, name: 'Changed', domain: 'leetcode.cn' } })
-    ).resolves.toBeUndefined();
+    await expect(dispatch('addCard', { problem: { ...problem, domain: 'leetcode.cn' } })).resolves.toBeUndefined();
     expect(writes).toHaveBeenCalledTimes(1);
-    await dispatch('saveNote', { slug: card.slug, text: '  solution\n\t' });
-    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('  solution\n\t');
-    await expect(dispatch('setPauseStatus', { slug: card.slug, paused: true })).resolves.toBeUndefined();
-    const paused = requireDefined((await readLearningDocument()).cards[card.slug]);
+    await dispatch('saveNote', { frontendId: card.frontendId, text: '  solution\n\t' });
+    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBe('  solution\n\t');
+    await expect(dispatch('setPauseStatus', { frontendId: card.frontendId, paused: true })).resolves.toBeUndefined();
+    const paused = requireDefined((await readLearningDocument()).cards[card.frontendId]);
     expect(paused).toEqual({ ...card, paused: true, note: '  solution\n\t' });
     vi.setSystemTime(new Date('2024-03-16T12:00:00'));
-    await expect(dispatch('delayCard', { slug: card.slug, days: 2 })).resolves.toBeUndefined();
-    const delayed = requireDefined((await readLearningDocument()).cards[card.slug]);
+    await expect(dispatch('delayCard', { frontendId: card.frontendId, days: 2 })).resolves.toBeUndefined();
+    const delayed = requireDefined((await readLearningDocument()).cards[card.frontendId]);
     expect(delayed).toEqual({ ...paused, fsrs: { ...paused.fsrs, due: new Date('2024-03-17T12:00:00').getTime() } });
-    await expect(dispatch('setPauseStatus', { slug: card.slug, paused: false })).resolves.toBeUndefined();
-    expect((await readLearningDocument()).cards[card.slug]).toEqual({ ...delayed, paused: false });
-    await dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(500) });
-    await expect(dispatch('saveNote', { slug: card.slug, text: 'a'.repeat(501) })).rejects.toThrow('maximum length');
-    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBe('a'.repeat(500));
-    await dispatch('saveNote', { slug: card.slug, text: '' });
-    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
-    await dispatch('saveNote', { slug: card.slug, text: 'removed with card' });
-    await dispatch('removeCard', { slug: card.slug });
+    await expect(dispatch('setPauseStatus', { frontendId: card.frontendId, paused: false })).resolves.toBeUndefined();
+    expect((await readLearningDocument()).cards[card.frontendId]).toEqual({ ...delayed, paused: false });
+    await dispatch('saveNote', { frontendId: card.frontendId, text: 'a'.repeat(500) });
+    await expect(dispatch('saveNote', { frontendId: card.frontendId, text: 'a'.repeat(501) })).rejects.toThrow(
+      'maximum length'
+    );
+    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBe('a'.repeat(500));
+    await dispatch('saveNote', { frontendId: card.frontendId, text: '' });
+    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBeNull();
+    await dispatch('saveNote', { frontendId: card.frontendId, text: 'removed with card' });
+    await dispatch('removeCard', { frontendId: card.frontendId });
     expect(Object.values((await readLearningDocument()).cards)).toEqual(others);
-    expect((await readLearningDocument()).cards[card.slug]?.note ?? null).toBeNull();
+    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBeNull();
     expect(await readLearningDocument()).toEqual({ ...original, dataUpdatedAt: new Date().toISOString() });
     expect(writes).toHaveBeenCalledTimes(9);
     for (const [index, [items]] of writes.mock.calls.entries()) {
@@ -163,13 +163,13 @@ describe('document learning through background commands', () => {
     });
 
     await dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
-    const card = requireDefined((await readLearningDocument()).cards['two-sum']);
+    const card = requireDefined((await readLearningDocument()).cards['1']);
 
     expect(card.createdAt).toBe(now.getTime());
     expect(card.fsrs.last_review).toBe(now.getTime());
     expect(card.fsrs.due).toBe(new Date('2024-03-18T23:59:59.999').getTime());
     expect(await readLearningDocument()).toMatchObject({
-      cards: { [card.slug]: card },
+      cards: { [card.frontendId]: card },
       reviewActivity: { date: '2024-03-15', newCards: 1 },
       dataUpdatedAt: now.toISOString(),
     });
@@ -180,8 +180,7 @@ describe('document learning through background commands', () => {
     vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
     const cards = ['new-a', 'new-b', 'future', 'review', 'paused'].map((slug) => {
       const card = createMockCard(slug === 'review' ? State.Review : State.New, {
-        id: slug,
-        slug,
+        frontendId: slug,
         paused: slug === 'paused',
       });
       if (slug === 'future') {
@@ -190,7 +189,7 @@ describe('document learning through background commands', () => {
       return card;
     });
     const document = buildLearningDocument({
-      cards: Object.fromEntries(cards.map((card) => [card.slug, card])),
+      cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])),
       reviewActivity: { date: '2024-03-14', newCards: 1, streak: 1 },
       settings: { maxNewCardsPerDay: 2 },
     });
@@ -203,20 +202,20 @@ describe('document learning through background commands', () => {
       return result;
     });
 
-    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'review']);
-    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
+    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['new-a', 'review']);
+    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['new-a', 'new-b', 'review', 'future']);
     await replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 0 } });
-    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['review']);
+    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['review']);
     await replaceLearningDocument({ ...document, settings: {} });
-    expect((await getReviewQueue()).map((card) => card.slug)).toEqual(['new-a', 'new-b', 'review', 'future']);
+    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['new-a', 'new-b', 'review', 'future']);
   });
 
   it.each([
     ['rate existing', () => dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Again } })],
-    ['save note', () => dispatch('saveNote', { slug: 'two-sum', text: '  new note\n' })],
+    ['save note', () => dispatch('saveNote', { frontendId: '1', text: '  new note\n' })],
   ])('leaves all saved data intact when %s is rejected and accepts the next command', async (_name, edit) => {
     const document = buildLearningDocument({
-      cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+      cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
       reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
       settings: { badgeEnabled: false },
       dataUpdatedAt: '2024-01-15T10:00:00.000Z',
@@ -231,7 +230,7 @@ describe('document learning through background commands', () => {
 
     await expect(edit()).rejects.toBe(error);
     expect(Object.values((await readLearningDocument()).cards)).toEqual(Object.values(document.cards));
-    expect((await readLearningDocument()).cards['two-sum']?.note ?? null).toBe('Keep this note');
+    expect((await readLearningDocument()).cards['1']?.note ?? null).toBe('Keep this note');
     expect((await readLearningDocument()).reviewActivity).toEqual(document.reviewActivity);
     expect(await fakeBrowser.storage.local.get()).toEqual(localBefore);
     expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
@@ -249,7 +248,7 @@ describe('document learning through background commands', () => {
     async (failure) => {
       const card = createMockCard(State.New, buildProblem());
       const document = buildLearningDocument({
-        cards: { [card.slug]: card },
+        cards: { [card.frontendId]: card },
         settings: { badgeEnabled: false },
         reviewActivity: { date: '2024-03-15', newCards: Number.MAX_SAFE_INTEGER, streak: 1 },
       });
@@ -260,7 +259,7 @@ describe('document learning through background commands', () => {
       }
       const edit =
         failure === 'delay overflow'
-          ? dispatch('delayCard', { slug: card.slug, days: Number.MAX_SAFE_INTEGER })
+          ? dispatch('delayCard', { frontendId: card.frontendId, days: Number.MAX_SAFE_INTEGER })
           : dispatch('rateCard', { input: { ...buildProblem(), rating: Rating.Good } });
 
       await expect(edit).rejects.toThrow();
@@ -273,16 +272,16 @@ describe('document learning through background commands', () => {
   it('preserves missing-card errors and harmless note deletion', async () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
-    await dispatch('saveNote', { slug: 'missing', text: '' });
-    await expect(dispatch('delayCard', { slug: 'missing', days: 1 })).rejects.toThrow('not found');
-    await expect(dispatch('setPauseStatus', { slug: 'missing', paused: true })).rejects.toThrow('not found');
+    await dispatch('saveNote', { frontendId: 'missing', text: '' });
+    await expect(dispatch('delayCard', { frontendId: 'missing', days: 1 })).rejects.toThrow('not found');
+    await expect(dispatch('setPauseStatus', { frontendId: 'missing', paused: true })).rejects.toThrow('not found');
     expect(writes).not.toHaveBeenCalled();
-    await dispatch('removeCard', { slug: 'missing' });
+    await dispatch('removeCard', { frontendId: 'missing' });
     expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
     await dispatch('addCard', { problem: buildProblem() });
-    const card = requireDefined((await readLearningDocument()).cards['two-sum']);
+    const card = requireDefined((await readLearningDocument()).cards['1']);
     writes.mockClear();
-    await dispatch('saveNote', { slug: card.slug, text: '' });
+    await dispatch('saveNote', { frontendId: card.frontendId, text: '' });
     expect(writes).not.toHaveBeenCalled();
   });
 
@@ -291,7 +290,7 @@ describe('document learning through background commands', () => {
     async (command) => {
       const before = await readLearningDocument();
       const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-      const problem = buildProblem({ slug: '__proto__' });
+      const problem = buildProblem({ frontendId: '__proto__' });
       const edit =
         command === 'addCard'
           ? dispatch(command, { problem })
@@ -308,15 +307,15 @@ describe('document learning through background commands', () => {
     'preserves repeated scheduling and daily activity for rating %s',
     async (rating) => {
       await dispatch('addCard', { problem: buildProblem() });
-      const card = requireDefined((await readLearningDocument()).cards['two-sum']);
-      await dispatch('saveNote', { slug: card.slug, text: '  retained\n' });
+      const card = requireDefined((await readLearningDocument()).cards['1']);
+      await dispatch('saveNote', { frontendId: card.frontendId, text: '  retained\n' });
       await expect(
-        dispatch('rateCard', { input: { ...buildProblem({ name: 'Changed' }), rating } })
+        dispatch('rateCard', { input: { ...buildProblem({ domain: 'leetcode.cn' }), rating } })
       ).resolves.toBeUndefined();
-      const first = requireDefined((await readLearningDocument()).cards[card.slug]);
+      const first = requireDefined((await readLearningDocument()).cards[card.frontendId]);
       expect(first).toMatchObject({
-        id: card.id,
-        name: card.name,
+        frontendId: card.frontendId,
+        domain: card.domain,
         createdAt: card.createdAt,
         note: '  retained\n',
       });
@@ -332,7 +331,7 @@ describe('document learning through background commands', () => {
       // Another attempt on the same review day counts as a reviewed card.
       vi.setSystemTime(card.createdAt);
       await expect(dispatch('rateCard', { input: { ...buildProblem(), rating } })).resolves.toBeUndefined();
-      const second = requireDefined((await readLearningDocument()).cards[card.slug]);
+      const second = requireDefined((await readLearningDocument()).cards[card.frontendId]);
       expect(second.fsrs.reps).toBe(2);
       expect(second.fsrs.state).toBe(State.Review);
       expect(second.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
@@ -363,12 +362,12 @@ describe('document learning through background commands', () => {
           ).getTime();
           existing.fsrs.learning_steps = state === State.Review ? 0 : 1;
           const document = await readLearningDocument();
-          await replaceLearningDocument({ ...document, cards: { [existing.slug]: existing } });
-          expect((await readLearningDocument()).cards[existing.slug]).toEqual(existing);
+          await replaceLearningDocument({ ...document, cards: { [existing.frontendId]: existing } });
+          expect((await readLearningDocument()).cards[existing.frontendId]).toEqual(existing);
         }
 
         await expect(dispatch('rateCard', { input: { ...problem, rating } })).resolves.toBeUndefined();
-        const card = requireDefined((await readLearningDocument()).cards[problem.slug]);
+        const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
 
         expect(card.fsrs).toMatchObject({
           state: State.Review,
@@ -378,9 +377,13 @@ describe('document learning through background commands', () => {
         });
         expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
         expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-        expect((await readLearningDocument()).cards[card.slug]).toEqual(card);
+        expect((await readLearningDocument()).cards[card.frontendId]).toEqual(card);
         if (existing) {
-          expect(card).toMatchObject({ id: existing.id, createdAt: existing.createdAt, note: 'Retained' });
+          expect(card).toMatchObject({
+            frontendId: existing.frontendId,
+            createdAt: existing.createdAt,
+            note: 'Retained',
+          });
         }
       }
     );

@@ -36,7 +36,7 @@ beforeEach(async () => {
 describe('document transfers through background commands', () => {
   it('replaces the whole document from a file without replacing the Gist connection', async () => {
     await dispatch('addCard', { problem: buildProblem() });
-    await dispatch('saveNote', { slug: 'two-sum', text: 'Omitted from replacement' });
+    await dispatch('saveNote', { frontendId: '1', text: 'Omitted from replacement' });
     const replacement = {
       ...(await readLearningDocument()),
       cards: {},
@@ -79,8 +79,8 @@ describe('document transfers through background commands', () => {
     ).rejects.toThrow('Document unavailable');
 
     expect(await readLearningDocument()).toEqual(before);
-    await dispatch('saveNote', { slug: 'two-sum', text: 'After failure' });
-    expect((await readLearningDocument()).cards['two-sum']?.note).toBe('After failure');
+    await dispatch('saveNote', { frontendId: '1', text: 'After failure' });
+    expect((await readLearningDocument()).cards['1']?.note).toBe('After failure');
   });
 
   it('rejects future data before overwriting the local document', async () => {

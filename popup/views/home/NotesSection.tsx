@@ -4,11 +4,11 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface NotesSectionProps {
-  slug: string;
+  frontendId: string;
   isDisabled?: boolean;
 }
 
-export function NotesSection({ slug, isDisabled = false }: NotesSectionProps) {
+export function NotesSection({ frontendId, isDisabled = false }: NotesSectionProps) {
   const t = useI18n();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -27,7 +27,7 @@ export function NotesSection({ slug, isDisabled = false }: NotesSectionProps) {
       </Button>
 
       <div className="px-4 pb-4 border-t border-current" hidden={!isExpanded}>
-        <NoteEditor slug={slug} variant="regular" isDisabled={isDisabled} />
+        <NoteEditor frontendId={frontendId} variant="regular" isDisabled={isDisabled} />
       </div>
     </div>
   );

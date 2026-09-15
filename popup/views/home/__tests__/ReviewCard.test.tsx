@@ -1,3 +1,4 @@
+import { initializeCatalog } from '@/shared/catalog';
 /**
  * @vitest-environment happy-dom
  */
@@ -6,7 +7,7 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { translations } from '@/shared/i18n/index';
-import type { Card } from '@/shared/models';
+import type { CardWithProblem } from '@/shared/models';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -17,9 +18,9 @@ vi.mock('@/popup/contexts/I18nContext', () => ({ useI18n: vi.fn() }));
 
 describe('ReviewCard', () => {
   const mockOnRate = vi.fn();
-  const mockCard: Pick<Card, 'slug' | 'leetcodeId' | 'name' | 'difficulty' | 'domain'> = {
+  const mockCard: Pick<CardWithProblem, 'slug' | 'frontendId' | 'name' | 'difficulty' | 'domain'> = {
     slug: 'two-sum',
-    leetcodeId: '1',
+    frontendId: '1',
     name: 'Two Sum',
     difficulty: 'Easy',
     domain: 'leetcode.com',
@@ -55,3 +56,5 @@ describe('ReviewCard', () => {
     });
   });
 });
+
+beforeEach(initializeCatalog);

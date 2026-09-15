@@ -53,12 +53,12 @@ it('keeps local writes responsive while sync is in flight', async () => {
 
   await dispatch('addCard', { problem: buildProblem() });
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-  await dispatch('saveNote', { slug: 'two-sum', text: 'Saved during sync' });
+  await dispatch('saveNote', { frontendId: '1', text: 'Saved during sync' });
 
-  expect((await readLearningDocument()).cards['two-sum'].note).toBe('Saved during sync');
+  expect((await readLearningDocument()).cards['1'].note).toBe('Saved during sync');
   download.resolve({ data: { files: {} } });
   await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
-  expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content).cards['two-sum'].note).toBe(
+  expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content).cards['1'].note).toBe(
     'Saved during sync'
   );
 });
@@ -69,7 +69,7 @@ it('leaves edits made during an upload for the next minute sync', async () => {
 
   await dispatch('addCard', { problem: buildProblem() });
   await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
-  await dispatch('saveNote', { slug: 'two-sum', text: 'Next sync' });
+  await dispatch('saveNote', { frontendId: '1', text: 'Next sync' });
   upload.resolve();
   await vi.waitFor(async () => expect(await dispatch('getGistSyncStatus')).toMatchObject({ syncInProgress: false }));
   expect(github.update).toHaveBeenCalledOnce();
@@ -77,7 +77,7 @@ it('leaves edits made during an upload for the next minute sync', async () => {
   await triggerSyncAlarm();
 
   expect(github.update).toHaveBeenCalledTimes(2);
-  expect(JSON.parse(github.update.mock.calls[1][0].files['leetsrs-backup.json'].content).cards['two-sum'].note).toBe(
+  expect(JSON.parse(github.update.mock.calls[1][0].files['leetsrs-backup.json'].content).cards['1'].note).toBe(
     'Next sync'
   );
 });

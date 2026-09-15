@@ -4,10 +4,11 @@ import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
+import { initializeCatalog } from '@/shared/catalog';
 import { sendMessage } from '@/shared/messages';
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 import { STORAGE_KEYS } from '@/shared/storage';
-import { createMockCard } from '@/test/utils/card-mocks';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -17,7 +18,7 @@ vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 describe('NoteEditor', () => {
   const variant = 'regular';
-  const slug = 'editor-card';
+  const frontendId = 'editor-card';
   const messages = createMessageMock(vi.mocked(sendMessage));
 
   beforeEach(() => {
@@ -33,10 +34,14 @@ describe('NoteEditor', () => {
   it('enables saving only for a nonempty changed note within the limit', () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+      buildLearningDocument({
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
+      })
     );
-    setPopupLearningCardsQueryData(queryClient, [createMockCard(State.New, { slug, note: 'Stored note' })]);
-    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    setPopupLearningCardsQueryData(queryClient, [
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+    ]);
+    render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     const save = screen.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
@@ -63,17 +68,19 @@ describe('NoteEditor', () => {
     });
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: text }) } })
+      buildLearningDocument({
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
+      })
     );
-    setPopupLearningCardsQueryData(queryClient, [createMockCard(State.New, { slug, note: text })]);
-    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    setPopupLearningCardsQueryData(queryClient, [createMockCardWithProblem(State.New, { frontendId, note: text })]);
+    render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     const confirm = await screen.findByRole('button', { name: 'Confirm?' });
     expect(sendMessage).not.toHaveBeenCalledWith('saveNote', expect.anything());
     fireEvent.click(confirm);
     expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug, text: '' });
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId, text: '' });
     expect(screen.getByRole('textbox', { name: 'Note text' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 
@@ -90,10 +97,14 @@ describe('NoteEditor', () => {
     messages.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+      buildLearningDocument({
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
+      })
     );
-    setPopupLearningCardsQueryData(queryClient, [createMockCard(State.New, { slug, note: 'Stored note' })]);
-    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    setPopupLearningCardsQueryData(queryClient, [
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+    ]);
+    render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
 
     fireEvent.change(textarea, { target: { value: 'Failed draft' } });
@@ -106,7 +117,7 @@ describe('NoteEditor', () => {
 
     messages.handle('saveNote', async ({ text }) => {
       const saved = buildLearningDocument({
-        cards: { [slug]: createMockCard(State.New, { slug, note: text }) },
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
       });
       vi.mocked(storage.getItem).mockResolvedValue(saved);
       await storage.setItem(STORAGE_KEYS.learningDocument, saved);
@@ -121,14 +132,14 @@ describe('NoteEditor', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     messages.handle('saveNote', () => Promise.reject(new Error('Save failed')));
     const { wrapper } = createPopupTestWrapper();
-    const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    const view = render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     await waitFor(() => expect(textarea).toBeEnabled());
     fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await screen.findByRole('alert');
 
-    view.rerender(<NoteEditor slug="another-card" variant={variant} />);
+    view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(textarea).toHaveValue('');
   });
@@ -138,14 +149,14 @@ describe('NoteEditor', () => {
     messages.handle('saveNote', () => pending.promise);
     const { wrapper, queryClient } = createPopupTestWrapper();
     const cards = [
-      createMockCard(State.New, { slug, note: 'Stored note' }),
-      createMockCard(State.New, { slug: 'another-card', note: 'Other note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
     ];
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
+      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) })
     );
     setPopupLearningCardsQueryData(queryClient, cards);
-    const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    const view = render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     fireEvent.change(textarea, { target: { value: 'Outgoing draft' } });
     if (operation === 'save') {
@@ -160,7 +171,7 @@ describe('NoteEditor', () => {
     }
     expect(textarea).toBeDisabled();
 
-    view.rerender(<NoteEditor slug="another-card" variant={variant} />);
+    view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
     await waitFor(() => expect(textarea).toBeEnabled());
     fireEvent.change(textarea, { target: { value: 'Other draft' } });
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
@@ -172,35 +183,35 @@ describe('NoteEditor', () => {
   it('preserves a dirty draft during incoming updates and resets it and confirmation when switching cards', async () => {
     const { wrapper, queryClient } = createPopupTestWrapper();
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCard(State.New, { slug, note: 'Stored note' }),
-      createMockCard(State.New, { slug: 'another-card', note: 'Other note' }),
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+      createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
     ]);
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({
         cards: {
-          [slug]: createMockCard(State.New, { slug, note: 'Incoming note' }),
-          'another-card': createMockCard(State.New, { slug: 'another-card', note: 'Other note' }),
+          [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Incoming note' }),
+          'another-card': createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
         },
       })
     );
-    const view = render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    const view = render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
     fireEvent.change(textarea, { target: { value: 'Dirty draft' } });
     act(() =>
       setPopupLearningCardsQueryData(queryClient, [
-        createMockCard(State.New, { slug, note: 'Incoming note' }),
-        createMockCard(State.New, { slug: 'another-card', note: 'Other note' }),
+        createMockCardWithProblem(State.New, { frontendId, note: 'Incoming note' }),
+        createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
       ])
     );
     expect(textarea).toHaveValue('Dirty draft');
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     await screen.findByRole('button', { name: 'Confirm?' });
 
-    view.rerender(<NoteEditor slug="another-card" variant={variant} />);
+    view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
     expect(textarea).toHaveValue('Other note');
     expect(screen.queryByRole('button', { name: 'Confirm?' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    view.rerender(<NoteEditor slug={slug} variant={variant} />);
+    view.rerender(<NoteEditor frontendId={frontendId} variant={variant} />);
     expect(textarea).toHaveValue('Incoming note');
   });
 
@@ -210,10 +221,14 @@ describe('NoteEditor', () => {
     messages.handle('saveNote', () => Promise.reject(error));
     const { wrapper, queryClient } = createPopupTestWrapper();
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: { [slug]: createMockCard(State.New, { slug, note: 'Stored note' }) } })
+      buildLearningDocument({
+        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
+      })
     );
-    setPopupLearningCardsQueryData(queryClient, [createMockCard(State.New, { slug, note: 'Stored note' })]);
-    render(<NoteEditor slug={slug} variant={variant} />, { wrapper });
+    setPopupLearningCardsQueryData(queryClient, [
+      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
+    ]);
+    render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm?' }));
@@ -222,3 +237,5 @@ describe('NoteEditor', () => {
     expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Stored note');
   });
 });
+
+beforeEach(initializeCatalog);

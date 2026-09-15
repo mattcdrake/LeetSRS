@@ -18,10 +18,15 @@ const epochMilliseconds = z.number().min(-8.64e15).max(8.64e15);
 
 export const difficultySchema = z.enum(['Easy', 'Medium', 'Hard']);
 export const leetcodeDomainSchema = z.enum(['leetcode.com', 'leetcode.cn']);
-export const problemDescriptorSchema = z.object({
+export const problemReferenceSchema = z.object({
+  frontendId: nonemptyString,
+  domain: leetcodeDomainSchema,
+});
+export type ProblemReference = z.infer<typeof problemReferenceSchema>;
+
+export const problemDescriptorSchema = problemReferenceSchema.extend({
   slug: nonemptyString,
   name: nonemptyString,
-  leetcodeId: nonemptyString,
   difficulty: difficultySchema,
   domain: leetcodeDomainSchema,
 });
@@ -39,9 +44,8 @@ export const fsrsCardSchema = z.object({
   learning_steps: count,
 }) satisfies z.ZodType<CardInput>;
 
-export const cardSchema = problemDescriptorSchema
+export const cardSchema = problemReferenceSchema
   .extend({
-    id: nonemptyString,
     createdAt: epochMilliseconds,
     fsrs: fsrsCardSchema,
     paused: z.boolean(),
@@ -55,11 +59,12 @@ export const cardSchema = problemDescriptorSchema
 export type Difficulty = z.infer<typeof difficultySchema>;
 export type LeetcodeDomain = z.infer<typeof leetcodeDomainSchema>;
 export type ProblemDescriptor = z.infer<typeof problemDescriptorSchema>;
-export const rateCardInputSchema = problemDescriptorSchema.extend({ rating: ratingSchema });
+export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratingSchema });
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
 export type FsrsCard = z.infer<typeof fsrsCardSchema>;
 export type Card = z.infer<typeof cardSchema>;
-export const LEARNING_DOCUMENT_VERSION = 9;
+export type CardWithProblem = Card & ProblemDescriptor;
+export const LEARNING_DOCUMENT_VERSION = 10;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
 const reviewDateSchema = z
@@ -89,26 +94,22 @@ export const learningDocumentSchema = z
     settings: settingsSchema.partial(),
   })
   .superRefine(({ cards }, ctx) => {
-    const ids = new Set<string>();
-
-    for (const [slug, card] of Object.entries(cards)) {
-      if (card.slug !== slug) {
-        ctx.addIssue({ code: 'custom', message: `Card slug does not match key: ${slug}`, path: ['cards', slug] });
+    for (const [frontendId, card] of Object.entries(cards)) {
+      if (card.frontendId !== frontendId) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Card frontend ID does not match key: ${frontendId}`,
+          path: ['cards', frontendId],
+        });
       }
-
-      if (ids.has(card.id)) {
-        ctx.addIssue({ code: 'custom', message: `Duplicate card ID: ${card.id}`, path: ['cards', slug, 'id'] });
-      }
-
-      ids.add(card.id);
     }
   });
 
 export type LearningDocument = z.infer<typeof learningDocumentSchema>;
 
-export function findCard(document: LearningDocument, slug: string): Card | undefined {
-  if (Object.hasOwn(document.cards, slug)) {
-    return document.cards[slug];
+export function findCard(document: LearningDocument, frontendId: string): Card | undefined {
+  if (Object.hasOwn(document.cards, frontendId)) {
+    return document.cards[frontendId];
   }
   return undefined;
 }

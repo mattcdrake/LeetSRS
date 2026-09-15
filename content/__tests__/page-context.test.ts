@@ -28,11 +28,11 @@ afterEach(() => {
 });
 
 describe('getCurrentProblemSlug', () => {
-  it('prefers the router slug over a different pathname slug', () => {
+  it('uses the URL even when the router has a stale slug', () => {
     history.replaceState({}, '', '/problems/path-slug/');
     leetCodeWindow.next = { router: { query: { slug: 'router-slug' } } };
 
-    expect(getCurrentProblemSlug()).toBe('router-slug');
+    expect(getCurrentProblemSlug()).toBe('path-slug');
   });
 
   it.each([

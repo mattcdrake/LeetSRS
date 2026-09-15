@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
-import type { Card } from '@/shared/models';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import { type CardWithProblem, cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import { buildProblemDescriptor } from './card-mocks';
 
 type LearningDocumentOverrides = Partial<Omit<LearningDocument, 'schemaVersion'>>;
 
@@ -15,22 +15,25 @@ export function setPopupLearningDocumentQueryData(
   now = new Date()
 ) {
   const document = buildLearningDocument(overrides);
-  queryClient.setQueryData(learningDocumentQueryKey, { document, now });
+  queryClient.setQueryData(learningDocumentQueryKey, {
+    document,
+    now,
+    cards: Object.values(document.cards).map((card) => ({ ...buildProblemDescriptor(), ...card })),
+  });
 }
 
-export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: Card[], now = new Date()) {
+export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: CardWithProblem[], now = new Date()) {
   const seen = new Set<string>();
   const uniqueCards = cards.map((card, index) => {
-    if (!seen.has(card.slug)) {
-      seen.add(card.slug);
+    if (!seen.has(card.frontendId)) {
+      seen.add(card.frontendId);
       return card;
     }
-    const slug = `${card.slug}-${index}`;
-    return { ...card, id: slug, slug };
+    const slug = `${card.frontendId}-${index}`;
+    return { ...card, frontendId: slug };
   });
-  setPopupLearningDocumentQueryData(
-    queryClient,
-    { cards: Object.fromEntries(uniqueCards.map((card) => [card.slug, card])) },
-    now
-  );
+  const document = buildLearningDocument({
+    cards: Object.fromEntries(uniqueCards.map((card) => [card.frontendId, cardSchema.parse(card)])),
+  });
+  queryClient.setQueryData(learningDocumentQueryKey, { document, now, cards: uniqueCards });
 }

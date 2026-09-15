@@ -1,13 +1,17 @@
 import type { State } from 'ts-fsrs';
-import type { Card, ProblemDescriptor } from '@/shared/models';
+import type { Card, CardWithProblem, ProblemDescriptor, ProblemReference } from '@/shared/models';
 
 const MOCK_TIMESTAMP = Date.parse('2024-01-01T00:00:00.000Z');
 
-export function buildProblem(overrides: Partial<ProblemDescriptor> = {}): ProblemDescriptor {
+export function buildProblem(overrides: Partial<ProblemReference> = {}): ProblemReference {
+  return { frontendId: '1', domain: 'leetcode.com', ...overrides };
+}
+
+export function buildProblemDescriptor(overrides: Partial<ProblemDescriptor> = {}): ProblemDescriptor {
   return {
     slug: 'two-sum',
     name: 'Two Sum',
-    leetcodeId: '1',
+    frontendId: '1',
     difficulty: 'Easy',
     domain: 'leetcode.com',
     ...overrides,
@@ -22,11 +26,7 @@ export function buildProblem(overrides: Partial<ProblemDescriptor> = {}): Proble
  */
 export const createMockCard = (state: State, overrides: Partial<Card> = {}): Card => {
   return {
-    id: 'mock-id',
-    slug: 'mock-slug',
-    name: 'Mock Problem',
-    leetcodeId: '1',
-    difficulty: 'Easy',
+    frontendId: '1',
     domain: 'leetcode.com',
     createdAt: MOCK_TIMESTAMP,
     fsrs: {
@@ -45,3 +45,7 @@ export const createMockCard = (state: State, overrides: Partial<Card> = {}): Car
     ...overrides,
   };
 };
+
+export function createMockCardWithProblem(state: State, overrides: Partial<CardWithProblem> = {}): CardWithProblem {
+  return { ...createMockCard(state), ...buildProblemDescriptor(), ...overrides };
+}

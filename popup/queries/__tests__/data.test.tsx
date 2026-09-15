@@ -16,7 +16,7 @@ beforeEach(() => fakeBrowser.reset());
 
 it('exports the current complete snapshot, preserving its timestamp and excluding connection, status, and legacy values', async () => {
   const document = buildLearningDocument({
-    cards: { 'two-sum': createMockCard(State.Review, { slug: 'two-sum', paused: true, note: 'Keep this note' }) },
+    cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
     reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
     settings: { theme: 'dark', maxNewCardsPerDay: 7, resetEditorOnReviewQueue: true },
     dataUpdatedAt: '2024-01-15T10:00:00.000Z',

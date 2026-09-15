@@ -1,7 +1,8 @@
 import { State } from 'ts-fsrs';
 import { storage } from '#imports';
+import { initializeCatalog } from '@/shared/catalog';
 import { STORAGE_KEYS } from '@/shared/storage';
-import { createMockCard } from '@/test/utils/card-mocks';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
@@ -28,11 +29,11 @@ describe('NotesSection', () => {
     void storage.setItem(
       STORAGE_KEYS.learningDocument,
       buildLearningDocument({
-        cards: { [mockSlug]: createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }) },
+        cards: { [mockSlug]: createMockCardWithProblem(State.New, { frontendId: mockSlug, note: note ?? undefined }) },
       })
     );
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCard(State.New, { slug: mockSlug, note: note ?? undefined }),
+      createMockCardWithProblem(State.New, { frontendId: mockSlug, note: note ?? undefined }),
     ]);
   };
 
@@ -44,13 +45,13 @@ describe('NotesSection', () => {
 
   it('disables an expanded note editor while its review action is pending', async () => {
     seedNote('Stored note');
-    const view = render(<NotesSection slug={mockSlug} />, { wrapper });
+    const view = render(<NotesSection frontendId={mockSlug} />, { wrapper });
     fireEvent.click(screen.getByRole('button', { expanded: false }));
     const textarea = await screen.findByRole('textbox', { name: 'Note text' });
     fireEvent.change(textarea, { target: { value: 'Unsaved draft' } });
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
 
-    view.rerender(<NotesSection slug={mockSlug} isDisabled />);
+    view.rerender(<NotesSection frontendId={mockSlug} isDisabled />);
 
     expect(screen.getByRole('button', { expanded: true })).toBeDisabled();
     expect(textarea).toBeDisabled();
@@ -60,7 +61,7 @@ describe('NotesSection', () => {
 
   it('retains the draft and delete confirmation across collapse and reopen', async () => {
     seedNote('Stored note');
-    render(<NotesSection slug={mockSlug} />, { wrapper });
+    render(<NotesSection frontendId={mockSlug} />, { wrapper });
     const toggle = screen.getByRole('button', { expanded: false });
     fireEvent.click(toggle);
     const textarea = screen.getByRole('textbox', { name: 'Note text' });
@@ -87,7 +88,7 @@ describe('NotesSection', () => {
       await save.promise;
       seedNote(text);
     });
-    render(<NotesSection slug={mockSlug} />, { wrapper });
+    render(<NotesSection frontendId={mockSlug} />, { wrapper });
     const toggle = screen.getByRole('button', { expanded: false });
     fireEvent.click(toggle);
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Saved draft' } });
@@ -99,7 +100,7 @@ describe('NotesSection', () => {
     await waitFor(() =>
       expect(
         queryClient.getQueryData<PopupLearningDocumentSnapshot>(learningDocumentQueryKey)?.document.cards[mockSlug]
-      ).toMatchObject({ slug: mockSlug, note: 'Saved draft' })
+      ).toMatchObject({ frontendId: mockSlug, note: 'Saved draft' })
     );
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
 
@@ -107,6 +108,8 @@ describe('NotesSection', () => {
     expect(screen.getByRole('textbox')).toHaveValue('Saved draft');
     expect(screen.getByRole('textbox')).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    expect(sendMessage).toHaveBeenCalledWith('saveNote', { slug: mockSlug, text: 'Saved draft' });
+    expect(sendMessage).toHaveBeenCalledWith('saveNote', { frontendId: mockSlug, text: 'Saved draft' });
   });
 });
+
+beforeEach(initializeCatalog);

@@ -7,10 +7,10 @@ export function isDue(card: Card, now: Date): boolean {
   return card.fsrs.due <= now.getTime();
 }
 
-const sortByDueDateThenSlug = (a: Card, b: Card): number => {
+const sortByDueDateThenFrontendId = (a: Card, b: Card): number => {
   const dueDiff = a.fsrs.due - b.fsrs.due;
   if (dueDiff !== 0) return dueDiff;
-  return a.slug.localeCompare(b.slug);
+  return a.frontendId.localeCompare(b.frontendId);
 };
 
 export function buildReviewQueue(document: LearningDocument, now: Date): Card[] {
@@ -19,7 +19,7 @@ export function buildReviewQueue(document: LearningDocument, now: Date): Card[] 
   const newCardsCompletedToday =
     document.reviewActivity?.date === formatLocalDate(now) ? document.reviewActivity.newCards : 0;
   let remainingNewCards = Math.max(0, maxNewCardsPerDay - newCardsCompletedToday);
-  eligibleCards.sort(sortByDueDateThenSlug);
+  eligibleCards.sort(sortByDueDateThenFrontendId);
   const queue: Card[] = [];
   for (const card of eligibleCards) {
     if (card.fsrs.state === FsrsState.New) {

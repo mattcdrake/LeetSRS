@@ -7,7 +7,7 @@ import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learni
 export function useCardsQuery() {
   return useQuery({
     ...learningDocumentQueryOptions,
-    select: ({ document }) => Object.values(document.cards),
+    select: ({ cards }) => cards,
   });
 }
 
@@ -15,7 +15,14 @@ export function useReviewQueueQuery(options?: { refetchOnWindowFocus?: boolean }
   const { refetchOnWindowFocus = false } = options || {};
   return useQuery({
     ...learningDocumentQueryOptions,
-    select: ({ document, now }) => buildReviewQueue(document, now),
+    select: ({ document, now, cards }) => {
+      const byId = new Map(cards.map((card) => [card.frontendId, card]));
+      return buildReviewQueue(document, now).map((card) => {
+        const detailed = byId.get(card.frontendId);
+        if (!detailed) throw new Error(`Missing problem details: ${card.frontendId}`);
+        return detailed;
+      });
+    },
     refetchOnWindowFocus,
   });
 }
@@ -29,7 +36,7 @@ function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Prom
 }
 
 export function useRemoveCardMutation() {
-  return useCardMutation((slug: string) => sendMessage('removeCard', { slug }));
+  return useCardMutation((frontendId: string) => sendMessage('removeCard', { frontendId }));
 }
 
 export function useRateCardMutation() {
@@ -37,11 +44,13 @@ export function useRateCardMutation() {
 }
 
 export function useDelayCardMutation() {
-  return useCardMutation(({ slug, days }: { slug: string; days: number }) => sendMessage('delayCard', { slug, days }));
+  return useCardMutation(({ frontendId, days }: { frontendId: string; days: number }) =>
+    sendMessage('delayCard', { frontendId, days })
+  );
 }
 
 export function usePauseCardMutation() {
-  return useCardMutation(({ slug, paused }: { slug: string; paused: boolean }) =>
-    sendMessage('setPauseStatus', { slug, paused })
+  return useCardMutation(({ frontendId, paused }: { frontendId: string; paused: boolean }) =>
+    sendMessage('setPauseStatus', { frontendId, paused })
   );
 }

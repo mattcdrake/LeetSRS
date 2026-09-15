@@ -8,7 +8,7 @@ import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/car
 import { bounceButton } from '@/popup/styles';
 import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import type { Card } from '@/shared/models';
+import type { CardWithProblem } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { useI18n } from '../../../contexts/I18nContext';
 
@@ -49,7 +49,7 @@ function StatRow({ label, value }: StatRowProps) {
 }
 
 interface CardListItemProps {
-  card: Card;
+  card: CardWithProblem;
 }
 
 export function CardListItem({ card }: CardListItemProps) {
@@ -61,7 +61,7 @@ export function CardListItem({ card }: CardListItemProps) {
 
   const handlePauseToggle = async () => {
     try {
-      await pauseCardMutation.mutateAsync({ slug: card.slug, paused: !card.paused });
+      await pauseCardMutation.mutateAsync({ frontendId: card.frontendId, paused: !card.paused });
     } catch (error) {
       console.error('Failed to toggle pause status:', error);
     }
@@ -69,7 +69,7 @@ export function CardListItem({ card }: CardListItemProps) {
 
   const handleDelete = async () => {
     try {
-      await removeCardMutation.mutateAsync(card.slug);
+      await removeCardMutation.mutateAsync(card.frontendId);
     } catch (error) {
       console.error('Failed to delete card:', error);
     }
@@ -85,7 +85,7 @@ export function CardListItem({ card }: CardListItemProps) {
         >
           <div className="flex items-center gap-2">
             {card.paused && <FaCirclePause className="text-warning text-base" title={t.cardsView.cardPausedTitle} />}
-            <span className="text-xs text-secondary">{t.format.leetcodeId(card.leetcodeId)}</span>
+            <span className="text-xs text-secondary">{t.format.leetcodeId(card.frontendId)}</span>
             <span className={`text-sm ${card.paused ? 'opacity-60' : ''}`}>{card.name}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -149,7 +149,7 @@ export function CardListItem({ card }: CardListItemProps) {
 
           <div className="mt-3 pt-3 border-t border-current">
             <span className="text-xs text-secondary">{t.notes.title}</span>
-            <NoteEditor slug={card.slug} variant="compact" />
+            <NoteEditor frontendId={card.frontendId} variant="compact" />
           </div>
         </div>
       )}

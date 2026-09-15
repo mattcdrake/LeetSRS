@@ -1,4 +1,5 @@
 import { storage } from '#imports';
+import { initializeCatalog } from '@/shared/catalog';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
@@ -9,8 +10,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendMessage } from '@/shared/messages';
-import type { Card } from '@/shared/models';
-import { createMockCard } from '@/test/utils/card-mocks';
+import type { CardWithProblem } from '@/shared/models';
+import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -45,9 +46,9 @@ vi.mock('../ReviewCard', () => ({
 }));
 
 vi.mock('../NotesSection', () => ({
-  NotesSection: ({ slug, isDisabled }: { slug: string; isDisabled: boolean }) => (
+  NotesSection: ({ frontendId, isDisabled }: { frontendId: string; isDisabled: boolean }) => (
     <div data-testid="notes-section">
-      Notes for {slug}
+      Notes for {frontendId}
       <button type="button" disabled={isDisabled}>
         Edit note
       </button>
@@ -86,25 +87,22 @@ vi.mock('../ActionsSection', () => ({
 
 describe('ReviewQueue', () => {
   const mockCards = [
-    createMockCard(State.Learning, {
-      id: '1',
+    createMockCardWithProblem(State.Learning, {
       slug: 'two-sum',
       name: 'Two Sum',
-      leetcodeId: '1',
+      frontendId: '1',
       difficulty: 'Easy',
     }),
-    createMockCard(State.Learning, {
-      id: '2',
+    createMockCardWithProblem(State.Learning, {
       slug: 'add-two-numbers',
       name: 'Add Two Numbers',
-      leetcodeId: '2',
+      frontendId: '2',
       difficulty: 'Medium',
     }),
-    createMockCard(State.Learning, {
-      id: '3',
+    createMockCardWithProblem(State.Learning, {
       slug: 'longest-substring',
       name: 'Longest Substring',
-      leetcodeId: '3',
+      frontendId: '3',
       difficulty: 'Medium',
     }),
   ];
@@ -113,9 +111,9 @@ describe('ReviewQueue', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
-  const seedQueue = (cards: Card[]) => {
+  const seedQueue = (cards: CardWithProblem[]) => {
     vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.slug, card])) })
+      buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) })
     );
     setPopupLearningCardsQueryData(queryClient, cards);
   };
@@ -158,7 +156,7 @@ describe('ReviewQueue', () => {
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
 
       refresh.resolve(
-        buildLearningDocument({ cards: Object.fromEntries(mockCards.slice(1).map((card) => [card.slug, card])) })
+        buildLearningDocument({ cards: Object.fromEntries(mockCards.slice(1).map((card) => [card.frontendId, card])) })
       );
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
       expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
@@ -169,6 +167,7 @@ describe('ReviewQueue', () => {
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue(mockCards.slice(1)));
 
@@ -187,6 +186,7 @@ describe('ReviewQueue', () => {
     it('shows the empty state after the final card command and queue refresh complete', async () => {
       render(<ReviewQueue />, { wrapper });
 
+      await waitFor(() => expect(queryClient.isFetching()).toBe(0));
       fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
       await act(async () => seedQueue([]));
 
@@ -251,3 +251,5 @@ describe('ReviewQueue', () => {
     });
   });
 });
+
+beforeEach(initializeCatalog);

@@ -5,23 +5,26 @@ import {
   type GistSyncStatus,
   gistSetupSchema,
   noteTextSchema,
+  type ProblemDescriptor,
   problemDescriptorSchema,
+  problemReferenceSchema,
   rateCardInputSchema,
 } from '@/shared/models';
 
 import { settingsUpdateSchema } from '@/shared/settings';
 
-const slugSchema = problemDescriptorSchema.shape.slug;
+const frontendIdSchema = problemReferenceSchema.shape.frontendId;
 const daysSchema = z.int().nonnegative();
 
 export const messagePayloadSchemas = {
   waitForInitialization: z.undefined(),
-  addCard: z.object({ problem: problemDescriptorSchema }),
-  removeCard: z.object({ slug: slugSchema }),
-  delayCard: z.object({ slug: slugSchema, days: daysSchema }),
-  setPauseStatus: z.object({ slug: slugSchema, paused: z.boolean() }),
+  getProblem: z.object({ slug: problemDescriptorSchema.shape.slug, domain: problemReferenceSchema.shape.domain }),
+  addCard: z.object({ problem: problemReferenceSchema }),
+  removeCard: z.object({ frontendId: frontendIdSchema }),
+  delayCard: z.object({ frontendId: frontendIdSchema, days: daysSchema }),
+  setPauseStatus: z.object({ frontendId: frontendIdSchema, paused: z.boolean() }),
   rateCard: z.object({ input: rateCardInputSchema }),
-  saveNote: z.object({ slug: slugSchema, text: noteTextSchema }),
+  saveNote: z.object({ frontendId: frontendIdSchema, text: noteTextSchema }),
   updateSettings: z.object({ changes: settingsUpdateSchema }),
   importData: z.object({ jsonData: z.string() }),
   resetAllData: z.undefined(),
@@ -34,6 +37,7 @@ type MessagePayload<Name extends keyof typeof messagePayloadSchemas> = z.infer<(
 
 export interface ExtensionMessageMap {
   waitForInitialization(): void;
+  getProblem(data: MessagePayload<'getProblem'>): ProblemDescriptor;
   addCard(data: MessagePayload<'addCard'>): void;
   removeCard(data: MessagePayload<'removeCard'>): void;
   delayCard(data: MessagePayload<'delayCard'>): void;
