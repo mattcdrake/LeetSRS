@@ -1,13 +1,13 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
-import type { CardWithProblem } from '@/shared/models';
-import { createMockCardWithProblem } from '@/test/utils/card-mocks';
+import type { CardWithQuestion } from '@/popup/queries/cards';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { filterAndSortCards } from '../card-list';
 
-const createCard = (id: string, frontendId: string, name = id): CardWithProblem =>
-  createMockCardWithProblem(State.New, { frontendId, name, slug: id });
+const createCard = (id: string, frontendId: string, title = id): CardWithQuestion =>
+  createMockCardWithQuestion(State.New, { frontendId, title, slug: id });
 
-const getIds = (cards: CardWithProblem[]) => cards.map((card) => card.slug);
+const getIds = (cards: CardWithQuestion[]) => cards.map((card) => card.slug);
 
 describe('filterAndSortCards', () => {
   it('does not mutate the input', () => {

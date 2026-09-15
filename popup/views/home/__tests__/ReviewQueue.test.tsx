@@ -9,9 +9,9 @@ import type { QueryClient } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { CardWithQuestion } from '@/popup/queries/cards';
 import { sendMessage } from '@/shared/messages';
-import type { CardWithProblem } from '@/shared/models';
-import { createMockCardWithProblem } from '@/test/utils/card-mocks';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -20,7 +20,7 @@ vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 // Mock the child components
 interface MockReviewCardProps {
-  card: { name: string };
+  card: { title: string };
   onRate: (rating: Rating) => void;
   isProcessing: boolean;
 }
@@ -28,7 +28,7 @@ interface MockReviewCardProps {
 vi.mock('../ReviewCard', () => ({
   ReviewCard: ({ card, onRate, isProcessing }: MockReviewCardProps) => (
     <div data-testid="review-card">
-      <div>{card.name}</div>
+      <div>{card.title}</div>
       <button type="button" onClick={() => onRate(Rating.Again)} disabled={isProcessing}>
         Again
       </button>
@@ -87,23 +87,23 @@ vi.mock('../ActionsSection', () => ({
 
 describe('ReviewQueue', () => {
   const mockCards = [
-    createMockCardWithProblem(State.Learning, {
+    createMockCardWithQuestion(State.Learning, {
       slug: 'two-sum',
-      name: 'Two Sum',
+      title: 'Two Sum',
       frontendId: '1',
-      difficulty: 'Easy',
+      difficulty: 'easy',
     }),
-    createMockCardWithProblem(State.Learning, {
+    createMockCardWithQuestion(State.Learning, {
       slug: 'add-two-numbers',
-      name: 'Add Two Numbers',
+      title: 'Add Two Numbers',
       frontendId: '2',
-      difficulty: 'Medium',
+      difficulty: 'medium',
     }),
-    createMockCardWithProblem(State.Learning, {
+    createMockCardWithQuestion(State.Learning, {
       slug: 'longest-substring',
-      name: 'Longest Substring',
+      title: 'Longest Substring',
       frontendId: '3',
-      difficulty: 'Medium',
+      difficulty: 'medium',
     }),
   ];
 
@@ -111,7 +111,7 @@ describe('ReviewQueue', () => {
   const messages = createMessageMock(vi.mocked(sendMessage));
   let wrapper: React.ComponentType<{ children: React.ReactNode }>;
   let queryClient: QueryClient;
-  const seedQueue = (cards: CardWithProblem[]) => {
+  const seedQueue = (cards: CardWithQuestion[]) => {
     vi.mocked(storage.getItem).mockResolvedValue(
       buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) })
     );

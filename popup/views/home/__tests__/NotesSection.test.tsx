@@ -1,7 +1,7 @@
 import { State } from 'ts-fsrs';
 import { storage } from '#imports';
 import { STORAGE_KEYS } from '@/shared/storage';
-import { createMockCardWithProblem } from '@/test/utils/card-mocks';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
@@ -28,11 +28,11 @@ describe('NotesSection', () => {
     void storage.setItem(
       STORAGE_KEYS.learningDocument,
       buildLearningDocument({
-        cards: { [mockSlug]: createMockCardWithProblem(State.New, { frontendId: mockSlug, note: note ?? undefined }) },
+        cards: { [mockSlug]: createMockCardWithQuestion(State.New, { frontendId: mockSlug, note: note ?? undefined }) },
       })
     );
     setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithProblem(State.New, { frontendId: mockSlug, note: note ?? undefined }),
+      createMockCardWithQuestion(State.New, { frontendId: mockSlug, note: note ?? undefined }),
     ]);
   };
 

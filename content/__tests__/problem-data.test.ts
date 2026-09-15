@@ -5,7 +5,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { getCurrentProblem } from '@/content/problem-data';
 import background from '@/entrypoints/background/index';
 import { onMessage, sendMessage } from '@/shared/messages';
-import { buildProblemDescriptor } from '@/test/utils/card-mocks';
+import { buildCatalogQuestion } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 
 vi.mock('@/shared/messages', async (importOriginal) => ({
@@ -14,7 +14,7 @@ vi.mock('@/shared/messages', async (importOriginal) => ({
   sendMessage: vi.fn(),
 }));
 
-const problem = buildProblemDescriptor();
+const problem = buildCatalogQuestion();
 
 describe('getCurrentProblem', () => {
   beforeEach(async () => {
@@ -38,15 +38,16 @@ describe('getCurrentProblem', () => {
     await expect(getCurrentProblem()).rejects.toThrow('Expected a problem slug on the current page');
   });
 
-  it.each([
-    ['leetcode.com', problem.name],
-    ['leetcode.cn', '两数之和'],
-  ] as const)('reads the bundled problem on %s through background messaging', async (domain, name) => {
-    window.location.hostname = domain;
-    expect(await getCurrentProblem()).toEqual({ ...problem, domain, name });
-    expect(sendMessage).toHaveBeenLastCalledWith('getProblem', { slug: problem.slug, domain });
-    expect(fetch).not.toHaveBeenCalled();
-  });
+  it.each(['leetcode.com', 'leetcode.cn'] as const)(
+    'reads the bundled problem on %s through background messaging',
+    async (domain) => {
+      window.location.hostname = domain;
+      expect(await getCurrentProblem()).toEqual({ frontendId: '1', domain });
+      expect(sendMessage).toHaveBeenLastCalledWith('getProblem', { slug: problem.slug, domain });
+      expect(await sendMessage('getProblem', { slug: problem.slug, domain })).toEqual(problem);
+      expect(fetch).not.toHaveBeenCalled();
+    }
+  );
 
   it.each(['unknown-problem', 'com-only'])('rejects an unknown or unavailable problem: %s', async (slug) => {
     window.location.pathname = `/problems/${slug}/`;

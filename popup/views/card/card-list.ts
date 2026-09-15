@@ -1,4 +1,5 @@
-import type { CardWithProblem } from '@/shared/models';
+import type { CardWithQuestion } from '@/popup/queries/cards';
+import { getQuestionTitle } from '@/shared/ui/question-title';
 
 const numericLeetcodeIdPattern = /^\d+$/;
 
@@ -8,7 +9,7 @@ const compareText = (a: string, b: string) => {
   return 0;
 };
 
-const compareCardsByLeetcodeId = (a: CardWithProblem, b: CardWithProblem) => {
+const compareCardsByLeetcodeId = (a: CardWithQuestion, b: CardWithQuestion) => {
   const aIsNumeric = numericLeetcodeIdPattern.test(a.frontendId);
   const bIsNumeric = numericLeetcodeIdPattern.test(b.frontendId);
 
@@ -23,12 +24,15 @@ const compareCardsByLeetcodeId = (a: CardWithProblem, b: CardWithProblem) => {
   return compareText(a.frontendId, b.frontendId);
 };
 
-export const filterAndSortCards = (cards: readonly CardWithProblem[], filterText: string) => {
+export const filterAndSortCards = (cards: readonly CardWithQuestion[], filterText: string) => {
   const searchLower = filterText.toLowerCase();
 
   return cards
     .filter(
-      (card) => !filterText || card.name.toLowerCase().includes(searchLower) || card.frontendId.includes(filterText)
+      (card) =>
+        !filterText ||
+        getQuestionTitle(card, card.domain).toLowerCase().includes(searchLower) ||
+        card.frontendId.includes(filterText)
     )
     .sort(compareCardsByLeetcodeId);
 };

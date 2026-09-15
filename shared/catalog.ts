@@ -1,14 +1,8 @@
 import { browser } from 'wxt/browser';
 import { z } from 'zod';
-import {
-  type Card,
-  type CardWithProblem,
-  type LeetcodeDomain,
-  leetcodeDomainSchema,
-  type ProblemDescriptor,
-} from '@/shared/models';
+import { type LeetcodeDomain, leetcodeDomainSchema } from '@/shared/models';
 
-const catalogQuestionSchema = z.looseObject({
+export const catalogQuestionSchema = z.looseObject({
   frontendId: z.string().min(1),
   title: z.string(),
   translatedTitle: z.string().nullable(),
@@ -133,27 +127,4 @@ async function getQuestion(
   } finally {
     database.close();
   }
-}
-
-function describeProblem(question: CatalogQuestion, domain: LeetcodeDomain): ProblemDescriptor {
-  const difficulties = { easy: 'Easy', medium: 'Medium', hard: 'Hard' } as const;
-  return {
-    frontendId: question.frontendId,
-    slug: question.slug,
-    name: domain === 'leetcode.cn' ? question.translatedTitle || question.title : question.title,
-    difficulty: difficulties[question.difficulty],
-    domain,
-  };
-}
-
-export async function getProblemBySlug(slug: string, domain: LeetcodeDomain): Promise<ProblemDescriptor> {
-  const question = await getQuestionBySlug(slug, domain);
-  if (!question) throw new Error(`Unknown problem: ${slug} on ${domain}`);
-  return describeProblem(question, domain);
-}
-
-export async function getCardWithProblem(card: Card): Promise<CardWithProblem> {
-  const question = await getQuestionByFrontendId(card.frontendId, card.domain);
-  if (!question) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
-  return { ...card, ...describeProblem(question, card.domain) };
 }

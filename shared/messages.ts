@@ -1,12 +1,11 @@
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from '@webext-core/messaging';
 import { z } from 'zod';
+import { type CatalogQuestion, catalogQuestionSchema } from '@/shared/catalog';
 import {
   type GistConnectionResult,
   type GistSyncStatus,
   gistSetupSchema,
   noteTextSchema,
-  type ProblemDescriptor,
-  problemDescriptorSchema,
   problemReferenceSchema,
   rateCardInputSchema,
 } from '@/shared/models';
@@ -18,7 +17,7 @@ const daysSchema = z.int().nonnegative();
 
 export const messagePayloadSchemas = {
   waitForInitialization: z.undefined(),
-  getProblem: z.object({ slug: problemDescriptorSchema.shape.slug, domain: problemReferenceSchema.shape.domain }),
+  getProblem: z.object({ slug: catalogQuestionSchema.shape.slug, domain: problemReferenceSchema.shape.domain }),
   addCard: z.object({ problem: problemReferenceSchema }),
   removeCard: z.object({ frontendId: frontendIdSchema }),
   delayCard: z.object({ frontendId: frontendIdSchema, days: daysSchema }),
@@ -37,7 +36,7 @@ type MessagePayload<Name extends keyof typeof messagePayloadSchemas> = z.infer<(
 
 export interface ExtensionMessageMap {
   waitForInitialization(): void;
-  getProblem(data: MessagePayload<'getProblem'>): ProblemDescriptor;
+  getProblem(data: MessagePayload<'getProblem'>): CatalogQuestion;
   addCard(data: MessagePayload<'addCard'>): void;
   removeCard(data: MessagePayload<'removeCard'>): void;
   delayCard(data: MessagePayload<'delayCard'>): void;

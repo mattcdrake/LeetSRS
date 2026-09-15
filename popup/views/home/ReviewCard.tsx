@@ -2,17 +2,18 @@ import { Button } from 'react-aria-components';
 import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import { useTheme } from '@/popup/hooks/useTheme';
+import type { CardWithQuestion } from '@/popup/queries/cards';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { bounceButton } from '@/popup/styles';
 import { authorizeEditorReset, getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import type { CardWithProblem } from '@/shared/models';
 import { ratingSchema } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
+import { getQuestionTitle } from '@/shared/ui/question-title';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
-  card: Pick<CardWithProblem, 'slug' | 'frontendId' | 'name' | 'difficulty' | 'domain'>;
+  card: CardWithQuestion;
   onRate: (rating: Grade) => void;
   isProcessing?: boolean;
 };
@@ -21,7 +22,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
   const t = useI18n();
   const colors = RATING_COLORS[useTheme()];
   const { data: settings } = useSettingsQuery();
-  const difficultyColor = DIFFICULTY_COLORS[card.difficulty] ?? DIFFICULTY_COLORS.Medium;
+  const difficultyColor = DIFFICULTY_COLORS[card.difficulty] ?? DIFFICULTY_COLORS.medium;
   const problemUrl = getLeetcodeProblemUrl(card);
   const href = settings.resetEditorOnReviewQueue ? authorizeEditorReset(problemUrl) : problemUrl;
 
@@ -29,7 +30,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
     <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-secondary">#{card.frontendId}</span>
-        <span className="text-xs px-2 py-1 rounded text-white" style={{ backgroundColor: difficultyColor }}>
+        <span className="text-xs px-2 py-1 rounded text-white capitalize" style={{ backgroundColor: difficultyColor }}>
           {card.difficulty}
         </span>
       </div>
@@ -42,7 +43,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
           className="text-lg font-semibold text-primary group"
           aria-label="LeetCode problem"
         >
-          {card.name}
+          {getQuestionTitle(card, card.domain)}
           <FaArrowUpRightFromSquare className="inline ml-1.5 text-xs opacity-60 group-hover:opacity-100 transition-opacity" />
         </a>
       </div>

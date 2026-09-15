@@ -12,7 +12,7 @@ import { getBadgeState } from '@/background/badge';
 import background from '@/entrypoints/background/index';
 import { onMessage, sendMessage } from '@/shared/messages';
 import { STORAGE_KEYS } from '@/shared/storage';
-import { buildProblemDescriptor, createMockCard } from '@/test/utils/card-mocks';
+import { buildCatalogQuestion, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -105,7 +105,7 @@ describe('card queries through JSON messaging and background handlers', () => {
         expect(view.result.current.data).toEqual([]);
 
         await act(() => vi.advanceTimersByTimeAsync(15_000));
-        await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildProblemDescriptor() }]));
+        await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildCatalogQuestion() }]));
       } finally {
         view.unmount();
         vi.useRealTimers();

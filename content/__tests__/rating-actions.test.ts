@@ -1,7 +1,7 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { getCurrentProblem } from '@/content/problem-data';
 import { sendMessage } from '@/shared/messages';
-import { buildProblemDescriptor } from '@/test/utils/card-mocks';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { createMessageMock } from '@/test/utils/message-mocks';
 import { addCurrentProblem, rateCurrentProblem } from '../rating-actions';
 
@@ -9,14 +9,14 @@ vi.mock('@/content/problem-data', () => ({ getCurrentProblem: vi.fn() }));
 vi.mock('@/shared/messages', () => ({ sendMessage: vi.fn() }));
 
 const messages = createMessageMock(vi.mocked(sendMessage));
-const problem = buildProblemDescriptor();
+const problem = buildProblem();
 beforeEach(() => {
   messages.reset().resolve('rateCard', undefined).resolve('addCard', undefined);
   vi.mocked(getCurrentProblem).mockResolvedValue(problem);
 });
 
 it('reads the current problem again for each action', async () => {
-  const nextProblem = buildProblemDescriptor({ slug: 'three-sum', name: '3Sum', frontendId: '15' });
+  const nextProblem = buildProblem({ frontendId: '15' });
   vi.mocked(getCurrentProblem).mockResolvedValueOnce(problem).mockResolvedValueOnce(nextProblem);
 
   await rateCurrentProblem(3);

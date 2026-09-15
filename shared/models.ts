@@ -16,19 +16,12 @@ const nonemptyString = z.string().refine((value) => value.trim().length > 0, {
 const count = z.int().nonnegative();
 const epochMilliseconds = z.number().min(-8.64e15).max(8.64e15);
 
-export const difficultySchema = z.enum(['Easy', 'Medium', 'Hard']);
 export const leetcodeDomainSchema = z.enum(['leetcode.com', 'leetcode.cn']);
 export const problemReferenceSchema = z.object({
   frontendId: nonemptyString,
   domain: leetcodeDomainSchema,
 });
 export type ProblemReference = z.infer<typeof problemReferenceSchema>;
-
-export const problemDescriptorSchema = problemReferenceSchema.extend({
-  slug: nonemptyString,
-  name: nonemptyString,
-  difficulty: difficultySchema,
-});
 
 export const fsrsCardSchema = z.object({
   due: epochMilliseconds,
@@ -55,14 +48,11 @@ export const cardSchema = problemReferenceSchema
     return card;
   });
 
-export type Difficulty = z.infer<typeof difficultySchema>;
 export type LeetcodeDomain = z.infer<typeof leetcodeDomainSchema>;
-export type ProblemDescriptor = z.infer<typeof problemDescriptorSchema>;
 export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratingSchema });
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
 export type FsrsCard = z.infer<typeof fsrsCardSchema>;
 export type Card = z.infer<typeof cardSchema>;
-export type CardWithProblem = Card & ProblemDescriptor;
 export const LEARNING_DOCUMENT_VERSION = 10;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });

@@ -3,10 +3,11 @@
  */
 
 import { render, screen } from '@testing-library/react';
+import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { translations } from '@/shared/i18n/index';
-import type { CardWithProblem } from '@/shared/models';
+import { createMockCardWithQuestion } from '@/test/utils/card-mocks';
 import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -17,13 +18,7 @@ vi.mock('@/popup/contexts/I18nContext', () => ({ useI18n: vi.fn() }));
 
 describe('ReviewCard', () => {
   const mockOnRate = vi.fn();
-  const mockCard: Pick<CardWithProblem, 'slug' | 'frontendId' | 'name' | 'difficulty' | 'domain'> = {
-    slug: 'two-sum',
-    frontendId: '1',
-    name: 'Two Sum',
-    difficulty: 'Easy',
-    domain: 'leetcode.com',
-  };
+  const mockCard = createMockCardWithQuestion(State.New);
 
   const renderWithProviders = (card = mockCard, onRate = mockOnRate, resetEditorOnReviewQueue = false) => {
     const { wrapper, queryClient } = createPopupTestWrapper();
@@ -48,6 +43,7 @@ describe('ReviewCard', () => {
 
     it.each(['leetcode.com', 'leetcode.cn'] as const)('authorizes a queue opening on %s', (domain) => {
       renderWithProviders({ ...mockCard, domain }, mockOnRate, true);
+      expect(screen.getByText(domain === 'leetcode.cn' ? '两数之和' : 'Two Sum')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /LeetCode/i })).toHaveAttribute(
         'href',
         `https://${domain}/problems/two-sum/description/#leetsrs-reset-editor`

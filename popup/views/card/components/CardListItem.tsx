@@ -4,12 +4,13 @@ import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-
 import { State as FsrsState } from 'ts-fsrs';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
+import type { CardWithQuestion } from '@/popup/queries/cards';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
 import { bounceButton } from '@/popup/styles';
 import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import type { CardWithProblem } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
+import { getQuestionTitle } from '@/shared/ui/question-title';
 import { useI18n } from '../../../contexts/I18nContext';
 
 const getStateLabel = (state: FsrsState, t: Translations) => {
@@ -49,7 +50,7 @@ function StatRow({ label, value }: StatRowProps) {
 }
 
 interface CardListItemProps {
-  card: CardWithProblem;
+  card: CardWithQuestion;
 }
 
 export function CardListItem({ card }: CardListItemProps) {
@@ -86,10 +87,10 @@ export function CardListItem({ card }: CardListItemProps) {
           <div className="flex items-center gap-2">
             {card.paused && <FaCirclePause className="text-warning text-base" title={t.cardsView.cardPausedTitle} />}
             <span className="text-xs text-secondary">{t.format.leetcodeId(card.frontendId)}</span>
-            <span className={`text-sm ${card.paused ? 'opacity-60' : ''}`}>{card.name}</span>
+            <span className={`text-sm ${card.paused ? 'opacity-60' : ''}`}>{getQuestionTitle(card, card.domain)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-secondary" style={{ color: DIFFICULTY_COLORS[card.difficulty] }}>
+            <span className="text-xs text-secondary capitalize" style={{ color: DIFFICULTY_COLORS[card.difficulty] }}>
               {card.difficulty}
             </span>
             <span
@@ -104,7 +105,7 @@ export function CardListItem({ card }: CardListItemProps) {
           target="_blank"
           rel="noopener noreferrer"
           className="self-stretch flex items-center px-3 text-secondary hover:text-primary transition-colors"
-          aria-label={`Open ${card.name} on LeetCode`}
+          aria-label={`Open ${getQuestionTitle(card, card.domain)} on LeetCode`}
         >
           <FaArrowUpRightFromSquare className="text-sm" />
         </a>

@@ -20,7 +20,7 @@ import {
   setSyncEnabled,
   sync,
 } from '@/background/persistence';
-import { getProblemBySlug, initializeCatalog } from '@/shared/catalog';
+import { getQuestionBySlug, initializeCatalog } from '@/shared/catalog';
 import { messagePayloadSchemas, onMessage } from '@/shared/messages';
 import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
@@ -57,7 +57,9 @@ export function startBackground() {
   onMessage('getProblem', async ({ data }) => {
     await readyPromise;
     const { slug, domain } = messagePayloadSchemas.getProblem.parse(data);
-    return getProblemBySlug(slug, domain);
+    const question = await getQuestionBySlug(slug, domain);
+    if (!question) throw new Error(`Unknown problem: ${slug} on ${domain}`);
+    return question;
   });
   onMessage('addCard', async ({ data }) => {
     await readyPromise;
