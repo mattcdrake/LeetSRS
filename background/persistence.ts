@@ -81,7 +81,8 @@ export async function resetAllData(): Promise<void> {
     settings: {},
   });
   await removeGistConnection();
-  await resetGistSyncStatus();
+  await removeSyncStatus();
+  lastError = null;
   await removeLegacyLearningData();
 }
 
@@ -216,11 +217,6 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
   } catch (error) {
     return { saved: false, error: syncErrorCode(error, 'connectionSaveFailed') };
   }
-}
-
-async function resetGistSyncStatus(): Promise<void> {
-  await removeSyncStatus();
-  lastError = null;
 }
 
 function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'): GistSyncErrorCode {

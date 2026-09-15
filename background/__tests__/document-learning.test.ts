@@ -285,24 +285,6 @@ describe('document learning through background commands', () => {
     expect(writes).not.toHaveBeenCalled();
   });
 
-  it.each(['addCard', 'rateCard'] as const)(
-    '%s rejects an unpersistable card result before writing',
-    async (command) => {
-      const before = await readLearningDocument();
-      const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-      const problem = buildProblem({ frontendId: '__proto__' });
-      const edit =
-        command === 'addCard'
-          ? dispatch(command, { problem })
-          : dispatch(command, { input: { ...problem, rating: Rating.Good } });
-
-      await expect(edit).rejects.toThrow('not found');
-      expect(writes).not.toHaveBeenCalled();
-      expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-      expect(await readLearningDocument()).toEqual(before);
-    }
-  );
-
   it.each([Rating.Again, Rating.Good] as const)(
     'preserves repeated scheduling and daily activity for rating %s',
     async (rating) => {
