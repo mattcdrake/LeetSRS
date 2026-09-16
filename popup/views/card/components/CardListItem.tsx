@@ -138,7 +138,7 @@ export function CardListItem({ card }: CardListItemProps) {
             </Button>
 
             <Button
-              className={`flex items-center justify-center gap-2 ${destructiveButton(isConfirming)}`}
+              className={`flex-1 flex items-center justify-center gap-2 ${destructiveButton(isConfirming)}`}
               onPress={() => startOrConfirm(handleDelete)}
               isDisabled={removeCardMutation.isPending}
             >

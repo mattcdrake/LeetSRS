@@ -12,11 +12,10 @@ import {
   useSetGistSyncEnabledMutation,
   useSetupGistSyncMutation,
 } from '@/popup/queries/gist-sync';
+import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import { SettingsSwitch } from './SettingsSwitch';
 
-const buttonClass =
-  'min-h-10 px-3 py-2 rounded-lg border border-current bg-primary text-primary text-xs hover:bg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 export function GistSyncSection() {
   const translations = useI18n();
   const t = translations.settings.gistSync;
@@ -170,13 +169,13 @@ export function GistSyncSection() {
               {destinations.isError && (
                 <p role="alert">
                   {t.loadBackupsFailed}{' '}
-                  <Button className={buttonClass} onPress={() => void destinations.refetch()}>
+                  <Button className={secondaryButton} onPress={() => void destinations.refetch()}>
                     {t.retry}
                   </Button>
                 </p>
               )}
               <Button
-                className={`${buttonClass} w-full font-medium`}
+                className={`${secondaryButton} w-full font-medium`}
                 isDisabled={busy || !destination}
                 onPress={() => void save()}
               >
