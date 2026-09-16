@@ -5,6 +5,10 @@ const actual = await vi.importActual<typeof import('@/shared/background-service'
 export const BACKGROUND_SERVICE_KEY = actual.BACKGROUND_SERVICE_KEY;
 
 export const background = {
+  claimRatingHint: vi.fn<BackgroundService['claimRatingHint']>(),
+  previewRatings: vi.fn<BackgroundService['previewRatings']>(),
+  savePanelRating: vi.fn<BackgroundService['savePanelRating']>(),
+  undoPanelRating: vi.fn<BackgroundService['undoPanelRating']>(),
   dismissGithubSetupPrompt: vi.fn<BackgroundService['dismissGithubSetupPrompt']>(),
   cancelGithubSignInRequest: vi.fn<BackgroundService['cancelGithubSignInRequest']>(),
   startGithubSignIn: vi.fn<BackgroundService['startGithubSignIn']>(),

@@ -34,6 +34,77 @@ describe('document learning through background commands', () => {
     vi.restoreAllMocks();
   });
 
+  it('previews the actual schedule and undoes a saved rating', async () => {
+    const service = getRegisteredBackground();
+    const before = await readLearningDocument();
+    const preview = await service.previewRatings(buildProblem());
+    expect(preview[Rating.Good]).toBe(3);
+    const saved = await service.savePanelRating({ ...buildProblem(), rating: Rating.Good });
+    expect(saved.scheduledDays).toBe(3);
+    expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
+    await service.undoPanelRating(saved.undo);
+    const restored = await readLearningDocument();
+    expect(restored.cards).toEqual(before.cards);
+    expect(restored.reviewActivity).toEqual(before.reviewActivity);
+  });
+
+  it.each([undefined, Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
+    'restores a prior card and activity after panel selection %s',
+    async (rating) => {
+      const service = getRegisteredBackground();
+      await service.rateCard({ ...buildProblem(), rating: Rating.Good });
+      await service.saveNote('1', 'Keep the approach');
+      const before = await readLearningDocument();
+      const saved = await service.savePanelRating({ ...buildProblem(), rating });
+      await service.updateSettings({ theme: 'dark' });
+      await service.undoPanelRating(saved.undo);
+      const restored = await readLearningDocument();
+      expect(restored.cards).toEqual(before.cards);
+      expect(restored.reviewActivity).toEqual(before.reviewActivity);
+      expect(restored.settings.theme).toBe('dark');
+    }
+  );
+
+  it('keeps failed saves and Undo retryable without losing subsequent edits', async () => {
+    const service = getRegisteredBackground();
+    const original = await readLearningDocument();
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
+    await expect(service.savePanelRating(buildProblem())).rejects.toThrow('Disk full');
+    expect(await readLearningDocument()).toEqual(original);
+    const saved = await service.savePanelRating(buildProblem());
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
+    await expect(service.undoPanelRating(saved.undo)).rejects.toThrow('Disk full');
+    expect((await readLearningDocument()).cards['1']).toBeDefined();
+    await service.undoPanelRating(saved.undo);
+    expect((await readLearningDocument()).cards).toEqual({});
+    const next = await service.savePanelRating({ ...buildProblem(), rating: Rating.Good });
+    await service.rateCard({ ...buildProblem(), rating: Rating.Easy });
+    const newer = await readLearningDocument();
+    await expect(service.undoPanelRating(next.undo)).rejects.toThrow('Practice data changed');
+    expect(await readLearningDocument()).toEqual(newer);
+  });
+
+  it('remembers the first panel open without changing the auto-open preference', async () => {
+    const service = getRegisteredBackground();
+    expect(await service.claimRatingHint()).toBe(true);
+    expect(await service.claimRatingHint()).toBe(false);
+    backgroundEntry.main();
+    expect(await getRegisteredBackground().claimRatingHint()).toBe(false);
+    expect((await readLearningDocument()).settings.openRatingAfterSolving).toBeUndefined();
+  });
+
+  it('preserves consecutive reviews when a panel save overlaps another command', async () => {
+    const service = getRegisteredBackground();
+    const saved = await service.savePanelRating({ ...buildProblem(), rating: Rating.Good });
+    await Promise.all([
+      service.undoPanelRating(saved.undo),
+      service.rateCard({ ...buildProblem(), rating: Rating.Easy }),
+    ]);
+    const document = await readLearningDocument();
+    expect(document.cards['1']?.fsrs.reps).toBe(1);
+    expect(document.reviewActivity?.newCards).toBe(1);
+  });
+
   it('publishes a complete review only after the document replacement succeeds', async () => {
     const before = await readLearningDocument();
     const started = Promise.withResolvers<void>();

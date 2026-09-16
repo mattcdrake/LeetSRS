@@ -64,6 +64,7 @@ describe('document settings through background commands', () => {
       theme: 'system',
       language: 'en',
       resetEditorOnReviewQueue: true,
+      openRatingAfterSolving: false,
     } as const;
     await getRegisteredBackground().updateSettings(changes);
 

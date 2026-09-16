@@ -1,13 +1,17 @@
 // @vitest-environment happy-dom
 
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeEditorReset } from '@/content/editor-reset';
 import { watchDocumentTranslations } from '@/content/translations';
 import { translations } from '@/shared/i18n/index';
+import { replaceLearningDocument } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { bootstrapContent } from '../bootstrap';
+import { ACCEPTED_SUBMISSION_MESSAGE } from '../submission-observer';
 
 vi.mock('@/content/editor-reset', () => ({ setupLeetcodeEditorReset: vi.fn() }));
 vi.mock('@/content/translations', () => ({ watchDocumentTranslations: vi.fn() }));
@@ -57,6 +61,7 @@ describe('content startup', () => {
     await act(() => bootstrapContent(ctx));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
+    const baselineTimers = vi.getTimerCount();
     const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeEditorReset).mock.calls[0]);
     await act(async () => onResetConfirmed());
 
@@ -66,7 +71,7 @@ describe('content startup', () => {
     act(() => vi.advanceTimersByTime(2800));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(container.isConnected).toBe(false);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(baselineTimers);
   });
 
   it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
@@ -110,4 +115,42 @@ describe('content startup', () => {
     expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
     expect(unwatchTranslations).toHaveBeenCalledOnce();
   });
+});
+
+it('auto-opens once per new submission, respects opt-out, and stops on invalidation', async () => {
+  fakeBrowser.reset();
+  window.history.replaceState({}, '', '/problems/two-sum/');
+  await replaceLearningDocument(buildLearningDocument());
+  await act(() => bootstrapContent(ctx));
+  const shadow = requireDefined(document.querySelector('leetsrs-control')?.shadowRoot);
+  const control = requireDefined(shadow.querySelector<HTMLElement>('div'));
+  const button = within(control).getByRole('button', { name: 'LeetSRS' });
+  const notify = (id: string, slug = 'two-sum') =>
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        source: window,
+        origin: window.location.origin,
+        data: { type: ACCEPTED_SUBMISSION_MESSAGE, slug, submissionId: id },
+      })
+    );
+  await act(async () => notify('1'));
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
+  fireEvent.click(button);
+  await act(async () => notify('1'));
+  expect(button).toHaveAttribute('aria-expanded', 'false');
+  await act(async () => notify('2'));
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
+  fireEvent.click(button);
+  await replaceLearningDocument(buildLearningDocument({ settings: { openRatingAfterSolving: false } }));
+  await act(async () => notify('3'));
+  expect(button).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(button);
+  expect(button).toHaveAttribute('aria-expanded', 'true');
+  fireEvent.click(button);
+  await replaceLearningDocument(buildLearningDocument());
+  await act(async () => notify('4', 'add-two-numbers'));
+  expect(button).toHaveAttribute('aria-expanded', 'false');
+  act(() => ctx.notifyInvalidated());
+  await act(async () => notify('5'));
+  expect(document.querySelector('leetsrs-control')).toBeNull();
 });

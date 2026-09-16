@@ -7,11 +7,15 @@ import {
 } from '@/background/github-auth';
 import {
   addCard,
+  claimRatingHint,
   delayCard,
+  previewRatings,
   rateCard,
   removeCard,
   saveNote,
+  savePanelRating,
   setPauseStatus,
+  undoPanelRating,
   updateSettings,
 } from '@/background/learning';
 import { dismissMigrationNotice } from '@/background/legacy/github-pat';
@@ -26,7 +30,14 @@ import {
 } from '@/background/persistence';
 import type { BackgroundService } from '@/shared/background-service';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
-import { gistSetupSchema, noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/models';
+import {
+  gistSetupSchema,
+  noteTextSchema,
+  panelRatingInputSchema,
+  panelUndoSchema,
+  problemReferenceSchema,
+  rateCardInputSchema,
+} from '@/shared/models';
 import { settingsUpdateSchema } from '@/shared/settings';
 
 export function createBackgroundService(ready: Promise<void>): BackgroundService {
@@ -38,6 +49,21 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
       await ready;
       return await run(...schema.parse(args));
     };
+  }
+
+  let learningWrites = Promise.resolve();
+  function learningCommand<Args extends unknown[], Result>(
+    schema: z.ZodType<Args>,
+    run: (...args: Args) => Result | Promise<Result>
+  ): (...args: Args) => Promise<Result> {
+    return command(schema, (...args) => {
+      const next = learningWrites.then(() => run(...args));
+      learningWrites = next.then(
+        () => undefined,
+        () => undefined
+      );
+      return next;
+    });
   }
 
   const frontendId = problemReferenceSchema.shape.frontendId;
@@ -58,15 +84,19 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
         return problem;
       }
     ),
-    addCard: command(z.tuple([problemReferenceSchema]), addCard),
-    removeCard: command(z.tuple([frontendId]), removeCard),
-    delayCard: command(z.tuple([frontendId, z.int().nonnegative()]), delayCard),
-    setPauseStatus: command(z.tuple([frontendId, z.boolean()]), setPauseStatus),
-    rateCard: command(z.tuple([rateCardInputSchema]), rateCard),
-    saveNote: command(z.tuple([frontendId, noteTextSchema]), saveNote),
-    updateSettings: command(z.tuple([settingsUpdateSchema]), updateSettings),
-    importData: command(z.tuple([z.string()]), restoreBackup),
-    resetAllData: command(z.tuple([]), resetAllData),
+    claimRatingHint: command(z.tuple([]), claimRatingHint),
+    previewRatings: learningCommand(z.tuple([problemReferenceSchema]), previewRatings),
+    savePanelRating: learningCommand(z.tuple([panelRatingInputSchema]), savePanelRating),
+    undoPanelRating: learningCommand(z.tuple([panelUndoSchema]), undoPanelRating),
+    addCard: learningCommand(z.tuple([problemReferenceSchema]), addCard),
+    removeCard: learningCommand(z.tuple([frontendId]), removeCard),
+    delayCard: learningCommand(z.tuple([frontendId, z.int().nonnegative()]), delayCard),
+    setPauseStatus: learningCommand(z.tuple([frontendId, z.boolean()]), setPauseStatus),
+    rateCard: learningCommand(z.tuple([rateCardInputSchema]), rateCard),
+    saveNote: learningCommand(z.tuple([frontendId, noteTextSchema]), saveNote),
+    updateSettings: learningCommand(z.tuple([settingsUpdateSchema]), updateSettings),
+    importData: learningCommand(z.tuple([z.string()]), restoreBackup),
+    resetAllData: learningCommand(z.tuple([]), resetAllData),
     setupGistSync: command(z.tuple([gistSetupSchema]), connectGist),
     setGistSyncEnabled: command(z.tuple([z.boolean()]), setSyncEnabled),
     getGistSyncStatus: command(z.tuple([]), getSyncStatus),

@@ -37,3 +37,15 @@ it('keeps an unfinished limit while incoming settings refresh and saves the draf
   await act(() => replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 7 } }));
   await waitFor(() => expect(input).toHaveValue(7));
 });
+
+it('defaults auto-open on and persists toggling it off and back on', async () => {
+  await replaceLearningDocument(buildLearningDocument());
+  createServiceMock(background).handle('updateSettings', updateSettings);
+  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
+  const toggle = await screen.findByRole('switch', { name: 'Open rating panel after solving' });
+  expect(toggle).toHaveAttribute('aria-checked', 'true');
+  fireEvent.click(toggle);
+  await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'));
+  fireEvent.click(toggle);
+  await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
+});

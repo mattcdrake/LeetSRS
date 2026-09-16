@@ -6,8 +6,12 @@ import type {
   GistSetup,
   GistSyncStatus,
   LeetcodeDomain,
+  PanelRatingInput,
+  PanelSave,
+  PanelUndo,
   ProblemReference,
   RateCardInput,
+  RatingPreview,
 } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
 
@@ -21,6 +25,10 @@ export interface BackgroundService {
   dismissMigrationNotice(): Promise<void>;
   waitForInitialization(): Promise<void>;
   getProblem(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem>;
+  claimRatingHint(): Promise<boolean>;
+  previewRatings(problem: ProblemReference): Promise<RatingPreview>;
+  savePanelRating(input: PanelRatingInput): Promise<PanelSave>;
+  undoPanelRating(undo: PanelUndo): Promise<void>;
   addCard(problem: ProblemReference): Promise<void>;
   removeCard(frontendId: string): Promise<void>;
   delayCard(frontendId: string, days: number): Promise<void>;

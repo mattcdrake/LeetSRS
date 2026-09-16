@@ -1,19 +1,14 @@
-import { type CSSProperties, type Ref, useCallback, useEffect, useRef, useState } from 'react';
-import { Overlay } from 'react-aria/Overlay';
+import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
-import { addCurrentProblem, rateCurrentProblem } from '@/content/rating-actions';
 import { watchDocumentTranslations } from '@/content/translations';
 import type { Translations } from '@/shared/i18n/index';
 import { RatingMenu } from './RatingMenu';
-import { Toast } from './Toast';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
 
-export function LeetSrsControl() {
+export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showError, setShowError] = useState(false);
-  const dismissError = useCallback(() => setShowError(false), []);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
 
@@ -26,42 +21,24 @@ export function LeetSrsControl() {
     wasMenuOpen.current = menuOpen;
   }, [menuOpen]);
 
-  const runAction = async (action: () => Promise<void>) => {
-    setShowError(false);
-    try {
-      await action();
-    } catch (error) {
-      console.error('Failed to save problem:', error);
-      setShowError(true);
-    }
-  };
+  useEffect(() => {
+    if (openRequest > 0) setMenuOpen(true);
+  }, [openRequest]);
 
   if (!t) return null;
 
   return (
-    <>
-      <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
-        <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
-          <LeetSrsButton t={t} ref={buttonRef} />
-          <Tooltip text={t.app.name} />
-        </TooltipTrigger>
-        <Popover placement="bottom end" offset={8} className="z-50">
-          <Dialog aria-label={t.app.name}>
-            <RatingMenu
-              t={t}
-              onRate={(rating) => void runAction(() => rateCurrentProblem(rating))}
-              onAddWithoutRating={() => void runAction(addCurrentProblem)}
-              onSelect={() => setMenuOpen(false)}
-            />
-          </Dialog>
-        </Popover>
-      </DialogTrigger>
-      {showError && (
-        <Overlay disableFocusManagement>
-          <Toast message={t.contentScript.saveFailed} onDismiss={dismissError} />
-        </Overlay>
-      )}
-    </>
+    <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
+      <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
+        <LeetSrsButton t={t} ref={buttonRef} />
+        <Tooltip text={t.app.name} />
+      </TooltipTrigger>
+      <Popover placement="bottom end" offset={8} className="z-50">
+        <Dialog aria-label={t.app.name}>
+          <RatingMenu key={openRequest} t={t} />
+        </Dialog>
+      </Popover>
+    </DialogTrigger>
   );
 }
 
@@ -71,7 +48,7 @@ export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTML
     <Button
       {...props}
       type="button"
-      className="flex cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 hover:bg-(--button-hover) data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-current data-focus-visible:outline-offset-2"
+      className="flex items-center gap-2 cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 hover:bg-(--button-hover) data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-current data-focus-visible:outline-offset-2"
       aria-label={t.app.name}
       style={
         {
@@ -103,6 +80,9 @@ export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTML
         <path d="M7.16 18.37l0 .01" />
         <path d="M11 19.94l0 .01" />
       </svg>
+      <span className="rating-wordmark" style={{ color: colors.textAddButton }}>
+        Leet<span style={{ color: colors.ratings[4].bg }}>SRS</span>
+      </span>
     </Button>
   );
 }

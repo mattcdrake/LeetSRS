@@ -16,7 +16,7 @@ export async function addCurrentProblem() {
   await background.addCard({ frontendId: problem.frontendId, domain: problem.domain });
 }
 
-async function getCurrentProblemReference(): Promise<ProblemReference> {
+export async function getCurrentProblemReference(): Promise<ProblemReference> {
   const slug = getCurrentProblemSlug();
   if (!slug) throw new Error('Expected a problem slug on the current page');
   const domain = getCurrentDomain();

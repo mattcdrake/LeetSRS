@@ -139,6 +139,7 @@ const zhCN: Translations = {
     },
 
     reviewSettings: {
+      openRatingAfterSolving: '解题后打开评分面板',
       newCardsPerDay: '每日新卡片数量',
     },
 
@@ -224,6 +225,20 @@ const zhCN: Translations = {
   },
 
   contentScript: {
+    howDidItGo: '这次做得怎么样？',
+    nextReview: '下次复习',
+    descriptions: { 1: '需要查看题解', 2: '解题较费力', 3: '记得解题思路', 4: '轻松解决' },
+    saveWithoutRating: '保存但不评分',
+    autoOpenHint: '解题后自动打开。',
+    turnOffAutoOpen: '关闭自动打开',
+    saved: '已保存',
+    undo: '撤销',
+    undoFailed: '无法撤销，练习数据可能已更改。请重试。',
+    retry: '重试',
+    loading: '加载中…',
+    days: (days: number) => `${days} 天`,
+    reviewIn: (days: number) => `${days} 天后复习`,
+
     saveFailed: '无法保存这道题目，请重试。',
     addToSrsNoRating: '添加到 SRS（无评分）',
   },

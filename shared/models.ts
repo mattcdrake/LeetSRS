@@ -135,3 +135,16 @@ export interface GistSyncStatus {
   syncInProgress: boolean;
   lastError: GistSyncErrorCode | null;
 }
+
+export const panelRatingInputSchema = problemReferenceSchema.extend({ rating: ratingSchema.optional() });
+export type PanelRatingInput = z.infer<typeof panelRatingInputSchema>;
+export const panelUndoSchema = z.object({
+  frontendId: problemReferenceSchema.shape.frontendId,
+  beforeCard: cardSchema.nullable(),
+  afterCard: cardSchema,
+  beforeActivity: reviewActivitySchema.nullable(),
+  afterActivity: reviewActivitySchema.nullable(),
+});
+export type PanelUndo = z.infer<typeof panelUndoSchema>;
+export type RatingPreview = Record<Grade, number>;
+export type PanelSave = { undo: PanelUndo; scheduledDays: number | null };
