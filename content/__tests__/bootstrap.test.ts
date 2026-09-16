@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, screen, within } from '@testing-library/react';
+import { act, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
@@ -59,7 +59,7 @@ describe('content startup', () => {
   it('shows a toast only after auto-reset reports confirmation', async () => {
     vi.useFakeTimers();
     await act(() => bootstrapContent(ctx));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(document.querySelector('leetsrs-toast')).toBeNull();
 
     const baselineTimers = vi.getTimerCount();
     const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeEditorReset).mock.calls[0]);
@@ -69,7 +69,6 @@ describe('content startup', () => {
     const toast = requireDefined(container.shadowRoot?.querySelector('[role="status"]'));
     expect(toast).toHaveTextContent('Code reset to default');
     act(() => vi.advanceTimersByTime(2800));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(container.isConnected).toBe(false);
     expect(vi.getTimerCount()).toBe(baselineTimers);
   });

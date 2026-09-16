@@ -95,13 +95,13 @@ describe('LeetcodeCnBanner', () => {
   });
 
   it('persists banner dismissal and keeps settings available', async () => {
-    render(
+    const content = (
       <>
         <LeetcodeCnBanner />
         <LeetcodeCnSection />
-      </>,
-      createPopupTestWrapper()
+      </>
     );
+    const view = render(content, createPopupTestWrapper());
     const dismiss = await screen.findByRole('button', { name: 'Dismiss' });
     act(() => dismiss.click());
     expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
@@ -110,6 +110,12 @@ describe('LeetcodeCnBanner', () => {
     expect(screen.getByText(/Enable support for leetcode\.cn/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
+
+    view.unmount();
+    render(content, createPopupTestWrapper());
+    expect(await screen.findByRole('button', { name: /enable/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Using leetcode.cn? Enable support to add problems.')).not.toBeInTheDocument();
   });
 
   it.each([
@@ -125,17 +131,6 @@ describe('LeetcodeCnBanner', () => {
 
     expect(mockQuery).toHaveBeenCalledWith({ active: true, currentWindow: true });
     expect(mockRequest).not.toHaveBeenCalled();
-    expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
-  });
-
-  it('is hidden when dismissed via localStorage', async () => {
-    mockLocalStorage.setItem(DISMISS_KEY, '1');
-    mockContains.mockResolvedValue(false);
-
-    await act(async () => {
-      render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    });
-
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
   });
 });
