@@ -22,6 +22,7 @@ const token = {
 const callback = 'https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.chromiumapp.org/';
 beforeEach(async () => {
   fakeBrowser.reset();
+  vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => true);
   await signOutGithub();
   vi.stubEnv('WXT_GITHUB_CLIENT_ID', 'client');
   vi.spyOn(browser.identity, 'getRedirectURL').mockReturnValue(callback);
@@ -151,4 +152,24 @@ it.each(['sign-in', 'refresh'])('sign-out waits for a %s credential write alread
   await refresh;
   expect((await getGithubAuthStatus()).account).toBeNull();
   expect(await storage.getItem('local:leetsrs:githubAuthorization')).toBeNull();
+});
+
+it('refuses OAuth without host access', async () => {
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
+  acceptSignIn();
+  startGithubSignIn();
+  await finishSignIn();
+  expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
+  expect(fetch).not.toHaveBeenCalled();
+  expect((await getGithubAuthStatus()).error).toBe('signInFailed');
+});
+
+it('blocks saved authorization after revocation and preserves it for re-enabling', async () => {
+  await seedGithubAuthorization();
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
+  await expect(getGithubAuthorization()).rejects.toThrow('Enable GitHub access');
+  expect(fetch).not.toHaveBeenCalled();
+  expect((await getGithubAuthStatus()).account?.login).toBe('tester');
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
+  expect((await getGithubAuthorization()).account.login).toBe('tester');
 });

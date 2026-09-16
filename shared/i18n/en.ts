@@ -190,6 +190,10 @@ const en = {
 
     // GitHub Gist Sync section
     gistSync: {
+      permissionRequired: 'GitHub access was removed. Re-enable it to resume backup sync.',
+      enableAccess: 'Enable GitHub access',
+      permissionFailed:
+        'GitHub access wasn’t granted. Retry sign-in or enable GitHub access; local practice is still available.',
       signIn: 'Sign in with GitHub',
       signingIn: 'Signing in…',
       signOut: 'Sign out',

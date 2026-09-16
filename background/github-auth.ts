@@ -2,7 +2,7 @@ import { browser } from 'wxt/browser';
 import { z } from 'zod';
 import { storage } from '#imports';
 import { readPatMigration } from '@/background/legacy/github-pat';
-import type { GithubAuthStatus } from '@/shared/github-auth';
+import { GITHUB_HOST_PERMISSIONS, type GithubAuthStatus } from '@/shared/github-auth';
 
 const AUTH_KEY = 'local:leetsrs:githubAuthorization';
 const AUTH_ORIGIN = 'https://auth.leetsrs.com';
@@ -82,6 +82,7 @@ export function startGithubSignIn(): void {
   const expected = generation;
   error = null;
   const attempt = (async () => {
+    if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) throw new Error('GitHub access required');
     // Changing accounts requires signing out first.
     if (await readAuthorization()) return;
     if (expected !== generation) return;
@@ -131,6 +132,8 @@ export function startGithubSignIn(): void {
 
 export async function getGithubAuthorization() {
   const expected = generation;
+  if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS)))
+    throw new Error('401: Enable GitHub access in Settings');
   const saved = await readAuthorization();
   if (!saved || expected !== generation) throw new Error('401: Sign in with GitHub');
   if (saved.expiresAt > Date.now() + 60000) return saved;

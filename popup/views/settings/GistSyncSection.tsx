@@ -12,6 +12,7 @@ import {
   useSetGistSyncEnabledMutation,
   useSetupGistSyncMutation,
 } from '@/popup/queries/gist-sync';
+import { useGithubPermissions } from '@/popup/queries/github-permissions';
 import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import { SettingsSwitch } from './SettingsSwitch';
@@ -21,25 +22,31 @@ export function GistSyncSection() {
   const t = translations.settings.gistSync;
   const client = useQueryClient();
   const auth = useGithubAuthQuery();
+  const permissions = useGithubPermissions();
   const { data: config } = useGistSyncConfigQuery();
   const { data: status } = useGistSyncStatusQuery();
   const destinations = useQuery({
     queryKey: [...gistSyncQueryKeys.all, 'destinations', auth.data?.account?.id],
     queryFn: () => background.listGistDestinations(),
-    enabled: !!auth.data?.account && !auth.data.signingIn,
+    enabled: permissions.granted === true && !!auth.data?.account && !auth.data.signingIn,
   });
   const setup = useSetupGistSyncMutation();
   const enable = useSetGistSyncEnabledMutation();
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const action = useMutation({
-    mutationFn: (action: 'signIn' | 'signOut') =>
-      action === 'signIn' ? background.startGithubSignIn() : background.signOutGithub(),
+    mutationFn: () => background.signOutGithub(),
     networkMode: 'always',
     onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
   });
-  const signingIn = !!auth.data?.signingIn || (action.isPending && action.variables === 'signIn');
-  const busy = action.isPending || setup.isPending || enable.isPending || !!auth.data?.signingIn;
+  const signingIn = !!auth.data?.signingIn || (permissions.request.isPending && permissions.request.variables?.signIn);
+  const busy =
+    action.isPending ||
+    permissions.request.isPending ||
+    permissions.granted !== true ||
+    setup.isPending ||
+    enable.isPending ||
+    !!auth.data?.signingIn;
   const destination = selected ?? config?.gistId ?? destinations.data?.find((gist) => gist.suggested)?.id ?? '';
   const result = setup.data ?? enable.data;
   const save = () => {
@@ -79,6 +86,19 @@ export function GistSyncSection() {
         )}
       </div>
       <GithubMigrationNotice />
+      {auth.data?.account && !permissions.isLoading && permissions.granted !== true && (
+        <div role="alert" className="space-y-2">
+          <p>{t.permissionRequired}</p>
+          <Button
+            className={secondaryButton}
+            isDisabled={permissions.request.isPending}
+            onPress={() => permissions.enable(false)}
+          >
+            {t.enableAccess}
+          </Button>
+        </div>
+      )}
+      {(permissions.error || permissions.request.isError) && <p role="alert">{t.permissionFailed}</p>}
       {auth.data?.account ? (
         <>
           <p className="flex items-center gap-2 text-xs text-secondary">
@@ -165,7 +185,7 @@ export function GistSyncSection() {
                   </option>
                 ))}
               </select>
-              {destinations.isPending && <p role="status">{t.loadingBackups}</p>}
+              {permissions.granted && destinations.isPending && <p role="status">{t.loadingBackups}</p>}
               {destinations.isError && (
                 <p role="alert">
                   {t.loadBackupsFailed}{' '}
@@ -210,8 +230,8 @@ export function GistSyncSection() {
               </span>
               <Button
                 className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-                isDisabled={action.isPending && action.variables === 'signOut'}
-                onPress={() => action.mutate('signOut')}
+                isDisabled={action.isPending || permissions.request.isPending}
+                onPress={() => action.mutate()}
               >
                 {t.cancel}
               </Button>
@@ -219,8 +239,8 @@ export function GistSyncSection() {
           ) : (
             <Button
               className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              isDisabled={busy || auth.isPending}
-              onPress={() => action.mutate('signIn')}
+              isDisabled={action.isPending || permissions.request.isPending || auth.isPending}
+              onPress={() => permissions.enable(true)}
             >
               <FaGithub className="h-4 w-4" aria-hidden="true" />
               {t.signIn}
@@ -258,7 +278,7 @@ export function GistSyncSection() {
               setup.reset();
               enable.reset();
               setEditing(false);
-              action.mutate('signOut');
+              action.mutate();
             }}
           >
             {t.signOut}

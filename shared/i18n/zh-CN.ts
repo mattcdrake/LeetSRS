@@ -172,6 +172,9 @@ const zhCN: Translations = {
     },
 
     gistSync: {
+      permissionRequired: 'GitHub 访问权限已移除。请重新启用以恢复备份同步。',
+      enableAccess: '启用 GitHub 访问权限',
+      permissionFailed: '未能获得 GitHub 访问权限。请重试登录或启用 GitHub 访问权限；本地练习仍然可用。',
       signIn: '使用 GitHub 登录',
       signingIn: '正在登录…',
       signOut: '退出登录',
