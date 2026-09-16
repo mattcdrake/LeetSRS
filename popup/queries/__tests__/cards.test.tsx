@@ -1,3 +1,4 @@
+import * as catalog from '@/shared/catalog';
 /**
  * @vitest-environment happy-dom
  */
@@ -16,35 +17,13 @@ import { buildCatalogProblem, createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
-import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper, createTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
-
-it('loads saved cards with one catalog batch', async () => {
-  fakeBrowser.reset();
-  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-  const cards = [
-    createMockCard(State.Review, { frontendId: '1', domain: 'leetcode.com' }),
-    createMockCard(State.Review, { frontendId: '2', domain: 'leetcode.cn' }),
-  ];
-  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
-  const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  try {
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
-    expect(view.result.current.data).toEqual([
-      { ...testCatalog[0], ...cards[0] },
-      { ...testCatalog[1], ...cards[1] },
-    ]);
-  } finally {
-    view.unmount();
-    vi.useRealTimers();
-  }
-});
 
 it('keeps popup and badge queues consistent without reading browser language', async () => {
   fakeBrowser.reset();
@@ -92,10 +71,14 @@ describe('card queries through the background service', () => {
   });
 
   it.each([
+    { frontendId: '1', domain: 'leetcode.com' as const },
     { frontendId: 'unknown', domain: 'leetcode.com' as const },
     { frontendId: '3', domain: 'leetcode.cn' as const },
-  ])('keeps learning data accessible when $frontendId is unavailable on $domain', async (problem) => {
+  ])('isolates catalog errors for $frontendId on $domain', async (problem) => {
     const card = createMockCard(State.Review, { ...problem, note: 'Keep my solution' });
+    const unavailable = problem.frontendId === '1';
+    if (unavailable)
+      vi.spyOn(catalog, 'getProblemsByFrontendIds').mockRejectedValueOnce(new Error('Catalog unavailable'));
     await background.importData(
       JSON.stringify(
         buildLearningDocument({
@@ -105,17 +88,21 @@ describe('card queries through the background service', () => {
       )
     );
     const view = renderHook(
-      () => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery(card.frontendId) }),
+      () => ({
+        cards: useCardsQuery(),
+        queue: useReviewQueueQuery(),
+        note: useNoteQuery(card.frontendId),
+        settings: useSettingsQuery(),
+      }),
       {
         wrapper: createPopupTestWrapper().wrapper,
       }
     );
-    const error = `Unknown problem: ${card.frontendId} on ${card.domain}`;
+    const error = unavailable ? 'Catalog unavailable' : `Unknown problem: ${card.frontendId} on ${card.domain}`;
     await waitFor(() => expect(view.result.current.cards.error?.message).toBe(error));
     expect(view.result.current.queue.error?.message).toBe(error);
     expect(view.result.current.note.data).toBe('Keep my solution');
-    const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-    await waitFor(() => expect(settings.result.current.data.language).toBe('zh-CN'));
+    expect(view.result.current.settings.data.language).toBe('zh-CN');
   });
 
   it('refreshes an empty queue when a card becomes due', async () => {
@@ -128,7 +115,7 @@ describe('card queries through the background service', () => {
 
     try {
       await act(() => vi.advanceTimersByTimeAsync(1));
-      await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
+      await vi.waitFor(() => expect(view.result.current.data).toBeDefined());
       expect(view.result.current.data).toEqual([]);
 
       await act(() => vi.advanceTimersByTimeAsync(15_000));
@@ -138,4 +125,29 @@ describe('card queries through the background service', () => {
       vi.useRealTimers();
     }
   });
+});
+
+it('shares one document read and catalog batch across cards, queue, notes, and settings', async () => {
+  const cards = [
+    createMockCard(State.New, { frontendId: '1', domain: 'leetcode.com', note: 'Shared note' }),
+    createMockCard(State.New, { frontendId: '2', domain: 'leetcode.cn' }),
+  ];
+  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
+  const reads = vi.spyOn(storage, 'getItem');
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
+  const view = renderHook(
+    () => ({
+      cards: useCardsQuery(),
+      queue: useReviewQueueQuery(),
+      note: useNoteQuery('1'),
+      settings: useSettingsQuery(),
+    }),
+    { wrapper: createTestWrapper().wrapper }
+  );
+  await waitFor(() => expect(view.result.current.queue.data).toBeDefined());
+  expect(view.result.current.cards.data).toEqual(cards.map((card, index) => ({ ...testCatalog[index], ...card })));
+  expect(view.result.current.queue.data).toEqual(view.result.current.cards.data);
+  expect(view.result.current.note.data).toBe('Shared note');
+  expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
+  expect(lookups).toHaveBeenCalledTimes(1);
 });

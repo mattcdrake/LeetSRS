@@ -1,54 +1,69 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import type { Card, RateCardInput } from '@/shared/models';
+import type { Card, ProblemReference, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
-import { readLearningDocument } from '@/shared/storage';
 import { usePopupClock } from '../hooks/usePopupClock';
-import { learningDocumentQueryKey } from './learning-document';
+import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export type CardWithProblem = Card & CatalogProblem;
 
-export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
-
-const cardsQueryOptions = queryOptions({
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  queryKey: cardsQueryKey,
-  queryFn: async () => {
-    const document = await readLearningDocument();
-    await background.waitForInitialization();
-    const savedCards = Object.values(document.cards);
-    const problems = await getProblemsByFrontendIds(savedCards);
-    const cards = savedCards.map((card, index): CardWithProblem => {
-      const problem = problems[index];
-      if (!problem) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
-      return { ...problem, ...card };
-    });
-    return { document, cards };
-  },
-});
-
-export function useCardsQuery() {
-  return useQuery({
-    ...cardsQueryOptions,
-    select: ({ cards }) => cards,
+// Catalog data is independent of learning-document edits and keyed only by references.
+export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
+  const references = cards.map(({ frontendId, domain }) => ({ frontendId, domain }));
+  return queryOptions({
+    queryKey: ['popupCardMetadata', references] as const,
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      await background.waitForInitialization();
+      const problems = await getProblemsByFrontendIds(references);
+      return Object.fromEntries(
+        references.map((reference, index) => {
+          const problem = problems[index];
+          if (!problem) throw new Error(`Unknown problem: ${reference.frontendId} on ${reference.domain}`);
+          return [reference.frontendId, problem];
+        })
+      );
+    },
   });
 }
 
-export function useReviewQueueQuery() {
-  const now = usePopupClock();
-  return useQuery({
-    ...cardsQueryOptions,
-    select: ({ document, cards }) => {
-      const byId = new Map(cards.map((card) => [card.frontendId, card]));
-      return buildReviewQueue(document, new Date(now)).map((card) => {
-        const detailed = byId.get(card.frontendId);
-        if (!detailed) throw new Error(`Missing problem details: ${card.frontendId}`);
-        return detailed;
-      });
-    },
+export function useCardsQuery() {
+  const document = useQuery(learningDocumentQueryOptions);
+  const cards = Object.values(document.data?.cards ?? {});
+  const metadata = useQuery({
+    ...cardMetadataQueryOptions(cards),
+    enabled: document.data !== undefined,
+    // Keep open editors mounted when the remaining cards already have metadata.
+    placeholderData: (previous) =>
+      cards.every((card) => previous?.[card.frontendId]?.sources.includes(card.domain)) ? previous : undefined,
   });
+  const problems = metadata.data;
+  return {
+    data:
+      document.data && problems
+        ? cards.map((card): CardWithProblem => ({ ...problems[card.frontendId], ...card }))
+        : undefined,
+    isLoading: document.isLoading || metadata.isLoading,
+    error: document.error ?? metadata.error,
+  };
+}
+
+export function useReviewQueueQuery() {
+  const cards = useCardsQuery();
+  const { data: document } = useQuery(learningDocumentQueryOptions);
+  const now = usePopupClock();
+  const byId = Object.fromEntries((cards.data ?? []).map((card) => [card.frontendId, card]));
+
+  return {
+    ...cards,
+    data:
+      document && cards.data
+        ? buildReviewQueue(document, new Date(now)).map((card) => byId[card.frontendId])
+        : undefined,
+  };
 }
 
 function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {
