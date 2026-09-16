@@ -4,6 +4,10 @@ import { storage } from '#imports';
 import { readPatMigration } from '@/background/legacy/github-pat';
 import { GITHUB_HOST_PERMISSIONS, type GithubAuthStatus } from '@/shared/github-auth';
 
+const SIGN_IN_REQUEST_KEY = 'session:leetsrs:githubSignInRequest';
+const SIGN_IN_REQUEST_TTL = 5 * 60 * 1000;
+let signInRequests = Promise.resolve();
+
 const AUTH_KEY = 'local:leetsrs:githubAuthorization';
 const AUTH_ORIGIN = 'https://auth.leetsrs.com';
 const accountSchema = z.object({ id: z.number().int().positive(), login: z.string().min(1) });
@@ -77,7 +81,53 @@ async function exchange(path: string, payload: Record<string, string>) {
   };
 }
 
-export function startGithubSignIn(): void {
+// Serialize permission events, requests, and cancellation so one grant launches one flow.
+function updateSignInRequest(run: (expected: number) => Promise<void>): Promise<void> {
+  const expected = generation;
+  const result = signInRequests.then(async () => {
+    if (expected === generation) await run(expected);
+  });
+  signInRequests = result.catch(() => {});
+  return result;
+}
+
+async function resumeSignInRequest(expected: number) {
+  const expiresAt = z
+    .number()
+    .finite()
+    .nullable()
+    .parse(await storage.getItem(SIGN_IN_REQUEST_KEY));
+  if (expiresAt === null) return;
+  if (expiresAt <= Date.now()) {
+    await storage.removeItem(SIGN_IN_REQUEST_KEY);
+    return;
+  }
+  if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) return;
+  await storage.removeItem(SIGN_IN_REQUEST_KEY);
+  if (expected === generation) launchGithubSignIn();
+}
+
+export function startGithubSignIn(): Promise<void> {
+  return updateSignInRequest(async (expected) => {
+    if (signingIn || (await readAuthorization())) return;
+    error = null;
+    await storage.setItem(SIGN_IN_REQUEST_KEY, Date.now() + SIGN_IN_REQUEST_TTL);
+    // Also covers grants that arrive before the command has finished arming.
+    await resumeSignInRequest(expected);
+  });
+}
+
+export function resumeGithubSignIn(): Promise<void> {
+  return updateSignInRequest(resumeSignInRequest);
+}
+
+export function cancelGithubSignInRequest(): Promise<void> {
+  return updateSignInRequest(async () => {
+    await storage.removeItem(SIGN_IN_REQUEST_KEY);
+  });
+}
+
+function launchGithubSignIn(): void {
   if (signingIn) return;
   const expected = generation;
   error = null;
@@ -161,6 +211,8 @@ export async function signOutGithub(): Promise<void> {
   signingIn = undefined;
   refreshing = undefined;
   error = null;
+  await signInRequests;
+  await storage.removeItem(SIGN_IN_REQUEST_KEY);
   // Wait for an already-started storage write, never an OAuth/network request.
   await credentialWrite.catch(() => {});
   await storage.removeItem(AUTH_KEY);

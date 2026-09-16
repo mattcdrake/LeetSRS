@@ -27,9 +27,17 @@ export function useGithubPermissions() {
   }, [client]);
 
   const request = useMutation({
-    mutationFn: async ({ permission, signIn }: { permission: Promise<boolean>; signIn: boolean }) => {
-      if (!(await permission)) throw new Error('GitHub access denied');
-      if (signIn) await background.startGithubSignIn();
+    mutationFn: async ({ permission, intent }: { permission: Promise<boolean>; intent: Promise<void> | null }) => {
+      try {
+        const [granted] = await Promise.all([permission, intent]);
+        if (!granted) throw new Error('GitHub access denied');
+      } catch (error) {
+        if (intent) {
+          await intent.catch(() => {});
+          await background.cancelGithubSignInRequest();
+        }
+        throw error;
+      }
     },
     networkMode: 'always',
     retry: false,
@@ -39,6 +47,7 @@ export function useGithubPermissions() {
     },
   });
   const enable = (signIn: boolean) => {
+    const intent = signIn ? background.startGithubSignIn() : null;
     // Preserve the click gesture: request before React Query's asynchronous lifecycle.
     let permission: Promise<boolean>;
     try {
@@ -46,7 +55,7 @@ export function useGithubPermissions() {
     } catch (error) {
       permission = Promise.reject(error);
     }
-    request.mutate({ permission, signIn });
+    request.mutate({ permission, intent });
   };
   return { granted: permission.data, isLoading: permission.isPending, error: permission.error, request, enable };
 }

@@ -9,6 +9,7 @@ import { SettingsView } from './views/settings/SettingsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
+  const [highlightGithubSignIn, setHighlightGithubSignIn] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
@@ -27,14 +28,27 @@ function App() {
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,
     card: <CardsView />,
-    settings: <SettingsView />,
+    settings: <SettingsView highlightGithubSignIn={highlightGithubSignIn} />,
   };
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      {activeView !== 'settings' && <GithubMigrationNotice onOpenSettings={() => setActiveView('settings')} />}
+      {activeView !== 'settings' && (
+        <GithubMigrationNotice
+          onOpenSettings={() => {
+            setHighlightGithubSignIn(true);
+            setActiveView('settings');
+          }}
+        />
+      )}
       <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
-      <BottomNav activeView={activeView} onNavigate={setActiveView} />
+      <BottomNav
+        activeView={activeView}
+        onNavigate={(view) => {
+          setHighlightGithubSignIn(false);
+          setActiveView(view);
+        }}
+      />
     </div>
   );
 }

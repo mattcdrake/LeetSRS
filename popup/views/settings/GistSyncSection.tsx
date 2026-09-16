@@ -17,7 +17,8 @@ import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import { SettingsSwitch } from './SettingsSwitch';
 
-export function GistSyncSection() {
+export function GistSyncSection({ highlightSignIn = false }: { highlightSignIn?: boolean }) {
+  const [highlightDismissed, setHighlightDismissed] = useState(false);
   const translations = useI18n();
   const t = translations.settings.gistSync;
   const client = useQueryClient();
@@ -39,7 +40,7 @@ export function GistSyncSection() {
     networkMode: 'always',
     onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
   });
-  const signingIn = !!auth.data?.signingIn || (permissions.request.isPending && permissions.request.variables?.signIn);
+  const signingIn = !!auth.data?.signingIn || (permissions.request.isPending && permissions.request.variables?.intent);
   const busy =
     action.isPending ||
     permissions.request.isPending ||
@@ -238,9 +239,13 @@ export function GistSyncSection() {
             </div>
           ) : (
             <Button
-              className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${highlightSignIn && !highlightDismissed ? 'github-sign-in-highlight' : ''}`}
+              onAnimationEnd={() => setHighlightDismissed(true)}
               isDisabled={action.isPending || permissions.request.isPending || auth.isPending}
-              onPress={() => permissions.enable(true)}
+              onPress={() => {
+                setHighlightDismissed(true);
+                permissions.enable(true);
+              }}
             >
               <FaGithub className="h-4 w-4" aria-hidden="true" />
               {t.signIn}

@@ -175,6 +175,22 @@ body {
   background: var(--current-text-tertiary);
 }
 
+.github-sign-in-highlight {
+  border-color: var(--current-accent);
+  background-color: color-mix(in srgb, var(--current-accent) 12%, var(--current-bg-primary));
+  animation: github-sign-in-pulse 1.4s ease-in-out 3;
+}
+
+@keyframes github-sign-in-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--current-accent) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--current-accent) 12%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root,
   :root *,

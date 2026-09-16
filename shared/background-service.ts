@@ -12,6 +12,7 @@ import type {
 import type { SettingsUpdate } from '@/shared/settings';
 
 export interface BackgroundService {
+  cancelGithubSignInRequest(): Promise<void>;
   startGithubSignIn(): Promise<void>;
   signOutGithub(): Promise<void>;
   getGithubAuthStatus(): Promise<GithubAuthStatus>;

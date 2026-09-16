@@ -24,6 +24,7 @@ beforeEach(async () => {
   await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'saved', enabled: false });
   service
     .reset()
+    .resolve('cancelGithubSignInRequest', undefined)
     .resolve('getGithubAuthStatus', signedIn)
     .resolve('getGistSyncStatus', {
       lastSyncTime: null,
@@ -172,7 +173,7 @@ it.each([false, true])(
     expect(browser.permissions.request).toHaveBeenCalledExactlyOnceWith({
       origins: ['https://auth.leetsrs.com/*', 'https://api.github.com/*', 'https://gist.githubusercontent.com/*'],
     });
-    expect(background.startGithubSignIn).not.toHaveBeenCalled();
+    expect(background.startGithubSignIn).toHaveBeenCalledOnce();
     vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
     await act(async () => pending.resolve(true));
     await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledOnce());
@@ -180,7 +181,7 @@ it.each([false, true])(
 );
 
 it.each(['denied', 'rejected', 'throws'])(
-  'allows retry after permission request is %s without starting OAuth',
+  'cancels pending sign-in and allows retry after permission request is %s',
   async (failure) => {
     vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
     if (failure === 'denied') vi.mocked(browser.permissions.request).mockImplementationOnce(async () => false);
@@ -196,10 +197,10 @@ it.each(['denied', 'rejected', 'throws'])(
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
     expect(await screen.findByRole('alert')).toHaveTextContent('GitHub access wasn’t granted');
-    expect(background.startGithubSignIn).not.toHaveBeenCalled();
+    expect(background.cancelGithubSignInRequest).toHaveBeenCalledOnce();
     vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
     fireEvent.click(screen.getByRole('button', { name: 'Sign in with GitHub' }));
-    await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledOnce());
+    await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledTimes(2));
   }
 );
 
@@ -232,3 +233,31 @@ it.each(['while open', 'while closed'])(
     );
   }
 );
+
+it('hands sign-in to the background before the permission prompt can destroy the popup', async () => {
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
+  service.resolve('getGithubAuthStatus', { ...signedIn, account: null }).resolve('startGithubSignIn', undefined);
+  vi.mocked(browser.permissions.request).mockImplementation(() => {
+    expect(background.startGithubSignIn).toHaveBeenCalledOnce();
+    // A destroyed popup never receives the permission result.
+    return new Promise<boolean>(() => {});
+  });
+  const { unmount } = open();
+  const button = await screen.findByRole('button', { name: 'Sign in with GitHub' });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  expect(background.startGithubSignIn).toHaveBeenCalledOnce();
+  unmount();
+});
+
+it('highlights sign-in from the update dialog and stops drawing attention after a click', async () => {
+  service.resolve('getGithubAuthStatus', { ...signedIn, account: null }).resolve('startGithubSignIn', undefined);
+  vi.mocked(browser.permissions.request).mockImplementation(async () => false);
+  render(<GistSyncSection highlightSignIn />, { wrapper: createPopupTestWrapper().wrapper });
+  const button = await screen.findByRole('button', { name: 'Sign in with GitHub' });
+  await waitFor(() => expect(button).toBeEnabled());
+  expect(button).toHaveClass('github-sign-in-highlight');
+  fireEvent.click(button);
+  await screen.findByRole('alert');
+  expect(screen.getByRole('button', { name: 'Sign in with GitHub' })).not.toHaveClass('github-sign-in-highlight');
+});
