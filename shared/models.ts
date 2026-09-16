@@ -101,11 +101,14 @@ export function findCard(document: LearningDocument, frontendId: string): Card |
   return undefined;
 }
 
-export const gistSyncConfigSchema = z.object({
-  accountId: z.number().int().positive().nullable(),
-  gistId: z.string().nullable(),
-  enabled: z.boolean(),
-});
+export const gistSyncConfigSchema = z.union([
+  z.object({ accountId: z.null(), gistId: z.null(), enabled: z.literal(false) }),
+  z.object({
+    accountId: z.number().int().positive(),
+    gistId: z.string().refine((id) => id.trim().length > 0),
+    enabled: z.boolean(),
+  }),
+]);
 export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
 
 export const gistSetupSchema = z.discriminatedUnion('mode', [

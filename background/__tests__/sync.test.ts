@@ -207,14 +207,13 @@ describe('whole-document Gist sync', () => {
     });
   });
 
-  it.each([
-    [{ accountId: null }, 'missingToken'],
-    [{ gistId: null }, 'missingGist'],
-  ] as const)('rejects enabling an incomplete connection', async (missing, error) => {
-    await writeGistConnection({ ...connection, ...missing, enabled: false });
+  it.each([true, false])('only allows disabling an absent connection (enabled: %s)', async (enabled) => {
+    await syncModule.disconnectGithub();
 
-    expect(await syncModule.setSyncEnabled(true)).toEqual({ saved: false, error });
-    expect((await readGistConnection()).enabled).toBe(false);
+    expect(await syncModule.setSyncEnabled(enabled)).toEqual(
+      enabled ? { saved: false, error: 'missingToken' } : { saved: true }
+    );
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(github.get).not.toHaveBeenCalled();
   });
 
@@ -223,9 +222,11 @@ describe('whole-document Gist sync', () => {
     github.get.mockResolvedValue({ data: { owner: { id: 1 }, files: {} } });
 
     expect(await syncModule.setSyncEnabled(true)).toEqual({ saved: true });
+    expect(await readGistConnection()).toEqual(connection);
     await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
     await vi.waitFor(async () => expect(await syncModule.getSyncStatus()).toMatchObject({ syncInProgress: false }));
     expect(await syncModule.setSyncEnabled(false)).toEqual({ saved: true });
+    expect(await readGistConnection()).toEqual({ ...connection, enabled: false });
     await syncModule.sync();
     expect(github.get).toHaveBeenCalledOnce();
   });

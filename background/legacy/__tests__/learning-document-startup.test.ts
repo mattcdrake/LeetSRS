@@ -174,7 +174,7 @@ describe('learning document startup', () => {
     });
 
     // A shared connection edit arriving before retry must win over the retained legacy fields.
-    const shared = { accountId: null, gistId: null, enabled: false };
+    const shared = { accountId: null, gistId: null, enabled: false } as const;
     await writeGistConnection(shared);
     await initializeLearningDocument();
 
