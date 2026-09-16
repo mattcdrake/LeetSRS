@@ -3,8 +3,9 @@ import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { Card, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
+import { readLearningDocument } from '@/shared/storage';
 import { usePopupClock } from '../hooks/usePopupClock';
-import { learningDocumentQueryKey, readPopupLearningDocument } from './learning-document';
+import { learningDocumentQueryKey } from './learning-document';
 
 export type CardWithProblem = Card & CatalogProblem;
 
@@ -15,16 +16,16 @@ const cardsQueryOptions = queryOptions({
   refetchOnWindowFocus: false,
   queryKey: cardsQueryKey,
   queryFn: async () => {
-    const snapshot = await readPopupLearningDocument();
+    const document = await readLearningDocument();
     await background.waitForInitialization();
-    const savedCards = Object.values(snapshot.document.cards);
+    const savedCards = Object.values(document.cards);
     const problems = await getProblemsByFrontendIds(savedCards);
     const cards = savedCards.map((card, index): CardWithProblem => {
       const problem = problems[index];
       if (!problem) throw new Error(`Unknown problem: ${card.frontendId} on ${card.domain}`);
       return { ...problem, ...card };
     });
-    return { ...snapshot, cards };
+    return { document, cards };
   },
 });
 

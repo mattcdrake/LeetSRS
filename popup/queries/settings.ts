@@ -7,7 +7,7 @@ import { learningDocumentQueryOptions } from './learning-document';
 export function useSettingsQuery() {
   return useSuspenseQuery({
     ...learningDocumentQueryOptions,
-    select: ({ document }) => resolveLearningDocumentSettings(document),
+    select: resolveLearningDocumentSettings,
   });
 }
 

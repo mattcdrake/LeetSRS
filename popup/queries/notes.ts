@@ -5,7 +5,7 @@ import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learni
 export function useNoteQuery(frontendId: string) {
   return useQuery({
     ...learningDocumentQueryOptions,
-    select: ({ document }) => document.cards[frontendId]?.note ?? null,
+    select: (document) => document.cards[frontendId]?.note ?? null,
     staleTime: 1000 * 60 * 5,
   });
 }
