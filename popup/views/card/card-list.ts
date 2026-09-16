@@ -1,4 +1,5 @@
 import type { CardWithProblem } from '@/popup/queries/cards';
+import { type CardFilter, matchesCardFilters } from '@/shared/card-filters';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 
 const numericLeetcodeIdPattern = /^\d+$/;
@@ -24,10 +25,16 @@ const compareCardsByLeetcodeId = (a: CardWithProblem, b: CardWithProblem) => {
   return compareText(a.frontendId, b.frontendId);
 };
 
-export const filterAndSortCards = (cards: readonly CardWithProblem[], filterText: string) => {
+export const filterAndSortCards = (
+  cards: readonly CardWithProblem[],
+  filterText: string,
+  filters: readonly CardFilter[] = [],
+  now = Date.now()
+) => {
   const searchLower = filterText.toLowerCase();
 
   return cards
+    .filter((card) => matchesCardFilters(card, filters, now))
     .filter(
       (card) =>
         !filterText ||

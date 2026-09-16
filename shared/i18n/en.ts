@@ -116,6 +116,7 @@ const en = {
     filterAriaLabel: 'Filter cards',
     filterPlaceholder: 'Filter by name or ID...',
     clearFilterAriaLabel: 'Clear filter',
+    filters: { due: 'Due', new: 'New', paused: 'Paused' },
     loadingCards: 'Loading cards...',
     noCardsAdded: 'No cards added yet.',
     noCardsMatchFilter: 'No cards match your filter.',
