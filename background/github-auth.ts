@@ -4,6 +4,10 @@ import { storage } from '#imports';
 import { readPatMigration } from '@/background/legacy/github-pat';
 import { GITHUB_HOST_PERMISSIONS, type GithubAuthStatus } from '@/shared/github-auth';
 
+export class GithubAuthorizationError extends Error {
+  readonly code = 'authentication';
+}
+
 const SIGN_IN_REQUEST_KEY = 'session:leetsrs:githubSignInRequest';
 const SIGN_IN_REQUEST_TTL = 5 * 60 * 1000;
 let signInRequests = Promise.resolve();
@@ -70,7 +74,7 @@ async function exchange(path: string, payload: Record<string, string>) {
     credentials: 'omit',
     signal: AbortSignal.timeout(20000),
   });
-  if (!response.ok) throw new Error('401: GitHub authorization failed');
+  if (!response.ok) throw new GithubAuthorizationError('GitHub authorization failed');
   const token = tokenSchema.parse(await response.json());
   const accountResponse = await fetch('https://api.github.com/user', {
     headers: { Authorization: `Bearer ${token.access_token}`, Accept: 'application/vnd.github+json' },
@@ -78,7 +82,7 @@ async function exchange(path: string, payload: Record<string, string>) {
     credentials: 'omit',
     signal: AbortSignal.timeout(20000),
   });
-  if (!accountResponse.ok) throw new Error('401: GitHub account validation failed');
+  if (!accountResponse.ok) throw new GithubAuthorizationError('GitHub account validation failed');
   return {
     account: accountSchema.parse(await accountResponse.json()),
     accessToken: token.access_token,
@@ -193,19 +197,19 @@ function launchGithubSignIn(): void {
 export async function getGithubAuthorization() {
   const expected = generation;
   if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS)))
-    throw new Error('401: Enable GitHub access in Settings');
+    throw new GithubAuthorizationError('Enable GitHub access in Settings');
   const saved = await readAuthorization();
-  if (!saved || expected !== generation) throw new Error('401: Sign in with GitHub');
+  if (!saved || expected !== generation) throw new GithubAuthorizationError('Sign in with GitHub');
   if (saved.expiresAt > Date.now() + 60000) return saved;
-  if (saved.refreshExpiresAt <= Date.now()) throw new Error('401: Sign in with GitHub');
+  if (saved.refreshExpiresAt <= Date.now()) throw new GithubAuthorizationError('Sign in with GitHub');
   if (refreshing) return refreshing;
   const attempt = (async () => {
     const auth = await exchange('refresh', { refresh_token: saved.refreshToken });
-    if (auth.account.id !== saved.account.id) throw new Error('401: GitHub account changed');
-    if (expected !== generation) throw new Error('401: authorization changed');
+    if (auth.account.id !== saved.account.id) throw new GithubAuthorizationError('GitHub account changed');
+    if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
     credentialWrite = storage.setItem(AUTH_KEY, auth);
     await credentialWrite;
-    if (expected !== generation) throw new Error('401: authorization changed');
+    if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
     return auth;
   })();
   refreshing = attempt;

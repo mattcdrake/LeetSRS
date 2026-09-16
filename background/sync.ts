@@ -1,6 +1,11 @@
 import { Octokit } from 'octokit';
 import { storage } from '#imports';
-import { authGeneration, getGithubAuthorization, signOutGithub } from '@/background/github-auth';
+import {
+  authGeneration,
+  GithubAuthorizationError,
+  getGithubAuthorization,
+  signOutGithub,
+} from '@/background/github-auth';
 import { dismissMigrationNotice, previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
 import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
@@ -119,7 +124,7 @@ export function sync(): Promise<void> {
 async function runSync(startGeneration: number): Promise<void> {
   try {
     const config = await readGistConnection();
-    if (generation !== startGeneration || !canSync(config)) {
+    if (generation !== startGeneration || !config.enabled) {
       return;
     }
 
@@ -132,7 +137,10 @@ async function runSync(startGeneration: number): Promise<void> {
   }
 }
 
-async function syncDocument(config: GistSyncConfig & { gistId: string }, startGeneration: number): Promise<void> {
+async function syncDocument(
+  config: Extract<GistSyncConfig, { gistId: string }>,
+  startGeneration: number
+): Promise<void> {
   const auth = await getGithubAuthorization();
   if (generation !== startGeneration || auth.account.id !== config.accountId) return;
   const github = new Octokit({ auth: auth.accessToken });
@@ -159,10 +167,6 @@ async function syncDocument(config: GistSyncConfig & { gistId: string }, startGe
 
   const timestamp = new Date().toISOString();
   await writeSyncStatus({ lastSyncTime: timestamp });
-}
-
-function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: string } {
-  return config.enabled && !!config.accountId && !!config.gistId?.trim();
 }
 
 export async function getSyncStatus(): Promise<GistSyncStatus> {
@@ -217,18 +221,15 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
   try {
     const expected = authGeneration();
     const config = await readGistConnection();
-    if (enabled && !config.accountId) {
-      return { saved: false, error: 'missingToken' };
-    }
-    if (enabled && !config.gistId?.trim()) {
-      return { saved: false, error: 'missingGist' };
+    if (config.accountId === null) {
+      return enabled ? { saved: false, error: 'missingToken' } : { saved: true };
     }
 
     if (enabled) {
       const auth = await getGithubAuthorization();
       if (auth.account.id !== config.accountId) return { saved: false, error: 'authentication' };
     }
-    if (expected !== authGeneration()) throw new Error('401: authorization changed');
+    if (expected !== authGeneration()) throw new GithubAuthorizationError('authorization changed');
     await saveConnection({ ...config, enabled });
     return { saved: true };
   } catch (error) {
@@ -237,6 +238,7 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
 }
 
 function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'): GistSyncErrorCode {
+  if (error instanceof GithubAuthorizationError) return error.code;
   const message = error instanceof Error ? error.message : '';
   let status: unknown;
   if (error && typeof error === 'object' && 'status' in error) {
@@ -288,7 +290,7 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
   const destinations: GistDestination[] = [];
   for (let page = 1; ; page++) {
     const { data } = await github.rest.gists.list({ per_page: 100, page });
-    if (expected !== authGeneration()) throw new Error('401: authorization changed');
+    if (expected !== authGeneration()) throw new GithubAuthorizationError('authorization changed');
     for (const gist of data) {
       if (gist.owner?.id === auth.account.id && gist.files?.[GIST_FILENAME])
         destinations.push({

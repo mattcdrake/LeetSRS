@@ -84,7 +84,7 @@ it('connects an owned backup and pauses and resumes syncing through Settings', a
   onlineManager.setOnline(false);
   fireEvent.click(screen.getByRole('switch'));
   await waitFor(() => expect(screen.getByRole('switch')).not.toBeChecked());
-  expect((await readGistConnection()).enabled).toBe(false);
+  expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: false });
   github.get.mockClear();
   await background.saveNote('1', 'Paused edit');
   await sync();
@@ -95,7 +95,7 @@ it('connects an owned backup and pauses and resumes syncing through Settings', a
   await waitFor(() => expect(github.update).toHaveBeenCalled());
   const uploaded = JSON.parse(github.update.mock.lastCall?.[0].files['leetsrs-backup.json'].content);
   expect(uploaded.cards['1'].note).toBe('Paused edit');
-  expect((await readGistConnection()).enabled).toBe(true);
+  expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: true });
 });
 
 it('cancels a destination change and retries creating a private backup without losing data', async () => {
