@@ -33,7 +33,10 @@ beforeEach(async () => {
   document.body.innerHTML = '<div id="ide-top-btns"><div id="last-group"></div></div>';
   ctx = new ContentScriptContext('test');
   await act(() => bootstrapContent(ctx));
-  vi.stubGlobal('fetch', network);
+  const extensionFetch = globalThis.fetch;
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+    String(input).startsWith('chrome-extension://') ? extensionFetch(input, init) : network(input, init)
+  );
   // Happy DOM omits the sender on postMessage; supply the browser's same-window envelope.
   vi.spyOn(window, 'postMessage').mockImplementation((data, origin) => {
     expect(origin).toBe(window.location.origin);

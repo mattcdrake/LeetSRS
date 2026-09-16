@@ -1,11 +1,9 @@
 import * as catalog from '@/shared/catalog';
-import { initializeCatalog } from '@/shared/catalog';
 /**
  * @vitest-environment happy-dom
  */
 
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { IDBDatabase } from 'fake-indexeddb';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -129,16 +127,12 @@ describe('card queries through the background service', () => {
   });
 });
 
-beforeEach(initializeCatalog);
-
 it('shares one document read and catalog batch across cards, queue, notes, and settings', async () => {
   const cards = [
     createMockCard(State.New, { frontendId: '1', domain: 'leetcode.com', note: 'Shared note' }),
     createMockCard(State.New, { frontendId: '2', domain: 'leetcode.cn' }),
   ];
   await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
-  const open = vi.spyOn(indexedDB, 'open');
-  const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
   const reads = vi.spyOn(storage, 'getItem');
   const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
   const view = renderHook(
@@ -156,6 +150,4 @@ it('shares one document read and catalog batch across cards, queue, notes, and s
   expect(view.result.current.note.data).toBe('Shared note');
   expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
   expect(lookups).toHaveBeenCalledTimes(1);
-  expect(open).toHaveBeenCalledTimes(1);
-  expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
 });

@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, beforeEach, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -23,11 +22,16 @@ for (const area of ['local', 'sync', 'session', 'managed'] as const) {
 
 beforeEach(() => {
   vi.spyOn(browser.permissions.onAdded, 'addListener').mockImplementation(() => {});
-  vi.stubGlobal('indexedDB', new IDBFactory());
   const fetchFromNetwork = globalThis.fetch;
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    if (input === browser.runtime.getURL('/data/leetcode-catalog.sha256')) return new Response('test-hash');
-    if (input === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json(testCatalog);
+    for (const [file, key] of [
+      ['id', 'frontendId'],
+      ['slug', 'slug'],
+    ] as const) {
+      if (input === browser.runtime.getURL(`/data/leetcode-catalog-by-${file}.json`)) {
+        return Response.json(Object.fromEntries(testCatalog.map((problem) => [problem[key], problem])));
+      }
+    }
     return fetchFromNetwork(input, init);
   });
 });

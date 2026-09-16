@@ -1,7 +1,6 @@
 /** @vitest-environment happy-dom */
 import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { IDBDatabase } from 'fake-indexeddb';
 import type { ReactNode } from 'react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -11,7 +10,6 @@ import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import * as catalog from '@/shared/catalog';
-import { initializeCatalog } from '@/shared/catalog';
 import type { GistSyncStatus } from '@/shared/models';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
@@ -287,7 +285,7 @@ it.each(['tick', 'visibility'] as const)(
     expect(view.result.current.today.data).toEqual(stats);
     const writes = vi.spyOn(storage, 'setItem');
     const reads = vi.spyOn(storage, 'getItem');
-    const transactions = vi.spyOn(IDBDatabase.prototype, 'transaction');
+    vi.mocked(fetch).mockClear();
     await act(async () => {
       if (trigger === 'tick') {
         await vi.advanceTimersByTimeAsync(15_000);
@@ -301,7 +299,7 @@ it.each(['tick', 'visibility'] as const)(
     expect(view.result.current.today.data).toBeNull();
     expect(writes).not.toHaveBeenCalled();
     expect(reads).not.toHaveBeenCalled();
-    expect(transactions).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
     view.unmount();
   }
 );
@@ -343,5 +341,3 @@ it('keeps polling background-only sync progress and errors without stored change
   expect(view.result.current.data).toEqual(status);
   view.unmount();
 });
-
-beforeEach(initializeCatalog);

@@ -153,6 +153,7 @@ describe('document startup through registered background commands', () => {
     badge.mockClear();
     await fireAlarm('unrelated');
     expect(badge).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
 

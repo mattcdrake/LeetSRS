@@ -1,13 +1,6 @@
-import { IDBDatabase, IDBObjectStore } from 'fake-indexeddb';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import {
-  type CatalogProblem,
-  getProblemByFrontendId,
-  getProblemBySlug,
-  getProblemsByFrontendIds,
-  initializeCatalog,
-} from '@/shared/catalog';
+import type { CatalogProblem } from '@/shared/catalog';
 
 const twoSum: CatalogProblem = {
   frontendId: '1',
@@ -19,59 +12,39 @@ const twoSum: CatalogProblem = {
   topics: ['array', 'hash-table'],
   sources: ['leetcode.com'],
 };
+const cnProblem: CatalogProblem = { ...twoSum, frontendId: '2', slug: 'cn-problem', sources: ['leetcode.cn'] };
 
-function bundle(problems: CatalogProblem[], hash = 'first-hash') {
+beforeEach(() => {
+  vi.resetModules();
   vi.mocked(fetch).mockImplementation(async (url) => {
-    if (url === browser.runtime.getURL('/data/leetcode-catalog.sha256')) return new Response(`${hash}\n`);
-    if (url === browser.runtime.getURL('/data/leetcode-catalog.json')) return Response.json(problems);
+    const problems = [twoSum, cnProblem];
+    if (url === browser.runtime.getURL('/data/leetcode-catalog-by-id.json')) {
+      return Response.json(Object.fromEntries(problems.map((problem) => [problem.frontendId, problem])));
+    }
+    if (url === browser.runtime.getURL('/data/leetcode-catalog-by-slug.json')) {
+      return Response.json(Object.fromEntries(problems.map((problem) => [problem.slug, problem])));
+    }
     throw new Error(`Unexpected fetch: ${url}`);
   });
-}
-
-beforeEach(() => bundle([twoSum]));
-
-it.each(['transaction', 'abort'] as const)('closes the batch connection after a %s failure', async (failure) => {
-  await initializeCatalog();
-  const close = vi.spyOn(IDBDatabase.prototype, 'close');
-  const error = new Error('Catalog read failed');
-  if (failure === 'transaction') {
-    vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementationOnce(() => {
-      throw error;
-    });
-  } else {
-    const get = IDBObjectStore.prototype.get;
-    vi.spyOn(IDBObjectStore.prototype, 'get').mockImplementationOnce(function (this: IDBObjectStore, key) {
-      const request = get.call(this, key);
-      queueMicrotask(() => this.transaction.abort());
-      return request;
-    });
-  }
-
-  const result = getProblemsByFrontendIds([
-    { frontendId: '1', domain: 'leetcode.com' },
-    { frontendId: 'missing', domain: 'leetcode.cn' },
-  ]);
-  if (failure === 'abort') {
-    await expect(result).rejects.toMatchObject({ name: 'AbortError' });
-  } else {
-    await expect(result).rejects.toThrow(error);
-  }
-  expect(close).toHaveBeenCalledTimes(1);
 });
 
-it('looks up mixed-domain and missing IDs in input order using one readonly transaction and connection', async () => {
-  const cnProblem = {
-    ...twoSum,
-    frontendId: '2',
-    slug: 'cn-problem',
-    sources: ['leetcode.cn'],
-  } satisfies CatalogProblem;
-  bundle([twoSum, cnProblem]);
-  await initializeCatalog();
-  const open = vi.spyOn(indexedDB, 'open');
-  const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
-  const close = vi.spyOn(IDBDatabase.prototype, 'close');
+it('loads only the requested file and shares concurrent and subsequent reads', async () => {
+  const { getProblemBySlug, getProblemsByFrontendIds } = await import('@/shared/catalog');
+  expect(fetch).not.toHaveBeenCalled();
+  expect(await getProblemsByFrontendIds([])).toEqual([]);
+  expect(fetch).not.toHaveBeenCalled();
+  await Promise.all([getProblemBySlug('two-sum', 'leetcode.com'), getProblemBySlug('cn-problem', 'leetcode.cn')]);
+  await getProblemBySlug('two-sum', 'leetcode.com');
+  expect(fetch).toHaveBeenCalledExactlyOnceWith(browser.runtime.getURL('/data/leetcode-catalog-by-slug.json'));
+  const refs = [{ frontendId: '1', domain: 'leetcode.com' as const }];
+  await Promise.all([getProblemsByFrontendIds(refs), getProblemsByFrontendIds(refs)]);
+  await getProblemsByFrontendIds(refs);
+  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(fetch).toHaveBeenLastCalledWith(browser.runtime.getURL('/data/leetcode-catalog-by-id.json'));
+});
 
+it('returns mixed-domain and missing IDs in input order', async () => {
+  const { getProblemsByFrontendIds } = await import('@/shared/catalog');
   expect(
     await getProblemsByFrontendIds([
       { frontendId: '2', domain: 'leetcode.cn' },
@@ -79,45 +52,25 @@ it('looks up mixed-domain and missing IDs in input order using one readonly tran
       { frontendId: 'missing', domain: 'leetcode.com' },
       { frontendId: '1', domain: 'leetcode.com' },
       { frontendId: '2', domain: 'leetcode.com' },
+      { frontendId: 'constructor', domain: 'leetcode.com' },
     ])
-  ).toEqual([cnProblem, undefined, undefined, twoSum, undefined]);
-  expect(open).toHaveBeenCalledTimes(1);
-  expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
-  expect(close).toHaveBeenCalledTimes(1);
+  ).toEqual([cnProblem, undefined, undefined, twoSum, undefined, undefined]);
 });
 
-it.each([
-  { lookup: getProblemByFrontendId, key: '1' },
-  { lookup: getProblemBySlug, key: 'two-sum' },
-])('returns the complete problem only for an available domain: $key', async ({ lookup, key }) => {
-  await initializeCatalog();
-
-  expect(await lookup(key, 'leetcode.com')).toEqual(twoSum);
-  expect(await lookup(key, 'leetcode.cn')).toBeUndefined();
-  expect(await lookup('missing', 'leetcode.com')).toBeUndefined();
-});
-
-it('skips loading JSON when the catalog hash is unchanged', async () => {
-  await initializeCatalog();
-  vi.mocked(fetch).mockImplementation(async (url) => {
-    if (url === browser.runtime.getURL('/data/leetcode-catalog.sha256')) return new Response('first-hash\n');
-    throw new Error('An unchanged catalog must not load JSON');
-  });
-  await initializeCatalog();
-
+it('returns a slug match only for an available domain', async () => {
+  const { getProblemBySlug } = await import('@/shared/catalog');
   expect(await getProblemBySlug('two-sum', 'leetcode.com')).toEqual(twoSum);
+  expect(await getProblemBySlug('two-sum', 'leetcode.cn')).toBeUndefined();
+  expect(await getProblemBySlug('missing', 'leetcode.com')).toBeUndefined();
+  expect(await getProblemBySlug('constructor', 'leetcode.com')).toBeUndefined();
 });
 
-it('replaces the catalog when the hash changes, including additions and removals', async () => {
-  bundle([twoSum, { ...twoSum, frontendId: '2', slug: 'removed' }]);
-  await initializeCatalog();
-  const updated = { ...twoSum, title: 'Updated title' };
-  const added = { ...twoSum, frontendId: '3', slug: 'new-problem' };
-  bundle([updated, added], 'second-hash');
-
-  await initializeCatalog();
-
-  expect(await getProblemByFrontendId('1', 'leetcode.com')).toEqual(updated);
-  expect(await getProblemByFrontendId('2', 'leetcode.com')).toBeUndefined();
-  expect(await getProblemBySlug('new-problem', 'leetcode.com')).toEqual(added);
+it.each(['id', 'slug'] as const)('surfaces %s catalog loading failures', async (field) => {
+  vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }));
+  const { getProblemBySlug, getProblemsByFrontendIds } = await import('@/shared/catalog');
+  const result =
+    field === 'slug'
+      ? getProblemBySlug('two-sum', 'leetcode.com')
+      : getProblemsByFrontendIds([{ frontendId: '1', domain: 'leetcode.com' }]);
+  await expect(result).rejects.toThrow('Failed to load catalog JSON: 404');
 });
