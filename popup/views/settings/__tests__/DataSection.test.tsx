@@ -30,12 +30,12 @@ describe('DataSection reset', () => {
     vi.mocked(window.confirm).mockReturnValue(false);
     render(<DataSection />, { wrapper });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset…' }));
 
     expect(window.confirm).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining('Are you absolutely sure you want to delete all data?')
     );
-    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Reset…' })).toBeEnabled();
     expect(window.alert).not.toHaveBeenCalled();
     expect(background.resetAllData).not.toHaveBeenCalledWith();
   });
@@ -45,7 +45,7 @@ describe('DataSection reset', () => {
     service.handle('resetAllData', () => reset.promise);
     render(<DataSection />, { wrapper });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset…' }));
 
     const button = await screen.findByRole('button', { name: 'Resetting...' });
     expect(button).toBeDisabled();
@@ -57,7 +57,7 @@ describe('DataSection reset', () => {
     reset.resolve();
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('All data has been reset'));
-    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Reset…' })).toBeEnabled();
   });
 
   it('alerts the error and enables retry when reset fails', async () => {
@@ -66,10 +66,10 @@ describe('DataSection reset', () => {
     service.handle('resetAllData', () => Promise.reject(error));
     render(<DataSection />, { wrapper });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Reset All Data' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset…' }));
 
     await waitFor(() => expect(consoleError).toHaveBeenCalledWith('Reset failed:', error));
     expect(window.alert).toHaveBeenCalledWith('Failed to reset data');
-    expect(screen.getByRole('button', { name: 'Reset All Data' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Reset…' })).toBeEnabled();
   });
 });

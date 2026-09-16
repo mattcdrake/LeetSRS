@@ -18,6 +18,25 @@ describe('ActionsSection', () => {
     isDisabled: false,
   };
 
+  it.each([
+    ['1 Day', 1],
+    ['5 Days', 5],
+  ])('postpones the card with %s', (name, days) => {
+    const onDelay = vi.fn();
+    render(<ActionsSection {...defaultProps} onDelay={onDelay} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+    fireEvent.click(screen.getByRole('button', { name }));
+    expect(onDelay).toHaveBeenCalledExactlyOnceWith(days);
+  });
+
+  it('pauses the card from the pause row', () => {
+    const onPause = vi.fn();
+    render(<ActionsSection {...defaultProps} onPause={onPause} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pause card' }));
+    expect(onPause).toHaveBeenCalledOnce();
+  });
+
   describe('Delete Functionality', () => {
     it('deletes only after confirmation and resets the confirmation afterward', () => {
       render(<ActionsSection {...defaultProps} />);

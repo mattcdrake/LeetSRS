@@ -1,17 +1,21 @@
+import type { IconType } from 'react-icons';
+
 interface SettingsSwitchProps {
   label: string;
+  icon?: IconType;
   isSelected: boolean;
   isDisabled?: boolean;
   onChange: (isSelected: boolean) => void;
 }
 
-export function SettingsSwitch({ label, isSelected, isDisabled = false, onChange }: SettingsSwitchProps) {
+export function SettingsSwitch({ label, icon: Icon, isSelected, isDisabled = false, onChange }: SettingsSwitchProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex flex-col">
+    <div className="flex min-h-10 items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary" />}
         <span>{label}</span>
       </div>
-      <div className="inline-flex items-center">
+      <div className="inline-flex shrink-0 items-center">
         <button
           type="button"
           role="switch"

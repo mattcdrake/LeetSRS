@@ -9,8 +9,8 @@ export function SettingsView() {
   const t = useI18n();
   return (
     <ViewLayout title={t.settings.title}>
-      <GeneralSettingsSection />
       <GistSyncSection />
+      <GeneralSettingsSection />
       <DataSection />
       <AboutSection />
     </ViewLayout>

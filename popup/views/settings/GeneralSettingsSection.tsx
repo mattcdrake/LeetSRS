@@ -1,6 +1,6 @@
 import { Button, Label, ListBox, ListBoxItem, Popover, Select, SelectValue } from 'react-aria-components';
 import type { IconType } from 'react-icons';
-import { FaChevronDown, FaCircleHalfStroke, FaGlobe } from 'react-icons/fa6';
+import { FaChevronDown, FaCircleHalfStroke, FaCode, FaGlobe } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
 import type { Language, Theme } from '@/shared/settings';
@@ -25,7 +25,7 @@ function SettingsSelect<Value extends string>({
 }: SettingsSelectProps<Value>) {
   return (
     <Select
-      className="flex items-center justify-between"
+      className="flex min-h-10 items-center justify-between gap-3"
       value={value}
       onChange={(key) => {
         const option = options.find((option) => option.value === key);
@@ -33,20 +33,20 @@ function SettingsSelect<Value extends string>({
       }}
     >
       <div className="flex items-center gap-2">
-        <Icon className="text-tertiary" />
+        <Icon aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary" />
         <Label>{label}</Label>
       </div>
-      <Button className="flex items-center gap-2 px-3 py-1.5 rounded bg-tertiary text-primary hover:opacity-80 transition-opacity cursor-pointer">
+      <Button className="flex shrink-0 min-h-10 items-center gap-2 px-3 py-2 rounded-lg border border-current bg-primary text-primary hover:bg-secondary cursor-pointer">
         <SelectValue />
-        <FaChevronDown className="text-xs" />
+        <FaChevronDown aria-hidden="true" className="text-xs" />
       </Button>
-      <Popover className="bg-secondary text-primary border border-tertiary rounded-lg shadow-lg p-1 min-w-[120px]">
+      <Popover className="bg-primary text-primary border border-current rounded-lg shadow-lg p-1 min-w-[120px]">
         <ListBox className="outline-none">
           {options.map((option) => (
             <ListBoxItem
               key={option.value}
               id={option.value}
-              className="px-3 py-2 rounded cursor-pointer outline-none text-primary hover:bg-tertiary focus:bg-tertiary data-[selected]:bg-tertiary"
+              className="px-3 py-2 rounded cursor-pointer outline-none text-primary hover:bg-secondary focus:bg-secondary data-[selected]:bg-secondary"
             >
               {option.label}
             </ListBoxItem>
@@ -63,7 +63,13 @@ export function GeneralSettingsSection() {
   const updateSettingsMutation = useUpdateSettingsMutation();
 
   return (
-    <section className="mb-6 space-y-4 p-4 rounded-lg bg-secondary text-primary">
+    <section
+      aria-labelledby="preferences-heading"
+      className="mb-4 pt-4 border-t border-current space-y-4 text-xs text-primary"
+    >
+      <h3 id="preferences-heading" className="text-sm font-medium">
+        {t.settings.preferences}
+      </h3>
       <SettingsSelect<Language>
         label={t.settings.language.label}
         icon={FaGlobe}
@@ -88,6 +94,7 @@ export function GeneralSettingsSection() {
       />
       <SettingsSwitch
         label={t.settings.editorReset.resetEditorOnReviewQueue}
+        icon={FaCode}
         isSelected={settings.resetEditorOnReviewQueue}
         onChange={(resetEditorOnReviewQueue) => updateSettingsMutation.mutate({ resetEditorOnReviewQueue })}
       />

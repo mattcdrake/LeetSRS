@@ -4,7 +4,7 @@ import type { Grade } from 'ts-fsrs';
 import { useTheme } from '@/popup/hooks/useTheme';
 import type { CardWithProblem } from '@/popup/queries/cards';
 import { useSettingsQuery } from '@/popup/queries/settings';
-import { bounceButton } from '@/popup/styles';
+import { buttonInteraction } from '@/popup/styles';
 import { authorizeEditorReset, getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { ratingSchema } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
@@ -30,7 +30,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
     <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-secondary">#{card.frontendId}</span>
-        <span className="text-xs px-2 py-1 rounded text-white capitalize" style={{ backgroundColor: difficultyColor }}>
+        <span className="text-xs capitalize" style={{ color: difficultyColor }}>
           {card.difficulty}
         </span>
       </div>
@@ -40,11 +40,14 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-lg font-semibold text-primary group"
+          className="text-lg font-medium text-primary group"
           aria-label="LeetCode problem"
         >
           {getProblemTitle(card, card.domain)}
-          <FaArrowUpRightFromSquare className="inline ml-1.5 text-xs opacity-60 group-hover:opacity-100 transition-opacity" />
+          <FaArrowUpRightFromSquare
+            aria-hidden="true"
+            className="inline ml-1.5 text-xs opacity-60 group-hover:opacity-100 transition-opacity"
+          />
         </a>
       </div>
 
@@ -55,7 +58,7 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
             onPress={() => onRate(rating)}
             isDisabled={isProcessing}
             style={{ backgroundColor: colors[rating] }}
-            className={`w-20 py-1.5 rounded text-sm text-white hover:opacity-90 ${bounceButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`flex-1 min-w-0 min-h-10 px-1 py-2 rounded-lg text-xs text-white hover:opacity-90 ${buttonInteraction} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {t.ratings[rating]}
           </Button>

@@ -17,6 +17,7 @@ See [README.md](README.md#setup) for setup, development, and packaging commands.
 - Use GitHub's native issue relationships when marking issues as blocked or blocking.
 - For local agent reviews, use Matt Pocock's installed `code-review` skill. Hosted Codex PR reviews use their native workflow and these repository rules.
 - Do not commit generated `.output/` or `.wxt/` content.
+- Opened issue titles should not use conventional comments. Label newly created issues with the appropriate conventional commit label.
 
 ## Gotchas
 

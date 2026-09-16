@@ -111,8 +111,10 @@ export function ReviewQueue() {
     <div className="flex flex-col gap-4">
       {/* The key is important to ensure React re-mounts the component for a new card */}
       <ReviewCard key={currentCard.frontendId} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
-      <NotesSection frontendId={currentCard.frontendId} isDisabled={isProcessing} />
-      <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
+      <div>
+        <NotesSection frontendId={currentCard.frontendId} isDisabled={isProcessing} />
+        <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
+      </div>
     </div>
   );
 }

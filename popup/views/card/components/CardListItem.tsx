@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Button } from 'react-aria-components';
-import { FaArrowUpRightFromSquare, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
+import { FaArrowUpRightFromSquare, FaChevronRight, FaCirclePause, FaPlay, FaTrash } from 'react-icons/fa6';
 import { State as FsrsState } from 'ts-fsrs';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import type { CardWithProblem } from '@/popup/queries/cards';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
-import { bounceButton } from '@/popup/styles';
+import { destructiveButton, secondaryButton } from '@/popup/styles';
 import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
@@ -77,43 +77,44 @@ export function CardListItem({ card }: CardListItemProps) {
   };
 
   return (
-    <div className="bg-secondary rounded-lg border border-current overflow-hidden">
-      <div className="flex items-center hover:bg-tertiary transition-colors">
+    <div className="text-primary">
+      <div className="flex items-center rounded-lg hover:bg-secondary transition-colors">
         <Button
-          className="flex-1 flex items-center justify-between p-3 text-left"
+          className="min-w-0 flex-1 flex items-center justify-between gap-3 min-h-10 py-2 text-left rounded-lg cursor-pointer focus-visible:outline-2"
           onPress={() => setIsExpanded((expanded) => !expanded)}
           aria-expanded={isExpanded}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             {card.paused && <FaCirclePause className="text-warning text-base" title={t.cardsView.cardPausedTitle} />}
             <span className="text-xs text-secondary">{t.format.leetcodeId(card.frontendId)}</span>
-            <span className={`text-sm ${card.paused ? 'opacity-60' : ''}`}>{getProblemTitle(card, card.domain)}</span>
+            <span className={`min-w-0 break-words text-sm ${card.paused ? 'opacity-60' : ''}`}>
+              {getProblemTitle(card, card.domain)}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="text-xs text-secondary capitalize" style={{ color: DIFFICULTY_COLORS[card.difficulty] }}>
               {card.difficulty}
             </span>
-            <span
-              className={`text-xs text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-            >
-              ▶
-            </span>
+            <FaChevronRight
+              aria-hidden="true"
+              className={`h-3 w-3 text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+            />
           </div>
         </Button>
         <a
           href={getLeetcodeProblemUrl(card)}
           target="_blank"
           rel="noopener noreferrer"
-          className="self-stretch flex items-center px-3 text-secondary hover:text-primary transition-colors"
+          className="self-stretch shrink-0 flex items-center pl-3 pr-1 text-secondary hover:text-primary transition-colors"
           aria-label={`Open ${getProblemTitle(card, card.domain)} on LeetCode`}
         >
-          <FaArrowUpRightFromSquare className="text-sm" />
+          <FaArrowUpRightFromSquare aria-hidden="true" className="text-sm" />
         </a>
       </div>
 
       {isExpanded && (
-        <div className="px-4 pb-3 border-t border-current">
-          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <div className="px-3 py-3 rounded-lg bg-secondary">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
             <StatRow label={t.cardStats.state} value={getStateLabel(card.fsrs.state, t)} />
             <StatRow label={t.cardStats.reviews} value={card.fsrs.reps} />
             <StatRow label={t.cardStats.stability} value={t.format.stabilityDays(card.fsrs.stability.toFixed(1))} />
@@ -128,7 +129,7 @@ export function CardListItem({ card }: CardListItemProps) {
 
           <div className="mt-3 pt-3 border-t border-current flex gap-2">
             <Button
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs bg-tertiary text-primary hover:bg-quaternary transition-colors ${bounceButton} disabled:opacity-50`}
+              className={`flex-1 flex items-center justify-center gap-2 ${secondaryButton}`}
               onPress={handlePauseToggle}
               isDisabled={pauseCardMutation.isPending}
             >
@@ -137,9 +138,7 @@ export function CardListItem({ card }: CardListItemProps) {
             </Button>
 
             <Button
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs ${
-                isConfirming ? 'bg-ultra-danger' : 'bg-danger'
-              } text-white hover:opacity-90 transition-colors ${bounceButton} disabled:opacity-50`}
+              className={`flex-1 flex items-center justify-center gap-2 ${destructiveButton(isConfirming)}`}
               onPress={() => startOrConfirm(handleDelete)}
               isDisabled={removeCardMutation.isPending}
             >

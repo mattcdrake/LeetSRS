@@ -93,6 +93,8 @@ const en = {
 
   // Home view - Actions section
   actionsSection: {
+    postpone: 'Postpone review',
+    pauseCard: 'Pause card',
     title: 'Actions',
     delay1Day: '1 Day',
     delay5Days: '5 Days',
@@ -134,6 +136,7 @@ const en = {
 
   // Settings view
   settings: {
+    preferences: 'Preferences',
     title: 'Settings',
 
     // Language section
@@ -166,12 +169,15 @@ const en = {
 
     // Data section
     data: {
-      title: 'Data',
-      exportData: 'Export Data',
+      title: 'Data & backups',
+      description: 'Save a backup or restore one you’ve saved.',
+      exportData: 'Export backup',
       exporting: 'Exporting...',
-      importData: 'Import Data',
+      importData: 'Import backup',
       importing: 'Importing...',
-      resetAllData: 'Reset All Data',
+      resetAllData: 'Reset all data',
+      resetAction: 'Reset…',
+      resetDescription: 'Permanently erase your saved data.',
       resetting: 'Resetting...',
       importConfirmMessage:
         'Are you sure you want to import this data?\n\nThis will replace ALL your current data including cards, review history, and notes.',
@@ -231,10 +237,11 @@ const en = {
     // About section
     about: {
       title: 'About',
-      feedbackMessage: 'Feel free to open issues for feature requests, bug reports, and feedback on GitHub!',
-      reviewRequest: 'Leave a review 🙏',
+      feedbackLink: 'Report a bug or suggest a feature',
+      reviewRequest: 'Rate LeetSRS',
       copyright: '© 2026 Matt Drake',
-      github: 'GitHub',
+      github: 'Star on GitHub',
+      discord: 'Join Discord',
     },
   },
 

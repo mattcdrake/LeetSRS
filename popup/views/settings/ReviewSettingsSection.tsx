@@ -1,4 +1,5 @@
 import { Input, Label, TextField } from 'react-aria-components';
+import { FaRegCalendarPlus } from 'react-icons/fa6';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
 import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
@@ -33,8 +34,11 @@ export function ReviewSettingsSection() {
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        <TextField className="flex items-center justify-between">
-          <Label>{t.settings.reviewSettings.newCardsPerDay}</Label>
+        <TextField className="flex min-h-10 items-center justify-between gap-3">
+          <Label className="flex items-center gap-2">
+            <FaRegCalendarPlus aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary" />
+            {t.settings.reviewSettings.newCardsPerDay}
+          </Label>
           <Input
             type="number"
             value={inputValue}
@@ -43,7 +47,7 @@ export function ReviewSettingsSection() {
             min={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.min.toString()}
             max={SETTINGS_CONSTRAINTS.maxNewCardsPerDay.max.toString()}
             placeholder={settings.maxNewCardsPerDay.toString()}
-            className="w-20 px-2 py-1 rounded border bg-tertiary text-primary border-current"
+            className="w-20 shrink-0 min-h-10 px-3 py-2 rounded-lg border bg-primary text-primary border-current"
           />
         </TextField>
       </div>
