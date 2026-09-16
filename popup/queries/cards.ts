@@ -10,9 +10,7 @@ export type CardWithProblem = Card & CatalogProblem;
 
 // Catalog data is independent of learning-document edits and keyed only by references.
 export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
-  const references = cards
-    .map(({ frontendId, domain }) => ({ frontendId, domain }))
-    .sort((a, b) => a.frontendId.localeCompare(b.frontendId) || a.domain.localeCompare(b.domain));
+  const references = cards.map(({ frontendId, domain }) => ({ frontendId, domain }));
   return queryOptions({
     queryKey: ['popupCardMetadata', references] as const,
     staleTime: Infinity,
