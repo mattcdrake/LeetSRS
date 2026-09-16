@@ -14,7 +14,6 @@ const zhCN: Translations = {
     rateLimit: '已达到 GitHub API 请求上限。请稍后重试。你可以继续学习。',
     authentication: '请在设置中重新登录 GitHub。',
     missingToken: '请在设置中登录 GitHub。',
-    missingGist: '尚未配置 Gist ID。请在设置中选择 Gist。',
     gistNotFound: '未找到备份。请在设置中选择可用的备份。',
     unknown: '同步失败，请稍后重试。',
   },

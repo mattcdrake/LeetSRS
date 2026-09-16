@@ -154,10 +154,26 @@ it('pauses, resumes and retries deletion through real card controls, requiring c
   await waitFor(() => expect(screen.queryByText('Two Sum')).not.toBeInTheDocument());
   expect((await readLearningDocument()).cards['1']).toBeUndefined();
   list.unmount();
+});
 
-  render(<ReviewQueue />, { wrapper });
-  await screen.findByText('Add Two Numbers');
+it('keeps expansion across queue refreshes but binds delete confirmation to the current card', async () => {
+  render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
+  await screen.findByText('Two Sum');
+  click('Notes');
   click('Actions');
+  click('Delete Card');
+
+  const saved = await readLearningDocument();
+  await replaceLearningDocument({
+    ...saved,
+    cards: { ...saved.cards, '1': { ...saved.cards['1'], note: 'Refreshed note' } },
+  });
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Refreshed note'));
+  expect(screen.getByRole('button', { name: 'Confirm Delete?' })).toBeVisible();
+
+  await replaceLearningDocument({ ...saved, cards: { '2': saved.cards['2'] } });
+  await screen.findByText('Add Two Numbers');
+  expect(screen.getByRole('button', { name: 'Actions' })).toHaveAttribute('aria-expanded', 'true');
   click('Delete Card');
   expect((await readLearningDocument()).cards['2']).toBeDefined();
   click('Confirm Delete?');
