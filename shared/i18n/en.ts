@@ -93,6 +93,8 @@ const en = {
 
   // Home view - Actions section
   actionsSection: {
+    postpone: 'Postpone review',
+    pauseCard: 'Pause card',
     title: 'Actions',
     delay1Day: '1 Day',
     delay5Days: '5 Days',

@@ -85,6 +85,8 @@ const zhCN: Translations = {
   },
 
   actionsSection: {
+    postpone: '推迟复习',
+    pauseCard: '暂停卡片',
     title: '操作',
     delay1Day: '延后1天',
     delay5Days: '延后5天',

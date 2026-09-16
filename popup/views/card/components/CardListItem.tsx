@@ -80,7 +80,7 @@ export function CardListItem({ card }: CardListItemProps) {
     <div className="text-primary">
       <div className="flex items-center rounded-lg hover:bg-secondary transition-colors">
         <Button
-          className="min-w-0 flex-1 flex items-center justify-between gap-3 min-h-14 py-3 text-left rounded-lg cursor-pointer focus-visible:outline-2"
+          className="min-w-0 flex-1 flex items-center justify-between gap-3 min-h-10 py-2 text-left rounded-lg cursor-pointer focus-visible:outline-2"
           onPress={() => setIsExpanded((expanded) => !expanded)}
           aria-expanded={isExpanded}
         >
@@ -113,7 +113,7 @@ export function CardListItem({ card }: CardListItemProps) {
       </div>
 
       {isExpanded && (
-        <div className="px-3 py-3 mb-3 rounded-lg bg-secondary">
+        <div className="px-3 py-3 rounded-lg bg-secondary">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
             <StatRow label={t.cardStats.state} value={getStateLabel(card.fsrs.state, t)} />
             <StatRow label={t.cardStats.reviews} value={card.fsrs.reps} />

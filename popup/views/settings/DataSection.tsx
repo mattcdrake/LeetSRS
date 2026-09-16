@@ -71,12 +71,12 @@ export function DataSection() {
   };
 
   return (
-    <section aria-labelledby="data-heading" className="mb-4 pt-6 border-t border-current text-primary">
+    <section aria-labelledby="data-heading" className="mb-4 pt-4 border-t border-current text-primary">
       <h3 id="data-heading" className="text-sm font-medium mb-2">
         {t.settings.data.title}
       </h3>
       <p className="text-xs text-secondary leading-relaxed">{t.settings.data.description}</p>
-      <div className="flex gap-2 mt-4 mb-5">
+      <div className="flex gap-2 mt-4 mb-4">
         <Button
           onPress={handleExport}
           isDisabled={exportDataMutation.isPending}

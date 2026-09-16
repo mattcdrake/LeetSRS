@@ -27,15 +27,15 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
   const href = settings.resetEditorOnReviewQueue ? authorizeEditorReset(problemUrl) : problemUrl;
 
   return (
-    <div className="border border-current rounded-lg bg-primary p-4 flex flex-col gap-3">
+    <div className="border border-current rounded-lg bg-secondary p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-secondary">#{card.frontendId}</span>
-        <span className="text-xs px-2 py-1 rounded text-white capitalize" style={{ backgroundColor: difficultyColor }}>
+        <span className="text-xs capitalize" style={{ color: difficultyColor }}>
           {card.difficulty}
         </span>
       </div>
 
-      <div className="flex pb-3 -mt-1">
+      <div className="flex justify-center pb-3 -mt-1 text-center">
         <a
           href={href}
           target="_blank"

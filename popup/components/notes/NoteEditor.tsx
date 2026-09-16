@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Button, Label, TextArea, TextField } from 'react-aria-components';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
@@ -6,8 +5,6 @@ import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
 import { destructiveButton, secondaryButton } from '@/popup/styles';
 import { NOTES_MAX_LENGTH } from '@/shared/models';
-
-const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
 
 interface NoteEditorProps {
   frontendId: string;
@@ -21,7 +18,6 @@ export function NoteEditor(props: NoteEditorProps) {
 
 function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorProps) {
   const t = useI18n();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = variant === 'compact';
 
   const { isConfirming, startOrConfirm } = useTimedConfirmation();
@@ -64,18 +60,6 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
   const isSaving = isPending && !isDeleting;
   const saveError = saveNoteMutation.error;
 
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    if (!isCompact) {
-      textarea.style.height = '';
-    } else if (textarea.value === text) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
-    }
-  }, [text, isCompact]);
-
   if (error) {
     console.error('Failed to load note:', error);
   }
@@ -85,10 +69,9 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
       <TextField className="w-full">
         <Label className="sr-only">{t.notes.ariaLabel}</Label>
         <TextArea
-          ref={textareaRef}
-          className={`w-full p-3 rounded-lg border border-current bg-primary text-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent ${isCompact ? 'mt-1.5 text-xs max-h-40 overflow-y-auto' : 'mt-3 text-sm'}`}
+          className={`w-full px-3 py-2 rounded-lg border border-current bg-primary text-primary resize-none field-sizing-content min-h-9 max-h-40 overflow-y-auto text-xs focus:outline-none focus:ring-1 focus:ring-accent ${isCompact ? 'mt-1.5' : ''}`}
           placeholder={isLoading ? t.notes.placeholderLoading : t.notes.placeholderEmpty}
-          rows={isCompact ? 1 : 4}
+          rows={1}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={isDisabled || isLoading || isPending}

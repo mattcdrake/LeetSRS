@@ -1,7 +1,7 @@
 import type { CatalogProblem } from '@/shared/catalog';
 
 export const DIFFICULTY_COLORS = {
-  easy: '#22c55e',
-  medium: '#f59e0b',
-  hard: '#ef4444',
+  easy: '#1cb8b8',
+  medium: '#ffb800',
+  hard: '#ff2d55',
 } as const satisfies Record<CatalogProblem['difficulty'], string>;

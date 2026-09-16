@@ -59,7 +59,7 @@ export function GistSyncSection() {
     enable.mutate(enabled);
   };
   return (
-    <section className="mb-8 text-primary text-xs space-y-4">
+    <section className="mb-4 text-primary text-xs space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{t.title}</h3>
         {auth.data?.account && (
@@ -111,7 +111,7 @@ export function GistSyncSection() {
             </div>
           )}
           {config?.gistId && !editing ? (
-            <div className="space-y-1 border-t border-current pt-3">
+            <div className="space-y-1 border-t border-current pt-4">
               <div className="flex items-center justify-between gap-3 text-xs">
                 <span>{t.destination}</span>
                 <a
@@ -250,7 +250,7 @@ export function GistSyncSection() {
         </p>
       )}
       {auth.data?.account && (
-        <div className="border-t border-current pt-2 -mx-1">
+        <div className="border-t border-current pt-4 -mx-1">
           <Button
             className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:bg-secondary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
             isDisabled={action.isPending}

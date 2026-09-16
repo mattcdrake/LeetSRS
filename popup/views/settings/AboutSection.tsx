@@ -16,7 +16,7 @@ export function AboutSection() {
   ];
 
   return (
-    <section aria-label={t.settings.about.title} className="mb-6 pt-6 border-t border-current text-primary">
+    <section aria-label={t.settings.about.title} className="mb-6 pt-4 border-t border-current text-primary">
       <div>
         {links.map(({ href, label, Icon }) => (
           <a
