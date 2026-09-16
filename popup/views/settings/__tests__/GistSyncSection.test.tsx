@@ -220,7 +220,6 @@ it.each(['while open', 'while closed'])(
     const button = await screen.findByRole('button', { name: 'Enable GitHub access' });
     expect(screen.getByRole('switch')).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
-    expect(screen.getByText(/Local practice works/)).toBeInTheDocument();
     vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
     fireEvent.click(button);
     expect(browser.permissions.request).toHaveBeenCalledOnce();

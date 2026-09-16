@@ -86,9 +86,6 @@ export function GistSyncSection() {
         )}
       </div>
       <GithubMigrationNotice />
-      {(!auth.data?.account || permissions.granted !== true) && (
-        <p className="text-secondary">{t.permissionExplanation}</p>
-      )}
       {auth.data?.account && !permissions.isLoading && permissions.granted !== true && (
         <div role="alert" className="space-y-2">
           <p>{t.permissionRequired}</p>

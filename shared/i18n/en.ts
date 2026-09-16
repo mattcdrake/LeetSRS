@@ -190,8 +190,6 @@ const en = {
 
     // GitHub Gist Sync section
     gistSync: {
-      permissionExplanation:
-        'GitHub sign-in and backup sync need access to auth.leetsrs.com, api.github.com, and gist.githubusercontent.com. Local practice works without this access.',
       permissionRequired: 'GitHub access was removed. Re-enable it to resume backup sync.',
       enableAccess: 'Enable GitHub access',
       permissionFailed:
