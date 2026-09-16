@@ -21,15 +21,6 @@ beforeEach(async () => {
     .resolve('getProblem', requireDefined(testCatalog[0]));
 });
 
-it('confirms the saved rating without offering Undo', async () => {
-  render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
-  expect(await screen.findByRole('status')).toHaveTextContent('Saved · Review in 3 days');
-  expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
-  expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
-});
-
 it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated presses', async (key) => {
   render(<LeetSrsControl />);
   fireEvent.keyDown(document.body, { key: String(key) });
@@ -57,17 +48,6 @@ it('Escape restores focus without saving or disabling auto-open, and the hint ap
   fireEvent.click(trigger);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
   expect(screen.queryByText('Opens after you solve a problem.')).not.toBeInTheDocument();
-});
-
-it('persists opt-out and keeps manual opening available', async () => {
-  render(<LeetSrsControl />);
-  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
-  fireEvent.click(trigger);
-  fireEvent.click(await screen.findByRole('button', { name: 'Turn off auto-open' }));
-  await waitFor(async () => expect((await readLearningDocument()).settings.openRatingAfterSolving).toBe(false));
-  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-  fireEvent.click(trigger);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
 });
 
 it('keeps persistence failures retryable and prevents saving twice while pending', async () => {

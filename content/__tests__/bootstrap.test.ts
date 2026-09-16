@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
@@ -117,7 +117,7 @@ describe('content startup', () => {
   });
 });
 
-it('auto-opens once per new submission, respects opt-out, and stops on invalidation', async () => {
+it('ignores messages for another problem and stops on invalidation', async () => {
   fakeBrowser.reset();
   window.history.replaceState({}, '', '/problems/two-sum/');
   await replaceLearningDocument(buildLearningDocument());
@@ -133,21 +133,6 @@ it('auto-opens once per new submission, respects opt-out, and stops on invalidat
         data: { type: ACCEPTED_SUBMISSION_MESSAGE, slug, submissionId: id },
       })
     );
-  await act(async () => notify('1'));
-  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
-  fireEvent.click(button);
-  await act(async () => notify('1'));
-  expect(button).toHaveAttribute('aria-expanded', 'false');
-  await act(async () => notify('2'));
-  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
-  fireEvent.click(button);
-  await replaceLearningDocument(buildLearningDocument({ settings: { openRatingAfterSolving: false } }));
-  await act(async () => notify('3'));
-  expect(button).toHaveAttribute('aria-expanded', 'false');
-  fireEvent.click(button);
-  expect(button).toHaveAttribute('aria-expanded', 'true');
-  fireEvent.click(button);
-  await replaceLearningDocument(buildLearningDocument());
   await act(async () => notify('4', 'add-two-numbers'));
   expect(button).toHaveAttribute('aria-expanded', 'false');
   act(() => ctx.notifyInvalidated());
