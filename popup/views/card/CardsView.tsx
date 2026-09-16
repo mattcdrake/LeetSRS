@@ -22,9 +22,12 @@ export function CardsView() {
           <TextField className="relative" value={filterText} onChange={setFilterText}>
             <Label className="sr-only">{t.cardsView.filterAriaLabel}</Label>
             <div className="relative">
-              <FaMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm" />
+              <FaMagnifyingGlass
+                aria-hidden="true"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-sm"
+              />
               <Input
-                className="w-full pl-9 pr-9 py-2 bg-secondary rounded-lg border border-current text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                className="w-full pl-9 pr-9 min-h-10 py-2 bg-primary rounded-lg border border-current text-sm focus:outline-none focus:ring-2 focus:ring-accent"
                 placeholder={t.cardsView.filterPlaceholder}
               />
               {filterText && (
@@ -33,7 +36,7 @@ export function CardsView() {
                   onPress={() => setFilterText('')}
                   aria-label={t.cardsView.clearFilterAriaLabel}
                 >
-                  <FaXmark className="text-secondary text-sm" />
+                  <FaXmark aria-hidden="true" className="text-secondary text-sm" />
                 </Button>
               )}
             </div>
@@ -47,7 +50,7 @@ export function CardsView() {
         ) : sortedCards.length === 0 ? (
           <p className="text-secondary">{t.cardsView.noCardsMatchFilter}</p>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-[var(--current-border)]">
             {sortedCards.map((card) => (
               <CardListItem key={card.frontendId} card={card} />
             ))}

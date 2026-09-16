@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
-import { FaArrowUpRightFromSquare, FaCircleExclamation, FaCircleInfo, FaGithub } from 'react-icons/fa6';
+import { FaArrowsRotate, FaArrowUpRightFromSquare, FaCircleExclamation, FaCircleInfo, FaGithub } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { GithubMigrationNotice } from '@/popup/legacy/GithubMigrationNotice';
 import {
@@ -12,11 +12,11 @@ import {
   useSetGistSyncEnabledMutation,
   useSetupGistSyncMutation,
 } from '@/popup/queries/gist-sync';
-import { bounceButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import { SettingsSwitch } from './SettingsSwitch';
 
-const buttonClass = `px-3 py-2 rounded bg-accent text-white text-sm disabled:opacity-50 ${bounceButton}`;
+const buttonClass =
+  'min-h-10 px-3 py-2 rounded-lg border border-current bg-primary text-primary text-xs hover:bg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 export function GistSyncSection() {
   const translations = useI18n();
   const t = translations.settings.gistSync;
@@ -59,20 +59,20 @@ export function GistSyncSection() {
     enable.mutate(enabled);
   };
   return (
-    <section className="mb-6 p-4 rounded-lg bg-secondary text-primary space-y-3">
+    <section className="mb-8 text-primary text-xs space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-lg font-semibold">{t.title}</h3>
+        <h3 className="text-sm font-medium">{t.title}</h3>
         {auth.data?.account && (
           <TooltipTrigger delay={350} closeDelay={0}>
             <Button
               aria-label={t.syncInfo}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-secondary hover:bg-tertiary cursor-help focus-visible:outline-2"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-secondary hover:bg-secondary cursor-help focus-visible:outline-2"
             >
               <FaCircleInfo className="h-4 w-4" aria-hidden="true" />
             </Button>
             <Tooltip
               placement="bottom end"
-              className="z-[1100] max-w-[280px] rounded-xl border border-current bg-primary p-3 text-xs leading-relaxed text-primary shadow-lg"
+              className="z-[1100] max-w-[280px] rounded-lg border border-current bg-primary p-3 text-xs leading-relaxed text-primary shadow-lg"
             >
               {t.syncDetails}
             </Tooltip>
@@ -82,13 +82,19 @@ export function GistSyncSection() {
       <GithubMigrationNotice />
       {auth.data?.account ? (
         <>
-          <p className="flex items-center gap-2 text-sm text-secondary">
+          <p className="flex items-center gap-2 text-xs text-secondary">
             <FaGithub className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="truncate">{auth.data.account.login}</span>
           </p>
           {config?.gistId && (
-            <div className="space-y-1 text-sm">
-              <SettingsSwitch label={t.syncEnabled} isSelected={config.enabled} isDisabled={busy} onChange={toggle} />
+            <div className="space-y-1 text-xs">
+              <SettingsSwitch
+                icon={FaArrowsRotate}
+                label={t.syncEnabled}
+                isSelected={config.enabled}
+                isDisabled={busy}
+                onChange={toggle}
+              />
               <p className="text-xs text-secondary">
                 {t.lastSync}:{' '}
                 {status?.syncInProgress
@@ -106,7 +112,7 @@ export function GistSyncSection() {
           )}
           {config?.gistId && !editing ? (
             <div className="space-y-1 border-t border-current pt-3">
-              <div className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center justify-between gap-3 text-xs">
                 <span>{t.destination}</span>
                 <a
                   aria-label={t.openGist}
@@ -141,12 +147,12 @@ export function GistSyncSection() {
             </div>
           ) : (
             <div className="space-y-2">
-              <label className="block text-sm" htmlFor="gist-destination">
+              <label className="block text-xs" htmlFor="gist-destination">
                 {t.destination}
               </label>
               <select
                 id="gist-destination"
-                className="w-full min-h-11 px-3 py-2 rounded-xl bg-tertiary text-sm"
+                className="w-full min-h-10 px-3 py-2 rounded-lg border border-current bg-primary text-xs"
                 value={destination}
                 disabled={busy}
                 onChange={(event) => setSelected(event.target.value)}
@@ -170,7 +176,7 @@ export function GistSyncSection() {
                 </p>
               )}
               <Button
-                className={`${buttonClass} w-full min-h-11 rounded-xl font-medium`}
+                className={`${buttonClass} w-full font-medium`}
                 isDisabled={busy || !destination}
                 onPress={() => void save()}
               >
@@ -178,7 +184,7 @@ export function GistSyncSection() {
               </Button>
               {config?.gistId && (
                 <Button
-                  className="w-full rounded-lg py-2 text-xs text-secondary hover:bg-tertiary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
+                  className="w-full rounded-lg py-2 text-xs text-secondary hover:bg-secondary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
                   isDisabled={busy}
                   onPress={() => {
                     setEditing(false);
@@ -195,8 +201,8 @@ export function GistSyncSection() {
       ) : (
         <div className="space-y-3">
           {signingIn ? (
-            <div className="flex min-h-11 items-center justify-between gap-3 rounded-xl bg-tertiary px-3">
-              <span role="status" className="flex items-center gap-2.5 text-sm text-secondary">
+            <div className="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-current bg-primary px-3">
+              <span role="status" className="flex items-center gap-2.5 text-xs text-secondary">
                 <span
                   aria-hidden="true"
                   className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
@@ -213,7 +219,7 @@ export function GistSyncSection() {
             </div>
           ) : (
             <Button
-              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white cursor-pointer hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-default transition-colors"
+              className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               isDisabled={busy || auth.isPending}
               onPress={() => action.mutate('signIn')}
             >
@@ -226,7 +232,7 @@ export function GistSyncSection() {
       {!signingIn && (auth.isError || action.isError || auth.data?.error) && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl bg-[color-mix(in_srgb,var(--current-danger)_8%,transparent)] p-3 text-xs leading-relaxed text-danger"
+          className="flex items-start gap-2 rounded-lg bg-[color-mix(in_srgb,var(--current-danger)_8%,transparent)] p-3 text-xs leading-relaxed text-danger"
         >
           <FaCircleExclamation className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <p>{t.signInFailed}</p>
@@ -246,7 +252,7 @@ export function GistSyncSection() {
       {auth.data?.account && (
         <div className="border-t border-current pt-2 -mx-1">
           <Button
-            className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:bg-tertiary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
+            className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:bg-secondary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
             isDisabled={action.isPending}
             onPress={() => {
               setSelected(null);

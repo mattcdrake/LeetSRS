@@ -122,6 +122,7 @@ const zhCN: Translations = {
   },
 
   settings: {
+    preferences: '偏好设置',
     title: '设置',
 
     language: {
@@ -150,12 +151,15 @@ const zhCN: Translations = {
     },
 
     data: {
-      title: '数据',
-      exportData: '导出数据',
+      title: '数据与备份',
+      description: '保存备份或恢复已有备份。',
+      exportData: '导出备份',
       exporting: '导出中...',
-      importData: '导入数据',
+      importData: '导入备份',
       importing: '导入中...',
       resetAllData: '重置所有数据',
+      resetAction: '重置…',
+      resetDescription: '永久删除已保存的数据。',
       resetting: '重置中...',
       importConfirmMessage: '确定要导入此数据吗？\n\n这将替换您当前的所有数据，包括卡片、复习历史和笔记。',
       importSuccess: '数据导入成功！',
@@ -206,10 +210,11 @@ const zhCN: Translations = {
 
     about: {
       title: '关于',
-      feedbackMessage: '欢迎在 GitHub 上提交功能请求、错误报告和反馈！',
-      reviewRequest: '留下评价 🙏',
+      feedbackLink: '报告问题或提出功能建议',
+      reviewRequest: '评价 LeetSRS',
       copyright: '© 2026 Matt Drake',
-      github: 'GitHub',
+      github: '在 GitHub 上点 Star',
+      discord: '加入 Discord',
     },
   },
 

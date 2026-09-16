@@ -4,7 +4,7 @@ import { useI18n } from '@/popup/contexts/I18nContext';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
-import { bounceButton } from '@/popup/styles';
+import { destructiveButton, secondaryButton } from '@/popup/styles';
 import { NOTES_MAX_LENGTH } from '@/shared/models';
 
 const MAX_TEXTAREA_HEIGHT = 160; // px, matches max-h-40
@@ -23,7 +23,6 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
   const t = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = variant === 'compact';
-  const buttonSizing = isCompact ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm';
 
   const { isConfirming, startOrConfirm } = useTimedConfirmation();
 
@@ -87,7 +86,7 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
         <Label className="sr-only">{t.notes.ariaLabel}</Label>
         <TextArea
           ref={textareaRef}
-          className={`w-full p-2 rounded border border-current bg-tertiary text-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent ${isCompact ? 'mt-1.5 text-xs max-h-40 overflow-y-auto' : 'mt-3 text-sm'}`}
+          className={`w-full p-3 rounded-lg border border-current bg-primary text-primary resize-none focus:outline-none focus:ring-1 focus:ring-accent ${isCompact ? 'mt-1.5 text-xs max-h-40 overflow-y-auto' : 'mt-3 text-sm'}`}
           placeholder={isLoading ? t.notes.placeholderLoading : t.notes.placeholderEmpty}
           rows={isCompact ? 1 : 4}
           value={text}
@@ -106,19 +105,11 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
         </span>
         <div className="flex gap-2">
           {hasExistingNote && (
-            <Button
-              className={`${buttonSizing} rounded ${deleteConfirm ? 'bg-ultra-danger' : 'bg-danger'} text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
-              onPress={remove}
-              isDisabled={isDisabled || isPending}
-            >
+            <Button className={destructiveButton(deleteConfirm)} onPress={remove} isDisabled={isDisabled || isPending}>
               {isDeleting ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
             </Button>
           )}
-          <Button
-            className={`${buttonSizing} rounded bg-accent text-white hover:opacity-90 data-[disabled]:opacity-50 ${bounceButton}`}
-            onPress={save}
-            isDisabled={isDisabled || !canSave || isPending}
-          >
+          <Button className={secondaryButton} onPress={save} isDisabled={isDisabled || !canSave || isPending}>
             {isSaving ? t.actions.saving : t.actions.save}
           </Button>
         </div>

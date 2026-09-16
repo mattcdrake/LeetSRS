@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Button } from 'react-aria-components';
+import { FaDownload, FaTrashCan, FaUpload } from 'react-icons/fa6';
 import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/popup/queries/data';
-import { bounceButton } from '@/popup/styles';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {
@@ -71,14 +71,18 @@ export function DataSection() {
   };
 
   return (
-    <div className="mb-6 p-4 rounded-lg bg-secondary text-primary">
-      <h3 className="text-lg font-semibold mb-4">{t.settings.data.title}</h3>
-      <div className="space-y-2">
+    <section aria-labelledby="data-heading" className="mb-4 pt-6 border-t border-current text-primary">
+      <h3 id="data-heading" className="text-sm font-medium mb-2">
+        {t.settings.data.title}
+      </h3>
+      <p className="text-xs text-secondary leading-relaxed">{t.settings.data.description}</p>
+      <div className="flex gap-2 mt-4 mb-5">
         <Button
           onPress={handleExport}
           isDisabled={exportDataMutation.isPending}
-          className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
+          className="flex flex-1 items-center justify-center gap-2 min-h-10 px-2 py-2 rounded-lg border border-current text-xs bg-primary hover:bg-secondary cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
         >
+          <FaDownload aria-hidden="true" className="shrink-0" />
           {exportDataMutation.isPending ? t.settings.data.exporting : t.settings.data.exportData}
         </Button>
         <input
@@ -92,18 +96,31 @@ export function DataSection() {
         <Button
           onPress={() => fileInputRef.current?.click()}
           isDisabled={importDataMutation.isPending}
-          className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 bg-tertiary text-primary ${bounceButton}`}
+          className="flex flex-1 items-center justify-center gap-2 min-h-10 px-2 py-2 rounded-lg border border-current text-xs bg-primary hover:bg-secondary cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
         >
+          <FaUpload aria-hidden="true" className="shrink-0" />
           {importDataMutation.isPending ? t.settings.data.importing : t.settings.data.importData}
         </Button>
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-current pt-4">
+        <div className="flex items-start gap-2">
+          <FaTrashCan aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary mt-0.5" />
+          <div>
+            <h4 className="text-xs font-medium">{t.settings.data.resetAllData}</h4>
+            <p id="reset-description" className="mt-1 text-xs text-secondary leading-relaxed">
+              {t.settings.data.resetDescription}
+            </p>
+          </div>
+        </div>
         <Button
+          aria-describedby="reset-description"
           onPress={handleReset}
           isDisabled={resetAllDataMutation.isPending}
-          className={`w-full px-4 py-2 rounded transition-opacity hover:opacity-80 text-white bg-danger ${bounceButton}`}
+          className="shrink-0 min-h-10 px-2 py-2 rounded-lg text-xs text-danger hover:bg-secondary cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
         >
-          {resetAllDataMutation.isPending ? t.settings.data.resetting : t.settings.data.resetAllData}
+          {resetAllDataMutation.isPending ? t.settings.data.resetting : t.settings.data.resetAction}
         </Button>
       </div>
-    </div>
+    </section>
   );
 }

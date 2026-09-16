@@ -1,3 +1,4 @@
+import { FaGlobe } from 'react-icons/fa6';
 import { useI18n } from '../../contexts/I18nContext';
 import { useLeetcodeCnCapability } from '../../queries/leetcode-cn';
 
@@ -8,13 +9,16 @@ export function LeetcodeCnSection() {
   if (granted !== false) return null;
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-tertiary mb-4">{t.settings.leetcodeCn.description}</p>
+    <div className="border-t border-current pt-4">
+      <p className="flex items-start gap-2 text-xs text-secondary leading-relaxed mb-3">
+        <FaGlobe aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5" />
+        <span>{t.settings.leetcodeCn.description}</span>
+      </p>
       <button
         type="button"
         onClick={enable}
         disabled={isEnabling}
-        className="rounded bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90"
+        className="min-h-10 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary hover:bg-secondary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {t.settings.leetcodeCn.enable}
       </button>

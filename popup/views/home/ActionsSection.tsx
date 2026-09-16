@@ -2,7 +2,7 @@ import { Button } from 'react-aria-components';
 import type { IconType } from 'react-icons';
 import { FaForwardFast, FaForwardStep, FaPause } from 'react-icons/fa6';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
-import { bounceButton } from '@/popup/styles';
+import { destructiveButton, secondaryButton } from '@/popup/styles';
 import { useI18n } from '../../contexts/I18nContext';
 import { ExpandableSection } from './ExpandableSection';
 
@@ -23,11 +23,11 @@ interface ActionButtonProps {
 function ActionButton({ icon: Icon, label, onPress, isDisabled }: ActionButtonProps) {
   return (
     <Button
-      className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 rounded text-sm bg-tertiary text-primary hover:bg-quaternary transition-colors ${bounceButton}`}
+      className={`flex-1 flex flex-col items-center justify-center gap-1 ${secondaryButton}`}
       onPress={onPress}
       isDisabled={isDisabled}
     >
-      <Icon className="text-lg" />
+      <Icon aria-hidden="true" className="w-4 h-4" />
       <span>{label}</span>
     </Button>
   );
@@ -56,11 +56,9 @@ export function ActionsSection({ onDelete, onDelay, onPause, isDisabled }: Actio
           <ActionButton icon={FaPause} label={t.actions.pause} onPress={onPause} isDisabled={isDisabled} />
         </div>
 
-        <div className="pt-2 border-t border-current">
+        <div className="pt-3 border-t border-current flex justify-end">
           <Button
-            className={`w-full px-4 py-2 rounded text-sm ${
-              isConfirming ? 'bg-ultra-danger' : 'bg-danger'
-            } text-white hover:opacity-90 transition-colors ${bounceButton}`}
+            className={destructiveButton(isConfirming)}
             onPress={() => startOrConfirm(onDelete)}
             isDisabled={isDisabled}
           >
