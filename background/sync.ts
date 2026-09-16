@@ -1,6 +1,11 @@
 import { Octokit } from 'octokit';
 import { storage } from '#imports';
-import { authGeneration, getGithubAuthorization, signOutGithub } from '@/background/github-auth';
+import {
+  authGeneration,
+  GithubAuthorizationError,
+  getGithubAuthorization,
+  signOutGithub,
+} from '@/background/github-auth';
 import { dismissMigrationNotice, previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
 import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
@@ -224,7 +229,7 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
       const auth = await getGithubAuthorization();
       if (auth.account.id !== config.accountId) return { saved: false, error: 'authentication' };
     }
-    if (expected !== authGeneration()) throw new Error('401: authorization changed');
+    if (expected !== authGeneration()) throw new GithubAuthorizationError('authorization changed');
     await saveConnection({ ...config, enabled });
     return { saved: true };
   } catch (error) {
@@ -233,6 +238,7 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
 }
 
 function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'): GistSyncErrorCode {
+  if (error instanceof GithubAuthorizationError) return error.code;
   const message = error instanceof Error ? error.message : '';
   let status: unknown;
   if (error && typeof error === 'object' && 'status' in error) {
@@ -284,7 +290,7 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
   const destinations: GistDestination[] = [];
   for (let page = 1; ; page++) {
     const { data } = await github.rest.gists.list({ per_page: 100, page });
-    if (expected !== authGeneration()) throw new Error('401: authorization changed');
+    if (expected !== authGeneration()) throw new GithubAuthorizationError('authorization changed');
     for (const gist of data) {
       if (gist.owner?.id === auth.account.id && gist.files?.[GIST_FILENAME])
         destinations.push({
