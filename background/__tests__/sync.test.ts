@@ -1,4 +1,3 @@
-import { Octokit } from 'octokit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
@@ -43,44 +42,6 @@ describe('whole-document Gist sync', () => {
   });
 
   afterEach(() => vi.useRealTimers());
-
-  it('saves an existing Gist connection and starts syncing without watching connection changes', async () => {
-    github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
-    });
-
-    expect(await syncModule.connectGist({ mode: 'existing', gistId: 'new-gist' })).toEqual({
-      saved: true,
-    });
-
-    await vi.waitFor(() => expect(github.get).toHaveBeenCalledTimes(2));
-    await vi.waitFor(async () => expect(await syncModule.getSyncStatus()).toMatchObject({ syncInProgress: false }));
-    expect(Octokit).toHaveBeenCalledWith({ auth: 'new-token' });
-    expect(github.get).toHaveBeenCalledWith({ gist_id: 'new-gist' });
-    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'new-gist', enabled: true });
-    expect(await readLearningDocument()).toEqual(local);
-    expect(await syncModule.getSyncStatus()).toMatchObject({
-      lastSyncTime: expect.any(String),
-      syncInProgress: false,
-    });
-  });
-
-  it('creates a private Gist with syncing enabled', async () => {
-    github.create.mockResolvedValue({ data: { id: 'created-gist' } });
-    github.get.mockResolvedValue({ data: { owner: { id: 1 }, files: {} } });
-
-    expect(await syncModule.connectGist({ mode: 'create' })).toEqual({ saved: true });
-
-    expect(github.create).toHaveBeenCalledExactlyOnceWith({
-      description: 'LeetSRS Backup - Spaced Repetition Data',
-      public: false,
-      files: { 'leetsrs-backup.json': { content: expect.any(String) } },
-    });
-    expect(JSON.parse(github.create.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(local);
-    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'created-gist', enabled: true });
-    await vi.waitFor(() => expect(github.get).toHaveBeenCalledExactlyOnceWith({ gist_id: 'created-gist' }));
-    await vi.waitFor(async () => expect(await syncModule.getSyncStatus()).toMatchObject({ syncInProgress: false }));
-  });
 
   it.each([
     ['missing backup', { mode: 'existing', gistId: 'gist' } as const, 'missingBackup'],
@@ -215,20 +176,6 @@ describe('whole-document Gist sync', () => {
     );
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(github.get).not.toHaveBeenCalled();
-  });
-
-  it('enables sync without watching connection changes and stops it when disabled', async () => {
-    await writeGistConnection({ ...connection, enabled: false });
-    github.get.mockResolvedValue({ data: { owner: { id: 1 }, files: {} } });
-
-    expect(await syncModule.setSyncEnabled(true)).toEqual({ saved: true });
-    expect(await readGistConnection()).toEqual(connection);
-    await vi.waitFor(() => expect(github.update).toHaveBeenCalledOnce());
-    await vi.waitFor(async () => expect(await syncModule.getSyncStatus()).toMatchObject({ syncInProgress: false }));
-    expect(await syncModule.setSyncEnabled(false)).toEqual({ saved: true });
-    expect(await readGistConnection()).toEqual({ ...connection, enabled: false });
-    await syncModule.sync();
-    expect(github.get).toHaveBeenCalledOnce();
   });
 
   it('does not request sync when saving an edit fails', async () => {

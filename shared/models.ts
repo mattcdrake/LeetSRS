@@ -123,7 +123,6 @@ export type GistSyncErrorCode =
   | 'creationFailed'
   | 'gistNotFound'
   | 'missingBackup'
-  | 'missingGist'
   | 'missingToken'
   | 'rateLimit'
   | 'unavailable'

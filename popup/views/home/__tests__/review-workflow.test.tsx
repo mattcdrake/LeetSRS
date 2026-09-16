@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
+import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { CardsView } from '@/popup/views/card/CardsView';
 import { DataSection } from '@/popup/views/settings/DataSection';
 import { background } from '@/shared/background-service';
@@ -13,6 +14,7 @@ import { formatLocalDate } from '@/shared/calendar';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -41,7 +43,7 @@ afterEach(() => {
 
 const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
 
-it('saves and reopens a note, retries a failed review, persists scheduling and advances to the next card', async () => {
+it('retains failed note drafts, retries a pending save and reopens the persisted note', async () => {
   const { wrapper } = createPopupTestWrapper();
   const view = render(<ReviewQueue />, { wrapper });
   await screen.findByText('Two Sum');
@@ -84,6 +86,13 @@ it('saves and reopens a note, retries a failed review, persists scheduling and a
   fireEvent.click(await screen.findByRole('button', { name: /#1 Two Sum/ }));
   expect(await screen.findByRole('textbox', { name: 'Note text' })).toHaveValue('Use a map');
   list.unmount();
+});
+
+it('retries a failed review, persists scheduling and advances to the next card', async () => {
+  await background.saveNote('1', 'Use a map');
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const { wrapper } = createPopupTestWrapper();
+  vi.spyOn(fakeBrowser.storage.local, 'set');
   render(<ReviewQueue />, { wrapper });
   await screen.findByText('Two Sum');
   const saved = await readLearningDocument();
@@ -217,6 +226,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
     { key: STORAGE_KEYS.lastSyncTime, value: 'previous-sync' },
     { key: 'sync:leetsrs:theme', value: 'light' },
   ]);
+  await seedGithubAuthorization();
   onlineManager.setOnline(false);
   const backups: Blob[] = [];
   const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
@@ -225,11 +235,16 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
     return 'blob:backup';
   });
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  const downloads: { href: string; filename: string }[] = [];
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    downloads.push({ href: this.href, filename: this.download });
+  });
   render(<DataSection />, { wrapper: createPopupTestWrapper().wrapper });
   click('Export backup');
   await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
   expect(JSON.parse(await backups[0].text())).toEqual(document);
+  expect(backups[0].type).toBe('application/json');
+  expect(downloads).toEqual([{ href: 'blob:backup', filename: 'leetsrs-backup-2024-03-15.json' }]);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Export backup' })).toBeEnabled());
 
   const replacement = buildLearningDocument();
@@ -250,4 +265,154 @@ it('reports initialization failure when exporting unavailable data without creat
   await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to export data'));
   expect(createObjectURL).not.toHaveBeenCalled();
   expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
+});
+
+it('validates changed notes and retries deletion without deleting the card', async () => {
+  await background.saveNote('1', 'Stored note');
+  render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
+  await screen.findByText('Two Sum');
+  click('Notes');
+  const input = screen.getByRole('textbox', { name: 'Note text' });
+  await waitFor(() => expect(input).toHaveValue('Stored note'));
+  const save = screen.getByRole('button', { name: 'Save' });
+  expect(save).toBeDisabled();
+  for (const [value, enabled] of [
+    ['Changed', true],
+    ['', false],
+    ['a'.repeat(500), true],
+    ['Stored note', false],
+  ] as const) {
+    fireEvent.change(input, { target: { value } });
+    expect(save.hasAttribute('disabled')).toBe(!enabled);
+    expect(screen.getByText(`${value.length}/500`)).toBeInTheDocument();
+  }
+  const before = await readLearningDocument();
+  click('Delete');
+  expect(await readLearningDocument()).toEqual(before);
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk unavailable'));
+  click('Confirm?');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled());
+  expect(input).toHaveValue('Stored note');
+  expect(await readLearningDocument()).toEqual(before);
+  const pending = Promise.withResolvers<void>();
+  vi.mocked(fakeBrowser.storage.local.set).mockRestore();
+  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
+    await pending.promise;
+    await write(items);
+  });
+  click('Delete');
+  click('Confirm?');
+  expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
+  expect(input).toBeDisabled();
+  expect(save).toBeDisabled();
+  await act(async () => pending.resolve());
+  await waitFor(() => expect(input).toHaveValue(''));
+  const { note: _note, ...card } = before.cards['1'];
+  expect((await readLearningDocument()).cards['1']).toEqual(card);
+  expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+});
+
+it.each(['save', 'delete', 'failure'] as const)('isolates a note %s when switching cards', async (operation) => {
+  await background.saveNote('1', 'Stored note');
+  await background.saveNote('2', 'Other note');
+  const view = render(<NoteEditor frontendId="1" variant="regular" />, { wrapper: createPopupTestWrapper().wrapper });
+  const input = await screen.findByRole('textbox', { name: 'Note text' });
+  await waitFor(() => expect(input).toHaveValue('Stored note'));
+  const pending = Promise.withResolvers<void>();
+  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
+    await pending.promise;
+    await write(items);
+  });
+  fireEvent.change(input, { target: { value: 'Outgoing draft' } });
+  if (operation === 'delete') {
+    click('Delete');
+    click('Confirm?');
+  } else click('Save');
+  expect(
+    await screen.findByRole('button', { name: operation === 'delete' ? 'Deleting...' : 'Saving...' })
+  ).toBeDisabled();
+  expect(input).toBeDisabled();
+  expect(screen.getByRole('button', { name: operation === 'delete' ? 'Save' : 'Delete' })).toBeDisabled();
+  if (operation === 'failure') {
+    await act(async () => pending.reject(new Error('Disk unavailable')));
+    await screen.findByRole('alert');
+  }
+  view.rerender(<NoteEditor frontendId="2" variant="regular" />);
+  const other = screen.getByRole('textbox', { name: 'Note text' });
+  await waitFor(() => expect(other).toHaveValue('Other note'));
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  fireEvent.change(other, { target: { value: 'Other draft' } });
+  expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+  await act(async () => pending.resolve());
+  expect(other).toHaveValue('Other draft');
+  expect((await readLearningDocument()).cards['2'].note).toBe('Other note');
+  expect((await readLearningDocument()).cards['1'].note).toBe(
+    operation === 'delete' ? undefined : operation === 'save' ? 'Outgoing draft' : 'Stored note'
+  );
+});
+
+it('disables all card controls and persists one review for duplicate actions while saving', async () => {
+  render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
+  await screen.findByText('Two Sum');
+  click('Notes');
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Draft' } });
+  click('Actions');
+  const controls = screen.getAllByRole('button');
+  const pending = Promise.withResolvers<void>();
+  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
+  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
+    await pending.promise;
+    await write(items);
+  });
+  click('Good');
+  await waitFor(() => {
+    for (const control of controls) expect(control).toBeDisabled();
+  });
+  for (const control of controls) fireEvent.click(control);
+  expect(screen.getByRole('textbox')).toBeDisabled();
+  await act(async () => pending.resolve());
+  await screen.findByText('Add Two Numbers');
+  expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
+  const saved = await readLearningDocument();
+  expect(saved.cards['1']).toMatchObject({ paused: false, fsrs: { reps: 1 } });
+  expect(saved.cards['1'].note).toBeUndefined();
+  expect(saved.reviewActivity?.newCards).toBe(1);
+});
+
+it.each(['command', 'refresh'] as const)('waits for the pending %s before showing the next card', async (phase) => {
+  const { wrapper, queryClient } = createPopupTestWrapper();
+  render(<ReviewQueue />, { wrapper });
+  await screen.findByText('Two Sum');
+  await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+  const pending = Promise.withResolvers<void>();
+  const started = Promise.withResolvers<void>();
+  const read = storage.getItem.bind(storage);
+  const rate = getRegisteredBackground().rateCard;
+  vi.mocked(background.rateCard).mockImplementationOnce(async (input) => {
+    const card = await rate(input);
+    if (phase === 'command') {
+      started.resolve();
+      await pending.promise;
+    } else
+      vi.spyOn(storage, 'getItem').mockImplementation(async (key) => {
+        started.resolve();
+        await pending.promise;
+        return read(key);
+      });
+    return card;
+  });
+  click('Good');
+  await act(() => started.promise);
+  if (phase === 'command') await screen.findByText('Loading review queue...');
+  else await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeDisabled());
+  expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
+  await act(async () => pending.resolve());
+  await screen.findByText('Add Two Numbers');
+  expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
+  expect((await readLearningDocument()).cards['1'].fsrs.reps).toBe(1);
 });

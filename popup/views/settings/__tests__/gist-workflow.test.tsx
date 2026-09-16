@@ -4,6 +4,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { sync } from '@/background/sync';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
@@ -55,15 +56,24 @@ beforeEach(async () => {
 
 afterEach(() => onlineManager.setOnline(true));
 
-it('connects, disables sync offline, cancels a change, retries creation and signs out', async () => {
-  const before = await readLearningDocument();
+async function connect() {
   render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
   await screen.findByRole('option', { name: /My backup/ });
   expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-  expect(github.get).not.toHaveBeenCalled();
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'backup' } });
   fireEvent.click(screen.getByRole('button', { name: 'Connect and sync' }));
   await screen.findByText('Connection saved');
+  await waitFor(async () =>
+    expect(await background.getGistSyncStatus()).toMatchObject({
+      syncInProgress: false,
+      lastSyncTime: expect.any(String),
+    })
+  );
+}
+
+it('connects an owned backup and pauses and resumes syncing through Settings', async () => {
+  const before = await readLearningDocument();
+  await connect();
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: true });
   expect(screen.getByRole('link', { name: 'Open backup Gist' })).toHaveAttribute(
     'href',
@@ -71,33 +81,52 @@ it('connects, disables sync offline, cancels a change, retries creation and sign
   );
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   expect(await readLearningDocument()).toEqual(before);
-
-  github.get.mockClear();
   onlineManager.setOnline(false);
   fireEvent.click(screen.getByRole('switch'));
   await waitFor(() => expect(screen.getByRole('switch')).not.toBeChecked());
-  expect((await readGistConnection()).enabled).toBe(false);
+  expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: false });
+  github.get.mockClear();
+  await background.saveNote('1', 'Paused edit');
+  await sync();
   expect(github.get).not.toHaveBeenCalled();
   onlineManager.setOnline(true);
+  fireEvent.click(screen.getByRole('switch'));
+  await waitFor(() => expect(screen.getByRole('switch')).toBeChecked());
+  await waitFor(() => expect(github.update).toHaveBeenCalled());
+  const uploaded = JSON.parse(github.update.mock.lastCall?.[0].files['leetsrs-backup.json'].content);
+  expect(uploaded.cards['1'].note).toBe('Paused edit');
+  expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: true });
+});
+
+it('cancels a destination change and retries creating a private backup without losing data', async () => {
+  const before = await readLearningDocument();
+  await connect();
   fireEvent.click(screen.getByRole('button', { name: 'Change' }));
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(github.create).not.toHaveBeenCalled();
   expect((await readGistConnection()).gistId).toBe('backup');
-
   fireEvent.click(screen.getByRole('button', { name: 'Change' }));
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
   github.create.mockRejectedValueOnce(new Error('Network unavailable'));
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await screen.findByText(/Connection could not be saved/);
   expect(screen.getByRole('combobox')).toHaveValue('create');
-  expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: false });
+  expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: true });
   expect(await readLearningDocument()).toEqual(before);
-
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await screen.findByText('Connection saved');
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'created', enabled: true });
-  expect(JSON.parse(github.create.mock.calls[1][0].files['leetsrs-backup.json'].content)).toEqual(before);
+  expect(github.create.mock.lastCall?.[0]).toMatchObject({
+    public: false,
+    description: 'LeetSRS Backup - Spaced Repetition Data',
+  });
+  expect(JSON.parse(github.create.mock.lastCall?.[0].files['leetsrs-backup.json'].content)).toEqual(before);
+});
+
+it('signs out without deleting learning data or the remote backup', async () => {
+  const before = await readLearningDocument();
+  await connect();
   fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
   await screen.findByRole('button', { name: 'Sign in with GitHub' });
   expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
