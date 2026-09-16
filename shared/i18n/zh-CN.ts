@@ -172,6 +172,11 @@ const zhCN: Translations = {
     },
 
     gistSync: {
+      permissionExplanation:
+        'GitHub 登录和备份同步需要访问 auth.leetsrs.com、api.github.com 和 gist.githubusercontent.com。本地练习无需此权限。',
+      permissionRequired: 'GitHub 访问权限已移除。请重新启用以恢复备份同步。',
+      enableAccess: '启用 GitHub 访问权限',
+      permissionFailed: '未能获得 GitHub 访问权限。请使用上方按钮重试；本地练习仍然可用。',
       signIn: '使用 GitHub 登录',
       signingIn: '正在登录…',
       signOut: '退出登录',

@@ -15,13 +15,13 @@ export default defineConfig({
     description: '__MSG_extDescription__',
     default_locale: 'en',
     permissions: ['storage', 'alarms', 'activeTab', 'identity'],
-    host_permissions: [
-      '*://*.leetcode.com/*',
+    host_permissions: ['*://*.leetcode.com/*'],
+    optional_host_permissions: [
+      '*://*.leetcode.cn/*',
       'https://auth.leetsrs.com/*',
       'https://api.github.com/*',
       'https://gist.githubusercontent.com/*',
     ],
-    optional_host_permissions: ['*://*.leetcode.cn/*'],
   },
   vite: () => ({
     plugins: [tailwindcss()],
