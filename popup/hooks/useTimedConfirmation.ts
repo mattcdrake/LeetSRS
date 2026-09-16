@@ -1,14 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const DEFAULT_CONFIRMATION_TIMEOUT_MS = 3000;
+const CONFIRMATION_TIMEOUT_MS = 3000;
 
-export interface TimedConfirmation {
-  isConfirming: boolean;
-  startOrConfirm: (action: () => void | Promise<void>) => Promise<void>;
-  resetConfirmation: () => void;
-}
-
-export function useTimedConfirmation(timeoutMs = DEFAULT_CONFIRMATION_TIMEOUT_MS): TimedConfirmation {
+export function useTimedConfirmation() {
   const [isConfirming, setIsConfirming] = useState(false);
   const isConfirmingRef = useRef(false);
   const isActionPendingRef = useRef(false);
@@ -32,7 +26,7 @@ export function useTimedConfirmation(timeoutMs = DEFAULT_CONFIRMATION_TIMEOUT_MS
       if (!isConfirmingRef.current) {
         isConfirmingRef.current = true;
         setIsConfirming(true);
-        timerRef.current = setTimeout(resetConfirmation, timeoutMs);
+        timerRef.current = setTimeout(resetConfirmation, CONFIRMATION_TIMEOUT_MS);
         return;
       }
 
@@ -53,10 +47,10 @@ export function useTimedConfirmation(timeoutMs = DEFAULT_CONFIRMATION_TIMEOUT_MS
         resetConfirmation();
       }
     },
-    [clearTimer, resetConfirmation, timeoutMs]
+    [clearTimer, resetConfirmation]
   );
 
   useEffect(() => clearTimer, [clearTimer]);
 
-  return { isConfirming, startOrConfirm, resetConfirmation };
+  return { isConfirming, startOrConfirm };
 }

@@ -164,7 +164,6 @@ const en = {
     },
 
     leetcodeCn: {
-      title: 'LeetCode China',
       description: 'Enable support for leetcode.cn (力扣). Requires additional browser permission.',
       enable: 'Enable',
     },
@@ -220,11 +219,7 @@ const en = {
       lastSyncNever: 'Never',
       // Errors
       syncFailed: 'Sync failed',
-      edit: 'Edit',
       cancel: 'Cancel',
-      latestEditNotice:
-        'Newest edit wins across the whole dataset. Simultaneous changes in another browser may be lost.',
-      howSyncWorks: 'How sync works',
       syncDetails:
         'LeetSRS compares the edit time of each complete dataset and replaces the older one. It does not merge individual cards.',
       openGist: 'Open backup Gist',
@@ -232,12 +227,10 @@ const en = {
       change: 'Change',
       destination: 'Backup Gist',
       syncInfo: 'How sync works',
-      existingGist: 'Use existing Gist',
       save: 'Save',
       saving: 'Saving…',
       saved: 'Connection saved',
       saveFailed: 'Connection could not be saved',
-      configFailed: 'Could not load the saved connection',
     },
 
     // About section
