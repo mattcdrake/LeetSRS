@@ -168,14 +168,13 @@ describe('whole-document Gist sync', () => {
     });
   });
 
-  it.each([
-    [{ accountId: null }, 'missingToken'],
-    [{ gistId: null }, 'missingGist'],
-  ] as const)('rejects enabling an incomplete connection', async (missing, error) => {
-    await writeGistConnection({ ...connection, ...missing, enabled: false });
+  it.each([true, false])('only allows disabling an absent connection (enabled: %s)', async (enabled) => {
+    await syncModule.disconnectGithub();
 
-    expect(await syncModule.setSyncEnabled(true)).toEqual({ saved: false, error });
-    expect((await readGistConnection()).enabled).toBe(false);
+    expect(await syncModule.setSyncEnabled(enabled)).toEqual(
+      enabled ? { saved: false, error: 'missingToken' } : { saved: true }
+    );
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(github.get).not.toHaveBeenCalled();
   });
 

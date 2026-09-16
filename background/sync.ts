@@ -119,7 +119,7 @@ export function sync(): Promise<void> {
 async function runSync(startGeneration: number): Promise<void> {
   try {
     const config = await readGistConnection();
-    if (generation !== startGeneration || !canSync(config)) {
+    if (generation !== startGeneration || !config.enabled) {
       return;
     }
 
@@ -132,7 +132,10 @@ async function runSync(startGeneration: number): Promise<void> {
   }
 }
 
-async function syncDocument(config: GistSyncConfig & { gistId: string }, startGeneration: number): Promise<void> {
+async function syncDocument(
+  config: Extract<GistSyncConfig, { gistId: string }>,
+  startGeneration: number
+): Promise<void> {
   const auth = await getGithubAuthorization();
   if (generation !== startGeneration || auth.account.id !== config.accountId) return;
   const github = new Octokit({ auth: auth.accessToken });
@@ -159,10 +162,6 @@ async function syncDocument(config: GistSyncConfig & { gistId: string }, startGe
 
   const timestamp = new Date().toISOString();
   await writeSyncStatus({ lastSyncTime: timestamp });
-}
-
-function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: string } {
-  return config.enabled && !!config.accountId && !!config.gistId?.trim();
 }
 
 export async function getSyncStatus(): Promise<GistSyncStatus> {
@@ -217,11 +216,8 @@ export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionRe
   try {
     const expected = authGeneration();
     const config = await readGistConnection();
-    if (enabled && !config.accountId) {
-      return { saved: false, error: 'missingToken' };
-    }
-    if (enabled && !config.gistId?.trim()) {
-      return { saved: false, error: 'missingGist' };
+    if (config.accountId === null) {
+      return enabled ? { saved: false, error: 'missingToken' } : { saved: true };
     }
 
     if (enabled) {

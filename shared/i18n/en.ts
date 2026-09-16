@@ -14,7 +14,6 @@ const en = {
     rateLimit: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
     authentication: 'Sign in with GitHub again in Settings.',
     missingToken: 'Sign in with GitHub in Settings.',
-    missingGist: 'Gist ID is not configured. Choose a Gist in Settings.',
     gistNotFound: 'Backup not found. Choose an available backup in Settings.',
     unknown: 'Sync failed. Try again later.',
   },
