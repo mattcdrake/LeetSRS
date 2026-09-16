@@ -10,9 +10,10 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
+import * as catalog from '@/shared/catalog';
 import { initializeCatalog } from '@/shared/catalog';
 import type { GistSyncStatus } from '@/shared/models';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
@@ -23,6 +24,7 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery } from '../gist-sync';
+import { learningDocumentQueryKey } from '../learning-document';
 import { useNoteQuery } from '../notes';
 import { useTodayReviewActivityQuery } from '../review-activity';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
@@ -74,22 +76,33 @@ it('returns a disabled connection without reviving retired credentials or reques
   expect(background.waitForInitialization).not.toHaveBeenCalled();
 });
 
-it.each(['success', 'failure'] as const)(
-  'ignores an obsolete initial read %s after a storage notification',
-  async (outcome) => {
-    const pending = Promise.withResolvers<LearningDocument>();
-    const reads = vi.spyOn(storage, 'getItem').mockReturnValue(pending.promise);
+it.each(['storage', 'catalog'].flatMap((source) => ['success', 'failure'].map((outcome) => ({ source, outcome }))))(
+  'loads replacement document cards despite an obsolete $source read $outcome',
+  async ({ source, outcome }) => {
+    const initial = buildLearningDocument({ cards: { 1: createMockCard(State.New) } });
+    await replaceLearningDocument(initial);
+    const pending = Promise.withResolvers<void>();
+    const read =
+      source === 'storage'
+        ? vi.spyOn(storage, 'getItem').mockImplementationOnce(async () => {
+            await pending.promise;
+            return initial;
+          })
+        : vi.spyOn(catalog, 'getProblemsByFrontendIds').mockImplementationOnce(async () => {
+            await pending.promise;
+            return [buildCatalogProblem()];
+          });
     const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-    await waitFor(() => expect(reads).toHaveBeenCalled());
-    reads.mockRestore();
-    const card = createMockCard(State.New);
-    await replaceLearningDocument(buildLearningDocument({ cards: { [card.frontendId]: card } }));
-    await waitFor(() => expect(result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
+    await waitFor(() => expect(read).toHaveBeenCalled());
+    read.mockRestore();
+    const card = createMockCard(State.New, { frontendId: '2' });
+    await replaceLearningDocument(buildLearningDocument({ cards: { 2: card } }));
+    await waitFor(() => expect(result.current.data).toMatchObject([{ ...card, title: 'Add Two Numbers' }]));
     await act(async () => {
-      if (outcome === 'success') pending.resolve(buildLearningDocument());
+      if (outcome === 'success') pending.resolve();
       else pending.reject(new Error('Obsolete failure'));
     });
-    expect(result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]);
+    expect(result.current.data).toMatchObject([{ ...card, title: 'Add Two Numbers' }]);
     expect(result.current.error).toBeNull();
   }
 );
@@ -183,7 +196,7 @@ it.each([
   await storage.setItem(STORAGE_KEYS.learningDocument, document);
   service.resolve('waitForInitialization', new Promise<void>(() => {}));
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  await waitFor(() => expect(result.current.isError).toBe(true));
+  await waitFor(() => expect(result.current.error).not.toBeNull());
   expect(result.current.data).toBeUndefined();
   expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
@@ -295,10 +308,9 @@ it.each(['tick', 'visibility'] as const)(
 
 it('keeps a successful local save successful when refreshing the cache fails', async () => {
   await startBackground();
-  const { result } = renderHook(() => ({ cards: useCardsQuery(), rate: useRateCardMutation() }), {
-    wrapper: createPopupTestWrapper().wrapper,
-  });
-  await waitFor(() => expect(result.current.cards.isSuccess).toBe(true));
+  const { wrapper, queryClient } = createPopupTestWrapper();
+  const { result } = renderHook(() => ({ cards: useCardsQuery(), rate: useRateCardMutation() }), { wrapper });
+  await waitFor(() => expect(result.current.cards.data).toBeDefined());
   const reads = vi.spyOn(storage, 'getItem');
   const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
   vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation((items) => {
@@ -310,7 +322,7 @@ it('keeps a successful local save successful when refreshing the cache fails', a
   await waitFor(() => expect(result.current.cards.error?.message).toBe('Read failed'));
   expect(result.current.rate.isSuccess).toBe(true);
   reads.mockRestore();
-  await act(() => result.current.cards.refetch());
+  await act(() => queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey }));
   await waitFor(() => expect(result.current.cards.data).toMatchObject([buildProblem()]));
 });
 
