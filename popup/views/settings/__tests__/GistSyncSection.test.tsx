@@ -34,7 +34,6 @@ beforeEach(async () => {
     .resolve('getGithubAuthStatus', signedIn)
     .resolve('getGistSyncStatus', {
       lastSyncTime: null,
-      lastSyncDirection: null,
       syncInProgress: false,
       lastError: null,
     })

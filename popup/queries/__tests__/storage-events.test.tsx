@@ -245,7 +245,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
     expect(result.current.cards.data).toEqual([]);
     expect(result.current.note.data).toBeNull();
     expect(result.current.settings.data.maxNewCardsPerDay).toBe(9);
-    expect(result.current.status.data?.lastSyncDirection).toBe('pull');
+    expect(result.current.status.data?.lastSyncTime).toEqual(expect.any(String));
   });
 });
 
@@ -320,7 +320,6 @@ it('keeps polling background-only sync progress and errors without stored change
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
   const status: GistSyncStatus = {
     lastSyncTime: null,
-    lastSyncDirection: null,
     syncInProgress: true,
     lastError: null,
   };
