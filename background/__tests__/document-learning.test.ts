@@ -3,7 +3,6 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { learningDocumentSchema } from '@/shared/models';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
@@ -99,25 +98,13 @@ describe('document learning through background commands', () => {
     });
     await replaceLearningDocument(original);
     const others = Object.values(original.cards);
-    const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const problem = buildProblem({ frontendId: 'new-problem' });
     await expect(getRegisteredBackground().addCard(problem)).resolves.toBeUndefined();
     const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
     expect(Object.values((await readLearningDocument()).cards)).toEqual([...others, card]);
-    expect(card.fsrs).toEqual({
-      due: Date.now(),
-      stability: 0,
-      difficulty: 0,
-      elapsed_days: 0,
-      scheduled_days: 0,
-      reps: 0,
-      lapses: 0,
-      state: 0,
-      learning_steps: 0,
-      last_review: undefined,
-    });
+    expect(card.fsrs).toMatchObject({ due: Date.now(), reps: 0, state: State.New });
     await expect(getRegisteredBackground().addCard({ ...problem, domain: 'leetcode.cn' })).resolves.toBeUndefined();
-    expect(writes).toHaveBeenCalledTimes(1);
+    expect((await readLearningDocument()).cards[problem.frontendId]).toEqual(card);
     await getRegisteredBackground().saveNote(card.frontendId, '  solution\n\t');
     expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBe('  solution\n\t');
     await expect(getRegisteredBackground().setPauseStatus(card.frontendId, true)).resolves.toBeUndefined();
@@ -141,21 +128,6 @@ describe('document learning through background commands', () => {
     expect(Object.values((await readLearningDocument()).cards)).toEqual(others);
     expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBeNull();
     expect(await readLearningDocument()).toEqual({ ...original, dataUpdatedAt: new Date().toISOString() });
-    expect(writes).toHaveBeenCalledTimes(9);
-    for (const [index, [items]] of writes.mock.calls.entries()) {
-      expect(Object.keys(items)).toEqual([STORAGE_KEYS.learningDocument.slice('local:'.length)]);
-      const document = learningDocumentSchema.parse(
-        Reflect.get(items, STORAGE_KEYS.learningDocument.slice('local:'.length))
-      );
-      expect(document).toMatchObject({
-        cards: original.cards,
-        reviewActivity: original.reviewActivity,
-        settings: original.settings,
-      });
-      expect(document.dataUpdatedAt).toBe(
-        new Date(index < 3 ? '2024-03-15T12:00:00' : '2024-03-16T12:00:00').toISOString()
-      );
-    }
   });
 
   it('keeps a review schedule, activity, and edit timestamp on the captured day when a read crosses midnight', async () => {

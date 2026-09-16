@@ -2,6 +2,7 @@
  * @vitest-environment happy-dom
  */
 
+import { onlineManager } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -51,6 +52,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  onlineManager.setOnline(true);
   Object.defineProperty(globalThis, 'localStorage', {
     value: originalLocalStorage,
     writable: true,
@@ -137,3 +139,42 @@ describe('LeetcodeCnBanner', () => {
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
   });
 });
+
+it.each(['offline', 'rejected', 'not-authorized'])(
+  'enables through the UI after %s permission handling',
+  async (scenario) => {
+    if (scenario === 'offline') onlineManager.setOnline(false);
+    const pending = Promise.withResolvers<boolean>();
+    mockRequest.mockReturnValueOnce(pending.promise);
+    render(
+      <>
+        <LeetcodeCnBanner />
+        <LeetcodeCnSection />
+      </>,
+      createPopupTestWrapper()
+    );
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /enable/i })).toHaveLength(2));
+    const button = screen.getAllByRole('button', { name: /enable/i })[0];
+    act(() => {
+      button.click();
+      expect(mockRequest).toHaveBeenCalledExactlyOnceWith({ origins: ['*://*.leetcode.cn/*'] });
+    });
+    await waitFor(() => expect(button).toBeDisabled());
+    if (scenario === 'offline') mockContains.mockResolvedValue(true);
+    await act(async () => {
+      if (scenario === 'rejected') pending.reject(new Error('User gesture required'));
+      else pending.resolve(true);
+    });
+    if (scenario !== 'offline') {
+      await waitFor(() => expect(button).toBeEnabled());
+      expect(screen.getAllByRole('button', { name: /enable/i })).toHaveLength(2);
+      mockContains.mockResolvedValue(true);
+      mockRequest.mockResolvedValue(true);
+      act(() => {
+        button.click();
+        expect(mockRequest).toHaveBeenCalledTimes(2);
+      });
+    }
+    await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(0));
+  }
+);
