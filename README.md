@@ -71,6 +71,17 @@ Use the sync toggle to pause syncing. **Sign out** removes the local connection 
 
 Sync uses last-write-wins for the entire dataset, not per-card merging. The browser with the newest edit replaces all Gist data, so concurrent changes in another browser can be lost. Enabled sync runs after local edits, when the extension starts, and at least once per minute for retry.
 
+## Setup
+
+Use Node.js 24 or newer and install dependencies with `npm install`.
+
+- `npm run dev` or `npm run dev:fresh`: start Chrome with a fresh temporary profile.
+- `npm run dev:persistent`: reuse a Chrome profile, keeping logins and extension data between runs.
+- `npm run build`: build the production extension.
+- `npm run zip`: package the extension for distribution.
+
+The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched. To reset it, close the development browser and delete that directory.
+
 ## Docs
 
 See [AGENTS.md](AGENTS.md) for development checks and workflow rules, and [Architecture](docs/architecture.md) for system boundaries.
