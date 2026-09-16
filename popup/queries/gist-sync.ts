@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
-import type { GistSetup } from '@/shared/models';
 import { readGistConnection } from '@/shared/storage';
 
 export const gistSyncQueryKeys = {
@@ -22,23 +21,6 @@ export function useGistSyncStatusQuery() {
     queryKey: gistSyncQueryKeys.status,
     queryFn: () => background.getGistSyncStatus(),
     refetchInterval: 15000,
-  });
-}
-
-export function useSetupGistSyncMutation() {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: (setup: GistSetup) => background.setupGistSync(setup),
-    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
-  });
-}
-
-export function useSetGistSyncEnabledMutation() {
-  const client = useQueryClient();
-  return useMutation({
-    networkMode: 'always',
-    mutationFn: (enabled: boolean) => background.setGistSyncEnabled(enabled),
-    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
   });
 }
 

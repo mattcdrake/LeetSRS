@@ -23,7 +23,7 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
-import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
+import { useGistSyncConfigQuery, useGistSyncStatusQuery } from '../gist-sync';
 import { useNoteQuery } from '../notes';
 import { useTodayReviewActivityQuery } from '../review-activity';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
@@ -355,23 +355,6 @@ it('loads settings inside Suspense alongside the root storage observer', async (
   );
   await screen.findByText('Ready');
   queryClient.clear();
-});
-
-it('disables automatic sync offline without attempting GitHub', async () => {
-  await startBackground();
-  await seedGithubAuthorization();
-  await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
-  await waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-  github.get.mockClear();
-  onlineManager.setOnline(false);
-  const { result } = renderHook(() => ({ config: useGistSyncConfigQuery(), toggle: useSetGistSyncEnabledMutation() }), {
-    wrapper: createPopupTestWrapper().wrapper,
-  });
-  await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
-  act(() => result.current.toggle.mutate(false));
-  await waitFor(() => expect(result.current.config.data?.enabled).toBe(false));
-  expect(result.current.toggle.isSuccess).toBe(true);
-  expect(github.get).not.toHaveBeenCalled();
 });
 
 beforeEach(initializeCatalog);

@@ -1,6 +1,7 @@
 /** @vitest-environment happy-dom */
+import { onlineManager } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
@@ -102,4 +103,20 @@ it('connects, cancels a change, preserves the old connection on failure, retries
   expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
   expect((await background.getGithubAuthStatus()).account).toBeNull();
   expect(await readLearningDocument()).toEqual(before);
+});
+
+afterEach(() => onlineManager.setOnline(true));
+
+it('lets the user disable automatic sync while offline without fetching the backup', async () => {
+  await background.setupGistSync({ mode: 'existing', gistId: 'backup' });
+  render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
+  const toggle = await screen.findByRole('switch');
+  await waitFor(() => expect(toggle).toBeEnabled());
+  expect(toggle).toBeChecked();
+  github.get.mockClear();
+  onlineManager.setOnline(false);
+  fireEvent.click(toggle);
+  await waitFor(() => expect(toggle).not.toBeChecked());
+  expect(await screen.findByRole('status')).toHaveTextContent('Connection saved');
+  expect(github.get).not.toHaveBeenCalled();
 });
