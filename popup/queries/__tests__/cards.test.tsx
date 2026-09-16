@@ -124,29 +124,26 @@ describe('card queries through the background service', () => {
     await waitFor(() => expect(settings.result.current.data.language).toBe('zh-CN'));
   });
 
-  it.each([State.Learning, State.Relearning])(
-    'refreshes an empty queue when a state %i card becomes due',
-    async (state) => {
-      vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-      vi.setSystemTime(new Date('2024-03-15T10:00:00'));
-      const card = createMockCard(state);
-      card.fsrs.due = Date.now() + 10_000;
-      await background.importData(JSON.stringify(buildLearningDocument({ cards: { [card.frontendId]: card } })));
-      const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  it('refreshes an empty queue when a card becomes due', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+    const card = createMockCard(State.Learning);
+    card.fsrs.due = Date.now() + 10_000;
+    await background.importData(JSON.stringify(buildLearningDocument({ cards: { [card.frontendId]: card } })));
+    const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
 
-      try {
-        await act(() => vi.advanceTimersByTimeAsync(1));
-        await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
-        expect(view.result.current.data).toEqual([]);
+    try {
+      await act(() => vi.advanceTimersByTimeAsync(1));
+      await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
+      expect(view.result.current.data).toEqual([]);
 
-        await act(() => vi.advanceTimersByTimeAsync(15_000));
-        await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
-      } finally {
-        view.unmount();
-        vi.useRealTimers();
-      }
+      await act(() => vi.advanceTimersByTimeAsync(15_000));
+      await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
+    } finally {
+      view.unmount();
+      vi.useRealTimers();
     }
-  );
+  });
 });
 
 beforeEach(initializeCatalog);

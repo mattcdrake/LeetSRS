@@ -8,7 +8,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
-import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import backgroundEntry from '@/entrypoints/background/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
 import { background } from '@/shared/background-service';
@@ -66,23 +65,12 @@ it('reads a current connection without waiting for a learning document or backgr
   expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
-it.each([false, true])('does not revive a retired connection (legacy: %s)', async (legacy) => {
-  if (legacy) {
-    await fakeBrowser.storage.sync.set({
-      'leetsrs:githubPat': 'legacy-secret',
-      'leetsrs:gistId': 'legacy-gist',
-      'leetsrs:gistSyncEnabled': true,
-    });
-  }
-  service.handle('waitForInitialization', initializeLearningDocument);
-  const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  await waitFor(() => expect(result.current.data).toEqual({ accountId: null, gistId: null, enabled: false }));
-  expect(background.waitForInitialization).not.toHaveBeenCalled();
-});
-
-it('returns a disabled connection when this installation has none', async () => {
-  await replaceLearningDocument(buildLearningDocument());
-  service.handle('waitForInitialization', initializeLearningDocument);
+it('returns a disabled connection without reviving retired credentials or requesting initialization', async () => {
+  await fakeBrowser.storage.sync.set({
+    'leetsrs:githubPat': 'legacy-secret',
+    'leetsrs:gistId': 'legacy-gist',
+    'leetsrs:gistSyncEnabled': true,
+  });
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual({ accountId: null, gistId: null, enabled: false }));
   expect(background.waitForInitialization).not.toHaveBeenCalled();

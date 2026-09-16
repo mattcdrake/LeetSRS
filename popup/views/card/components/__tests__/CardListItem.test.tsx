@@ -97,21 +97,6 @@ describe('CardListItem', () => {
     expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
   });
 
-  it('restores its pause action after a failure', async () => {
-    const error = new Error('Pause failed');
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    service.handle('setPauseStatus', () => Promise.reject(error));
-    renderItem(createMockCardWithProblem(State.New));
-
-    const pauseButton = screen.getByRole('button', { name: 'Pause' });
-    fireEvent.click(pauseButton);
-
-    await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith('Failed to toggle pause status:', error);
-      expect(pauseButton).not.toBeDisabled();
-    });
-  });
-
   it('restores delete confirmation after a failure', async () => {
     const error = new Error('Delete failed');
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});

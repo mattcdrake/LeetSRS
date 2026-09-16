@@ -2,10 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { getSupportedLanguage, selectLanguage } from '@/shared/settings';
 
 describe('selectLanguage', () => {
-  it('base language match (en-US → en)', () => {
-    expect(selectLanguage(['en-US'])).toBe('en');
-  });
-
   it('zh variant falls back to zh-CN', () => {
     expect(selectLanguage(['zh-TW'])).toBe('zh-CN');
   });

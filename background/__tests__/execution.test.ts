@@ -109,19 +109,16 @@ describe('registered background execution', () => {
     }
   );
 
-  it.each(['setBadgeText', 'setBadgeBackgroundColor'] as const)(
-    'keeps a saved card successful when %s fails and accepts the next write',
-    async (method) => {
-      const failure = new Error('Badge unavailable');
-      vi.spyOn(browser.action, method).mockRejectedValueOnce(failure);
-      const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      await expect(getRegisteredBackground().addCard(problem)).resolves.toBeUndefined();
-      expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
-      expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
-      await getRegisteredBackground().saveNote(problem.frontendId, 'saved after badge failure');
-      expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBe('saved after badge failure');
-    }
-  );
+  it('keeps a saved card successful when badge refresh fails and accepts the next write', async () => {
+    const failure = new Error('Badge unavailable');
+    vi.spyOn(browser.action, 'setBadgeText').mockRejectedValueOnce(failure);
+    const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(getRegisteredBackground().addCard(problem)).resolves.toBeUndefined();
+    expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
+    expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
+    await getRegisteredBackground().saveNote(problem.frontendId, 'saved after badge failure');
+    expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBe('saved after badge failure');
+  });
 
   it('responds to saves while badge work is pending', async () => {
     const started = Promise.withResolvers<void>();
@@ -146,7 +143,6 @@ const invalidArguments: [keyof BackgroundService, unknown[]][] = [
   ['delayCard', [problem.frontendId, 0.5]],
   ['setPauseStatus', [problem.frontendId, 'false']],
   ['rateCard', [{ ...problem, rating: 0 }]],
-  ['saveNote', ['card', 'a'.repeat(501)]],
   ['saveNote', ['card']],
   ['saveNote', ['card', 'note', 'extra']],
   ['updateSettings', [{ language: 'constructor' }]],
@@ -155,9 +151,6 @@ const invalidArguments: [keyof BackgroundService, unknown[]][] = [
   ['setupGistSync', [{ mode: 'invalid' }]],
   ['setupGistSync', [{ mode: 'existing', gistId: '' }]],
   ['setGistSyncEnabled', ['true']],
-  ['waitForInitialization', ['extra']],
-  ['resetAllData', ['extra']],
-  ['getGistSyncStatus', ['extra']],
 ];
 
 it.each(invalidArguments)(

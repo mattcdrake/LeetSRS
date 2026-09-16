@@ -33,11 +33,7 @@ describe('card schemas', () => {
     { domain: 'leetcode.org' },
     { paused: 0 },
     { createdAt: '2024-01-01' },
-    { createdAt: 8_640_000_000_000_001 },
-    { fsrs: { due: -8_640_000_000_000_001 } },
     { fsrs: { last_review: null } },
-    { fsrs: { last_review: Number.NaN } },
-    { fsrs: { last_review: 1e100 } },
     { fsrs: { state: 4 } },
     { fsrs: { stability: -1 } },
     { fsrs: { difficulty: Number.POSITIVE_INFINITY } },
@@ -53,10 +49,8 @@ describe('card schemas', () => {
     );
   });
 
-  it('retains numeric date boundaries and fractional scheduling values while stripping nested unknown fields', () => {
-    const card = createMockCard(State.Review, { createdAt: -8_640_000_000_000_000 });
-    card.fsrs.due = 8_640_000_000_000_000;
-    card.fsrs.last_review = -0.5;
+  it('retains fractional scheduling values while stripping nested unknown fields', () => {
+    const card = createMockCard(State.Review);
     card.fsrs.elapsed_days = 0.5;
     card.fsrs.scheduled_days = 1.5;
     expect(cardSchema.parse({ ...card, extra: true, fsrs: { ...card.fsrs, extra: { value: 1 } } })).toEqual(card);

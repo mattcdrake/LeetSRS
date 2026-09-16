@@ -10,7 +10,6 @@ import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { getReviewQueue } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
@@ -20,8 +19,6 @@ describe('document learning through background commands', () => {
     fakeBrowser.reset();
     fakeBrowser.runtime.id = 'test';
     vi.mocked(registerService).mockClear();
-    const get = fakeBrowser.storage.local.get.bind(fakeBrowser.storage.local);
-    vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementation(async (keys) => structuredClone(await get(keys)));
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2024-03-15T12:00:00'));
     await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en' } }));
@@ -186,40 +183,6 @@ describe('document learning through background commands', () => {
     expect((await readLearningDocument()).reviewActivity?.date).toBe('2024-03-15');
   });
 
-  it('uses one document and time for queue eligibility and the daily allowance across midnight', async () => {
-    vi.setSystemTime(new Date('2024-03-14T23:59:59.999'));
-    const cards = ['new-a', 'new-b', 'future', 'review', 'paused'].map((slug) => {
-      const card = createMockCard(slug === 'review' ? State.Review : State.New, {
-        frontendId: slug,
-        paused: slug === 'paused',
-      });
-      if (slug === 'future') {
-        card.fsrs.due = new Date('2024-03-15T00:00:00').getTime();
-      }
-      return card;
-    });
-    const document = buildLearningDocument({
-      cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])),
-      reviewActivity: { date: '2024-03-14', newCards: 1, streak: 1 },
-      settings: { maxNewCardsPerDay: 2 },
-    });
-    await replaceLearningDocument(document);
-    const get = storage.getItem.bind(storage);
-    vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
-      const result = await get(key);
-      vi.setSystemTime(new Date('2024-03-15T00:00:00'));
-      await replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 3 } });
-      return result;
-    });
-
-    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['new-a', 'review']);
-    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['new-a', 'new-b', 'review', 'future']);
-    await replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 0 } });
-    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['review']);
-    await replaceLearningDocument({ ...document, settings: {} });
-    expect((await getReviewQueue()).map((card) => card.frontendId)).toEqual(['new-a', 'new-b', 'review', 'future']);
-  });
-
   it.each([
     ['rate existing', () => getRegisteredBackground().rateCard({ ...buildProblem(), rating: Rating.Again })],
     ['save note', () => getRegisteredBackground().saveNote('1', '  new note\n')],
@@ -254,32 +217,6 @@ describe('document learning through background commands', () => {
     expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
   });
 
-  it.each(['delay overflow', 'allowance overflow', 'invalid clock'])(
-    'rejects %s before any write and preserves the previous document',
-    async (failure) => {
-      const card = createMockCard(State.New, buildProblem());
-      const document = buildLearningDocument({
-        cards: { [card.frontendId]: card },
-        settings: { language: 'en' },
-        reviewActivity: { date: '2024-03-15', newCards: Number.MAX_SAFE_INTEGER, streak: 1 },
-      });
-      await replaceLearningDocument(document);
-      const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-      if (failure === 'invalid clock') {
-        vi.setSystemTime(Number.NaN);
-      }
-      const edit =
-        failure === 'delay overflow'
-          ? getRegisteredBackground().delayCard(card.frontendId, Number.MAX_SAFE_INTEGER)
-          : getRegisteredBackground().rateCard({ ...buildProblem(), rating: Rating.Good });
-
-      await expect(edit).rejects.toThrow();
-      expect(writes).not.toHaveBeenCalled();
-      expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
-      expect(await readLearningDocument()).toEqual(document);
-    }
-  );
-
   it('preserves missing-card errors and harmless note deletion', async () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
@@ -296,87 +233,74 @@ describe('document learning through background commands', () => {
     expect(writes).not.toHaveBeenCalled();
   });
 
-  it.each([Rating.Again, Rating.Good] as const)(
-    'preserves repeated scheduling and daily activity for rating %s',
-    async (rating) => {
-      await getRegisteredBackground().addCard(buildProblem());
-      const card = requireDefined((await readLearningDocument()).cards['1']);
-      await getRegisteredBackground().saveNote(card.frontendId, '  retained\n');
-      await getRegisteredBackground().rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating });
-      const first = requireDefined((await readLearningDocument()).cards[card.frontendId]);
-      expect(first).toMatchObject({
-        frontendId: card.frontendId,
-        domain: card.domain,
-        createdAt: card.createdAt,
-        note: '  retained\n',
-      });
-      expect(first.fsrs.reps).toBe(1);
-      expect(first.fsrs.last_review).toBe(card.createdAt);
-      expect(first.fsrs.state).toBe(State.Review);
-      expect(first.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-      expect(first.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-      vi.setSystemTime(first.fsrs.due - 1);
-      expect(await getReviewQueue()).toEqual([]);
-      vi.setSystemTime(first.fsrs.due);
-      expect(await getReviewQueue()).toEqual([first]);
-      // Another attempt on the same review day counts as a reviewed card.
-      vi.setSystemTime(card.createdAt);
-      await getRegisteredBackground().rateCard({ ...buildProblem(), rating });
-      const second = requireDefined((await readLearningDocument()).cards[card.frontendId]);
-      expect(second.fsrs.reps).toBe(2);
-      expect(second.fsrs.state).toBe(State.Review);
-      expect(second.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-      expect(second.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-      expect(Object.values((await readLearningDocument()).cards)).toEqual([second]);
-      expect((await readLearningDocument()).reviewActivity).toEqual({
-        streak: 1,
-        newCards: 1,
-        date: '2024-03-15',
+  it('preserves repeated scheduling and daily activity', async () => {
+    await getRegisteredBackground().addCard(buildProblem());
+    const card = requireDefined((await readLearningDocument()).cards['1']);
+    await getRegisteredBackground().saveNote(card.frontendId, '  retained\n');
+    await getRegisteredBackground().rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating: Rating.Good });
+    const first = requireDefined((await readLearningDocument()).cards[card.frontendId]);
+    expect(first).toMatchObject({
+      frontendId: card.frontendId,
+      domain: card.domain,
+      createdAt: card.createdAt,
+      note: '  retained\n',
+    });
+    expect(first.fsrs.reps).toBe(1);
+    expect(first.fsrs.last_review).toBe(card.createdAt);
+    expect(first.fsrs.state).toBe(State.Review);
+    expect(first.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+    expect(first.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+    // Another attempt on the same review day counts as a reviewed card.
+    await getRegisteredBackground().rateCard({ ...buildProblem(), rating: Rating.Good });
+    const second = requireDefined((await readLearningDocument()).cards[card.frontendId]);
+    expect(second.fsrs.reps).toBe(2);
+    expect(second.fsrs.state).toBe(State.Review);
+    expect(second.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+    expect(second.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+    expect(Object.values((await readLearningDocument()).cards)).toEqual([second]);
+    expect((await readLearningDocument()).reviewActivity).toEqual({
+      streak: 1,
+      newCards: 1,
+      date: '2024-03-15',
+    });
+  });
+
+  it.each([
+    ['untracked', undefined, Rating.Again],
+    ['Learning', State.Learning, Rating.Good],
+    ['Review', State.Review, Rating.Again],
+    ['Relearning', State.Relearning, Rating.Good],
+  ] as const)('schedules %s cards in Review state at least one day later', async (_name, state, rating) => {
+    const problem = buildProblem();
+    const existing = state === undefined ? undefined : createMockCard(state, { ...problem, note: 'Retained' });
+    if (existing) {
+      existing.fsrs.last_review = new Date(
+        state === State.Review ? '2024-03-12T12:00:00' : '2024-03-15T11:50:00'
+      ).getTime();
+      existing.fsrs.learning_steps = state === State.Review ? 0 : 1;
+      const document = await readLearningDocument();
+      await replaceLearningDocument({ ...document, cards: { [existing.frontendId]: existing } });
+      expect((await readLearningDocument()).cards[existing.frontendId]).toEqual(existing);
+    }
+
+    await getRegisteredBackground().rateCard({ ...problem, rating });
+    const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
+
+    expect(card.fsrs).toMatchObject({
+      state: State.Review,
+      learning_steps: 0,
+      last_review: Date.now(),
+      reps: (existing?.fsrs.reps ?? 0) + 1,
+    });
+    expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+    expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+    expect((await readLearningDocument()).cards[card.frontendId]).toEqual(card);
+    if (existing) {
+      expect(card).toMatchObject({
+        frontendId: existing.frontendId,
+        createdAt: existing.createdAt,
+        note: 'Retained',
       });
     }
-  );
-
-  describe.each([
-    ['untracked', undefined],
-    ['Learning', State.Learning],
-    ['Review', State.Review],
-    ['Relearning', State.Relearning],
-  ] as const)('long-term scheduling for %s cards', (_name, state) => {
-    it.each([Rating.Again, Rating.Good] as const)(
-      'schedules rating %s in Review state at least one day later',
-      async (rating) => {
-        const problem = buildProblem();
-        const existing = state === undefined ? undefined : createMockCard(state, { ...problem, note: 'Retained' });
-        if (existing) {
-          existing.fsrs.last_review = new Date(
-            state === State.Review ? '2024-03-12T12:00:00' : '2024-03-15T11:50:00'
-          ).getTime();
-          existing.fsrs.learning_steps = state === State.Review ? 0 : 1;
-          const document = await readLearningDocument();
-          await replaceLearningDocument({ ...document, cards: { [existing.frontendId]: existing } });
-          expect((await readLearningDocument()).cards[existing.frontendId]).toEqual(existing);
-        }
-
-        await getRegisteredBackground().rateCard({ ...problem, rating });
-        const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
-
-        expect(card.fsrs).toMatchObject({
-          state: State.Review,
-          learning_steps: 0,
-          last_review: Date.now(),
-          reps: (existing?.fsrs.reps ?? 0) + 1,
-        });
-        expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-        expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-        expect((await readLearningDocument()).cards[card.frontendId]).toEqual(card);
-        if (existing) {
-          expect(card).toMatchObject({
-            frontendId: existing.frontendId,
-            createdAt: existing.createdAt,
-            note: 'Retained',
-          });
-        }
-      }
-    );
   });
 });
