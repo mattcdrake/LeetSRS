@@ -1,3 +1,4 @@
+import * as catalog from '@/shared/catalog';
 import { initializeCatalog } from '@/shared/catalog';
 /**
  * @vitest-environment happy-dom
@@ -18,7 +19,7 @@ import { buildCatalogProblem, createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
-import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper, createTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useReviewQueueQuery } from '../cards';
 import { useNoteQuery } from '../notes';
 import { useSettingsQuery } from '../settings';
@@ -147,3 +148,53 @@ describe('card queries through the background service', () => {
 });
 
 beforeEach(initializeCatalog);
+
+it('shares one document read across cards, queue, notes, and settings', async () => {
+  const card = createMockCard(State.New, { note: 'Shared note' });
+  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: card } }));
+  const reads = vi.spyOn(storage, 'getItem');
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
+  const view = renderHook(
+    () => ({
+      cards: useCardsQuery(),
+      queue: useReviewQueueQuery(),
+      note: useNoteQuery('1'),
+      settings: useSettingsQuery(),
+    }),
+    { wrapper: createTestWrapper().wrapper }
+  );
+  await waitFor(() => expect(view.result.current.queue.isSuccess).toBe(true));
+  expect(view.result.current.cards.data).toMatchObject([{ note: 'Shared note' }]);
+  expect(view.result.current.note.data).toBe('Shared note');
+  expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
+  expect(lookups).toHaveBeenCalledTimes(1);
+});
+
+it('isolates catalog failures and can retry metadata through the cards refetch', async () => {
+  const card = createMockCard(State.New, { note: 'Available' });
+  await storage.setItem(
+    STORAGE_KEYS.learningDocument,
+    buildLearningDocument({ cards: { 1: card }, settings: { language: 'zh-CN' } })
+  );
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds').mockRejectedValue(new Error('Catalog unavailable'));
+  const view = renderHook(
+    () => ({
+      cards: useCardsQuery(),
+      queue: useReviewQueueQuery(),
+      note: useNoteQuery('1'),
+      settings: useSettingsQuery(),
+    }),
+    { wrapper: createTestWrapper().wrapper }
+  );
+  await waitFor(() => expect(view.result.current.cards.error?.message).toBe('Catalog unavailable'));
+  expect(view.result.current.queue.error?.message).toBe('Catalog unavailable');
+  expect(view.result.current.note.data).toBe('Available');
+  expect(view.result.current.settings.data.language).toBe('zh-CN');
+  lookups.mockRestore();
+  await act(async () => {
+    const result = await view.result.current.cards.refetch();
+    expect(result.isSuccess).toBe(true);
+    expect(result.data).toMatchObject([{ frontendId: '1', note: 'Available' }]);
+  });
+  await waitFor(() => expect(view.result.current.queue.isSuccess).toBe(true));
+});

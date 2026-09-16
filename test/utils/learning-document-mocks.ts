@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { type CardWithProblem, cardsQueryKey } from '@/popup/queries/cards';
+import { type CardWithProblem, cardMetadataQueryOptions } from '@/popup/queries/cards';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
 import { cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { buildCatalogProblem } from './card-mocks';
@@ -13,10 +13,11 @@ export function buildLearningDocument(overrides: LearningDocumentOverrides = {})
 export function setPopupLearningDocumentQueryData(queryClient: QueryClient, overrides: LearningDocumentOverrides = {}) {
   const document = buildLearningDocument(overrides);
   queryClient.setQueryData(learningDocumentQueryKey, document);
-  queryClient.setQueryData(cardsQueryKey, {
-    document,
-    cards: Object.values(document.cards).map((card) => ({ ...buildCatalogProblem(), ...card })),
-  });
+  const cards = Object.values(document.cards);
+  queryClient.setQueryData(
+    cardMetadataQueryOptions(cards).queryKey,
+    cards.map((card) => buildCatalogProblem({ frontendId: card.frontendId }))
+  );
 }
 
 export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: CardWithProblem[]) {
@@ -33,5 +34,19 @@ export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: 
     cards: Object.fromEntries(uniqueCards.map((card) => [card.frontendId, cardSchema.parse(card)])),
   });
   queryClient.setQueryData(learningDocumentQueryKey, document);
-  queryClient.setQueryData(cardsQueryKey, { document, cards: uniqueCards });
+  queryClient.setQueryData(
+    cardMetadataQueryOptions(uniqueCards).queryKey,
+    uniqueCards.map((card) =>
+      buildCatalogProblem({
+        frontendId: card.frontendId,
+        title: card.title,
+        translatedTitle: card.translatedTitle,
+        slug: card.slug,
+        difficulty: card.difficulty,
+        isPaidOnly: card.isPaidOnly,
+        topics: card.topics,
+        sources: card.sources,
+      })
+    )
+  );
 }

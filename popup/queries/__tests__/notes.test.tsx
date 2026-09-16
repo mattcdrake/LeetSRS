@@ -8,12 +8,14 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
+import * as catalog from '@/shared/catalog';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useDelayCardMutation, useReviewQueueQuery } from '../cards';
-import { useNoteQuery } from '../notes';
+import { useNoteQuery, useSaveNoteMutation } from '../notes';
+import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
@@ -70,4 +72,27 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
   await waitFor(() => expect(view.result.current.note.data).toBeNull());
   view.rerender({ frontendId: next.frontendId });
   await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));
+});
+
+it('reuses metadata after note and settings saves while updating enriched cards and the queue', async () => {
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
+  const view = renderHook(
+    () => ({
+      queue: useReviewQueueQuery(),
+      note: useNoteQuery(problem.frontendId),
+      save: useSaveNoteMutation(problem.frontendId),
+      settings: useSettingsQuery(),
+      update: useUpdateSettingsMutation(),
+    }),
+    { wrapper: createPopupTestWrapper().wrapper }
+  );
+  await waitFor(() => expect(view.result.current.queue.isSuccess).toBe(true));
+  expect(lookups).toHaveBeenCalledTimes(1);
+  await act(() => view.result.current.save.mutateAsync('Edited solution'));
+  await waitFor(() => expect(view.result.current.note.data).toBe('Edited solution'));
+  expect(view.result.current.queue.data).toMatchObject([{ note: 'Edited solution' }]);
+  await act(() => view.result.current.update.mutateAsync({ maxNewCardsPerDay: 0 }));
+  await waitFor(() => expect(view.result.current.queue.data).toEqual([]));
+  expect(view.result.current.settings.data.maxNewCardsPerDay).toBe(0);
+  expect(lookups).toHaveBeenCalledTimes(1);
 });

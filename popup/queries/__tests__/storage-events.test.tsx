@@ -11,6 +11,7 @@ import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
 import { background } from '@/shared/background-service';
+import * as catalog from '@/shared/catalog';
 import { initializeCatalog } from '@/shared/catalog';
 import type { GistSyncStatus } from '@/shared/models';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
@@ -357,3 +358,66 @@ it('loads settings inside Suspense alongside the root storage observer', async (
 });
 
 beforeEach(initializeCatalog);
+
+it.each([
+  { frontendId: '2', domain: 'leetcode.com' as const },
+  { frontendId: '1', domain: 'leetcode.cn' as const },
+])('refreshes metadata when a stored reference changes to $frontendId on $domain', async (reference) => {
+  const first = createMockCard(State.New);
+  await replaceLearningDocument(buildLearningDocument({ cards: { 1: first } }));
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
+  const view = renderHook(() => ({ cards: useCardsQuery(), queue: useReviewQueueQuery() }), {
+    wrapper: createPopupTestWrapper().wrapper,
+  });
+  await waitFor(() => expect(view.result.current.cards.isSuccess).toBe(true));
+  const changed = createMockCard(State.New, reference);
+  await act(() => replaceLearningDocument(buildLearningDocument({ cards: { [changed.frontendId]: changed } })));
+  await waitFor(() => expect(view.result.current.cards.data).toMatchObject([reference]));
+  expect(view.result.current.queue.data).toMatchObject([reference]);
+  expect(lookups).toHaveBeenCalledTimes(2);
+  expect(lookups).toHaveBeenLastCalledWith([reference]);
+});
+
+it.each(['success', 'failure'] as const)(
+  'ignores an obsolete catalog lookup %s after references change',
+  async (outcome) => {
+    const first = createMockCard(State.New);
+    await replaceLearningDocument(buildLearningDocument({ cards: { 1: first } }));
+    const pending = Promise.withResolvers<Awaited<ReturnType<typeof catalog.getProblemsByFrontendIds>>>();
+    const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds').mockReturnValueOnce(pending.promise);
+    const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
+    await waitFor(() => expect(lookups).toHaveBeenCalledTimes(1));
+    const next = createMockCard(State.New, { frontendId: '2' });
+    await act(() => replaceLearningDocument(buildLearningDocument({ cards: { 2: next } })));
+    await waitFor(() => expect(view.result.current.data).toMatchObject([{ frontendId: '2' }]));
+    await act(async () => {
+      if (outcome === 'success') pending.resolve([buildCatalogProblem()]);
+      else pending.reject(new Error('Obsolete catalog failure'));
+    });
+    expect(view.result.current.data).toMatchObject([{ frontendId: '2' }]);
+    expect(view.result.current.error).toBeNull();
+  }
+);
+
+it('waits for changed-reference enrichment before completing a card mutation', async () => {
+  await startBackground();
+  const view = renderHook(() => ({ cards: useCardsQuery(), rate: useRateCardMutation() }), {
+    wrapper: createPopupTestWrapper().wrapper,
+  });
+  await waitFor(() => expect(view.result.current.cards.isSuccess).toBe(true));
+  const pending = Promise.withResolvers<Awaited<ReturnType<typeof catalog.getProblemsByFrontendIds>>>();
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds').mockReturnValue(pending.promise);
+  const completed = vi.fn();
+  let mutation: Promise<void>;
+  act(() => {
+    mutation = view.result.current.rate.mutateAsync({ ...buildProblem(), rating: Rating.Good }).then(completed);
+  });
+  await waitFor(() => expect(lookups).toHaveBeenCalled());
+  expect(completed).not.toHaveBeenCalled();
+  await act(async () => {
+    pending.resolve([buildCatalogProblem()]);
+    await mutation;
+  });
+  expect(completed).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(view.result.current.cards.data).toMatchObject([buildProblem()]));
+});
