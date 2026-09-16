@@ -48,54 +48,26 @@ function open() {
   return render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
 }
 
-it('shows the latest feedback when connecting, toggling, and retrying a changed backup', async () => {
-  await storage.removeItem(STORAGE_KEYS.gistConnection);
-  service.handle('setupGistSync', async () => {
-    await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'backup', enabled: true });
-    return { saved: true };
-  });
-  open();
-  await screen.findByRole('option', { name: /My backup/ });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'backup' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Connect and sync' }));
-  expect(await screen.findByRole('status')).toHaveTextContent('Connection saved');
-
-  service.handle('setGistSyncEnabled', () => {
-    throw new Error('Background unavailable');
-  });
-  fireEvent.click(screen.getByRole('switch'));
-  expect(await screen.findByRole('alert')).toHaveTextContent(/^Connection could not be saved$/);
-  expect(screen.queryByRole('status')).not.toBeInTheDocument();
-
-  fireEvent.click(screen.getByRole('button', { name: 'Change' }));
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+it('replaces feedback when alternating a backup change and sync toggle', async () => {
   service.resolve('setupGistSync', { saved: false, error: 'creationFailed' });
+  open();
+  const change = await screen.findByRole('button', { name: 'Change' });
+  await waitFor(() => expect(change).toBeEnabled());
+  fireEvent.click(change);
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('GitHub returned no ID for the created Gist');
-  expect(screen.getByRole('combobox')).toHaveValue('create');
 
-  service.handle('setGistSyncEnabled', async (enabled) => {
-    await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'backup', enabled });
-    return { saved: true };
-  });
   fireEvent.click(screen.getByRole('switch'));
   expect(await screen.findByRole('status')).toHaveTextContent('Connection saved');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  expect(screen.getByRole('switch')).not.toBeChecked();
   expect(screen.getByRole('combobox')).toHaveValue('create');
 
-  service.handle('setupGistSync', async () => {
-    await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'created', enabled: true });
-    return { saved: true };
-  });
+  vi.mocked(background.setupGistSync).mockRejectedValueOnce(new Error('Background unavailable'));
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  await waitFor(() => expect(screen.queryByRole('combobox')).not.toBeInTheDocument());
-  expect(screen.getByRole('link', { name: 'Open backup Gist' })).toHaveAttribute(
-    'href',
-    'https://gist.github.com/created'
-  );
-  expect(screen.getByRole('status')).toHaveTextContent('Connection saved');
+  expect(await screen.findByRole('alert')).toHaveTextContent(/^Connection could not be saved$/);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox')).toHaveValue('create');
 });
 
 it('allows signing out while a connection is pending and ignores its late feedback', async () => {

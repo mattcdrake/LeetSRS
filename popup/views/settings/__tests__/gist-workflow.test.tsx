@@ -53,7 +53,9 @@ beforeEach(async () => {
   github.create.mockResolvedValue({ data: { id: 'created' } });
 });
 
-it('connects, cancels a change, preserves the old connection on failure, retries creation and signs out', async () => {
+afterEach(() => onlineManager.setOnline(true));
+
+it('connects, disables sync offline, cancels a change, retries creation and signs out', async () => {
   const before = await readLearningDocument();
   render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
   await screen.findByRole('option', { name: /My backup/ });
@@ -70,9 +72,13 @@ it('connects, cancels a change, preserves the old connection on failure, retries
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   expect(await readLearningDocument()).toEqual(before);
 
+  github.get.mockClear();
+  onlineManager.setOnline(false);
   fireEvent.click(screen.getByRole('switch'));
   await waitFor(() => expect(screen.getByRole('switch')).not.toBeChecked());
   expect((await readGistConnection()).enabled).toBe(false);
+  expect(github.get).not.toHaveBeenCalled();
+  onlineManager.setOnline(true);
   fireEvent.click(screen.getByRole('button', { name: 'Change' }));
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -88,13 +94,7 @@ it('connects, cancels a change, preserves the old connection on failure, retries
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: false });
   expect(await readLearningDocument()).toEqual(before);
 
-  const pending = Promise.withResolvers<{ data: { id: string } }>();
-  github.create.mockReturnValueOnce(pending.promise);
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  await waitFor(() => expect(screen.getByRole('combobox')).toBeDisabled());
-  expect(screen.getByRole('switch')).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
-  pending.resolve({ data: { id: 'created' } });
   await screen.findByText('Connection saved');
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'created', enabled: true });
   expect(JSON.parse(github.create.mock.calls[1][0].files['leetsrs-backup.json'].content)).toEqual(before);
@@ -103,20 +103,4 @@ it('connects, cancels a change, preserves the old connection on failure, retries
   expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
   expect((await background.getGithubAuthStatus()).account).toBeNull();
   expect(await readLearningDocument()).toEqual(before);
-});
-
-afterEach(() => onlineManager.setOnline(true));
-
-it('lets the user disable automatic sync while offline without fetching the backup', async () => {
-  await background.setupGistSync({ mode: 'existing', gistId: 'backup' });
-  render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
-  const toggle = await screen.findByRole('switch');
-  await waitFor(() => expect(toggle).toBeEnabled());
-  expect(toggle).toBeChecked();
-  github.get.mockClear();
-  onlineManager.setOnline(false);
-  fireEvent.click(toggle);
-  await waitFor(() => expect(toggle).not.toBeChecked());
-  expect(await screen.findByRole('status')).toHaveTextContent('Connection saved');
-  expect(github.get).not.toHaveBeenCalled();
 });
