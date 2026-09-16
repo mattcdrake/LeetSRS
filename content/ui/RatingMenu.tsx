@@ -17,6 +17,8 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
   const [hint, setHint] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const error = session.error ?? (loadFailed ? 'save' : undefined);
+  const [selected, setSelected] = useState<number>();
+  const showSaved = saved && selected === undefined;
   const [attempt, setAttempt] = useState(0);
   const container = useRef<HTMLFieldSetElement>(null);
 
@@ -45,15 +47,26 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     if (hint && !saved) void background.markRatingHintShown().catch(() => setLoadFailed(true));
   }, [hint, saved]);
 
+  useEffect(() => {
+    if (selected === undefined) return;
+    if (session.error) {
+      setSelected(undefined);
+      return;
+    }
+    const timeout = setTimeout(() => setSelected(undefined), 400);
+    return () => clearTimeout(timeout);
+  }, [selected, session.error]);
+
   function save(rating?: Grade) {
-    if (!problem || !preview || saved) return;
+    if (!problem || !preview || saved || busy || selected !== undefined) return;
+    setSelected(rating ?? 5);
     session.save({ ...problem, rating });
   }
 
   useEffect(() => {
-    if (saved) container.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    if (showSaved) container.current?.querySelector<HTMLButtonElement>('button')?.focus();
     else container.current?.focus();
-  }, [saved]);
+  }, [showSaved]);
 
   return (
     <fieldset
@@ -81,7 +94,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
         }
       }}
     >
-      {saved ? (
+      {showSaved ? (
         <div className="rating-saved">
           <span aria-hidden="true" style={{ color: colors.ratings[4].bg }}>
             ✓
@@ -116,7 +129,8 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
                 aria-label={t.ratings[rating]}
                 aria-describedby={`rating-description-${rating}`}
                 className="rating-row"
-                isDisabled={busy || !preview}
+                data-selected={selected === rating || undefined}
+                isDisabled={busy || !preview || selected !== undefined}
                 onPress={() => save(rating)}
                 style={{ '--rating-color': colors.ratings[rating].bg } as CSSProperties}
               >
@@ -132,8 +146,9 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
           </div>
           <Button
             className="rating-without"
+            data-selected={selected === 5 || undefined}
             aria-label={t.contentScript.saveWithoutRating}
-            isDisabled={busy || !preview}
+            isDisabled={busy || !preview || selected !== undefined}
             onPress={() => save()}
           >
             <span aria-hidden="true">+</span>

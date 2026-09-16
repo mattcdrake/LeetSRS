@@ -156,8 +156,11 @@ it('closes saved confirmations after five seconds and allows another manual rati
     vi.useFakeTimers();
     try {
       await act(async () => fireEvent.click(good));
+      expect(good).toHaveAttribute('data-selected', 'true');
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(400));
       expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
-      await act(() => vi.advanceTimersByTimeAsync(4999));
+      await act(() => vi.advanceTimersByTimeAsync(4599));
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(1));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
