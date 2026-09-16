@@ -1,14 +1,22 @@
+import { useMutation } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { Button } from 'react-aria-components';
 import { FaDownload, FaTrashCan, FaUpload } from 'react-icons/fa6';
-import { useExportDataMutation, useImportDataMutation, useResetAllDataMutation } from '@/popup/queries/data';
+import { background } from '@/shared/background-service';
+import { readLearningDocument } from '@/shared/storage';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {
   const t = useI18n();
-  const exportDataMutation = useExportDataMutation();
-  const importDataMutation = useImportDataMutation();
-  const resetAllDataMutation = useResetAllDataMutation();
+  const exportDataMutation = useMutation({
+    mutationFn: async () => JSON.stringify(await readLearningDocument(), null, 2),
+  });
+  const importDataMutation = useMutation({
+    mutationFn: (jsonData: string) => background.importData(jsonData),
+  });
+  const resetAllDataMutation = useMutation({
+    mutationFn: () => background.resetAllData(),
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
