@@ -5,7 +5,7 @@ import type { Card, ProblemReference, RateCardInput, RatingPreview } from '@/sha
 import { findCard, type LearningDocument } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
 import { readLearningDocument } from '@/shared/storage';
-import { saveEdit } from './persistence';
+import { saveEdit } from './sync';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short_term: false }));
 
