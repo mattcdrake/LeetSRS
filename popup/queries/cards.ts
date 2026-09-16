@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import type { Card, LearningDocument, ProblemReference, RateCardInput } from '@/shared/models';
+import type { Card, ProblemReference, RateCardInput } from '@/shared/models';
 import { buildReviewQueue } from '@/shared/review';
 import { usePopupClock } from '../hooks/usePopupClock';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
@@ -30,7 +30,7 @@ export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
   });
 }
 
-function useEnrichedCards(selectCards: (document: LearningDocument) => Card[]) {
+export function useCardsQuery() {
   const document = useQuery(learningDocumentQueryOptions);
   const cards = Object.values(document.data?.cards ?? {});
   const metadata = useQuery({
@@ -44,20 +44,26 @@ function useEnrichedCards(selectCards: (document: LearningDocument) => Card[]) {
   return {
     data:
       document.data && problems
-        ? selectCards(document.data).map((card): CardWithProblem => ({ ...problems[card.frontendId], ...card }))
+        ? cards.map((card): CardWithProblem => ({ ...problems[card.frontendId], ...card }))
         : undefined,
     isLoading: document.isLoading || metadata.isLoading,
     error: document.error ?? metadata.error,
   };
 }
 
-export function useCardsQuery() {
-  return useEnrichedCards((document) => Object.values(document.cards));
-}
-
 export function useReviewQueueQuery() {
+  const cards = useCardsQuery();
+  const { data: document } = useQuery(learningDocumentQueryOptions);
   const now = usePopupClock();
-  return useEnrichedCards((document) => buildReviewQueue(document, new Date(now)));
+  const byId = Object.fromEntries((cards.data ?? []).map((card) => [card.frontendId, card]));
+
+  return {
+    ...cards,
+    data:
+      document && cards.data
+        ? buildReviewQueue(document, new Date(now)).map((card) => byId[card.frontendId])
+        : undefined,
+  };
 }
 
 function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {
