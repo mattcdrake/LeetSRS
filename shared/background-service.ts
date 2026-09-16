@@ -25,7 +25,8 @@ export interface BackgroundService {
   dismissMigrationNotice(): Promise<void>;
   waitForInitialization(): Promise<void>;
   getProblem(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem>;
-  claimRatingHint(): Promise<boolean>;
+  getRatingHint(): Promise<boolean>;
+  markRatingHintShown(): Promise<void>;
   previewRatings(problem: ProblemReference): Promise<RatingPreview>;
   savePanelRating(input: PanelRatingInput): Promise<PanelSave>;
   undoPanelRating(undo: PanelUndo): Promise<void>;

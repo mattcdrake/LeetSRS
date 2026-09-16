@@ -28,7 +28,8 @@ it('keeps the saved confirmation open and Undo restores the prior practice state
   expect(await screen.findByRole('status')).toHaveTextContent('Saved');
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
   fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-  await screen.findByRole('button', { name: 'Good' });
+  const restoredGood = await screen.findByRole('button', { name: 'Good' });
+  await waitFor(() => expect(restoredGood.closest('fieldset')).toHaveFocus());
   await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
 });
 
@@ -110,4 +111,47 @@ it.each(['light', 'dark'])('shows descriptions and actual intervals in the %s th
   expect(good).toHaveAccessibleDescription('Recalled the approach');
   expect(good.closest('[data-theme]')).toHaveAttribute('data-theme', theme);
   document.documentElement.className = '';
+});
+
+it('retains a save in progress and its confirmation when the panel closes and reopens', async () => {
+  const release = Promise.withResolvers<void>();
+  const service = createBackgroundService(Promise.resolve());
+  vi.mocked(background.savePanelRating).mockImplementation(async (input) => {
+    await release.promise;
+    return service.savePanelRating(input);
+  });
+  render(<LeetSrsControl />);
+  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
+  fireEvent.click(trigger);
+  await screen.findByText('Opens after you solve a problem.');
+  fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  fireEvent.click(trigger);
+  await act(async () => release.resolve());
+  expect(await screen.findByRole('status')).toHaveTextContent('Saved');
+  fireEvent.keyDown(screen.getByRole('button', { name: 'Undo' }), { key: '3' });
+  expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+  await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
+});
+
+it('does not consume the hint when the panel closes before it can be displayed', async () => {
+  const release = Promise.withResolvers<void>();
+  const started = Promise.withResolvers<void>();
+  const service = createBackgroundService(Promise.resolve());
+  vi.mocked(background.getRatingHint).mockImplementationOnce(async () => {
+    started.resolve();
+    await release.promise;
+    return service.getRatingHint();
+  });
+  render(<LeetSrsControl />);
+  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
+  fireEvent.click(trigger);
+  await act(() => started.promise);
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  await act(async () => release.resolve());
+  expect(await service.getRatingHint()).toBe(true);
+  fireEvent.click(trigger);
+  await screen.findByText('Opens after you solve a problem.');
+  await waitFor(async () => expect(await service.getRatingHint()).toBe(false));
 });

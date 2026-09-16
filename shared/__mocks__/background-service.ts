@@ -5,7 +5,8 @@ const actual = await vi.importActual<typeof import('@/shared/background-service'
 export const BACKGROUND_SERVICE_KEY = actual.BACKGROUND_SERVICE_KEY;
 
 export const background = {
-  claimRatingHint: vi.fn<BackgroundService['claimRatingHint']>(),
+  getRatingHint: vi.fn<BackgroundService['getRatingHint']>(),
+  markRatingHintShown: vi.fn<BackgroundService['markRatingHintShown']>(),
   previewRatings: vi.fn<BackgroundService['previewRatings']>(),
   savePanelRating: vi.fn<BackgroundService['savePanelRating']>(),
   undoPanelRating: vi.fn<BackgroundService['undoPanelRating']>(),

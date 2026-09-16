@@ -86,10 +86,12 @@ describe('document learning through background commands', () => {
 
   it('remembers the first panel open without changing the auto-open preference', async () => {
     const service = getRegisteredBackground();
-    expect(await service.claimRatingHint()).toBe(true);
-    expect(await service.claimRatingHint()).toBe(false);
+    expect(await service.getRatingHint()).toBe(true);
+    expect(await service.getRatingHint()).toBe(true);
+    await service.markRatingHintShown();
+    expect(await service.getRatingHint()).toBe(false);
     backgroundEntry.main();
-    expect(await getRegisteredBackground().claimRatingHint()).toBe(false);
+    expect(await getRegisteredBackground().getRatingHint()).toBe(false);
     expect((await readLearningDocument()).settings.openRatingAfterSolving).toBeUndefined();
   });
 

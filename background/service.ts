@@ -7,8 +7,9 @@ import {
 } from '@/background/github-auth';
 import {
   addCard,
-  claimRatingHint,
   delayCard,
+  getRatingHint,
+  markRatingHintShown,
   previewRatings,
   rateCard,
   removeCard,
@@ -84,7 +85,8 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
         return problem;
       }
     ),
-    claimRatingHint: command(z.tuple([]), claimRatingHint),
+    getRatingHint: command(z.tuple([]), getRatingHint),
+    markRatingHintShown: command(z.tuple([]), markRatingHintShown),
     previewRatings: learningCommand(z.tuple([problemReferenceSchema]), previewRatings),
     savePanelRating: learningCommand(z.tuple([panelRatingInputSchema]), savePanelRating),
     undoPanelRating: learningCommand(z.tuple([panelUndoSchema]), undoPanelRating),

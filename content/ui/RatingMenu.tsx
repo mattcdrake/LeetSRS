@@ -4,25 +4,21 @@ import type { Grade } from 'ts-fsrs';
 import { getCurrentProblemReference } from '@/content/rating-actions';
 import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
-import { type PanelSave, type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
+import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
 import { THEME_COLORS, useDarkMode } from './theme';
+import type { useRatingSession } from './useRatingSession';
 
-export function RatingMenu({ t }: { t: Translations }) {
+export function RatingMenu({ t, session }: { t: Translations; session: ReturnType<typeof useRatingSession> }) {
+  const { saved, busy } = session;
   const dark = useDarkMode();
   const colors = dark ? THEME_COLORS.dark : THEME_COLORS.light;
   const [problem, setProblem] = useState<ProblemReference>();
   const [preview, setPreview] = useState<RatingPreview>();
-  const [saved, setSaved] = useState<PanelSave>();
   const [hint, setHint] = useState(false);
-  const [error, setError] = useState<'save' | 'undo'>();
-  const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const error = session.error ?? (loadFailed ? 'save' : undefined);
   const [attempt, setAttempt] = useState(0);
   const container = useRef<HTMLFieldSetElement>(null);
-
-  useEffect(() => {
-    container.current?.focus();
-  }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and Undo refresh the preview.
   useEffect(() => {
@@ -34,10 +30,10 @@ export function RatingMenu({ t }: { t: Translations }) {
         if (!active) return;
         setProblem(problem);
         setPreview(preview);
-        const showHint = await background.claimRatingHint();
+        const showHint = await background.getRatingHint();
         if (active) setHint(showHint);
       } catch {
-        if (active) setError('save');
+        if (active) setLoadFailed(true);
       }
     })();
     return () => {
@@ -45,28 +41,18 @@ export function RatingMenu({ t }: { t: Translations }) {
     };
   }, [attempt]);
 
-  async function run(action: () => Promise<void>, failure: 'save' | 'undo' = 'save') {
-    if (pending.current) return;
-    pending.current = true;
-    setBusy(true);
-    setError(undefined);
-    try {
-      await action();
-    } catch {
-      setError(failure);
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  }
+  useEffect(() => {
+    if (hint && !saved) void background.markRatingHintShown().catch(() => setLoadFailed(true));
+  }, [hint, saved]);
 
   function save(rating?: Grade) {
     if (!problem || !preview || saved) return;
-    void run(async () => setSaved(await background.savePanelRating({ ...problem, rating })));
+    session.save({ ...problem, rating });
   }
 
   useEffect(() => {
     if (saved) container.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    else container.current?.focus();
   }, [saved]);
 
   return (
@@ -107,11 +93,9 @@ export function RatingMenu({ t }: { t: Translations }) {
           <Button
             isDisabled={busy}
             onPress={() =>
-              void run(async () => {
-                await background.undoPanelRating(saved.undo);
-                setSaved(undefined);
-                setAttempt((value) => value + 1);
-              }, 'undo')
+              void session.undo().then((undone) => {
+                if (undone) setAttempt((value) => value + 1);
+              })
             }
           >
             {t.contentScript.undo}
@@ -160,9 +144,8 @@ export function RatingMenu({ t }: { t: Translations }) {
               <Button
                 isDisabled={busy}
                 onPress={() =>
-                  void run(async () => {
-                    await background.updateSettings({ openRatingAfterSolving: false });
-                    setHint(false);
+                  void session.disableAutoOpen().then((disabled) => {
+                    if (disabled) setHint(false);
                   })
                 }
               >
@@ -178,7 +161,7 @@ export function RatingMenu({ t }: { t: Translations }) {
           {!preview && (
             <Button
               onPress={() => {
-                setError(undefined);
+                setLoadFailed(false);
                 setAttempt((value) => value + 1);
               }}
             >

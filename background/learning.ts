@@ -177,15 +177,10 @@ export async function undoPanelRating(undo: PanelUndo): Promise<void> {
   await saveEdit(document, new Date());
 }
 
-let hintClaim = Promise.resolve(false);
-export function claimRatingHint(): Promise<boolean> {
-  const claim = hintClaim
-    .catch(() => false)
-    .then(async () => {
-      if (await storage.getItem('local:leetsrs:ratingHintShown')) return false;
-      await storage.setItem('local:leetsrs:ratingHintShown', true);
-      return true;
-    });
-  hintClaim = claim;
-  return claim;
+export async function getRatingHint(): Promise<boolean> {
+  return !(await storage.getItem('local:leetsrs:ratingHintShown'));
+}
+
+export async function markRatingHintShown(): Promise<void> {
+  await storage.setItem('local:leetsrs:ratingHintShown', true);
 }

@@ -5,10 +5,12 @@ import type { Translations } from '@/shared/i18n/index';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
+import { useRatingSession } from './useRatingSession';
 
 export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const session = useRatingSession(openRequest);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
 
@@ -35,7 +37,7 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
       </TooltipTrigger>
       <Popover placement="bottom end" offset={8} className="z-50">
         <Dialog aria-label={t.app.name}>
-          <RatingMenu key={openRequest} t={t} />
+          <RatingMenu key={openRequest} t={t} session={session} />
         </Dialog>
       </Popover>
     </DialogTrigger>
