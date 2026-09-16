@@ -1,7 +1,7 @@
 import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { sync } from '@/background/persistence';
+import { sync } from '@/background/sync';
 import { readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';

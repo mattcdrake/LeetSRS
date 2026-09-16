@@ -26,7 +26,7 @@ import {
   resetAllData,
   restoreBackup,
   setSyncEnabled,
-} from '@/background/persistence';
+} from '@/background/sync';
 import type { BackgroundService } from '@/shared/background-service';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
 import { gistSetupSchema, noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/models';
