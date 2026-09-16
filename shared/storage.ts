@@ -52,44 +52,29 @@ export const STORAGE_KEYS = {
   // GitHub Gist Sync
   gistConnection: 'local:leetsrs:gistConnection',
   lastSyncTime: 'local:leetsrs:lastSyncTime',
-  lastSyncDirection: 'local:leetsrs:lastSyncDirection',
 } as const;
 
 // Sync status is separate from the learning document and its edit timestamp.
-const syncMetadataSchema = z.object({
+const syncStatusUpdateSchema = z.object({
   lastSyncTime: z.string(),
-  lastSyncDirection: z.enum(['push', 'pull']),
 });
-
-const syncStatusUpdateSchema = syncMetadataSchema.partial({ lastSyncDirection: true });
 const storedSyncStatusSchema = z.object({
-  lastSyncTime: syncMetadataSchema.shape.lastSyncTime.nullable(),
-  lastSyncDirection: syncMetadataSchema.shape.lastSyncDirection.nullable(),
+  lastSyncTime: syncStatusUpdateSchema.shape.lastSyncTime.nullable(),
 });
 
 export async function readSyncStatus(): Promise<z.infer<typeof storedSyncStatusSchema>> {
-  const [{ value: lastSyncTime = null }, { value: lastSyncDirection = null }] = await storage.getItems([
-    STORAGE_KEYS.lastSyncTime,
-    STORAGE_KEYS.lastSyncDirection,
-  ]);
-
-  return storedSyncStatusSchema.parse({ lastSyncTime, lastSyncDirection });
+  const lastSyncTime = await storage.getItem(STORAGE_KEYS.lastSyncTime);
+  return storedSyncStatusSchema.parse({ lastSyncTime });
 }
 
 export async function writeSyncStatus(status: z.infer<typeof syncStatusUpdateSchema>): Promise<void> {
   const prepared = syncStatusUpdateSchema.parse(status);
-  const items: { key: typeof STORAGE_KEYS.lastSyncTime | typeof STORAGE_KEYS.lastSyncDirection; value: string }[] = [
-    { key: STORAGE_KEYS.lastSyncTime, value: prepared.lastSyncTime },
-  ];
-  if (prepared.lastSyncDirection !== undefined) {
-    items.push({ key: STORAGE_KEYS.lastSyncDirection, value: prepared.lastSyncDirection });
-  }
-
-  await storage.setItems(items);
+  await storage.setItem(STORAGE_KEYS.lastSyncTime, prepared.lastSyncTime);
 }
 
 export function removeSyncStatus(): Promise<void> {
-  return storage.removeItems([STORAGE_KEYS.lastSyncTime, STORAGE_KEYS.lastSyncDirection]);
+  // Clear the retired direction key during reset and sign-out.
+  return storage.removeItems([STORAGE_KEYS.lastSyncTime, 'local:leetsrs:lastSyncDirection']);
 }
 
 export async function readGistConnection(): Promise<GistSyncConfig> {

@@ -256,7 +256,6 @@ describe('whole-document Gist sync', () => {
     expect(await readLearningDocument()).toEqual(local);
     expect(await syncModule.getSyncStatus()).toEqual({
       lastSyncTime: now,
-      lastSyncDirection: 'push',
       syncInProgress: false,
       lastError: null,
     });
@@ -274,7 +273,6 @@ describe('whole-document Gist sync', () => {
     expect(github.update).not.toHaveBeenCalled();
     expect(await syncModule.getSyncStatus()).toMatchObject({
       lastSyncTime: now,
-      lastSyncDirection: 'pull',
       lastError: null,
     });
   });
@@ -309,7 +307,6 @@ describe('whole-document Gist sync', () => {
       expect(await readLearningDocument()).toEqual(direction === 'pull' ? remote : document);
       expect(await syncModule.getSyncStatus()).toMatchObject({
         lastSyncTime: now,
-        lastSyncDirection: direction,
         lastError: null,
       });
     }

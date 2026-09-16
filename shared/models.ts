@@ -131,7 +131,6 @@ export type GistConnectionResult = { saved: true } | { saved: false; error: Gist
 
 export interface GistSyncStatus {
   lastSyncTime: string | null;
-  lastSyncDirection: 'push' | 'pull' | null;
   syncInProgress: boolean;
   lastError: GistSyncErrorCode | null;
 }
