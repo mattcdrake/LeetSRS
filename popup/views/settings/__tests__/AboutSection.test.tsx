@@ -12,31 +12,24 @@ vi.hoisted(() => {
 afterAll(() => vi.unstubAllGlobals());
 
 describe('AboutSection', () => {
-  it('orders the links as rate, star, Discord, then feedback', () => {
+  it('orders the support links and opens each destination in a separate tab', () => {
+    const destinations = [
+      [
+        'Rate LeetSRS',
+        'https://chromewebstore.google.com/detail/leetsrs/odgfcigkohoimpeeooifjdglncggkgko/reviews?utm_source=item-share-cb',
+      ],
+      ['Star on GitHub', 'https://github.com/mattcdrake/leetsrs'],
+      ['Join Discord', 'https://discord.gg/fn24NAzBFu'],
+      ['Report a bug or suggest a feature', 'https://github.com/mattcdrake/leetsrs/issues'],
+    ];
     render(<AboutSection />);
 
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
-      'Rate LeetSRS',
-      'Star on GitHub',
-      'Join Discord',
-      'Report a bug or suggest a feature',
-    ]);
-  });
-
-  it.each([
-    ['Report a bug or suggest a feature', 'https://github.com/mattcdrake/leetsrs/issues'],
-    [
-      'Rate LeetSRS',
-      'https://chromewebstore.google.com/detail/leetsrs/odgfcigkohoimpeeooifjdglncggkgko/reviews?utm_source=item-share-cb',
-    ],
-    ['Star on GitHub', 'https://github.com/mattcdrake/leetsrs'],
-    ['Join Discord', 'https://discord.gg/fn24NAzBFu'],
-  ])('links %s to its destination in a separate tab', (name, href) => {
-    render(<AboutSection />);
-
-    const link = screen.getByRole('link', { name });
-    expect(link).toHaveAttribute('href', href);
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(destinations.map(([name]) => name));
+    for (const [name, href] of destinations) {
+      const link = screen.getByRole('link', { name });
+      expect(link).toHaveAttribute('href', href);
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    }
   });
 });

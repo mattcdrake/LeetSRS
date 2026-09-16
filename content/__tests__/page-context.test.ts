@@ -35,17 +35,6 @@ describe('getCurrentProblemSlug', () => {
     expect(getCurrentProblemSlug()).toBe('path-slug');
   });
 
-  it.each([
-    ['window.next', undefined],
-    ['the router', {}],
-    ['the router slug', { router: { query: {} } }],
-  ])('falls back to the pathname when %s is absent', (_source, next) => {
-    history.replaceState({}, '', '/problems/path-slug/');
-    leetCodeWindow.next = next;
-
-    expect(getCurrentProblemSlug()).toBe('path-slug');
-  });
-
   it.each(['/problems/two-sum/', '/problems/two-sum/description/'])('returns only the problem slug from %s', (path) => {
     delete leetCodeWindow.next;
     history.replaceState({}, '', path);

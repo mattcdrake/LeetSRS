@@ -10,14 +10,6 @@ const createCard = (id: string, frontendId: string, title = id): CardWithProblem
 const getIds = (cards: CardWithProblem[]) => cards.map((card) => card.slug);
 
 describe('filterAndSortCards', () => {
-  it('does not mutate the input', () => {
-    const cards = [createCard('second', '2'), createCard('first', '1')];
-
-    filterAndSortCards(cards, '');
-
-    expect(getIds(cards)).toEqual(['second', 'first']);
-  });
-
   it.each([
     {
       description: 'returns every card for an empty filter',
@@ -38,7 +30,9 @@ describe('filterAndSortCards', () => {
       expectedIds: ['match'],
     },
   ])('$description', ({ cards, filterText, expectedIds }) => {
+    const before = structuredClone(cards);
     expect(getIds(filterAndSortCards(cards, filterText))).toEqual(expectedIds);
+    expect(cards).toEqual(before);
   });
 
   it.each([
