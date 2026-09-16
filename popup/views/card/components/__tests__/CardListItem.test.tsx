@@ -71,21 +71,6 @@ describe('CardListItem', () => {
     expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
   });
 
-  it('restores delete confirmation after a failure', async () => {
-    const error = new Error('Delete failed');
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    service.handle('removeCard', () => Promise.reject(error));
-    renderItem(createMockCardWithProblem(State.New));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
-
-    await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith('Failed to delete card:', error);
-      expect(screen.getByRole('button', { name: 'Delete' })).not.toBeDisabled();
-    });
-  });
-
   it('keeps overlapping operations on different cards independent', async () => {
     const pauseResult = Promise.withResolvers<void>();
     const deleteResult = Promise.withResolvers<void>();

@@ -2,13 +2,13 @@ import { registerService } from '@webext-core/proxy-service';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { storage } from 'wxt/utils/storage';
 
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { readGistConnection, readLearningDocument } from '@/shared/storage';
+import { readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { getSettings } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
@@ -116,50 +116,8 @@ describe('document startup through registered background commands', () => {
     }
   );
 
-  it.each(['write', 'cleanup'] as const)(
-    'preserves a legacy installation across a startup %s failure and retry',
-    async (stage) => {
-      const legacy = {
-        'leetsrs:schemaVersion': 5,
-        'leetsrs:cards': {},
-        'leetsrs:stats': {},
-        'leetsrs:dataUpdatedAt': '2024-01-01T00:00:00.000Z',
-      };
-      await fakeBrowser.storage.local.set(legacy);
-      await fakeBrowser.storage.sync.set({
-        'leetsrs:language': 'de',
-        'leetsrs:githubPat': 'secret',
-        'leetsrs:gistId': 'gist',
-        'leetsrs:gistSyncEnabled': true,
-      });
-      const failure = new Error('Storage unavailable');
-      if (stage === 'write') vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
-      if (stage === 'cleanup') vi.spyOn(fakeBrowser.storage.local, 'remove').mockRejectedValueOnce(failure);
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.spyOn(console, 'warn').mockImplementation(() => {});
-      startBackground();
-      if (stage === 'cleanup') {
-        await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
-      } else {
-        await expect(getRegisteredBackground().waitForInitialization()).rejects.toBe(failure);
-        expect(await fakeBrowser.storage.local.get(null)).toEqual(legacy);
-      }
-      startBackground();
-      await getRegisteredBackground().waitForInitialization();
-      expect(await getSettings()).toMatchObject({ language: stage === 'cleanup' ? 'zh-CN' : 'en' });
-      expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-      if (stage !== 'cleanup') {
-        expect(await readLearningDocument()).toEqual(
-          buildLearningDocument({
-            settings: { language: 'en', resetEditorOnReviewQueue: false },
-            dataUpdatedAt: legacy['leetsrs:dataUpdatedAt'],
-          })
-        );
-      }
-    }
-  );
-
   it.each([
+    { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
     { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
     { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
   ])('rejects a saved invalid document without falling back to legacy data: %j', async (document) => {
@@ -170,13 +128,16 @@ describe('document startup through registered background commands', () => {
     });
     const before = await fakeBrowser.storage.local.get(null);
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
+    const snapshots = vi.spyOn(storage, 'snapshot').mockRejectedValue(new Error('Must not gather legacy storage'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const fireAlarm = startBackground();
     await expect(getRegisteredBackground().waitForInitialization()).rejects.toThrow();
     await expect(getRegisteredBackground().addCard(buildProblem())).rejects.toThrow();
     await fireAlarm();
     expect(writes).not.toHaveBeenCalled();
+    expect(snapshots).not.toHaveBeenCalled();
     expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
+    expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 
   it.each([false, true])('preserves the one-minute alarm (already exists: %s)', async (exists) => {

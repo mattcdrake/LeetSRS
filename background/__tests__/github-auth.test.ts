@@ -156,16 +156,6 @@ it.each(['sign-in', 'refresh'])('sign-out waits for a %s credential write alread
   expect(await storage.getItem('local:leetsrs:githubAuthorization')).toBeNull();
 });
 
-it('waits for host access without starting OAuth', async () => {
-  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
-  acceptSignIn();
-  await startGithubSignIn();
-  await finishSignIn();
-  expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
-  expect(fetch).not.toHaveBeenCalled();
-  expect((await getGithubAuthStatus()).error).toBeNull();
-});
-
 it('blocks saved authorization after revocation and preserves it for re-enabling', async () => {
   await seedGithubAuthorization();
   vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
@@ -180,7 +170,10 @@ it.each(['open', 'suspended'])('continues sign-in after a grant with the popup g
   vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
   acceptSignIn();
   await startGithubSignIn();
+  await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
+  expect(fetch).not.toHaveBeenCalled();
+  expect((await getGithubAuthStatus()).error).toBeNull();
   let resume = resumeGithubSignIn;
   let status = getGithubAuthStatus;
   if (worker === 'suspended') {

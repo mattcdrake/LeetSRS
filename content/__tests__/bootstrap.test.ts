@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, screen, within } from '@testing-library/react';
+import { act, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
@@ -59,7 +59,7 @@ describe('content startup', () => {
   it('shows a toast only after auto-reset reports confirmation', async () => {
     vi.useFakeTimers();
     await act(() => bootstrapContent(ctx));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(document.querySelector('leetsrs-toast')).toBeNull();
 
     const baselineTimers = vi.getTimerCount();
     const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeEditorReset).mock.calls[0]);
@@ -69,12 +69,11 @@ describe('content startup', () => {
     const toast = requireDefined(container.shadowRoot?.querySelector('[role="status"]'));
     expect(toast).toHaveTextContent('Code reset to default');
     act(() => vi.advanceTimersByTime(2800));
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(container.isConnected).toBe(false);
     expect(vi.getTimerCount()).toBe(baselineTimers);
   });
 
-  it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
+  it('mounts late and replaced toolbars without duplicates and unmounts when they disappear', async () => {
     document.body.innerHTML = '';
     await act(() => bootstrapContent(ctx));
     expect(document.querySelector('#leetsrs-control')).toBeNull();
@@ -87,10 +86,8 @@ describe('content startup', () => {
     document.querySelector('#leetsrs-control')?.remove();
     act(() => notifyMutation());
     expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
-  });
 
-  it('replaces the tracked mount when the old toolbar stays connected', async () => {
-    await act(() => bootstrapContent(ctx));
+    unwatchTranslations.mockClear();
     const oldToolbar = requireDefined(document.querySelector('#ide-top-btns'));
     oldToolbar.removeAttribute('id');
     document.body.insertAdjacentHTML('beforeend', '<div id="ide-top-btns"><div id="last-group"></div></div>');
@@ -103,17 +100,14 @@ describe('content startup', () => {
     expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
     expect(document.querySelector('#ide-top-btns #leetsrs-control')).not.toBeNull();
     expect(unwatchTranslations).toHaveBeenCalledOnce();
-  });
 
-  it('unmounts when the toolbar disappears', async () => {
-    await act(() => bootstrapContent(ctx));
     const toolbar = requireDefined(document.querySelector('#ide-top-btns'));
     toolbar.remove();
 
     act(() => notifyMutation());
 
     expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
-    expect(unwatchTranslations).toHaveBeenCalledOnce();
+    expect(unwatchTranslations).toHaveBeenCalledTimes(2);
   });
 });
 
