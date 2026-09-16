@@ -28,7 +28,7 @@ export const THEME_COLORS = {
 
 export const LEETSRS_BUTTON_COLOR = '#28c244';
 
-export function isDarkMode(): boolean {
+function isDarkMode(): boolean {
   return (
     document.documentElement.classList.contains('dark') ||
     document.documentElement.classList.contains('dark-theme') ||

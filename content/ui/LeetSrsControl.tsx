@@ -60,7 +60,7 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   );
 }
 
-export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTMLButtonElement> } & ButtonProps) {
+function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTMLButtonElement> } & ButtonProps) {
   const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
     <Button
