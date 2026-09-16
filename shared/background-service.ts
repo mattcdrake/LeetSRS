@@ -6,9 +6,6 @@ import type {
   GistSetup,
   GistSyncStatus,
   LeetcodeDomain,
-  PanelRatingInput,
-  PanelSave,
-  PanelUndo,
   ProblemReference,
   RateCardInput,
   RatingPreview,
@@ -25,16 +22,14 @@ export interface BackgroundService {
   dismissMigrationNotice(): Promise<void>;
   waitForInitialization(): Promise<void>;
   getProblem(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem>;
-  getRatingHint(): Promise<boolean>;
-  markRatingHintShown(): Promise<void>;
+  shouldShowAutoOpenHint(): Promise<boolean>;
+  markAutoOpenHintShown(): Promise<void>;
   previewRatings(problem: ProblemReference): Promise<RatingPreview>;
-  savePanelRating(input: PanelRatingInput): Promise<PanelSave>;
-  undoPanelRating(undo: PanelUndo): Promise<void>;
   addCard(problem: ProblemReference): Promise<void>;
   removeCard(frontendId: string): Promise<void>;
   delayCard(frontendId: string, days: number): Promise<void>;
   setPauseStatus(frontendId: string, paused: boolean): Promise<void>;
-  rateCard(input: RateCardInput): Promise<void>;
+  rateCard(input: RateCardInput): Promise<number>;
   saveNote(frontendId: string, text: string): Promise<void>;
   updateSettings(changes: SettingsUpdate): Promise<void>;
   importData(jsonData: string): Promise<void>;

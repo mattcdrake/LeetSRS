@@ -152,7 +152,6 @@
   color: var(--panel-muted);
 }
 .rating-hint button,
-.rating-saved button,
 .rating-error button {
   border: 0;
   background: transparent;

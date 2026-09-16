@@ -34,66 +34,16 @@ describe('document learning through background commands', () => {
     vi.restoreAllMocks();
   });
 
-  it('previews the actual schedule and undoes a saved rating', async () => {
+  it('previews the actual schedule for new and existing cards', async () => {
     const service = getRegisteredBackground();
-    const before = await readLearningDocument();
-    const preview = await service.previewRatings(buildProblem());
-    expect(preview[Rating.Good]).toBe(3);
-    const saved = await service.savePanelRating({ ...buildProblem(), rating: Rating.Good });
-    expect(saved.scheduledDays).toBe(3);
-    expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
-    await service.undoPanelRating(saved.undo);
-    const restored = await readLearningDocument();
-    expect(restored.cards).toEqual(before.cards);
-    expect(restored.reviewActivity).toEqual(before.reviewActivity);
-  });
-
-  it.each([undefined, Rating.Good] as const)(
-    'restores a prior card and activity after panel selection %s',
-    async (rating) => {
-      const service = getRegisteredBackground();
-      await service.rateCard({ ...buildProblem(), rating: Rating.Good });
-      await service.saveNote('1', 'Keep the approach');
-      const before = await readLearningDocument();
-      const saved = await service.savePanelRating({ ...buildProblem(), rating });
-      await service.updateSettings({ theme: 'dark' });
-      await service.undoPanelRating(saved.undo);
-      const restored = await readLearningDocument();
-      expect(restored.cards).toEqual(before.cards);
-      expect(restored.reviewActivity).toEqual(before.reviewActivity);
-      expect(restored.settings.theme).toBe('dark');
+    for (const reps of [1, 2]) {
+      const preview = await service.previewRatings(buildProblem());
+      const scheduledDays = await service.rateCard({ ...buildProblem(), rating: Rating.Good });
+      const card = requireDefined((await readLearningDocument()).cards['1']);
+      expect(scheduledDays).toBe(preview[Rating.Good]);
+      expect(card.fsrs.scheduled_days).toBe(scheduledDays);
+      expect(card.fsrs.reps).toBe(reps);
     }
-  );
-
-  it('keeps failed saves and Undo retryable without losing subsequent edits', async () => {
-    const service = getRegisteredBackground();
-    const original = await readLearningDocument();
-    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
-    await expect(service.savePanelRating(buildProblem())).rejects.toThrow('Disk full');
-    expect(await readLearningDocument()).toEqual(original);
-    const saved = await service.savePanelRating(buildProblem());
-    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
-    await expect(service.undoPanelRating(saved.undo)).rejects.toThrow('Disk full');
-    expect((await readLearningDocument()).cards['1']).toBeDefined();
-    await service.undoPanelRating(saved.undo);
-    expect((await readLearningDocument()).cards).toEqual({});
-    const next = await service.savePanelRating({ ...buildProblem(), rating: Rating.Good });
-    await service.rateCard({ ...buildProblem(), rating: Rating.Easy });
-    const newer = await readLearningDocument();
-    await expect(service.undoPanelRating(next.undo)).rejects.toThrow('Practice data changed');
-    expect(await readLearningDocument()).toEqual(newer);
-  });
-
-  it('preserves consecutive reviews when a panel save overlaps another command', async () => {
-    const service = getRegisteredBackground();
-    const saved = await service.savePanelRating({ ...buildProblem(), rating: Rating.Good });
-    await Promise.all([
-      service.undoPanelRating(saved.undo),
-      service.rateCard({ ...buildProblem(), rating: Rating.Easy }),
-    ]);
-    const document = await readLearningDocument();
-    expect(document.cards['1']?.fsrs.reps).toBe(1);
-    expect(document.reviewActivity?.newCards).toBe(1);
   });
 
   it('publishes a complete review only after the document replacement succeeds', async () => {
@@ -116,7 +66,7 @@ describe('document learning through background commands', () => {
     expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
-    await expect(pending).resolves.toBeUndefined();
+    await expect(pending).resolves.toBe(3);
     const card = requireDefined((await readLearningDocument()).cards['1']);
 
     expect(card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
@@ -352,9 +302,7 @@ describe('document learning through background commands', () => {
       await getRegisteredBackground().addCard(buildProblem());
       const card = requireDefined((await readLearningDocument()).cards['1']);
       await getRegisteredBackground().saveNote(card.frontendId, '  retained\n');
-      await expect(
-        getRegisteredBackground().rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating })
-      ).resolves.toBeUndefined();
+      await getRegisteredBackground().rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating });
       const first = requireDefined((await readLearningDocument()).cards[card.frontendId]);
       expect(first).toMatchObject({
         frontendId: card.frontendId,
@@ -373,7 +321,7 @@ describe('document learning through background commands', () => {
       expect(await getReviewQueue()).toEqual([first]);
       // Another attempt on the same review day counts as a reviewed card.
       vi.setSystemTime(card.createdAt);
-      await expect(getRegisteredBackground().rateCard({ ...buildProblem(), rating })).resolves.toBeUndefined();
+      await getRegisteredBackground().rateCard({ ...buildProblem(), rating });
       const second = requireDefined((await readLearningDocument()).cards[card.frontendId]);
       expect(second.fsrs.reps).toBe(2);
       expect(second.fsrs.state).toBe(State.Review);
@@ -409,7 +357,7 @@ describe('document learning through background commands', () => {
           expect((await readLearningDocument()).cards[existing.frontendId]).toEqual(existing);
         }
 
-        await expect(getRegisteredBackground().rateCard({ ...problem, rating })).resolves.toBeUndefined();
+        await getRegisteredBackground().rateCard({ ...problem, rating });
         const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
 
         expect(card.fsrs).toMatchObject({

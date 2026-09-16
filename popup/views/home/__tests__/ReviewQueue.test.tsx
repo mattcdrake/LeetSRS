@@ -150,7 +150,7 @@ describe('ReviewQueue', () => {
 
   describe('Processing State', () => {
     it('keeps controls disabled after the command until the queue refresh completes', async () => {
-      const mutation = Promise.withResolvers<void>();
+      const mutation = Promise.withResolvers<number>();
       const refresh = Promise.withResolvers<ReturnType<typeof buildLearningDocument>>();
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
@@ -159,7 +159,7 @@ describe('ReviewQueue', () => {
       const goodButton = await screen.findByRole('button', { name: 'Good' });
       vi.mocked(storage.getItem).mockReturnValue(refresh.promise);
       fireEvent.click(goodButton);
-      mutation.resolve();
+      mutation.resolve(3);
       await act(async () => Promise.resolve());
       expect(goodButton).toBeDisabled();
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
@@ -172,7 +172,7 @@ describe('ReviewQueue', () => {
     });
 
     it('does not render a cache update until the command also completes', async () => {
-      const mutation = Promise.withResolvers<void>();
+      const mutation = Promise.withResolvers<number>();
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
@@ -185,7 +185,7 @@ describe('ReviewQueue', () => {
       expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
       expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
 
-      mutation.resolve();
+      mutation.resolve(3);
 
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
       expect(screen.getByRole('button', { name: 'Good' })).not.toBeDisabled();
@@ -235,7 +235,7 @@ describe('ReviewQueue', () => {
 
   describe('Card Actions', () => {
     it('should disable controls and prevent duplicate actions while a review is pending', async () => {
-      const mutation = Promise.withResolvers<void>();
+      const mutation = Promise.withResolvers<number>();
       service.handle('rateCard', () => mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
@@ -252,7 +252,7 @@ describe('ReviewQueue', () => {
       expect(background.rateCard).toHaveBeenCalledWith(expect.any(Object));
       for (const control of controls) expect(control).toBeDisabled();
 
-      mutation.resolve();
+      mutation.resolve(3);
       await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
       });

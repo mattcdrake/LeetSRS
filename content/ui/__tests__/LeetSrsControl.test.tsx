@@ -21,16 +21,13 @@ beforeEach(async () => {
     .resolve('getProblem', requireDefined(testCatalog[0]));
 });
 
-it('keeps the saved confirmation open and Undo restores the prior practice state', async () => {
+it('confirms the saved rating without offering Undo', async () => {
   render(<LeetSrsControl />);
   fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Good' }));
-  expect(await screen.findByRole('status')).toHaveTextContent('Saved');
+  expect(await screen.findByRole('status')).toHaveTextContent('Saved · Review in 3 days');
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-  const restoredGood = await screen.findByRole('button', { name: 'Good' });
-  await waitFor(() => expect(restoredGood.closest('fieldset')).toHaveFocus());
-  await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
+  expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
 });
 
 it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated presses', async (key) => {
@@ -44,7 +41,7 @@ it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated press
   expect((await readLearningDocument()).cards).toEqual({});
   fireEvent.keyDown(good, { key: String(key) });
   fireEvent.keyDown(good, { key: String(key) });
-  await screen.findByRole('button', { name: 'Undo' });
+  await screen.findByRole('status');
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(key === 5 ? 0 : 1);
 });
 
@@ -84,29 +81,24 @@ it('keeps persistence failures retryable and prevents saving twice while pending
   expect((await readLearningDocument()).cards).toEqual({});
   const release = Promise.withResolvers<void>();
   const service = createBackgroundService(Promise.resolve());
-  vi.mocked(background.savePanelRating).mockImplementation(async (input) => {
+  vi.mocked(background.rateCard).mockImplementation(async (input) => {
     await release.promise;
-    return service.savePanelRating(input);
+    return service.rateCard(input);
   });
   fireEvent.click(good);
   fireEvent.click(good);
   fireEvent.keyDown(good, { key: '3' });
   await act(async () => release.resolve());
-  await screen.findByRole('button', { name: 'Undo' });
+  await screen.findByRole('status');
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
-  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not undo');
-  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-  await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
 });
 
 it('retains a save in progress and its confirmation when the panel closes and reopens', async () => {
   const release = Promise.withResolvers<void>();
   const service = createBackgroundService(Promise.resolve());
-  vi.mocked(background.savePanelRating).mockImplementation(async (input) => {
+  vi.mocked(background.rateCard).mockImplementation(async (input) => {
     await release.promise;
-    return service.savePanelRating(input);
+    return service.rateCard(input);
   });
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
@@ -117,20 +109,18 @@ it('retains a save in progress and its confirmation when the panel closes and re
   fireEvent.click(trigger);
   await act(async () => release.resolve());
   expect(await screen.findByRole('status')).toHaveTextContent('Saved');
-  fireEvent.keyDown(screen.getByRole('button', { name: 'Undo' }), { key: '3' });
+  fireEvent.keyDown(screen.getByRole('status'), { key: '3' });
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-  await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
 });
 
 it('does not consume the hint when the panel closes before it can be displayed', async () => {
   const release = Promise.withResolvers<void>();
   const started = Promise.withResolvers<void>();
   const service = createBackgroundService(Promise.resolve());
-  vi.mocked(background.getRatingHint).mockImplementationOnce(async () => {
+  vi.mocked(background.shouldShowAutoOpenHint).mockImplementationOnce(async () => {
     started.resolve();
     await release.promise;
-    return service.getRatingHint();
+    return service.shouldShowAutoOpenHint();
   });
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
@@ -138,10 +128,10 @@ it('does not consume the hint when the panel closes before it can be displayed',
   await act(() => started.promise);
   fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
   await act(async () => release.resolve());
-  expect(await service.getRatingHint()).toBe(true);
+  expect(await service.shouldShowAutoOpenHint()).toBe(true);
   fireEvent.click(trigger);
   await screen.findByText('Opens after you solve a problem.');
-  await waitFor(async () => expect(await service.getRatingHint()).toBe(false));
+  await waitFor(async () => expect(await service.shouldShowAutoOpenHint()).toBe(false));
 });
 
 it('closes saved confirmations after five seconds and allows another manual rating', async () => {
@@ -158,7 +148,7 @@ it('closes saved confirmations after five seconds and allows another manual rati
       expect(good).toHaveAttribute('data-selected', 'true');
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(400));
-      expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent('Saved');
       await act(() => vi.advanceTimersByTimeAsync(4599));
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(1));

@@ -16,13 +16,13 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
   const [preview, setPreview] = useState<RatingPreview>();
   const [hint, setHint] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
-  const error = session.error ?? (loadFailed ? 'save' : undefined);
+  const error = session.error || loadFailed;
   const [selected, setSelected] = useState<number>();
   const showSaved = saved && selected === undefined;
   const [attempt, setAttempt] = useState(0);
   const container = useRef<HTMLFieldSetElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Retry and Undo refresh the preview.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Retry reloads the preview.
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -32,7 +32,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
         if (!active) return;
         setProblem(problem);
         setPreview(preview);
-        const showHint = await background.getRatingHint();
+        const showHint = await background.shouldShowAutoOpenHint();
         if (active) setHint(showHint);
       } catch {
         if (active) setLoadFailed(true);
@@ -44,7 +44,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
   }, [attempt]);
 
   useEffect(() => {
-    if (hint && !saved) void background.markRatingHintShown().catch(() => setLoadFailed(true));
+    if (hint && !saved) void background.markAutoOpenHintShown().catch(() => setLoadFailed(true));
   }, [hint, saved]);
 
   useEffect(() => {
@@ -60,13 +60,12 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
   function save(rating?: Grade) {
     if (!problem || !preview || saved || busy || selected !== undefined) return;
     setSelected(rating ?? 5);
-    session.save({ ...problem, rating });
+    session.save(problem, rating);
   }
 
   useEffect(() => {
-    if (showSaved) container.current?.querySelector<HTMLButtonElement>('button')?.focus();
-    else container.current?.focus();
-  }, [showSaved]);
+    if (showSaved || !saved) container.current?.focus();
+  }, [showSaved, saved]);
 
   return (
     <fieldset
@@ -103,16 +102,6 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
             {t.contentScript.saved}
             {saved.scheduledDays !== null && ` · ${t.contentScript.reviewIn(saved.scheduledDays)}`}
           </span>
-          <Button
-            isDisabled={busy}
-            onPress={() =>
-              void session.undo().then((undone) => {
-                if (undone) setAttempt((value) => value + 1);
-              })
-            }
-          >
-            {t.contentScript.undo}
-          </Button>
         </div>
       ) : (
         <>
@@ -174,7 +163,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
       )}
       {error && (
         <div className="rating-error" role="alert">
-          {error === 'undo' ? t.contentScript.undoFailed : t.contentScript.saveFailed}
+          {t.contentScript.saveFailed}
           {!preview && (
             <Button
               onPress={() => {

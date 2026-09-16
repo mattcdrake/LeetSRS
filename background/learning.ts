@@ -1,15 +1,7 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
 import { storage } from '#imports';
 import { recordReview } from '@/background/review-activity';
-import type {
-  Card,
-  PanelRatingInput,
-  PanelSave,
-  PanelUndo,
-  ProblemReference,
-  RateCardInput,
-  RatingPreview,
-} from '@/shared/models';
+import type { Card, ProblemReference, RateCardInput, RatingPreview } from '@/shared/models';
 import { findCard, type LearningDocument } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
 import { readLearningDocument } from '@/shared/storage';
@@ -74,14 +66,23 @@ export async function setPauseStatus(frontendId: string, paused: boolean): Promi
   await saveEdit(document, now);
 }
 
-export async function rateCard(input: RateCardInput): Promise<void> {
+export async function rateCard(input: RateCardInput): Promise<number> {
   const now = new Date();
   const document = await readLearningDocument();
   const { rating, ...problem } = input;
   const card = findCard(document, problem.frontendId) ?? createCard(problem, now);
-  applyRating(document, card, rating, now);
+  const isNewCard = card.fsrs.state === FsrsState.New;
+  const schedulingResult = fsrs.next(card.fsrs, now, rating);
+  card.fsrs = {
+    ...schedulingResult.card,
+    due: schedulingResult.card.due.getTime(),
+    last_review: schedulingResult.card.last_review?.getTime(),
+  };
+  document.cards[card.frontendId] = card;
 
+  document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
   await saveEdit(document, now);
+  return card.fsrs.scheduled_days;
 }
 
 export async function saveNote(frontendId: string, text: string): Promise<void> {
@@ -115,19 +116,6 @@ export function calculateDelayedDueDate(due: number, days: number): number {
   return newDueDate.getTime();
 }
 
-function applyRating(document: LearningDocument, card: Card, rating: RateCardInput['rating'], now: Date) {
-  const isNewCard = card.fsrs.state === FsrsState.New;
-  const schedulingResult = fsrs.next(card.fsrs, now, rating);
-  card.fsrs = {
-    ...schedulingResult.card,
-    due: schedulingResult.card.due.getTime(),
-    last_review: schedulingResult.card.last_review?.getTime(),
-  };
-  document.cards[card.frontendId] = card;
-
-  document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
-}
-
 export async function previewRatings(problem: ProblemReference): Promise<RatingPreview> {
   const now = new Date();
   const document = await readLearningDocument();
@@ -141,46 +129,10 @@ export async function previewRatings(problem: ProblemReference): Promise<RatingP
   };
 }
 
-export async function savePanelRating(input: PanelRatingInput): Promise<PanelSave> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const { rating, ...problem } = input;
-  const beforeCard = structuredClone(findCard(document, problem.frontendId) ?? null);
-  const beforeActivity = structuredClone(document.reviewActivity);
-  const card = findCard(document, problem.frontendId) ?? createCard(problem, now);
-  if (rating !== undefined) applyRating(document, card, rating, now);
-  else document.cards[card.frontendId] = card;
-  if (rating !== undefined || beforeCard === null) await saveEdit(document, now);
-  return {
-    scheduledDays: rating === undefined ? null : card.fsrs.scheduled_days,
-    undo: {
-      frontendId: card.frontendId,
-      beforeCard,
-      afterCard: card,
-      beforeActivity,
-      afterActivity: document.reviewActivity,
-    },
-  };
-}
-
-export async function undoPanelRating(undo: PanelUndo): Promise<void> {
-  const document = await readLearningDocument();
-  if (
-    JSON.stringify(findCard(document, undo.frontendId)) !== JSON.stringify(undo.afterCard) ||
-    JSON.stringify(document.reviewActivity) !== JSON.stringify(undo.afterActivity)
-  ) {
-    throw new Error('Practice data changed since this save');
-  }
-  if (undo.beforeCard) document.cards[undo.frontendId] = undo.beforeCard;
-  else delete document.cards[undo.frontendId];
-  document.reviewActivity = undo.beforeActivity;
-  await saveEdit(document, new Date());
-}
-
-export async function getRatingHint(): Promise<boolean> {
+export async function shouldShowAutoOpenHint(): Promise<boolean> {
   return !(await storage.getItem('local:leetsrs:ratingHintShown'));
 }
 
-export async function markRatingHintShown(): Promise<void> {
+export async function markAutoOpenHintShown(): Promise<void> {
   await storage.setItem('local:leetsrs:ratingHintShown', true);
 }

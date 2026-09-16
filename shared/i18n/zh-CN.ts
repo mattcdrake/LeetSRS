@@ -231,8 +231,6 @@ const zhCN: Translations = {
     autoOpenHint: '解题后自动打开。',
     turnOffAutoOpen: '关闭自动打开',
     saved: '已保存',
-    undo: '撤销',
-    undoFailed: '无法撤销，练习数据可能已更改。请重试。',
     retry: '重试',
     days: (days: number) => `${days} 天`,
     reviewIn: (days: number) => `${days} 天后复习`,

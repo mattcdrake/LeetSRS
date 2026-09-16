@@ -263,8 +263,6 @@ const en = {
     autoOpenHint: 'Opens after you solve a problem.',
     turnOffAutoOpen: 'Turn off auto-open',
     saved: 'Saved',
-    undo: 'Undo',
-    undoFailed: 'Could not undo. Your practice data may have changed. Please try again.',
     retry: 'Try again',
     days: (days: number) => `${days} ${days === 1 ? 'day' : 'days'}`,
     reviewIn: (days: number) => `Review in ${days} ${days === 1 ? 'day' : 'days'}`,
