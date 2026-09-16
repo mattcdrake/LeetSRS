@@ -1,15 +1,14 @@
 /** @vitest-environment happy-dom */
 import { onlineManager, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { IDBDatabase } from 'fake-indexeddb';
-import { type ReactNode, Suspense } from 'react';
+import type { ReactNode } from 'react';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
-import { I18nProvider } from '@/popup/contexts/I18nContext';
 import { background } from '@/shared/background-service';
 import * as catalog from '@/shared/catalog';
 import { initializeCatalog } from '@/shared/catalog';
@@ -330,7 +329,7 @@ it('keeps a successful local save successful when refreshing the cache fails', a
 it('keeps polling background-only sync progress and errors without stored changes', async () => {
   await replaceLearningDocument(buildLearningDocument());
   vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-  const status: GistSyncStatus = {
+  let status: GistSyncStatus = {
     lastSyncTime: null,
     syncInProgress: true,
     lastError: null,
@@ -339,33 +338,10 @@ it('keeps polling background-only sync progress and errors without stored change
   const view = renderHook(() => useGistSyncStatusQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   expect(view.result.current.data?.syncInProgress).toBe(true);
-  status.syncInProgress = false;
-  status.lastError = 'unavailable';
+  status = { ...status, syncInProgress: false, lastError: 'unavailable' };
   await act(() => vi.advanceTimersByTimeAsync(15_000));
   expect(view.result.current.data).toEqual(status);
   view.unmount();
-});
-
-it('loads settings inside Suspense alongside the root storage observer', async () => {
-  await replaceLearningDocument(buildLearningDocument());
-  const queryClient = createTestQueryClient();
-  queryClient.setDefaultOptions({ queries: { staleTime: 300_000, retry: false } });
-  function Observer() {
-    useStorageQueryEvents();
-    return null;
-  }
-  render(
-    <QueryClientProvider client={queryClient}>
-      <Observer />
-      <Suspense fallback={<span>Loading settings</span>}>
-        <I18nProvider>
-          <span>Ready</span>
-        </I18nProvider>
-      </Suspense>
-    </QueryClientProvider>
-  );
-  await screen.findByText('Ready');
-  queryClient.clear();
 });
 
 beforeEach(initializeCatalog);

@@ -49,7 +49,7 @@ describe('setupLeetcodeEditorReset', () => {
     vi.restoreAllMocks();
   });
 
-  it('preserves code during ordinary browsing and consumes one authorization per opening', async () => {
+  it('preserves code while browsing and consumes authorization without replay on refresh or history restoration', async () => {
     const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
     const dialog = createDialog();
@@ -69,6 +69,19 @@ describe('setupLeetcodeEditorReset', () => {
     expect(location.hash).toBe('');
     expect(resetClick).toHaveBeenCalledTimes(1);
     expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
+    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+
+    dispose();
+    dialog.dialog.remove();
+    history.pushState({}, '', '/problemset/');
+    history.back();
+    await vi.advanceTimersByTimeAsync(100);
+    dispose = setupLeetcodeEditorReset(onResetConfirmed);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(location.hash).toBe('');
+    expect(resetClick).toHaveBeenCalledTimes(1);
     expect(onResetConfirmed).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -179,28 +192,5 @@ describe('setupLeetcodeEditorReset', () => {
     await vi.advanceTimersByTimeAsync(3000);
     expect(resetClick).toHaveBeenCalledTimes(1);
     for (const click of late.clicks) expect(click).not.toHaveBeenCalled();
-  });
-
-  it('does not replay consumed authorization on refresh or history restoration', async () => {
-    const resetButton = renderResetButton();
-    const resetClick = vi.spyOn(resetButton, 'click');
-    const first = createDialog();
-    attachDialog(resetButton, first.dialog);
-    authorizeOpening('/problems/two-sum/');
-
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-    dispose();
-    first.dialog.remove();
-    history.pushState({}, '', '/problemset/');
-    history.back();
-    await vi.advanceTimersByTimeAsync(100);
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-
-    expect(location.hash).toBe('');
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
   });
 });
