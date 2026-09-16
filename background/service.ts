@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { cancelGithubSignInRequest, getGithubAuthStatus, startGithubSignIn } from '@/background/github-auth';
+import {
+  cancelGithubSignInRequest,
+  dismissGithubSetupPrompt,
+  getGithubAuthStatus,
+  startGithubSignIn,
+} from '@/background/github-auth';
 import {
   addCard,
   delayCard,
@@ -37,6 +42,7 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
 
   const frontendId = problemReferenceSchema.shape.frontendId;
   return {
+    dismissGithubSetupPrompt: command(z.tuple([]), dismissGithubSetupPrompt),
     cancelGithubSignInRequest: command(z.tuple([]), cancelGithubSignInRequest),
     startGithubSignIn: command(z.tuple([]), startGithubSignIn),
     signOutGithub: command(z.tuple([]), disconnectGithub),

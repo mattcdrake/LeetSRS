@@ -24,6 +24,8 @@ export function useStorageQueryEvents() {
     const unwatch = [
       watch(STORAGE_KEYS.learningDocument, learningKeys),
       watch(STORAGE_KEYS.gistConnection, connectionKeys),
+      watch('local:leetsrs:githubAuthorization', [gistSyncQueryKeys.auth]),
+      watch('local:leetsrs:githubSetupPending', [gistSyncQueryKeys.auth]),
       watch(STORAGE_KEYS.lastSyncTime, [gistSyncQueryKeys.status]),
       watch(STORAGE_KEYS.lastSyncDirection, [gistSyncQueryKeys.status]),
     ];

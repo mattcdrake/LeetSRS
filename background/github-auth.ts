@@ -8,6 +8,7 @@ const SIGN_IN_REQUEST_KEY = 'session:leetsrs:githubSignInRequest';
 const SIGN_IN_REQUEST_TTL = 5 * 60 * 1000;
 let signInRequests = Promise.resolve();
 
+const SETUP_PROMPT_KEY = 'local:leetsrs:githubSetupPending';
 const AUTH_KEY = 'local:leetsrs:githubAuthorization';
 const AUTH_ORIGIN = 'https://auth.leetsrs.com';
 const accountSchema = z.object({ id: z.number().int().positive(), login: z.string().min(1) });
@@ -44,7 +45,13 @@ async function readAuthorization() {
 export async function getGithubAuthStatus(): Promise<GithubAuthStatus> {
   const auth = await readAuthorization();
   const migration = await readPatMigration();
-  return { account: auth?.account ?? null, signingIn: !!signingIn, error, migrationNotice: migration.notice };
+  return {
+    account: auth?.account ?? null,
+    signingIn: !!signingIn,
+    error,
+    migrationNotice: migration.notice,
+    setupPending: !!auth && (await storage.getItem(SETUP_PROMPT_KEY)) === true,
+  };
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -168,7 +175,10 @@ function launchGithubSignIn(): void {
     if (!code || expected !== generation) throw new Error('Sign-in cancelled');
     const auth = await exchange('exchange', { code, code_verifier: verifier, redirect_uri: redirectUri });
     if (expected !== generation) return;
-    credentialWrite = storage.setItem(AUTH_KEY, auth);
+    credentialWrite = (async () => {
+      await storage.setItem(AUTH_KEY, auth);
+      await storage.setItem(SETUP_PROMPT_KEY, true);
+    })();
     await credentialWrite;
   })()
     .catch(() => {
@@ -206,6 +216,11 @@ export async function getGithubAuthorization() {
   }
 }
 
+export async function dismissGithubSetupPrompt(): Promise<void> {
+  await credentialWrite;
+  await storage.removeItem(SETUP_PROMPT_KEY);
+}
+
 export async function signOutGithub(): Promise<void> {
   generation++;
   signingIn = undefined;
@@ -215,5 +230,5 @@ export async function signOutGithub(): Promise<void> {
   await storage.removeItem(SIGN_IN_REQUEST_KEY);
   // Wait for an already-started storage write, never an OAuth/network request.
   await credentialWrite.catch(() => {});
-  await storage.removeItem(AUTH_KEY);
+  await storage.removeItems([AUTH_KEY, SETUP_PROMPT_KEY]);
 }

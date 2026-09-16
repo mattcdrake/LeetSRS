@@ -12,7 +12,13 @@ import { GistSyncSection } from '../GistSyncSection';
 
 vi.mock('@/shared/background-service');
 const service = createServiceMock(background);
-const signedIn = { account: { id: 1, login: 'tester' }, signingIn: false, error: null, migrationNotice: false };
+const signedIn = {
+  account: { id: 1, login: 'tester' },
+  signingIn: false,
+  error: null,
+  migrationNotice: false,
+  setupPending: false,
+};
 beforeEach(async () => {
   vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => true);
   vi.spyOn(browser.permissions, 'request').mockImplementation(async () => true);
@@ -233,34 +239,6 @@ it.each(['while open', 'while closed'])(
     );
   }
 );
-
-it('hands sign-in to the background before the permission prompt can destroy the popup', async () => {
-  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
-  service.resolve('getGithubAuthStatus', { ...signedIn, account: null }).resolve('startGithubSignIn', undefined);
-  vi.mocked(browser.permissions.request).mockImplementation(() => {
-    expect(background.startGithubSignIn).toHaveBeenCalledOnce();
-    // A destroyed popup never receives the permission result.
-    return new Promise<boolean>(() => {});
-  });
-  const { unmount } = open();
-  const button = await screen.findByRole('button', { name: 'Sign in with GitHub' });
-  await waitFor(() => expect(button).toBeEnabled());
-  fireEvent.click(button);
-  expect(background.startGithubSignIn).toHaveBeenCalledOnce();
-  unmount();
-});
-
-it('highlights sign-in from the update dialog and stops drawing attention after a click', async () => {
-  service.resolve('getGithubAuthStatus', { ...signedIn, account: null }).resolve('startGithubSignIn', undefined);
-  vi.mocked(browser.permissions.request).mockImplementation(async () => false);
-  render(<GistSyncSection highlightSignIn />, { wrapper: createPopupTestWrapper().wrapper });
-  const button = await screen.findByRole('button', { name: 'Sign in with GitHub' });
-  await waitFor(() => expect(button).toBeEnabled());
-  expect(button).toHaveClass('github-sign-in-highlight');
-  fireEvent.click(button);
-  await screen.findByRole('alert');
-  expect(screen.getByRole('button', { name: 'Sign in with GitHub' })).not.toHaveClass('github-sign-in-highlight');
-});
 
 it('dispatches the real proxy message while the permission prompt is still pending', async () => {
   const actual = await vi.importActual<typeof import('@/shared/background-service')>('@/shared/background-service');

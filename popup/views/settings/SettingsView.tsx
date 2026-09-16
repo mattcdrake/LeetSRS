@@ -5,11 +5,17 @@ import { DataSection } from './DataSection';
 import { GeneralSettingsSection } from './GeneralSettingsSection';
 import { GistSyncSection } from './GistSyncSection';
 
-export function SettingsView({ highlightGithubSignIn = false }: { highlightGithubSignIn?: boolean }) {
+export function SettingsView({
+  highlightGithubSignIn = false,
+  highlightGistSetup = false,
+}: {
+  highlightGithubSignIn?: boolean;
+  highlightGistSetup?: boolean;
+}) {
   const t = useI18n();
   return (
     <ViewLayout title={t.settings.title}>
-      <GistSyncSection highlightSignIn={highlightGithubSignIn} />
+      <GistSyncSection highlightSignIn={highlightGithubSignIn} highlightSetup={highlightGistSetup} />
       <GeneralSettingsSection />
       <DataSection />
       <AboutSection />
