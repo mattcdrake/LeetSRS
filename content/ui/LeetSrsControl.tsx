@@ -30,7 +30,13 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   if (!t) return null;
 
   return (
-    <DialogTrigger isOpen={menuOpen} onOpenChange={setMenuOpen}>
+    <DialogTrigger
+      isOpen={menuOpen}
+      onOpenChange={(open) => {
+        setMenuOpen(open);
+        if (!open) session.dismiss();
+      }}
+    >
       <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
         <LeetSrsButton t={t} ref={buttonRef} />
         <Tooltip text={t.app.name} />

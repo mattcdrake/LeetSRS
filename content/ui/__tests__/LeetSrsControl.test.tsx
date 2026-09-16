@@ -155,3 +155,18 @@ it('does not consume the hint when the panel closes before it can be displayed',
   await screen.findByText('Opens after you solve a problem.');
   await waitFor(async () => expect(await service.getRatingHint()).toBe(false));
 });
+
+it('allows consecutive manual ratings after dismissing a completed confirmation', async () => {
+  await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en', openRatingAfterSolving: false } }));
+  render(<LeetSrsControl />);
+  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
+  for (const reps of [1, 2]) {
+    fireEvent.click(trigger);
+    const good = await screen.findByRole('button', { name: 'Good' });
+    await waitFor(() => expect(good).toBeEnabled());
+    fireEvent.click(good);
+    await screen.findByRole('button', { name: 'Undo' });
+    expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(reps);
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  }
+});

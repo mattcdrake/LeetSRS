@@ -31,6 +31,9 @@ export function useRatingSession(openRequest: number) {
     saved,
     error,
     busy,
+    dismiss() {
+      if (saved && !pending.current) setConfirmation(undefined);
+    },
     save(input: PanelRatingInput) {
       if (saved) return;
       void run(async () => {
