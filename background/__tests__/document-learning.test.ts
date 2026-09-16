@@ -38,10 +38,10 @@ describe('document learning through background commands', () => {
     const service = getRegisteredBackground();
     for (const reps of [1, 2]) {
       const preview = await service.previewRatings(buildProblem());
-      const scheduledDays = await service.rateCard({ ...buildProblem(), rating: Rating.Good });
+      const ratedCard = await service.rateCard({ ...buildProblem(), rating: Rating.Good });
       const card = requireDefined((await readLearningDocument()).cards['1']);
-      expect(scheduledDays).toBe(preview[Rating.Good]);
-      expect(card.fsrs.scheduled_days).toBe(scheduledDays);
+      expect(ratedCard).toEqual(card);
+      expect(card.fsrs.scheduled_days).toBe(preview[Rating.Good]);
       expect(card.fsrs.reps).toBe(reps);
     }
   });
@@ -66,8 +66,8 @@ describe('document learning through background commands', () => {
     expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
-    await expect(pending).resolves.toBe(3);
-    const card = requireDefined((await readLearningDocument()).cards['1']);
+    const card = await pending;
+    expect(card).toEqual((await readLearningDocument()).cards['1']);
 
     expect(card).toMatchObject({ ...buildProblem(), createdAt: Date.now(), paused: false });
     expect(card.fsrs).toMatchObject({

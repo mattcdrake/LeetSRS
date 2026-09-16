@@ -66,7 +66,7 @@ export async function setPauseStatus(frontendId: string, paused: boolean): Promi
   await saveEdit(document, now);
 }
 
-export async function rateCard(input: RateCardInput): Promise<number> {
+export async function rateCard(input: RateCardInput): Promise<Card> {
   const now = new Date();
   const document = await readLearningDocument();
   const { rating, ...problem } = input;
@@ -82,7 +82,7 @@ export async function rateCard(input: RateCardInput): Promise<number> {
 
   document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
   await saveEdit(document, now);
-  return card.fsrs.scheduled_days;
+  return card;
 }
 
 export async function saveNote(frontendId: string, text: string): Promise<void> {

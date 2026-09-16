@@ -11,6 +11,7 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
 import { background } from '@/shared/background-service';
+import type { Card } from '@/shared/models';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -150,7 +151,7 @@ describe('ReviewQueue', () => {
 
   describe('Processing State', () => {
     it('keeps controls disabled after the command until the queue refresh completes', async () => {
-      const mutation = Promise.withResolvers<number>();
+      const mutation = Promise.withResolvers<void>();
       const refresh = Promise.withResolvers<ReturnType<typeof buildLearningDocument>>();
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
@@ -159,7 +160,7 @@ describe('ReviewQueue', () => {
       const goodButton = await screen.findByRole('button', { name: 'Good' });
       vi.mocked(storage.getItem).mockReturnValue(refresh.promise);
       fireEvent.click(goodButton);
-      mutation.resolve(3);
+      mutation.resolve();
       await act(async () => Promise.resolve());
       expect(goodButton).toBeDisabled();
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
@@ -172,7 +173,7 @@ describe('ReviewQueue', () => {
     });
 
     it('does not render a cache update until the command also completes', async () => {
-      const mutation = Promise.withResolvers<number>();
+      const mutation = Promise.withResolvers<void>();
       mockMutateAsync.mockReturnValue(mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
@@ -185,7 +186,7 @@ describe('ReviewQueue', () => {
       expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
       expect(screen.queryByTestId('pause-button')).not.toBeInTheDocument();
 
-      mutation.resolve(3);
+      mutation.resolve();
 
       await waitFor(() => expect(screen.getByText('Add Two Numbers')).toBeInTheDocument());
       expect(screen.getByRole('button', { name: 'Good' })).not.toBeDisabled();
@@ -235,7 +236,7 @@ describe('ReviewQueue', () => {
 
   describe('Card Actions', () => {
     it('should disable controls and prevent duplicate actions while a review is pending', async () => {
-      const mutation = Promise.withResolvers<number>();
+      const mutation = Promise.withResolvers<Card>();
       service.handle('rateCard', () => mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
@@ -252,7 +253,7 @@ describe('ReviewQueue', () => {
       expect(background.rateCard).toHaveBeenCalledWith(expect.any(Object));
       for (const control of controls) expect(control).toBeDisabled();
 
-      mutation.resolve(3);
+      mutation.resolve(createMockCardWithProblem(State.Review));
       await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
       });

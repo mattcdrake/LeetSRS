@@ -42,7 +42,10 @@ export function useRatingSession(openRequest: number) {
       void run(async () => {
         let scheduledDays: number | null = null;
         if (rating === undefined) await background.addCard(problem);
-        else scheduledDays = await background.rateCard({ ...problem, rating });
+        else {
+          const card = await background.rateCard({ ...problem, rating });
+          scheduledDays = card.fsrs.scheduled_days;
+        }
         setConfirmation({ request: openRequest, scheduledDays });
       });
     },

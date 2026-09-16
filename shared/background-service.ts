@@ -2,6 +2,7 @@ import { createProxyService, type ProxyServiceKey } from '@webext-core/proxy-ser
 import type { CatalogProblem } from '@/shared/catalog';
 import type { GistDestination, GithubAuthStatus } from '@/shared/github-auth';
 import type {
+  Card,
   GistConnectionResult,
   GistSetup,
   GistSyncStatus,
@@ -29,7 +30,7 @@ export interface BackgroundService {
   removeCard(frontendId: string): Promise<void>;
   delayCard(frontendId: string, days: number): Promise<void>;
   setPauseStatus(frontendId: string, paused: boolean): Promise<void>;
-  rateCard(input: RateCardInput): Promise<number>;
+  rateCard(input: RateCardInput): Promise<Card>;
   saveNote(frontendId: string, text: string): Promise<void>;
   updateSettings(changes: SettingsUpdate): Promise<void>;
   importData(jsonData: string): Promise<void>;
