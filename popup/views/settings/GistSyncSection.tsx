@@ -9,12 +9,11 @@ import {
   useGistSyncConfigQuery,
   useGistSyncStatusQuery,
   useGithubAuthQuery,
-  useSetGistSyncEnabledMutation,
-  useSetupGistSyncMutation,
 } from '@/popup/queries/gist-sync';
 import { useGithubPermissions } from '@/popup/queries/github-permissions';
 import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
+import type { GistSetup } from '@/shared/models';
 import { SettingsSwitch } from './SettingsSwitch';
 
 export function GistSyncSection({
@@ -38,8 +37,12 @@ export function GistSyncSection({
     queryFn: () => background.listGistDestinations(),
     enabled: permissions.granted === true && !!auth.data?.account && !auth.data.signingIn,
   });
-  const setup = useSetupGistSyncMutation();
-  const enable = useSetGistSyncEnabledMutation();
+  const connection = useMutation({
+    mutationFn: (change: GistSetup | { mode: 'toggle'; enabled: boolean }) =>
+      change.mode === 'toggle' ? background.setGistSyncEnabled(change.enabled) : background.setupGistSync(change),
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
+  });
   const [editing, setEditing] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const action = useMutation({
@@ -52,14 +55,12 @@ export function GistSyncSection({
     action.isPending ||
     permissions.request.isPending ||
     permissions.granted !== true ||
-    setup.isPending ||
-    enable.isPending ||
+    connection.isPending ||
     !!auth.data?.signingIn;
   const destination = selected ?? config?.gistId ?? destinations.data?.find((gist) => gist.suggested)?.id ?? '';
-  const result = setup.data ?? enable.data;
+  const result = connection.data;
   const save = () => {
-    enable.reset();
-    setup.mutate(destination === 'create' ? { mode: 'create' } : { mode: 'existing', gistId: destination }, {
+    connection.mutate(destination === 'create' ? { mode: 'create' } : { mode: 'existing', gistId: destination }, {
       onSuccess: (result) => {
         if (result.saved) {
           setEditing(false);
@@ -67,10 +68,6 @@ export function GistSyncSection({
         }
       },
     });
-  };
-  const toggle = (enabled: boolean) => {
-    setup.reset();
-    enable.mutate(enabled);
   };
   return (
     <section className="mb-4 text-primary text-xs space-y-4">
@@ -119,8 +116,7 @@ export function GistSyncSection({
               isDisabled={action.isPending}
               onPress={() => {
                 setSelected(null);
-                setup.reset();
-                enable.reset();
+                connection.reset();
                 setEditing(false);
                 action.mutate();
               }}
@@ -135,7 +131,7 @@ export function GistSyncSection({
                 label={t.syncEnabled}
                 isSelected={config.enabled}
                 isDisabled={busy}
-                onChange={toggle}
+                onChange={(enabled) => connection.mutate({ mode: 'toggle', enabled })}
               />
               <p className="-mt-1 pl-6 text-[11px] leading-4 text-secondary">
                 {t.lastSync}:{' '}
@@ -178,8 +174,7 @@ export function GistSyncSection({
                   isDisabled={busy}
                   onPress={() => {
                     setSelected(null);
-                    setup.reset();
-                    enable.reset();
+                    connection.reset();
                     setEditing(true);
                   }}
                 >
@@ -226,7 +221,11 @@ export function GistSyncSection({
                 isDisabled={busy || !destination}
                 onPress={() => void save()}
               >
-                {setup.isPending ? t.saving : config?.gistId ? t.save : t.connectAndSync}
+                {connection.isPending && connection.variables.mode !== 'toggle'
+                  ? t.saving
+                  : config?.gistId
+                    ? t.save
+                    : t.connectAndSync}
               </Button>
               {config?.gistId && (
                 <Button
@@ -235,7 +234,7 @@ export function GistSyncSection({
                   onPress={() => {
                     setEditing(false);
                     setSelected(null);
-                    setup.reset();
+                    connection.reset();
                   }}
                 >
                   {t.cancel}
@@ -288,7 +287,7 @@ export function GistSyncSection({
           <p>{t.signInFailed}</p>
         </div>
       )}
-      {(setup.isError || enable.isError) && <p role="alert">{t.saveFailed}</p>}
+      {connection.isError && <p role="alert">{t.saveFailed}</p>}
       {result && (
         <p role={result.saved ? 'status' : 'alert'}>
           {result.saved ? t.saved : `${t.saveFailed}: ${translations.syncNotices[result.error]}`}

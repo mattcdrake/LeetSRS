@@ -4,6 +4,7 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
 import { background } from '@/shared/background-service';
+import type { GistConnectionResult } from '@/shared/models';
 import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -46,6 +47,53 @@ beforeEach(async () => {
 function open() {
   return render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
 }
+
+it('replaces feedback when alternating a backup change and sync toggle', async () => {
+  service.resolve('setupGistSync', { saved: false, error: 'creationFailed' });
+  open();
+  const change = await screen.findByRole('button', { name: 'Change' });
+  await waitFor(() => expect(change).toBeEnabled());
+  fireEvent.click(change);
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('GitHub returned no ID for the created Gist');
+
+  fireEvent.click(screen.getByRole('switch'));
+  expect(await screen.findByRole('status')).toHaveTextContent('Connection saved');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox')).toHaveValue('create');
+
+  vi.mocked(background.setupGistSync).mockRejectedValueOnce(new Error('Background unavailable'));
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(/^Connection could not be saved$/);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.getByRole('combobox')).toHaveValue('create');
+});
+
+it('allows signing out while a connection is pending and ignores its late feedback', async () => {
+  const pending = Promise.withResolvers<GistConnectionResult>();
+  service.resolve('setupGistSync', pending.promise).handle('signOutGithub', async () => {
+    service.resolve('getGithubAuthStatus', { ...signedIn, account: null });
+    await storage.removeItem(STORAGE_KEYS.gistConnection);
+  });
+  open();
+  const change = await screen.findByRole('button', { name: 'Change' });
+  await waitFor(() => expect(change).toBeEnabled());
+  fireEvent.click(change);
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+  expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled();
+  expect(screen.getByRole('combobox')).toBeDisabled();
+  expect(screen.getByRole('switch')).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+  expect(await screen.findByRole('button', { name: 'Sign in with GitHub' })).toBeEnabled();
+  await act(async () => pending.resolve({ saved: false, error: 'connectionSaveFailed' }));
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+});
 
 it('shows cancellable sign-in progress without a stale error or duplicate sign-in button', async () => {
   service
