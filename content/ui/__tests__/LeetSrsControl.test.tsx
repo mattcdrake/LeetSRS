@@ -85,6 +85,8 @@ it('keeps persistence failures retryable and prevents saving twice while pending
     await release.promise;
     return service.rateCard(input);
   });
+  // The error can render before the effect clears the selected rating.
+  await waitFor(() => expect(good).toBeEnabled());
   fireEvent.click(good);
   fireEvent.click(good);
   fireEvent.keyDown(good, { key: '3' });
