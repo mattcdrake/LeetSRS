@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Grade } from 'ts-fsrs';
+import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import {
   useDelayCardMutation,
   usePauseCardMutation,
@@ -11,7 +12,7 @@ import type { RateCardInput } from '@/shared/models';
 import { LeetSRSLogo } from '../../components/LeetSRSLogo';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
-import { NotesSection } from './NotesSection';
+import { ExpandableSection } from './ExpandableSection';
 import { ReviewCard } from './ReviewCard';
 
 export function ReviewQueue() {
@@ -112,7 +113,9 @@ export function ReviewQueue() {
       {/* The key is important to ensure React re-mounts the component for a new card */}
       <ReviewCard key={currentCard.frontendId} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
       <div>
-        <NotesSection frontendId={currentCard.frontendId} isDisabled={isProcessing} />
+        <ExpandableSection title={t.notes.title} isDisabled={isProcessing}>
+          <NoteEditor frontendId={currentCard.frontendId} variant="regular" isDisabled={isProcessing} />
+        </ExpandableSection>
         <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
       </div>
     </div>
