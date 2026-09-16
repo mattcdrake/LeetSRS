@@ -82,10 +82,6 @@ Use Node.js 24 or newer and install dependencies with `npm install`.
 
 The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched. To reset it, close the development browser and delete that directory.
 
-## Docs
-
-See [AGENTS.md](AGENTS.md) for development checks and workflow rules, and [Architecture](docs/architecture.md) for system boundaries.
-
 ## License
 
 [MIT](LICENSE.md) · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
