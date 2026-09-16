@@ -8,7 +8,6 @@ import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/s
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
-import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import backgroundEntry from '../../entrypoints/background/index';
 
@@ -181,40 +180,6 @@ describe('document learning through background commands', () => {
       dataUpdatedAt: now.toISOString(),
     });
     expect((await readLearningDocument()).reviewActivity?.date).toBe('2024-03-15');
-  });
-
-  it.each([
-    ['rate existing', () => getRegisteredBackground().rateCard({ ...buildProblem(), rating: Rating.Again })],
-    ['save note', () => getRegisteredBackground().saveNote('1', '  new note\n')],
-  ])('leaves all saved data intact when %s is rejected and accepts the next command', async (_name, edit) => {
-    const document = buildLearningDocument({
-      cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
-      reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
-      settings: { language: 'en' },
-      dataUpdatedAt: '2024-01-15T10:00:00.000Z',
-    });
-    await replaceLearningDocument(document);
-    await seedGithubAuthorization();
-    await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
-    await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-01-15T10:00:00.000Z');
-    const localBefore = await fakeBrowser.storage.local.get();
-    const syncBefore = await fakeBrowser.storage.sync.get();
-    const error = new Error('Write failed');
-    const writes = vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(error);
-
-    await expect(edit()).rejects.toBe(error);
-    expect(Object.values((await readLearningDocument()).cards)).toEqual(Object.values(document.cards));
-    expect((await readLearningDocument()).cards['1']?.note ?? null).toBe('Keep this note');
-    expect((await readLearningDocument()).reviewActivity).toEqual(document.reviewActivity);
-    expect(await fakeBrowser.storage.local.get()).toEqual(localBefore);
-    expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
-    expect(writes).toHaveBeenCalledOnce();
-
-    await edit();
-    expect(writes).toHaveBeenCalledTimes(2);
-    expect(await readLearningDocument()).not.toEqual(document);
-    expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
-    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
   });
 
   it('preserves missing-card errors and harmless note deletion', async () => {

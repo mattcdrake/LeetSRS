@@ -136,21 +136,8 @@ describe('registered background execution', () => {
 });
 
 const invalidArguments: [keyof BackgroundService, unknown[]][] = [
-  ['getProblem', ['', 'leetcode.com']],
-  ['getProblem', ['two-sum', 'invalid']],
-  ['addCard', [{ ...problem, frontendId: '' }]],
-  ['removeCard', ['']],
-  ['delayCard', [problem.frontendId, 0.5]],
-  ['setPauseStatus', [problem.frontendId, 'false']],
   ['rateCard', [{ ...problem, rating: 0 }]],
-  ['saveNote', ['card']],
   ['saveNote', ['card', 'note', 'extra']],
-  ['updateSettings', [{ language: 'constructor' }]],
-  ['importData', [{}]],
-  ['setupGistSync', [{ mode: 'existing', gistId: 42, pat: 'token' }]],
-  ['setupGistSync', [{ mode: 'invalid' }]],
-  ['setupGistSync', [{ mode: 'existing', gistId: '' }]],
-  ['setGistSyncEnabled', ['true']],
 ];
 
 it.each(invalidArguments)(

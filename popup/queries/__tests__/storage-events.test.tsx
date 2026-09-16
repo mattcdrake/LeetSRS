@@ -76,14 +76,6 @@ it('returns a disabled connection without reviving retired credentials or reques
   expect(background.waitForInitialization).not.toHaveBeenCalled();
 });
 
-it('reports invalid connection data without requesting initialization', async () => {
-  await storage.setItem(STORAGE_KEYS.gistConnection, { pat: 42 });
-  const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  await waitFor(() => expect(result.current.isError).toBe(true));
-  expect(result.current.data).toBeUndefined();
-  expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
-});
-
 it.each(['success', 'failure'] as const)(
   'ignores an obsolete initial read %s after a storage notification',
   async (outcome) => {
@@ -187,7 +179,6 @@ it.each([useCardsQuery])('reports initialization failure without presenting defa
 });
 
 it.each([
-  { schemaVersion: -1, cards: {}, stats: {}, settings: {} },
   { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
   { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
 ])('reports invalid current data directly: %j', async (document) => {

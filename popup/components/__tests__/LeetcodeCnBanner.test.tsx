@@ -113,6 +113,7 @@ describe('LeetcodeCnBanner', () => {
   it.each([
     { context: 'a leetcode.com tab', tabs: [tabWithUrl('https://leetcode.com/problems/two-sum/')] },
     { context: 'no active tab', tabs: [] },
+    { context: 'a lookalike domain', tabs: [tabWithUrl('https://leetcode.cn.example.com/')] },
   ])('is hidden for $context', async ({ tabs }) => {
     mockQuery.mockResolvedValue(tabs);
 

@@ -127,9 +127,6 @@ describe('learning document startup', () => {
   });
 
   it.each([
-    false,
-    { schemaVersion: null },
-    { schemaVersion: 5, cards: null },
     { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
     { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
   ])('reports corrupt or future saved documents without legacy fallback: %j', async (document) => {

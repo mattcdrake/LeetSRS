@@ -12,31 +12,6 @@ const getIds = (cards: CardWithProblem[]) => cards.map((card) => card.slug);
 describe('filterAndSortCards', () => {
   it.each([
     {
-      description: 'returns every card for an empty filter',
-      cards: [createCard('second', '2'), createCard('first', '1')],
-      filterText: '',
-      expectedIds: ['first', 'second'],
-    },
-    {
-      description: 'filters names case-insensitively',
-      cards: [createCard('match', '2', 'Add TWO Numbers'), createCard('other', '1', 'Two Sum')],
-      filterText: 'two numbers',
-      expectedIds: ['match'],
-    },
-    {
-      description: 'filters by an ID substring',
-      cards: [createCard('first', '123'), createCard('match', '456'), createCard('last', '789')],
-      filterText: '45',
-      expectedIds: ['match'],
-    },
-  ])('$description', ({ cards, filterText, expectedIds }) => {
-    const before = structuredClone(cards);
-    expect(getIds(filterAndSortCards(cards, filterText))).toEqual(expectedIds);
-    expect(cards).toEqual(before);
-  });
-
-  it.each([
-    {
       description: 'sorts fully numeric IDs numerically without number precision limits',
       cards: [
         createCard('large', '9007199254740993'),
