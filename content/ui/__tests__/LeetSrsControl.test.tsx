@@ -40,8 +40,7 @@ it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated press
   fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
   const good = await screen.findByRole('button', { name: 'Good' });
   await waitFor(() => expect(good).toBeEnabled());
-  const dialog = screen.getByRole('dialog');
-  fireEvent.keyDown(dialog, { key: String(key), repeat: true });
+  fireEvent.keyDown(good, { key: String(key), repeat: true });
   expect((await readLearningDocument()).cards).toEqual({});
   fireEvent.keyDown(good, { key: String(key) });
   fireEvent.keyDown(good, { key: String(key) });
