@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { LearningDocument } from '@/shared/models';
 
-export const SUPPORTED_LANGUAGES = ['en', 'zh-CN'] as const;
+const SUPPORTED_LANGUAGES = ['en', 'zh-CN'] as const;
 
 export const languageSchema = z.enum(SUPPORTED_LANGUAGES, {
   error: (issue) =>
@@ -11,7 +11,7 @@ export type Language = z.infer<typeof languageSchema>;
 
 const DEFAULT_LANGUAGE: Language = 'en';
 
-export function selectLanguage(browserLanguages: readonly string[]): Language {
+function selectLanguage(browserLanguages: readonly string[]): Language {
   for (const browserLanguage of browserLanguages) {
     const exactMatch = getSupportedLanguage(browserLanguage);
     if (exactMatch) return exactMatch;
@@ -27,7 +27,7 @@ export function selectLanguage(browserLanguages: readonly string[]): Language {
   return DEFAULT_LANGUAGE;
 }
 
-export function getSupportedLanguage(language: unknown): Language | undefined {
+function getSupportedLanguage(language: unknown): Language | undefined {
   return languageSchema.safeParse(language).data;
 }
 
@@ -63,9 +63,9 @@ export const DEFAULT_SETTINGS = {
   resetEditorOnReviewQueue: false,
 } satisfies Omit<Settings, 'language'>;
 
-export const SETTING_KEYS = settingsSchema.keyof().options;
+const SETTING_KEYS = settingsSchema.keyof().options;
 
-export function resolveSettings(overrides: Partial<Settings>, fallbackLanguage: Language): Settings {
+function resolveSettings(overrides: Partial<Settings>, fallbackLanguage: Language): Settings {
   const entries = SETTING_KEYS.map((key) => [
     key,
     overrides[key] ?? (key === 'language' ? fallbackLanguage : DEFAULT_SETTINGS[key]),

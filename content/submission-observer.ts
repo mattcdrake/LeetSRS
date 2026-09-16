@@ -1,7 +1,7 @@
 import { getCurrentProblemSlug } from './page-context';
 
 export const ACCEPTED_SUBMISSION_MESSAGE = 'leetsrs:accepted-submission';
-export interface AcceptedSubmission {
+interface AcceptedSubmission {
   slug: string;
   submissionId: string;
 }

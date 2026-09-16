@@ -22,7 +22,7 @@ export const problemReferenceSchema = z.object({
 });
 export type ProblemReference = z.infer<typeof problemReferenceSchema>;
 
-export const fsrsCardSchema = z.object({
+const fsrsCardSchema = z.object({
   due: epochMilliseconds,
   last_review: epochMilliseconds.optional(),
   state: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
@@ -50,7 +50,6 @@ export const cardSchema = problemReferenceSchema
 export type LeetcodeDomain = z.infer<typeof leetcodeDomainSchema>;
 export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratingSchema });
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
-export type FsrsCard = z.infer<typeof fsrsCardSchema>;
 export type Card = z.infer<typeof cardSchema>;
 export const LEARNING_DOCUMENT_VERSION = 11;
 
@@ -131,7 +130,6 @@ export type GistConnectionResult = { saved: true } | { saved: false; error: Gist
 
 export interface GistSyncStatus {
   lastSyncTime: string | null;
-  lastSyncDirection: 'push' | 'pull' | null;
   syncInProgress: boolean;
   lastError: GistSyncErrorCode | null;
 }

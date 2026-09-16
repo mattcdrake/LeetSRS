@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import type { Theme } from '@/shared/settings';
 import { useSettingsQuery } from '../queries/settings';
 
-export type ResolvedTheme = Exclude<Theme, 'system'>;
+type ResolvedTheme = Exclude<Theme, 'system'>;
 
-export function resolveTheme(theme: Theme, prefersDark: boolean): ResolvedTheme {
+function resolveTheme(theme: Theme, prefersDark: boolean): ResolvedTheme {
   return theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
 }
 

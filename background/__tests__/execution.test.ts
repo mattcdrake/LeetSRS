@@ -61,7 +61,6 @@ describe('registered background execution', () => {
     expect(rpc).not.toHaveBeenCalled();
     expect(await getRegisteredBackground().getGistSyncStatus()).toEqual({
       lastSyncTime: null,
-      lastSyncDirection: null,
       syncInProgress: false,
       lastError: null,
     });

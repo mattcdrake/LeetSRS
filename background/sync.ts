@@ -144,7 +144,6 @@ async function syncDocument(config: GistSyncConfig & { gistId: string }, startGe
   const local = await readLearningDocument();
   if (generation !== startGeneration) return;
 
-  let direction: 'push' | 'pull' | undefined;
   if (
     !remote?.dataUpdatedAt ||
     (local.dataUpdatedAt && Date.parse(local.dataUpdatedAt) > Date.parse(remote.dataUpdatedAt))
@@ -153,15 +152,13 @@ async function syncDocument(config: GistSyncConfig & { gistId: string }, startGe
       gist_id: config.gistId,
       files: { [GIST_FILENAME]: { content: JSON.stringify(local, null, 2) } },
     });
-    direction = 'push';
   } else if (!local.dataUpdatedAt || Date.parse(local.dataUpdatedAt) < Date.parse(remote.dataUpdatedAt)) {
     await replaceLearningDocument(remote);
-    direction = 'pull';
   }
   if (generation !== startGeneration) return;
 
   const timestamp = new Date().toISOString();
-  await writeSyncStatus({ lastSyncTime: timestamp, lastSyncDirection: direction });
+  await writeSyncStatus({ lastSyncTime: timestamp });
 }
 
 function canSync(config: GistSyncConfig): config is GistSyncConfig & { gistId: string } {

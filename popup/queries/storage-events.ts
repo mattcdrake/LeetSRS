@@ -27,7 +27,6 @@ export function useStorageQueryEvents() {
       watch('local:leetsrs:githubAuthorization', [gistSyncQueryKeys.auth]),
       watch('local:leetsrs:githubSetupPending', [gistSyncQueryKeys.auth]),
       watch(STORAGE_KEYS.lastSyncTime, [gistSyncQueryKeys.status]),
-      watch(STORAGE_KEYS.lastSyncDirection, [gistSyncQueryKeys.status]),
     ];
     // Catch changes made before this effect, including while a cached popup was unmounted.
     void refresh([...learningKeys, ...connectionKeys]);

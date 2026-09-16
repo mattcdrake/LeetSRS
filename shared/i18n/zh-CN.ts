@@ -149,7 +149,6 @@ const zhCN: Translations = {
     },
 
     leetcodeCn: {
-      title: '力扣中国',
       description: '启用 leetcode.cn（力扣）支持。需要额外的浏览器权限。',
       enable: '启用',
     },
@@ -197,22 +196,17 @@ const zhCN: Translations = {
       lastSync: '上次同步',
       lastSyncNever: '从未',
       syncFailed: '同步失败',
-      edit: '编辑',
       cancel: '取消',
-      latestEditNotice: '整个数据集以最新编辑为准。其他浏览器上的同时更改可能会丢失。',
-      howSyncWorks: '同步原理',
       syncDetails: 'LeetSRS 比较完整数据集的编辑时间，并用较新的数据替换较旧的数据。不会逐张卡片合并。',
       openGist: '打开备份 Gist',
       open: '打开',
       change: '更改',
       destination: '备份 Gist',
       syncInfo: '同步方式',
-      existingGist: '使用现有 Gist',
       save: '保存',
       saving: '正在保存…',
       saved: '连接已保存',
       saveFailed: '无法保存连接',
-      configFailed: '无法加载已保存的连接',
     },
 
     about: {
