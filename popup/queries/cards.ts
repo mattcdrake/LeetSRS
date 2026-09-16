@@ -1,11 +1,4 @@
-import {
-  QueryObserver,
-  queryOptions,
-  type UseQueryResult,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { Card, LearningDocument, ProblemReference, RateCardInput } from '@/shared/models';
@@ -16,13 +9,14 @@ import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learni
 export type CardWithProblem = Card & CatalogProblem;
 
 // Catalog data is independent of learning-document edits and keyed only by references.
-export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
+function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
   const references = cards
     .map(({ frontendId, domain }) => ({ frontendId, domain }))
     .sort((a, b) => a.frontendId.localeCompare(b.frontendId) || a.domain.localeCompare(b.domain));
   return queryOptions({
     queryKey: ['popupCardMetadata', references] as const,
     staleTime: Infinity,
+    gcTime: Infinity,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     queryFn: async () => {
@@ -37,62 +31,40 @@ export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
   });
 }
 
+export const cardsQueryKey = [...learningDocumentQueryKey, 'cards'] as const;
+
 function useEnrichedCards(selectCards: (document: LearningDocument) => Card[]) {
   const queryClient = useQueryClient();
-  const document = useQuery(learningDocumentQueryOptions);
-  const options = (data: LearningDocument | undefined) => ({
-    ...cardMetadataQueryOptions(Object.values(data?.cards ?? {})),
-    enabled: data !== undefined,
-    // Removing cards can reuse the previous batch while the smaller batch loads.
-    // Keep existing card components mounted so open editors retain their state.
-    placeholderData: (previous: CatalogProblem[] | undefined) =>
-      data &&
-      Object.values(data.cards).every((card) =>
-        previous?.some((problem) => problem.frontendId === card.frontendId && problem.sources.includes(card.domain))
-      )
-        ? previous
-        : undefined,
-    select: (problems: CatalogProblem[]): CardWithProblem[] => {
-      if (!data) return [];
+  // Subscribe to the canonical document; the cards query owns its refresh lifecycle.
+  const { data: document } = useQuery({ ...learningDocumentQueryOptions, enabled: false });
+  const query = useQuery({
+    queryKey: cardsQueryKey,
+    // A document refresh must rerun selectors even when catalog details are unchanged.
+    structuralSharing: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    queryFn: async () => {
+      const current = await queryClient.fetchQuery({ ...learningDocumentQueryOptions, staleTime: Infinity });
+      return [...(await queryClient.fetchQuery(cardMetadataQueryOptions(Object.values(current.cards))))];
+    },
+    select: (problems): CardWithProblem[] => {
+      const current = queryClient.getQueryData(learningDocumentQueryOptions.queryKey) ?? document;
+      if (!current) return [];
       const byId = new Map(problems.map((problem) => [problem.frontendId, problem]));
-      return selectCards(data).map((card) => {
+      return selectCards(current).map((card) => {
         const problem = byId.get(card.frontendId);
         if (!problem) throw new Error(`Missing problem details: ${card.frontendId}`);
         return { ...problem, ...card };
       });
     },
   });
-  const metadata = useQuery(options(document.data));
-  const combine = (learning: typeof document, catalog: typeof metadata): UseQueryResult<CardWithProblem[], Error> => {
-    if (learning.isPending) return { ...learning, data: undefined, refetch };
-    if (learning.isError) {
-      if (catalog.data !== undefined) {
-        return { ...learning, data: catalog.data, isLoadingError: false, isRefetchError: true, refetch };
-      }
-      return { ...learning, data: undefined, isLoadingError: true, isRefetchError: false, refetch };
-    }
-    return {
-      ...catalog,
-      fetchStatus: learning.isFetching ? learning.fetchStatus : catalog.fetchStatus,
-      isFetching: learning.isFetching || catalog.isFetching,
-      isRefetching: learning.isRefetching || catalog.isRefetching,
-      refetch,
-    };
+  return {
+    ...query,
+    refetch: (options?: Parameters<typeof query.refetch>[0]) => {
+      void queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey, exact: true, refetchType: 'none' });
+      return query.refetch(options);
+    },
   };
-  const refetch: typeof metadata.refetch = async (refetchOptions) => {
-    const learning = await document.refetch(refetchOptions);
-    if (!learning.isSuccess) return combine(learning, metadata);
-    const nextOptions = options(learning.data);
-    // Read the new references even when refetch changes the query key before React renders.
-    const observer = new QueryObserver(queryClient, nextOptions);
-    try {
-      await queryClient.fetchQuery({ ...nextOptions, staleTime: 0 });
-    } catch (error) {
-      if (refetchOptions?.throwOnError) throw error;
-    }
-    return combine(learning, observer.getOptimisticResult(queryClient.defaultQueryOptions(nextOptions)));
-  };
-  return combine(document, metadata);
 }
 
 export function useCardsQuery() {
@@ -108,15 +80,7 @@ function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Prom
   const queryClient = useQueryClient();
   return useMutation<void, Error, TVariables>({
     mutationFn,
-    onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey });
-      const document = queryClient.getQueryData(learningDocumentQueryOptions.queryKey);
-      const observingCards = queryClient.getQueryCache().findAll({ queryKey: ['popupCardMetadata'], type: 'active' });
-      if (document && observingCards.length > 0) {
-        // Mutation completion includes enrichment, while refresh failures remain query errors.
-        await queryClient.prefetchQuery(cardMetadataQueryOptions(Object.values(document.cards)));
-      }
-    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey }),
   });
 }
 

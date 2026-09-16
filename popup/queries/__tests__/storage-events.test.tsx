@@ -22,7 +22,7 @@ import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
-import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
+import { createPopupTestWrapper, createTestQueryClient, createTestWrapper } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery } from '../gist-sync';
 import { useNoteQuery } from '../notes';
@@ -359,19 +359,26 @@ it('loads settings inside Suspense alongside the root storage observer', async (
 
 beforeEach(initializeCatalog);
 
-it.each([
-  { frontendId: '2', domain: 'leetcode.com' as const },
-  { frontendId: '1', domain: 'leetcode.cn' as const },
-])('refreshes metadata when a stored reference changes to $frontendId on $domain', async (reference) => {
+it.each(
+  [
+    { frontendId: '2', domain: 'leetcode.com' as const },
+    { frontendId: '1', domain: 'leetcode.cn' as const },
+  ].flatMap((reference) => ['storage', 'refetch'].map((refresh) => ({ reference, refresh })))
+)('refreshes changed references via $refresh: $reference', async ({ reference, refresh }) => {
   const first = createMockCard(State.New);
   await replaceLearningDocument(buildLearningDocument({ cards: { 1: first } }));
   const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
   const view = renderHook(() => ({ cards: useCardsQuery(), queue: useReviewQueueQuery() }), {
-    wrapper: createPopupTestWrapper().wrapper,
+    wrapper: (refresh === 'storage' ? createPopupTestWrapper() : createTestWrapper()).wrapper,
   });
   await waitFor(() => expect(view.result.current.cards.isSuccess).toBe(true));
   const changed = createMockCard(State.New, reference);
-  await act(() => replaceLearningDocument(buildLearningDocument({ cards: { [changed.frontendId]: changed } })));
+  await act(async () => {
+    await replaceLearningDocument(buildLearningDocument({ cards: { [changed.frontendId]: changed } }));
+    if (refresh === 'refetch') {
+      expect((await view.result.current.cards.refetch()).data).toMatchObject([reference]);
+    }
+  });
   await waitFor(() => expect(view.result.current.cards.data).toMatchObject([reference]));
   expect(view.result.current.queue.data).toMatchObject([reference]);
   expect(lookups).toHaveBeenCalledTimes(2);
