@@ -51,7 +51,7 @@ Paths below are relative to the repository. A narrower contract is explicitly id
 
 - Baseline: 421/421 cases passed across 52 files.
 - Focused workflows and migration suites passed during implementation. The six new workflow cases also passed 10 consecutive runs (60 expanded executions) after correcting an import-test refresh-order assumption.
-- Final `npm run check`: formatting, Markdown, TypeScript, and 303/303 cases across 46 files passed.
+- Final `TZ=UTC npm run check` (matching CI; DST workflows explicitly select and restore `America/Los_Angeles`): formatting, Markdown, TypeScript, and 303/303 cases across 46 files passed.
 
 ## Original PR pass (historical)
 

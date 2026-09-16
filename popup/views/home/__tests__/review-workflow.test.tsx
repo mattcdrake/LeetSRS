@@ -21,6 +21,7 @@ vi.mock('@/shared/background-service');
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
+  vi.stubEnv('TZ', 'America/Los_Angeles');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2024-03-15T12:00:00'));
   backgroundEntry.main();
@@ -29,7 +30,10 @@ beforeEach(async () => {
   await background.addCard(buildProblem({ frontendId: '2' }));
 });
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+});
 
 const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
 
