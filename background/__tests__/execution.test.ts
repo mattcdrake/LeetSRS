@@ -74,9 +74,6 @@ describe('registered background execution', () => {
     await fakeBrowser.storage.local.set(staleLocal);
     vi.mocked(registerService).mockClear();
     backgroundEntry.main();
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-    expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBeNull();
-    expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(empty);
   });
   it.each(['document', 'connection cleanup'] as const)(

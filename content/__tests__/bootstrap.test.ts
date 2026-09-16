@@ -73,7 +73,7 @@ describe('content startup', () => {
     expect(vi.getTimerCount()).toBe(baselineTimers);
   });
 
-  it('mounts a late toolbar and avoids duplicates on later mutations', async () => {
+  it('mounts late and replaced toolbars without duplicates and unmounts when they disappear', async () => {
     document.body.innerHTML = '';
     await act(() => bootstrapContent(ctx));
     expect(document.querySelector('#leetsrs-control')).toBeNull();
@@ -86,10 +86,8 @@ describe('content startup', () => {
     document.querySelector('#leetsrs-control')?.remove();
     act(() => notifyMutation());
     expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
-  });
 
-  it('replaces the tracked mount when the old toolbar stays connected', async () => {
-    await act(() => bootstrapContent(ctx));
+    unwatchTranslations.mockClear();
     const oldToolbar = requireDefined(document.querySelector('#ide-top-btns'));
     oldToolbar.removeAttribute('id');
     document.body.insertAdjacentHTML('beforeend', '<div id="ide-top-btns"><div id="last-group"></div></div>');
@@ -102,17 +100,14 @@ describe('content startup', () => {
     expect(document.querySelectorAll('#leetsrs-control')).toHaveLength(1);
     expect(document.querySelector('#ide-top-btns #leetsrs-control')).not.toBeNull();
     expect(unwatchTranslations).toHaveBeenCalledOnce();
-  });
 
-  it('unmounts when the toolbar disappears', async () => {
-    await act(() => bootstrapContent(ctx));
     const toolbar = requireDefined(document.querySelector('#ide-top-btns'));
     toolbar.remove();
 
     act(() => notifyMutation());
 
     expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
-    expect(unwatchTranslations).toHaveBeenCalledOnce();
+    expect(unwatchTranslations).toHaveBeenCalledTimes(2);
   });
 });
 

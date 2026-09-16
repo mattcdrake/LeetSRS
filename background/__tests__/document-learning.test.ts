@@ -29,19 +29,8 @@ describe('document learning through background commands', () => {
     vi.restoreAllMocks();
   });
 
-  it('previews the actual schedule for new and existing cards', async () => {
-    const service = getRegisteredBackground();
-    for (const reps of [1, 2]) {
-      const preview = await service.previewRatings(buildProblem());
-      const ratedCard = await service.rateCard({ ...buildProblem(), rating: Rating.Good });
-      const card = requireDefined((await readLearningDocument()).cards['1']);
-      expect(ratedCard).toEqual(card);
-      expect(card.fsrs.scheduled_days).toBe(preview[Rating.Good]);
-      expect(card.fsrs.reps).toBe(reps);
-    }
-  });
-
   it('publishes a complete review only after the document replacement succeeds', async () => {
+    const preview = await getRegisteredBackground().previewRatings(buildProblem());
     const before = await readLearningDocument();
     const started = Promise.withResolvers<void>();
     const release = Promise.withResolvers<void>();
@@ -57,8 +46,6 @@ describe('document learning through background commands', () => {
     await started.promise;
 
     expect(settled).not.toHaveBeenCalled();
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-    expect((await readLearningDocument()).reviewActivity).toBeNull();
     expect(await readLearningDocument()).toEqual(before);
     release.resolve();
     const card = await pending;
@@ -70,8 +57,8 @@ describe('document learning through background commands', () => {
       last_review: Date.now(),
       reps: 1,
       state: State.Review,
+      scheduled_days: preview[Rating.Good],
     });
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([card]);
     const stats = (await readLearningDocument()).reviewActivity;
     expect(stats).toEqual({
       newCards: 1,
@@ -151,7 +138,6 @@ describe('document learning through background commands', () => {
       reviewActivity: { date: '2024-03-15', newCards: 1 },
       dataUpdatedAt: now.toISOString(),
     });
-    expect((await readLearningDocument()).reviewActivity?.date).toBe('2024-03-15');
   });
 
   it('preserves missing-card errors and harmless note deletion', async () => {
@@ -170,36 +156,27 @@ describe('document learning through background commands', () => {
     expect(writes).not.toHaveBeenCalled();
   });
 
-  it('preserves repeated scheduling and daily activity', async () => {
+  it('previews and persists repeated scheduling without losing card identity or daily activity', async () => {
     await getRegisteredBackground().addCard(buildProblem());
     const card = requireDefined((await readLearningDocument()).cards['1']);
     await getRegisteredBackground().saveNote(card.frontendId, '  retained\n');
-    await getRegisteredBackground().rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating: Rating.Good });
-    const first = requireDefined((await readLearningDocument()).cards[card.frontendId]);
-    expect(first).toMatchObject({
-      frontendId: card.frontendId,
-      domain: card.domain,
-      createdAt: card.createdAt,
-      note: '  retained\n',
-    });
-    expect(first.fsrs.reps).toBe(1);
-    expect(first.fsrs.last_review).toBe(card.createdAt);
-    expect(first.fsrs.state).toBe(State.Review);
-    expect(first.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-    expect(first.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-    // Another attempt on the same review day counts as a reviewed card.
-    await getRegisteredBackground().rateCard({ ...buildProblem(), rating: Rating.Good });
-    const second = requireDefined((await readLearningDocument()).cards[card.frontendId]);
-    expect(second.fsrs.reps).toBe(2);
-    expect(second.fsrs.state).toBe(State.Review);
-    expect(second.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-    expect(second.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([second]);
-    expect((await readLearningDocument()).reviewActivity).toEqual({
-      streak: 1,
-      newCards: 1,
-      date: '2024-03-15',
-    });
+    for (const [index, domain] of (['leetcode.cn', 'leetcode.com'] as const).entries()) {
+      const problem = buildProblem({ domain });
+      const preview = await getRegisteredBackground().previewRatings(problem);
+      const rated = await getRegisteredBackground().rateCard({ ...problem, rating: Rating.Good });
+      expect(rated).toMatchObject({
+        frontendId: card.frontendId,
+        domain: card.domain,
+        createdAt: card.createdAt,
+        note: '  retained\n',
+        fsrs: { reps: index + 1, last_review: card.createdAt, state: State.Review },
+      });
+      expect(rated.fsrs.scheduled_days).toBe(preview[Rating.Good]);
+      expect(rated.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
+      expect(rated.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+      expect(Object.values((await readLearningDocument()).cards)).toEqual([rated]);
+      expect((await readLearningDocument()).reviewActivity).toEqual({ streak: 1, newCards: 1, date: '2024-03-15' });
+    }
   });
 
   it.each([
@@ -217,7 +194,6 @@ describe('document learning through background commands', () => {
       existing.fsrs.learning_steps = state === State.Review ? 0 : 1;
       const document = await readLearningDocument();
       await replaceLearningDocument({ ...document, cards: { [existing.frontendId]: existing } });
-      expect((await readLearningDocument()).cards[existing.frontendId]).toEqual(existing);
     }
 
     await getRegisteredBackground().rateCard({ ...problem, rating });
@@ -231,7 +207,6 @@ describe('document learning through background commands', () => {
     });
     expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
     expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-    expect((await readLearningDocument()).cards[card.frontendId]).toEqual(card);
     if (existing) {
       expect(card).toMatchObject({
         frontendId: existing.frontendId,

@@ -50,9 +50,10 @@ it('Escape restores focus without saving or disabling auto-open, and the hint ap
   expect(screen.queryByText('Opens after you solve a problem.')).not.toBeInTheDocument();
 });
 
-it('keeps persistence failures retryable and prevents saving twice while pending', async () => {
+it('retries failed saves once, retaining pending work and confirmation across panel dismissal', async () => {
   render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
+  fireEvent.click(trigger);
   const good = await screen.findByRole('button', { name: 'Good' });
   await screen.findByText('Opens after you solve a problem.');
   vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
@@ -70,23 +71,6 @@ it('keeps persistence failures retryable and prevents saving twice while pending
   fireEvent.click(good);
   fireEvent.click(good);
   fireEvent.keyDown(good, { key: '3' });
-  await act(async () => release.resolve());
-  await screen.findByRole('status');
-  expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
-});
-
-it('retains a save in progress and its confirmation when the panel closes and reopens', async () => {
-  const release = Promise.withResolvers<void>();
-  const service = createBackgroundService(Promise.resolve());
-  vi.mocked(background.rateCard).mockImplementation(async (input) => {
-    await release.promise;
-    return service.rateCard(input);
-  });
-  render(<LeetSrsControl />);
-  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
-  fireEvent.click(trigger);
-  await screen.findByText('Opens after you solve a problem.');
-  fireEvent.click(screen.getByRole('button', { name: 'Good' }));
   fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
   fireEvent.click(trigger);
   await act(async () => release.resolve());

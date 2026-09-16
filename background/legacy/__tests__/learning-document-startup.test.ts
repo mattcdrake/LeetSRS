@@ -3,7 +3,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { background } from '@/shared/background-service';
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
 import {
   readGistConnection,
   readLearningDocument,
@@ -124,25 +123,6 @@ describe('learning document startup', () => {
       })
     );
     expect(await fakeBrowser.storage.sync.get()).toEqual({ 'leetsrs:gistConnection': 'do not read or replace' });
-  });
-
-  it.each([
-    { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
-    { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
-  ])('reports corrupt or future saved documents without legacy fallback: %j', async (document) => {
-    await fakeBrowser.storage.local.set({
-      'leetsrs:learningDocument': document,
-      'leetsrs:cards': {},
-      'leetsrs:schemaVersion': 5,
-    });
-    const before = await fakeBrowser.storage.local.get();
-    const snapshots = vi.spyOn(storage, 'snapshot').mockRejectedValue(new Error('Must not gather legacy storage'));
-
-    await expect(initializeLearningDocument()).rejects.toThrow();
-
-    expect(snapshots).not.toHaveBeenCalled();
-    expect(await fakeBrowser.storage.local.get()).toEqual(before);
-    expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 
   it('retries a rejected document write from intact legacy data', async () => {

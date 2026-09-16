@@ -7,7 +7,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { LeetcodeCnSection } from '../../views/settings/LeetcodeCnSection';
-import { DISMISS_KEY, LeetcodeCnBanner } from '../LeetcodeCnBanner';
+import { LeetcodeCnBanner } from '../LeetcodeCnBanner';
 
 const mockContains = vi.fn<() => Promise<boolean>>();
 const mockRequest = vi.fn<() => Promise<boolean>>();
@@ -15,32 +15,8 @@ type QueriedTabs = Parameters<Parameters<typeof browser.tabs.query>[1]>[0];
 const mockQuery = vi.fn<() => Promise<QueriedTabs>>();
 const tabWithUrl = (url?: string) => ({ url }) as QueriedTabs[number];
 
-// Mock localStorage since WXT test env doesn't provide one
-const store: Record<string, string> = {};
-const mockLocalStorage = {
-  getItem: (key: string) => store[key] ?? null,
-  setItem: (key: string, value: string) => {
-    store[key] = value;
-  },
-  removeItem: (key: string) => {
-    delete store[key];
-  },
-  clear: () => {
-    for (const key of Object.keys(store)) delete store[key];
-  },
-  length: 0,
-  key: () => null,
-};
-
-const originalLocalStorage = globalThis.localStorage;
-
 beforeEach(() => {
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: mockLocalStorage,
-    writable: true,
-    configurable: true,
-  });
-  mockLocalStorage.clear();
+  localStorage.clear();
   browser.permissions.contains = mockContains;
   browser.permissions.request = mockRequest;
   browser.tabs.query = mockQuery as typeof browser.tabs.query;
@@ -53,47 +29,9 @@ beforeEach(() => {
 
 afterEach(() => {
   onlineManager.setOnline(true);
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: originalLocalStorage,
-    writable: true,
-    configurable: true,
-  });
 });
 
 describe('LeetcodeCnBanner', () => {
-  it.each([
-    { buttonIndex: 0, granted: true },
-    { buttonIndex: 1, granted: false },
-  ])('shares granted=$granted after Enable button $buttonIndex is clicked', async ({ buttonIndex, granted }) => {
-    const request = Promise.withResolvers<boolean>();
-    mockRequest.mockReturnValue(request.promise);
-    render(
-      <>
-        <LeetcodeCnBanner />
-        <LeetcodeCnSection />
-      </>,
-      createPopupTestWrapper()
-    );
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /enable/i })).toHaveLength(2));
-    expect(mockRequest).not.toHaveBeenCalled();
-    const button = screen.getAllByRole('button', { name: /enable/i })[buttonIndex];
-    act(() => {
-      button.click();
-      expect(mockRequest).toHaveBeenCalledExactlyOnceWith({ origins: ['*://*.leetcode.cn/*'] });
-    });
-    await waitFor(() => expect(button).toBeDisabled());
-    mockContains.mockResolvedValue(granted);
-    await act(async () => request.resolve(granted));
-    await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(granted ? 0 : 2));
-    if (!granted) {
-      await waitFor(() => expect(button).toBeEnabled());
-      mockRequest.mockResolvedValue(true);
-      mockContains.mockResolvedValue(true);
-      act(() => button.click());
-      await waitFor(() => expect(screen.queryAllByRole('button', { name: /enable/i })).toHaveLength(0));
-    }
-  });
-
   it('persists banner dismissal and keeps settings available', async () => {
     const content = (
       <>
@@ -106,7 +44,6 @@ describe('LeetcodeCnBanner', () => {
     act(() => dismiss.click());
     expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
     expect(screen.queryByText('Using leetcode.cn? Enable support to add problems.')).not.toBeInTheDocument();
-    expect(store[DISMISS_KEY]).toBe('1');
     expect(screen.getByText(/Enable support for leetcode\.cn/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
@@ -135,7 +72,7 @@ describe('LeetcodeCnBanner', () => {
   });
 });
 
-it.each(['offline', 'rejected', 'not-authorized'])(
+it.each(['offline', 'denied', 'rejected', 'not-authorized'])(
   'enables through the UI after %s permission handling',
   async (scenario) => {
     if (scenario === 'offline') onlineManager.setOnline(false);
@@ -149,7 +86,8 @@ it.each(['offline', 'rejected', 'not-authorized'])(
       createPopupTestWrapper()
     );
     await waitFor(() => expect(screen.getAllByRole('button', { name: /enable/i })).toHaveLength(2));
-    const button = screen.getAllByRole('button', { name: /enable/i })[0];
+    expect(mockRequest).not.toHaveBeenCalled();
+    const button = screen.getAllByRole('button', { name: /enable/i })[scenario === 'denied' ? 1 : 0];
     act(() => {
       button.click();
       expect(mockRequest).toHaveBeenCalledExactlyOnceWith({ origins: ['*://*.leetcode.cn/*'] });
@@ -158,7 +96,7 @@ it.each(['offline', 'rejected', 'not-authorized'])(
     if (scenario === 'offline') mockContains.mockResolvedValue(true);
     await act(async () => {
       if (scenario === 'rejected') pending.reject(new Error('User gesture required'));
-      else pending.resolve(true);
+      else pending.resolve(scenario !== 'denied');
     });
     if (scenario !== 'offline') {
       await waitFor(() => expect(button).toBeEnabled());

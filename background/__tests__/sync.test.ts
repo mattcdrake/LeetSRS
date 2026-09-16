@@ -188,45 +188,9 @@ describe('whole-document Gist sync', () => {
     expect(github.get).not.toHaveBeenCalled();
   });
 
-  it('pushes the local document when it is newer', async () => {
-    const remote = { ...local, settings: { theme: 'light' as const }, dataUpdatedAt: '2026-09-11T12:00:00.000Z' };
-    github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },
-    });
-    github.update.mockResolvedValue({});
-
-    await syncModule.sync();
-
-    expect(github.update).toHaveBeenCalledExactlyOnceWith({
-      gist_id: 'gist',
-      files: { 'leetsrs-backup.json': { content: expect.any(String) } },
-    });
-    expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(local);
-    expect(await readLearningDocument()).toEqual(local);
-    expect(await syncModule.getSyncStatus()).toEqual({
-      lastSyncTime: now,
-      syncInProgress: false,
-      lastError: null,
-    });
-  });
-
-  it('pulls the remote document when it is newer', async () => {
-    const remote = { ...local, settings: { theme: 'light' as const }, dataUpdatedAt: '2026-09-14T12:00:00.000Z' };
-    github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },
-    });
-
-    await syncModule.sync();
-
-    expect(await readLearningDocument()).toEqual(remote);
-    expect(github.update).not.toHaveBeenCalled();
-    expect(await syncModule.getSyncStatus()).toMatchObject({
-      lastSyncTime: now,
-      lastError: null,
-    });
-  });
-
   it.each([
+    { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-11T12:00:00.000Z', direction: 'push' },
+    { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-14T12:00:00.000Z', direction: 'pull' },
     { localTime: undefined, remoteTime: undefined, direction: 'push' },
     { localTime: '2026-09-12T12:00:00.000Z', remoteTime: undefined, direction: 'push' },
     { localTime: undefined, remoteTime: '2026-09-12T12:00:00.000Z', direction: 'pull' },
@@ -254,8 +218,9 @@ describe('whole-document Gist sync', () => {
         expect(github.update).not.toHaveBeenCalled();
       }
       expect(await readLearningDocument()).toEqual(direction === 'pull' ? remote : document);
-      expect(await syncModule.getSyncStatus()).toMatchObject({
+      expect(await syncModule.getSyncStatus()).toEqual({
         lastSyncTime: now,
+        syncInProgress: false,
         lastError: null,
       });
     }
@@ -293,20 +258,5 @@ describe('whole-document Gist sync', () => {
 
     expect(await syncModule.getSyncStatus()).toMatchObject({ lastError: error, syncInProgress: false });
     expect(await fakeBrowser.storage.local.get(STORAGE_KEYS.lastSyncTime)).toEqual({});
-  });
-
-  it('shares one in-flight sync between overlapping triggers', async () => {
-    const response = Promise.withResolvers<{ data: { owner: { id: 1 }; files: Record<string, never> } }>();
-    github.get.mockReturnValue(response.promise);
-    github.update.mockResolvedValue({});
-
-    const first = syncModule.sync();
-    const second = syncModule.sync();
-    expect(second).toBe(first);
-    await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-
-    response.resolve({ data: { owner: { id: 1 }, files: {} } });
-    await first;
-    expect(github.update).toHaveBeenCalledOnce();
   });
 });

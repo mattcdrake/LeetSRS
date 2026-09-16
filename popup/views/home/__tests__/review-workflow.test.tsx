@@ -111,7 +111,7 @@ it('retries a failed review, persists scheduling and advances to the next card',
   expect(reviewed.dataUpdatedAt).toBe(new Date(reviewed.cards['1'].fsrs.last_review ?? 0).toISOString());
 });
 
-it('pauses, resumes and deletes through real card controls, requiring confirmation', async () => {
+it('pauses, resumes and retries deletion through real card controls, requiring confirmation', async () => {
   const { wrapper } = createPopupTestWrapper();
   const queue = render(<ReviewQueue />, { wrapper });
   await screen.findByText('Two Sum');
@@ -144,6 +144,12 @@ it('pauses, resumes and deletes through real card controls, requiring confirmati
   expect((await readLearningDocument()).cards['1'].paused).toBe(false);
   click('Delete');
   expect((await readLearningDocument()).cards['1']).toBeDefined();
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk unavailable'));
+  click('Confirm?');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled());
+  expect((await readLearningDocument()).cards['1']).toBeDefined();
+  click('Delete');
   click('Confirm?');
   await waitFor(() => expect(screen.queryByText('Two Sum')).not.toBeInTheDocument());
   expect((await readLearningDocument()).cards['1']).toBeUndefined();

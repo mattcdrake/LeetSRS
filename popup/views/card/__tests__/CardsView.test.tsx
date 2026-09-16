@@ -36,13 +36,26 @@ describe('CardsView', () => {
     ({ queryClient, wrapper } = createTestWrapper());
   });
 
-  it('combines filter toggles with search and resets them when the view remounts', () => {
+  it('combines search and filter toggles, preserves visible expansion, and resets on remount', () => {
     seedCards([
       createMockCardWithProblem(State.New, { title: 'Paused new', frontendId: '1', paused: true }),
       createMockCardWithProblem(State.New, { title: 'Active new', frontendId: '2' }),
       createMockCardWithProblem(State.Review, { title: 'Paused review', frontendId: '3', paused: true }),
     ]);
     const view = renderWithQueryClient(<CardsView />);
+    const search = screen.getByRole('textbox');
+    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Paused new/ }));
+    expect(screen.getByRole('button', { name: /Active new/ })).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.change(search, { target: { value: 'new' } });
+    expect(screen.getByText('Paused new')).toBeInTheDocument();
+    expect(screen.getByText('Active new')).toBeInTheDocument();
+    expect(screen.queryByText('Paused review')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Paused new/ })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
+    expect(search).toHaveValue('');
+    expect(screen.getByText('Paused review')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
     for (const name of ['Due', 'New', 'Paused']) {
       const button = screen.getByRole('button', { name });
       fireEvent.click(button);
@@ -51,8 +64,13 @@ describe('CardsView', () => {
     expect(screen.getByText('Paused new')).toBeInTheDocument();
     expect(screen.queryByText('Active new')).not.toBeInTheDocument();
     expect(screen.queryByText('Paused review')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'review' } });
+    fireEvent.change(search, { target: { value: 'review' } });
     expect(screen.getByText('No cards match your filter.')).toBeInTheDocument();
+    expect(screen.queryByText('No cards added yet.')).not.toBeInTheDocument();
+    expect(search).toHaveValue('review');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
+    expect(screen.getByRole('button', { name: /Paused new/ })).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.change(search, { target: { value: 'review' } });
     fireEvent.click(screen.getByRole('button', { name: 'New' }));
     expect(screen.getByRole('button', { name: 'New' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByText('Paused review')).toBeInTheDocument();
@@ -93,55 +111,6 @@ describe('CardsView', () => {
       expect(link).toHaveAttribute('target', '_blank');
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
-  });
-
-  it('should filter cards, show no matches, and restore all cards when cleared', () => {
-    const cards = [
-      createMockCardWithProblem(State.New, { title: 'Two Sum', frontendId: '1' }),
-      createMockCardWithProblem(State.New, { title: 'Add Two Numbers', frontendId: '2' }),
-      createMockCardWithProblem(State.New, { title: 'Longest Substring', frontendId: '3' }),
-    ];
-
-    seedCards(cards);
-
-    renderWithQueryClient(<CardsView />);
-
-    expect(screen.getByText('Two Sum')).toBeInTheDocument();
-    expect(screen.getByText('Add Two Numbers')).toBeInTheDocument();
-    expect(screen.getByText('Longest Substring')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Two Sum/ }));
-    expect(screen.getByRole('button', { name: /Two Sum/ })).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('button', { name: /Add Two Numbers/ })).toHaveAttribute('aria-expanded', 'false');
-    const filterInput = screen.getByPlaceholderText('Filter by name or ID...');
-    fireEvent.change(filterInput, { target: { value: 'Two' } });
-
-    expect(screen.getByText('Two Sum')).toBeInTheDocument();
-    expect(screen.getByText('Add Two Numbers')).toBeInTheDocument();
-    expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Clear filter' })).toBeInTheDocument();
-
-    expect(screen.getByRole('button', { name: /Two Sum/ })).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.change(filterInput, { target: { value: 'xyz' } });
-
-    expect(screen.getByText('No cards match your filter.')).toBeInTheDocument();
-    expect(screen.queryByText('No cards added yet.')).not.toBeInTheDocument();
-    expect(screen.queryByText('Two Sum')).not.toBeInTheDocument();
-    expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-    expect(screen.queryByText('Longest Substring')).not.toBeInTheDocument();
-    expect(filterInput).toBeInTheDocument();
-    expect(filterInput).toHaveValue('xyz');
-
-    fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
-
-    expect(screen.getByText('Two Sum')).toBeInTheDocument();
-    expect(screen.getByText('Add Two Numbers')).toBeInTheDocument();
-    expect(screen.getByText('Longest Substring')).toBeInTheDocument();
-    expect(screen.queryByText('No cards match your filter.')).not.toBeInTheDocument();
-    expect(filterInput).toHaveValue('');
-    expect(screen.getByRole('button', { name: /Two Sum/ })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
   });
 });
 
