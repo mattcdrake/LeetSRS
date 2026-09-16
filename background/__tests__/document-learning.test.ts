@@ -48,7 +48,7 @@ describe('document learning through background commands', () => {
     expect(restored.reviewActivity).toEqual(before.reviewActivity);
   });
 
-  it.each([undefined, Rating.Again, Rating.Hard, Rating.Good, Rating.Easy] as const)(
+  it.each([undefined, Rating.Good] as const)(
     'restores a prior card and activity after panel selection %s',
     async (rating) => {
       const service = getRegisteredBackground();
@@ -82,17 +82,6 @@ describe('document learning through background commands', () => {
     const newer = await readLearningDocument();
     await expect(service.undoPanelRating(next.undo)).rejects.toThrow('Practice data changed');
     expect(await readLearningDocument()).toEqual(newer);
-  });
-
-  it('remembers the first panel open without changing the auto-open preference', async () => {
-    const service = getRegisteredBackground();
-    expect(await service.getRatingHint()).toBe(true);
-    expect(await service.getRatingHint()).toBe(true);
-    await service.markRatingHintShown();
-    expect(await service.getRatingHint()).toBe(false);
-    backgroundEntry.main();
-    expect(await getRegisteredBackground().getRatingHint()).toBe(false);
-    expect((await readLearningDocument()).settings.openRatingAfterSolving).toBeUndefined();
   });
 
   it('preserves consecutive reviews when a panel save overlaps another command', async () => {

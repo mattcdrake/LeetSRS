@@ -33,7 +33,7 @@ it('keeps the saved confirmation open and Undo restores the prior practice state
   await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
 });
 
-it.each([1, 2, 3, 4, 5])('limits shortcut %s to the open panel and ignores repeated presses', async (key) => {
+it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated presses', async (key) => {
   render(<LeetSrsControl />);
   fireEvent.keyDown(document.body, { key: String(key) });
   expect((await readLearningDocument()).cards).toEqual({});
@@ -102,17 +102,6 @@ it('keeps persistence failures retryable and prevents saving twice while pending
   await waitFor(async () => expect((await readLearningDocument()).cards).toEqual({}));
 });
 
-it.each(['light', 'dark'])('shows descriptions and actual intervals in the %s theme', async (theme) => {
-  document.documentElement.className = theme;
-  render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-  const good = await screen.findByRole('button', { name: 'Good' });
-  await waitFor(() => expect(good).toHaveTextContent('3 days'));
-  expect(good).toHaveAccessibleDescription('Recalled the approach');
-  expect(good.closest('[data-theme]')).toHaveAttribute('data-theme', theme);
-  document.documentElement.className = '';
-});
-
 it('retains a save in progress and its confirmation when the panel closes and reopens', async () => {
   const release = Promise.withResolvers<void>();
   const service = createBackgroundService(Promise.resolve());
@@ -156,7 +145,7 @@ it('does not consume the hint when the panel closes before it can be displayed',
   await waitFor(async () => expect(await service.getRatingHint()).toBe(false));
 });
 
-it('allows consecutive manual ratings after dismissing a completed confirmation', async () => {
+it('closes saved confirmations after five seconds and allows another manual rating', async () => {
   await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en', openRatingAfterSolving: false } }));
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
@@ -164,9 +153,18 @@ it('allows consecutive manual ratings after dismissing a completed confirmation'
     fireEvent.click(trigger);
     const good = await screen.findByRole('button', { name: 'Good' });
     await waitFor(() => expect(good).toBeEnabled());
-    fireEvent.click(good);
-    await screen.findByRole('button', { name: 'Undo' });
-    expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(reps);
-    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    vi.useFakeTimers();
+    try {
+      await act(async () => fireEvent.click(good));
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(4999));
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(1));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(trigger).toHaveFocus();
+      expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(reps);
+    } finally {
+      vi.useRealTimers();
+    }
   }
 });

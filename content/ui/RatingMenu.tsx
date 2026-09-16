@@ -1,7 +1,7 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { Button } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
-import { getCurrentProblemReference } from '@/content/rating-actions';
+import { getCurrentProblemReference } from '@/content/current-problem';
 import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
 import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
@@ -105,7 +105,9 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
         <>
           <div className="rating-heading">
             <span>{t.contentScript.howDidItGo}</span>
-            <span>{t.contentScript.nextReview}</span>
+            <span className="rating-wordmark">
+              Leet<span style={{ color: colors.ratings[4].bg }}>SRS</span>
+            </span>
           </div>
           <div className="rating-options">
             {[...ratingSchema.values].map((rating) => (

@@ -17,19 +17,22 @@ async function request(path: string, body: unknown, method = 'GET') {
   await vi.waitFor(() => expect(network).toHaveBeenCalled());
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
-it('opens once for a new Accepted submission, including subsequent reviews', async () => {
-  await request('/submissions/detail/1/check/', { state: 'SUCCESS', status_code: 10 });
-  expect(accepted).not.toHaveBeenCalled();
-  await request('/problems/two-sum/submit/', { submission_id: 2 }, 'POST');
-  await request('/submissions/detail/2/check/', { state: 'PENDING' });
-  expect(accepted).not.toHaveBeenCalled();
-  await request('/submissions/detail/2/check/', { state: 'SUCCESS', status_code: 10 });
-  await request('/submissions/detail/2/check/', { state: 'SUCCESS', status_code: 10 });
-  expect(accepted).toHaveBeenCalledExactlyOnceWith({ slug: 'two-sum', submissionId: '2' });
-  await request('/problems/two-sum/submit/', { submission_id: 3 }, 'POST');
-  await request('/submissions/detail/3/check/', { state: 'SUCCESS', status_code: 10 });
-  expect(accepted).toHaveBeenCalledTimes(2);
-});
+it.each(['check', 'v2/check'])(
+  'opens once for a new Accepted submission through %s, including subsequent reviews',
+  async (checkPath) => {
+    await request(`/submissions/detail/1/${checkPath}/`, { state: 'SUCCESS', status_code: 10 });
+    expect(accepted).not.toHaveBeenCalled();
+    await request('/problems/two-sum/submit/', { submission_id: 2 }, 'POST');
+    await request(`/submissions/detail/2/${checkPath}/`, { state: 'PENDING' });
+    expect(accepted).not.toHaveBeenCalled();
+    await request(`/submissions/detail/2/${checkPath}/`, { state: 'SUCCESS', status_code: 10 });
+    await request(`/submissions/detail/2/${checkPath}/`, { state: 'SUCCESS', status_code: 10 });
+    expect(accepted).toHaveBeenCalledExactlyOnceWith({ slug: 'two-sum', submissionId: '2' });
+    await request('/problems/two-sum/submit/', { submission_id: 3 }, 'POST');
+    await request(`/submissions/detail/3/${checkPath}/`, { state: 'SUCCESS', status_code: 10 });
+    expect(accepted).toHaveBeenCalledTimes(2);
+  }
+);
 it('ignores rejected submissions, test runs, navigation, and results after disposal', async () => {
   await request('/problems/two-sum/interpret_solution/', { interpret_id: '1' }, 'POST');
   await request('/submissions/detail/1/check/', { state: 'SUCCESS', status_code: 10 });

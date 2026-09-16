@@ -63,7 +63,7 @@ export function observeSubmissions(onAccepted: (submission: AcceptedSubmission) 
       }
       return;
     }
-    const id = url.pathname.match(/^\/submissions\/detail\/(\d+)\/check\/?$/)?.[1];
+    const id = url.pathname.match(/^\/submissions\/detail\/(\d+)\/(?:v2\/)?check\/?$/)?.[1];
     if (!id || pending.get(id) !== slug || !('state' in data) || data.state !== 'SUCCESS') return;
     pending.delete(id);
     if ('status_code' in data && data.status_code === 10) onAccepted({ slug, submissionId: id });

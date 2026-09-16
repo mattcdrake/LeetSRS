@@ -253,7 +253,6 @@ const en = {
   // Content script (LeetCode page integration)
   contentScript: {
     howDidItGo: 'How did it go?',
-    nextReview: 'Next review',
     descriptions: {
       1: 'Needed the solution',
       2: 'Solved with effort',
@@ -267,12 +266,10 @@ const en = {
     undo: 'Undo',
     undoFailed: 'Could not undo. Your practice data may have changed. Please try again.',
     retry: 'Try again',
-    loading: 'Loading…',
     days: (days: number) => `${days} ${days === 1 ? 'day' : 'days'}`,
     reviewIn: (days: number) => `Review in ${days} ${days === 1 ? 'day' : 'days'}`,
 
     saveFailed: 'Could not save this problem. Please try again.',
-    addToSrsNoRating: 'Add to SRS (no rating)',
   },
 
   // Formatting helpers (for interpolated strings)

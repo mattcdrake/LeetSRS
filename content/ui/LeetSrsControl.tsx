@@ -11,6 +11,7 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const session = useRatingSession(openRequest);
+  const { saved, busy, error, dismiss } = session;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
 
@@ -26,6 +27,15 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   useEffect(() => {
     if (openRequest > 0) setMenuOpen(true);
   }, [openRequest]);
+
+  useEffect(() => {
+    if (!menuOpen || !saved || busy || error) return;
+    const timeout = setTimeout(() => {
+      setMenuOpen(false);
+      dismiss();
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [menuOpen, saved, busy, error, dismiss]);
 
   if (!t) return null;
 
@@ -56,7 +66,7 @@ export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTML
     <Button
       {...props}
       type="button"
-      className="flex items-center gap-2 cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 hover:bg-(--button-hover) data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-current data-focus-visible:outline-offset-2"
+      className="flex cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 hover:bg-(--button-hover) data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-current data-focus-visible:outline-offset-2"
       aria-label={t.app.name}
       style={
         {
@@ -88,9 +98,6 @@ export function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTML
         <path d="M7.16 18.37l0 .01" />
         <path d="M11 19.94l0 .01" />
       </svg>
-      <span className="rating-wordmark" style={{ color: colors.textAddButton }}>
-        Leet<span style={{ color: colors.ratings[4].bg }}>SRS</span>
-      </span>
     </Button>
   );
 }
