@@ -7,7 +7,7 @@ export function useTodayReviewActivityQuery() {
   const now = usePopupClock();
   return useQuery({
     ...learningDocumentQueryOptions,
-    select: ({ document }) =>
+    select: (document) =>
       document.reviewActivity?.date === formatLocalDate(new Date(now)) ? document.reviewActivity : null,
   });
 }
