@@ -8,15 +8,13 @@ import { initializeLearningDocument } from '@/background/legacy/learning-documen
 import { createBackgroundService } from '@/background/service';
 import { sync, watchGistConnectionChanges } from '@/background/sync';
 import { BACKGROUND_SERVICE_KEY } from '@/shared/background-service';
-import { initializeCatalog } from '@/shared/catalog';
 import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 export function startBackground() {
-  // Commands and alarms wait until both learning storage and the catalog are ready.
+  // Commands and alarms wait until learning storage is ready.
   const readyPromise = (async () => {
-    await initializeCatalog();
     await initializeLearningDocument();
     await migratePatConnection();
 

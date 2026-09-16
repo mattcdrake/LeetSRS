@@ -1,4 +1,3 @@
-import { initializeCatalog } from '@/shared/catalog';
 import { setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 /**
  * @vitest-environment happy-dom
@@ -113,5 +112,3 @@ describe('CardsView', () => {
     }
   });
 });
-
-beforeEach(initializeCatalog);
