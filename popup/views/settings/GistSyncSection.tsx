@@ -188,7 +188,7 @@ export function GistSyncSection() {
                   </option>
                 ))}
               </select>
-              {destinations.isPending && <p role="status">{t.loadingBackups}</p>}
+              {permissions.granted && destinations.isPending && <p role="status">{t.loadingBackups}</p>}
               {destinations.isError && (
                 <p role="alert">
                   {t.loadBackupsFailed}{' '}
