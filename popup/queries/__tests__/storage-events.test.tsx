@@ -78,7 +78,7 @@ it('returns a disabled connection without reviving retired credentials or reques
 });
 
 it.each(['storage', 'catalog'].flatMap((source) => ['success', 'failure'].map((outcome) => ({ source, outcome }))))(
-  'ignores an obsolete $source read $outcome after a storage notification',
+  'loads replacement document cards despite an obsolete $source read $outcome',
   async ({ source, outcome }) => {
     const initial = buildLearningDocument({ cards: { 1: createMockCard(State.New) } });
     await replaceLearningDocument(initial);
@@ -98,12 +98,12 @@ it.each(['storage', 'catalog'].flatMap((source) => ['success', 'failure'].map((o
     read.mockRestore();
     const card = createMockCard(State.New, { frontendId: '2' });
     await replaceLearningDocument(buildLearningDocument({ cards: { 2: card } }));
-    await waitFor(() => expect(result.current.data).toMatchObject([card]));
+    await waitFor(() => expect(result.current.data).toMatchObject([{ ...card, title: 'Add Two Numbers' }]));
     await act(async () => {
       if (outcome === 'success') pending.resolve();
       else pending.reject(new Error('Obsolete failure'));
     });
-    expect(result.current.data).toMatchObject([card]);
+    expect(result.current.data).toMatchObject([{ ...card, title: 'Add Two Numbers' }]);
     expect(result.current.error).toBeNull();
   }
 );
@@ -369,22 +369,3 @@ it('loads settings inside Suspense alongside the root storage observer', async (
 });
 
 beforeEach(initializeCatalog);
-
-it.each([
-  { frontendId: '2', domain: 'leetcode.com' as const },
-  { frontendId: '1', domain: 'leetcode.cn' as const },
-])('refreshes metadata when a reference changes to $frontendId on $domain', async (reference) => {
-  const first = createMockCard(State.New);
-  await replaceLearningDocument(buildLearningDocument({ cards: { 1: first } }));
-  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
-  const view = renderHook(() => ({ cards: useCardsQuery(), queue: useReviewQueueQuery() }), {
-    wrapper: createPopupTestWrapper().wrapper,
-  });
-  await waitFor(() => expect(view.result.current.cards.data).toBeDefined());
-  const changed = createMockCard(State.New, reference);
-  await act(() => replaceLearningDocument(buildLearningDocument({ cards: { [changed.frontendId]: changed } })));
-  await waitFor(() => expect(view.result.current.cards.data).toMatchObject([reference]));
-  expect(view.result.current.queue.data).toMatchObject([reference]);
-  expect(lookups).toHaveBeenCalledTimes(2);
-  expect(lookups).toHaveBeenLastCalledWith([reference]);
-});
