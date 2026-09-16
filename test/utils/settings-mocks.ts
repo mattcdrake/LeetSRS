@@ -4,6 +4,7 @@ export function buildSettings(overrides: Partial<Settings> = {}): Settings {
   return {
     maxNewCardsPerDay: 3,
     theme: 'system',
+    openRatingAfterSolving: true,
     resetEditorOnReviewQueue: false,
     language: 'en',
     ...overrides,

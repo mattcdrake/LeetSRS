@@ -8,10 +8,13 @@ import {
 import {
   addCard,
   delayCard,
+  markAutoOpenHintShown,
+  previewRatings,
   rateCard,
   removeCard,
   saveNote,
   setPauseStatus,
+  shouldShowAutoOpenHint,
   updateSettings,
 } from '@/background/learning';
 import { dismissMigrationNotice } from '@/background/legacy/github-pat';
@@ -58,6 +61,9 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
         return problem;
       }
     ),
+    shouldShowAutoOpenHint,
+    markAutoOpenHintShown,
+    previewRatings: command(z.tuple([problemReferenceSchema]), previewRatings),
     addCard: command(z.tuple([problemReferenceSchema]), addCard),
     removeCard: command(z.tuple([frontendId]), removeCard),
     delayCard: command(z.tuple([frontendId, z.int().nonnegative()]), delayCard),

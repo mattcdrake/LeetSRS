@@ -63,7 +63,9 @@ export function useRemoveCardMutation() {
 }
 
 export function useRateCardMutation() {
-  return useCardMutation((input: RateCardInput) => background.rateCard(input));
+  return useCardMutation(async (input: RateCardInput) => {
+    await background.rateCard(input);
+  });
 }
 
 export function useDelayCardMutation() {

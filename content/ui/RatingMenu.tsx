@@ -1,77 +1,181 @@
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { Button } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
+import { getCurrentProblemReference } from '@/content/current-problem';
+import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
-import { ratingSchema } from '@/shared/models';
+import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
 import { THEME_COLORS, useDarkMode } from './theme';
+import type { useRatingSession } from './useRatingSession';
 
-export type RatingCallback = (rating: Grade) => void;
+export function RatingMenu({ t, session }: { t: Translations; session: ReturnType<typeof useRatingSession> }) {
+  const { saved, busy } = session;
+  const dark = useDarkMode();
+  const colors = dark ? THEME_COLORS.dark : THEME_COLORS.light;
+  const [problem, setProblem] = useState<ProblemReference>();
+  const [preview, setPreview] = useState<RatingPreview>();
+  const [hint, setHint] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const error = session.error || loadFailed;
+  const [selected, setSelected] = useState<number>();
+  const showSaved = saved && selected === undefined;
+  const [attempt, setAttempt] = useState(0);
+  const container = useRef<HTMLFieldSetElement>(null);
 
-export function RatingMenu({
-  t,
-  onRate,
-  onAddWithoutRating,
-  onSelect,
-}: {
-  t: Translations;
-  onRate: RatingCallback;
-  onAddWithoutRating: () => void;
-  onSelect: () => void;
-}) {
-  const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Retry reloads the preview.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const problem = await getCurrentProblemReference();
+        const preview = await background.previewRatings(problem);
+        if (!active) return;
+        setProblem(problem);
+        setPreview(preview);
+        const showHint = await background.shouldShowAutoOpenHint();
+        if (active) setHint(showHint);
+      } catch {
+        if (active) setLoadFailed(true);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [attempt]);
+
+  useEffect(() => {
+    if (hint && !saved) void background.markAutoOpenHintShown().catch(() => setLoadFailed(true));
+  }, [hint, saved]);
+
+  useEffect(() => {
+    if (selected === undefined) return;
+    if (session.error) {
+      setSelected(undefined);
+      return;
+    }
+    const timeout = setTimeout(() => setSelected(undefined), 400);
+    return () => clearTimeout(timeout);
+  }, [selected, session.error]);
+
+  function save(rating?: Grade) {
+    if (!problem || !preview || saved || busy || selected !== undefined) return;
+    setSelected(rating ?? 5);
+    session.save(problem, rating);
+  }
+
+  useEffect(() => {
+    if (showSaved || !saved) container.current?.focus();
+  }, [showSaved, saved]);
+
   return (
-    <div
-      className="min-w-40 max-w-[calc(100vw-32px)] rounded-lg border border-(--menu-border) bg-(--menu-bg) p-3 shadow-(--menu-shadow)"
+    <fieldset
+      ref={container}
+      tabIndex={-1}
+      className="rating-panel"
+      data-theme={dark ? 'dark' : 'light'}
+      aria-busy={busy}
       style={
         {
-          '--menu-bg': colors.bgSecondary,
+          '--panel-bg': dark ? '#242424' : '#ffffff',
+          '--panel-text': colors.textAddButton,
+          '--panel-muted': dark ? '#a8a8a8' : '#737373',
+          '--panel-border': colors.borderMenu,
           '--focus-ring': colors.focusRing,
-          '--menu-border': colors.borderMenu,
-          '--menu-shadow': colors.shadowMenu,
-        } as CSSProperties & Record<`--${string}`, string>
+        } as CSSProperties
       }
+      onKeyDown={(event) => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return;
+        const rating = ratingSchema.safeParse(Number(event.key));
+        if (rating.success || event.key === '5') {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!busy) save(rating.success ? rating.data : undefined);
+        }
+      }}
     >
-      <div className="mb-2 flex flex-wrap gap-1">
-        {[...ratingSchema.values].map((rating) => {
-          const { bg, hover } = colors.ratings[rating];
-          const label = t.ratings[rating];
-          return (
+      {showSaved ? (
+        <div className="rating-saved">
+          <span aria-hidden="true" style={{ color: colors.ratings[4].bg }}>
+            ✓
+          </span>
+          <span role="status">
+            {t.contentScript.saved}
+            {saved.scheduledDays !== null && ` · ${t.contentScript.reviewIn(saved.scheduledDays)}`}
+          </span>
+        </div>
+      ) : (
+        <>
+          <div className="rating-heading">
+            <span>{t.contentScript.howDidItGo}</span>
+            <span className="rating-wordmark">
+              Leet<span style={{ color: colors.ratings[4].bg }}>SRS</span>
+            </span>
+          </div>
+          <div className="rating-options">
+            {[...ratingSchema.values].map((rating) => (
+              <Button
+                key={rating}
+                aria-label={t.ratings[rating]}
+                aria-describedby={`rating-description-${rating}`}
+                className="rating-row"
+                data-selected={selected === rating || undefined}
+                isDisabled={busy || !preview || selected !== undefined}
+                onPress={() => save(rating)}
+                style={{ '--rating-color': colors.ratings[rating].bg } as CSSProperties}
+              >
+                <span className="rating-stripe" aria-hidden="true" />
+                <span className="rating-label">
+                  {t.ratings[rating]}
+                  <small id={`rating-description-${rating}`}>{t.contentScript.descriptions[rating]}</small>
+                </span>
+                <span className="rating-interval">{preview ? t.contentScript.days(preview[rating]) : '…'}</span>
+                <kbd>{rating}</kbd>
+              </Button>
+            ))}
+          </div>
+          <Button
+            className="rating-without"
+            data-selected={selected === 5 || undefined}
+            aria-label={t.contentScript.saveWithoutRating}
+            isDisabled={busy || !preview || selected !== undefined}
+            onPress={() => save()}
+          >
+            <span aria-hidden="true">+</span>
+            <span>{t.contentScript.saveWithoutRating}</span>
+            <kbd>5</kbd>
+          </Button>
+          {hint && (
+            <div className="rating-hint">
+              <p>{t.contentScript.autoOpenHint}</p>
+              <Button
+                isDisabled={busy}
+                onPress={() =>
+                  void session.disableAutoOpen().then((disabled) => {
+                    if (disabled) setHint(false);
+                  })
+                }
+              >
+                {t.contentScript.turnOffAutoOpen}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+      {error && (
+        <div className="rating-error" role="alert">
+          {t.contentScript.saveFailed}
+          {!preview && (
             <Button
-              key={rating}
-              type="button"
-              className="rating-menu-action min-w-16 flex-auto shrink-0 whitespace-nowrap border-0 px-2 py-1.5 text-white"
-              style={{ '--button-bg': bg, '--button-hover': hover } as CSSProperties & Record<`--${string}`, string>}
               onPress={() => {
-                onRate(rating);
-                onSelect();
+                setLoadFailed(false);
+                setAttempt((value) => value + 1);
               }}
             >
-              {label}
+              {t.contentScript.retry}
             </Button>
-          );
-        })}
-      </div>
-      <Button
-        type="button"
-        className="rating-menu-action block w-full px-3 py-1.5 leading-5 no-underline hover:underline"
-        style={
-          {
-            '--button-bg': colors.bgAddButton,
-            '--button-hover': colors.bgAddButtonHover,
-            color: colors.textAddButton,
-            border: `1px solid ${colors.borderAddButton}`,
-          } as CSSProperties & Record<`--${string}`, string>
-        }
-        onPress={() => {
-          onAddWithoutRating();
-          onSelect();
-        }}
-      >
-        <span aria-hidden="true" style={{ filter: colors.addIconFilter }}>
-          ➕
-        </span>{' '}
-        {t.contentScript.addToSrsNoRating}
-      </Button>
-    </div>
+          )}
+        </div>
+      )}
+    </fieldset>
   );
 }

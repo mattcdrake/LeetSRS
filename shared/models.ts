@@ -135,3 +135,5 @@ export interface GistSyncStatus {
   syncInProgress: boolean;
   lastError: GistSyncErrorCode | null;
 }
+
+export type RatingPreview = Record<Grade, number>;

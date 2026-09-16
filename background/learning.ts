@@ -1,6 +1,7 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
+import { storage } from '#imports';
 import { recordReview } from '@/background/review-activity';
-import type { Card, ProblemReference, RateCardInput } from '@/shared/models';
+import type { Card, ProblemReference, RateCardInput, RatingPreview } from '@/shared/models';
 import { findCard, type LearningDocument } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
 import { readLearningDocument } from '@/shared/storage';
@@ -65,7 +66,7 @@ export async function setPauseStatus(frontendId: string, paused: boolean): Promi
   await saveEdit(document, now);
 }
 
-export async function rateCard(input: RateCardInput): Promise<void> {
+export async function rateCard(input: RateCardInput): Promise<Card> {
   const now = new Date();
   const document = await readLearningDocument();
   const { rating, ...problem } = input;
@@ -80,8 +81,8 @@ export async function rateCard(input: RateCardInput): Promise<void> {
   document.cards[card.frontendId] = card;
 
   document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
-
   await saveEdit(document, now);
+  return card;
 }
 
 export async function saveNote(frontendId: string, text: string): Promise<void> {
@@ -113,4 +114,25 @@ export function calculateDelayedDueDate(due: number, days: number): number {
   const newDueDate = new Date(due);
   newDueDate.setDate(newDueDate.getDate() + days);
   return newDueDate.getTime();
+}
+
+export async function previewRatings(problem: ProblemReference): Promise<RatingPreview> {
+  const now = new Date();
+  const document = await readLearningDocument();
+  const card = findCard(document, problem.frontendId) ?? createCard(problem, now);
+  const preview = fsrs.repeat(card.fsrs, now);
+  return {
+    1: preview[1].card.scheduled_days,
+    2: preview[2].card.scheduled_days,
+    3: preview[3].card.scheduled_days,
+    4: preview[4].card.scheduled_days,
+  };
+}
+
+export async function shouldShowAutoOpenHint(): Promise<boolean> {
+  return !(await storage.getItem('local:leetsrs:ratingHintShown'));
+}
+
+export async function markAutoOpenHintShown(): Promise<void> {
+  await storage.setItem('local:leetsrs:ratingHintShown', true);
 }

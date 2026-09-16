@@ -4,6 +4,7 @@ import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
 import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
 import { useI18n } from '../../contexts/I18nContext';
+import { SettingsSwitch } from './SettingsSwitch';
 
 export function ReviewSettingsSection() {
   const t = useI18n();
@@ -33,6 +34,12 @@ export function ReviewSettingsSection() {
 
   return (
     <div className="space-y-4">
+      <SettingsSwitch
+        label={t.settings.reviewSettings.openRatingAfterSolving}
+        isSelected={settings.openRatingAfterSolving}
+        isDisabled={updateSettingsMutation.isPending}
+        onChange={(openRatingAfterSolving) => updateSettingsMutation.mutate({ openRatingAfterSolving })}
+      />
       <div className="space-y-3">
         <TextField className="flex min-h-10 items-center justify-between gap-3">
           <Label className="flex items-center gap-2">

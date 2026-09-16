@@ -11,6 +11,7 @@ import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
 import { background } from '@/shared/background-service';
+import type { Card } from '@/shared/models';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -235,7 +236,7 @@ describe('ReviewQueue', () => {
 
   describe('Card Actions', () => {
     it('should disable controls and prevent duplicate actions while a review is pending', async () => {
-      const mutation = Promise.withResolvers<void>();
+      const mutation = Promise.withResolvers<Card>();
       service.handle('rateCard', () => mutation.promise);
       render(<ReviewQueue />, { wrapper });
 
@@ -252,7 +253,7 @@ describe('ReviewQueue', () => {
       expect(background.rateCard).toHaveBeenCalledWith(expect.any(Object));
       for (const control of controls) expect(control).toBeDisabled();
 
-      mutation.resolve();
+      mutation.resolve(createMockCardWithProblem(State.Review));
       await waitFor(() => {
         for (const control of controls) expect(control).toBeEnabled();
       });

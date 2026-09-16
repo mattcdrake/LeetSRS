@@ -2,12 +2,14 @@ import { createProxyService, type ProxyServiceKey } from '@webext-core/proxy-ser
 import type { CatalogProblem } from '@/shared/catalog';
 import type { GistDestination, GithubAuthStatus } from '@/shared/github-auth';
 import type {
+  Card,
   GistConnectionResult,
   GistSetup,
   GistSyncStatus,
   LeetcodeDomain,
   ProblemReference,
   RateCardInput,
+  RatingPreview,
 } from '@/shared/models';
 import type { SettingsUpdate } from '@/shared/settings';
 
@@ -21,11 +23,14 @@ export interface BackgroundService {
   dismissMigrationNotice(): Promise<void>;
   waitForInitialization(): Promise<void>;
   getProblem(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem>;
+  shouldShowAutoOpenHint(): Promise<boolean>;
+  markAutoOpenHintShown(): Promise<void>;
+  previewRatings(problem: ProblemReference): Promise<RatingPreview>;
   addCard(problem: ProblemReference): Promise<void>;
   removeCard(frontendId: string): Promise<void>;
   delayCard(frontendId: string, days: number): Promise<void>;
   setPauseStatus(frontendId: string, paused: boolean): Promise<void>;
-  rateCard(input: RateCardInput): Promise<void>;
+  rateCard(input: RateCardInput): Promise<Card>;
   saveNote(frontendId: string, text: string): Promise<void>;
   updateSettings(changes: SettingsUpdate): Promise<void>;
   importData(jsonData: string): Promise<void>;
