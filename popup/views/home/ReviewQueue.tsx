@@ -116,7 +116,15 @@ export function ReviewQueue() {
         <ExpandableSection title={t.notes.title} isDisabled={isProcessing}>
           <NoteEditor frontendId={currentCard.frontendId} variant="regular" isDisabled={isProcessing} />
         </ExpandableSection>
-        <ActionsSection onDelete={handleDelete} onDelay={handleDelay} onPause={handlePause} isDisabled={isProcessing} />
+        <ExpandableSection title={t.actionsSection.title} isDisabled={isProcessing}>
+          <ActionsSection
+            key={currentCard.frontendId}
+            onDelete={handleDelete}
+            onDelay={handleDelay}
+            onPause={handlePause}
+            isDisabled={isProcessing}
+          />
+        </ExpandableSection>
       </div>
     </div>
   );
