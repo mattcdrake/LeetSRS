@@ -17,7 +17,15 @@ import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import { SettingsSwitch } from './SettingsSwitch';
 
-export function GistSyncSection() {
+export function GistSyncSection({
+  highlightSignIn = false,
+  highlightSetup = false,
+}: {
+  highlightSignIn?: boolean;
+  highlightSetup?: boolean;
+}) {
+  const [setupHighlightDismissed, setSetupHighlightDismissed] = useState(false);
+  const [highlightDismissed, setHighlightDismissed] = useState(false);
   const translations = useI18n();
   const t = translations.settings.gistSync;
   const client = useQueryClient();
@@ -39,7 +47,7 @@ export function GistSyncSection() {
     networkMode: 'always',
     onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
   });
-  const signingIn = !!auth.data?.signingIn || (permissions.request.isPending && permissions.request.variables?.signIn);
+  const signingIn = !!auth.data?.signingIn || (permissions.request.isPending && permissions.request.variables?.intent);
   const busy =
     action.isPending ||
     permissions.request.isPending ||
@@ -101,12 +109,27 @@ export function GistSyncSection() {
       {(permissions.error || permissions.request.isError) && <p role="alert">{t.permissionFailed}</p>}
       {auth.data?.account ? (
         <>
-          <p className="flex items-center gap-2 text-xs text-secondary">
-            <FaGithub className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{auth.data.account.login}</span>
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="flex min-w-0 items-center gap-2 text-xs text-secondary">
+              <FaGithub className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{auth.data.account.login}</span>
+            </p>
+            <Button
+              className="shrink-0 rounded-lg px-2 py-2 text-xs font-medium text-danger hover:bg-secondary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
+              isDisabled={action.isPending}
+              onPress={() => {
+                setSelected(null);
+                setup.reset();
+                enable.reset();
+                setEditing(false);
+                action.mutate();
+              }}
+            >
+              {t.signOut}
+            </Button>
+          </div>
           {config?.gistId && (
-            <div className="space-y-1 text-xs">
+            <div className="text-xs">
               <SettingsSwitch
                 icon={FaArrowsRotate}
                 label={t.syncEnabled}
@@ -114,7 +137,7 @@ export function GistSyncSection() {
                 isDisabled={busy}
                 onChange={toggle}
               />
-              <p className="text-xs text-secondary">
+              <p className="-mt-1 pl-6 text-[11px] leading-4 text-secondary">
                 {t.lastSync}:{' '}
                 {status?.syncInProgress
                   ? t.syncing
@@ -130,9 +153,9 @@ export function GistSyncSection() {
             </div>
           )}
           {config?.gistId && !editing ? (
-            <div className="space-y-1 border-t border-current pt-4">
+            <div className="space-y-1 pt-2">
               <div className="flex items-center justify-between gap-3 text-xs">
-                <span>{t.destination}</span>
+                <span className="font-medium">{t.destination}</span>
                 <a
                   aria-label={t.openGist}
                   className="inline-flex items-center gap-1.5 text-xs text-accent"
@@ -165,7 +188,11 @@ export function GistSyncSection() {
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div
+              className={`space-y-2 ${highlightSetup && !setupHighlightDismissed && !config?.gistId ? 'github-gist-highlight rounded-lg p-3' : ''}`}
+              onAnimationEnd={() => setSetupHighlightDismissed(true)}
+              onChange={() => setSetupHighlightDismissed(true)}
+            >
               <label className="block text-xs" htmlFor="gist-destination">
                 {t.destination}
               </label>
@@ -238,9 +265,13 @@ export function GistSyncSection() {
             </div>
           ) : (
             <Button
-              className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${highlightSignIn && !highlightDismissed ? 'github-sign-in-highlight' : ''}`}
+              onAnimationEnd={() => setHighlightDismissed(true)}
               isDisabled={action.isPending || permissions.request.isPending || auth.isPending}
-              onPress={() => permissions.enable(true)}
+              onPress={() => {
+                setHighlightDismissed(true);
+                permissions.enable(true);
+              }}
             >
               <FaGithub className="h-4 w-4" aria-hidden="true" />
               {t.signIn}
@@ -267,23 +298,6 @@ export function GistSyncSection() {
         <p role="alert">
           {t.syncFailed}: {translations.syncNotices[status.lastError]}
         </p>
-      )}
-      {auth.data?.account && (
-        <div className="border-t border-current pt-4 -mx-1">
-          <Button
-            className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:bg-secondary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-            isDisabled={action.isPending}
-            onPress={() => {
-              setSelected(null);
-              setup.reset();
-              enable.reset();
-              setEditing(false);
-              action.mutate();
-            }}
-          >
-            {t.signOut}
-          </Button>
-        </div>
       )}
     </section>
   );

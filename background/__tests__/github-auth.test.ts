@@ -3,8 +3,10 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import {
+  cancelGithubSignInRequest,
   getGithubAuthorization,
   getGithubAuthStatus,
+  resumeGithubSignIn,
   signOutGithub,
   startGithubSignIn,
 } from '@/background/github-auth';
@@ -40,7 +42,7 @@ function acceptSignIn() {
 }
 it('validates state and uses PKCE, saves credentials locally, and does not enable sync', async () => {
   acceptSignIn();
-  startGithubSignIn();
+  await startGithubSignIn();
   await finishSignIn();
   expect(await getGithubAuthStatus()).toMatchObject({ account: { id: 1, login: 'tester' }, error: null });
   expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
@@ -66,7 +68,7 @@ it.each(['state', 'origin', 'cancel', 'exchange', 'account'])(
       vi.mocked(fetch)
         .mockResolvedValueOnce(Response.json(token))
         .mockResolvedValueOnce(Response.json({ id: 'invalid' }));
-    startGithubSignIn();
+    await startGithubSignIn();
     await finishSignIn();
     expect(await getGithubAuthStatus()).toMatchObject({ account: null, error: 'signInFailed' });
     if (['state', 'origin', 'cancel'].includes(failure)) expect(fetch).not.toHaveBeenCalled();
@@ -87,7 +89,7 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
   let refresh: Promise<unknown> | undefined;
   if (operation === 'sign-in') {
     acceptSignIn();
-    startGithubSignIn();
+    await startGithubSignIn();
   } else {
     await seedGithubAuthorization();
     const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
@@ -116,12 +118,12 @@ it('keeps saved authorization unchanged on refresh failure and allows retry', as
 it('requires sign-out before starting another account sign-in', async () => {
   await seedGithubAuthorization();
   acceptSignIn();
-  startGithubSignIn();
+  await startGithubSignIn();
   await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
   expect((await getGithubAuthStatus()).account?.login).toBe('tester');
   await signOutGithub();
-  startGithubSignIn();
+  await startGithubSignIn();
   await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).toHaveBeenCalledOnce();
 });
@@ -143,7 +145,7 @@ it.each(['sign-in', 'refresh'])('sign-out waits for a %s credential write alread
   let refresh: Promise<unknown> | undefined;
   if (operation === 'sign-in') {
     acceptSignIn();
-    startGithubSignIn();
+    await startGithubSignIn();
   } else refresh = getGithubAuthorization().catch(() => null);
   await started.promise;
   const signingOut = signOutGithub();
@@ -154,14 +156,14 @@ it.each(['sign-in', 'refresh'])('sign-out waits for a %s credential write alread
   expect(await storage.getItem('local:leetsrs:githubAuthorization')).toBeNull();
 });
 
-it('refuses OAuth without host access', async () => {
+it('waits for host access without starting OAuth', async () => {
   vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
   acceptSignIn();
-  startGithubSignIn();
+  await startGithubSignIn();
   await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
   expect(fetch).not.toHaveBeenCalled();
-  expect((await getGithubAuthStatus()).error).toBe('signInFailed');
+  expect((await getGithubAuthStatus()).error).toBeNull();
 });
 
 it('blocks saved authorization after revocation and preserves it for re-enabling', async () => {
@@ -172,4 +174,35 @@ it('blocks saved authorization after revocation and preserves it for re-enabling
   expect((await getGithubAuthStatus()).account?.login).toBe('tester');
   vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
   expect((await getGithubAuthorization()).account.login).toBe('tester');
+});
+
+it.each(['open', 'suspended'])('continues sign-in after a grant with the popup gone and worker %s', async (worker) => {
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
+  acceptSignIn();
+  await startGithubSignIn();
+  expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
+  let resume = resumeGithubSignIn;
+  let status = getGithubAuthStatus;
+  if (worker === 'suspended') {
+    vi.resetModules();
+    const restarted = await import('@/background/github-auth');
+    resume = restarted.resumeGithubSignIn;
+    status = restarted.getGithubAuthStatus;
+  }
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
+  await Promise.all([resume(), resume()]);
+  await vi.waitFor(async () => expect((await status()).account?.login).toBe('tester'));
+  expect(browser.identity.launchWebAuthFlow).toHaveBeenCalledOnce();
+});
+
+it.each(['denied', 'expired', 'signed out'])('does not resume a permission request that was %s', async (outcome) => {
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
+  acceptSignIn();
+  await startGithubSignIn();
+  if (outcome === 'denied') await cancelGithubSignInRequest();
+  if (outcome === 'signed out') await signOutGithub();
+  if (outcome === 'expired') vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 6 * 60 * 1000);
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
+  await resumeGithubSignIn();
+  expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
 });

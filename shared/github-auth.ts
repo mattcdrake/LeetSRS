@@ -7,6 +7,7 @@ export interface GithubAuthStatus {
   signingIn: boolean;
   error: 'signInFailed' | null;
   migrationNotice: boolean;
+  setupPending: boolean;
 }
 
 export interface GistDestination {

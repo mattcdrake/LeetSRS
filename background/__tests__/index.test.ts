@@ -194,3 +194,21 @@ describe('document startup through registered background commands', () => {
     expect(badge).not.toHaveBeenCalled();
   });
 });
+
+it('starts OAuth from a permission-grant event without another popup command', async () => {
+  vi.stubEnv('WXT_GITHUB_CLIENT_ID', 'client');
+  const redirect = 'https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.chromiumapp.org/';
+  vi.spyOn(browser.identity, 'getRedirectURL').mockReturnValue(redirect);
+  const oauth = vi.spyOn(browser.identity, 'launchWebAuthFlow').mockImplementation(() => new Promise(() => {}));
+  const contains = vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => false);
+  startBackground();
+  const service = getRegisteredBackground();
+  await service.startGithubSignIn();
+  expect(oauth).not.toHaveBeenCalled();
+  contains.mockImplementation(async () => true);
+  const onGrant = vi.mocked(browser.permissions.onAdded.addListener).mock.calls.at(-1)?.[0];
+  if (!onGrant) throw new Error('Permission listener was not registered');
+  onGrant({ origins: ['https://api.github.com/*'] });
+  await vi.waitFor(() => expect(oauth).toHaveBeenCalledOnce());
+  await service.signOutGithub();
+});

@@ -22,6 +22,7 @@ for (const area of ['local', 'sync', 'session', 'managed'] as const) {
 }
 
 beforeEach(() => {
+  vi.spyOn(browser.permissions.onAdded, 'addListener').mockImplementation(() => {});
   vi.stubGlobal('indexedDB', new IDBFactory());
   const fetchFromNetwork = globalThis.fetch;
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {

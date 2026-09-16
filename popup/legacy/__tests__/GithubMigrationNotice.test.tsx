@@ -8,7 +8,7 @@ import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 
 vi.mock('@/shared/background-service');
 const service = createServiceMock(background);
-const signedIn = { account: null, signingIn: false, error: null, migrationNotice: false };
+const signedIn = { account: null, signingIn: false, error: null, migrationNotice: false, setupPending: false };
 beforeEach(() => {
   service.reset();
 });
