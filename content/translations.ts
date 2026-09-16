@@ -12,7 +12,7 @@ function resolve(value: unknown): Translations {
   return translations[language ?? detectBrowserLanguage()];
 }
 
-export async function getDocumentTranslations(): Promise<Translations> {
+async function getDocumentTranslations(): Promise<Translations> {
   return resolve(await storage.getItem<unknown>(STORAGE_KEYS.learningDocument));
 }
 
