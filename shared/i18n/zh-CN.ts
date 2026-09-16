@@ -106,6 +106,7 @@ const zhCN: Translations = {
     filterAriaLabel: '筛选卡片',
     filterPlaceholder: '按名称或 ID 筛选...',
     clearFilterAriaLabel: '清除筛选',
+    filters: { due: '到期', new: '新卡片', paused: '已暂停' },
     loadingCards: '加载卡片中...',
     noCardsAdded: '还没有添加卡片。',
     noCardsMatchFilter: '没有匹配的卡片。',

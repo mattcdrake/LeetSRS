@@ -36,6 +36,35 @@ describe('CardsView', () => {
     ({ queryClient, wrapper } = createTestWrapper());
   });
 
+  it('combines filter toggles with search and resets them when the view remounts', () => {
+    seedCards([
+      createMockCardWithProblem(State.New, { title: 'Paused new', frontendId: '1', paused: true }),
+      createMockCardWithProblem(State.New, { title: 'Active new', frontendId: '2' }),
+      createMockCardWithProblem(State.Review, { title: 'Paused review', frontendId: '3', paused: true }),
+    ]);
+    const view = renderWithQueryClient(<CardsView />);
+    for (const name of ['Due', 'New', 'Paused']) {
+      const button = screen.getByRole('button', { name });
+      fireEvent.click(button);
+      expect(button).toHaveAttribute('aria-pressed', 'true');
+    }
+    expect(screen.getByText('Paused new')).toBeInTheDocument();
+    expect(screen.queryByText('Active new')).not.toBeInTheDocument();
+    expect(screen.queryByText('Paused review')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'review' } });
+    expect(screen.getByText('No cards match your filter.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'New' }));
+    expect(screen.getByRole('button', { name: 'New' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Paused review')).toBeInTheDocument();
+    view.rerender(<div />);
+    view.rerender(<CardsView />);
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    for (const name of ['Due', 'New', 'Paused']) {
+      expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
+    }
+    expect(screen.getByText('Active new')).toBeInTheDocument();
+  });
+
   it('should link cards to their problem on the stored LeetCode domain', () => {
     const cards = [
       createMockCardWithProblem(State.New, { title: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),

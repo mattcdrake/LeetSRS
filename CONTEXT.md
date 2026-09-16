@@ -11,6 +11,12 @@ _Avoid_: Question.
 
 **Card**: The learner's study record for a problem.
 
+**New card**: A card that has never been rated, whether active or paused.
+
+**Paused card**: A card the learner has put on hold from the review queue, whether new or previously practiced.
+
+**Due card**: A card whose scheduled review timestamp has arrived, regardless of pause status or the daily new-card allowance. Being due does not necessarily mean admission to the review queue.
+
 **Review / revisit**: Every rating is a review. Ratings after the first are revisits; repetition counts include the first.
 
 **Practiced problem**: Rated at least once, including paused cards.
