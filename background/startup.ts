@@ -2,6 +2,7 @@ import { registerService } from '@webext-core/proxy-service';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
 import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
+import { resumeGithubSignIn } from '@/background/github-auth';
 import { migratePatConnection } from '@/background/legacy/github-pat';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { sync, watchGistConnectionChanges } from '@/background/persistence';
@@ -38,6 +39,12 @@ export function startBackground() {
 
   registerService(BACKGROUND_SERVICE_KEY, createBackgroundService(readyPromise));
   watchGistConnectionChanges(readyPromise);
+  const resumeSignIn = () => {
+    void readyPromise.then(resumeGithubSignIn).catch(() => {});
+  };
+  // Register synchronously: permission grants can wake a suspended worker.
+  browser.permissions.onAdded.addListener(resumeSignIn);
+  resumeSignIn();
   storage.watch(STORAGE_KEYS.learningDocument, () => {
     void readyPromise.then(refreshBadge, () => {});
   });

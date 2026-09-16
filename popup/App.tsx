@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { GithubMigrationNotice } from '@/popup/legacy/GithubMigrationNotice';
 import './App.css';
 import { useTheme } from '@/popup/hooks/useTheme';
+import { gistSyncQueryKeys, useGistSyncConfigQuery, useGithubAuthQuery } from '@/popup/queries/gist-sync';
+import { background } from '@/shared/background-service';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { CardsView } from './views/card/CardsView';
 import { HomeView } from './views/home/HomeView';
@@ -9,7 +12,31 @@ import { SettingsView } from './views/settings/SettingsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
+  const [highlightGithubSignIn, setHighlightGithubSignIn] = useState(false);
+  const [highlightGistSetup, setHighlightGistSetup] = useState(false);
+  const setupShown = useRef(false);
+  const auth = useGithubAuthQuery();
+  const config = useGistSyncConfigQuery();
+  const client = useQueryClient();
+  const { mutate: dismissSetup } = useMutation({
+    mutationFn: () => background.dismissGithubSetupPrompt(),
+    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.auth }),
+  });
   const theme = useTheme();
+
+  useEffect(() => {
+    if (!auth.data?.account) {
+      setupShown.current = false;
+      return;
+    }
+    if (!auth.data.setupPending || auth.data.signingIn || !config.data || setupShown.current) return;
+    setupShown.current = true;
+    if (!config.data.gistId) {
+      setActiveView('settings');
+      setHighlightGistSetup(true);
+    }
+    dismissSetup();
+  }, [auth.data, config.data, dismissSetup]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -27,14 +54,28 @@ function App() {
   const views: Record<ViewId, React.ReactNode> = {
     home: <HomeView />,
     card: <CardsView />,
-    settings: <SettingsView />,
+    settings: <SettingsView highlightGithubSignIn={highlightGithubSignIn} highlightGistSetup={highlightGistSetup} />,
   };
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      {activeView !== 'settings' && <GithubMigrationNotice onOpenSettings={() => setActiveView('settings')} />}
+      {activeView !== 'settings' && (
+        <GithubMigrationNotice
+          onOpenSettings={() => {
+            setHighlightGithubSignIn(true);
+            setActiveView('settings');
+          }}
+        />
+      )}
       <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
-      <BottomNav activeView={activeView} onNavigate={setActiveView} />
+      <BottomNav
+        activeView={activeView}
+        onNavigate={(view) => {
+          setHighlightGithubSignIn(false);
+          setHighlightGistSetup(false);
+          setActiveView(view);
+        }}
+      />
     </div>
   );
 }

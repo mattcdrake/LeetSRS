@@ -12,7 +12,13 @@ import { GistSyncSection } from '../GistSyncSection';
 
 vi.mock('@/shared/background-service');
 const service = createServiceMock(background);
-const signedIn = { account: { id: 1, login: 'tester' }, signingIn: false, error: null, migrationNotice: false };
+const signedIn = {
+  account: { id: 1, login: 'tester' },
+  signingIn: false,
+  error: null,
+  migrationNotice: false,
+  setupPending: false,
+};
 beforeEach(async () => {
   vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => true);
   vi.spyOn(browser.permissions, 'request').mockImplementation(async () => true);
@@ -24,6 +30,7 @@ beforeEach(async () => {
   await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'saved', enabled: false });
   service
     .reset()
+    .resolve('cancelGithubSignInRequest', undefined)
     .resolve('getGithubAuthStatus', signedIn)
     .resolve('getGistSyncStatus', {
       lastSyncTime: null,
@@ -172,7 +179,7 @@ it.each([false, true])(
     expect(browser.permissions.request).toHaveBeenCalledExactlyOnceWith({
       origins: ['https://auth.leetsrs.com/*', 'https://api.github.com/*', 'https://gist.githubusercontent.com/*'],
     });
-    expect(background.startGithubSignIn).not.toHaveBeenCalled();
+    expect(background.startGithubSignIn).toHaveBeenCalledOnce();
     vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
     await act(async () => pending.resolve(true));
     await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledOnce());
@@ -180,7 +187,7 @@ it.each([false, true])(
 );
 
 it.each(['denied', 'rejected', 'throws'])(
-  'allows retry after permission request is %s without starting OAuth',
+  'cancels pending sign-in and allows retry after permission request is %s',
   async (failure) => {
     vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
     if (failure === 'denied') vi.mocked(browser.permissions.request).mockImplementationOnce(async () => false);
@@ -196,10 +203,10 @@ it.each(['denied', 'rejected', 'throws'])(
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
     expect(await screen.findByRole('alert')).toHaveTextContent('GitHub access wasn’t granted');
-    expect(background.startGithubSignIn).not.toHaveBeenCalled();
+    expect(background.cancelGithubSignInRequest).toHaveBeenCalledOnce();
     vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
     fireEvent.click(screen.getByRole('button', { name: 'Sign in with GitHub' }));
-    await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledOnce());
+    await waitFor(() => expect(background.startGithubSignIn).toHaveBeenCalledTimes(2));
   }
 );
 
@@ -232,3 +239,24 @@ it.each(['while open', 'while closed'])(
     );
   }
 );
+
+it('dispatches the real proxy message while the permission prompt is still pending', async () => {
+  const actual = await vi.importActual<typeof import('@/shared/background-service')>('@/shared/background-service');
+  const sendMessage = vi.fn((_message: unknown, reply: (response: unknown) => void) => reply({ res: undefined }));
+  vi.stubGlobal('chrome', { runtime: { sendMessage } });
+  vi.mocked(background.startGithubSignIn).mockImplementation(() => actual.background.startGithubSignIn());
+  service.resolve('getGithubAuthStatus', { ...signedIn, account: null });
+  vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
+  vi.mocked(browser.permissions.request).mockImplementation(() => new Promise<boolean>(() => {}));
+  const { unmount } = open();
+  const button = await screen.findByRole('button', { name: 'Sign in with GitHub' });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  await waitFor(() =>
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'proxy-service.background', data: { path: ['startGithubSignIn'], args: [] } }),
+      expect.any(Function)
+    )
+  );
+  unmount();
+});
