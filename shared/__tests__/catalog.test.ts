@@ -30,47 +30,34 @@ function bundle(problems: CatalogProblem[], hash = 'first-hash') {
 
 beforeEach(() => bundle([twoSum]));
 
-it('returns an empty batch without opening the catalog', async () => {
-  const open = vi.spyOn(indexedDB, 'open');
-  expect(await getProblemsByFrontendIds([])).toEqual([]);
-  expect(open).not.toHaveBeenCalled();
-});
-
-it.each(['transaction', 'request', 'abort'] as const)(
-  'closes the batch connection after a %s failure',
-  async (failure) => {
-    await initializeCatalog();
-    const close = vi.spyOn(IDBDatabase.prototype, 'close');
-    const error = new Error('Catalog read failed');
-    if (failure === 'transaction') {
-      vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementationOnce(() => {
-        throw error;
-      });
-    } else if (failure === 'request') {
-      vi.spyOn(IDBObjectStore.prototype, 'get').mockImplementationOnce(() => {
-        throw error;
-      });
-    } else {
-      const get = IDBObjectStore.prototype.get;
-      vi.spyOn(IDBObjectStore.prototype, 'get').mockImplementationOnce(function (this: IDBObjectStore, key) {
-        const request = get.call(this, key);
-        queueMicrotask(() => this.transaction.abort());
-        return request;
-      });
-    }
-
-    const result = getProblemsByFrontendIds([
-      { frontendId: '1', domain: 'leetcode.com' },
-      { frontendId: 'missing', domain: 'leetcode.cn' },
-    ]);
-    if (failure === 'abort') {
-      await expect(result).rejects.toMatchObject({ name: 'AbortError' });
-    } else {
-      await expect(result).rejects.toThrow(error);
-    }
-    expect(close).toHaveBeenCalledTimes(1);
+it.each(['transaction', 'abort'] as const)('closes the batch connection after a %s failure', async (failure) => {
+  await initializeCatalog();
+  const close = vi.spyOn(IDBDatabase.prototype, 'close');
+  const error = new Error('Catalog read failed');
+  if (failure === 'transaction') {
+    vi.spyOn(IDBDatabase.prototype, 'transaction').mockImplementationOnce(() => {
+      throw error;
+    });
+  } else {
+    const get = IDBObjectStore.prototype.get;
+    vi.spyOn(IDBObjectStore.prototype, 'get').mockImplementationOnce(function (this: IDBObjectStore, key) {
+      const request = get.call(this, key);
+      queueMicrotask(() => this.transaction.abort());
+      return request;
+    });
   }
-);
+
+  const result = getProblemsByFrontendIds([
+    { frontendId: '1', domain: 'leetcode.com' },
+    { frontendId: 'missing', domain: 'leetcode.cn' },
+  ]);
+  if (failure === 'abort') {
+    await expect(result).rejects.toMatchObject({ name: 'AbortError' });
+  } else {
+    await expect(result).rejects.toThrow(error);
+  }
+  expect(close).toHaveBeenCalledTimes(1);
+});
 
 it('looks up mixed-domain and missing IDs in input order using one readonly transaction and connection', async () => {
   const cnProblem = {

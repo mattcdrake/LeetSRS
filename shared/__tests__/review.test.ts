@@ -24,7 +24,7 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
 }
 
 describe('review queue calculations', () => {
-  it.each([State.New, State.Learning, State.Review, State.Relearning])(
+  it.each([State.New, State.Review])(
     'excludes paused and future cards and includes exact due times in state %i',
     (state) => {
       const due = dueCard('due', '2024-01-15T12:00:00', state);

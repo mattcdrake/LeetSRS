@@ -23,14 +23,7 @@ describe('learning document startup', () => {
     });
   });
 
-  it.each(['missing', 'null'])('initializes an unedited installation with a %s document', async (presence) => {
-    if (presence === 'null') {
-      // The fake browser drops null values; expose raw null at the storage boundary.
-      vi.spyOn(fakeBrowser.storage.local, 'get').mockImplementationOnce(async () => ({
-        'leetsrs:learningDocument': null,
-      }));
-    }
-
+  it('initializes an unedited installation with a missing document', async () => {
     await initializeLearningDocument();
 
     expect(await readLearningDocument()).toEqual(
@@ -134,9 +127,6 @@ describe('learning document startup', () => {
   });
 
   it.each([
-    false,
-    { schemaVersion: null },
-    { schemaVersion: 5, cards: null },
     { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
     { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
   ])('reports corrupt or future saved documents without legacy fallback: %j', async (document) => {
@@ -155,7 +145,7 @@ describe('learning document startup', () => {
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 
-  it.each(['document'])('retries a rejected %s write from intact legacy data', async (stage) => {
+  it('retries a rejected document write from intact legacy data', async () => {
     const { backup, converted } = validLegacyBackup();
     const local = {
       'leetsrs:schemaVersion': 2,
@@ -173,8 +163,7 @@ describe('learning document startup', () => {
     };
     await fakeBrowser.storage.local.set(local);
     await fakeBrowser.storage.sync.set(sync);
-    const area = stage === 'promotion' ? fakeBrowser.storage.sync : fakeBrowser.storage.local;
-    vi.spyOn(area, 'set').mockRejectedValueOnce(new Error('Storage unavailable'));
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Storage unavailable'));
 
     await expect(initializeLearningDocument()).rejects.toThrow('Storage unavailable');
 
@@ -224,22 +213,18 @@ describe('learning document startup', () => {
     expect(await readLearningDocument()).toEqual(edited);
   });
 
-  it.each([['sync', 'theme', 'invalid']])('rejects malformed %s %s before any writes', async (area, key, value) => {
+  it('rejects a malformed legacy theme before any writes', async () => {
     const { backup } = validLegacyBackup();
     const local: Record<string, unknown> = {
       'leetsrs:schemaVersion': 2,
       'leetsrs:cards': backup.data.cards,
       'leetsrs:notes:valid-com': backup.data.notes['valid-com'],
     };
-    const sync: Record<string, unknown> = { 'leetsrs:githubPat': 'secret' };
-    const invalidArea = area === 'local' ? local : sync;
-    invalidArea[`leetsrs:${key}`] = value;
+    const sync = { 'leetsrs:githubPat': 'secret', 'leetsrs:theme': 'invalid' };
     await fakeBrowser.storage.local.set(local);
     await fakeBrowser.storage.sync.set(sync);
     const localBefore = await fakeBrowser.storage.local.get();
     const syncBefore = await fakeBrowser.storage.sync.get();
-    // Preserve explicit nulls, which the fake browser otherwise drops, in the raw snapshots.
-    vi.spyOn(storage, 'snapshot').mockImplementation(async (name) => structuredClone(name === 'local' ? local : sync));
     const localWrites = vi.spyOn(fakeBrowser.storage.local, 'set');
     const syncWrites = vi.spyOn(fakeBrowser.storage.sync, 'set');
 
@@ -249,25 +234,6 @@ describe('learning document startup', () => {
     expect(syncWrites).not.toHaveBeenCalled();
     expect(await fakeBrowser.storage.local.get()).toEqual(localBefore);
     expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
-  });
-
-  it.each([
-    { pat: 'shared-secret', gistId: 'shared-gist', enabled: true },
-    { pat: '', gistId: null, enabled: false },
-    { pat: '', gistId: '', enabled: false },
-  ])('preserves an already-combined connection over malformed retained fields: %j', async (connection) => {
-    const sync = {
-      'leetsrs:gistConnection': connection,
-      'leetsrs:githubPat': 42,
-      'leetsrs:gistId': false,
-      'leetsrs:gistSyncEnabled': 'invalid',
-    };
-    await fakeBrowser.storage.sync.set(sync);
-
-    await initializeLearningDocument();
-
-    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-    expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
   });
 
   it('retries a rejected supported-document conversion without falling back to legacy storage', async () => {

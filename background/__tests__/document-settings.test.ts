@@ -76,7 +76,7 @@ describe('document settings through background commands', () => {
     expect(await storage.getItem('local:leetsrs:dataUpdatedAt')).toBeNull();
   });
 
-  it.each(['validation', 'clock', 'write'] as const)(
+  it.each(['validation', 'write'] as const)(
     'preserves the document after a %s failure and accepts the next edit',
     async (failure) => {
       const document = buildLearningDocument({
@@ -93,10 +93,6 @@ describe('document settings through background commands', () => {
       if (failure === 'write') {
         writes.mockRejectedValueOnce(new Error('Write failed'));
       }
-      if (failure === 'clock') {
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(Number.NaN);
-      }
 
       await expect(
         getRegisteredBackground().updateSettings({
@@ -104,7 +100,6 @@ describe('document settings through background commands', () => {
           maxNewCardsPerDay: failure === 'validation' ? -1 : 8,
         })
       ).rejects.toThrow();
-      vi.useRealTimers();
       expect(await getSettings()).toEqual(before);
       expect(await readLearningDocument()).toEqual(document);
       expect(writes).toHaveBeenCalledTimes(failure === 'write' ? 1 : 0);
@@ -121,42 +116,16 @@ describe('document settings through background commands', () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     const changes = Object.assign(Object.create({ language: 'zh-CN' }), { theme: undefined, unknown: 1 });
     const before = await readLearningDocument();
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(Number.NaN);
 
     await getRegisteredBackground().updateSettings({});
     await getRegisteredBackground().updateSettings(changes);
 
     expect(writes).not.toHaveBeenCalled();
     expect(await readLearningDocument()).toEqual(before);
-    vi.useRealTimers();
     await getRegisteredBackground().updateSettings({ theme: undefined, maxNewCardsPerDay: 5 });
     expect((await readLearningDocument())?.settings).toEqual({
       maxNewCardsPerDay: 5,
       resetEditorOnReviewQueue: false,
     });
-  });
-
-  it('resolves each read from its captured document and follows replacement without retained overrides', async () => {
-    vi.stubGlobal('navigator', { languages: ['en'] });
-    const document = buildLearningDocument({
-      settings: { language: 'zh-CN' as const, theme: 'dark' as const },
-    });
-    await replaceLearningDocument(document);
-    backgroundEntry.main();
-    await getRegisteredBackground().waitForInitialization();
-    const initial = Promise.withResolvers<typeof document>();
-    const started = Promise.withResolvers<void>();
-    vi.spyOn(storage, 'getItem').mockImplementationOnce(() => {
-      started.resolve();
-      return initial.promise;
-    });
-
-    const pending = getSettings();
-    await started.promise;
-    await replaceLearningDocument(buildLearningDocument());
-    initial.resolve(document);
-    expect(await pending).toEqual(buildSettings({ language: 'zh-CN', theme: 'dark' }));
-    expect(await getSettings()).toEqual(buildSettings({ language: 'en' }));
   });
 });

@@ -8,7 +8,6 @@ import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
-import { getSettings } from '@/test/utils/learning-reads';
 import backgroundEntry from '../../entrypoints/background/index';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
@@ -33,39 +32,6 @@ beforeEach(async () => {
 });
 
 describe('document transfers through background commands', () => {
-  it('replaces the whole document from a file without replacing the Gist connection', async () => {
-    await getRegisteredBackground().addCard(buildProblem());
-    await getRegisteredBackground().saveNote('1', 'Omitted from replacement');
-    const replacement = {
-      ...(await readLearningDocument()),
-      cards: {},
-      settings: {},
-      dataUpdatedAt: '2099-01-01T00:00:00.000Z',
-    };
-
-    await getRegisteredBackground().importData(JSON.stringify(replacement));
-
-    expect(await readLearningDocument()).toEqual(replacement);
-    expect(await getSettings()).toMatchObject({ theme: 'system' });
-    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'gist', enabled: false });
-  });
-
-  it.each([true, false])('imports historical data with an explicit timestamp: %s', async (hasTimestamp) => {
-    const { backup, converted } = validLegacyBackup();
-    const input = { ...backup, dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : undefined };
-
-    await getRegisteredBackground().importData(JSON.stringify(input));
-
-    expect(await readLearningDocument()).toEqual(
-      buildLearningDocument({
-        ...converted,
-        settings: { resetEditorOnReviewQueue: false },
-        dataUpdatedAt: hasTimestamp ? backup.dataUpdatedAt : backup.exportDate,
-      })
-    );
-    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'gist', enabled: false });
-  });
-
   it('retains all data after a rejected import and accepts a later edit', async () => {
     await getRegisteredBackground().addCard(buildProblem());
     const before = await readLearningDocument();
@@ -80,19 +46,6 @@ describe('document transfers through background commands', () => {
     expect(await readLearningDocument()).toEqual(before);
     await getRegisteredBackground().saveNote('1', 'After failure');
     expect((await readLearningDocument()).cards['1']?.note).toBe('After failure');
-  });
-
-  it('rejects future data before overwriting the local document', async () => {
-    await getRegisteredBackground().addCard(buildProblem());
-    const before = await readLearningDocument();
-
-    await expect(
-      getRegisteredBackground().importData(
-        JSON.stringify({ schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} })
-      )
-    ).rejects.toThrow();
-
-    expect(await readLearningDocument()).toEqual(before);
   });
 
   it.each([false, true])(
@@ -132,3 +85,65 @@ describe('document transfers through background commands', () => {
     }
   );
 });
+
+it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, LEARNING_DOCUMENT_VERSION])(
+  'imports version %i through the registered service and persists the complete converted document',
+  async (schemaVersion) => {
+    const { backup, converted, legacyConverted } = validLegacyBackup();
+    const data = {
+      ...(schemaVersion < 4
+        ? backup.data
+        : schemaVersion < 9
+          ? legacyConverted
+          : schemaVersion === 9
+            ? { cards: legacyConverted.cards, reviewActivity: converted.reviewActivity }
+            : converted),
+      settings: {
+        theme: 'light',
+        language: schemaVersion < 11 ? 'de' : 'en',
+        maxNewCardsPerDay: 7,
+        ...(schemaVersion < 3
+          ? { autoClearLeetcode: true }
+          : schemaVersion < 7
+            ? { resetEditorOnEveryProblem: true }
+            : { resetEditorOnReviewQueue: true }),
+      },
+    };
+    const input =
+      schemaVersion < 6
+        ? { schemaVersion, exportDate: backup.exportDate, data }
+        : { schemaVersion, dataUpdatedAt: backup.dataUpdatedAt, ...data };
+    await getRegisteredBackground().addCard(buildProblem({ frontendId: 'discard' }));
+    await getRegisteredBackground().importData(JSON.stringify(input));
+    expect(await readLearningDocument()).toEqual(
+      buildLearningDocument({
+        ...converted,
+        settings: { theme: 'light', language: 'en', maxNewCardsPerDay: 7, resetEditorOnReviewQueue: true },
+        dataUpdatedAt: backup.dataUpdatedAt,
+      })
+    );
+    expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'gist', enabled: false });
+  }
+);
+
+it.each(['json', 'card', 'future'] as const)(
+  'rejects a malformed %s import without writing and recovers',
+  async (kind) => {
+    await getRegisteredBackground().addCard(buildProblem());
+    const before = await readLearningDocument();
+    const invalid =
+      kind === 'json'
+        ? '{'
+        : JSON.stringify(
+            kind === 'future'
+              ? { ...before, schemaVersion: LEARNING_DOCUMENT_VERSION + 1 }
+              : { ...before, cards: { '1': { ...before.cards['1'], fsrs: { ...before.cards['1'].fsrs, state: 4 } } } }
+          );
+    const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
+    await expect(getRegisteredBackground().importData(invalid)).rejects.toThrow();
+    expect(writes).not.toHaveBeenCalled();
+    expect(await readLearningDocument()).toEqual(before);
+    await getRegisteredBackground().saveNote('1', 'Recovered');
+    expect((await readLearningDocument()).cards['1'].note).toBe('Recovered');
+  }
+);

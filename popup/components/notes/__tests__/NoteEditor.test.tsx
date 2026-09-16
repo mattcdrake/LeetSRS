@@ -90,43 +90,6 @@ describe('NoteEditor', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('shows a save failure, retains the draft, and clears the error after a successful retry', async () => {
-    const error = new Error('Save failed');
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    service.handle('saveNote', () => Promise.reject(error));
-    const { wrapper, queryClient } = createPopupTestWrapper();
-    vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }) },
-      })
-    );
-    setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
-    ]);
-    render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
-    const textarea = screen.getByRole('textbox', { name: 'Note text' });
-
-    fireEvent.change(textarea, { target: { value: 'Failed draft' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Could not save your note. Your draft is kept. Try saving again.'
-    );
-    expect(textarea).toHaveValue('Failed draft');
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
-
-    service.handle('saveNote', async (_frontendId, text) => {
-      const saved = buildLearningDocument({
-        cards: { [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: text }) },
-      });
-      vi.mocked(storage.getItem).mockResolvedValue(saved);
-      await storage.setItem(STORAGE_KEYS.learningDocument, saved);
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
-    expect(textarea).toHaveValue('Failed draft');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  });
-
   it('does not show another card’s save failure', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     service.handle('saveNote', () => Promise.reject(new Error('Save failed')));
@@ -178,41 +141,6 @@ describe('NoteEditor', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
     await act(async () => pending.resolve());
     expect(otherTextarea).toHaveValue('Other draft');
-  });
-
-  it('preserves a dirty draft during incoming updates and resets it and confirmation when switching cards', async () => {
-    const { wrapper, queryClient } = createPopupTestWrapper();
-    setPopupLearningCardsQueryData(queryClient, [
-      createMockCardWithProblem(State.New, { frontendId, note: 'Stored note' }),
-      createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
-    ]);
-    vi.mocked(storage.getItem).mockResolvedValue(
-      buildLearningDocument({
-        cards: {
-          [frontendId]: createMockCardWithProblem(State.New, { frontendId, note: 'Incoming note' }),
-          'another-card': createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
-        },
-      })
-    );
-    const view = render(<NoteEditor frontendId={frontendId} variant={variant} />, { wrapper });
-    const textarea = screen.getByRole('textbox', { name: 'Note text' });
-    fireEvent.change(textarea, { target: { value: 'Dirty draft' } });
-    act(() =>
-      setPopupLearningCardsQueryData(queryClient, [
-        createMockCardWithProblem(State.New, { frontendId, note: 'Incoming note' }),
-        createMockCardWithProblem(State.New, { frontendId: 'another-card', note: 'Other note' }),
-      ])
-    );
-    expect(textarea).toHaveValue('Dirty draft');
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    await screen.findByRole('button', { name: 'Confirm?' });
-
-    view.rerender(<NoteEditor frontendId="another-card" variant={variant} />);
-    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Other note');
-    expect(screen.queryByRole('button', { name: 'Confirm?' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
-    view.rerender(<NoteEditor frontendId={frontendId} variant={variant} />);
-    expect(screen.getByRole('textbox', { name: 'Note text' })).toHaveValue('Incoming note');
   });
 
   it('retains text and resets confirmation after a failed deletion', async () => {

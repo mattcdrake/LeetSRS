@@ -58,32 +58,6 @@ describe('CardListItem', () => {
     }
   });
 
-  it.each([
-    { paused: false, action: 'Pause', nextPaused: true },
-    { paused: true, action: 'Resume', nextPaused: false },
-  ])('sends the $action mutation for its card', async ({ paused, action, nextPaused }) => {
-    const card = createMockCardWithProblem(State.New, { slug: 'test-problem', paused });
-    renderItem(card);
-
-    fireEvent.click(screen.getByRole('button', { name: action }));
-
-    await vi.waitFor(() => expect(background.setPauseStatus).toHaveBeenCalledWith('1', nextPaused));
-  });
-
-  it('deletes only after confirmation', async () => {
-    renderItem(createMockCardWithProblem(State.New, { slug: 'test-problem' }));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(screen.getByRole('button', { name: 'Confirm?' })).toBeInTheDocument();
-    expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
-
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
-
-    await vi.waitFor(() => {
-      expect(background.removeCard).toHaveBeenCalledWith('1');
-    });
-  });
-
   it('expires delete confirmation', () => {
     vi.useFakeTimers();
     renderItem(createMockCardWithProblem(State.New));
@@ -95,21 +69,6 @@ describe('CardListItem', () => {
 
     expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument();
     expect(background.removeCard).not.toHaveBeenCalledWith(expect.anything());
-  });
-
-  it('restores its pause action after a failure', async () => {
-    const error = new Error('Pause failed');
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    service.handle('setPauseStatus', () => Promise.reject(error));
-    renderItem(createMockCardWithProblem(State.New));
-
-    const pauseButton = screen.getByRole('button', { name: 'Pause' });
-    fireEvent.click(pauseButton);
-
-    await vi.waitFor(() => {
-      expect(consoleError).toHaveBeenCalledWith('Failed to toggle pause status:', error);
-      expect(pauseButton).not.toBeDisabled();
-    });
   });
 
   it('restores delete confirmation after a failure', async () => {

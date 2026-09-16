@@ -92,7 +92,7 @@ describe('LeetcodeCnBanner', () => {
     }
   });
 
-  it('keeps settings available after dismissing the banner', async () => {
+  it('persists banner dismissal and keeps settings available', async () => {
     render(
       <>
         <LeetcodeCnBanner />
@@ -103,6 +103,8 @@ describe('LeetcodeCnBanner', () => {
     const dismiss = await screen.findByRole('button', { name: 'Dismiss' });
     act(() => dismiss.click());
     expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Using leetcode.cn? Enable support to add problems.')).not.toBeInTheDocument();
+    expect(store[DISMISS_KEY]).toBe('1');
     expect(screen.getByText(/Enable support for leetcode\.cn/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
@@ -110,8 +112,8 @@ describe('LeetcodeCnBanner', () => {
 
   it.each([
     { context: 'a leetcode.com tab', tabs: [tabWithUrl('https://leetcode.com/problems/two-sum/')] },
-    { context: 'an invalid tab URL', tabs: [tabWithUrl('not-a-url')] },
     { context: 'no active tab', tabs: [] },
+    { context: 'a lookalike domain', tabs: [tabWithUrl('https://leetcode.cn.example.com/')] },
   ])('is hidden for $context', async ({ tabs }) => {
     mockQuery.mockResolvedValue(tabs);
 
@@ -133,20 +135,5 @@ describe('LeetcodeCnBanner', () => {
     });
 
     expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
-  });
-
-  it('hides and sets localStorage when dismissed', async () => {
-    mockContains.mockResolvedValue(false);
-
-    await act(async () => {
-      render(<LeetcodeCnBanner />, createPopupTestWrapper());
-    });
-
-    await act(async () => {
-      (await screen.findByLabelText('Dismiss')).click();
-    });
-
-    expect(screen.queryByText(/leetcode\.cn/i)).not.toBeInTheDocument();
-    expect(store[DISMISS_KEY]).toBe('1');
   });
 });

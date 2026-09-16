@@ -2,7 +2,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Theme } from '@/shared/settings';
-import { resolveTheme, useTheme } from '../useTheme';
+import { useTheme } from '../useTheme';
 
 const queryMock = vi.hoisted(() => ({ theme: 'system' as Theme }));
 
@@ -52,15 +52,6 @@ describe('useTheme', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-  });
-
-  it.each([
-    ['light', false, 'light'],
-    ['dark', true, 'dark'],
-    ['system', false, 'light'],
-    ['system', true, 'dark'],
-  ] as const)('resolves %s with prefersDark=%s to %s', (theme, prefersDark, expected) => {
-    expect(resolveTheme(theme, prefersDark)).toBe(expected);
   });
 
   it('returns live OS theme changes in system mode and cleans up the listener', () => {

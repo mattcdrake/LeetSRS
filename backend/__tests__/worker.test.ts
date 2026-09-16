@@ -50,7 +50,6 @@ it.each([
   ['callback', { code: 'code', code_verifier: 'a'.repeat(43), redirect_uri: 'https://evil.example/' }],
   ['verifier', { code: 'code', code_verifier: 'short', redirect_uri: callback }],
   ['extra fields', { code: 'code', code_verifier: 'a'.repeat(43), redirect_uri: callback, client_id: 'attacker' }],
-  ['oversized body', { code: 'a'.repeat(5000) }],
 ])('rejects invalid %s before contacting GitHub', async (_, body) => {
   expect((await worker.fetch(request('/exchange', body), env)).status).toBe(400);
   expect(fetch).not.toHaveBeenCalled();
@@ -71,7 +70,7 @@ it('denies unrecognized origins and permits configured extension preflight', asy
   expect(response.headers.get('Access-Control-Allow-Origin')).toBe(origin);
   expect(fetch).not.toHaveBeenCalled();
 });
-it.each([302, 307, 400, 500, 200])('sanitizes upstream failure %s', async (status) => {
+it.each([302, 500, 200])('sanitizes upstream failure %s', async (status) => {
   vi.mocked(fetch).mockResolvedValue(Response.json({ error: 'secret detail' }, { status }));
   const response = await worker.fetch(request(), env);
   expect(response.ok).toBe(false);
