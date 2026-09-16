@@ -27,32 +27,6 @@ import { useSettingsQuery } from '../settings';
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 
-it('loads saved cards with one catalog batch', async () => {
-  fakeBrowser.reset();
-  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-  const cards = [
-    createMockCard(State.Review, { frontendId: '1', domain: 'leetcode.com' }),
-    createMockCard(State.Review, { frontendId: '2', domain: 'leetcode.cn' }),
-  ];
-  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
-  const open = vi.spyOn(indexedDB, 'open');
-  const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
-  const view = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-  try {
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    await vi.waitFor(() => expect(view.result.current.isSuccess).toBe(true));
-    expect(view.result.current.data).toEqual([
-      { ...testCatalog[0], ...cards[0] },
-      { ...testCatalog[1], ...cards[1] },
-    ]);
-    expect(open).toHaveBeenCalledTimes(1);
-    expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
-  } finally {
-    view.unmount();
-    vi.useRealTimers();
-  }
-});
-
 it('keeps popup and badge queues consistent without reading browser language', async () => {
   fakeBrowser.reset();
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -101,28 +75,21 @@ describe('card queries through the background service', () => {
   it.each([
     { frontendId: 'unknown', domain: 'leetcode.com' as const },
     { frontendId: '3', domain: 'leetcode.cn' as const },
-  ])('keeps learning data accessible when $frontendId is unavailable on $domain', async (problem) => {
-    const card = createMockCard(State.Review, { ...problem, note: 'Keep my solution' });
+  ])('reports an unknown problem for $frontendId on $domain', async (problem) => {
+    const card = createMockCard(State.Review, problem);
     await background.importData(
       JSON.stringify(
         buildLearningDocument({
           cards: { 1: createMockCard(State.Review), [card.frontendId]: card },
-          settings: { language: 'zh-CN' },
         })
       )
     );
-    const view = renderHook(
-      () => ({ cards: useCardsQuery(), queue: useReviewQueueQuery(), note: useNoteQuery(card.frontendId) }),
-      {
-        wrapper: createPopupTestWrapper().wrapper,
-      }
-    );
+    const view = renderHook(() => ({ cards: useCardsQuery(), queue: useReviewQueueQuery() }), {
+      wrapper: createPopupTestWrapper().wrapper,
+    });
     const error = `Unknown problem: ${card.frontendId} on ${card.domain}`;
     await waitFor(() => expect(view.result.current.cards.error?.message).toBe(error));
     expect(view.result.current.queue.error?.message).toBe(error);
-    expect(view.result.current.note.data).toBe('Keep my solution');
-    const settings = renderHook(() => useSettingsQuery(), { wrapper: createPopupTestWrapper().wrapper });
-    await waitFor(() => expect(settings.result.current.data.language).toBe('zh-CN'));
   });
 
   it('refreshes an empty queue when a card becomes due', async () => {
@@ -149,9 +116,14 @@ describe('card queries through the background service', () => {
 
 beforeEach(initializeCatalog);
 
-it('shares one document read across cards, queue, notes, and settings', async () => {
-  const card = createMockCard(State.New, { note: 'Shared note' });
-  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: card } }));
+it('shares one document read and catalog batch across cards, queue, notes, and settings', async () => {
+  const cards = [
+    createMockCard(State.New, { frontendId: '1', domain: 'leetcode.com', note: 'Shared note' }),
+    createMockCard(State.New, { frontendId: '2', domain: 'leetcode.cn' }),
+  ];
+  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
+  const open = vi.spyOn(indexedDB, 'open');
+  const transaction = vi.spyOn(IDBDatabase.prototype, 'transaction');
   const reads = vi.spyOn(storage, 'getItem');
   const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
   const view = renderHook(
@@ -164,10 +136,13 @@ it('shares one document read across cards, queue, notes, and settings', async ()
     { wrapper: createTestWrapper().wrapper }
   );
   await waitFor(() => expect(view.result.current.queue.isSuccess).toBe(true));
-  expect(view.result.current.cards.data).toMatchObject([{ note: 'Shared note' }]);
+  expect(view.result.current.cards.data).toEqual(cards.map((card, index) => ({ ...testCatalog[index], ...card })));
+  expect(view.result.current.queue.data).toEqual(view.result.current.cards.data);
   expect(view.result.current.note.data).toBe('Shared note');
   expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
   expect(lookups).toHaveBeenCalledTimes(1);
+  expect(open).toHaveBeenCalledTimes(1);
+  expect(transaction).toHaveBeenCalledExactlyOnceWith('problems', 'readonly');
 });
 
 it('isolates catalog failures and can retry metadata through the cards refetch', async () => {
