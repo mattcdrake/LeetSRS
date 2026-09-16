@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { type CardWithProblem, cardsQueryKey } from '@/popup/queries/cards';
+import { type CardWithProblem, cardMetadataQueryOptions } from '@/popup/queries/cards';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
 import { catalogProblemSchema } from '@/shared/catalog';
 import { cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
@@ -16,8 +16,8 @@ export function setPopupLearningDocumentQueryData(queryClient: QueryClient, over
   queryClient.setQueryData(learningDocumentQueryKey, document);
   const cards = Object.values(document.cards);
   queryClient.setQueryData(
-    cardsQueryKey,
-    cards.map((card) => buildCatalogProblem({ frontendId: card.frontendId }))
+    cardMetadataQueryOptions(cards).queryKey,
+    Object.fromEntries(cards.map((card) => [card.frontendId, buildCatalogProblem({ frontendId: card.frontendId })]))
   );
 }
 
@@ -36,7 +36,7 @@ export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: 
   });
   queryClient.setQueryData(learningDocumentQueryKey, document);
   queryClient.setQueryData(
-    cardsQueryKey,
-    uniqueCards.map((card) => catalogProblemSchema.strip().parse(card))
+    cardMetadataQueryOptions(uniqueCards).queryKey,
+    Object.fromEntries(uniqueCards.map((card) => [card.frontendId, catalogProblemSchema.strip().parse(card)]))
   );
 }

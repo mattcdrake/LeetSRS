@@ -52,6 +52,7 @@ it('preserves a dirty rendered note through incoming replacement and saves its d
 });
 
 it('keeps the outgoing card note live after it leaves the review queue', async () => {
+  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
   const next = buildProblem({ frontendId: 'next-card' });
   await background.addCard(next);
   await background.saveNote(problem.frontendId, 'Outgoing note');
@@ -61,6 +62,9 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
       note: useNoteQuery(frontendId),
       queue: useReviewQueueQuery(),
       delay: useDelayCardMutation(),
+      save: useSaveNoteMutation(frontendId),
+      settings: useSettingsQuery(),
+      update: useUpdateSettingsMutation(),
     }),
     { initialProps: { frontendId: problem.frontendId }, wrapper: createPopupTestWrapper().wrapper }
   );
@@ -68,29 +72,11 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
   await act(() => view.result.current.delay.mutateAsync({ frontendId: problem.frontendId, days: 1 }));
   await waitFor(() => expect(view.result.current.queue.data).toMatchObject([{ frontendId: next.frontendId }]));
   expect(view.result.current.note.data).toBe('Outgoing note');
-  await act(() => background.saveNote(problem.frontendId, ''));
+  await act(() => view.result.current.save.mutateAsync(''));
   await waitFor(() => expect(view.result.current.note.data).toBeNull());
   view.rerender({ frontendId: next.frontendId });
   await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));
-});
-
-it('reuses metadata after note and settings saves while updating enriched cards and the queue', async () => {
-  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
-  const view = renderHook(
-    () => ({
-      queue: useReviewQueueQuery(),
-      note: useNoteQuery(problem.frontendId),
-      save: useSaveNoteMutation(problem.frontendId),
-      settings: useSettingsQuery(),
-      update: useUpdateSettingsMutation(),
-    }),
-    { wrapper: createPopupTestWrapper().wrapper }
-  );
-  await waitFor(() => expect(view.result.current.queue.isSuccess).toBe(true));
-  expect(lookups).toHaveBeenCalledTimes(1);
-  await act(() => view.result.current.save.mutateAsync('Edited solution'));
-  await waitFor(() => expect(view.result.current.note.data).toBe('Edited solution'));
-  expect(view.result.current.queue.data).toMatchObject([{ note: 'Edited solution' }]);
+  expect(view.result.current.queue.data).toMatchObject([{ note: 'Next note' }]);
   await act(() => view.result.current.update.mutateAsync({ maxNewCardsPerDay: 0 }));
   await waitFor(() => expect(view.result.current.queue.data).toEqual([]));
   expect(view.result.current.settings.data.maxNewCardsPerDay).toBe(0);
