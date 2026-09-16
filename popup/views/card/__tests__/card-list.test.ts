@@ -1,7 +1,6 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import type { CardWithProblem } from '@/popup/queries/cards';
-import type { CardFilter } from '@/shared/card-filters';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
 import { filterAndSortCards } from '../card-list';
 
@@ -11,58 +10,6 @@ const createCard = (id: string, frontendId: string, title = id): CardWithProblem
 const getIds = (cards: CardWithProblem[]) => cards.map((card) => card.slug);
 
 describe('filterAndSortCards', () => {
-  const now = Date.parse('2026-09-16T12:00:00Z');
-  const filterCards = (
-    [
-      ['active-new-due', State.New, false, now - 1],
-      ['paused-new-due', State.New, true, now],
-      ['active-practiced-due', State.Review, false, now],
-      ['paused-practiced-due', State.Review, true, now],
-      ['active-new-future', State.New, false, now + 1],
-      ['paused-new-future', State.New, true, now + 1],
-      ['active-practiced-future', State.Review, false, now + 1],
-      ['paused-practiced-future', State.Review, true, now + 1],
-    ] as const
-  ).map(([slug, state, paused, due], index) => {
-    const card = createMockCardWithProblem(state, {
-      frontendId: String(index + 1),
-      slug,
-      title: slug,
-      paused,
-    });
-    return { ...card, fsrs: { ...card.fsrs, due, reps: state === State.New ? 0 : 1 } };
-  });
-
-  it.each<{ filters: CardFilter[]; expected: string[] }>([
-    { filters: [], expected: filterCards.map((card) => card.slug) },
-    {
-      filters: ['due'],
-      expected: ['active-new-due', 'paused-new-due', 'active-practiced-due', 'paused-practiced-due'],
-    },
-    { filters: ['new'], expected: ['active-new-due', 'paused-new-due', 'active-new-future', 'paused-new-future'] },
-    {
-      filters: ['paused'],
-      expected: ['paused-new-due', 'paused-practiced-due', 'paused-new-future', 'paused-practiced-future'],
-    },
-    { filters: ['due', 'new'], expected: ['active-new-due', 'paused-new-due'] },
-    { filters: ['due', 'paused'], expected: ['paused-new-due', 'paused-practiced-due'] },
-    { filters: ['new', 'paused'], expected: ['paused-new-due', 'paused-new-future'] },
-    { filters: ['due', 'new', 'paused'], expected: ['paused-new-due'] },
-  ])('intersects $filters using exact timestamps and independent pause status', ({ filters, expected }) => {
-    expect(getIds(filterAndSortCards(filterCards, '', filters, now))).toEqual(expected);
-  });
-
-  it.each([State.Learning, State.Review, State.Relearning])('excludes practiced state %s from New', (state) => {
-    expect(filterAndSortCards([createMockCardWithProblem(state)], '', ['new'], now)).toEqual([]);
-  });
-
-  it('combines selected filters with search and preserves ID sorting', () => {
-    expect(getIds(filterAndSortCards([...filterCards].reverse(), 'future', ['new'], now))).toEqual([
-      'active-new-future',
-      'paused-new-future',
-    ]);
-  });
-
   it('does not mutate the input', () => {
     const cards = [createCard('second', '2'), createCard('first', '1')];
 

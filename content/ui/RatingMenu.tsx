@@ -72,6 +72,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
       ref={container}
       tabIndex={-1}
       className="rating-panel"
+      data-saved={showSaved || undefined}
       data-theme={dark ? 'dark' : 'light'}
       aria-busy={busy}
       style={

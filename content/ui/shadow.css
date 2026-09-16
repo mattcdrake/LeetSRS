@@ -57,6 +57,9 @@
 .rating-panel button {
   cursor: pointer;
 }
+.rating-panel[data-saved] {
+  width: fit-content;
+}
 .rating-panel button[data-disabled] {
   cursor: default;
   opacity: 0.55;
@@ -166,12 +169,11 @@
 .rating-saved {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 12px;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
   font-size: 12px;
-}
-.rating-saved [role="status"] {
-  flex: 1;
+  text-align: center;
 }
 .rating-error {
   padding: 10px 12px;

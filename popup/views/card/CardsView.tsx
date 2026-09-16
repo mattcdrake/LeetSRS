@@ -46,7 +46,7 @@ export function CardsView() {
                 )}
               </div>
             </TextField>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               {(['due', 'new', 'paused'] as const).map((filter) => (
                 <ToggleButton
                   key={filter}
@@ -57,9 +57,9 @@ export function CardsView() {
                     )
                   }
                   className={({ isSelected }) =>
-                    `min-h-9 px-3 py-1 rounded-lg border text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--current-accent)] ${
+                    `h-7 px-2.5 rounded-full border text-xs font-medium cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--current-accent)] ${
                       isSelected
-                        ? 'bg-accent text-black border-transparent'
+                        ? 'bg-[color-mix(in_srgb,var(--current-accent)_12%,var(--current-bg-primary))] text-primary border-[color-mix(in_srgb,var(--current-accent)_50%,var(--current-border))]'
                         : 'bg-primary text-secondary border-current hover:bg-tertiary'
                     }`
                   }
