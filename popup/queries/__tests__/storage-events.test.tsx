@@ -23,7 +23,6 @@ import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper, createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useCardsQuery, useRateCardMutation, useReviewQueueQuery } from '../cards';
-import { useExportDataMutation } from '../data';
 import { useGistSyncConfigQuery, useGistSyncStatusQuery, useSetGistSyncEnabledMutation } from '../gist-sync';
 import { useNoteQuery } from '../notes';
 import { useTodayReviewActivityQuery } from '../review-activity';
@@ -190,7 +189,7 @@ it.each([
   expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
-it('runs local queries, saves, and validated export while offline', async () => {
+it('runs local queries and saves while offline', async () => {
   await startBackground();
   onlineManager.setOnline(false);
   const { result } = renderHook(
@@ -200,7 +199,6 @@ it('runs local queries, saves, and validated export while offline', async () => 
       config: useGistSyncConfigQuery(),
       rate: useRateCardMutation(),
       update: useUpdateSettingsMutation(),
-      export: useExportDataMutation(),
     }),
     { wrapper: createPopupTestWrapper().wrapper }
   );
@@ -212,11 +210,6 @@ it('runs local queries, saves, and validated export while offline', async () => 
   });
   await waitFor(() => expect(result.current.settings.data.theme).toBe('dark'));
   expect(result.current.cards.data).toMatchObject([buildProblem()]);
-  await act(async () => {
-    const exported = JSON.parse(await result.current.export.mutateAsync());
-    expect(exported).toEqual(await readLearningDocument());
-    expect(exported).not.toHaveProperty('pat');
-  });
 });
 
 it('refreshes saved views after a content command and an alarm pull, including connection and status changes', async () => {

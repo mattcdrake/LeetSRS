@@ -1,12 +1,9 @@
 import { useSyncExternalStore } from 'react';
-import { Rating } from 'ts-fsrs';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 
 export const THEME_COLORS = {
   light: {
     bgToolbarButton: 'rgba(0, 0, 0, 0.04)',
-    bgSecondary: '#f5f5f5',
-    bgAddButton: '#f5f5f5',
     bgAddButtonHover: '#e8e8e8',
     bgTooltip: 'white',
     textAddButton: '#333333',
@@ -14,20 +11,10 @@ export const THEME_COLORS = {
     borderTooltip: 'rgba(0, 0, 0, 0.08)',
     focusRing: '#2563eb',
     borderMenu: 'rgba(0, 0, 0, 0.15)',
-    shadowMenu: '0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1)',
-    borderAddButton: 'rgba(0, 0, 0, 0.1)',
-    addIconFilter: 'grayscale(1) brightness(0.3)',
-    ratings: {
-      [Rating.Again]: { bg: RATING_COLORS.light[Rating.Again], hover: '#b13636' },
-      [Rating.Hard]: { bg: RATING_COLORS.light[Rating.Hard], hover: '#c26805' },
-      [Rating.Good]: { bg: RATING_COLORS.light[Rating.Good], hover: '#3862b5' },
-      [Rating.Easy]: { bg: RATING_COLORS.light[Rating.Easy], hover: '#35804a' },
-    },
+    ratings: RATING_COLORS.light,
   },
   dark: {
     bgToolbarButton: 'rgba(255, 255, 255, 0.08)',
-    bgSecondary: '#242424',
-    bgAddButton: '#2e2e2e',
     bgAddButtonHover: '#3a3a3a',
     bgTooltip: 'rgb(40, 40, 40)',
     textAddButton: '#e0e0e0',
@@ -35,15 +22,7 @@ export const THEME_COLORS = {
     borderTooltip: 'rgba(255, 255, 255, 0.08)',
     focusRing: '#93c5fd',
     borderMenu: 'rgba(255, 255, 255, 0.12)',
-    shadowMenu: '0 8px 16px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3)',
-    borderAddButton: 'rgba(255, 255, 255, 0.1)',
-    addIconFilter: 'grayscale(1) brightness(2)',
-    ratings: {
-      [Rating.Again]: { bg: RATING_COLORS.dark[Rating.Again], hover: '#c13a4f' },
-      [Rating.Hard]: { bg: RATING_COLORS.dark[Rating.Hard], hover: '#d97d2e' },
-      [Rating.Good]: { bg: RATING_COLORS.dark[Rating.Good], hover: '#4c7ec8' },
-      [Rating.Easy]: { bg: RATING_COLORS.dark[Rating.Easy], hover: '#47a05d' },
-    },
+    ratings: RATING_COLORS.dark,
   },
 } as const;
 

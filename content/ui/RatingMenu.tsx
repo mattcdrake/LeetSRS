@@ -96,7 +96,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     >
       {showSaved ? (
         <div className="rating-saved">
-          <span aria-hidden="true" style={{ color: colors.ratings[4].bg }}>
+          <span aria-hidden="true" style={{ color: colors.ratings[4] }}>
             ✓
           </span>
           <span role="status">
@@ -109,7 +109,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
           <div className="rating-heading">
             <span>{t.contentScript.howDidItGo}</span>
             <span className="rating-wordmark">
-              Leet<span style={{ color: colors.ratings[4].bg }}>SRS</span>
+              Leet<span style={{ color: colors.ratings[4] }}>SRS</span>
             </span>
           </div>
           <div className="rating-options">
@@ -122,7 +122,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
                 data-selected={selected === rating || undefined}
                 isDisabled={busy || !preview || selected !== undefined}
                 onPress={() => save(rating)}
-                style={{ '--rating-color': colors.ratings[rating].bg } as CSSProperties}
+                style={{ '--rating-color': colors.ratings[rating] } as CSSProperties}
               >
                 <span className="rating-stripe" aria-hidden="true" />
                 <span className="rating-label">

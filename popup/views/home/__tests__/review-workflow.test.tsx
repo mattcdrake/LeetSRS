@@ -1,15 +1,18 @@
 /** @vitest-environment happy-dom */
+import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
 import { CardsView } from '@/popup/views/card/CardsView';
 import { DataSection } from '@/popup/views/settings/DataSection';
 import { background } from '@/shared/background-service';
 import { formatLocalDate } from '@/shared/calendar';
-import { readLearningDocument } from '@/shared/storage';
+import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
-import { buildProblem } from '@/test/utils/card-mocks';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -31,6 +34,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  onlineManager.setOnline(true);
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });
@@ -198,4 +202,53 @@ it.each([
   const card = (await readLearningDocument()).cards['1'];
   expect(card.fsrs.due).toBe(new Date(end).getTime());
   expect(card.fsrs.due - new Date(start).getTime()).toBe(hours * 3_600_000);
+});
+
+it('exports the current complete snapshot, preserving its timestamp and excluding connection, status, and legacy values while offline', async () => {
+  const document = buildLearningDocument({
+    cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
+    reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
+    settings: { theme: 'dark', maxNewCardsPerDay: 7, resetEditorOnReviewQueue: true },
+    dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+  });
+  await replaceLearningDocument(document);
+  await storage.setItems([
+    { key: STORAGE_KEYS.gistConnection, value: { accountId: 1, gistId: 'local-gist', enabled: true } },
+    { key: STORAGE_KEYS.lastSyncTime, value: 'previous-sync' },
+    { key: STORAGE_KEYS.lastSyncDirection, value: 'pull' },
+    { key: 'sync:leetsrs:theme', value: 'light' },
+  ]);
+  onlineManager.setOnline(false);
+  const backups: Blob[] = [];
+  const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+    if (!(blob instanceof Blob)) throw new Error('Expected a backup blob');
+    backups.push(blob);
+    return 'blob:backup';
+  });
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  render(<DataSection />, { wrapper: createPopupTestWrapper().wrapper });
+  click('Export backup');
+  await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+  expect(JSON.parse(await backups[0].text())).toEqual(document);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Export backup' })).toBeEnabled());
+
+  const replacement = buildLearningDocument();
+  await replaceLearningDocument(replacement);
+  click('Export backup');
+  await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(2));
+  expect(JSON.parse(await backups[1].text())).toEqual(replacement);
+});
+
+it('reports initialization failure when exporting unavailable data without creating an empty backup', async () => {
+  await storage.removeItem(STORAGE_KEYS.learningDocument);
+  vi.mocked(background.waitForInitialization).mockRejectedValue(new Error('Initialization failed'));
+  vi.stubGlobal('alert', vi.fn());
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const createObjectURL = vi.spyOn(URL, 'createObjectURL');
+  render(<DataSection />, { wrapper: createPopupTestWrapper().wrapper });
+  click('Export backup');
+  await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to export data'));
+  expect(createObjectURL).not.toHaveBeenCalled();
+  expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
 });
