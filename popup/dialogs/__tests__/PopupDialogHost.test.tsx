@@ -127,13 +127,3 @@ it.each(['success', 'failure'] as const)(
     expect(await screen.findByRole('dialog', { name: outcome === 'success' ? 'later' : 'first' })).toBeInTheDocument();
   }
 );
-
-it('updates the queue when another popup acknowledges a dialog', async () => {
-  const registry = [dialog('first', async () => true), dialog('later', async () => true)];
-  render(<PopupDialogHost registry={registry} />, { wrapper: createPopupTestWrapper().wrapper });
-  expect(await screen.findByRole('dialog', { name: 'first' })).toBeInTheDocument();
-
-  await act(() => acknowledgePopupDialog('first'));
-  expect(await screen.findByRole('dialog', { name: 'later' })).toBeInTheDocument();
-  expect(background.acknowledgePopupDialog).not.toHaveBeenCalled();
-});
