@@ -4,9 +4,10 @@ import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/model
 import {
   readGistConnection,
   readLearningDocument,
+  readSyncStatus,
   replaceLearningDocument,
-  STORAGE_KEYS,
   writeGistConnection,
+  writeSyncStatus,
 } from '@/shared/storage';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import * as syncModule from '../sync';
@@ -94,7 +95,7 @@ describe('whole-document Gist sync', () => {
           owner: { id: kind === 'not-owned' ? 2 : 1 },
           files: {
             'leetsrs-backup.json': {
-              content: 'invalid json',
+              content: kind === 'not-owned' ? JSON.stringify(local) : 'invalid json',
               truncated: kind === 'truncated',
               raw_url: 'https://gist.githubusercontent.com/test/backup/raw/file',
             },
@@ -110,7 +111,10 @@ describe('whole-document Gist sync', () => {
           expect.objectContaining({ credentials: 'omit' })
         );
         await syncModule.sync();
-      } else expect(await readGistConnection()).toEqual(connection);
+      } else {
+        if (kind === 'not-owned') expect(result).toEqual({ saved: false, error: 'authentication' });
+        expect(await readGistConnection()).toEqual(connection);
+      }
     }
   );
 
@@ -230,11 +234,13 @@ describe('whole-document Gist sync', () => {
     [new TypeError('Failed to fetch'), 'unavailable'],
     [new Error('unexpected'), 'unknown'],
   ] as const)('reports sync failures as %s', async (failure, error) => {
+    const lastSyncTime = '2026-09-11T12:00:00.000Z';
+    await writeSyncStatus({ lastSyncTime });
     github.get.mockRejectedValue(failure);
 
     await syncModule.sync();
 
     expect(await syncModule.getSyncStatus()).toMatchObject({ lastError: error, syncInProgress: false });
-    expect(await fakeBrowser.storage.local.get(STORAGE_KEYS.lastSyncTime)).toEqual({});
+    expect(await readSyncStatus()).toEqual({ lastSyncTime });
   });
 });
