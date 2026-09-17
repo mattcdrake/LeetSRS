@@ -45,6 +45,7 @@
 
 ## Repository conventions
 
+- Perform implementation work in a separate Git worktree.
 - Regenerate a missing `.wxt/tsconfig.json` with `npx wxt prepare`; `tsconfig.json` extends it.
 - Do not commit generated `.wxt/` or `.output/` files.
 - Use GitHub's native issue relationships when marking issues as blocked or blocking.
