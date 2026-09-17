@@ -35,24 +35,24 @@ import {
 const GIST_FILENAME = 'leetsrs-backup.json';
 
 let activeSync: Promise<void> | undefined;
-let connectionWrite = Promise.resolve();
 let generation = 0;
 let lastError: GistSyncErrorCode | null = null;
 
 // Remember observed values so our own storage notification and completed operation
 // share a sync attempt, even when the notification arrives after the write resolves.
-let connectionKey: string | undefined;
+let observedConnection: GistSyncConfig | null | undefined;
 
 function observeConnection(connection: GistSyncConfig | null): boolean {
-  const key = JSON.stringify([connection?.accountId, connection?.gistId, connection?.enabled]);
-  if (key === connectionKey) return false;
-  connectionKey = key;
-  invalidateGistSync();
+  const destinationChanged =
+    connection?.accountId !== observedConnection?.accountId || connection?.gistId !== observedConnection?.gistId;
+  if (!destinationChanged && connection?.enabled === observedConnection?.enabled) return false;
+  observedConnection = connection;
+  if (destinationChanged) invalidateGistSync();
   return true;
 }
 
 export function watchGistConnectionChanges(ready: Promise<void>): void {
-  connectionKey = undefined;
+  observedConnection = undefined;
   storage.watch<GistSyncConfig>(STORAGE_KEYS.gistConnection, (connection) => {
     if (observeConnection(connection)) {
       void ready.then(sync, () => {});
@@ -61,13 +61,11 @@ export function watchGistConnectionChanges(ready: Promise<void>): void {
 }
 
 async function saveConnection(connection: GistSyncConfig): Promise<void> {
-  const previousKey = connectionKey;
-  invalidateGistSync();
-  connectionWrite = writeGistConnection(connection);
-  await connectionWrite;
+  const previousConnection = observedConnection;
+  await writeGistConnection(connection);
   // A notification may already have completed this connection's sync before the
   // write resolves. An unchanged connection still needs the explicit trigger.
-  if (observeConnection(connection) || connectionKey === previousKey) {
+  if (observeConnection(connection) || observedConnection === previousConnection) {
     void sync();
   }
 }
@@ -79,13 +77,10 @@ export async function saveEdit(document: LearningDocument, editedAt: Date): Prom
 
 export async function restoreBackup(json: string): Promise<void> {
   const document = parseLearningDocumentBackup(json);
-  invalidateGistSync();
   await replaceLearningDocument(document);
 }
 
 export async function resetAllData(): Promise<void> {
-  invalidateGistSync();
-  connectionKey = undefined;
   await replaceLearningDocument({
     schemaVersion: LEARNING_DOCUMENT_VERSION,
     cards: {},
@@ -98,8 +93,7 @@ export async function resetAllData(): Promise<void> {
 
 // Sync is deliberately just whole-document last-write-wins. Startup, local saves,
 // enabling, and the minute alarm all call the same function; overlapping calls share
-// one promise. A generation change stops document sync started before a reset, import,
-// or connection change from applying a stale result.
+// one promise. A generation change rejects results from a previous connection.
 
 function invalidateGistSync(): void {
   generation++;
@@ -124,6 +118,7 @@ export function sync(): Promise<void> {
 async function runSync(startGeneration: number): Promise<void> {
   try {
     const config = await readGistConnection();
+    observedConnection ??= config;
     if (generation !== startGeneration || !config.enabled) {
       return;
     }
@@ -306,7 +301,7 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
 
 export async function disconnectGithub(): Promise<void> {
   invalidateGistSync();
-  await Promise.all([signOutGithub(), connectionWrite.catch(() => {})]);
+  await signOutGithub();
   await removeGistConnection();
   await removeSyncStatus();
   lastError = null;
