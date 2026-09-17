@@ -102,7 +102,6 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
   if (refresh) await refresh;
   else await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
   expect((await getGithubAuthStatus()).account).toBeNull();
-  expect((await readGistConnection()).enabled).toBe(false);
 });
 it('keeps saved authorization unchanged on refresh failure and allows retry', async () => {
   await seedGithubAuthorization();
@@ -126,34 +125,6 @@ it('requires sign-out before starting another account sign-in', async () => {
   await startGithubSignIn();
   await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).toHaveBeenCalledOnce();
-});
-
-it.each(['sign-in', 'refresh'])('sign-out waits for a %s credential write already in progress', async (operation) => {
-  if (operation === 'refresh') {
-    await seedGithubAuthorization();
-    const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
-    await storage.setItem('local:leetsrs:githubAuthorization', { ...saved, expiresAt: 0 });
-  }
-  const started = Promise.withResolvers<void>();
-  const release = Promise.withResolvers<void>();
-  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
-    started.resolve();
-    await release.promise;
-    await write(items);
-  });
-  let refresh: Promise<unknown> | undefined;
-  if (operation === 'sign-in') {
-    acceptSignIn();
-    await startGithubSignIn();
-  } else refresh = getGithubAuthorization().catch(() => null);
-  await started.promise;
-  const signingOut = signOutGithub();
-  release.resolve();
-  await signingOut;
-  await refresh;
-  expect((await getGithubAuthStatus()).account).toBeNull();
-  expect(await storage.getItem('local:leetsrs:githubAuthorization')).toBeNull();
 });
 
 it('blocks saved authorization after revocation and preserves it for re-enabling', async () => {

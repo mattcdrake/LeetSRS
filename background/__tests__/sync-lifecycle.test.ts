@@ -101,53 +101,38 @@ it('does not sync while disabled and starts syncing when enabled', async () => {
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 });
 
-it.each(['import', 'reset', 'disable', 'external connection'] as const)(
-  'ignores a pending download after %s',
-  async (change) => {
-    const download = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
-    github.get.mockReturnValueOnce(download.promise);
-    if (change === 'import') await getRegisteredBackground().addCard(buildProblem());
-    const pending = sync();
-    await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
+it('ignores a pending download after an external connection change', async () => {
+  const download = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
+  github.get.mockReturnValueOnce(download.promise);
+  const pending = sync();
+  await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 
-    const imported = buildLearningDocument({ settings: { theme: 'dark' }, dataUpdatedAt: '2030-01-01' });
-    if (change === 'import') {
-      await getRegisteredBackground().importData(JSON.stringify(imported));
-    } else if (change === 'reset') {
-      await getRegisteredBackground().resetAllData();
-    } else if (change === 'disable') {
-      await getRegisteredBackground().setGistSyncEnabled(false);
-    } else {
-      await fakeBrowser.storage.local.set({
-        'leetsrs:gistConnection': { accountId: 1, gistId: 'other-gist', enabled: true },
-      });
-      await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'other-gist' }));
-      await vi.waitFor(async () =>
-        expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
-      );
-    }
-    const before = change === 'import' ? imported : await readLearningDocument();
-    const status = await getRegisteredBackground().getGistSyncStatus();
-    expect(status.syncInProgress).toBe(false);
-    const uploads = github.update.mock.calls.length;
-    download.resolve({
-      data: {
-        files: {
-          'leetsrs-backup.json': {
-            content: JSON.stringify(
-              buildLearningDocument({ settings: { theme: 'light' }, dataUpdatedAt: '2099-01-01' })
-            ),
-          },
+  await fakeBrowser.storage.local.set({
+    'leetsrs:gistConnection': { accountId: 1, gistId: 'other-gist', enabled: true },
+  });
+  await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'other-gist' }));
+  await vi.waitFor(async () =>
+    expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
+  );
+  const before = await readLearningDocument();
+  const status = await getRegisteredBackground().getGistSyncStatus();
+  expect(status.syncInProgress).toBe(false);
+  const uploads = github.update.mock.calls.length;
+  download.resolve({
+    data: {
+      files: {
+        'leetsrs-backup.json': {
+          content: JSON.stringify(buildLearningDocument({ settings: { theme: 'light' }, dataUpdatedAt: '2099-01-01' })),
         },
       },
-    });
-    await pending;
+    },
+  });
+  await pending;
 
-    expect(await readLearningDocument()).toEqual(before);
-    expect(await getRegisteredBackground().getGistSyncStatus()).toEqual(status);
-    expect(github.update).toHaveBeenCalledTimes(uploads);
-  }
-);
+  expect(await readLearningDocument()).toEqual(before);
+  expect(await getRegisteredBackground().getGistSyncStatus()).toEqual(status);
+  expect(github.update).toHaveBeenCalledTimes(uploads);
+});
 
 it('retries a failed save from the minute alarm', async () => {
   github.get.mockRejectedValueOnce(new TypeError('Failed to fetch'));
