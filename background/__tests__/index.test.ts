@@ -117,9 +117,9 @@ describe('document startup through registered background commands', () => {
   );
 
   it.each([
-    { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: {}, stats: {} },
-    { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
-    { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
+    { ...buildLearningDocument(), settings: undefined },
+    { ...buildLearningDocument(), schemaVersion: LEARNING_DOCUMENT_VERSION + 1 },
+    { ...buildLearningDocument(), cards: 'corrupt' },
   ])('rejects a saved invalid document without falling back to legacy data: %j', async (document) => {
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': document,

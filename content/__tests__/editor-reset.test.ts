@@ -98,11 +98,11 @@ describe('setupLeetcodeEditorReset', () => {
     const resetButton = renderResetButton(markup);
     const resetClick = vi.spyOn(resetButton, 'click');
     const dialog = createDialog(['确定', 'Cancel'], 'role="alertdialog"');
-    attachDialog(resetButton, dialog.dialog, 200);
-
-    await vi.advanceTimersByTimeAsync(249);
+    await vi.waitFor(() => expect(resetClick).toHaveBeenCalledOnce());
     expect(dialog.clicks[0]).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(1);
+    expect(onResetConfirmed).not.toHaveBeenCalled();
+    document.body.appendChild(dialog.dialog);
+    await vi.waitFor(() => expect(onResetConfirmed).toHaveBeenCalledOnce());
 
     expect(resetClick).toHaveBeenCalledTimes(1);
     expect(dialog.clicks[0]).toHaveBeenCalledTimes(1);

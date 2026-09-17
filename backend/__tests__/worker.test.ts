@@ -44,7 +44,13 @@ it.each(['/exchange', '/refresh'])('exchanges %s through the fixed upstream with
     expect.objectContaining({ method: 'POST', redirect: 'manual' })
   );
   const options = vi.mocked(fetch).mock.calls[0][1];
-  expect(JSON.parse(String(options?.body))).toMatchObject({ client_id: 'client', client_secret: 'secret' });
+  expect(JSON.parse(String(options?.body))).toEqual({
+    ...(path === '/refresh'
+      ? { refresh_token: 'refresh', grant_type: 'refresh_token' }
+      : { code: 'code', code_verifier: 'a'.repeat(43), redirect_uri: callback }),
+    client_id: 'client',
+    client_secret: 'secret',
+  });
 });
 it.each([
   ['callback', { code: 'code', code_verifier: 'a'.repeat(43), redirect_uri: 'https://evil.example/' }],
