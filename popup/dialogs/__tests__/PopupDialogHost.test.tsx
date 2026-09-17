@@ -1,5 +1,6 @@
 /** @vitest-environment happy-dom */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { Button, Heading } from 'react-aria-components';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -127,3 +128,38 @@ it.each(['success', 'failure'] as const)(
     expect(await screen.findByRole('dialog', { name: outcome === 'success' ? 'later' : 'first' })).toBeInTheDocument();
   }
 );
+
+it('acknowledges only the displayed dialog when the popup closes and resumes with the next entry', async () => {
+  const first = Promise.withResolvers<boolean>();
+  const registry = [dialog('first', () => first.promise), dialog('later', async () => true)];
+  const view = render(
+    <StrictMode>
+      <PopupDialogHost registry={registry} />
+    </StrictMode>,
+    { wrapper: createPopupTestWrapper().wrapper }
+  );
+  fireEvent(window, new Event('pagehide'));
+  expect(background.acknowledgePopupDialog).not.toHaveBeenCalled();
+
+  await act(async () => first.resolve(true));
+  expect(await screen.findByRole('dialog', { name: 'first' })).toBeInTheDocument();
+  fireEvent(window, new Event('pagehide'));
+  view.unmount();
+  await waitFor(async () => expect(await readPopupDialogAcknowledgments()).toEqual({ first: true }));
+  expect(background.acknowledgePopupDialog).toHaveBeenCalledExactlyOnceWith('first');
+
+  render(<PopupDialogHost registry={registry} />, { wrapper: createPopupTestWrapper().wrapper });
+  expect(await screen.findByRole('dialog', { name: 'later' })).toBeInTheDocument();
+});
+
+it('does not acknowledge an unshown dialog or duplicate a pending dismissal when the popup closes', async () => {
+  const save = Promise.withResolvers<void>();
+  service.resolve('acknowledgePopupDialog', save.promise);
+  const registry = [dialog('first', async () => true), dialog('later', async () => true)];
+  const view = render(<PopupDialogHost registry={registry} />, { wrapper: createPopupTestWrapper().wrapper });
+  fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+  fireEvent(window, new Event('pagehide'));
+  view.unmount();
+  await act(async () => save.resolve());
+  expect(background.acknowledgePopupDialog).toHaveBeenCalledExactlyOnceWith('first');
+});

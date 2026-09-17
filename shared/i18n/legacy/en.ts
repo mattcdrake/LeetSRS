@@ -5,5 +5,4 @@ export const patMigration = {
   migrationOpenSettings: 'Open settings',
   migrationContinue: 'Got it',
   migrationLater: 'Not now',
-  migrationDismissFailed: 'Could not dismiss this message. Please try again.',
 };

@@ -19,6 +19,7 @@ export function useStorageQueryEvents() {
     const learningKeys = [learningDocumentQueryKey];
     const connectionKeys = [gistSyncQueryKeys.config, gistSyncQueryKeys.status];
     const dialogKeys = [popupDialogAcknowledgmentsQueryKey];
+    const eligibilityKeys = [['popupDialogs', 'eligibility']];
     const watch = (key: Parameters<typeof storage.watch>[0], keys: readonly (readonly string[])[]) =>
       storage.watch(key, () => {
         void refresh(keys);
@@ -27,12 +28,13 @@ export function useStorageQueryEvents() {
       watch(STORAGE_KEYS.learningDocument, learningKeys),
       watch(STORAGE_KEYS.popupDialogAcknowledgments, dialogKeys),
       watch(STORAGE_KEYS.gistConnection, connectionKeys),
+      watch('local:leetsrs:oauthMigration', [gistSyncQueryKeys.auth, ...eligibilityKeys]),
       watch('local:leetsrs:githubAuthorization', [gistSyncQueryKeys.auth]),
       watch('local:leetsrs:githubSetupPending', [gistSyncQueryKeys.auth]),
       watch(STORAGE_KEYS.lastSyncTime, [gistSyncQueryKeys.status]),
     ];
     // Catch changes made before this effect, including while a cached popup was unmounted.
-    void refresh([...learningKeys, ...connectionKeys, ...dialogKeys]);
+    void refresh([...learningKeys, ...connectionKeys, ...dialogKeys, ...eligibilityKeys]);
     return () => {
       stopped = true;
       for (const stop of unwatch) stop();

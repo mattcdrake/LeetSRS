@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { GithubMigrationNotice } from '@/popup/legacy/GithubMigrationNotice';
+import { PopupDialogHost } from '@/popup/dialogs/PopupDialogHost';
 import './App.css';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { gistSyncQueryKeys, useGistSyncConfigQuery, useGithubAuthQuery } from '@/popup/queries/gist-sync';
@@ -69,7 +69,7 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      <GithubMigrationNotice
+      <PopupDialogHost
         onOpenSettings={
           activeView === 'settings'
             ? undefined

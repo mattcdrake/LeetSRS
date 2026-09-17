@@ -5,5 +5,4 @@ export const patMigration = {
   migrationOpenSettings: '打开设置',
   migrationContinue: '知道了',
   migrationLater: '暂时不用',
-  migrationDismissFailed: '无法关闭此消息，请重试。',
 };
