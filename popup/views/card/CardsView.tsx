@@ -3,7 +3,6 @@ import { SearchFilterBar } from '@/popup/components/SearchFilterBar';
 import { usePopupClock } from '@/popup/hooks/usePopupClock';
 import { useCardsQuery } from '@/popup/queries/cards';
 import type { CardFilter } from '@/shared/card-filters';
-import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
 import { useI18n } from '../../contexts/I18nContext';
 import { filterAndSortCards } from './card-list';
@@ -19,7 +18,7 @@ export function CardsView() {
   const sortedCards = filterAndSortCards(cards, filterText, filters, now);
 
   return (
-    <ViewLayout title={t.cardsView.title} headerContent={<StreakCounter />}>
+    <ViewLayout title={t.cardsView.title}>
       <div className="flex flex-col gap-4">
         {!isLoading && cards.length > 0 && (
           <SearchFilterBar
