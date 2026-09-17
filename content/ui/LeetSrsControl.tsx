@@ -2,6 +2,7 @@ import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import { watchDocumentTranslations } from '@/content/translations';
 import type { Translations } from '@/shared/i18n/index';
+import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
 import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
@@ -76,28 +77,7 @@ function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTMLButtonE
         } as CSSProperties & Record<`--${string}`, string>
       }
     >
-      <svg
-        aria-hidden="true"
-        focusable="false"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        width="1em"
-        height="1em"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-4"
-        role="img"
-      >
-        <path d="M9 4.55a8 8 0 0 1 6 14.9m0 -4.45v5h5" />
-        <path d="M5.63 7.16l0 .01" />
-        <path d="M4.06 11l0 .01" />
-        <path d="M4.63 15.1l0 .01" />
-        <path d="M7.16 18.37l0 .01" />
-        <path d="M11 19.94l0 .01" />
-      </svg>
+      <LeetSRSLogo className="size-4" role="img" />
     </Button>
   );
 }

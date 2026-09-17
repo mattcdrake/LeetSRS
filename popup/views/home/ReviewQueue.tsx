@@ -9,7 +9,7 @@ import {
   useReviewQueueQuery,
 } from '@/popup/queries/cards';
 import type { RateCardInput } from '@/shared/models';
-import { LeetSRSLogo } from '../../components/LeetSRSLogo';
+import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
 import { ExpandableSection } from './ExpandableSection';
@@ -101,7 +101,13 @@ export function ReviewQueue() {
       <div className="flex flex-col items-center justify-center h-32 gap-3 px-4">
         <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
         <div className="text-base text-secondary text-center">
-          {t.home.addProblemsInstructions} <LeetSRSLogo />
+          {t.home.addProblemsInstructions}{' '}
+          <LeetSRSLogo
+            className="inline-block mx-1 align-text-bottom"
+            width="20"
+            height="20"
+            style={{ color: '#10b981' }}
+          />
           {t.home.addProblemsButton}
         </div>
       </div>
