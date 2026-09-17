@@ -80,7 +80,7 @@ it('browses, activates, filters, and restores a saved roadmap', async () => {
   await screen.findByRole('button', { name: 'Activate' });
   expect(screen.getByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByLabelText('Roadmaps'));
-  expect(await screen.findByRole('button', { name: 'Activate Blind 75' })).toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: 'Use Blind 75' })).toBeInTheDocument();
 });
 
 it('keeps reviews available with roadmap progress and continues with a recommendation after the queue empties', async () => {
@@ -112,7 +112,7 @@ it('keeps reviews available with roadmap progress and continues with a recommend
   fireEvent.click(within(section).getByRole('button', { name: 'View roadmap' }));
   expect(await screen.findByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Back to all roadmaps' }));
-  expect(await screen.findByRole('button', { name: 'Deactivate Blind 75' })).toBeInTheDocument();
+  expect(within(await screen.findByRole('region', { name: 'Blind 75' })).getByText('Active')).toBeInTheDocument();
 });
 
 it('updates empty-queue recommendations for skips, the preferred site, and the active roadmap', async () => {
@@ -167,8 +167,8 @@ it('suggests activating a roadmap only when reviews and the active roadmap are b
   const roadmapLink = screen.getByRole('button', { name: 'roadmap' });
   expect(roadmapLink.closest('p')).toHaveTextContent('Activate a roadmap to find your next problem.');
   fireEvent.click(roadmapLink);
-  fireEvent.click(await screen.findByRole('button', { name: 'Activate Blind 75' }));
-  await screen.findByRole('button', { name: 'Deactivate Blind 75' });
+  fireEvent.click(await screen.findByRole('button', { name: 'Use Blind 75' }));
+  await screen.findByText('Active');
   fireEvent.click(screen.getByLabelText('Home'));
   await screen.findByText('No cards to review!');
   expect(screen.queryByRole('button', { name: 'roadmap' })).not.toBeInTheDocument();

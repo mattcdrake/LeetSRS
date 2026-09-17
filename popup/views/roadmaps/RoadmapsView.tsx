@@ -33,14 +33,14 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
     <ViewLayout
       title={selected?.name ?? t.nav.roadmaps}
       headerContent={
-        selected && (
+        (selected || activeRoadmapId) && (
           <button
             type="button"
             className="roadmap-text-button"
             disabled={activation.isPending}
-            onClick={() => activation.mutate(selected.id === activeRoadmapId ? null : selected.id)}
+            onClick={() => activation.mutate(selected && selected.id !== activeRoadmapId ? selected.id : null)}
           >
-            {selected.id === activeRoadmapId ? t.roadmaps.deactivate : t.roadmaps.activate}
+            {selected && selected.id !== activeRoadmapId ? t.roadmaps.activate : t.roadmaps.deactivate}
           </button>
         )
       }

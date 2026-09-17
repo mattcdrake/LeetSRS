@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
-import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
 import { FaChevronRight } from 'react-icons/fa6';
-import { LuPlay, LuSquare } from 'react-icons/lu';
+import { LuCheck } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import type { Roadmap, RoadmapId } from '@/shared/roadmap';
 import './roadmaps.css';
@@ -12,7 +11,7 @@ interface RoadmapOverviewProps {
   roadmaps: RoadmapSummary[];
   activeRoadmapId: RoadmapId | null;
   isSaving: boolean;
-  onActivate: (id: RoadmapId | null) => void;
+  onActivate: (id: RoadmapId) => void;
   onOpen: (id: RoadmapId) => void;
 }
 
@@ -21,7 +20,7 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
   const rows = useRef(new Map<RoadmapId, HTMLElement>());
   const previousPositions = useRef(new Map<RoadmapId, number>());
 
-  // FLIP keeps each row's DOM identity (and keyboard focus) while animating its new position.
+  // FLIP keeps each row's DOM identity while animating its new position.
   useLayoutEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const positions = new Map<RoadmapId, number>();
@@ -64,12 +63,7 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
               aria-describedby={`roadmap-progress-${roadmap.id}`}
               onClick={() => onOpen(roadmap.id)}
             >
-              <span className="roadmap-name">
-                {active && (
-                  <span className="roadmap-active-indicator" role="img" aria-label={t.roadmaps.activeRoadmap} />
-                )}
-                {roadmap.name}
-              </span>
+              <span className="roadmap-name">{roadmap.name}</span>
               <span className="roadmap-count text-secondary">
                 <span id={`roadmap-progress-${roadmap.id}`} className="sr-only">
                   {t.roadmaps.reviewed(roadmap.reviewed, roadmap.total)}
@@ -80,28 +74,22 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
                 <FaChevronRight aria-hidden="true" className="text-xs" />
               </span>
             </button>
-            <TooltipTrigger delay={350} closeDelay={0}>
-              <Button
+            {active ? (
+              <span className="roadmap-active-label">
+                <LuCheck aria-hidden="true" className="size-3" />
+                {t.roadmaps.active}
+              </span>
+            ) : (
+              <button
+                type="button"
                 className="roadmap-activation"
-                aria-label={
-                  active ? t.roadmaps.deactivationLabel(roadmap.name) : t.roadmaps.activationLabel(roadmap.name)
-                }
-                isDisabled={isSaving}
-                onPress={() => onActivate(active ? null : roadmap.id)}
+                aria-label={t.roadmaps.activationLabel(roadmap.name)}
+                disabled={isSaving}
+                onClick={() => onActivate(roadmap.id)}
               >
-                {active ? (
-                  <LuSquare aria-hidden="true" className="size-3" fill="currentColor" />
-                ) : (
-                  <LuPlay aria-hidden="true" className="size-4" />
-                )}
-              </Button>
-              <Tooltip
-                placement="top"
-                className="z-[1100] rounded-lg border border-current bg-primary px-2 py-1 text-xs text-primary shadow-lg"
-              >
-                {active ? t.roadmaps.deactivateRoadmap : t.roadmaps.activateRoadmap}
-              </Tooltip>
-            </TooltipTrigger>
+                {t.roadmaps.use}
+              </button>
+            )}
           </section>
         );
       })}
