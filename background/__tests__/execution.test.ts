@@ -151,6 +151,7 @@ describe('registered background execution', () => {
 });
 
 const invalidArguments: [keyof BackgroundService, unknown[]][] = [
+  ['acknowledgePopupDialog', ['']],
   ['rateCard', [{ ...problem, rating: 0 }]],
   ['saveNote', ['card', 'note', 'extra']],
 ];
