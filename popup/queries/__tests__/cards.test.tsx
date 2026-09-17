@@ -128,6 +128,7 @@ describe('card queries through the background service', () => {
 });
 
 it('shares one document read and catalog batch across cards, queue, notes, and settings', async () => {
+  createServiceMock(background).reset();
   const cards = [
     createMockCard(State.New, { frontendId: '1', domain: 'leetcode.com', note: 'Shared note' }),
     createMockCard(State.New, { frontendId: '2', domain: 'leetcode.cn' }),
@@ -148,6 +149,7 @@ it('shares one document read and catalog batch across cards, queue, notes, and s
   expect(view.result.current.cards.data).toEqual(cards.map((card, index) => ({ ...testCatalog[index], ...card })));
   expect(view.result.current.queue.data).toEqual(view.result.current.cards.data);
   expect(view.result.current.note.data).toBe('Shared note');
+  expect(background.waitForInitialization).not.toHaveBeenCalled();
   expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
   expect(lookups).toHaveBeenCalledTimes(1);
 });

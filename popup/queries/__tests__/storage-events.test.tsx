@@ -125,7 +125,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
   const view = renderHook(() => useCardsQuery(), { wrapper });
   await act(() => vi.advanceTimersByTimeAsync(1));
   await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
-  expect(background.waitForInitialization).toHaveBeenCalledWith();
+  expect(background.waitForInitialization).not.toHaveBeenCalled();
 
   const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
   await act(async () => {
