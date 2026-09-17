@@ -40,15 +40,10 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const body = document.body;
 
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.style.colorScheme = theme;
-
-    body.classList.remove('light', 'dark');
-    body.classList.add(theme);
-    body.style.colorScheme = theme;
   }, [theme]);
 
   const views: Record<ViewId, React.ReactNode> = {
