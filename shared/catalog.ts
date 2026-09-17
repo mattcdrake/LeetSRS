@@ -27,22 +27,13 @@ async function loadCatalog(
   return z.record(z.string(), catalogProblemSchema).parse(await response.json());
 }
 
-// Returns undefined for problems unavailable on each reference's domain.
 export async function getProblemsByFrontendIds(
   problems: readonly ProblemReference[]
 ): Promise<(CatalogProblem | undefined)[]> {
-  const metadata = await getCatalogProblemsByFrontendIds(problems.map((problem) => problem.frontendId));
-  return metadata.map((problem, index) => (problem?.sources.includes(problems[index].domain) ? problem : undefined));
-}
-
-// Looks up metadata across all sites, including problems unavailable on the preferred site.
-export async function getCatalogProblemsByFrontendIds(
-  frontendIds: readonly string[]
-): Promise<(CatalogProblem | undefined)[]> {
-  if (frontendIds.length === 0) return [];
+  if (problems.length === 0) return [];
   byId ??= loadCatalog('leetcode-catalog-by-id.json');
   const catalog = await byId;
-  return frontendIds.map((id) => (Object.hasOwn(catalog, id) ? catalog[id] : undefined));
+  return problems.map(({ frontendId, domain }) => problemForDomain(catalog, frontendId, domain));
 }
 
 export async function getProblemBySlug(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem | undefined> {

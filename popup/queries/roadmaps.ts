@@ -1,7 +1,8 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
-import { getCatalogProblemsByFrontendIds } from '@/shared/catalog';
+import { getProblemsByFrontendIds } from '@/shared/catalog';
+import type { LeetcodeDomain } from '@/shared/models';
 import {
   ROADMAP_IDS,
   type Roadmap,
@@ -60,14 +61,26 @@ export function useSkipRoadmapProblemMutation() {
   });
 }
 
-export function roadmapMetadataQueryOptions(roadmap: Roadmap) {
+export function roadmapMetadataQueryOptions(roadmap: Roadmap, domain: LeetcodeDomain) {
   return queryOptions({
-    queryKey: ['popupRoadmapMetadata', roadmap.id],
+    queryKey: ['popupRoadmapMetadata', roadmap.id, domain],
     staleTime: Infinity,
     queryFn: async () => {
       const ids = roadmap.groups.flatMap((group) => group.frontendIds);
-      const problems = await getCatalogProblemsByFrontendIds(ids);
-      return Object.fromEntries(ids.map((id, index) => [id, problems[index]]));
+      const problems = await getProblemsByFrontendIds(ids.map((frontendId) => ({ frontendId, domain })));
+
+      // Retain titles and paid status for unavailable rows; links still use the preferred site.
+      const unavailableIds = ids.filter((_, index) => !problems[index]);
+      const fallback = await getProblemsByFrontendIds(
+        unavailableIds.map((frontendId) => ({
+          frontendId,
+          domain: domain === 'leetcode.com' ? 'leetcode.cn' : 'leetcode.com',
+        }))
+      );
+      return Object.fromEntries([
+        ...ids.map((id, index) => [id, problems[index]]),
+        ...unavailableIds.map((id, index) => [id, fallback[index]]),
+      ]);
     },
   });
 }

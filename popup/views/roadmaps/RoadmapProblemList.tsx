@@ -52,7 +52,8 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
   const t = useI18n();
   const { data: document } = useSuspenseQuery(learningDocumentQueryOptions);
   const { data: settings } = useSettingsQuery();
-  const metadata = useQuery(roadmapMetadataQueryOptions(roadmap));
+  const domain = settings.preferredLeetcodeSite;
+  const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const skips = useQuery(roadmapSkipsQueryOptions);
   const skip = useSkipRoadmapProblemMutation();
 
@@ -81,7 +82,6 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
     );
   }
 
-  const domain = settings.preferredLeetcodeSite;
   const query = search.trim().toLowerCase();
   const filtering = query !== '' || filter !== null;
   const skippedIds = new Set(skips.data[roadmap.id]);

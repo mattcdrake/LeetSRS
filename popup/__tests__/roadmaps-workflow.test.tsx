@@ -39,6 +39,7 @@ beforeEach(async () => {
 
 const openPopup = () => render(<PopupRoot queryClient={createPopupQueryClient()} />);
 it('browses, activates, filters, and restores a saved roadmap', async () => {
+  await background.updateSettings({ preferredLeetcodeSite: 'leetcode.cn' });
   await background.rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating: Rating.Good });
   const popup = openPopup();
   fireEvent.click(await screen.findByLabelText('Roadmaps'));
@@ -49,17 +50,20 @@ it('browses, activates, filters, and restores a saved roadmap', async () => {
   const arrays = await screen.findByRole('button', { name: /Arrays & Hashing/ });
   expect(arrays).toHaveAttribute('aria-expanded', 'false');
   fireEvent.click(arrays);
-  expect(screen.getByRole('link', { name: '1. Two Sum' })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: '1. 两数之和' })).toHaveAttribute(
     'href',
-    'https://leetcode.com/problems/two-sum/description/'
+    'https://leetcode.cn/problems/two-sum/description/'
   );
+  fireEvent.click(screen.getByRole('button', { name: /Sliding Window/ }));
+  expect(screen.getByText('3. Longest Substring')).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '3. Longest Substring' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Activate' }));
   await screen.findByRole('button', { name: 'Deactivate' });
   fireEvent.change(screen.getByRole('textbox', { name: 'Search roadmap problems' }), { target: { value: 'Two Sum' } });
   fireEvent.click(screen.getByRole('button', { name: 'Reviewed' }));
   expect(screen.getAllByRole('listitem')).toHaveLength(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Skip Two Sum' }));
-  await screen.findByRole('button', { name: 'Restore Two Sum' });
+  fireEvent.click(screen.getByRole('button', { name: 'Skip 两数之和' }));
+  await screen.findByRole('button', { name: 'Restore 两数之和' });
   expect(screen.getByRole('progressbar')).toHaveAttribute('value', '1');
   popup.unmount();
 
@@ -67,7 +71,7 @@ it('browses, activates, filters, and restores a saved roadmap', async () => {
   fireEvent.click(await screen.findByLabelText('Roadmaps'));
   expect(await screen.findByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Skipped' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Restore Two Sum' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Restore 两数之和' }));
   await screen.findByText('No matching problems.');
   await act(async () => background.removeCard('1'));
   await waitFor(() => expect(screen.getByRole('progressbar')).toHaveAttribute('value', '0'));
