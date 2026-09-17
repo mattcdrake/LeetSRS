@@ -35,7 +35,6 @@ const zhCN: Translations = {
     deactivate: '停用',
     searchLabel: '搜索学习路线题目',
     filters: { notInSrs: '未加入 SRS', inSrs: '已加入 SRS', reviewed: '已复习', skipped: '已跳过' },
-    matches: (problems: number, groups: number) => `${problems} 道题目 · ${groups} 个分组`,
     noMatches: '没有匹配的题目。',
     detailLoadFailed: '无法加载学习路线题目，请重试。',
     skipFailed: '无法保存跳过的题目，请重试。',

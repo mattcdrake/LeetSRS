@@ -36,7 +36,6 @@ const en = {
     deactivate: 'Deactivate',
     searchLabel: 'Search roadmap problems',
     filters: { notInSrs: 'Not in SRS', inSrs: 'In SRS', reviewed: 'Reviewed', skipped: 'Skipped' },
-    matches: (problems: number, groups: number) => `${problems} problems · ${groups} groups`,
     noMatches: 'No matching problems.',
     detailLoadFailed: 'Could not load roadmap problems. Try again.',
     skipFailed: 'Could not save skipped problems. Try again.',

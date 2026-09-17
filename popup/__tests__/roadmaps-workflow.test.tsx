@@ -122,7 +122,7 @@ it('expands groups independently, combines single-select filters with search, an
   fireEvent.click(screen.getByRole('button', { name: 'In SRS' }));
   expect(screen.getByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
   fireEvent.change(screen.getByRole('textbox', { name: 'Search roadmap problems' }), { target: { value: '1' } });
-  expect(screen.getByText('1 problems · 1 groups')).toBeInTheDocument();
+  expect(screen.getAllByRole('listitem')).toHaveLength(1);
   await act(async () => background.removeCard('1'));
   await screen.findByText('No matching problems.');
   fireEvent.click(screen.getByRole('button', { name: 'Not in SRS' }));

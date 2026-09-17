@@ -1,6 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { FaArrowUpRightFromSquare, FaChevronRight, FaLock } from 'react-icons/fa6';
+import { FaArrowUpRightFromSquare, FaChevronRight, FaForwardStep, FaLock, FaRotateLeft } from 'react-icons/fa6';
 import { SearchFilterBar } from '@/popup/components/SearchFilterBar';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
@@ -112,12 +112,6 @@ export function RoadmapDetail({ roadmap }: { roadmap: RoadmapSummary }) {
               {t.roadmaps.skipFailed}
             </p>
           )}
-          <p className="text-xs text-secondary" role="status">
-            {t.roadmaps.matches(
-              groups.reduce((total, group) => total + group.visibleIds.length, 0),
-              groups.length
-            )}
-          </p>
           {groups.length === 0 ? (
             <p className="text-secondary">{t.roadmaps.noMatches}</p>
           ) : (
@@ -215,14 +209,19 @@ export function RoadmapDetail({ roadmap }: { roadmap: RoadmapSummary }) {
                               </div>
                               <button
                                 type="button"
-                                className="roadmap-text-button"
+                                className="roadmap-text-button inline-flex size-8 items-center justify-center"
                                 disabled={skip.isPending}
                                 aria-label={skipped ? t.roadmaps.restoreProblem(title) : t.roadmaps.skipProblem(title)}
+                                title={skipped ? t.roadmaps.restore : t.roadmaps.skip}
                                 onClick={() =>
                                   skip.mutate({ roadmapId: roadmap.id, frontendId: id, skipped: !skipped })
                                 }
                               >
-                                {skipped ? t.roadmaps.restore : t.roadmaps.skip}
+                                {skipped ? (
+                                  <FaRotateLeft aria-hidden="true" className="text-sm" />
+                                ) : (
+                                  <FaForwardStep aria-hidden="true" className="text-sm" />
+                                )}
                               </button>
                             </li>
                           );
