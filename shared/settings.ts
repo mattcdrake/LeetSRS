@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { leetcodeDomainSchema } from '@/shared/leetcode-domain';
 import type { LearningDocument } from '@/shared/models';
 
 const SUPPORTED_LANGUAGES = ['en', 'zh-CN'] as const;
@@ -51,6 +52,7 @@ export const settingsSchema = z.object({
   resetEditorOnReviewQueue: z.boolean({ error: 'Reset editor on review queue must be a boolean' }),
   openRatingAfterSolving: z.boolean(),
   language: languageSchema,
+  preferredLeetcodeSite: leetcodeDomainSchema,
 });
 export type Settings = z.infer<typeof settingsSchema>;
 export type Theme = Settings['theme'];
@@ -59,6 +61,7 @@ export type Theme = Settings['theme'];
 export const DEFAULT_SETTINGS = {
   maxNewCardsPerDay: 3,
   theme: 'system',
+  preferredLeetcodeSite: 'leetcode.com',
   openRatingAfterSolving: true,
   resetEditorOnReviewQueue: false,
 } satisfies Omit<Settings, 'language'>;

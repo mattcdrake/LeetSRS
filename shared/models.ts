@@ -1,5 +1,6 @@
 import { type CardInput, type Grade, Rating } from 'ts-fsrs';
 import { z } from 'zod';
+import { leetcodeDomainSchema } from '@/shared/leetcode-domain';
 import { settingsSchema } from '@/shared/settings';
 
 export const ratingSchema = z.literal([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy]) satisfies z.ZodType<Grade>;
@@ -15,7 +16,6 @@ const nonemptyString = z.string().refine((value) => value.trim().length > 0, {
 const count = z.int().nonnegative();
 const epochMilliseconds = z.number().min(-8.64e15).max(8.64e15);
 
-export const leetcodeDomainSchema = z.enum(['leetcode.com', 'leetcode.cn']);
 export const problemReferenceSchema = z.object({
   frontendId: nonemptyString,
   domain: leetcodeDomainSchema,

@@ -3,6 +3,7 @@ import type { IconType } from 'react-icons';
 import { FaChevronDown, FaCircleHalfStroke, FaCode, FaGlobe } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
+import type { LeetcodeDomain } from '@/shared/models';
 import type { Language, Theme } from '@/shared/settings';
 import { LeetcodeCnSection } from './LeetcodeCnSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';
@@ -65,7 +66,7 @@ export function GeneralSettingsSection() {
   return (
     <section
       aria-labelledby="preferences-heading"
-      className="mb-4 pt-4 border-t border-current space-y-4 text-xs text-primary"
+      className="mb-3 pt-3 border-t border-current space-y-1 text-xs text-primary"
     >
       <h3 id="preferences-heading" className="text-sm font-medium">
         {t.settings.preferences}
@@ -97,6 +98,16 @@ export function GeneralSettingsSection() {
         icon={FaCode}
         isSelected={settings.resetEditorOnReviewQueue}
         onChange={(resetEditorOnReviewQueue) => updateSettingsMutation.mutate({ resetEditorOnReviewQueue })}
+      />
+      <SettingsSelect<LeetcodeDomain>
+        label={t.settings.preferredLeetcodeSite}
+        icon={FaGlobe}
+        options={[
+          { value: 'leetcode.com', label: 'leetcode.com' },
+          { value: 'leetcode.cn', label: 'leetcode.cn' },
+        ]}
+        value={settings.preferredLeetcodeSite}
+        onChange={(preferredLeetcodeSite) => updateSettingsMutation.mutate({ preferredLeetcodeSite })}
       />
       <LeetcodeCnSection />
     </section>

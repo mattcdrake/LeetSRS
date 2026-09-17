@@ -63,6 +63,7 @@ describe('document settings through background commands', () => {
       maxNewCardsPerDay: 0,
       theme: 'system',
       language: 'en',
+      preferredLeetcodeSite: 'leetcode.cn',
       resetEditorOnReviewQueue: true,
       openRatingAfterSolving: false,
     } as const;

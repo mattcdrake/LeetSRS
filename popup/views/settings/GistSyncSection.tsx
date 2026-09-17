@@ -70,7 +70,7 @@ export function GistSyncSection({
     });
   };
   return (
-    <section className="mb-4 text-primary text-xs space-y-4">
+    <section className="mb-3 text-primary text-xs space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{t.title}</h3>
         {auth.data?.account && (

@@ -16,7 +16,7 @@ export function AboutSection() {
   ];
 
   return (
-    <section aria-label={t.settings.about.title} className="mb-6 pt-4 border-t border-current text-primary">
+    <section aria-label={t.settings.about.title} className="mb-3 pt-3 border-t border-current text-primary">
       <div>
         {links.map(({ href, label, Icon }) => (
           <a
@@ -24,14 +24,14 @@ export function AboutSection() {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 min-h-11 py-2 rounded-lg text-xs hover:bg-secondary"
+            className="flex items-center gap-3 min-h-9 py-1 rounded-lg text-xs hover:bg-secondary"
           >
             <Icon aria-hidden="true" className="w-4 h-4 shrink-0" />
             <span>{label}</span>
           </a>
         ))}
       </div>
-      <div className="mt-4 flex items-center justify-between gap-2 text-xs text-secondary">
+      <div className="mt-2 flex items-center justify-between gap-2 text-xs text-secondary">
         <span>{t.settings.about.copyright}</span>
         <span className="font-jetbrains-mono">{t.format.version(APP_VERSION)}</span>
       </div>

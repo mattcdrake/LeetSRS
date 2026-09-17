@@ -79,12 +79,12 @@ export function DataSection() {
   };
 
   return (
-    <section aria-labelledby="data-heading" className="mb-4 pt-4 border-t border-current text-primary">
+    <section aria-labelledby="data-heading" className="mb-3 pt-3 border-t border-current text-primary">
       <h3 id="data-heading" className="text-sm font-medium mb-2">
         {t.settings.data.title}
       </h3>
       <p className="text-xs text-secondary leading-relaxed">{t.settings.data.description}</p>
-      <div className="flex gap-2 mt-4 mb-4">
+      <div className="flex gap-2 my-2">
         <Button
           onPress={handleExport}
           isDisabled={exportDataMutation.isPending}
@@ -110,7 +110,7 @@ export function DataSection() {
           {importDataMutation.isPending ? t.settings.data.importing : t.settings.data.importData}
         </Button>
       </div>
-      <div className="flex items-center justify-between gap-3 border-t border-current pt-4">
+      <div className="flex items-center justify-between gap-3 border-t border-current pt-2">
         <div className="flex items-start gap-2">
           <FaTrashCan aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary mt-0.5" />
           <div>

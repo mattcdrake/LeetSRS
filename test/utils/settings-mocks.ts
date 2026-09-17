@@ -7,6 +7,7 @@ export function buildSettings(overrides: Partial<Settings> = {}): Settings {
     openRatingAfterSolving: true,
     resetEditorOnReviewQueue: false,
     language: 'en',
+    preferredLeetcodeSite: 'leetcode.com',
     ...overrides,
   };
 }
