@@ -1,0 +1,190 @@
+{
+  "id": "blind-75",
+  "name": "Blind 75",
+  "sourceUrl": "https://neetcode.io/practice/practice/blind75",
+  "groups": [
+    {
+      "id": "arrays-and-hashing",
+      "name": "Arrays & Hashing",
+      "frontendIds": [
+        "217",
+        "242",
+        "1",
+        "49",
+        "347",
+        "271",
+        "238",
+        "128"
+      ]
+    },
+    {
+      "id": "two-pointers",
+      "name": "Two Pointers",
+      "frontendIds": [
+        "125",
+        "15",
+        "11"
+      ]
+    },
+    {
+      "id": "sliding-window",
+      "name": "Sliding Window",
+      "frontendIds": [
+        "121",
+        "3",
+        "424",
+        "76"
+      ]
+    },
+    {
+      "id": "stack",
+      "name": "Stack",
+      "frontendIds": [
+        "20"
+      ]
+    },
+    {
+      "id": "binary-search",
+      "name": "Binary Search",
+      "frontendIds": [
+        "153",
+        "33"
+      ]
+    },
+    {
+      "id": "linked-list",
+      "name": "Linked List",
+      "frontendIds": [
+        "206",
+        "21",
+        "141",
+        "143",
+        "19",
+        "23"
+      ]
+    },
+    {
+      "id": "trees",
+      "name": "Trees",
+      "frontendIds": [
+        "226",
+        "104",
+        "100",
+        "572",
+        "235",
+        "102",
+        "98",
+        "230",
+        "105",
+        "124",
+        "297"
+      ]
+    },
+    {
+      "id": "heap-priority-queue",
+      "name": "Heap / Priority Queue",
+      "frontendIds": [
+        "295"
+      ]
+    },
+    {
+      "id": "backtracking",
+      "name": "Backtracking",
+      "frontendIds": [
+        "39",
+        "79"
+      ]
+    },
+    {
+      "id": "tries",
+      "name": "Tries",
+      "frontendIds": [
+        "208",
+        "211",
+        "212"
+      ]
+    },
+    {
+      "id": "graphs",
+      "name": "Graphs",
+      "frontendIds": [
+        "200",
+        "133",
+        "417",
+        "207",
+        "261",
+        "323"
+      ]
+    },
+    {
+      "id": "advanced-graphs",
+      "name": "Advanced Graphs",
+      "frontendIds": [
+        "269"
+      ]
+    },
+    {
+      "id": "1-d-dynamic-programming",
+      "name": "1-D Dynamic Programming",
+      "frontendIds": [
+        "70",
+        "198",
+        "213",
+        "5",
+        "647",
+        "91",
+        "322",
+        "152",
+        "139",
+        "300"
+      ]
+    },
+    {
+      "id": "2-d-dynamic-programming",
+      "name": "2-D Dynamic Programming",
+      "frontendIds": [
+        "62",
+        "1143"
+      ]
+    },
+    {
+      "id": "greedy",
+      "name": "Greedy",
+      "frontendIds": [
+        "53",
+        "55"
+      ]
+    },
+    {
+      "id": "intervals",
+      "name": "Intervals",
+      "frontendIds": [
+        "57",
+        "56",
+        "435",
+        "252",
+        "253"
+      ]
+    },
+    {
+      "id": "math-and-geometry",
+      "name": "Math & Geometry",
+      "frontendIds": [
+        "48",
+        "54",
+        "73"
+      ]
+    },
+    {
+      "id": "bit-manipulation",
+      "name": "Bit Manipulation",
+      "frontendIds": [
+        "191",
+        "338",
+        "190",
+        "268",
+        "371"
+      ]
+    }
+  ]
+}
