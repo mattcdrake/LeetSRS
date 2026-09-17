@@ -8,6 +8,23 @@ import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
 describe('convertLearningDocument', () => {
+  it('adds empty roadmap state to v11 documents without changing existing learning data', () => {
+    const { converted } = validLegacyBackup();
+    const input = {
+      ...converted,
+      schemaVersion: 11,
+      settings: { theme: 'dark' },
+      dataUpdatedAt: '2026-09-16T12:00:00.000Z',
+    };
+
+    expect(convertLearningDocument(input)).toEqual({
+      ...input,
+      schemaVersion: LEARNING_DOCUMENT_VERSION,
+      activeRoadmapId: null,
+      roadmapSkips: {},
+    });
+  });
+
   it('rekeys v9 cards by frontend ID, retaining learning data and discarding invalid cards and metadata', () => {
     const { backup } = validLegacyBackup();
     const original = { ...backup.data.cards['two-sum'], domain: 'leetcode.cn', note: 'Keep my approach' };
@@ -27,6 +44,8 @@ describe('convertLearningDocument', () => {
     const expected = {
       ...input,
       schemaVersion: LEARNING_DOCUMENT_VERSION,
+      activeRoadmapId: null,
+      roadmapSkips: {},
       cards: {
         '1': {
           frontendId: '1',
@@ -55,6 +74,8 @@ describe('convertLearningDocument', () => {
     };
     const expected = {
       schemaVersion: LEARNING_DOCUMENT_VERSION,
+      activeRoadmapId: null,
+      roadmapSkips: {},
       dataUpdatedAt: input.dataUpdatedAt,
       cards: {},
       settings: {},

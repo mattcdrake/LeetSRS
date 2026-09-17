@@ -1,9 +1,8 @@
 import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { readGistConnection, readLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import { readGistConnection, readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
@@ -33,18 +32,18 @@ beforeEach(async () => {
 });
 
 describe('document transfers through background commands', () => {
-  it('preserves the browser-local roadmap during import and clears it on reset', async () => {
-    await storage.setItem(STORAGE_KEYS.activeRoadmapId, 'grind-75');
-    await storage.setItem(STORAGE_KEYS.roadmapSkips, { 'grind-75': ['1'] });
-    const document = buildLearningDocument();
-    await getRegisteredBackground().importData(JSON.stringify(document));
-    expect(await readLearningDocument()).toEqual(document);
-    expect(await storage.getItem(STORAGE_KEYS.activeRoadmapId)).toBe('grind-75');
-    expect(await storage.getItem(STORAGE_KEYS.roadmapSkips)).toEqual({ 'grind-75': ['1'] });
-
+  it('round-trips roadmap choices through export/import and clears them on reset', async () => {
+    await getRegisteredBackground().setActiveRoadmap('grind-75');
+    await getRegisteredBackground().setRoadmapProblemSkipped('grind-75', '1', true);
+    const document = await readLearningDocument();
+    const exported = JSON.stringify(document, null, 2);
     await getRegisteredBackground().resetAllData();
-    expect(await storage.getItem(STORAGE_KEYS.activeRoadmapId)).toBeNull();
-    expect(await storage.getItem(STORAGE_KEYS.roadmapSkips)).toBeNull();
+    expect(await readLearningDocument()).toEqual(buildLearningDocument());
+
+    await getRegisteredBackground().importData(exported);
+    expect(await readLearningDocument()).toEqual(document);
+    expect(document.activeRoadmapId).toBe('grind-75');
+    expect(document.roadmapSkips).toEqual({ 'grind-75': ['1'] });
   });
 
   it('retains all data after a rejected import and accepts a later edit', async () => {
@@ -113,6 +112,7 @@ it.each([0, 2, 3, 4, 6, 7, 9, 10, LEARNING_DOCUMENT_VERSION])(
           : schemaVersion === 9
             ? { cards: legacyConverted.cards, reviewActivity: converted.reviewActivity }
             : converted),
+      ...(schemaVersion >= 12 && { activeRoadmapId: null, roadmapSkips: {} }),
       settings: {
         theme: 'light',
         language: schemaVersion < 11 ? 'de' : 'en',

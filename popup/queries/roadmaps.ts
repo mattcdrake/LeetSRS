@@ -1,63 +1,36 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { browser } from 'wxt/browser';
-import { storage } from '#imports';
+import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import type { LeetcodeDomain } from '@/shared/models';
-import {
-  ROADMAP_IDS,
-  type Roadmap,
-  type RoadmapId,
-  roadmapIdSchema,
-  roadmapSchema,
-  roadmapSkipsSchema,
-} from '@/shared/roadmap';
-import { STORAGE_KEYS } from '@/shared/storage';
+import type { LearningDocument, LeetcodeDomain } from '@/shared/models';
+import { ROADMAP_IDS, type Roadmap, type RoadmapId, roadmapSchema } from '@/shared/roadmap';
+import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export const activeRoadmapQueryOptions = queryOptions({
-  queryKey: ['popupActiveRoadmap'],
-  queryFn: async () => roadmapIdSchema.nullable().parse(await storage.getItem(STORAGE_KEYS.activeRoadmapId)),
+  ...learningDocumentQueryOptions,
+  select: (document: LearningDocument) => document.activeRoadmapId,
 });
 
 export function useActivateRoadmapMutation() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (id: RoadmapId | null) => storage.setItem(STORAGE_KEYS.activeRoadmapId, id),
-    onSettled: () => client.invalidateQueries({ queryKey: activeRoadmapQueryOptions.queryKey }),
+    mutationFn: (id: RoadmapId | null) => background.setActiveRoadmap(id),
+    onSettled: () => client.invalidateQueries({ queryKey: learningDocumentQueryKey }),
   });
 }
 
-async function readRoadmapSkips() {
-  return roadmapSkipsSchema.parse((await storage.getItem(STORAGE_KEYS.roadmapSkips)) ?? {});
-}
-
 export const roadmapSkipsQueryOptions = queryOptions({
-  queryKey: ['popupRoadmapSkips'],
-  queryFn: readRoadmapSkips,
+  ...learningDocumentQueryOptions,
+  select: (document: LearningDocument) => document.roadmapSkips,
 });
 
 export function useSkipRoadmapProblemMutation() {
   const client = useQueryClient();
   return useMutation({
     scope: { id: 'roadmapSkips' },
-    mutationFn: async ({
-      roadmapId,
-      frontendId,
-      skipped,
-    }: {
-      roadmapId: RoadmapId;
-      frontendId: string;
-      skipped: boolean;
-    }) => {
-      const skips = await readRoadmapSkips();
-      const ids = new Set(skips[roadmapId]);
-      if (skipped) {
-        ids.add(frontendId);
-      } else {
-        ids.delete(frontendId);
-      }
-      await storage.setItem(STORAGE_KEYS.roadmapSkips, { ...skips, [roadmapId]: [...ids] });
-    },
-    onSettled: () => client.invalidateQueries({ queryKey: roadmapSkipsQueryOptions.queryKey }),
+    mutationFn: ({ roadmapId, frontendId, skipped }: { roadmapId: RoadmapId; frontendId: string; skipped: boolean }) =>
+      background.setRoadmapProblemSkipped(roadmapId, frontendId, skipped),
+    onSettled: () => client.invalidateQueries({ queryKey: learningDocumentQueryKey }),
   });
 }
 

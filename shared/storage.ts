@@ -49,8 +49,6 @@ export async function replaceLearningDocument(document: LearningDocument): Promi
 
 export const STORAGE_KEYS = {
   learningDocument: 'local:leetsrs:learningDocument',
-  activeRoadmapId: 'local:leetsrs:activeRoadmapId',
-  roadmapSkips: 'local:leetsrs:roadmapSkips',
   // GitHub Gist Sync
   gistConnection: 'local:leetsrs:gistConnection',
   lastSyncTime: 'local:leetsrs:lastSyncTime',

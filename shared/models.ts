@@ -1,6 +1,7 @@
 import { type CardInput, type Grade, Rating } from 'ts-fsrs';
 import { z } from 'zod';
 import { leetcodeDomainSchema } from '@/shared/leetcode-domain';
+import { roadmapIdSchema, roadmapSkipsSchema } from '@/shared/roadmap';
 import { settingsSchema } from '@/shared/settings';
 
 export const ratingSchema = z.literal([Rating.Again, Rating.Hard, Rating.Good, Rating.Easy]) satisfies z.ZodType<Grade>;
@@ -51,7 +52,7 @@ export type LeetcodeDomain = z.infer<typeof leetcodeDomainSchema>;
 export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratingSchema });
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
 export type Card = z.infer<typeof cardSchema>;
-export const LEARNING_DOCUMENT_VERSION = 11;
+export const LEARNING_DOCUMENT_VERSION = 12;
 
 export const learningDocumentVersionSchema = z.object({ schemaVersion: z.int().nonnegative() });
 const reviewDateSchema = z
@@ -79,6 +80,8 @@ export const learningDocumentSchema = z
     cards: z.record(z.string(), cardSchema),
     reviewActivity: reviewActivitySchema.nullable(),
     settings: settingsSchema.partial(),
+    activeRoadmapId: roadmapIdSchema.nullable(),
+    roadmapSkips: roadmapSkipsSchema,
   })
   .superRefine(({ cards }, ctx) => {
     for (const [frontendId, card] of Object.entries(cards)) {
