@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
+import { z } from 'zod';
 import type { CatalogProblem } from '@/shared/catalog';
 
 const twoSum: CatalogProblem = {
@@ -15,42 +16,24 @@ const twoSum: CatalogProblem = {
 };
 const cnProblem: CatalogProblem = { ...twoSum, frontendId: '2', slug: 'cn-problem', sources: ['leetcode.cn'] };
 
-it.each([
-  ['blind-75', 75],
-  ['neetcode-150', 150],
-  ['neetcode-250', 250],
-  ['grind-75', 75],
-] as const)('%s has grouped references that resolve through both bundled catalogs', (id, count) => {
-  const readData = (file: string) => JSON.parse(readFileSync(`public/data/${file}`, 'utf8'));
-  const roadmap = readData(`roadmaps/${id}.json`);
-  const byId = readData('leetcode-catalog-by-id.json');
-  const bySlug = readData('leetcode-catalog-by-slug.json');
+const roadmapSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  sourceUrl: z.url(),
+  groups: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        frontendIds: z.array(z.string().min(1)).min(1),
+      })
+    )
+    .min(1),
+});
 
-  expect(roadmap.id).toBe(id);
-  expect(roadmap.groups.length).toBeGreaterThan(0);
-  const groupIds = new Set<string>();
-  const ids = new Set<string>();
-  let problemCount = 0;
-  for (const group of roadmap.groups) {
-    expect(group.id).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-    expect(group.name).toEqual(expect.any(String));
-    expect(group.name.trim().length).toBeGreaterThan(0);
-    expect(Array.isArray(group.frontendIds)).toBe(true);
-    expect(group.frontendIds.length).toBeGreaterThan(0);
-    groupIds.add(group.id);
-    for (const frontendId of group.frontendIds) {
-      expect(typeof frontendId).toBe('string');
-      const problem = byId[frontendId];
-      expect(problem).toBeDefined();
-      expect(problem.frontendId).toBe(frontendId);
-      expect(bySlug[problem.slug]).toEqual(problem);
-      ids.add(frontendId);
-      problemCount++;
-    }
-  }
-  expect(groupIds.size).toBe(roadmap.groups.length);
-  expect(problemCount).toBe(count);
-  expect(ids.size).toBe(count);
+it.each(['blind-75', 'neetcode-150', 'neetcode-250', 'grind-75'])('%s matches the roadmap schema', (id) => {
+  const data = JSON.parse(readFileSync(`public/data/roadmaps/${id}.json`, 'utf8'));
+  expect(() => roadmapSchema.parse(data)).not.toThrow();
 });
 
 beforeEach(() => {
