@@ -4,7 +4,7 @@
   "release-type": "node",
   "packages": {
     ".": {
-      "package-name": "leetsrs-spaced-repetition"
+      "package-name": "leetsrs"
     }
   }
 }

@@ -1,4 +1,4 @@
-# LeetSRS - Spaced Repetition
+# LeetSRS
 
 <div align="center">
 <img src="assets/branding/LeetSRS_card%20large.png" alt="LeetSRS Logo" />
@@ -6,7 +6,7 @@
 
 <br/>
 
-**LeetSRS - Spaced Repetition** is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb) that adds spaced repetition to LeetCode problem practice.
+LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb) that adds spaced repetition to LeetCode problem practice.
 
 ## Screenshots
 
