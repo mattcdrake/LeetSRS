@@ -8,6 +8,7 @@ import { background } from '@/shared/background-service';
 import type { RoadmapId } from '@/shared/roadmap';
 import { BottomNav, type ViewId } from './components/BottomNav';
 import { activeRoadmapQueryOptions } from './queries/roadmaps';
+import { CalendarView } from './views/calendar/CalendarView';
 import { CardsView } from './views/card/CardsView';
 import { HomeView } from './views/home/HomeView';
 import { RoadmapsView } from './views/roadmaps/RoadmapsView';
@@ -61,6 +62,7 @@ function App() {
       />
     ),
     roadmaps: <RoadmapsView selectedRoadmapId={selectedRoadmapId} onSelect={setSelectedRoadmapId} />,
+    calendar: <CalendarView />,
     card: <CardsView />,
     settings: <SettingsView highlightGithubSignIn={highlightGithubSignIn} highlightGistSetup={highlightGistSetup} />,
   };
