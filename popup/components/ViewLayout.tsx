@@ -32,7 +32,7 @@ export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, ch
 
       <div
         className="flex-1 flex flex-col py-4 gap-4 overflow-y-auto overflow-x-hidden"
-        style={{ scrollbarGutter: 'stable' }}
+        style={{ scrollbarGutter: 'stable both-edges' }}
       >
         <div className="px-4">{children}</div>
       </div>
