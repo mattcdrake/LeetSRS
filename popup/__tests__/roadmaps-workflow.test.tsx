@@ -39,6 +39,29 @@ beforeEach(async () => {
 
 const openPopup = () =>
   render(<PopupRoot queryClient={createPopupQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
+
+it('refreshes the Home badge immediately when adding a roadmap problem between clock ticks', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-09-17T10:00:00'));
+  const popup = openPopup();
+  try {
+    await screen.findByText('No cards to review!');
+    fireEvent.click(screen.getByLabelText('Roadmaps'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Blind 75' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Arrays & Hashing/ }));
+    expect(screen.getByLabelText('Home')).toHaveTextContent(/^Home$/);
+
+    // The card is created after the popup clock's last tick.
+    vi.setSystemTime(new Date('2026-09-17T10:00:01'));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Two Sum to SRS' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Add Two Sum to SRS' })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Home')).toHaveTextContent(/^1Home$/));
+  } finally {
+    popup.unmount();
+    vi.useRealTimers();
+  }
+});
+
 it('browses, activates, filters, and restores a saved roadmap', async () => {
   await background.updateSettings({ preferredLeetcodeSite: 'leetcode.cn' });
   await background.rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating: Rating.Good });

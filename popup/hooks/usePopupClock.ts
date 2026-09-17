@@ -29,5 +29,7 @@ function subscribe(listener: () => void) {
 }
 
 export function usePopupClock() {
-  return useSyncExternalStore(subscribe, () => now);
+  useSyncExternalStore(subscribe, () => now);
+  // Data changes can render between ticks, so evaluate them with the current time.
+  return Date.now();
 }
