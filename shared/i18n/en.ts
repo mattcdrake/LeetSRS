@@ -26,9 +26,17 @@ const en = {
   // Navigation
   nav: {
     home: 'Home',
+    calendar: 'Calendar',
     roadmaps: 'Roadmaps',
     cards: 'Cards',
     settings: 'Settings',
+  },
+
+  calendar: {
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    today: 'Today',
+    due: (count: number) => `${count} due`,
   },
 
   roadmaps: {

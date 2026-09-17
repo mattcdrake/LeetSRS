@@ -31,6 +31,7 @@
     "backend:deploy": "wrangler deploy --config backend/wrangler.jsonc"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.4",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "^5.102.8",
     "@webext-core/proxy-service": "^3.0.2",
