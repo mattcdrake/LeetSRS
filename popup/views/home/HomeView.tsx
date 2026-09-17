@@ -26,7 +26,7 @@ export function HomeView({ onOpenRoadmap }: { onOpenRoadmap: (id: RoadmapId | nu
       <ReviewQueue
         emptyContent={
           activeRoadmapId === null && (
-            <div className="text-sm text-secondary text-center flex flex-col items-center gap-2 pt-2">
+            <div className="text-base text-secondary text-center flex flex-col items-center gap-2 pt-2">
               <p>{t.home.activateRoadmapSuggestion}</p>
               <button type="button" className={`text-accent ${buttonInteraction}`} onClick={() => onOpenRoadmap(null)}>
                 {t.home.browseRoadmaps}
