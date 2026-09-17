@@ -45,15 +45,10 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const body = document.body;
 
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.style.colorScheme = theme;
-
-    body.classList.remove('light', 'dark');
-    body.classList.add(theme);
-    body.style.colorScheme = theme;
   }, [theme]);
 
   const views: Record<ViewId, React.ReactNode> = {
@@ -72,14 +67,16 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      {activeView !== 'settings' && (
-        <GithubMigrationNotice
-          onOpenSettings={() => {
-            setHighlightGithubSignIn(true);
-            setActiveView('settings');
-          }}
-        />
-      )}
+      <GithubMigrationNotice
+        onOpenSettings={
+          activeView === 'settings'
+            ? undefined
+            : () => {
+                setHighlightGithubSignIn(true);
+                setActiveView('settings');
+              }
+        }
+      />
       <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
       <BottomNav
         activeView={activeView}
