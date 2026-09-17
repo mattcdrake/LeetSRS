@@ -1,5 +1,5 @@
 import { Input, Label, TextField } from 'react-aria-components';
-import { FaRegCalendarPlus } from 'react-icons/fa6';
+import { FaRegCalendarPlus, FaRegWindowRestore } from 'react-icons/fa6';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
 import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
@@ -36,6 +36,7 @@ export function ReviewSettingsSection() {
     <div className="space-y-1">
       <SettingsSwitch
         label={t.settings.reviewSettings.openRatingAfterSolving}
+        icon={FaRegWindowRestore}
         isSelected={settings.openRatingAfterSolving}
         isDisabled={updateSettingsMutation.isPending}
         onChange={(openRatingAfterSolving) => updateSettingsMutation.mutate({ openRatingAfterSolving })}
