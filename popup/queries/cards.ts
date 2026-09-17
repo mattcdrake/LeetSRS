@@ -77,6 +77,10 @@ export function useRemoveCardMutation() {
   return useCardMutation((frontendId: string) => background.removeCard(frontendId));
 }
 
+export function useAddCardMutation() {
+  return useCardMutation((problem: ProblemReference) => background.addCard(problem));
+}
+
 export function useRateCardMutation() {
   return useCardMutation(async (input: RateCardInput) => {
     await background.rateCard(input);

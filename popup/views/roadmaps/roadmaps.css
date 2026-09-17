@@ -2,7 +2,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .roadmap-row {
@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 6px 12px;
   border: 1px solid var(--current-border);
   border-radius: 9px;
   background: var(--current-bg-primary);
@@ -52,63 +52,43 @@
   white-space: nowrap;
 }
 
-.roadmap-switch {
+.roadmap-activation,
+.roadmap-active-label {
   display: inline-flex;
   flex-shrink: 0;
   justify-content: center;
   align-items: center;
-  width: 36px;
-  height: 32px;
-  border-radius: 6px;
+  gap: 3px;
+  min-width: 49px;
+  min-height: 28px;
+  font-size: 11px;
+}
+
+.roadmap-activation {
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: var(--current-bg-secondary);
+  color: var(--current-text-secondary);
   cursor: pointer;
 }
 
-.roadmap-switch:disabled {
+.roadmap-active-label {
+  color: var(--current-accent);
+}
+
+.roadmap-activation:hover {
+  color: var(--current-accent);
+}
+
+.roadmap-activation:disabled {
   cursor: wait;
+  opacity: 0.6;
 }
 
 .roadmap-open:focus-visible,
-.roadmap-switch:focus-visible {
+.roadmap-activation:focus-visible {
   outline: 2px solid var(--current-accent);
   outline-offset: 3px;
-}
-
-.roadmap-switch-track {
-  display: flex;
-  align-items: center;
-  width: 34px;
-  height: 20px;
-  padding: 3px;
-  border-radius: 20px;
-  background: #c5c5c5;
-  transition: background-color 160ms ease-out;
-}
-
-.dark .roadmap-switch-track {
-  background: #515151;
-}
-
-.roadmap-switch-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform 160ms ease-out;
-}
-
-.roadmap-switch[aria-checked="true"] .roadmap-switch-track {
-  background: var(--current-accent);
-}
-
-.roadmap-switch[aria-checked="true"] .roadmap-switch-thumb {
-  transform: translateX(14px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .roadmap-switch-track,
-  .roadmap-switch-thumb {
-    transition: none;
-  }
 }
 
 .roadmap-text-button {
@@ -162,7 +142,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 13px 0;
+  padding: 8px 0;
   text-align: left;
   font-size: 12px;
   font-weight: 500;

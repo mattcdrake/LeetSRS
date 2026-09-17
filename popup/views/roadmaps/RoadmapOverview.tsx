@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { FaChevronRight } from 'react-icons/fa6';
+import { LuCheck } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import type { Roadmap, RoadmapId } from '@/shared/roadmap';
 import './roadmaps.css';
@@ -10,7 +11,7 @@ interface RoadmapOverviewProps {
   roadmaps: RoadmapSummary[];
   activeRoadmapId: RoadmapId | null;
   isSaving: boolean;
-  onActivate: (id: RoadmapId | null) => void;
+  onActivate: (id: RoadmapId) => void;
   onOpen: (id: RoadmapId) => void;
 }
 
@@ -19,7 +20,7 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
   const rows = useRef(new Map<RoadmapId, HTMLElement>());
   const previousPositions = useRef(new Map<RoadmapId, number>());
 
-  // FLIP keeps each row's DOM identity (and keyboard focus) while animating its new position.
+  // FLIP keeps each row's DOM identity while animating its new position.
   useLayoutEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const positions = new Map<RoadmapId, number>();
@@ -73,19 +74,22 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
                 <FaChevronRight aria-hidden="true" className="text-xs" />
               </span>
             </button>
-            <button
-              type="button"
-              role="switch"
-              aria-label={t.roadmaps.activationLabel(roadmap.name)}
-              aria-checked={active}
-              disabled={isSaving}
-              className="roadmap-switch"
-              onClick={() => onActivate(active ? null : roadmap.id)}
-            >
-              <span className="roadmap-switch-track" aria-hidden="true">
-                <span className="roadmap-switch-thumb" />
+            {active ? (
+              <span className="roadmap-active-label">
+                <LuCheck aria-hidden="true" className="size-3" />
+                {t.roadmaps.active}
               </span>
-            </button>
+            ) : (
+              <button
+                type="button"
+                className="roadmap-activation"
+                aria-label={t.roadmaps.activationLabel(roadmap.name)}
+                disabled={isSaving}
+                onClick={() => onActivate(roadmap.id)}
+              >
+                {t.roadmaps.use}
+              </button>
+            )}
           </section>
         );
       })}
