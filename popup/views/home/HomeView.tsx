@@ -4,7 +4,6 @@ import { activeRoadmapQueryOptions } from '@/popup/queries/roadmaps';
 import { buttonInteraction } from '@/popup/styles';
 import type { RoadmapId } from '@/shared/roadmap';
 import { LeetcodeCnBanner } from '../../components/LeetcodeCnBanner';
-import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
 import { ReviewQueue } from './ReviewQueue';
 import { RoadmapSection } from './RoadmapSection';
@@ -14,14 +13,7 @@ export function HomeView({ onOpenRoadmap }: { onOpenRoadmap: (id: RoadmapId | nu
   const t = useI18n();
   const { data: activeRoadmapId } = useSuspenseQuery(activeRoadmapQueryOptions);
   return (
-    <ViewLayout
-      headerContent={
-        <div className="flex items-center justify-end gap-4 w-full">
-          <StatsBar />
-          <StreakCounter />
-        </div>
-      }
-    >
+    <ViewLayout headerContent={<StatsBar />}>
       <LeetcodeCnBanner />
       <ReviewQueue
         emptyContent={

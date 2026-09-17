@@ -25,9 +25,21 @@ const zhCN: Translations = {
 
   nav: {
     home: '首页',
+    calendar: '日历',
     roadmaps: '学习路线',
     cards: '卡片',
     settings: '设置',
+  },
+
+  calendar: {
+    previousMonth: '上个月',
+    nextMonth: '下个月',
+    today: '今天',
+    due: (count: number) => `${count} 到期`,
+    overdue: (count: number) => `${count} 逾期`,
+    empty: '当天没有到期题目。',
+    loading: '正在加载题目...',
+    loadFailed: '无法加载题目，请重试。',
   },
 
   roadmaps: {

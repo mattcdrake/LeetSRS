@@ -1,4 +1,5 @@
 import { useI18n } from '../contexts/I18nContext';
+import { StreakCounter } from './StreakCounter';
 
 interface ViewLayoutProps {
   title?: string;
@@ -11,11 +12,11 @@ export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, ch
   const t = useI18n();
   return (
     <div className="flex flex-col h-full">
-      <div className="sticky top-0 z-10">
-        <div className="flex items-center justify-between px-4 py-2 bg-secondary border-b border-current">
-          <div className="flex items-center gap-2 shrink-0">
+      <header className="sticky top-0 z-10">
+        <div className="flex items-center justify-between gap-2 px-4 py-2 bg-secondary border-b border-current">
+          <div className="flex items-center gap-2 min-w-0">
             {headerLeading}
-            <h1 className="text-xl font-bold text-primary font-jetbrains-mono">
+            <h1 className="truncate text-xl font-bold text-primary font-jetbrains-mono">
               {title === t.app.name ? (
                 <>
                   {t.app.namePart1}
@@ -26,16 +27,19 @@ export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, ch
               )}
             </h1>
           </div>
-          {headerContent}
+          <div className="flex items-center gap-4 shrink-0">
+            {headerContent}
+            <StreakCounter />
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div
+      <main
         className="flex-1 flex flex-col py-4 gap-4 overflow-y-auto overflow-x-hidden"
         style={{ scrollbarGutter: 'stable both-edges' }}
       >
         <div className="px-4">{children}</div>
-      </div>
+      </main>
     </div>
   );
 }

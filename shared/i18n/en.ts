@@ -26,9 +26,21 @@ const en = {
   // Navigation
   nav: {
     home: 'Home',
+    calendar: 'Calendar',
     roadmaps: 'Roadmaps',
     cards: 'Cards',
     settings: 'Settings',
+  },
+
+  calendar: {
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    today: 'Today',
+    due: (count: number) => `${count} due`,
+    overdue: (count: number) => `${count} overdue`,
+    empty: 'No problems due on this day.',
+    loading: 'Loading problems...',
+    loadFailed: 'Could not load problems. Try again.',
   },
 
   roadmaps: {
