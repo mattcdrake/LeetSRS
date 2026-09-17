@@ -88,6 +88,7 @@ export async function resetAllData(): Promise<void> {
     settings: {},
   });
   await disconnectGithub();
+  await storage.removeItem(STORAGE_KEYS.activeRoadmapId);
   await removeLegacyLearningData();
 }
 
