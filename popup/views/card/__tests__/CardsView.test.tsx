@@ -84,8 +84,14 @@ describe('CardsView', () => {
 
   it('should link cards to their problem on the stored LeetCode domain', () => {
     const cards = [
-      createMockCardWithProblem(State.New, { title: 'Two Sum', slug: 'two-sum', domain: 'leetcode.com' }),
       createMockCardWithProblem(State.New, {
+        frontendId: '1',
+        title: 'Two Sum',
+        slug: 'two-sum',
+        domain: 'leetcode.com',
+      }),
+      createMockCardWithProblem(State.New, {
+        frontendId: '2',
         title: 'Chinese Problem',
         translatedTitle: '中文题目',
         slug: 'chinese-problem',

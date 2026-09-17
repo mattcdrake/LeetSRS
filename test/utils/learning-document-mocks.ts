@@ -22,21 +22,12 @@ export function setPopupLearningDocumentQueryData(queryClient: QueryClient, over
 }
 
 export function setPopupLearningCardsQueryData(queryClient: QueryClient, cards: CardWithProblem[]) {
-  const seen = new Set<string>();
-  const uniqueCards = cards.map((card, index) => {
-    if (!seen.has(card.frontendId)) {
-      seen.add(card.frontendId);
-      return card;
-    }
-    const frontendId = `${card.frontendId}-${index}`;
-    return { ...card, frontendId };
-  });
   const document = buildLearningDocument({
-    cards: Object.fromEntries(uniqueCards.map((card) => [card.frontendId, cardSchema.parse(card)])),
+    cards: Object.fromEntries(cards.map((card) => [card.frontendId, cardSchema.parse(card)])),
   });
   queryClient.setQueryData(learningDocumentQueryKey, document);
   queryClient.setQueryData(
-    cardMetadataQueryOptions(uniqueCards).queryKey,
-    Object.fromEntries(uniqueCards.map((card) => [card.frontendId, catalogProblemSchema.strip().parse(card)]))
+    cardMetadataQueryOptions(cards).queryKey,
+    Object.fromEntries(cards.map((card) => [card.frontendId, catalogProblemSchema.strip().parse(card)]))
   );
 }
