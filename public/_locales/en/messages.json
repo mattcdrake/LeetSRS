@@ -1,6 +1,6 @@
 {
   "extName": {
-    "message": "LeetSRS - Spaced Repetition"
+    "message": "LeetSRS — Spaced Repetition for LeetCode"
   },
   "extDescription": {
     "message": "A spaced repetition extension for LeetCode problems"
