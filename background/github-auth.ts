@@ -35,7 +35,6 @@ let generation = 0;
 let signingIn: Promise<void> | undefined;
 let refreshing: Promise<z.infer<typeof authorizationSchema>> | undefined;
 let error: GithubAuthStatus['error'] = null;
-let credentialWrite = Promise.resolve();
 
 export function authGeneration() {
   return generation;
@@ -179,11 +178,10 @@ function launchGithubSignIn(): void {
     if (!code || expected !== generation) throw new Error('Sign-in cancelled');
     const auth = await exchange('exchange', { code, code_verifier: verifier, redirect_uri: redirectUri });
     if (expected !== generation) return;
-    credentialWrite = (async () => {
-      await storage.setItem(AUTH_KEY, auth);
-      await storage.setItem(SETUP_PROMPT_KEY, true);
-    })();
-    await credentialWrite;
+    await storage.setItems([
+      { key: AUTH_KEY, value: auth },
+      { key: SETUP_PROMPT_KEY, value: true },
+    ]);
   })()
     .catch(() => {
       if (expected === generation) error = 'signInFailed';
@@ -207,8 +205,7 @@ export async function getGithubAuthorization() {
     const auth = await exchange('refresh', { refresh_token: saved.refreshToken });
     if (auth.account.id !== saved.account.id) throw new GithubAuthorizationError('GitHub account changed');
     if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
-    credentialWrite = storage.setItem(AUTH_KEY, auth);
-    await credentialWrite;
+    await storage.setItem(AUTH_KEY, auth);
     if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
     return auth;
   })();
@@ -221,7 +218,6 @@ export async function getGithubAuthorization() {
 }
 
 export async function dismissGithubSetupPrompt(): Promise<void> {
-  await credentialWrite;
   await storage.removeItem(SETUP_PROMPT_KEY);
 }
 
@@ -232,7 +228,5 @@ export async function signOutGithub(): Promise<void> {
   error = null;
   await signInRequests;
   await storage.removeItem(SIGN_IN_REQUEST_KEY);
-  // Wait for an already-started storage write, never an OAuth/network request.
-  await credentialWrite.catch(() => {});
   await storage.removeItems([AUTH_KEY, SETUP_PROMPT_KEY]);
 }

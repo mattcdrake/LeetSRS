@@ -75,12 +75,13 @@ Sync uses last-write-wins for the entire dataset, not per-card merging. The brow
 
 Use Node.js 24 or newer and install dependencies with `npm install`.
 
-- `npm run dev` or `npm run dev:fresh`: start Chrome with a fresh temporary profile.
+- `npm run dev`: start Chrome with a fresh temporary profile.
 - `npm run dev:persistent`: reuse a Chrome profile, keeping logins and extension data between runs.
+- `npm run dev:reset`: delete the persistent development profile, including its logins and extension data. Stop the dev server and close the development browser first.
 - `npm run build`: build the production extension.
 - `npm run zip`: package the extension for distribution.
 
-The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched. To reset it, close the development browser and delete that directory.
+The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched.
 
 ## License
 

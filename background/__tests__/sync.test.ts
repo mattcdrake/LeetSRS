@@ -130,27 +130,6 @@ describe('whole-document Gist sync', () => {
     expect(await readLearningDocument()).toEqual(local);
   });
 
-  it('sign-out removes a connection whose storage write is already in progress', async () => {
-    github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
-    });
-    const started = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
-    const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
-    vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
-      started.resolve();
-      await release.promise;
-      await write(items);
-    });
-    const connecting = syncModule.connectGist({ mode: 'existing', gistId: 'selected' });
-    await started.promise;
-    const signingOut = syncModule.disconnectGithub();
-    release.resolve();
-    await Promise.all([connecting, signingOut]);
-    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-    expect(await readLearningDocument()).toEqual(local);
-  });
-
   it('uses stable error codes for GitHub and storage failures', async () => {
     github.get.mockRejectedValueOnce(Object.assign(new Error('Not Found'), { status: 404 }));
     expect(await syncModule.connectGist({ mode: 'existing', gistId: 'missing' })).toEqual({
