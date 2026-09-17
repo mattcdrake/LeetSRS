@@ -28,6 +28,8 @@ describe('whole-document Gist sync', () => {
     cards: {},
     reviewActivity: null,
     settings: { theme: 'dark' },
+    activeRoadmapId: 'blind-75',
+    roadmapSkips: { 'blind-75': ['1'] },
     dataUpdatedAt: '2026-09-12T12:00:00.000Z',
   };
 
@@ -182,7 +184,13 @@ describe('whole-document Gist sync', () => {
     'handles local $localTime and remote $remoteTime with direction $direction',
     async ({ localTime, remoteTime, direction }) => {
       const document = { ...local, dataUpdatedAt: localTime };
-      const remote = { ...local, settings: { theme: 'light' as const }, dataUpdatedAt: remoteTime };
+      const remote = {
+        ...local,
+        settings: { theme: 'light' as const },
+        activeRoadmapId: 'grind-75' as const,
+        roadmapSkips: { 'grind-75': ['2'] },
+        dataUpdatedAt: remoteTime,
+      };
       await replaceLearningDocument(document);
       github.get.mockResolvedValue({
         data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },

@@ -3,6 +3,7 @@ import { storage } from '#imports';
 import { recordReview } from '@/background/review-activity';
 import type { Card, ProblemReference, RateCardInput, RatingPreview } from '@/shared/models';
 import { findCard, type LearningDocument } from '@/shared/models';
+import type { RoadmapId } from '@/shared/roadmap';
 import type { SettingsUpdate } from '@/shared/settings';
 import { readLearningDocument } from '@/shared/storage';
 import { saveEdit } from './sync';
@@ -114,6 +115,32 @@ export function calculateDelayedDueDate(due: number, days: number): number {
   const newDueDate = new Date(due);
   newDueDate.setDate(newDueDate.getDate() + days);
   return newDueDate.getTime();
+}
+
+export async function setActiveRoadmap(id: RoadmapId | null): Promise<void> {
+  const now = new Date();
+  const document = await readLearningDocument();
+  if (document.activeRoadmapId === id) return;
+  document.activeRoadmapId = id;
+  await saveEdit(document, now);
+}
+
+export async function setRoadmapProblemSkipped(
+  roadmapId: RoadmapId,
+  frontendId: string,
+  skipped: boolean
+): Promise<void> {
+  const now = new Date();
+  const document = await readLearningDocument();
+  const ids = new Set(document.roadmapSkips[roadmapId]);
+  if (ids.has(frontendId) === skipped) return;
+  if (skipped) {
+    ids.add(frontendId);
+  } else {
+    ids.delete(frontendId);
+  }
+  document.roadmapSkips[roadmapId] = [...ids];
+  await saveEdit(document, now);
 }
 
 export async function previewRatings(problem: ProblemReference): Promise<RatingPreview> {

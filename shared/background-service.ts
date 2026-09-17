@@ -11,6 +11,7 @@ import type {
   RateCardInput,
   RatingPreview,
 } from '@/shared/models';
+import type { RoadmapId } from '@/shared/roadmap';
 import type { SettingsUpdate } from '@/shared/settings';
 
 export interface BackgroundService {
@@ -33,6 +34,8 @@ export interface BackgroundService {
   rateCard(input: RateCardInput): Promise<Card>;
   saveNote(frontendId: string, text: string): Promise<void>;
   updateSettings(changes: SettingsUpdate): Promise<void>;
+  setActiveRoadmap(id: RoadmapId | null): Promise<void>;
+  setRoadmapProblemSkipped(roadmapId: RoadmapId, frontendId: string, skipped: boolean): Promise<void>;
   importData(jsonData: string): Promise<void>;
   resetAllData(): Promise<void>;
   setupGistSync(setup: GistSetup): Promise<GistConnectionResult>;

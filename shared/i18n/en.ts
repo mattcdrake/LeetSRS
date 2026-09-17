@@ -26,8 +26,39 @@ const en = {
   // Navigation
   nav: {
     home: 'Home',
+    roadmaps: 'Roadmaps',
     cards: 'Cards',
     settings: 'Settings',
+  },
+
+  roadmaps: {
+    activate: 'Activate',
+    deactivate: 'Deactivate',
+    active: 'Active',
+    use: 'Use',
+    add: 'Add to SRS',
+    addProblem: (title: string) => `Add ${title} to SRS`,
+    addFailed: 'Could not add the problem to SRS. Try again.',
+    searchLabel: 'Search roadmap problems',
+    filters: { notInSrs: 'Not in SRS', inSrs: 'In SRS', reviewed: 'Reviewed', skipped: 'Skipped' },
+    noMatches: 'No matching problems.',
+    detailLoadFailed: 'Could not load roadmap problems. Try again.',
+    skipFailed: 'Could not save skipped problems. Try again.',
+    skip: 'Skip',
+    restore: 'Restore',
+    skipProblem: (title: string) => `Skip ${title}`,
+    restoreProblem: (title: string) => `Restore ${title}`,
+    paidOnly: 'Paid-only problem',
+    problem: (id: string) => `Problem ${id}`,
+    unavailable: (domain: string) => `Unavailable on ${domain}`,
+    open: (name: string) => `Open ${name}`,
+    activationLabel: (name: string) => `Use ${name}`,
+    reviewed: (count: number, total: number) => `${count} of ${total} reviewed`,
+    back: 'Back to all roadmaps',
+    loading: 'Loading roadmaps...',
+    loadFailed: 'Failed to load roadmaps.',
+    saveFailed: 'Could not save the active roadmap. Try again.',
+    retry: 'Retry',
   },
 
   // Common actions
@@ -73,6 +104,16 @@ const en = {
 
   // Home view - Review queue
   home: {
+    currentRoadmap: 'Current roadmap',
+    nextProblem: 'Next in your roadmap',
+    viewRoadmap: 'View roadmap',
+    roadmapReviewed: (count: number, total: number) => `${count} / ${total} reviewed`,
+    activateRoadmapSuggestion: {
+      before: 'Activate a ',
+      link: 'roadmap',
+      after: ' to find your next problem.',
+    },
+    noNextProblem: (domain: string) => `No unadded, unskipped problems available on ${domain}.`,
     loadingReviewQueue: 'Loading review queue...',
     noCardsToReview: 'No cards to review!',
     addProblemsInstructions: 'Add problems on LeetCode using the',

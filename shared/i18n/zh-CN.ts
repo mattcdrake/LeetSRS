@@ -25,8 +25,39 @@ const zhCN: Translations = {
 
   nav: {
     home: '首页',
+    roadmaps: '学习路线',
     cards: '卡片',
     settings: '设置',
+  },
+
+  roadmaps: {
+    activate: '启用',
+    deactivate: '停用',
+    active: '当前',
+    use: '使用',
+    add: '加入 SRS',
+    addProblem: (title: string) => `将 ${title} 加入 SRS`,
+    addFailed: '无法将题目加入 SRS，请重试。',
+    searchLabel: '搜索学习路线题目',
+    filters: { notInSrs: '未加入 SRS', inSrs: '已加入 SRS', reviewed: '已复习', skipped: '已跳过' },
+    noMatches: '没有匹配的题目。',
+    detailLoadFailed: '无法加载学习路线题目，请重试。',
+    skipFailed: '无法保存跳过的题目，请重试。',
+    skip: '跳过',
+    restore: '恢复',
+    skipProblem: (title: string) => `跳过 ${title}`,
+    restoreProblem: (title: string) => `恢复 ${title}`,
+    paidOnly: '付费题目',
+    problem: (id: string) => `题目 ${id}`,
+    unavailable: (domain: string) => `${domain} 暂不提供此题`,
+    open: (name: string) => `打开 ${name}`,
+    activationLabel: (name: string) => `使用 ${name}`,
+    reviewed: (count: number, total: number) => `已复习 ${count} / ${total} 题`,
+    back: '返回所有学习路线',
+    loading: '正在加载学习路线...',
+    loadFailed: '无法加载学习路线。',
+    saveFailed: '无法保存当前学习路线，请重试。',
+    retry: '重试',
   },
 
   actions: {
@@ -67,6 +98,16 @@ const zhCN: Translations = {
   },
 
   home: {
+    currentRoadmap: '当前学习路线',
+    nextProblem: '学习路线中的下一题',
+    viewRoadmap: '查看学习路线',
+    roadmapReviewed: (count: number, total: number) => `已复习 ${count} / ${total} 题`,
+    activateRoadmapSuggestion: {
+      before: '启用一条',
+      link: '学习路线',
+      after: '，找到下一道要练习的题目。',
+    },
+    noNextProblem: (domain: string) => `${domain} 上没有尚未加入 SRS 且未跳过的可用题目。`,
     loadingReviewQueue: '加载复习队列中...',
     noCardsToReview: '没有需要复习的卡片！',
     addProblemsInstructions: '在 LeetCode 上使用',

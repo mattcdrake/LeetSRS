@@ -1,17 +1,22 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { GithubMigrationNotice } from '@/popup/legacy/GithubMigrationNotice';
 import './App.css';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { gistSyncQueryKeys, useGistSyncConfigQuery, useGithubAuthQuery } from '@/popup/queries/gist-sync';
 import { background } from '@/shared/background-service';
+import type { RoadmapId } from '@/shared/roadmap';
 import { BottomNav, type ViewId } from './components/BottomNav';
+import { activeRoadmapQueryOptions } from './queries/roadmaps';
 import { CardsView } from './views/card/CardsView';
 import { HomeView } from './views/home/HomeView';
+import { RoadmapsView } from './views/roadmaps/RoadmapsView';
 import { SettingsView } from './views/settings/SettingsView';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
+  const [selectedRoadmapId, setSelectedRoadmapId] = useState<RoadmapId | null>(null);
+  const { data: activeRoadmapId } = useSuspenseQuery(activeRoadmapQueryOptions);
   const [highlightGithubSignIn, setHighlightGithubSignIn] = useState(false);
   const [highlightGistSetup, setHighlightGistSetup] = useState(false);
   const setupShown = useRef(false);
@@ -47,7 +52,15 @@ function App() {
   }, [theme]);
 
   const views: Record<ViewId, React.ReactNode> = {
-    home: <HomeView />,
+    home: (
+      <HomeView
+        onOpenRoadmap={(id) => {
+          setSelectedRoadmapId(id);
+          setActiveView('roadmaps');
+        }}
+      />
+    ),
+    roadmaps: <RoadmapsView selectedRoadmapId={selectedRoadmapId} onSelect={setSelectedRoadmapId} />,
     card: <CardsView />,
     settings: <SettingsView highlightGithubSignIn={highlightGithubSignIn} highlightGistSetup={highlightGistSetup} />,
   };
@@ -68,6 +81,7 @@ function App() {
       <BottomNav
         activeView={activeView}
         onNavigate={(view) => {
+          if (view === 'roadmaps') setSelectedRoadmapId(activeRoadmapId);
           setHighlightGithubSignIn(false);
           setHighlightGistSetup(false);
           setActiveView(view);

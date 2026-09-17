@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import type { Grade } from 'ts-fsrs';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import {
@@ -15,7 +15,7 @@ import { ActionsSection } from './ActionsSection';
 import { ExpandableSection } from './ExpandableSection';
 import { ReviewCard } from './ReviewCard';
 
-export function ReviewQueue() {
+export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   const t = useI18n();
   const { data: queue = [], isLoading, error } = useReviewQueueQuery();
   const rateCardMutation = useRateCardMutation();
@@ -98,19 +98,22 @@ export function ReviewQueue() {
 
   if (!currentCard) {
     return (
-      <div className="flex flex-col items-center justify-center h-32 gap-3 px-4">
-        <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
-        <div className="text-base text-secondary text-center">
-          {t.home.addProblemsInstructions}{' '}
-          <LeetSRSLogo
-            className="inline-block mx-1 align-text-bottom"
-            width="20"
-            height="20"
-            style={{ color: '#10b981' }}
-          />
-          {t.home.addProblemsButton}
+      <>
+        <div className="flex flex-col items-center justify-center min-h-32 gap-3 px-4">
+          <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
+          <div className="text-base text-secondary text-center">
+            {t.home.addProblemsInstructions}{' '}
+            <LeetSRSLogo
+              className="inline-block mx-1 align-text-bottom"
+              width="20"
+              height="20"
+              style={{ color: '#10b981' }}
+            />
+            {t.home.addProblemsButton}
+          </div>
         </div>
-      </div>
+        {emptyContent}
+      </>
     );
   }
 
