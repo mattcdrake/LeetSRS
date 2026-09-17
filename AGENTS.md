@@ -45,6 +45,7 @@
 
 ## Repository conventions
 
+- Keep PR titles and descriptions concise.
 - Perform implementation work in a separate Git worktree.
 - Regenerate a missing `.wxt/tsconfig.json` with `npx wxt prepare`; `tsconfig.json` extends it.
 - Do not commit generated `.wxt/` or `.output/` files.
