@@ -15,6 +15,7 @@ import type { RoadmapId } from '@/shared/roadmap';
 import type { SettingsUpdate } from '@/shared/settings';
 
 export interface BackgroundService {
+  acknowledgePopupDialog(id: string): Promise<void>;
   dismissGithubSetupPrompt(): Promise<void>;
   cancelGithubSignInRequest(): Promise<void>;
   startGithubSignIn(): Promise<void>;

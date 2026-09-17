@@ -49,10 +49,26 @@ export async function replaceLearningDocument(document: LearningDocument): Promi
 
 export const STORAGE_KEYS = {
   learningDocument: 'local:leetsrs:learningDocument',
+  popupDialogAcknowledgments: 'local:leetsrs:popupDialogAcknowledgments',
   // GitHub Gist Sync
   gistConnection: 'local:leetsrs:gistConnection',
   lastSyncTime: 'local:leetsrs:lastSyncTime',
 } as const;
+
+const popupDialogAcknowledgmentsSchema = z.record(z.string(), z.literal(true));
+export type PopupDialogAcknowledgments = z.infer<typeof popupDialogAcknowledgmentsSchema>;
+
+export async function readPopupDialogAcknowledgments(): Promise<PopupDialogAcknowledgments> {
+  const stored = await storage.getItem<unknown>(STORAGE_KEYS.popupDialogAcknowledgments);
+  return popupDialogAcknowledgmentsSchema.parse(stored ?? {});
+}
+
+export function writePopupDialogAcknowledgments(acknowledgments: PopupDialogAcknowledgments): Promise<void> {
+  return storage.setItem(
+    STORAGE_KEYS.popupDialogAcknowledgments,
+    popupDialogAcknowledgmentsSchema.parse(acknowledgments)
+  );
+}
 
 // Sync status is separate from the learning document and its edit timestamp.
 const syncStatusUpdateSchema = z.object({
