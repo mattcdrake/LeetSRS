@@ -25,7 +25,6 @@ web-ext.config.ts
 devex/
 
 # Super secret stuff
-.agents
 docs/local
 experiments/
 
