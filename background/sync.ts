@@ -86,9 +86,10 @@ export async function resetAllData(): Promise<void> {
     cards: {},
     reviewActivity: null,
     settings: {},
+    activeRoadmapId: null,
+    roadmapSkips: {},
   });
   await disconnectGithub();
-  await storage.removeItems([STORAGE_KEYS.activeRoadmapId, STORAGE_KEYS.roadmapSkips]);
   await removeLegacyLearningData();
 }
 

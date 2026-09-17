@@ -100,6 +100,11 @@ export function convertLearningDocument(input: unknown): LearningDocument {
     }
   }
 
+  if (schemaVersion < 12) {
+    data.activeRoadmapId = null;
+    data.roadmapSkips = {};
+  }
+
   return learningDocumentSchema.parse({
     ...data,
     schemaVersion: LEARNING_DOCUMENT_VERSION,

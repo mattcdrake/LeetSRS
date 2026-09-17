@@ -13,7 +13,9 @@ import {
   rateCard,
   removeCard,
   saveNote,
+  setActiveRoadmap,
   setPauseStatus,
+  setRoadmapProblemSkipped,
   shouldShowAutoOpenHint,
   updateSettings,
 } from '@/background/learning';
@@ -30,6 +32,7 @@ import {
 import type { BackgroundService } from '@/shared/background-service';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
 import { gistSetupSchema, noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/models';
+import { roadmapIdSchema } from '@/shared/roadmap';
 import { settingsUpdateSchema } from '@/shared/settings';
 
 export function createBackgroundService(ready: Promise<void>): BackgroundService {
@@ -71,6 +74,8 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
     rateCard: command(z.tuple([rateCardInputSchema]), rateCard),
     saveNote: command(z.tuple([frontendId, noteTextSchema]), saveNote),
     updateSettings: command(z.tuple([settingsUpdateSchema]), updateSettings),
+    setActiveRoadmap: command(z.tuple([roadmapIdSchema.nullable()]), setActiveRoadmap),
+    setRoadmapProblemSkipped: command(z.tuple([roadmapIdSchema, frontendId, z.boolean()]), setRoadmapProblemSkipped),
     importData: command(z.tuple([z.string()]), restoreBackup),
     resetAllData: command(z.tuple([]), resetAllData),
     setupGistSync: command(z.tuple([gistSetupSchema]), connectGist),

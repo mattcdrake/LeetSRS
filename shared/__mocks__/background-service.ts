@@ -24,6 +24,8 @@ export const background = {
   rateCard: vi.fn<BackgroundService['rateCard']>(),
   saveNote: vi.fn<BackgroundService['saveNote']>(),
   updateSettings: vi.fn<BackgroundService['updateSettings']>(),
+  setActiveRoadmap: vi.fn<BackgroundService['setActiveRoadmap']>(),
+  setRoadmapProblemSkipped: vi.fn<BackgroundService['setRoadmapProblemSkipped']>(),
   importData: vi.fn<BackgroundService['importData']>(),
   resetAllData: vi.fn<BackgroundService['resetAllData']>(),
   setupGistSync: vi.fn<BackgroundService['setupGistSync']>(),

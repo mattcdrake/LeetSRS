@@ -3,6 +3,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
+import { replaceLearningDocument } from '@/shared/storage';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { PopupRoot } from '../PopupRoot';
 import { createPopupQueryClient } from '../query-client';
@@ -23,7 +25,8 @@ const contains = vi.fn<() => Promise<boolean>>();
 type QueriedTabs = Parameters<Parameters<typeof browser.tabs.query>[1]>[0];
 const queryTabs = vi.fn<() => Promise<QueriedTabs>>();
 
-beforeEach(() => {
+beforeEach(async () => {
+  await replaceLearningDocument(buildLearningDocument());
   browser.permissions.contains = contains;
   browser.tabs.query = queryTabs as typeof browser.tabs.query;
   contains.mockReset();

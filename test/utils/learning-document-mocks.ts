@@ -8,7 +8,15 @@ import { buildCatalogProblem } from './card-mocks';
 type LearningDocumentOverrides = Partial<Omit<LearningDocument, 'schemaVersion'>>;
 
 export function buildLearningDocument(overrides: LearningDocumentOverrides = {}): LearningDocument {
-  return { cards: {}, reviewActivity: null, settings: {}, ...overrides, schemaVersion: LEARNING_DOCUMENT_VERSION };
+  return {
+    cards: {},
+    reviewActivity: null,
+    settings: {},
+    activeRoadmapId: null,
+    roadmapSkips: {},
+    ...overrides,
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+  };
 }
 
 export function setPopupLearningDocumentQueryData(queryClient: QueryClient, overrides: LearningDocumentOverrides = {}) {

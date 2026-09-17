@@ -4,11 +4,9 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { Rating } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { ROADMAP_IDS } from '@/shared/roadmap';
-import { STORAGE_KEYS } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -86,7 +84,7 @@ it('browses, activates, filters, and restores a saved roadmap', async () => {
 });
 
 it('keeps reviews available with roadmap progress and continues with a recommendation after the queue empties', async () => {
-  await storage.setItem(STORAGE_KEYS.activeRoadmapId, 'blind-75');
+  await background.setActiveRoadmap('blind-75');
   await background.rateCard({ ...buildProblem(), rating: Rating.Easy });
   // This card is outside Blind 75 and must still be reviewable.
   await background.addCard(buildProblem({ frontendId: '2' }));
@@ -121,34 +119,34 @@ it('updates empty-queue recommendations for skips, the preferred site, and the a
   openPopup();
   await screen.findByText('No cards to review!');
   expect(screen.queryByRole('region', { name: 'Current roadmap' })).not.toBeInTheDocument();
-  await act(async () => storage.setItem(STORAGE_KEYS.activeRoadmapId, 'blind-75'));
+  await act(async () => background.setActiveRoadmap('blind-75'));
   const section = await screen.findByRole('region', { name: 'Current roadmap' });
   expect(await within(section).findByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
-  await act(async () => storage.setItem(STORAGE_KEYS.roadmapSkips, { 'blind-75': ['1'] }));
+  await act(async () => background.setRoadmapProblemSkipped('blind-75', '1', true));
   expect(await within(section).findByRole('link', { name: '3. Longest Substring' })).toBeInTheDocument();
   expect(within(section).getByText('0 / 75 reviewed')).toBeInTheDocument();
 
   await act(async () => background.updateSettings({ preferredLeetcodeSite: 'leetcode.cn' }));
   await within(section).findByText('No unadded, unskipped problems available on leetcode.cn.');
   expect(within(section).queryByRole('link')).not.toBeInTheDocument();
-  await act(async () => storage.setItem(STORAGE_KEYS.roadmapSkips, { 'blind-75': [] }));
+  await act(async () => background.setRoadmapProblemSkipped('blind-75', '1', false));
   expect(await within(section).findByRole('link', { name: '1. 两数之和' })).toHaveAttribute(
     'href',
     'https://leetcode.cn/problems/two-sum/description/'
   );
 
-  await act(async () => storage.setItem(STORAGE_KEYS.roadmapSkips, { 'blind-75': ['1'] }));
+  await act(async () => background.setRoadmapProblemSkipped('blind-75', '1', true));
   await within(section).findByText('No unadded, unskipped problems available on leetcode.cn.');
-  await act(async () => storage.setItem(STORAGE_KEYS.activeRoadmapId, 'grind-75'));
+  await act(async () => background.setActiveRoadmap('grind-75'));
   expect(await within(section).findByText('Grind 75')).toBeInTheDocument();
   expect(await within(section).findByRole('link', { name: '1. 两数之和' })).toBeInTheDocument();
-  await act(async () => storage.setItem(STORAGE_KEYS.activeRoadmapId, null));
+  await act(async () => background.setActiveRoadmap(null));
   await waitFor(() => expect(screen.queryByRole('region', { name: 'Current roadmap' })).not.toBeInTheDocument());
   expect(screen.getByText('No cards to review!')).toBeInTheDocument();
 });
 
 it('keeps reviews usable and retries when roadmap loading fails', async () => {
-  await storage.setItem(STORAGE_KEYS.activeRoadmapId, 'blind-75');
+  await background.setActiveRoadmap('blind-75');
   await background.addCard(buildProblem());
   vi.mocked(fetch).mockRejectedValueOnce(new Error('Roadmap unavailable'));
   openPopup();
