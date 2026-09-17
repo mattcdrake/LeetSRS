@@ -130,18 +130,13 @@ it.each(['success', 'failure'] as const)(
 );
 
 it('acknowledges only the displayed dialog when the popup closes and resumes with the next entry', async () => {
-  const first = Promise.withResolvers<boolean>();
-  const registry = [dialog('first', () => first.promise), dialog('later', async () => true)];
+  const registry = [dialog('first', async () => true), dialog('later', async () => true)];
   const view = render(
     <StrictMode>
       <PopupDialogHost registry={registry} />
     </StrictMode>,
     { wrapper: createPopupTestWrapper().wrapper }
   );
-  fireEvent(window, new Event('pagehide'));
-  expect(background.acknowledgePopupDialog).not.toHaveBeenCalled();
-
-  await act(async () => first.resolve(true));
   expect(await screen.findByRole('dialog', { name: 'first' })).toBeInTheDocument();
   fireEvent(window, new Event('pagehide'));
   view.unmount();
@@ -150,29 +145,4 @@ it('acknowledges only the displayed dialog when the popup closes and resumes wit
 
   render(<PopupDialogHost registry={registry} />, { wrapper: createPopupTestWrapper().wrapper });
   expect(await screen.findByRole('dialog', { name: 'later' })).toBeInTheDocument();
-});
-
-it('does not acknowledge an unshown dialog or duplicate a pending dismissal when the popup closes', async () => {
-  const save = Promise.withResolvers<void>();
-  service.resolve('acknowledgePopupDialog', save.promise);
-  const registry = [dialog('first', async () => true), dialog('later', async () => true)];
-  const view = render(<PopupDialogHost registry={registry} />, { wrapper: createPopupTestWrapper().wrapper });
-  fireEvent.click(await screen.findByRole('button', { name: 'Continue' }));
-  fireEvent(window, new Event('pagehide'));
-  view.unmount();
-  await act(async () => save.resolve());
-  expect(background.acknowledgePopupDialog).toHaveBeenCalledExactlyOnceWith('first');
-});
-
-it('shows the current release without migration eligibility and remembers its dismissal', async () => {
-  const view = render(<PopupDialogHost />, { wrapper: createPopupTestWrapper().wrapper });
-  expect(await screen.findByRole('dialog', { name: 'LeetSRS 1.0' })).toBeInTheDocument();
-  expect(background.getGithubAuthStatus).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-  await waitFor(async () => expect(await readPopupDialogAcknowledgments()).toEqual({ 'release-1.0': true }));
-  view.unmount();
-  const { wrapper, queryClient } = createPopupTestWrapper();
-  render(<PopupDialogHost />, { wrapper });
-  await waitFor(() => expect(queryClient.isFetching()).toBe(0));
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });

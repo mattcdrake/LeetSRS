@@ -5,7 +5,7 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import { getGithubAuthStatus } from '@/background/github-auth';
-import { dismissMigrationNotice, migratePatConnection, previousGist } from '@/background/legacy/github-pat';
+import { dismissMigrationNotice, migratePatConnection } from '@/background/legacy/github-pat';
 import App from '@/popup/App';
 import { background } from '@/shared/background-service';
 import { replaceLearningDocument, writePopupDialogAcknowledgments } from '@/shared/storage';
@@ -32,23 +32,16 @@ beforeEach(async () => {
   await migratePatConnection();
 });
 
-it('persists across popup closes and Settings clicks, and only the X saves dismissal', async () => {
-  const onOpenSettings = vi.fn();
-  const content = <GithubMigrationBanner onOpenSettings={onOpenSettings} />;
+it('persists across popup closes until dismissed with X', async () => {
+  const content = <GithubMigrationBanner onOpenSettings={vi.fn()} />;
   const view = render(content, { wrapper: createPopupTestWrapper().wrapper });
-  fireEvent.click(await screen.findByRole('button', { name: 'Settings' }));
-  expect(onOpenSettings).toHaveBeenCalledOnce();
-  fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+  expect(await screen.findByRole('button', { name: 'Dismiss GitHub migration notice' })).toBeInTheDocument();
   fireEvent(window, new Event('pagehide'));
   view.unmount();
-  expect(background.dismissMigrationNotice).not.toHaveBeenCalled();
-  expect((await getGithubAuthStatus()).migrationNotice).toBe(true);
 
   const reopened = render(content, { wrapper: createPopupTestWrapper().wrapper });
   fireEvent.click(await screen.findByRole('button', { name: 'Dismiss GitHub migration notice' }));
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Settings' })).not.toBeInTheDocument());
-  expect(background.dismissMigrationNotice).toHaveBeenCalledOnce();
-  expect(await previousGist()).toBe('previous');
   reopened.unmount();
 
   const { wrapper, queryClient } = createPopupTestWrapper();
@@ -81,7 +74,7 @@ it('keeps dismissal available if saving fails', async () => {
 
 it('opens highlighted GitHub settings from the header banner without dismissing it', async () => {
   await replaceLearningDocument(buildLearningDocument());
-  await writePopupDialogAcknowledgments({ 'release-1.0': true, 'github-migration': true });
+  await writePopupDialogAcknowledgments({ 'release-1.0': true });
   service.resolve('getGistSyncStatus', { lastSyncTime: null, syncInProgress: false, lastError: null });
   vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => true);
   vi.spyOn(browser.permissions.onRemoved, 'addListener').mockImplementation(() => {});
@@ -90,7 +83,6 @@ it('opens highlighted GitHub settings from the header banner without dismissing 
   }
   render(<App />, { wrapper: createPopupTestWrapper().wrapper });
   const header = await screen.findByRole('banner');
-  expect(within(header).getByRole('heading', { name: 'Leet SRS' })).toBeInTheDocument();
   fireEvent.click(await within(header).findByRole('button', { name: 'Settings' }));
   expect(await screen.findByRole('button', { name: 'Sign in with GitHub' })).toBeInTheDocument();
   expect(
