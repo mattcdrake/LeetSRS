@@ -146,9 +146,7 @@ const zhCN: Translations = {
     editorReset: {
       resetEditorOnReviewQueue: '复习时重置代码',
     },
-
     preferredLeetcodeSite: '首选 LeetCode 站点',
-
     leetcodeCn: {
       description: '启用 leetcode.cn（力扣）支持。需要额外的浏览器权限。',
       enable: '启用',

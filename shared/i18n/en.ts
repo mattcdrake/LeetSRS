@@ -161,9 +161,7 @@ const en = {
     editorReset: {
       resetEditorOnReviewQueue: 'Reset code on review',
     },
-
     preferredLeetcodeSite: 'Preferred LeetCode site',
-
     leetcodeCn: {
       description: 'Enable support for leetcode.cn (力扣). Requires additional browser permission.',
       enable: 'Enable',
