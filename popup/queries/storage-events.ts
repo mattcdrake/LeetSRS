@@ -4,7 +4,7 @@ import { storage } from '#imports';
 import { STORAGE_KEYS } from '@/shared/storage';
 import { gistSyncQueryKeys } from './gist-sync';
 import { learningDocumentQueryKey } from './learning-document';
-import { activeRoadmapQueryOptions } from './roadmaps';
+import { activeRoadmapQueryOptions, roadmapSkipsQueryOptions } from './roadmaps';
 
 // Mount outside Suspense so initialization and the first query cannot hide subscriptions.
 export function useStorageQueryEvents() {
@@ -25,13 +25,19 @@ export function useStorageQueryEvents() {
     const unwatch = [
       watch(STORAGE_KEYS.learningDocument, learningKeys),
       watch(STORAGE_KEYS.activeRoadmapId, [activeRoadmapQueryOptions.queryKey]),
+      watch(STORAGE_KEYS.roadmapSkips, [roadmapSkipsQueryOptions.queryKey]),
       watch(STORAGE_KEYS.gistConnection, connectionKeys),
       watch('local:leetsrs:githubAuthorization', [gistSyncQueryKeys.auth]),
       watch('local:leetsrs:githubSetupPending', [gistSyncQueryKeys.auth]),
       watch(STORAGE_KEYS.lastSyncTime, [gistSyncQueryKeys.status]),
     ];
     // Catch changes made before this effect, including while a cached popup was unmounted.
-    void refresh([...learningKeys, ...connectionKeys, activeRoadmapQueryOptions.queryKey]);
+    void refresh([
+      ...learningKeys,
+      ...connectionKeys,
+      activeRoadmapQueryOptions.queryKey,
+      roadmapSkipsQueryOptions.queryKey,
+    ]);
     return () => {
       stopped = true;
       for (const stop of unwatch) stop();

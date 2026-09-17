@@ -4,6 +4,8 @@ export const ROADMAP_IDS = ['blind-75', 'neetcode-150', 'neetcode-250', 'grind-7
 export const roadmapIdSchema = z.enum(ROADMAP_IDS);
 export type RoadmapId = z.infer<typeof roadmapIdSchema>;
 
+export const roadmapSkipsSchema = z.partialRecord(roadmapIdSchema, z.array(z.string().min(1)));
+
 export const roadmapSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),

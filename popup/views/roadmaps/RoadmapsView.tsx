@@ -5,6 +5,7 @@ import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { activeRoadmapQueryOptions, roadmapsQueryOptions, useActivateRoadmapMutation } from '@/popup/queries/roadmaps';
 import type { RoadmapId } from '@/shared/roadmap';
+import { RoadmapDetail } from './RoadmapDetail';
 import { RoadmapOverview } from './RoadmapOverview';
 
 interface RoadmapsViewProps {
@@ -31,6 +32,18 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
   return (
     <ViewLayout
       title={selected?.name ?? t.nav.roadmaps}
+      headerContent={
+        selected && (
+          <button
+            type="button"
+            className="roadmap-text-button"
+            disabled={activation.isPending}
+            onClick={() => activation.mutate(selected.id === activeRoadmapId ? null : selected.id)}
+          >
+            {selected.id === activeRoadmapId ? t.roadmaps.deactivate : t.roadmaps.activate}
+          </button>
+        )
+      }
       headerLeading={
         selected && (
           <button
@@ -44,6 +57,11 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
         )
       }
     >
+      {activation.isError && (
+        <p role="alert" className="text-danger mb-3">
+          {t.roadmaps.saveFailed}
+        </p>
+      )}
       {roadmaps.isPending ? (
         <p role="status" className="text-secondary">
           {t.roadmaps.loading}
@@ -56,22 +74,15 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
           </button>
         </div>
       ) : selected ? (
-        <p className="text-secondary">{t.roadmaps.reviewed(selected.reviewed, selected.total)}</p>
+        <RoadmapDetail key={selected.id} roadmap={selected} />
       ) : (
-        <>
-          <RoadmapOverview
-            roadmaps={summaries}
-            activeRoadmapId={activeRoadmapId}
-            isSaving={activation.isPending}
-            onActivate={(id) => activation.mutate(id)}
-            onOpen={onSelect}
-          />
-          {activation.isError && (
-            <p role="alert" className="text-danger mt-3">
-              {t.roadmaps.saveFailed}
-            </p>
-          )}
-        </>
+        <RoadmapOverview
+          roadmaps={summaries}
+          activeRoadmapId={activeRoadmapId}
+          isSaving={activation.isPending}
+          onActivate={(id) => activation.mutate(id)}
+          onOpen={onSelect}
+        />
       )}
     </ViewLayout>
   );

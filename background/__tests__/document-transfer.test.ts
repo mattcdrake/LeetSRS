@@ -35,13 +35,16 @@ beforeEach(async () => {
 describe('document transfers through background commands', () => {
   it('preserves the browser-local roadmap during import and clears it on reset', async () => {
     await storage.setItem(STORAGE_KEYS.activeRoadmapId, 'grind-75');
+    await storage.setItem(STORAGE_KEYS.roadmapSkips, { 'grind-75': ['1'] });
     const document = buildLearningDocument();
     await getRegisteredBackground().importData(JSON.stringify(document));
     expect(await readLearningDocument()).toEqual(document);
     expect(await storage.getItem(STORAGE_KEYS.activeRoadmapId)).toBe('grind-75');
+    expect(await storage.getItem(STORAGE_KEYS.roadmapSkips)).toEqual({ 'grind-75': ['1'] });
 
     await getRegisteredBackground().resetAllData();
     expect(await storage.getItem(STORAGE_KEYS.activeRoadmapId)).toBeNull();
+    expect(await storage.getItem(STORAGE_KEYS.roadmapSkips)).toBeNull();
   });
 
   it('retains all data after a rejected import and accepts a later edit', async () => {
