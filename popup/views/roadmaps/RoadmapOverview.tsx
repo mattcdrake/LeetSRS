@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
+import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
 import { FaChevronRight } from 'react-icons/fa6';
+import { LuPlay, LuSquare } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import type { Roadmap, RoadmapId } from '@/shared/roadmap';
 import './roadmaps.css';
@@ -42,8 +44,7 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
   const ordered = [...roadmaps].sort((a, b) => Number(b.id === activeRoadmapId) - Number(a.id === activeRoadmapId));
 
   return (
-    <fieldset className="roadmap-overview">
-      <legend className="sr-only">{t.roadmaps.activeRoadmap}</legend>
+    <div className="roadmap-overview">
       {ordered.map((roadmap) => {
         const active = roadmap.id === activeRoadmapId;
         return (
@@ -63,7 +64,12 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
               aria-describedby={`roadmap-progress-${roadmap.id}`}
               onClick={() => onOpen(roadmap.id)}
             >
-              <span className="roadmap-name">{roadmap.name}</span>
+              <span className="roadmap-name">
+                {active && (
+                  <span className="roadmap-active-indicator" role="img" aria-label={t.roadmaps.activeRoadmap} />
+                )}
+                {roadmap.name}
+              </span>
               <span className="roadmap-count text-secondary">
                 <span id={`roadmap-progress-${roadmap.id}`} className="sr-only">
                   {t.roadmaps.reviewed(roadmap.reviewed, roadmap.total)}
@@ -74,20 +80,31 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
                 <FaChevronRight aria-hidden="true" className="text-xs" />
               </span>
             </button>
-            <label className="roadmap-selection">
-              <input
-                type="radio"
-                name="active-roadmap"
-                value={roadmap.id}
-                aria-label={t.roadmaps.activationLabel(roadmap.name)}
-                checked={active}
-                disabled={isSaving}
-                onChange={() => onActivate(roadmap.id)}
-              />
-            </label>
+            <TooltipTrigger delay={350} closeDelay={0}>
+              <Button
+                className="roadmap-activation"
+                aria-label={
+                  active ? t.roadmaps.deactivationLabel(roadmap.name) : t.roadmaps.activationLabel(roadmap.name)
+                }
+                isDisabled={isSaving}
+                onPress={() => onActivate(active ? null : roadmap.id)}
+              >
+                {active ? (
+                  <LuSquare aria-hidden="true" className="size-3" fill="currentColor" />
+                ) : (
+                  <LuPlay aria-hidden="true" className="size-4" />
+                )}
+              </Button>
+              <Tooltip
+                placement="top"
+                className="z-[1100] rounded-lg border border-current bg-primary px-2 py-1 text-xs text-primary shadow-lg"
+              >
+                {active ? t.roadmaps.deactivateRoadmap : t.roadmaps.activateRoadmap}
+              </Tooltip>
+            </TooltipTrigger>
           </section>
         );
       })}
-    </fieldset>
+    </div>
   );
 }
