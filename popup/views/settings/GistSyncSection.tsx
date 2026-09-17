@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
 import { FaArrowsRotate, FaArrowUpRightFromSquare, FaCircleExclamation, FaCircleInfo, FaGithub } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { GithubMigrationNotice } from '@/popup/legacy/GithubMigrationNotice';
 import {
   gistSyncQueryKeys,
   useGistSyncConfigQuery,
@@ -90,7 +89,6 @@ export function GistSyncSection({
           </TooltipTrigger>
         )}
       </div>
-      <GithubMigrationNotice />
       {auth.data?.account && !permissions.isLoading && permissions.granted !== true && (
         <div role="alert" className="space-y-2">
           <p>{t.permissionRequired}</p>
