@@ -99,6 +99,16 @@ const en = {
 
   // Home view - Review queue
   home: {
+    currentRoadmap: 'Current roadmap',
+    nextProblem: 'Next in your roadmap',
+    viewRoadmap: 'View roadmap',
+    roadmapReviewed: (count: number, total: number) => `${count} / ${total} reviewed`,
+    activateRoadmapSuggestion: {
+      before: 'Activate a ',
+      link: 'roadmap',
+      after: ' to find your next problem.',
+    },
+    noNextProblem: (domain: string) => `No unadded, unskipped problems available on ${domain}.`,
     loadingReviewQueue: 'Loading review queue...',
     noCardsToReview: 'No cards to review!',
     addProblemsInstructions: 'Add problems on LeetCode using the',

@@ -93,6 +93,16 @@ const zhCN: Translations = {
   },
 
   home: {
+    currentRoadmap: '当前学习路线',
+    nextProblem: '学习路线中的下一题',
+    viewRoadmap: '查看学习路线',
+    roadmapReviewed: (count: number, total: number) => `已复习 ${count} / ${total} 题`,
+    activateRoadmapSuggestion: {
+      before: '启用一条',
+      link: '学习路线',
+      after: '，找到下一道要练习的题目。',
+    },
+    noNextProblem: (domain: string) => `${domain} 上没有尚未加入 SRS 且未跳过的可用题目。`,
     loadingReviewQueue: '加载复习队列中...',
     noCardsToReview: '没有需要复习的卡片！',
     addProblemsInstructions: '在 LeetCode 上使用',
