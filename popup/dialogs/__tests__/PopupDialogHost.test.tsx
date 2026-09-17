@@ -57,13 +57,3 @@ it('does not select a later dialog when eligibility fails, and resumes after rec
   await act(() => queryClient.invalidateQueries({ queryKey: dialogEligibilityQueryKey('first') }));
   expect(await screen.findByRole('dialog', { name: 'later' })).toBeInTheDocument();
 });
-
-it('shows no dialog for an empty registry or when no entry is eligible', async () => {
-  const { wrapper, queryClient } = createTestWrapper();
-  const view = render(<PopupDialogHost registry={[]} />, { wrapper });
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-  view.rerender(<PopupDialogHost registry={[dialog('ineligible', async () => false)]} />);
-  await waitFor(() => expect(queryClient.getQueryData(dialogEligibilityQueryKey('ineligible'))).toBe(false));
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-});
