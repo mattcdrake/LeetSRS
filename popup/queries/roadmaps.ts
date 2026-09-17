@@ -49,8 +49,11 @@ export function useSkipRoadmapProblemMutation() {
     }) => {
       const skips = await readRoadmapSkips();
       const ids = new Set(skips[roadmapId]);
-      if (skipped) ids.add(frontendId);
-      else ids.delete(frontendId);
+      if (skipped) {
+        ids.add(frontendId);
+      } else {
+        ids.delete(frontendId);
+      }
       await storage.setItem(STORAGE_KEYS.roadmapSkips, { ...skips, [roadmapId]: [...ids] });
     },
     onSettled: () => client.invalidateQueries({ queryKey: roadmapSkipsQueryOptions.queryKey }),
@@ -58,11 +61,11 @@ export function useSkipRoadmapProblemMutation() {
 }
 
 export function roadmapMetadataQueryOptions(roadmap: Roadmap) {
-  const ids = roadmap.groups.flatMap((group) => group.frontendIds);
   return queryOptions({
     queryKey: ['popupRoadmapMetadata', roadmap.id],
     staleTime: Infinity,
     queryFn: async () => {
+      const ids = roadmap.groups.flatMap((group) => group.frontendIds);
       const problems = await getCatalogProblemsByFrontendIds(ids);
       return Object.fromEntries(ids.map((id, index) => [id, problems[index]]));
     },

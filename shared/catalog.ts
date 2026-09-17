@@ -27,6 +27,7 @@ async function loadCatalog(
   return z.record(z.string(), catalogProblemSchema).parse(await response.json());
 }
 
+// Returns undefined for problems unavailable on each reference's domain.
 export async function getProblemsByFrontendIds(
   problems: readonly ProblemReference[]
 ): Promise<(CatalogProblem | undefined)[]> {
@@ -34,7 +35,7 @@ export async function getProblemsByFrontendIds(
   return metadata.map((problem, index) => (problem?.sources.includes(problems[index].domain) ? problem : undefined));
 }
 
-// Roadmaps also display metadata for problems unavailable on the preferred site.
+// Looks up metadata across all sites, including problems unavailable on the preferred site.
 export async function getCatalogProblemsByFrontendIds(
   frontendIds: readonly string[]
 ): Promise<(CatalogProblem | undefined)[]> {
