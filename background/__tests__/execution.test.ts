@@ -4,9 +4,10 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
 import type { BackgroundService } from '@/shared/background-service';
-import { readGistConnection, readLearningDocument } from '@/shared/storage';
+import { readGistConnection, readLearningDocument, writeGistConnection } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
+import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import backgroundEntry from '../../entrypoints/background/index';
 
@@ -22,13 +23,17 @@ beforeEach(async () => {
 });
 
 const problem = buildProblem();
+const savedConnection = { accountId: 1, gistId: 'gist', enabled: false };
 
 describe('registered background execution', () => {
   it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
     await getRegisteredBackground().rateCard({ ...problem, rating: 3 });
     await getRegisteredBackground().saveNote(problem.frontendId, 'Reset me');
     await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
-    await fakeBrowser.storage.sync.set({ 'leetsrs:gistConnection': { accountId: 1, gistId: 'gist', enabled: true } });
+    await seedGithubAuthorization();
+    await writeGistConnection(savedConnection);
+    expect(await readGistConnection()).toEqual(savedConnection);
+    expect((await getRegisteredBackground().getGithubAuthStatus()).account).toEqual({ id: 1, login: 'tester' });
     const staleLocal = {
       'leetsrs:cards': { stale: 'invalid leftover' },
       'leetsrs:stats': { stale: 'invalid leftover' },
@@ -58,6 +63,7 @@ describe('registered background execution', () => {
     const rpc = vi.spyOn(browser.runtime, 'sendMessage');
     expect(await readLearningDocument()).toEqual(empty);
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
+    expect((await getRegisteredBackground().getGithubAuthStatus()).account).toBeNull();
     expect(rpc).not.toHaveBeenCalled();
     expect(await getRegisteredBackground().getGistSyncStatus()).toEqual({
       lastSyncTime: null,
@@ -74,16 +80,22 @@ describe('registered background execution', () => {
     await fakeBrowser.storage.local.set(staleLocal);
     vi.mocked(registerService).mockClear();
     backgroundEntry.main();
+    await getRegisteredBackground().waitForInitialization();
     expect(await readLearningDocument()).toEqual(empty);
   });
-  it.each(['document', 'connection cleanup'] as const)(
+  it.each(['document', 'legacy connection cleanup'] as const)(
     'reports reset failure at %s without resurrecting data on restart',
     async (stage) => {
       await getRegisteredBackground().addCard(problem);
+      await seedGithubAuthorization();
+      await writeGistConnection(savedConnection);
+      expect(await readGistConnection()).toEqual(savedConnection);
+      expect((await getRegisteredBackground().getGithubAuthStatus()).account).toEqual({ id: 1, login: 'tester' });
       await fakeBrowser.storage.sync.set({
-        'leetsrs:gistConnection': { accountId: 1, gistId: 'gist', enabled: true },
+        'leetsrs:githubPat': 'legacy secret',
+        'leetsrs:gistId': 'old-gist',
       });
-      const before = JSON.stringify(await readLearningDocument(), null, 2);
+      const before = await readLearningDocument();
       const failure = new Error('Reset storage unavailable');
       if (stage === 'document') {
         vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
@@ -91,17 +103,24 @@ describe('registered background execution', () => {
         vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
       }
       await expect(getRegisteredBackground().resetAllData()).rejects.toBe(failure);
-      expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
+      expect(await readGistConnection()).toEqual(
+        stage === 'document' ? savedConnection : { accountId: null, gistId: null, enabled: false }
+      );
+      expect((await getRegisteredBackground().getGithubAuthStatus()).account).toEqual(
+        stage === 'document' ? { id: 1, login: 'tester' } : null
+      );
       vi.mocked(registerService).mockClear();
       backgroundEntry.main();
+      await getRegisteredBackground().waitForInitialization();
       if (stage === 'document') {
-        expect(JSON.stringify(await readLearningDocument(), null, 2)).toBe(before);
+        expect(await readLearningDocument()).toEqual(before);
       } else {
         expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       }
       await getRegisteredBackground().resetAllData();
       expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
       expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
+      expect((await getRegisteredBackground().getGithubAuthStatus()).account).toBeNull();
     }
   );
 
