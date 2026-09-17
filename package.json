@@ -1,5 +1,5 @@
 {
-  "name": "leetsrs",
+  "name": "leetsrs-spaced-repetition",
   "description": "A spaced repetition extension for LeetCode problems",
   "private": true,
   "version": "0.6.0",
