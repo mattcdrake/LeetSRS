@@ -28,7 +28,7 @@ export function useStorageQueryEvents() {
       watch(STORAGE_KEYS.learningDocument, learningKeys),
       watch(STORAGE_KEYS.popupDialogAcknowledgments, dialogKeys),
       watch(STORAGE_KEYS.gistConnection, connectionKeys),
-      watch('local:leetsrs:oauthMigration', [gistSyncQueryKeys.auth, ...eligibilityKeys]),
+      watch('local:leetsrs:oauthMigration', [gistSyncQueryKeys.auth]),
       watch('local:leetsrs:githubAuthorization', [gistSyncQueryKeys.auth]),
       watch('local:leetsrs:githubSetupPending', [gistSyncQueryKeys.auth]),
       watch(STORAGE_KEYS.lastSyncTime, [gistSyncQueryKeys.status]),

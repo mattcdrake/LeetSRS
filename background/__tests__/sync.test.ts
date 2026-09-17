@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { getGithubAuthStatus } from '@/background/github-auth';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import {
   readGistConnection,
@@ -119,6 +120,15 @@ describe('whole-document Gist sync', () => {
       }
     }
   );
+
+  it('keeps the migration banner pending after reconnecting a backup with OAuth', async () => {
+    await fakeBrowser.storage.local.set({ 'leetsrs:oauthMigration': { notice: true, previousGist: 'previous' } });
+    github.get.mockResolvedValue({
+      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
+    });
+    expect(await syncModule.connectGist({ mode: 'existing', gistId: 'previous' })).toEqual({ saved: true });
+    expect((await getGithubAuthStatus()).migrationNotice).toBe(true);
+  });
 
   it('does not reconnect if sign-out happens during destination validation', async () => {
     const response = Promise.withResolvers<{

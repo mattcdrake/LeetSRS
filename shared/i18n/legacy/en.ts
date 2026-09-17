@@ -1,8 +1,6 @@
 export const patMigration = {
-  migrationTitle: 'Reconnect backup',
-  migrationNotice: 'GitHub sign-in replaces access tokens, so sync is paused until you sign in.',
-  migrationDataSafe: 'Your learning data is safe on this device.',
-  migrationOpenSettings: 'Open settings',
-  migrationContinue: 'Got it',
-  migrationLater: 'Not now',
+  migrationNotice: 'Personal access tokens are retired. Reconnect with OAuth in',
+  migrationOpenSettings: 'Settings',
+  migrationDismiss: 'Dismiss GitHub migration notice',
+  migrationDismissFailed: 'Could not dismiss this message. Please try again.',
 };

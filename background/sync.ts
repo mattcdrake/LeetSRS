@@ -6,7 +6,7 @@ import {
   getGithubAuthorization,
   signOutGithub,
 } from '@/background/github-auth';
-import { dismissMigrationNotice, previousGist } from '@/background/legacy/github-pat';
+import { previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
 import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
 import type { GistDestination } from '@/shared/github-auth';
@@ -207,7 +207,6 @@ export async function connectGist(setup: GistSetup): Promise<GistConnectionResul
 
     if (expectedAuth !== authGeneration() || expectedSync !== generation) throw new Error('Connection changed');
     await saveConnection({ accountId: auth.account.id, gistId, enabled: true });
-    await dismissMigrationNotice();
     return { saved: true };
   } catch (error) {
     return { saved: false, error: syncErrorCode(error, 'connectionSaveFailed') };

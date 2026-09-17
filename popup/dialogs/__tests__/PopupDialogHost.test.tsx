@@ -163,3 +163,16 @@ it('does not acknowledge an unshown dialog or duplicate a pending dismissal when
   await act(async () => save.resolve());
   expect(background.acknowledgePopupDialog).toHaveBeenCalledExactlyOnceWith('first');
 });
+
+it('shows the current release without migration eligibility and remembers its dismissal', async () => {
+  const view = render(<PopupDialogHost />, { wrapper: createPopupTestWrapper().wrapper });
+  expect(await screen.findByRole('dialog', { name: 'LeetSRS 1.0' })).toBeInTheDocument();
+  expect(background.getGithubAuthStatus).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  await waitFor(async () => expect(await readPopupDialogAcknowledgments()).toEqual({ 'release-1.0': true }));
+  view.unmount();
+  const { wrapper, queryClient } = createPopupTestWrapper();
+  render(<PopupDialogHost />, { wrapper });
+  await waitFor(() => expect(queryClient.isFetching()).toBe(0));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});

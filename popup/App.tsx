@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { PopupDialogHost } from '@/popup/dialogs/PopupDialogHost';
 import './App.css';
 import { useTheme } from '@/popup/hooks/useTheme';
+import { GithubMigrationBanner } from '@/popup/legacy/GithubMigrationBanner';
 import { gistSyncQueryKeys, useGistSyncConfigQuery, useGithubAuthQuery } from '@/popup/queries/gist-sync';
 import { background } from '@/shared/background-service';
 import type { RoadmapId } from '@/shared/roadmap';
 import { BottomNav, type ViewId } from './components/BottomNav';
+import { ViewBannerContext } from './components/ViewLayout';
 import { activeRoadmapQueryOptions } from './queries/roadmaps';
 import { CalendarView } from './views/calendar/CalendarView';
 import { CardsView } from './views/card/CardsView';
@@ -69,17 +71,19 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      <PopupDialogHost
-        onOpenSettings={
-          activeView === 'settings'
-            ? undefined
-            : () => {
-                setHighlightGithubSignIn(true);
-                setActiveView('settings');
-              }
+      <PopupDialogHost />
+      <ViewBannerContext
+        value={
+          <GithubMigrationBanner
+            onOpenSettings={() => {
+              setHighlightGithubSignIn(true);
+              setActiveView('settings');
+            }}
+          />
         }
-      />
-      <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
+      >
+        <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
+      </ViewBannerContext>
       <BottomNav
         activeView={activeView}
         onNavigate={(view) => {
