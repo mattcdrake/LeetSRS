@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { cardMetadataQueryOptions } from '@/popup/queries/cards';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
@@ -38,24 +39,27 @@ export function CalendarDayDetail({ dateLabel, day }: CalendarDayDetailProps) {
         {cards.map((card) => {
           const problem = metadata[card.frontendId];
           return (
-            <li
-              key={card.frontendId}
-              className="flex items-baseline gap-2 py-2 border-b border-current last:border-b-0"
-            >
+            <li key={card.frontendId} className="border-b border-current last:border-b-0">
               <a
-                className="min-w-0 flex-1 text-xs text-primary hover:text-accent break-words focus-visible:outline-2 focus-visible:outline-current"
+                className="group flex items-baseline gap-2 py-2 text-xs text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-current"
                 href={getLeetcodeProblemUrl({ domain: card.domain, slug: problem.slug })}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {card.frontendId}. {getProblemTitle(problem, card.domain)}
+                <span className="min-w-0 flex-1 break-words">
+                  {card.frontendId}. {getProblemTitle(problem, card.domain)}
+                </span>
+                <span
+                  className="shrink-0 text-[11px] capitalize"
+                  style={{ color: DIFFICULTY_COLORS[problem.difficulty] }}
+                >
+                  {problem.difficulty}
+                </span>
+                <FaArrowUpRightFromSquare
+                  aria-hidden="true"
+                  className="shrink-0 text-[10px] opacity-60 group-hover:opacity-100"
+                />
               </a>
-              <span
-                className="shrink-0 text-[11px] capitalize"
-                style={{ color: DIFFICULTY_COLORS[problem.difficulty] }}
-              >
-                {problem.difficulty}
-              </span>
             </li>
           );
         })}
