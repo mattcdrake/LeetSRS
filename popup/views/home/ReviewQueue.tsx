@@ -98,14 +98,16 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
 
   if (!currentCard) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-32 gap-3 px-4">
-        <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
-        <div className="text-base text-secondary text-center">
-          {t.home.addProblemsInstructions} <LeetSRSLogo />
-          {t.home.addProblemsButton}
+      <>
+        <div className="flex flex-col items-center justify-center min-h-32 gap-3 px-4">
+          <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
+          <div className="text-base text-secondary text-center">
+            {t.home.addProblemsInstructions} <LeetSRSLogo />
+            {t.home.addProblemsButton}
+          </div>
         </div>
         {emptyContent}
-      </div>
+      </>
     );
   }
 

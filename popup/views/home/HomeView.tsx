@@ -26,12 +26,17 @@ export function HomeView({ onOpenRoadmap }: { onOpenRoadmap: (id: RoadmapId | nu
       <ReviewQueue
         emptyContent={
           activeRoadmapId === null && (
-            <div className="text-base text-secondary text-center flex flex-col items-center gap-2 pt-2">
-              <p>{t.home.activateRoadmapSuggestion}</p>
-              <button type="button" className={`text-accent ${buttonInteraction}`} onClick={() => onOpenRoadmap(null)}>
-                {t.home.browseRoadmaps}
+            <p className="mt-6 pt-4 border-t border-current text-base text-secondary text-center">
+              {t.home.activateRoadmapSuggestion.before}
+              <button
+                type="button"
+                className={`text-accent underline ${buttonInteraction}`}
+                onClick={() => onOpenRoadmap(null)}
+              >
+                {t.home.activateRoadmapSuggestion.link}
               </button>
-            </div>
+              {t.home.activateRoadmapSuggestion.after}
+            </p>
           )
         }
       />
