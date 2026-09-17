@@ -165,7 +165,7 @@ const zhCN: Translations = {
   },
 
   settings: {
-    preferences: '偏好设置',
+    groups: { reviews: '复习', display: '显示', leetcode: 'LeetCode' },
     title: '设置',
 
     language: {

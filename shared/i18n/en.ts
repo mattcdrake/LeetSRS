@@ -177,7 +177,7 @@ const en = {
 
   // Settings view
   settings: {
-    preferences: 'Preferences',
+    groups: { reviews: 'Reviews', display: 'Display', leetcode: 'LeetCode' },
     title: 'Settings',
 
     // Language section
