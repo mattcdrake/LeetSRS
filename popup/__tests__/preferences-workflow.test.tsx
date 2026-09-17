@@ -1,10 +1,11 @@
 /** @vitest-environment happy-dom */
+
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
-import { readLearningDocument } from '@/shared/storage';
+import { readLearningDocument, writePopupDialogAcknowledgments } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -28,6 +29,7 @@ beforeEach(async () => {
   backgroundEntry.main();
   createServiceMock(background).reset().use(getRegisteredBackground());
   await background.addCard(buildProblem());
+  await writePopupDialogAcknowledgments({ 'release-1.0': true });
 });
 
 const openPopup = () => render(<PopupRoot queryClient={createPopupQueryClient()} />);

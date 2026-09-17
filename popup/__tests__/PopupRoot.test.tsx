@@ -3,7 +3,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { replaceLearningDocument } from '@/shared/storage';
+import { replaceLearningDocument, writePopupDialogAcknowledgments } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { PopupRoot } from '../PopupRoot';
@@ -34,6 +34,7 @@ beforeEach(async () => {
   queryTabs.mockReset();
   queryTabs.mockResolvedValue([{ url: 'https://leetcode.cn/problems/two-sum/' } as QueriedTabs[number]]);
   localStorage.clear();
+  await writePopupDialogAcknowledgments({ 'release-1.0': true });
 });
 
 function openPopup() {

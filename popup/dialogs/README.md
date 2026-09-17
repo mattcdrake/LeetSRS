@@ -1,24 +1,23 @@
 # Popup dialogs
 
-`popupDialogRegistry` lists automatic dialogs in display order. Each entry has a
-unique, stable `id`, an async `loadEligibility` function, and a `Content` component.
-Content supplies a React Aria `Heading` with `slot="title"` and calls `onDismiss`
-from its dismissal actions. The host supplies the shared modal shell, including
-Escape and outside-click dismissal.
+[`popupDialogRegistry`](registry.ts) defines display order. The host loads eligibility
+and local acknowledgments, then shows one eligible, unacknowledged dialog at a time.
+It owns the modal shell, Escape/outside-click dismissal, and persistence.
 
-`PopupDialogHost` loads all eligibility checks and local acknowledgments before
-selecting the first eligible, unacknowledged entry. Pending or failed reads leave
-the host hidden until they succeed. Eligibility checks
-use React Query keys from `dialogEligibilityQueryKey(id)` so source changes can
-invalidate them.
+Dismissal closes immediately; the next dialog waits for the save attempt, even if
+it fails. Closing the popup dismisses only the displayed dialog. Failed saves may
+cause it to reappear next time.
 
-Dismissal closes the dialog immediately and calls `acknowledgePopupDialog` in the
-background. The next dialog waits for that save attempt to finish. If saving fails,
-the queue still advances; the dismissed dialog stays hidden for this mounted host
-but may reappear in a later popup. Acknowledgments use stable dialog IDs in local
-storage, separate from synced learning data. `useStorageQueryEvents` refreshes the
-acknowledgment query when storage changes and when the popup mounts.
+## Add a dialog
 
-This is the foundation for issue #645. Popup-close handling, migration notice
-integration, and the release entry follow in later steps. The registry is empty
-and the host is not mounted in `App` until that integration.
+1. Create a `Content` component accepting `PopupDialogContentProps`. Include a
+   React Aria `Heading` with `slot="title"`; call `onDismiss` from dismissal actions.
+2. Register its stable `id`, async `loadEligibility`, and `Content` in display order:
+   - **Release notes:** replace the current release entry and content with a new
+     versioned ID, e.g. `release-1.1`. Never retain older release entries.
+   - **Other dialogs:** add an independent entry with a unique ID. Keep it when
+     replacing release notes.
+3. If eligibility can change while open, invalidate `dialogEligibilityQueryKey(id)`
+   when its source changes.
+
+Keep IDs stable across copy edits; changing an ID makes the dialog eligible again.

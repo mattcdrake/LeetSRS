@@ -23,6 +23,12 @@ const zhCN: Translations = {
     namePart2: 'SRS',
   },
 
+  releaseAnnouncement: {
+    title: 'LeetSRS 1.0',
+    placeholder: '版本更新说明即将发布。',
+    dismiss: '继续',
+  },
+
   nav: {
     home: '首页',
     calendar: '日历',

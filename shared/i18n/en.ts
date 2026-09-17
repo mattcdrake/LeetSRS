@@ -23,6 +23,12 @@ const en = {
     namePart2: 'SRS',
   },
 
+  releaseAnnouncement: {
+    title: 'LeetSRS 1.0',
+    placeholder: 'Release notes coming soon.',
+    dismiss: 'Continue',
+  },
+
   // Navigation
   nav: {
     home: 'Home',

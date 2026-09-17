@@ -1,4 +1,5 @@
 /** @vitest-environment happy-dom */
+
 import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Rating } from 'ts-fsrs';
@@ -7,6 +8,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { ROADMAP_IDS } from '@/shared/roadmap';
+import { writePopupDialogAcknowledgments } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -35,6 +37,7 @@ beforeEach(async () => {
   backgroundEntry.main();
   createServiceMock(background).reset().use(getRegisteredBackground());
   await background.waitForInitialization();
+  await writePopupDialogAcknowledgments({ 'release-1.0': true });
 });
 
 const openPopup = () =>
