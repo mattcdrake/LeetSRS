@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from 'react-aria-components';
-import { FaXmark } from 'react-icons/fa6';
+import { FaGithub, FaXmark } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { gistSyncQueryKeys, useGithubAuthQuery } from '@/popup/queries/gist-sync';
 import { background } from '@/shared/background-service';
@@ -18,6 +18,7 @@ export function GithubMigrationBanner({ onOpenSettings }: { onOpenSettings: () =
 
   return (
     <div className="flex items-start gap-2 border-b border-green-200 bg-green-100 px-4 py-2 text-xs leading-5 text-green-950">
+      <FaGithub className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p>
           {t.migrationNotice}{' '}

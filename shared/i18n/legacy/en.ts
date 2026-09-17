@@ -1,5 +1,5 @@
 export const patMigration = {
-  migrationNotice: 'Personal access tokens are retired. Reconnect with OAuth in',
+  migrationNotice: 'GitHub personal access tokens are retired. Reconnect to GitHub using OAuth in',
   migrationOpenSettings: 'Settings',
   migrationDismiss: 'Dismiss GitHub migration notice',
   migrationDismissFailed: 'Could not dismiss this message. Please try again.',
