@@ -1,4 +1,4 @@
-import { parseDate } from '@internationalized/date';
+import { getLocalTimeZone, parseDate } from '@internationalized/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
@@ -21,6 +21,7 @@ import { useSettingsQuery } from '@/popup/queries/settings';
 import { buttonInteraction } from '@/popup/styles';
 import { formatLocalDate } from '@/shared/calendar';
 import { buildReviewCalendar } from '@/shared/review';
+import { CalendarDayDetail } from './CalendarDayDetail';
 import './calendar.css';
 
 export function CalendarView() {
@@ -32,6 +33,13 @@ export function CalendarView() {
   const days = buildReviewCalendar(document, new Date(now));
   const [selectedDate, setSelectedDate] = useState(today);
   const [focusedDate, setFocusedDate] = useState(today);
+  const activeDate = selectedDate.compare(today) < 0 ? today : selectedDate;
+  const dateLabel = new Intl.DateTimeFormat(settings.language, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(activeDate.toDate(getLocalTimeZone()));
 
   return (
     <ViewLayout title={t.nav.calendar}>
@@ -40,7 +48,7 @@ export function CalendarView() {
           aria-label={t.nav.calendar}
           className="review-calendar"
           minValue={today}
-          value={selectedDate.compare(today) < 0 ? today : selectedDate}
+          value={activeDate}
           onChange={setSelectedDate}
           focusedValue={focusedDate.compare(today) < 0 ? today : focusedDate}
           onFocusChange={setFocusedDate}
@@ -101,6 +109,7 @@ export function CalendarView() {
             </CalendarGridBody>
           </CalendarGrid>
         </Calendar>
+        <CalendarDayDetail dateLabel={dateLabel} day={days[activeDate.toString()]} />
       </I18nProvider>
     </ViewLayout>
   );
