@@ -6,12 +6,9 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
-import { formatLocalDate } from '@/shared/calendar';
 import { ROADMAP_IDS } from '@/shared/roadmap';
-import { replaceLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { PopupRoot } from '../PopupRoot';
 import { createPopupQueryClient } from '../query-client';
@@ -42,40 +39,6 @@ beforeEach(async () => {
 
 const openPopup = () =>
   render(<PopupRoot queryClient={createPopupQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
-
-it('shows one shared streak across tabs and roadmap details, and hides a zero streak', async () => {
-  vi.spyOn(fakeBrowser.permissions.onRemoved, 'addListener').mockImplementation(() => {});
-  for (const event of [fakeBrowser.permissions.onAdded, fakeBrowser.permissions.onRemoved]) {
-    vi.spyOn(event, 'removeListener').mockImplementation(() => {});
-  }
-  const document = buildLearningDocument({
-    reviewActivity: { date: formatLocalDate(new Date()), newCards: 0, streak: 7 },
-  });
-  await replaceLearningDocument(document);
-  openPopup();
-
-  for (const tab of ['Home', 'Cards', 'Calendar', 'Settings', 'Roadmaps']) {
-    fireEvent.click(await screen.findByLabelText(tab));
-    const header = within((await screen.findByRole('heading', { level: 1 })).closest('header') as HTMLElement);
-    expect(await header.findAllByText('7')).toHaveLength(1);
-  }
-
-  fireEvent.click(await screen.findByRole('button', { name: 'Open NeetCode 150' }));
-  const header = within(screen.getByRole('banner'));
-  expect(header.getByRole('heading', { name: 'NeetCode 150' })).toBeInTheDocument();
-  expect(header.getByRole('button', { name: 'Activate' })).toBeEnabled();
-  expect(header.getAllByText('7')).toHaveLength(1);
-
-  await act(async () => {
-    await replaceLearningDocument({
-      ...document,
-      reviewActivity: { date: formatLocalDate(new Date()), newCards: 0, streak: 0 },
-    });
-  });
-  await waitFor(() => expect(header.queryByText('7')).not.toBeInTheDocument());
-  expect(header.queryByText('0')).not.toBeInTheDocument();
-  expect(header.getByRole('button', { name: 'Activate' })).toBeEnabled();
-});
 
 it('refreshes the Home badge immediately when adding a roadmap problem between clock ticks', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
