@@ -25,6 +25,10 @@
 - For documentation-only changes, format Markdown and verify the diff and affected links; skip the full check and tests.
 - In Codex, run tests and full checks with `sandbox_permissions: "require_escalated"` from the first attempt; WXT's test setup needs a localhost port.
 
+## Code Review Rules
+
+- Before reviewing code, read and follow `.agents/skills/code-review/SKILL.md`.
+
 ## Tests
 
 - Add a test only when it catches a plausible regression or meaningful failure that existing tests miss; otherwise, do not add it.
