@@ -34,6 +34,10 @@ const en = {
   roadmaps: {
     activate: 'Activate',
     deactivate: 'Deactivate',
+    activeRoadmap: 'Active roadmap',
+    add: 'Add to SRS',
+    addProblem: (title: string) => `Add ${title} to SRS`,
+    addFailed: 'Could not add the problem to SRS. Try again.',
     searchLabel: 'Search roadmap problems',
     filters: { notInSrs: 'Not in SRS', inSrs: 'In SRS', reviewed: 'Reviewed', skipped: 'Skipped' },
     noMatches: 'No matching problems.',

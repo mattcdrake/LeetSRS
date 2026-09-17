@@ -33,6 +33,10 @@ const zhCN: Translations = {
   roadmaps: {
     activate: '启用',
     deactivate: '停用',
+    activeRoadmap: '当前学习路线',
+    add: '加入 SRS',
+    addProblem: (title: string) => `将 ${title} 加入 SRS`,
+    addFailed: '无法将题目加入 SRS，请重试。',
     searchLabel: '搜索学习路线题目',
     filters: { notInSrs: '未加入 SRS', inSrs: '已加入 SRS', reviewed: '已复习', skipped: '已跳过' },
     noMatches: '没有匹配的题目。',

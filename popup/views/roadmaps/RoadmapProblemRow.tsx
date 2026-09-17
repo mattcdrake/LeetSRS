@@ -1,4 +1,5 @@
-import { FaForwardStep, FaLock, FaRotateLeft } from 'react-icons/fa6';
+import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
+import { FaForwardStep, FaLock, FaPlus, FaRotateLeft } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import type { CatalogProblem } from '@/shared/catalog';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
@@ -17,10 +18,19 @@ interface RoadmapProblemRowProps {
   problem: RoadmapProblem;
   domain: LeetcodeDomain;
   isSaving: boolean;
+  isAdding: boolean;
+  onAdd: () => void;
   onToggleSkip: () => void;
 }
 
-export function RoadmapProblemRow({ problem, domain, isSaving, onToggleSkip }: RoadmapProblemRowProps) {
+export function RoadmapProblemRow({
+  problem,
+  domain,
+  isSaving,
+  isAdding,
+  onAdd,
+  onToggleSkip,
+}: RoadmapProblemRowProps) {
   const t = useI18n();
   const { frontendId, metadata, card, skipped } = problem;
   const title = metadata ? getProblemTitle(metadata, domain) : t.roadmaps.problem(frontendId);
@@ -69,6 +79,24 @@ export function RoadmapProblemRow({ problem, domain, isSaving, onToggleSkip }: R
         </div>
         {!available && <p className="text-xs text-secondary mt-1">{t.roadmaps.unavailable(domain)}</p>}
       </div>
+      {!card && available && (
+        <TooltipTrigger delay={350} closeDelay={0}>
+          <Button
+            className="roadmap-text-button inline-flex size-8 items-center justify-center"
+            isDisabled={isAdding}
+            aria-label={t.roadmaps.addProblem(title)}
+            onPress={onAdd}
+          >
+            <FaPlus aria-hidden="true" className="text-sm" />
+          </Button>
+          <Tooltip
+            placement="top"
+            className="z-[1100] rounded-lg border border-current bg-primary px-2 py-1 text-xs text-primary shadow-lg"
+          >
+            {t.roadmaps.add}
+          </Tooltip>
+        </TooltipTrigger>
+      )}
       <button
         type="button"
         className="roadmap-text-button inline-flex size-8 items-center justify-center"

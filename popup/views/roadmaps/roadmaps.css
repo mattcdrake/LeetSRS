@@ -2,7 +2,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .roadmap-row {
@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 6px 12px;
   border: 1px solid var(--current-border);
   border-radius: 9px;
   background: var(--current-bg-primary);
@@ -52,63 +52,31 @@
   white-space: nowrap;
 }
 
-.roadmap-switch {
+.roadmap-selection {
   display: inline-flex;
   flex-shrink: 0;
   justify-content: center;
   align-items: center;
-  width: 36px;
+  width: 32px;
   height: 32px;
-  border-radius: 6px;
   cursor: pointer;
 }
 
-.roadmap-switch:disabled {
+.roadmap-selection input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--current-accent);
+  cursor: pointer;
+}
+
+.roadmap-selection input:disabled {
   cursor: wait;
 }
 
 .roadmap-open:focus-visible,
-.roadmap-switch:focus-visible {
+.roadmap-selection input:focus-visible {
   outline: 2px solid var(--current-accent);
   outline-offset: 3px;
-}
-
-.roadmap-switch-track {
-  display: flex;
-  align-items: center;
-  width: 34px;
-  height: 20px;
-  padding: 3px;
-  border-radius: 20px;
-  background: #c5c5c5;
-  transition: background-color 160ms ease-out;
-}
-
-.dark .roadmap-switch-track {
-  background: #515151;
-}
-
-.roadmap-switch-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform 160ms ease-out;
-}
-
-.roadmap-switch[aria-checked="true"] .roadmap-switch-track {
-  background: var(--current-accent);
-}
-
-.roadmap-switch[aria-checked="true"] .roadmap-switch-thumb {
-  transform: translateX(14px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .roadmap-switch-track,
-  .roadmap-switch-thumb {
-    transition: none;
-  }
 }
 
 .roadmap-text-button {
@@ -162,7 +130,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 13px 0;
+  padding: 8px 0;
   text-align: left;
   font-size: 12px;
   font-weight: 500;

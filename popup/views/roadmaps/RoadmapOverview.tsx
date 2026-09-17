@@ -42,7 +42,8 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
   const ordered = [...roadmaps].sort((a, b) => Number(b.id === activeRoadmapId) - Number(a.id === activeRoadmapId));
 
   return (
-    <div className="roadmap-overview">
+    <fieldset className="roadmap-overview">
+      <legend className="sr-only">{t.roadmaps.activeRoadmap}</legend>
       {ordered.map((roadmap) => {
         const active = roadmap.id === activeRoadmapId;
         return (
@@ -73,22 +74,20 @@ export function RoadmapOverview({ roadmaps, activeRoadmapId, isSaving, onActivat
                 <FaChevronRight aria-hidden="true" className="text-xs" />
               </span>
             </button>
-            <button
-              type="button"
-              role="switch"
-              aria-label={t.roadmaps.activationLabel(roadmap.name)}
-              aria-checked={active}
-              disabled={isSaving}
-              className="roadmap-switch"
-              onClick={() => onActivate(active ? null : roadmap.id)}
-            >
-              <span className="roadmap-switch-track" aria-hidden="true">
-                <span className="roadmap-switch-thumb" />
-              </span>
-            </button>
+            <label className="roadmap-selection">
+              <input
+                type="radio"
+                name="active-roadmap"
+                value={roadmap.id}
+                aria-label={t.roadmaps.activationLabel(roadmap.name)}
+                checked={active}
+                disabled={isSaving}
+                onChange={() => onActivate(roadmap.id)}
+              />
+            </label>
           </section>
         );
       })}
-    </div>
+    </fieldset>
   );
 }
