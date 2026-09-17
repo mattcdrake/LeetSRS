@@ -17,7 +17,6 @@ export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     queryFn: async () => {
-      await background.waitForInitialization();
       const problems = await getProblemsByFrontendIds(references);
       return Object.fromEntries(
         references.map((reference, index) => {
