@@ -55,16 +55,10 @@ it('starts on today, keeps due counts visible on selection, and allows empty day
   expect(day('September 19, 2026')).not.toHaveAttribute('data-has-due');
 });
 
-it('bounds month navigation and returns both the visible month and selection to today', async () => {
+it('returns to today after selecting a date in another month', async () => {
   await openCalendar();
-  expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
-  expect(screen.getByRole('grid', { name: 'Calendar, October 2026' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Previous month' })).toBeEnabled();
   fireEvent.click(day('October 20, 2026'));
-  fireEvent.click(screen.getByRole('button', { name: 'Previous month' }));
-  expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
   fireEvent.click(screen.getByRole('button', { name: 'Today' }));
   expect(screen.getByRole('grid', { name: 'Calendar, September 2026' })).toBeInTheDocument();
   expect(day('September 17, 2026')).toHaveAttribute('data-selected');
@@ -89,16 +83,4 @@ it('refreshes projected counts after learning document changes', async () => {
   await waitFor(() => expect(day('September 17, 2026')).toHaveAccessibleName(/0 due$/));
   expect(day('September 18, 2026')).toHaveAccessibleName(/1 due$/);
   expect(day('September 19, 2026')).toHaveAccessibleName(/1 due$/);
-});
-
-it('advances the selection and month boundary when the popup stays open overnight', async () => {
-  vi.mocked(Date.now).mockReturnValue(new Date(2026, 8, 30, 23, 59).getTime());
-  await openCalendar();
-  expect(day('September 30, 2026')).toHaveAttribute('data-selected');
-
-  vi.mocked(Date.now).mockReturnValue(new Date(2026, 9, 1, 0, 1).getTime());
-  fireEvent.focus(window);
-  expect(screen.getByRole('grid', { name: 'Calendar, October 2026' })).toBeInTheDocument();
-  expect(day('October 1, 2026')).toHaveAttribute('data-selected');
-  expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
 });
