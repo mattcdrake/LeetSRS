@@ -1,7 +1,15 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
-import { ROADMAP_IDS, type RoadmapId, roadmapIdSchema, roadmapSchema } from '@/shared/roadmap';
+import { getCatalogProblemsByFrontendIds } from '@/shared/catalog';
+import {
+  ROADMAP_IDS,
+  type Roadmap,
+  type RoadmapId,
+  roadmapIdSchema,
+  roadmapSchema,
+  roadmapSkipsSchema,
+} from '@/shared/roadmap';
 import { STORAGE_KEYS } from '@/shared/storage';
 
 export const activeRoadmapQueryOptions = queryOptions({
@@ -14,6 +22,50 @@ export function useActivateRoadmapMutation() {
   return useMutation({
     mutationFn: (id: RoadmapId | null) => storage.setItem(STORAGE_KEYS.activeRoadmapId, id),
     onSettled: () => client.invalidateQueries({ queryKey: activeRoadmapQueryOptions.queryKey }),
+  });
+}
+
+async function readRoadmapSkips() {
+  return roadmapSkipsSchema.parse((await storage.getItem(STORAGE_KEYS.roadmapSkips)) ?? {});
+}
+
+export const roadmapSkipsQueryOptions = queryOptions({
+  queryKey: ['popupRoadmapSkips'],
+  queryFn: readRoadmapSkips,
+});
+
+export function useSkipRoadmapProblemMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    scope: { id: 'roadmapSkips' },
+    mutationFn: async ({
+      roadmapId,
+      frontendId,
+      skipped,
+    }: {
+      roadmapId: RoadmapId;
+      frontendId: string;
+      skipped: boolean;
+    }) => {
+      const skips = await readRoadmapSkips();
+      const ids = new Set(skips[roadmapId]);
+      if (skipped) ids.add(frontendId);
+      else ids.delete(frontendId);
+      await storage.setItem(STORAGE_KEYS.roadmapSkips, { ...skips, [roadmapId]: [...ids] });
+    },
+    onSettled: () => client.invalidateQueries({ queryKey: roadmapSkipsQueryOptions.queryKey }),
+  });
+}
+
+export function roadmapMetadataQueryOptions(roadmap: Roadmap) {
+  const ids = roadmap.groups.flatMap((group) => group.frontendIds);
+  return queryOptions({
+    queryKey: ['popupRoadmapMetadata', roadmap.id],
+    staleTime: Infinity,
+    queryFn: async () => {
+      const problems = await getCatalogProblemsByFrontendIds(ids);
+      return Object.fromEntries(ids.map((id, index) => [id, problems[index]]));
+    },
   });
 }
 

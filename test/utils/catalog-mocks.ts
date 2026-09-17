@@ -43,4 +43,14 @@ export const testCatalog: CatalogProblem[] = [
       sources: ['leetcode.com'],
     })
   ),
+  {
+    frontendId: '271',
+    slug: 'encode-and-decode-strings',
+    title: 'Encode and Decode Strings',
+    translatedTitle: null,
+    difficulty: 'medium',
+    isPaidOnly: true,
+    topics: ['string'],
+    sources: ['leetcode.com', 'leetcode.cn'],
+  },
 ];

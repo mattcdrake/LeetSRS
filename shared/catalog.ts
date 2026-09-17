@@ -30,10 +30,18 @@ async function loadCatalog(
 export async function getProblemsByFrontendIds(
   problems: readonly ProblemReference[]
 ): Promise<(CatalogProblem | undefined)[]> {
-  if (problems.length === 0) return [];
+  const metadata = await getCatalogProblemsByFrontendIds(problems.map((problem) => problem.frontendId));
+  return metadata.map((problem, index) => (problem?.sources.includes(problems[index].domain) ? problem : undefined));
+}
+
+// Roadmaps also display metadata for problems unavailable on the preferred site.
+export async function getCatalogProblemsByFrontendIds(
+  frontendIds: readonly string[]
+): Promise<(CatalogProblem | undefined)[]> {
+  if (frontendIds.length === 0) return [];
   byId ??= loadCatalog('leetcode-catalog-by-id.json');
   const catalog = await byId;
-  return problems.map(({ frontendId, domain }) => problemForDomain(catalog, frontendId, domain));
+  return frontendIds.map((id) => (Object.hasOwn(catalog, id) ? catalog[id] : undefined));
 }
 
 export async function getProblemBySlug(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem | undefined> {
