@@ -54,7 +54,7 @@ LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcig
 
 ## Open Source
 
-LeetSRS is open source and accepts contributions.
+LeetSRS is open source. Please read the [contribution guidelines](CONTRIBUTING.md) before contributing.
 
 ## Installation
 
