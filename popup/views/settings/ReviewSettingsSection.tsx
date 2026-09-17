@@ -33,7 +33,7 @@ export function ReviewSettingsSection() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1">
       <SettingsSwitch
         label={t.settings.reviewSettings.openRatingAfterSolving}
         isSelected={settings.openRatingAfterSolving}

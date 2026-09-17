@@ -66,7 +66,7 @@ export function GeneralSettingsSection() {
   return (
     <section
       aria-labelledby="preferences-heading"
-      className="mb-4 pt-4 border-t border-current space-y-4 text-xs text-primary"
+      className="mb-3 pt-3 border-t border-current space-y-1 text-xs text-primary"
     >
       <h3 id="preferences-heading" className="text-sm font-medium">
         {t.settings.preferences}

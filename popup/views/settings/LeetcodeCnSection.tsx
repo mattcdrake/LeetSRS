@@ -9,8 +9,8 @@ export function LeetcodeCnSection() {
   if (granted !== false) return null;
 
   return (
-    <div className="border-t border-current pt-4">
-      <p className="flex items-start gap-2 text-xs text-secondary leading-relaxed mb-3">
+    <div className="border-t border-current pt-2">
+      <p className="flex items-start gap-2 text-xs text-secondary leading-relaxed mb-2">
         <FaGlobe aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5" />
         <span>{t.settings.leetcodeCn.description}</span>
       </p>
