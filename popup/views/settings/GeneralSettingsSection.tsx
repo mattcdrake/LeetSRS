@@ -3,6 +3,7 @@ import type { IconType } from 'react-icons';
 import { FaChevronDown, FaCircleHalfStroke, FaCode, FaGlobe } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
+import type { LeetcodeDomain } from '@/shared/models';
 import type { Language, Theme } from '@/shared/settings';
 import { LeetcodeCnSection } from './LeetcodeCnSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';
@@ -97,6 +98,16 @@ export function GeneralSettingsSection() {
         icon={FaCode}
         isSelected={settings.resetEditorOnReviewQueue}
         onChange={(resetEditorOnReviewQueue) => updateSettingsMutation.mutate({ resetEditorOnReviewQueue })}
+      />
+      <SettingsSelect<LeetcodeDomain>
+        label={t.settings.preferredLeetcodeSite}
+        icon={FaGlobe}
+        options={[
+          { value: 'leetcode.com', label: 'leetcode.com' },
+          { value: 'leetcode.cn', label: 'leetcode.cn' },
+        ]}
+        value={settings.preferredLeetcodeSite}
+        onChange={(preferredLeetcodeSite) => updateSettingsMutation.mutate({ preferredLeetcodeSite })}
       />
       <LeetcodeCnSection />
     </section>

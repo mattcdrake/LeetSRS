@@ -84,3 +84,17 @@ it('changes rendered navigation and Settings labels and restores the language on
   fireEvent.click(await screen.findByLabelText('设置'));
   expect(await screen.findByRole('button', { name: /简体中文/ })).toBeInTheDocument();
 });
+
+it('defaults to leetcode.com and restores the preferred site after reopening', async () => {
+  const view = openPopup();
+  fireEvent.click(await screen.findByLabelText('Settings'));
+  expect(screen.getByRole('button', { name: /Preferred LeetCode site/ })).toHaveTextContent('leetcode.com');
+  await select('Preferred LeetCode site', 'leetcode.cn');
+  await waitFor(async () => expect((await readLearningDocument()).settings.preferredLeetcodeSite).toBe('leetcode.cn'));
+  view.unmount();
+  openPopup();
+  fireEvent.click(await screen.findByLabelText('Settings'));
+  expect(screen.getByRole('button', { name: /Preferred LeetCode site/ })).toHaveTextContent('leetcode.cn');
+  await select('Preferred LeetCode site', 'leetcode.com');
+  await waitFor(async () => expect((await readLearningDocument()).settings.preferredLeetcodeSite).toBe('leetcode.com'));
+});
