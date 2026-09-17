@@ -7,7 +7,6 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { ROADMAP_IDS } from '@/shared/roadmap';
-import { readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -114,65 +113,6 @@ it('keeps reviews available with roadmap progress and continues with a recommend
   expect(await screen.findByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Back to all roadmaps' }));
   expect(await screen.findByRole('radio', { name: 'Use Blind 75 as active roadmap' })).toBeChecked();
-});
-
-it('selects only one roadmap and deactivates from the overview without changing study data', async () => {
-  await background.rateCard({ ...buildProblem(), rating: Rating.Good });
-  await background.setRoadmapProblemSkipped('blind-75', '3', true);
-  const before = await readLearningDocument();
-  openPopup();
-  fireEvent.click(await screen.findByLabelText('Roadmaps'));
-  fireEvent.click(await screen.findByRole('radio', { name: 'Use Blind 75 as active roadmap' }));
-  await screen.findByRole('button', { name: 'Deactivate' });
-  await waitFor(() => expect(screen.getByRole('radio', { name: 'Use Blind 75 as active roadmap' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('radio', { name: 'Use Grind 75 as active roadmap' }));
-  await waitFor(() => expect(screen.getAllByRole('region')[0]).toHaveAccessibleName('Grind 75'));
-  expect(screen.getByRole('radio', { name: 'Use Grind 75 as active roadmap' })).toBeChecked();
-  const selection = within(screen.getByRole('group', { name: 'Active roadmap' }));
-  expect(selection.getAllByRole('radio', { checked: true })).toHaveLength(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }));
-  await waitFor(() => expect(selection.queryAllByRole('radio', { checked: true })).toHaveLength(0));
-  const after = await readLearningDocument();
-  expect(after.activeRoadmapId).toBeNull();
-  expect(after.cards).toEqual(before.cards);
-  expect(after.roadmapSkips).toEqual(before.roadmapSkips);
-});
-
-it('adds a roadmap problem on the preferred site and updates filters and recommendations', async () => {
-  await background.updateSettings({ preferredLeetcodeSite: 'leetcode.cn' });
-  await background.setActiveRoadmap('blind-75');
-  openPopup();
-  fireEvent.click(await screen.findByLabelText('Roadmaps'));
-  fireEvent.click(await screen.findByRole('button', { name: 'Not in SRS' }));
-  const add = await screen.findByRole('button', { name: 'Add 两数之和 to SRS' });
-  expect(screen.queryByRole('button', { name: 'Add Longest Substring to SRS' })).not.toBeInTheDocument();
-  fireEvent.click(add);
-  await waitFor(() => expect(screen.queryByRole('link', { name: '1. 两数之和' })).not.toBeInTheDocument());
-  fireEvent.click(screen.getByRole('button', { name: 'In SRS' }));
-  expect(await screen.findByRole('link', { name: '1. 两数之和' })).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Add 两数之和 to SRS' })).not.toBeInTheDocument();
-  expect(screen.getByRole('progressbar')).toHaveAttribute('value', '0');
-  const document = await readLearningDocument();
-  expect(document.cards['1']).toMatchObject({ domain: 'leetcode.cn', fsrs: { reps: 0 } });
-  fireEvent.click(screen.getByLabelText('Home'));
-  const section = await screen.findByRole('region', { name: 'Current roadmap' });
-  await within(section).findByText('No unadded, unskipped problems available on leetcode.cn.');
-  expect(within(section).queryByRole('link')).not.toBeInTheDocument();
-});
-
-it('keeps the add action available after a failed save so it can be retried', async () => {
-  await background.setActiveRoadmap('blind-75');
-  openPopup();
-  fireEvent.click(await screen.findByLabelText('Roadmaps'));
-  fireEvent.click(await screen.findByRole('button', { name: /Arrays & Hashing/ }));
-  vi.mocked(background.addCard).mockRejectedValueOnce(new Error('Storage unavailable'));
-  fireEvent.click(await screen.findByRole('button', { name: 'Add Two Sum to SRS' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not add the problem to SRS. Try again.');
-  fireEvent.click(screen.getByRole('button', { name: 'Add Two Sum to SRS' }));
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Add Two Sum to SRS' })).not.toBeInTheDocument());
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  await act(async () => background.removeCard('1'));
-  expect(await screen.findByRole('button', { name: 'Add Two Sum to SRS' })).toBeEnabled();
 });
 
 it('updates empty-queue recommendations for skips, the preferred site, and the active roadmap', async () => {

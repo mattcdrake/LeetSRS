@@ -79,38 +79,40 @@ export function RoadmapProblemRow({
         </div>
         {!available && <p className="text-xs text-secondary mt-1">{t.roadmaps.unavailable(domain)}</p>}
       </div>
-      {!card && available && (
-        <TooltipTrigger delay={350} closeDelay={0}>
-          <Button
-            className="roadmap-text-button inline-flex size-8 items-center justify-center"
-            isDisabled={isAdding}
-            aria-label={t.roadmaps.addProblem(title)}
-            onPress={onAdd}
-          >
-            <FaPlus aria-hidden="true" className="text-sm" />
-          </Button>
-          <Tooltip
-            placement="top"
-            className="z-[1100] rounded-lg border border-current bg-primary px-2 py-1 text-xs text-primary shadow-lg"
-          >
-            {t.roadmaps.add}
-          </Tooltip>
-        </TooltipTrigger>
-      )}
-      <button
-        type="button"
-        className="roadmap-text-button inline-flex size-8 items-center justify-center"
-        disabled={isSaving}
-        aria-label={skipped ? t.roadmaps.restoreProblem(title) : t.roadmaps.skipProblem(title)}
-        title={skipped ? t.roadmaps.restore : t.roadmaps.skip}
-        onClick={onToggleSkip}
-      >
-        {skipped ? (
-          <FaRotateLeft aria-hidden="true" className="text-sm" />
-        ) : (
-          <FaForwardStep aria-hidden="true" className="text-sm" />
+      <div className="flex shrink-0 items-center">
+        {!card && available && (
+          <TooltipTrigger delay={350} closeDelay={0}>
+            <Button
+              className="roadmap-text-button inline-flex size-8 items-center justify-center"
+              isDisabled={isAdding}
+              aria-label={t.roadmaps.addProblem(title)}
+              onPress={onAdd}
+            >
+              <FaPlus aria-hidden="true" className="text-sm" />
+            </Button>
+            <Tooltip
+              placement="top"
+              className="z-[1100] rounded-lg border border-current bg-primary px-2 py-1 text-xs text-primary shadow-lg"
+            >
+              {t.roadmaps.add}
+            </Tooltip>
+          </TooltipTrigger>
         )}
-      </button>
+        <button
+          type="button"
+          className="roadmap-text-button inline-flex size-8 items-center justify-center"
+          disabled={isSaving}
+          aria-label={skipped ? t.roadmaps.restoreProblem(title) : t.roadmaps.skipProblem(title)}
+          title={skipped ? t.roadmaps.restore : t.roadmaps.skip}
+          onClick={onToggleSkip}
+        >
+          {skipped ? (
+            <FaRotateLeft aria-hidden="true" className="text-sm" />
+          ) : (
+            <FaForwardStep aria-hidden="true" className="text-sm" />
+          )}
+        </button>
+      </div>
     </li>
   );
 }
