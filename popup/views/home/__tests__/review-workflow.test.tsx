@@ -302,6 +302,7 @@ it('validates changed notes and retries deletion without deleting the card', asy
     ['Changed', true],
     ['', false],
     ['a'.repeat(500), true],
+    ['a'.repeat(501), false],
     ['Stored note', false],
   ] as const) {
     fireEvent.change(input, { target: { value } });

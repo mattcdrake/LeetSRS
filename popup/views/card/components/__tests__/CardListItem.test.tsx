@@ -35,8 +35,8 @@ describe('CardListItem', () => {
   });
 
   it.each([0, undefined])('renders numeric dates with last_review=%s', (lastReview) => {
-    const card = createMockCardWithProblem(State.Review, { createdAt: 0 });
-    card.fsrs.due = 0;
+    const card = createMockCardWithProblem(State.Review, { createdAt: Date.parse('2024-01-02T12:00:00-08:00') });
+    card.fsrs.due = Date.parse('2024-02-03T12:00:00-08:00');
     if (lastReview === undefined) {
       delete card.fsrs.last_review;
     } else {
@@ -44,17 +44,12 @@ describe('CardListItem', () => {
     }
     renderItem(card);
 
-    const epochDate = new Date(0).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-    expect(screen.getByText('Due:').parentElement).toHaveTextContent(`Due:${epochDate}`);
-    expect(screen.getByText('Added:').parentElement).toHaveTextContent(`Added:${epochDate}`);
+    expect(screen.getByText('Due:').parentElement).toHaveTextContent('Due:Feb 3, 2024');
+    expect(screen.getByText('Added:').parentElement).toHaveTextContent('Added:Jan 2, 2024');
     if (lastReview === undefined) {
       expect(screen.queryByText('Last:')).not.toBeInTheDocument();
     } else {
-      expect(screen.getByText('Last:').parentElement).toHaveTextContent(`Last:${epochDate}`);
+      expect(screen.getByText('Last:').parentElement).toHaveTextContent('Last:Dec 31, 1969');
     }
   });
 
@@ -98,6 +93,8 @@ describe('CardListItem', () => {
       expect(deleteButtons[0]).not.toBeDisabled();
       expect(deleteButtons[1]).toBeDisabled();
     });
+    expect(background.setPauseStatus).toHaveBeenCalledExactlyOnceWith('first', true);
+    expect(background.removeCard).toHaveBeenCalledExactlyOnceWith('second');
 
     await act(async () => {
       pauseResult.resolve();
