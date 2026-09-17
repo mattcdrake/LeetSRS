@@ -100,7 +100,7 @@ function calendarFor(cards: Card[], now: string, overrides: Partial<LearningDocu
 describe('review calendar calculations', () => {
   it('groups overdue cards under today, excludes paused cards, and preserves queue ordering', () => {
     const cards = [
-      dueCard('late', '2024-01-15T23:59:59.999', State.Review),
+      dueCard('late', '2024-01-16T07:59:59.999Z', State.Review),
       dueCard('new-b', '2024-01-14T09:00:00'),
       dueCard('new-a', '2024-01-14T09:00:00'),
       dueCard('review', '2024-01-13T08:00:00', State.Review),
@@ -108,51 +108,53 @@ describe('review calendar calculations', () => {
       dueCard('relearning', '2024-01-15T09:00:00', State.Relearning),
       { ...dueCard('paused-new', '2024-01-12T08:00:00'), paused: true },
       { ...dueCard('paused-review', '2024-01-14T08:00:00', State.Review), paused: true },
+      dueCard('at-midnight', '2024-01-16T08:00:00Z', State.Review),
     ];
     const calendar = calendarFor(cards, '2024-01-15T12:00:00');
-    expect(Object.keys(calendar)).toEqual(['2024-01-15']);
+    expect(Object.keys(calendar)).toEqual(['2024-01-15', '2024-01-16']);
     expect(calendar['2024-01-15']).toEqual({
       cards: [cards[3], cards[1], cards[2], cards[4], cards[5], cards[0]],
       count: 6,
       overdueCount: 3,
     });
+    expect(calendar['2024-01-16']).toEqual({ cards: [cards[8]], count: 1, overdueCount: 0 });
     const document = buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) });
     expect(calendar['2024-01-15'].cards).toEqual(buildReviewQueue(document, new Date('2024-01-15T23:59:59.999')));
   });
 
-  it('uses the remaining allowance today and carries excess new cards across months in original due order', () => {
-    const cards = [
-      dueCard('future-new', '2024-02-01T10:00:00'),
-      dueCard('new-c', '2024-01-31T10:00:00'),
-      dueCard('review', '2024-02-01T00:00:00', State.Review),
-      dueCard('new-b', '2024-01-30T10:00:00'),
-      dueCard('new-a', '2024-01-29T10:00:00'),
-      dueCard('distant', '2024-03-10T10:00:00'),
-    ];
-    const calendar = calendarFor(cards, '2024-01-31T12:00:00', {
-      settings: { maxNewCardsPerDay: 2 },
-      reviewActivity: { date: '2024-01-31', newCards: 1, streak: 1 },
-    });
-    expect(calendar).toEqual({
-      '2024-01-31': { cards: [cards[4]], count: 1, overdueCount: 1 },
-      '2024-02-01': { cards: [cards[3], cards[1], cards[2]], count: 3, overdueCount: 0 },
-      '2024-02-02': { cards: [cards[0]], count: 1, overdueCount: 0 },
-      '2024-03-10': { cards: [cards[5]], count: 1, overdueCount: 0 },
-    });
-  });
-
-  it.each([2, 4])('carries all new cards forward when %i completions exhaust today’s allowance', (completed) => {
-    const cards = [dueCard('new', '2024-01-14T10:00:00'), dueCard('review', '2024-01-14T11:00:00', State.Review)];
-    expect(
-      calendarFor(cards, '2024-01-15T12:00:00', {
+  it.each([
+    [1, ['overdue-review', 'new-a'], ['new-b', 'new-c', 'review'], ['future-new'], 2],
+    [2, ['overdue-review'], ['new-a', 'new-b', 'review'], ['new-c', 'future-new'], 1],
+    [4, ['overdue-review'], ['new-a', 'new-b', 'review'], ['new-c', 'future-new'], 1],
+  ])(
+    'projects remaining allowances across months after %i completions',
+    (completed, today, tomorrow, later, overdue) => {
+      const cards = [
+        dueCard('future-new', '2024-02-01T10:00:00'),
+        dueCard('new-c', '2024-01-31T10:00:00'),
+        dueCard('review', '2024-02-01T00:00:00', State.Review),
+        dueCard('new-b', '2024-01-30T10:00:00'),
+        dueCard('new-a', '2024-01-29T10:00:00'),
+        dueCard('distant', '2024-03-10T10:00:00'),
+        dueCard('overdue-review', '2024-01-28T10:00:00', State.Review),
+      ];
+      const calendar = calendarFor(cards, '2024-01-31T12:00:00', {
         settings: { maxNewCardsPerDay: 2 },
-        reviewActivity: { date: '2024-01-15', newCards: completed, streak: 1 },
-      })
-    ).toEqual({
-      '2024-01-15': { cards: [cards[1]], count: 1, overdueCount: 1 },
-      '2024-01-16': { cards: [cards[0]], count: 1, overdueCount: 0 },
-    });
-  });
+        reviewActivity: { date: '2024-01-31', newCards: completed, streak: 1 },
+      });
+      expect(
+        Object.fromEntries(
+          Object.entries(calendar).map(([date, day]) => [date, day.cards.map((card) => card.frontendId)])
+        )
+      ).toEqual({
+        '2024-01-31': today,
+        '2024-02-01': tomorrow,
+        '2024-02-02': later,
+        '2024-03-10': ['distant'],
+      });
+      expect(Object.values(calendar).map((day) => day.overdueCount)).toEqual([overdue, 0, 0, 0]);
+    }
+  );
 
   it('restores the default allowance after local midnight', () => {
     const cards = ['a', 'b', 'c', 'd'].map((id) => dueCard(id, '2024-01-15T10:00:00'));
@@ -177,17 +179,6 @@ describe('review calendar calculations', () => {
     expect(calendarFor(cards, '2024-01-15T12:00:00', { settings: { maxNewCardsPerDay: 0 } })).toEqual({
       '2024-01-15': { cards: [cards[2], cards[3]], count: 2, overdueCount: 1 },
       '2024-01-16': { cards: [cards[4]], count: 1, overdueCount: 0 },
-    });
-  });
-
-  it('uses local midnight boundaries even when the UTC date differs', () => {
-    const cards = [
-      dueCard('before-midnight', '2024-01-16T07:59:59.999Z', State.Review),
-      dueCard('at-midnight', '2024-01-16T08:00:00Z', State.Review),
-    ];
-    expect(calendarFor(cards, '2024-01-15T12:00:00')).toEqual({
-      '2024-01-15': { cards: [cards[0]], count: 1, overdueCount: 0 },
-      '2024-01-16': { cards: [cards[1]], count: 1, overdueCount: 0 },
     });
   });
 
