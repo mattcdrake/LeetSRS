@@ -1,5 +1,5 @@
 .review-calendar {
-  --calendar-populated: color-mix(in srgb, var(--current-accent) 14%, var(--current-bg-primary));
+  --calendar-populated: color-mix(in srgb, var(--current-accent) 24%, white);
   --calendar-selected: color-mix(in srgb, var(--current-accent) 62%, white);
 }
 
@@ -71,6 +71,7 @@
 
 .calendar-day[data-has-due] {
   background: var(--calendar-populated);
+  color: #12300e;
 }
 
 .calendar-day[data-selected] {
