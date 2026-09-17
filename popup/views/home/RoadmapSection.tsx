@@ -24,7 +24,7 @@ export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) 
 
   const roadmap = roadmaps.data?.find((roadmap) => roadmap.id === activeRoadmapId);
   return (
-    <section aria-label={t.home.currentRoadmap} className="mt-6 pt-4 border-t border-current flex flex-col gap-4">
+    <section aria-label={t.home.currentRoadmap} className="pt-3 border-t border-current flex flex-col gap-3">
       {roadmaps.isPending ? (
         <p role="status" className="text-sm text-secondary">
           {t.roadmaps.loading}
@@ -96,7 +96,12 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
           rel="noopener noreferrer"
           aria-label={`${next.frontendId}. ${getProblemTitle(next, domain)}`}
         >
-          <span className="text-[10px] font-medium uppercase text-secondary">{t.home.nextProblem}</span>
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-medium uppercase text-secondary">{t.home.nextProblem}</span>
+            <span className="text-[11px] capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
+              {next.difficulty}
+            </span>
+          </span>
           <span className="flex items-start gap-2 text-[13px] font-medium">
             <span className="min-w-0 flex-1 break-words">
               {next.frontendId}. {getProblemTitle(next, domain)}
@@ -105,13 +110,6 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
               <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
             )}
             <FaArrowUp aria-hidden="true" className="shrink-0 mt-1 rotate-45 text-xs" />
-          </span>
-          <span className="flex items-center gap-1 text-[11px] text-secondary">
-            <span className="capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
-              {next.difficulty}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>{t.roadmaps.filters.notInSrs}</span>
           </span>
         </a>
       ) : (
