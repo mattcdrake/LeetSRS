@@ -1,7 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { z } from 'zod';
 import type { CatalogProblem } from '@/shared/catalog';
 
 const twoSum: CatalogProblem = {
@@ -15,26 +13,6 @@ const twoSum: CatalogProblem = {
   sources: ['leetcode.com'],
 };
 const cnProblem: CatalogProblem = { ...twoSum, frontendId: '2', slug: 'cn-problem', sources: ['leetcode.cn'] };
-
-const roadmapSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  sourceUrl: z.url(),
-  groups: z
-    .array(
-      z.object({
-        id: z.string().min(1),
-        name: z.string().min(1),
-        frontendIds: z.array(z.string().min(1)).min(1),
-      })
-    )
-    .min(1),
-});
-
-it.each(['blind-75', 'neetcode-150', 'neetcode-250', 'grind-75'])('%s matches the roadmap schema', (id) => {
-  const data = JSON.parse(readFileSync(`public/data/roadmaps/${id}.json`, 'utf8'));
-  expect(() => roadmapSchema.parse(data)).not.toThrow();
-});
 
 beforeEach(() => {
   vi.resetModules();

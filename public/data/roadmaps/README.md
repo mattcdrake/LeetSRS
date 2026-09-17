@@ -25,4 +25,4 @@ Sources checked on September 16, 2026:
 | [grind-75.json](grind-75.json)         | [Grind 75](https://www.techinterviewhandbook.org/grind75/), default 8 weeks / 8 hours per week, all topics and difficulties, ordered by difficulty. |
 
 To refresh, resolve each source's LeetCode problem slug through the bundled catalog,
-preserve the source groups and ordering, and run `npm test -- shared/__tests__/catalog.test.ts`.
+preserve the source groups and ordering, and run `npm test -- shared/__tests__/roadmap.test.ts`.
