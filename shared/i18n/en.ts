@@ -99,6 +99,9 @@ const en = {
 
   // Home view - Review queue
   home: {
+    currentRoadmap: 'Current roadmap',
+    nextProblem: 'Next problem',
+    noNextProblem: (domain: string) => `No unadded, unskipped problems available on ${domain}.`,
     loadingReviewQueue: 'Loading review queue...',
     noCardsToReview: 'No cards to review!',
     addProblemsInstructions: 'Add problems on LeetCode using the',

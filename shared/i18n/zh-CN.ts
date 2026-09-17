@@ -93,6 +93,9 @@ const zhCN: Translations = {
   },
 
   home: {
+    currentRoadmap: '当前学习路线',
+    nextProblem: '下一题',
+    noNextProblem: (domain: string) => `${domain} 上没有尚未加入 SRS 且未跳过的可用题目。`,
     loadingReviewQueue: '加载复习队列中...',
     noCardsToReview: '没有需要复习的卡片！',
     addProblemsInstructions: '在 LeetCode 上使用',

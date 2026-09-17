@@ -1,10 +1,12 @@
+import type { RoadmapId } from '@/shared/roadmap';
 import { LeetcodeCnBanner } from '../../components/LeetcodeCnBanner';
 import { StreakCounter } from '../../components/StreakCounter';
 import { ViewLayout } from '../../components/ViewLayout';
 import { ReviewQueue } from './ReviewQueue';
+import { RoadmapSection } from './RoadmapSection';
 import { StatsBar } from './StatsBar';
 
-export function HomeView() {
+export function HomeView({ onOpenRoadmap }: { onOpenRoadmap: (id: RoadmapId) => void }) {
   return (
     <ViewLayout
       headerContent={
@@ -16,6 +18,7 @@ export function HomeView() {
     >
       <LeetcodeCnBanner />
       <ReviewQueue />
+      <RoadmapSection onOpen={onOpenRoadmap} />
     </ViewLayout>
   );
 }

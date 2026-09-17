@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { browser } from 'wxt/browser';
 import { storage } from '#imports';
-import { getProblemsByFrontendIds } from '@/shared/catalog';
+import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { LeetcodeDomain } from '@/shared/models';
 import {
   ROADMAP_IDS,
@@ -77,9 +77,9 @@ export function roadmapMetadataQueryOptions(roadmap: Roadmap, domain: LeetcodeDo
           domain: domain === 'leetcode.com' ? 'leetcode.cn' : 'leetcode.com',
         }))
       );
-      return Object.fromEntries([
-        ...ids.map((id, index) => [id, problems[index]]),
-        ...unavailableIds.map((id, index) => [id, fallback[index]]),
+      return Object.fromEntries<CatalogProblem | undefined>([
+        ...ids.map((id, index) => [id, problems[index]] as const),
+        ...unavailableIds.map((id, index) => [id, fallback[index]] as const),
       ]);
     },
   });

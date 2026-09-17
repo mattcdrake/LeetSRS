@@ -57,7 +57,14 @@ function App() {
   }, [theme]);
 
   const views: Record<ViewId, React.ReactNode> = {
-    home: <HomeView />,
+    home: (
+      <HomeView
+        onOpenRoadmap={(id) => {
+          setSelectedRoadmapId(id);
+          setActiveView('roadmaps');
+        }}
+      />
+    ),
     roadmaps: <RoadmapsView selectedRoadmapId={selectedRoadmapId} onSelect={setSelectedRoadmapId} />,
     card: <CardsView />,
     settings: <SettingsView highlightGithubSignIn={highlightGithubSignIn} highlightGistSetup={highlightGistSetup} />,
