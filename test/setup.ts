@@ -11,10 +11,7 @@ for (const area of ['local', 'sync', 'session', 'managed'] as const) {
   const storage = fakeBrowser.storage[area];
   storage.get = new Proxy(storage.get, {
     apply(get, context, args: unknown[]) {
-      const snapshotArgs = args.map((arg) =>
-        typeof arg === 'function' ? (items: unknown) => arg(structuredClone(items)) : arg
-      );
-      const result: unknown = Reflect.apply(get, context, snapshotArgs);
+      const result: unknown = Reflect.apply(get, context, args);
       return result instanceof Promise ? result.then((items) => structuredClone(items)) : result;
     },
   });
