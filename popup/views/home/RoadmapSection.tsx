@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { FaArrowRight, FaArrowUpRightFromSquare, FaLock } from 'react-icons/fa6';
+import { FaArrowUp, FaLock } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import {
@@ -9,11 +9,11 @@ import {
   roadmapsQueryOptions,
 } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
+import { buttonInteraction } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { Roadmap, RoadmapId } from '@/shared/roadmap';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
-import '../roadmaps/roadmaps.css';
 
 export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) {
   const t = useI18n();
@@ -24,8 +24,7 @@ export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) 
 
   const roadmap = roadmaps.data?.find((roadmap) => roadmap.id === activeRoadmapId);
   return (
-    <section aria-label={t.home.currentRoadmap} className="mt-4 pt-4 border-t border-current flex flex-col gap-2">
-      <h2 className="text-xs font-medium text-secondary">{t.home.currentRoadmap}</h2>
+    <section aria-label={t.home.currentRoadmap} className="mt-6 pt-4 border-t border-current flex flex-col gap-4">
       {roadmaps.isPending ? (
         <p role="status" className="text-sm text-secondary">
           {t.roadmaps.loading}
@@ -33,7 +32,7 @@ export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) 
       ) : roadmaps.isError ? (
         <div role="alert" className="text-sm">
           <p>{t.roadmaps.loadFailed}</p>
-          <button type="button" className="roadmap-text-button" onClick={() => void roadmaps.refetch()}>
+          <button type="button" className={`text-accent ${buttonInteraction}`} onClick={() => void roadmaps.refetch()}>
             {t.roadmaps.retry}
           </button>
         </div>
@@ -53,7 +52,6 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
   const skips = useQuery(roadmapSkipsQueryOptions);
   const ids = roadmap.groups.flatMap((group) => group.frontendIds);
   const reviewed = ids.filter((id) => document.cards[id]?.fsrs.reps > 0).length;
-  const progressLabel = t.roadmaps.reviewed(reviewed, ids.length);
   const skippedIds = new Set(skips.data?.[roadmap.id]);
   const nextId = ids.find(
     (id) => !document.cards[id] && !skippedIds.has(id) && metadata.data?.[id]?.sources.includes(domain)
@@ -62,12 +60,16 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
 
   return (
     <>
-      <button type="button" className="roadmap-open" aria-label={t.roadmaps.open(roadmap.name)} onClick={onOpen}>
-        <span className="roadmap-name">{roadmap.name}</span>
-        <FaArrowRight aria-hidden="true" className="text-xs text-secondary" />
-      </button>
-      <p className="text-xs text-secondary">{progressLabel}</p>
-      <progress className="roadmap-progress" value={reviewed} max={ids.length} aria-label={progressLabel} />
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex flex-col gap-2">
+          <h2 className="text-[10px] font-medium uppercase text-secondary">{t.home.currentRoadmap}</h2>
+          <p className="text-sm font-medium">{roadmap.name}</p>
+          <p className="text-xs text-secondary">{t.home.roadmapReviewed(reviewed, ids.length)}</p>
+        </div>
+        <button type="button" className={`shrink-0 text-xs text-accent ${buttonInteraction}`} onClick={onOpen}>
+          {t.home.viewRoadmap}
+        </button>
+      </div>
       {metadata.isPending || skips.isPending ? (
         <p role="status" className="text-sm text-secondary">
           {t.roadmaps.loading}
@@ -77,7 +79,7 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
           <p>{t.roadmaps.detailLoadFailed}</p>
           <button
             type="button"
-            className="roadmap-text-button"
+            className={`text-accent ${buttonInteraction}`}
             onClick={() => {
               void metadata.refetch();
               void skips.refetch();
@@ -87,28 +89,31 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
           </button>
         </div>
       ) : next ? (
-        <div className="mt-1 flex flex-col gap-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-secondary">{t.home.nextProblem}</span>
-            <span className="capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
-              {next.difficulty}
-            </span>
-          </div>
-          <div className="flex items-start gap-1">
-            <a
-              className="text-sm hover:text-accent break-words"
-              href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+        <a
+          className={`rounded-lg border border-current p-3 flex flex-col gap-2 hover:bg-secondary ${buttonInteraction}`}
+          href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${next.frontendId}. ${getProblemTitle(next, domain)}`}
+        >
+          <span className="text-[10px] font-medium uppercase text-secondary">{t.home.nextProblem}</span>
+          <span className="flex items-start gap-2 text-[13px] font-medium">
+            <span className="min-w-0 flex-1 break-words">
               {next.frontendId}. {getProblemTitle(next, domain)}
-              <FaArrowUpRightFromSquare aria-hidden="true" className="inline ml-1.5 text-xs text-secondary" />
-            </a>
+            </span>
             {next.isPaidOnly && (
               <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
             )}
-          </div>
-        </div>
+            <FaArrowUp aria-hidden="true" className="shrink-0 mt-1 rotate-45 text-xs" />
+          </span>
+          <span className="flex items-center gap-1 text-[11px] text-secondary">
+            <span className="capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
+              {next.difficulty}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>{t.roadmaps.filters.notInSrs}</span>
+          </span>
+        </a>
       ) : (
         <p className="text-sm text-secondary">{t.home.noNextProblem(domain)}</p>
       )}

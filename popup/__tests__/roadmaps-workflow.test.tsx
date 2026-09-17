@@ -94,7 +94,7 @@ it('keeps reviews available with roadmap progress and continues with a recommend
   expect(await screen.findByRole('button', { name: 'Good' })).toBeEnabled();
   expect(screen.getByRole('link', { name: 'LeetCode problem' })).toHaveTextContent('Add Two Numbers');
   const section = await screen.findByRole('region', { name: 'Current roadmap' });
-  expect(await within(section).findByText('1 of 75 reviewed')).toBeInTheDocument();
+  expect(await within(section).findByText('1 / 75 reviewed')).toBeInTheDocument();
   expect(await within(section).findByRole('link', { name: '3. Longest Substring' })).toHaveAttribute(
     'href',
     'https://leetcode.com/problems/longest-substring/description/'
@@ -106,12 +106,12 @@ it('keeps reviews available with roadmap progress and continues with a recommend
   await act(async () => background.addCard(buildProblem({ frontendId: '3' })));
   await within(section).findByText('No unadded, unskipped problems available on leetcode.com.');
   // Unreviewed cards are excluded from recommendations without counting as progress.
-  expect(within(section).getByRole('progressbar')).toHaveAttribute('value', '1');
+  expect(within(section).getByText('1 / 75 reviewed')).toBeInTheDocument();
   await act(async () => background.removeCard('1'));
   expect(await within(section).findByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
-  expect(within(section).getByRole('progressbar')).toHaveAttribute('value', '0');
+  expect(within(section).getByText('0 / 75 reviewed')).toBeInTheDocument();
 
-  fireEvent.click(within(section).getByRole('button', { name: 'Open Blind 75' }));
+  fireEvent.click(within(section).getByRole('button', { name: 'View roadmap' }));
   expect(await screen.findByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Back to all roadmaps' }));
   expect(await screen.findByRole('switch', { name: 'Use Blind 75 as active roadmap' })).toBeChecked();
@@ -126,7 +126,7 @@ it('updates empty-queue recommendations for skips, the preferred site, and the a
   expect(await within(section).findByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
   await act(async () => storage.setItem(STORAGE_KEYS.roadmapSkips, { 'blind-75': ['1'] }));
   expect(await within(section).findByRole('link', { name: '3. Longest Substring' })).toBeInTheDocument();
-  expect(within(section).getByRole('progressbar')).toHaveAttribute('value', '0');
+  expect(within(section).getByText('0 / 75 reviewed')).toBeInTheDocument();
 
   await act(async () => background.updateSettings({ preferredLeetcodeSite: 'leetcode.cn' }));
   await within(section).findByText('No unadded, unskipped problems available on leetcode.cn.');
@@ -140,7 +140,7 @@ it('updates empty-queue recommendations for skips, the preferred site, and the a
   await act(async () => storage.setItem(STORAGE_KEYS.roadmapSkips, { 'blind-75': ['1'] }));
   await within(section).findByText('No unadded, unskipped problems available on leetcode.cn.');
   await act(async () => storage.setItem(STORAGE_KEYS.activeRoadmapId, 'grind-75'));
-  expect(await within(section).findByRole('button', { name: 'Open Grind 75' })).toBeInTheDocument();
+  expect(await within(section).findByText('Grind 75')).toBeInTheDocument();
   expect(await within(section).findByRole('link', { name: '1. 两数之和' })).toBeInTheDocument();
   await act(async () => storage.setItem(STORAGE_KEYS.activeRoadmapId, null));
   await waitFor(() => expect(screen.queryByRole('region', { name: 'Current roadmap' })).not.toBeInTheDocument());
@@ -157,4 +157,21 @@ it('keeps reviews usable and retries when roadmap loading fails', async () => {
   expect(await within(section).findByRole('alert')).toHaveTextContent('Failed to load roadmaps.');
   fireEvent.click(within(section).getByRole('button', { name: 'Retry' }));
   expect(await within(section).findByRole('link', { name: '3. Longest Substring' })).toBeInTheDocument();
+});
+
+it('suggests activating a roadmap only when reviews and the active roadmap are both absent', async () => {
+  await background.addCard(buildProblem());
+  openPopup();
+  await screen.findByRole('button', { name: 'Easy' });
+  expect(screen.queryByText('Activate a roadmap to find your next problem.')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Easy' }));
+  await screen.findByText('No cards to review!');
+  expect(screen.getByText('Activate a roadmap to find your next problem.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Browse roadmaps' }));
+  fireEvent.click(await screen.findByRole('switch', { name: 'Use Blind 75 as active roadmap' }));
+  await waitFor(() => expect(screen.getByRole('switch', { name: 'Use Blind 75 as active roadmap' })).toBeChecked());
+  fireEvent.click(screen.getByLabelText('Home'));
+  await screen.findByText('No cards to review!');
+  expect(screen.queryByText('Activate a roadmap to find your next problem.')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Browse roadmaps' })).not.toBeInTheDocument();
 });
