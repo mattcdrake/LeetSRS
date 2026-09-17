@@ -1,5 +1,5 @@
 import { Input, Label, TextField } from 'react-aria-components';
-import { FaRegCalendarPlus, FaRegWindowRestore } from 'react-icons/fa6';
+import { FaCode, FaRegCalendarPlus, FaRegWindowRestore } from 'react-icons/fa6';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
 import { SETTINGS_CONSTRAINTS } from '@/shared/settings';
@@ -33,14 +33,13 @@ export function ReviewSettingsSection() {
   };
 
   return (
-    <div className="space-y-1">
-      <SettingsSwitch
-        label={t.settings.reviewSettings.openRatingAfterSolving}
-        icon={FaRegWindowRestore}
-        isSelected={settings.openRatingAfterSolving}
-        isDisabled={updateSettingsMutation.isPending}
-        onChange={(openRatingAfterSolving) => updateSettingsMutation.mutate({ openRatingAfterSolving })}
-      />
+    <section
+      aria-labelledby="reviews-heading"
+      className="mb-3 pt-3 border-t border-current space-y-1 text-xs text-primary"
+    >
+      <h3 id="reviews-heading" className="text-sm font-medium">
+        {t.settings.groups.reviews}
+      </h3>
       <div className="space-y-3">
         <TextField className="flex min-h-10 items-center justify-between gap-3">
           <Label className="flex items-center gap-2">
@@ -59,6 +58,19 @@ export function ReviewSettingsSection() {
           />
         </TextField>
       </div>
-    </div>
+      <SettingsSwitch
+        label={t.settings.editorReset.resetEditorOnReviewQueue}
+        icon={FaCode}
+        isSelected={settings.resetEditorOnReviewQueue}
+        onChange={(resetEditorOnReviewQueue) => updateSettingsMutation.mutate({ resetEditorOnReviewQueue })}
+      />
+      <SettingsSwitch
+        label={t.settings.reviewSettings.openRatingAfterSolving}
+        icon={FaRegWindowRestore}
+        isSelected={settings.openRatingAfterSolving}
+        isDisabled={updateSettingsMutation.isPending}
+        onChange={(openRatingAfterSolving) => updateSettingsMutation.mutate({ openRatingAfterSolving })}
+      />
+    </section>
   );
 }
