@@ -3,8 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ZodError } from 'zod';
+import { storage } from '#imports';
 import type { BackgroundService } from '@/shared/background-service';
-import { readGistConnection, readLearningDocument, writeGistConnection } from '@/shared/storage';
+import {
+  readGistConnection,
+  readLearningDocument,
+  readPopupDialogAcknowledgments,
+  STORAGE_KEYS,
+  writeGistConnection,
+} from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
@@ -26,6 +33,24 @@ const problem = buildProblem();
 const savedConnection = { accountId: 1, gistId: 'gist', enabled: false };
 
 describe('registered background execution', () => {
+  it('preserves concurrent dialog acknowledgments without changing learning data', async () => {
+    const before = await readLearningDocument();
+    const service = getRegisteredBackground();
+    await Promise.all([service.acknowledgePopupDialog('migration'), service.acknowledgePopupDialog('release-1.0')]);
+    await service.acknowledgePopupDialog('migration');
+    expect(await readPopupDialogAcknowledgments()).toEqual({ migration: true, 'release-1.0': true });
+    expect(await readLearningDocument()).toEqual(before);
+  });
+
+  it('reports acknowledgment save failure and accepts the next acknowledgment', async () => {
+    const failure = new Error('Storage unavailable');
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
+    await expect(getRegisteredBackground().acknowledgePopupDialog('first')).rejects.toBe(failure);
+    expect(await storage.getItem(STORAGE_KEYS.popupDialogAcknowledgments)).toBeNull();
+    await getRegisteredBackground().acknowledgePopupDialog('later');
+    expect(await readPopupDialogAcknowledgments()).toEqual({ later: true });
+  });
+
   it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
     await getRegisteredBackground().rateCard({ ...problem, rating: 3 });
     await getRegisteredBackground().saveNote(problem.frontendId, 'Reset me');
@@ -151,6 +176,7 @@ describe('registered background execution', () => {
 });
 
 const invalidArguments: [keyof BackgroundService, unknown[]][] = [
+  ['acknowledgePopupDialog', ['']],
   ['rateCard', [{ ...problem, rating: 0 }]],
   ['saveNote', ['card', 'note', 'extra']],
 ];

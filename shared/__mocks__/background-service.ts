@@ -5,6 +5,7 @@ const actual = await vi.importActual<typeof import('@/shared/background-service'
 export const BACKGROUND_SERVICE_KEY = actual.BACKGROUND_SERVICE_KEY;
 
 export const background = {
+  acknowledgePopupDialog: vi.fn<BackgroundService['acknowledgePopupDialog']>(),
   shouldShowAutoOpenHint: vi.fn<BackgroundService['shouldShowAutoOpenHint']>(),
   markAutoOpenHintShown: vi.fn<BackgroundService['markAutoOpenHintShown']>(),
   previewRatings: vi.fn<BackgroundService['previewRatings']>(),
