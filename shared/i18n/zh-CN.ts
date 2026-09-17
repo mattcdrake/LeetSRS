@@ -25,8 +25,20 @@ const zhCN: Translations = {
 
   nav: {
     home: '首页',
+    roadmaps: '学习路线',
     cards: '卡片',
     settings: '设置',
+  },
+
+  roadmaps: {
+    open: (name: string) => `打开 ${name}`,
+    activationLabel: (name: string) => `将 ${name} 设为当前学习路线`,
+    reviewed: (count: number, total: number) => `已复习 ${count} / ${total} 题`,
+    back: '返回所有学习路线',
+    loading: '正在加载学习路线...',
+    loadFailed: '无法加载学习路线。',
+    saveFailed: '无法保存当前学习路线，请重试。',
+    retry: '重试',
   },
 
   actions: {

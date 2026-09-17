@@ -26,8 +26,20 @@ const en = {
   // Navigation
   nav: {
     home: 'Home',
+    roadmaps: 'Roadmaps',
     cards: 'Cards',
     settings: 'Settings',
+  },
+
+  roadmaps: {
+    open: (name: string) => `Open ${name}`,
+    activationLabel: (name: string) => `Use ${name} as active roadmap`,
+    reviewed: (count: number, total: number) => `${count} of ${total} reviewed`,
+    back: 'Back to all roadmaps',
+    loading: 'Loading roadmaps...',
+    loadFailed: 'Failed to load roadmaps.',
+    saveFailed: 'Could not save the active roadmap. Try again.',
+    retry: 'Retry',
   },
 
   // Common actions
