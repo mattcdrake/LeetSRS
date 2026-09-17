@@ -26,30 +26,14 @@ export function StatsBar() {
   const t = useI18n();
   const { data: cards = [] } = useReviewQueueQuery();
 
-  const stats = cards.reduce(
-    (acc, card) => {
-      switch (card.fsrs?.state) {
-        case State.Learning:
-        case State.Relearning:
-        case State.Review:
-          acc.reviews++;
-          break;
-        case State.New:
-          acc.new++;
-          break;
-        default:
-          break;
-      }
-      return acc;
-    },
-    { reviews: 0, new: 0 }
-  );
+  const newCount = cards.filter((card) => card.fsrs.state === State.New).length;
+  const reviewCount = cards.length - newCount;
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <StatItem count={stats.reviews} label={t.statsBar.review} colorClass="text-info" testId="review" />
+      <StatItem count={reviewCount} label={t.statsBar.review} colorClass="text-info" testId="review" />
       <span className="text-tertiary">•</span>
-      <StatItem count={stats.new} label={t.statsBar.new} colorClass="text-accent" testId="new" />
+      <StatItem count={newCount} label={t.statsBar.new} colorClass="text-accent" testId="new" />
     </div>
   );
 }
