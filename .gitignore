@@ -25,16 +25,8 @@ web-ext.config.ts
 devex/
 
 # Super secret stuff
-.agents
 docs/local
 experiments/
-
-# Shared repository skill
-!/.agents/
-/.agents/*
-!/.agents/skills/
-/.agents/skills/*
-!/.agents/skills/agents-md/
 
 # OAuth secrets and local Worker state
 .dev.vars*
