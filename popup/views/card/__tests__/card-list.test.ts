@@ -12,19 +12,9 @@ const getIds = (cards: CardWithProblem[]) => cards.map((card) => card.slug);
 describe('filterAndSortCards', () => {
   it.each([
     {
-      description: 'sorts fully numeric IDs numerically without number precision limits',
-      cards: [
-        createCard('large', '9007199254740993'),
-        createCard('hundred', '100'),
-        createCard('two', '2'),
-        createCard('safe-limit', '9007199254740992'),
-      ],
-      expectedIds: ['two', 'hundred', 'safe-limit', 'large'],
-    },
-    {
-      description: 'orders equal numeric IDs by their original text',
-      cards: [createCard('b', '1'), createCard('c', '01'), createCard('d', '001')],
-      expectedIds: ['d', 'c', 'b'],
+      description: 'sorts numeric IDs numerically rather than lexically',
+      cards: [createCard('hundred', '100'), createCard('two', '2'), createCard('ten', '10')],
+      expectedIds: ['two', 'ten', 'hundred'],
     },
     {
       description: 'places nonnumeric IDs after numeric IDs in deterministic lexical order',

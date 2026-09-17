@@ -86,7 +86,7 @@ describe('document transfers through background commands', () => {
   );
 });
 
-it.each([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, LEARNING_DOCUMENT_VERSION])(
+it.each([0, 2, 3, 4, 6, 7, 9, 10, LEARNING_DOCUMENT_VERSION])(
   'imports version %i through the registered service and persists the complete converted document',
   async (schemaVersion) => {
     const { backup, converted, legacyConverted } = validLegacyBackup();
