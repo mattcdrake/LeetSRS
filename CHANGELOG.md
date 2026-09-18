@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/mattcdrake/LeetSRS/compare/v1.0.0...v1.0.1) (2026-09-18)
+
+
+### Bug Fixes
+
+* remove next from store and README tagline ([#656](https://github.com/mattcdrake/LeetSRS/issues/656)) ([0472c45](https://github.com/mattcdrake/LeetSRS/commit/0472c45489f02550dc4986bb97c7fb7388956819))
+
 ## [1.0.0](https://github.com/mattcdrake/LeetSRS/compare/v0.6.0...v1.0.0) (2026-09-18)
 
 
