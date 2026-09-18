@@ -294,7 +294,7 @@ const en = {
     // About section
     about: {
       title: 'About',
-      feedbackLink: 'Report a bug or suggest a feature',
+      feedbackLink: 'Open an issue',
       reviewRequest: 'Rate LeetSRS',
       copyright: '© 2026 Matt Drake',
       github: 'Star on GitHub',
