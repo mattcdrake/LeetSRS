@@ -8,11 +8,15 @@ Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses 
 
 **[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
 
-![LeetSRS shows the next problem in Blind 75 alongside a review that's due.](assets/screenshots/v1.0/01-practice-plan.png)
+**[Watch the demo on YouTube](https://www.youtube.com/watch?v=AvE9a7tMS7w)**
+
+[![Watch the LeetSRS demo on YouTube](https://img.youtube.com/vi/AvE9a7tMS7w/hqdefault.jpg)](https://www.youtube.com/watch?v=AvE9a7tMS7w)
 
 ## Follow a roadmap
 
 Choose a roadmap, open your next problem, and track your progress without managing a separate spreadsheet. Your next new problem appears alongside the reviews that are due.
+
+![LeetSRS shows the next problem in Blind 75 alongside a review that's due.](assets/screenshots/v1.0/01-practice-plan.png)
 
 ## Solve. Rate. Keep going.
 
