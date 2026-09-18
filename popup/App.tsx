@@ -71,7 +71,14 @@ function App() {
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      <PopupDialogHost />
+      <PopupDialogHost
+        onNavigate={(view) => {
+          if (view === 'roadmaps') setSelectedRoadmapId(null);
+          setHighlightGithubSignIn(false);
+          setHighlightGistSetup(false);
+          setActiveView(view);
+        }}
+      />
       <ViewBannerContext
         value={
           <GithubMigrationBanner

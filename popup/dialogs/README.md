@@ -12,6 +12,9 @@ cause it to reappear next time.
 
 1. Create a `Content` component accepting `PopupDialogContentProps`. Include a
    React Aria `Heading` with `slot="title"`; call `onDismiss` from dismissal actions.
+   For an action that opens a popup view, call `onNavigate(view)` (e.g.
+   `onNavigate('roadmaps')`). The host dismisses and acknowledges the dialog before
+   navigating.
 2. Register its stable `id`, async `loadEligibility`, and `Content` in display order:
    - **Release notes:** replace the current release entry and content with a new
      versioned ID, e.g. `release-1.1`. Never retain older release entries.
