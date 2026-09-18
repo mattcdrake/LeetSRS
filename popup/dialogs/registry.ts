@@ -3,6 +3,7 @@ import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 
 export interface PopupDialogContentProps {
   onDismiss: () => void;
+  onOpenRoadmaps: () => void;
 }
 
 export interface PopupDialogEntry {

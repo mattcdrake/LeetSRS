@@ -5,7 +5,13 @@ import { background } from '@/shared/background-service';
 import { PopupDialogShell } from './PopupDialogShell';
 import { dialogEligibilityQueryKey, type PopupDialogEntry, popupDialogRegistry } from './registry';
 
-export function PopupDialogHost({ registry = popupDialogRegistry }: { registry?: readonly PopupDialogEntry[] }) {
+export function PopupDialogHost({
+  registry = popupDialogRegistry,
+  onOpenRoadmaps,
+}: {
+  registry?: readonly PopupDialogEntry[];
+  onOpenRoadmaps: () => void;
+}) {
   const eligibility = useQueries({
     queries: registry.map((entry) => ({
       queryKey: dialogEligibilityQueryKey(entry.id),
@@ -52,7 +58,7 @@ export function PopupDialogHost({ registry = popupDialogRegistry }: { registry?:
 
   return (
     <PopupDialogShell key={current.id} onDismiss={dismiss}>
-      <Content onDismiss={dismiss} />
+      <Content onDismiss={dismiss} onOpenRoadmaps={onOpenRoadmaps} />
     </PopupDialogShell>
   );
 }

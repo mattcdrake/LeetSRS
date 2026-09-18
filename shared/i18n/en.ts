@@ -25,8 +25,18 @@ const en = {
 
   releaseAnnouncement: {
     title: 'LeetSRS 1.0',
-    placeholder: 'Release notes coming soon.',
-    dismiss: 'Continue',
+    eyebrow: 'What’s new',
+    roadmapsTitle: 'A plan for your next problem',
+    roadmapsDescription:
+      'Follow Blind 75, NeetCode 150/250, or Grind 75. Find your next problem and keep it fresh with spaced repetition.',
+    calendarTitle: 'See your reviews ahead',
+    calendarDescription: 'Your new calendar puts upcoming reviews in one place.',
+    syncTitle: 'Easier GitHub sync',
+    syncDescription: 'Sign in with GitHub to sync across devices. No token setup.',
+    upgradeTitle: 'Upgrading to 1.0?',
+    upgradeSync: 'Already syncing? Sign in again in Settings and choose your existing backup to reconnect.',
+    tryRoadmaps: 'Try Roadmaps',
+    dismiss: 'Dismiss release notes',
   },
 
   // Navigation
