@@ -1,79 +1,59 @@
 # LeetSRS
 
-<div align="center">
-<img src="assets/branding/LeetSRS_card%20large.png" alt="LeetSRS Logo" />
-</div>
+**Know what to practice next—and when to review it.**
 
-<br/>
+LeetSRS is a free, open-source Chrome extension that brings spaced repetition to your LeetCode practice. Work through interview roadmaps like Blind 75 or NeetCode 150 while keeping up with problems you've already solved.
 
-LeetSRS is a [Chrome extension](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb) that adds spaced repetition to LeetCode problem practice.
+Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses your ratings to schedule reviews, so revisiting problems stays part of your interview preparation.
 
-## Screenshots
+**[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
 
-### In Extension
+![LeetSRS shows the next problem in Blind 75 alongside a review that's due.](assets/screenshots/v1.0/01-practice-plan.png)
 
-<div align="center">
-<img src="assets/screenshots/mainScreen.png" width="30%" alt="Main Screen" />
-&nbsp;&nbsp;
-<img src="assets/screenshots/cardsScreen.png" width="30%" alt="Cards Screen" />
-&nbsp;&nbsp;
-<img src="assets/screenshots/statsScreen.png" width="30%" alt="Stats Screen" />
-</div>
+## Follow a roadmap
 
-### Works directly on leetcode.com
+Choose a roadmap, open your next problem, and track your progress without managing a separate spreadsheet. Your next new problem appears alongside the reviews that are due.
 
-<div align="center">
-<img src="assets/screenshots/leetcodeScreencap.png" width="90%" alt="LeetCode Integration" />
-</div>
+## Solve. Rate. Keep going.
 
-## Features
+Rate how each solve went directly on LeetCode: **Again**, **Hard**, **Good**, or **Easy**. LeetSRS uses your ratings and the [FSRS spaced repetition algorithm](https://github.com/open-spaced-repetition/ts-fsrs) to schedule your next review. You can also save a problem to review later without rating it.
 
-### Spaced Repetition
+![The LeetSRS panel on LeetCode offers four ratings, upcoming review intervals, and an option to save without rating.](assets/screenshots/v1.0/03-leetcode-workflow.png)
 
-- Uses **[TS-FSRS](https://github.com/open-spaced-repetition/ts-fsrs)** for the spaced repetition algorithm
+## Review at your own pace
 
-### Review System
+Open your review queue for what's due now, or check the calendar for upcoming reviews. Set a daily limit for new problems, pause individual problems, and track your streaks. Daily limits and streaks follow your local day, starting at midnight.
 
-- Review queue ordered by due time
-- View streaks
-- Works directly on leetcode.com
-- Easily rate after solving problems, or add to review later
-- Optional editor reset when opening a problem from the review queue; other navigation preserves your code
-- Customizable daily new card limits
-- Daily limits and streaks follow local calendar days beginning at midnight
+![The review calendar shows upcoming due dates and the problems scheduled for the selected day.](assets/screenshots/v1.0/04-review-calendar.png)
 
-### Cross-Browser Sync
+## Your practice. Your data.
 
-- Optional sync via GitHub Gists
-- Sign in with GitHub and choose a backup in Settings
-- Your data stays in your own GitHub account
+Start without a LeetSRS account. Your practice data stays on your device by default, and you can import or export a backup from Settings whenever you want.
 
-### Interface
+To continue on another computer, enable optional GitHub sync. Your backup lives in a Gist in your own GitHub account. See the [privacy policy](PRIVACY.md) for details.
 
-- Dark/light theme support
+<details>
+<summary>Set up GitHub sync</summary>
 
-## Open Source
-
-LeetSRS is open source. Please read the [contribution guidelines](CONTRIBUTING.md) before contributing.
-
-## Installation
-
-1. Download the latest release from the [Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko?utm_source=item-share-cb)
-2. Or build from source and load as an unpacked extension
-
-### Setting Up GitHub Gist Sync (Optional)
-
-1. Select **Sign in with GitHub** in Settings. Signing in does not enable sync.
+1. Select **Sign in with GitHub** in Settings. Signing in alone does not enable sync.
 2. Choose an existing backup or **Create New Gist**, then select **Connect and sync**.
-3. Sign in and select the same backup separately on each browser. Credentials and the selected destination stay local to each installation.
+3. Repeat on each browser, selecting the same backup. Credentials and the selected backup stay local to each installation.
 
-Use the sync toggle to pause syncing. **Sign out** removes the local connection and credentials while keeping learning data and remote Gists. Upgrading from PAT setup requires signing in again; your previous backup is suggested only if it belongs to your account.
+Use the sync toggle to pause syncing. **Sign out** removes the local connection and credentials while keeping your practice data and GitHub backups.
 
-Sync uses last-write-wins for the entire dataset, not per-card merging. The browser with the newest edit replaces all Gist data, so concurrent changes in another browser can be lost. Enabled sync runs after local edits, when the extension starts, and at least once per minute for retry.
+Sync uses the entire dataset from the browser with the newest edit; it does not merge individual problems. Concurrent changes on another computer can be lost. Sync runs after local edits, when the extension starts, and at least once per minute for retry while enabled.
+
+</details>
+
+## Get started
+
+1. [Install LeetSRS from the Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko).
+2. Open the extension and choose a roadmap.
+3. Solve your next problem on LeetCode and rate how it went. LeetSRS schedules the review.
 
 ## Setup
 
-Use Node.js 24 or newer and install dependencies with `npm install`.
+To build from source or contribute, use Node.js 24 or newer and install dependencies with `npm install`.
 
 - `npm run dev`: start Chrome with a fresh temporary profile.
 - `npm run dev:persistent`: reuse a Chrome profile, keeping logins and extension data between runs.
@@ -83,6 +63,8 @@ Use Node.js 24 or newer and install dependencies with `npm install`.
 
 The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched.
 
+Bug reports, feedback, and contributions are welcome. Read the [contribution guidelines](CONTRIBUTING.md) before opening a pull request.
+
 ## License
 
-[MIT](LICENSE.md) · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
+[MIT](LICENSE.md)
