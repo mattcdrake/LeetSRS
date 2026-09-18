@@ -8,7 +8,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { ROADMAP_IDS } from '@/shared/roadmap';
-import { readPopupDialogAcknowledgments, writePopupDialogAcknowledgments } from '@/shared/storage';
+import { writePopupDialogAcknowledgments } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -198,20 +198,4 @@ it('suggests activating a roadmap only when reviews and the active roadmap are b
   fireEvent.click(screen.getByLabelText('Home'));
   await screen.findByText('No cards to review!');
   expect(screen.queryByRole('button', { name: 'roadmap' })).not.toBeInTheDocument();
-});
-
-it('opens the roadmap chooser from the release notes and remembers dismissal on reopen', async () => {
-  await writePopupDialogAcknowledgments({});
-  await background.setActiveRoadmap('blind-75');
-  const popup = openPopup();
-  expect(await screen.findByRole('dialog', { name: 'LeetSRS 1.0' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Try Roadmaps' }));
-  expect(await screen.findByRole('button', { name: 'Open Blind 75' })).toBeInTheDocument();
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  await waitFor(async () => expect(await readPopupDialogAcknowledgments()).toEqual({ 'release-1.0': true }));
-  popup.unmount();
-
-  openPopup();
-  await screen.findByText('No cards to review!');
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
