@@ -10,7 +10,14 @@ Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses 
 
 **[Watch the demo on YouTube](https://www.youtube.com/watch?v=AvE9a7tMS7w)**
 
-[![Watch the LeetSRS demo on YouTube](https://img.youtube.com/vi/AvE9a7tMS7w/hqdefault.jpg)](https://www.youtube.com/watch?v=AvE9a7tMS7w)
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">
+    <img
+      src="https://img.youtube.com/vi/AvE9a7tMS7w/hqdefault.jpg"
+      alt="Watch the LeetSRS demo on YouTube"
+    />
+  </a>
+</p>
 
 ## Follow a roadmap
 
