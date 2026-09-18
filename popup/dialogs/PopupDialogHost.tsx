@@ -1,11 +1,18 @@
 import { useQueries } from '@tanstack/react-query';
 import { useLayoutEffect, useRef, useState } from 'react';
+import type { ViewId } from '@/popup/components/BottomNav';
 import { useAcknowledgePopupDialogMutation, usePopupDialogAcknowledgmentsQuery } from '@/popup/queries/popup-dialogs';
 import { background } from '@/shared/background-service';
 import { PopupDialogShell } from './PopupDialogShell';
 import { dialogEligibilityQueryKey, type PopupDialogEntry, popupDialogRegistry } from './registry';
 
-export function PopupDialogHost({ registry = popupDialogRegistry }: { registry?: readonly PopupDialogEntry[] }) {
+export function PopupDialogHost({
+  registry = popupDialogRegistry,
+  onNavigate,
+}: {
+  registry?: readonly PopupDialogEntry[];
+  onNavigate: (view: ViewId) => void;
+}) {
   const eligibility = useQueries({
     queries: registry.map((entry) => ({
       queryKey: dialogEligibilityQueryKey(entry.id),
@@ -52,7 +59,13 @@ export function PopupDialogHost({ registry = popupDialogRegistry }: { registry?:
 
   return (
     <PopupDialogShell key={current.id} onDismiss={dismiss}>
-      <Content onDismiss={dismiss} />
+      <Content
+        onDismiss={dismiss}
+        onNavigate={(view) => {
+          dismiss();
+          onNavigate(view);
+        }}
+      />
     </PopupDialogShell>
   );
 }

@@ -25,8 +25,17 @@ const zhCN: Translations = {
 
   releaseAnnouncement: {
     title: 'LeetSRS 1.0',
-    placeholder: '版本更新说明即将发布。',
-    dismiss: '继续',
+    eyebrow: '版本亮点',
+    roadmapsTitle: '下一题，有方向',
+    roadmapsDescription: '跟随 Blind 75、NeetCode 150/250 或 Grind 75 规划练习，用间隔重复持续复习。',
+    calendarTitle: '复习安排，一目了然',
+    calendarDescription: '在全新的日历中查看即将到来的复习。',
+    syncTitle: 'GitHub 同步更简单',
+    syncDescription: '登录 GitHub，即可跨设备同步，无需手动配置令牌。',
+    upgradeTitle: '升级到 1.0？',
+    upgradeSync: '已在使用同步？请在设置中重新登录 GitHub，并选择原有备份以恢复连接。',
+    tryRoadmaps: '探索学习路线',
+    dismiss: '关闭版本说明',
   },
 
   nav: {
