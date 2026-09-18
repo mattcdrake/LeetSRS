@@ -4,7 +4,7 @@ import { FiArrowRight, FiCalendar, FiChevronDown, FiMap, FiX } from 'react-icons
 import { useI18n } from '@/popup/contexts/I18nContext';
 import type { PopupDialogContentProps } from './registry';
 
-export function ReleaseAnnouncement({ onDismiss, onOpenRoadmaps }: PopupDialogContentProps) {
+export function ReleaseAnnouncement({ onDismiss, onNavigate }: PopupDialogContentProps) {
   const t = useI18n().releaseAnnouncement;
   return (
     <>
@@ -65,10 +65,7 @@ export function ReleaseAnnouncement({ onDismiss, onOpenRoadmaps }: PopupDialogCo
 
       <Button
         className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-[#10230d] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2"
-        onPress={() => {
-          onDismiss();
-          onOpenRoadmaps();
-        }}
+        onPress={() => onNavigate('roadmaps')}
       >
         {t.tryRoadmaps}
         <FiArrowRight aria-hidden="true" className="h-4 w-4" />

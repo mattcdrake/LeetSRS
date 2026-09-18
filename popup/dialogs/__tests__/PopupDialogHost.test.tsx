@@ -43,7 +43,7 @@ it('waits for eligibility and shows one dialog at a time in registry order', asy
     dialog('ineligible', async () => false),
     dialog('a-later', async () => true),
   ];
-  render(<PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />, { wrapper });
+  render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, { wrapper });
 
   await waitFor(() => expect(queryClient.getQueryData(dialogEligibilityQueryKey('a-later'))).toBe(true));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -64,7 +64,7 @@ it('does not select a later dialog when eligibility fails, and resumes after rec
   const { wrapper, queryClient } = createPopupTestWrapper();
   const loadFirst = vi.fn<() => Promise<boolean>>().mockRejectedValue(new Error('Unavailable'));
   const registry = [dialog('first', loadFirst), dialog('later', async () => true)];
-  render(<PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />, { wrapper });
+  render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, { wrapper });
 
   await waitFor(() => expect(queryClient.getQueryState(dialogEligibilityQueryKey('first'))?.status).toBe('error'));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -84,7 +84,7 @@ it('waits for acknowledgment reads and recovers without showing an already ackno
     if (key === STORAGE_KEYS.popupDialogAcknowledgments) await pending.promise;
     return getItem(key, options);
   });
-  render(<PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />, { wrapper });
+  render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, { wrapper });
 
   await waitFor(() => expect(queryClient.getQueryData(dialogEligibilityQueryKey('first'))).toBe(true));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -107,7 +107,7 @@ it.each(['success', 'failure'] as const)(
     });
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const registry = [dialog('first', async () => true), dialog('later', async () => true)];
-    const view = render(<PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />, {
+    const view = render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, {
       wrapper: createPopupTestWrapper().wrapper,
     });
     expect(await screen.findByRole('dialog', { name: 'first' })).toBeInTheDocument();
@@ -126,7 +126,7 @@ it.each(['success', 'failure'] as const)(
     expect(await readPopupDialogAcknowledgments()).toEqual(outcome === 'success' ? { first: true } : {});
 
     view.unmount();
-    render(<PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />, {
+    render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, {
       wrapper: createPopupTestWrapper().wrapper,
     });
     expect(await screen.findByRole('dialog', { name: outcome === 'success' ? 'later' : 'first' })).toBeInTheDocument();
@@ -137,7 +137,7 @@ it('acknowledges only the displayed dialog when the popup closes and resumes wit
   const registry = [dialog('first', async () => true), dialog('later', async () => true)];
   const view = render(
     <StrictMode>
-      <PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />
+      <PopupDialogHost registry={registry} onNavigate={vi.fn()} />
     </StrictMode>,
     { wrapper: createPopupTestWrapper().wrapper }
   );
@@ -147,7 +147,7 @@ it('acknowledges only the displayed dialog when the popup closes and resumes wit
   await waitFor(async () => expect(await readPopupDialogAcknowledgments()).toEqual({ first: true }));
   expect(background.acknowledgePopupDialog).toHaveBeenCalledExactlyOnceWith('first');
 
-  render(<PopupDialogHost registry={registry} onOpenRoadmaps={vi.fn()} />, {
+  render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, {
     wrapper: createPopupTestWrapper().wrapper,
   });
   expect(await screen.findByRole('dialog', { name: 'later' })).toBeInTheDocument();

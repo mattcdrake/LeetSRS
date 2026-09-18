@@ -1,9 +1,10 @@
 import type { ComponentType } from 'react';
+import type { ViewId } from '@/popup/components/BottomNav';
 import { ReleaseAnnouncement } from './ReleaseAnnouncement';
 
 export interface PopupDialogContentProps {
   onDismiss: () => void;
-  onOpenRoadmaps: () => void;
+  onNavigate: (view: ViewId) => void;
 }
 
 export interface PopupDialogEntry {
