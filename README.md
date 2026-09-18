@@ -8,9 +8,18 @@ Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses 
 
 **[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
 
-**[Watch the demo on YouTube](https://www.youtube.com/watch?v=AvE9a7tMS7w)**
+<p align="center">
+  <strong><a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">Watch the demo on YouTube</a></strong>
+</p>
 
-[![Watch the LeetSRS demo on YouTube](https://img.youtube.com/vi/AvE9a7tMS7w/hqdefault.jpg)](https://www.youtube.com/watch?v=AvE9a7tMS7w)
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">
+    <img
+      src="https://img.youtube.com/vi/AvE9a7tMS7w/hqdefault.jpg"
+      alt="Watch the LeetSRS demo on YouTube"
+    />
+  </a>
+</p>
 
 ## Follow a roadmap
 
