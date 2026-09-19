@@ -30,22 +30,6 @@ describe('ReviewCard', () => {
     vi.mocked(useI18n).mockReturnValue(translations.en);
   });
 
-  it.each([undefined, 'https://www.youtube.com/watch?v=KLlXCFG5TnA'])(
-    'shows a video link only when the catalog supplies one (%s)',
-    (youtubeUrl) => {
-      renderWithProviders({ ...mockCard, youtubeUrl }, mockOnRate, true);
-      const link = screen.queryByRole('link', { name: translations.en.youtubeSolution });
-      if (youtubeUrl) {
-        expect(link).toHaveAttribute('href', youtubeUrl);
-        expect(link).toHaveAttribute('target', '_blank');
-        expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-      } else {
-        expect(link).not.toBeInTheDocument();
-      }
-      expect(mockOnRate).not.toHaveBeenCalled();
-    }
-  );
-
   describe('review-queue reset authorization', () => {
     it('renders the problem identity and an unauthorized external link when reset is disabled', () => {
       renderWithProviders();

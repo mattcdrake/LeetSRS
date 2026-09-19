@@ -10,7 +10,6 @@ import { ratingSchema } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
-import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
@@ -51,12 +50,6 @@ export function ReviewCard({ card, onRate, isProcessing = false }: ReviewCardPro
           />
         </a>
       </div>
-
-      {card.youtubeUrl && (
-        <div className="flex justify-center -mt-3">
-          <YouTubeLink url={card.youtubeUrl} label={t.youtubeSolution} />
-        </div>
-      )}
 
       <div className="flex gap-2 justify-center">
         {[...ratingSchema.values].map((rating) => (

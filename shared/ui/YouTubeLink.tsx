@@ -1,6 +1,14 @@
 import { FaYoutube } from 'react-icons/fa6';
 
-export function YouTubeLink({ url, label }: { url?: string; label: string }) {
+export function YouTubeLink({
+  url,
+  label,
+  className = 'size-8 rounded-md opacity-70 hover:opacity-100',
+}: {
+  url?: string;
+  label: string;
+  className?: string;
+}) {
   if (!url) return null;
 
   return (
@@ -10,7 +18,7 @@ export function YouTubeLink({ url, label }: { url?: string; label: string }) {
       rel="noopener noreferrer"
       aria-label={label}
       title={label}
-      className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-current opacity-70 hover:opacity-100 focus-visible:outline-2"
+      className={`inline-flex shrink-0 items-center justify-center text-current focus-visible:outline-2 ${className}`}
     >
       <FaYoutube aria-hidden="true" className="size-4" />
     </a>
