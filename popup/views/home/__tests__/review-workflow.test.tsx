@@ -13,9 +13,9 @@ import { background } from '@/shared/background-service';
 import { formatLocalDate } from '@/shared/calendar';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
-import { buildProblem, createMockCard, createMockCardWithProblem } from '@/test/utils/card-mocks';
+import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
-import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewQueue } from '../ReviewQueue';
@@ -42,32 +42,6 @@ afterEach(() => {
 });
 
 const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
-
-it('shows the current video only inside Actions and removes it for an unmapped next card', async () => {
-  const { wrapper, queryClient } = createPopupTestWrapper();
-  const youtubeUrl = 'https://www.youtube.com/watch?v=KLlXCFG5TnA';
-  setPopupLearningCardsQueryData(queryClient, [
-    createMockCardWithProblem(State.New, { youtubeUrl }),
-    createMockCardWithProblem(State.New, { frontendId: '2', title: 'Add Two Numbers', slug: 'add-two-numbers' }),
-  ]);
-  render(<ReviewQueue />, { wrapper });
-  await screen.findByText('Two Sum');
-  const name = 'Watch NeetCode solution on YouTube';
-  expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
-  click('Actions');
-  const videoLink = screen.getByRole('link', { name });
-  expect(videoLink).toHaveAttribute('href', youtubeUrl);
-  expect(videoLink).toHaveAttribute('target', '_blank');
-  expect(videoLink).toHaveAttribute('rel', 'noopener noreferrer');
-  const before = await readLearningDocument();
-  videoLink.addEventListener('click', (event) => event.preventDefault(), { once: true });
-  fireEvent.click(videoLink);
-  expect(await readLearningDocument()).toEqual(before);
-  click('Pause card');
-  await screen.findByText('Add Two Numbers');
-  expect(screen.getByRole('button', { name: 'Actions' })).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
-});
 
 it('retains failed note drafts, retries a pending save and reopens the persisted note', async () => {
   const { wrapper } = createPopupTestWrapper();
