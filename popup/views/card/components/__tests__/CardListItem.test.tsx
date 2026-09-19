@@ -24,6 +24,25 @@ const renderItem = (card: CardWithProblem) => {
 };
 
 describe('CardListItem', () => {
+  it.each([undefined, 'https://www.youtube.com/watch?v=KLlXCFG5TnA'])(
+    'keeps the optional video link outside the card expansion control (%s)',
+    (youtubeUrl) => {
+      render(<CardListItem card={createMockCardWithProblem(State.New, { youtubeUrl })} />, { wrapper });
+      const link = screen.queryByRole('link', { name: 'Watch NeetCode solution on YouTube' });
+      if (youtubeUrl) {
+        expect(link).toHaveAttribute('href', youtubeUrl);
+        const videoLink = screen.getByRole('link', { name: 'Watch NeetCode solution on YouTube' });
+        videoLink.addEventListener('click', (event) => event.preventDefault(), { once: true });
+        fireEvent.click(videoLink);
+      } else {
+        expect(link).not.toBeInTheDocument();
+      }
+      expect(screen.getByRole('button', { expanded: false })).toBeInTheDocument();
+      expect(background.setPauseStatus).not.toHaveBeenCalled();
+      expect(background.removeCard).not.toHaveBeenCalled();
+    }
+  );
+
   beforeEach(() => {
     service.reset().resolve('setPauseStatus', undefined).resolve('removeCard', undefined);
     wrapper = createTestWrapper().wrapper;

@@ -10,10 +10,11 @@ import { background } from '@/shared/background-service';
 import { ROADMAP_IDS } from '@/shared/roadmap';
 import { writePopupDialogAcknowledgments } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
-import { buildProblem } from '@/test/utils/card-mocks';
+import { buildCatalogProblem, buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { PopupRoot } from '../PopupRoot';
 import { createPopupQueryClient } from '../query-client';
+import { RoadmapProblemRow } from '../views/roadmaps/RoadmapProblemRow';
 
 vi.hoisted(() => {
   vi.stubGlobal('__APP_VERSION__', 'test');
@@ -42,6 +43,40 @@ beforeEach(async () => {
 
 const openPopup = () =>
   render(<PopupRoot queryClient={createPopupQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
+
+it.each([undefined, 'https://www.youtube.com/watch?v=KLlXCFG5TnA'])(
+  'offers the catalog video without adding or skipping the roadmap problem (%s)',
+  (youtubeUrl) => {
+    const onAdd = vi.fn();
+    const onToggleSkip = vi.fn();
+    render(
+      <RoadmapProblemRow
+        problem={{
+          frontendId: '1',
+          metadata: buildCatalogProblem({ youtubeUrl }),
+          card: undefined,
+          skipped: false,
+        }}
+        domain="leetcode.com"
+        isSaving={false}
+        isAdding={false}
+        onAdd={onAdd}
+        onToggleSkip={onToggleSkip}
+      />
+    );
+    const link = screen.queryByRole('link', { name: 'Watch NeetCode solution on YouTube' });
+    if (youtubeUrl) {
+      expect(link).toHaveAttribute('href', youtubeUrl);
+      const videoLink = screen.getByRole('link', { name: 'Watch NeetCode solution on YouTube' });
+      videoLink.addEventListener('click', (event) => event.preventDefault(), { once: true });
+      fireEvent.click(videoLink);
+    } else {
+      expect(link).not.toBeInTheDocument();
+    }
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(onToggleSkip).not.toHaveBeenCalled();
+  }
+);
 
 it('refreshes the Home badge immediately when adding a roadmap problem between clock ticks', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });

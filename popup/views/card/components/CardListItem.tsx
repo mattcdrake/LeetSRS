@@ -11,6 +11,7 @@ import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
+import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { useI18n } from '../../../contexts/I18nContext';
 
 const getStateLabel = (state: FsrsState, t: Translations) => {
@@ -101,6 +102,7 @@ export function CardListItem({ card }: CardListItemProps) {
             />
           </div>
         </Button>
+        <YouTubeLink url={card.youtubeUrl} label={t.youtubeSolution} />
         <a
           href={getLeetcodeProblemUrl(card)}
           target="_blank"

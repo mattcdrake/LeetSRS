@@ -36,6 +36,26 @@ it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated press
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(key === 5 ? 0 : 1);
 });
 
+it.each([undefined, 'https://www.youtube.com/watch?v=KLlXCFG5TnA'])(
+  'shows the current problem video without saving or rating (%s)',
+  async (youtubeUrl) => {
+    vi.mocked(background.getProblem).mockResolvedValue({ ...requireDefined(testCatalog[0]), youtubeUrl });
+    render(<LeetSrsControl />);
+    fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
+    const link = screen.queryByRole('link', { name: 'Watch NeetCode solution on YouTube' });
+    if (youtubeUrl) {
+      expect(link).toHaveAttribute('href', youtubeUrl);
+      const videoLink = screen.getByRole('link', { name: 'Watch NeetCode solution on YouTube' });
+      videoLink.addEventListener('click', (event) => event.preventDefault(), { once: true });
+      fireEvent.click(videoLink);
+    } else {
+      expect(link).not.toBeInTheDocument();
+    }
+    expect((await readLearningDocument()).cards).toEqual({});
+  }
+);
+
 it('Escape restores focus without saving or disabling auto-open, and the hint appears only once', async () => {
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });

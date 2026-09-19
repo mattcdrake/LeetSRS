@@ -1,10 +1,11 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { Button } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
-import { getCurrentProblemReference } from '@/content/current-problem';
+import { getCurrentProblem } from '@/content/current-problem';
 import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
 import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
+import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { THEME_COLORS, useDarkMode } from './theme';
 import type { useRatingSession } from './useRatingSession';
 
@@ -13,6 +14,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
   const dark = useDarkMode();
   const colors = dark ? THEME_COLORS.dark : THEME_COLORS.light;
   const [problem, setProblem] = useState<ProblemReference>();
+  const [youtubeUrl, setYoutubeUrl] = useState<string>();
   const [preview, setPreview] = useState<RatingPreview>();
   const [hint, setHint] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -27,10 +29,12 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     let active = true;
     void (async () => {
       try {
-        const problem = await getCurrentProblemReference();
+        const metadata = await getCurrentProblem();
+        const problem = { frontendId: metadata.frontendId, domain: metadata.domain };
         const preview = await background.previewRatings(problem);
         if (!active) return;
         setProblem(problem);
+        setYoutubeUrl(metadata.youtubeUrl);
         setPreview(preview);
         const showHint = await background.shouldShowAutoOpenHint();
         if (active) setHint(showHint);
@@ -161,6 +165,11 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
             </div>
           )}
         </>
+      )}
+      {youtubeUrl && (
+        <div className="flex justify-end border-t border-(--panel-border) px-2 py-1">
+          <YouTubeLink url={youtubeUrl} label={t.youtubeSolution} />
+        </div>
       )}
       {error && (
         <div className="rating-error" role="alert">

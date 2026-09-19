@@ -6,6 +6,7 @@ import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { Card, LeetcodeDomain } from '@/shared/models';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
+import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 
 export interface RoadmapProblem {
   frontendId: string;
@@ -80,6 +81,7 @@ export function RoadmapProblemRow({
         {!available && <p className="text-xs text-secondary mt-1">{t.roadmaps.unavailable(domain)}</p>}
       </div>
       <div className="flex shrink-0 items-center">
+        <YouTubeLink url={metadata?.youtubeUrl} label={t.youtubeSolution} />
         {!card && available && (
           <TooltipTrigger delay={350} closeDelay={0}>
             <Button

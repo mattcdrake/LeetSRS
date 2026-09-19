@@ -4,6 +4,7 @@ import { getTopicLabel } from './topic-labels';
 
 // English translations (base language - all other translations must match this structure)
 const en = {
+  youtubeSolution: 'Watch NeetCode solution on YouTube',
   topicLabel: (topic: string) => getTopicLabel(topic, 'en'),
   // App branding
   syncNotices: {
