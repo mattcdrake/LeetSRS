@@ -1,5 +1,6 @@
 // Shared popup controls: flat surfaces, consistent sizing, and visible keyboard focus.
-export const rowActionSpacing = 'gap-0.5';
+// 24px controls around 16px icons leave 8px between visible icons and labels.
+export const rowActionSpacing = 'gap-0 [&>a]:w-6 [&>button]:w-6 [&>span]:px-1';
 
 export const buttonInteraction =
   'cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:opacity-50 disabled:cursor-not-allowed data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
