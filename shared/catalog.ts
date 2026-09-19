@@ -12,6 +12,10 @@ export const catalogProblemSchema = z.looseObject({
   isPaidOnly: z.boolean(),
   topics: z.array(z.string()),
   sources: z.array(leetcodeDomainSchema),
+  youtubeUrl: z
+    .string()
+    .regex(/^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/)
+    .optional(),
 });
 
 export type CatalogProblem = z.infer<typeof catalogProblemSchema>;

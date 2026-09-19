@@ -5,6 +5,7 @@ import { getTopicLabel } from './topic-labels';
 
 // Simplified Chinese translations
 const zhCN: Translations = {
+  youtubeSolution: '在 YouTube 观看 NeetCode 题解',
   topicLabel: (topic: string) => getTopicLabel(topic, 'zh-CN'),
   syncNotices: {
     missingBackup: '此 Gist 不含 LeetSRS 备份。请在设置中选择其他 Gist。',

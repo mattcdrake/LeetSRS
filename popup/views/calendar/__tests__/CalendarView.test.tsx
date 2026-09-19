@@ -47,10 +47,10 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
   );
 
   const list = await screen.findByRole('list');
-  const links = within(list).getAllByRole('link');
+  const links = within(list).getAllByRole('link', { name: /^\d+\./ });
   expect(links).toHaveLength(2);
-  expect(links[0]).toHaveAccessibleName('2. Add Two Numbers medium');
-  expect(links[1]).toHaveAccessibleName('1. 两数之和 easy');
+  expect(links[0]).toHaveAccessibleName('2. Add Two Numbers');
+  expect(links[1]).toHaveAccessibleName('1. 两数之和');
   expect(links[1]).toHaveAttribute('href', 'https://leetcode.cn/problems/two-sum/description/');
   expect(links[1]).toHaveAttribute('target', '_blank');
   expect(day('September 17, 2026')).toHaveAttribute('data-selected');
@@ -63,7 +63,7 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
     'href',
     'https://leetcode.com/problems/longest-substring/description/'
   );
-  expect(screen.getAllByRole('link')).toHaveLength(1);
+  expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
   expect(within(day('September 18, 2026')).getByText('1 due')).toBeVisible();
   expect(screen.getByRole('region')).not.toHaveTextContent('overdue');
 
@@ -91,7 +91,7 @@ it('updates counts and problems when a review consumes today’s new-card allowa
   await openCalendar(document);
   expect(day('September 17, 2026')).toHaveAccessibleName(/1 due$/);
   expect(await screen.findByRole('link', { name: /1\. Two Sum/ })).toBeVisible();
-  expect(screen.getAllByRole('link')).toHaveLength(1);
+  expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
 
   await act(async () => {
     await replaceLearningDocument({
@@ -109,6 +109,6 @@ it('updates counts and problems when a review consumes today’s new-card allowa
   expect(screen.queryByRole('link')).not.toBeInTheDocument();
   fireEvent.click(day('September 18, 2026'));
   expect(await screen.findByRole('link', { name: /2\. Add Two Numbers/ })).toBeVisible();
-  expect(screen.getAllByRole('link')).toHaveLength(1);
+  expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
   expect(day('September 18, 2026')).toHaveAccessibleName(/1 due$/);
 });

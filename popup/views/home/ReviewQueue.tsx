@@ -128,6 +128,7 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
         <ExpandableSection title={t.actionsSection.title} isDisabled={isProcessing}>
           <ActionsSection
             key={currentCard.frontendId}
+            youtubeUrl={currentCard.youtubeUrl}
             onDelete={handleDelete}
             onDelay={handleDelay}
             onPause={handlePause}
