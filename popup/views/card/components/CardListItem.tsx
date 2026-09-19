@@ -6,7 +6,7 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import type { CardWithProblem } from '@/popup/queries/cards';
 import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
-import { destructiveButton, secondaryButton } from '@/popup/styles';
+import { destructiveButton, rowActionSpacing, secondaryButton } from '@/popup/styles';
 import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
@@ -97,7 +97,7 @@ export function CardListItem({ card }: CardListItemProps) {
             </span>
           </div>
         </Button>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className={`flex shrink-0 items-center ${rowActionSpacing}`}>
           <span
             className="px-2 text-xs text-secondary capitalize"
             style={{ color: DIFFICULTY_COLORS[card.difficulty] }}
