@@ -4,9 +4,9 @@ import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
-import { replaceLearningDocument } from '@/shared/storage';
-import { createMockCard } from '@/test/utils/card-mocks';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
+import { createMockCard, createMockCardWithProblem } from '@/test/utils/card-mocks';
+import { buildLearningDocument, setPopupLearningCardsQueryData } from '@/test/utils/learning-document-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { CalendarView } from '../CalendarView';
 
@@ -71,6 +71,41 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
   expect(screen.getByRole('region')).toHaveTextContent('0 due');
   expect(screen.getByText('No problems due on this day.')).toBeVisible();
   expect(screen.queryByRole('link')).not.toBeInTheDocument();
+});
+
+it('shows a separate video link only for calendar problems with a catalog video', async () => {
+  const youtubeUrl = 'https://www.youtube.com/watch?v=KLlXCFG5TnA';
+  const cards = [
+    createMockCardWithProblem(State.New, { youtubeUrl }),
+    createMockCardWithProblem(State.New, { frontendId: '2', title: 'Add Two Numbers', slug: 'add-two-numbers' }),
+  ];
+  await replaceLearningDocument(
+    buildLearningDocument({
+      cards: Object.fromEntries(
+        cards.map((card) => [card.frontendId, createMockCard(State.New, { frontendId: card.frontendId })])
+      ),
+    })
+  );
+  const { wrapper, queryClient } = createPopupTestWrapper();
+  setPopupLearningCardsQueryData(queryClient, cards);
+  render(<CalendarView />, { wrapper });
+  const list = await screen.findByRole('list');
+  const rows = within(list).getAllByRole('listitem');
+  const name = 'Watch NeetCode solution on YouTube';
+  const videoLink = within(rows[0]).getByRole('link', { name });
+  expect(videoLink).toHaveAttribute('href', youtubeUrl);
+  expect(videoLink).toHaveAttribute('target', '_blank');
+  expect(videoLink).toHaveAttribute('rel', 'noopener noreferrer');
+  expect(videoLink.parentElement?.closest('a')).toBeNull();
+  expect(within(rows[1]).queryByRole('link', { name })).not.toBeInTheDocument();
+  const before = await readLearningDocument();
+  videoLink.addEventListener('click', (event) => event.preventDefault(), { once: true });
+  fireEvent.click(videoLink);
+  expect(await readLearningDocument()).toEqual(before);
+  expect(within(rows[0]).getByRole('link', { name: /1\. Two Sum/ })).toHaveAttribute(
+    'href',
+    'https://leetcode.com/problems/two-sum/description/'
+  );
 });
 
 it('returns both the visible month and day detail to today', async () => {

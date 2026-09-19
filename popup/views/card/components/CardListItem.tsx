@@ -79,9 +79,9 @@ export function CardListItem({ card }: CardListItemProps) {
 
   return (
     <div className="text-primary">
-      <div className="flex items-center rounded-lg hover:bg-secondary transition-colors">
+      <div className="flex items-center gap-2 rounded-lg hover:bg-secondary transition-colors">
         <Button
-          className="min-w-0 flex-1 flex items-center justify-between gap-3 min-h-10 py-2 text-left rounded-lg cursor-pointer focus-visible:outline-2"
+          className="min-w-0 flex-1 flex items-center min-h-10 py-2 text-left rounded-lg cursor-pointer focus-visible:outline-2"
           onPress={() => setIsExpanded((expanded) => !expanded)}
           aria-expanded={isExpanded}
         >
@@ -96,23 +96,25 @@ export function CardListItem({ card }: CardListItemProps) {
               {getProblemTitle(card, card.domain)}
             </span>
           </div>
+        </Button>
+        <div className="flex shrink-0 items-center gap-1">
           <span
-            className="shrink-0 text-xs text-secondary capitalize"
+            className="px-2 text-xs text-secondary capitalize"
             style={{ color: DIFFICULTY_COLORS[card.difficulty] }}
           >
             {card.difficulty}
           </span>
-        </Button>
-        <YouTubeLink url={card.youtubeUrl} label={t.youtubeSolution} />
-        <a
-          href={getLeetcodeProblemUrl(card)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="self-stretch shrink-0 flex items-center pl-3 pr-1 text-secondary hover:text-primary transition-colors"
-          aria-label={`Open ${getProblemTitle(card, card.domain)} on LeetCode`}
-        >
-          <FaArrowUpRightFromSquare aria-hidden="true" className="text-sm" />
-        </a>
+          <YouTubeLink url={card.youtubeUrl} label={t.youtubeSolution} />
+          <a
+            href={getLeetcodeProblemUrl(card)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-secondary hover:text-primary transition-colors focus-visible:outline-2"
+            aria-label={`Open ${getProblemTitle(card, card.domain)} on LeetCode`}
+          >
+            <FaArrowUpRightFromSquare aria-hidden="true" className="size-4" />
+          </a>
+        </div>
       </div>
 
       {isExpanded && (

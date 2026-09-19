@@ -7,6 +7,7 @@ import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { ReviewCalendarDay } from '@/shared/review';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
+import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 
 interface CalendarDayDetailProps {
   dateLabel: string;
@@ -39,9 +40,9 @@ export function CalendarDayDetail({ dateLabel, day }: CalendarDayDetailProps) {
         {cards.map((card) => {
           const problem = metadata[card.frontendId];
           return (
-            <li key={card.frontendId} className="border-b border-current last:border-b-0">
+            <li key={card.frontendId} className="flex items-center gap-2 border-b border-current last:border-b-0">
               <a
-                className="group flex items-baseline gap-2 py-2 text-xs text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-current"
+                className="group flex min-w-0 flex-1 items-baseline gap-2 py-2 text-xs text-primary hover:text-accent focus-visible:outline-2 focus-visible:outline-current"
                 href={getLeetcodeProblemUrl({ domain: card.domain, slug: problem.slug })}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -60,6 +61,7 @@ export function CalendarDayDetail({ dateLabel, day }: CalendarDayDetailProps) {
                   className="shrink-0 text-[10px] opacity-60 group-hover:opacity-100"
                 />
               </a>
+              <YouTubeLink url={problem.youtubeUrl} label={t.youtubeSolution} />
             </li>
           );
         })}
