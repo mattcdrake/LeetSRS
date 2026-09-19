@@ -86,21 +86,22 @@ export function CardListItem({ card }: CardListItemProps) {
           aria-expanded={isExpanded}
         >
           <div className="flex min-w-0 items-center gap-2">
+            <FaChevronRight
+              aria-hidden="true"
+              className={`h-3 w-3 shrink-0 text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+            />
             {card.paused && <FaCirclePause className="text-warning text-base" title={t.cardsView.cardPausedTitle} />}
             <span className="text-xs text-secondary">{t.format.leetcodeId(card.frontendId)}</span>
             <span className={`min-w-0 break-words text-sm ${card.paused ? 'opacity-60' : ''}`}>
               {getProblemTitle(card, card.domain)}
             </span>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="text-xs text-secondary capitalize" style={{ color: DIFFICULTY_COLORS[card.difficulty] }}>
-              {card.difficulty}
-            </span>
-            <FaChevronRight
-              aria-hidden="true"
-              className={`h-3 w-3 text-secondary transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-            />
-          </div>
+          <span
+            className="shrink-0 text-xs text-secondary capitalize"
+            style={{ color: DIFFICULTY_COLORS[card.difficulty] }}
+          >
+            {card.difficulty}
+          </span>
         </Button>
         <YouTubeLink url={card.youtubeUrl} label={t.youtubeSolution} />
         <a
