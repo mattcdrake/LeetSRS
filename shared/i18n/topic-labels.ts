@@ -75,6 +75,7 @@ const topicLabels: Record<string, { en: string; 'zh-CN'?: string }> = {
   'hamiltonian-path': { en: 'Hamiltonian Path' },
   'hash-function': { en: 'Hash Function', 'zh-CN': '哈希函数' },
   'hash-table': { en: 'Hash Table', 'zh-CN': '哈希表' },
+  heap: { en: 'Heap', 'zh-CN': '堆' },
   'heap-priority-queue': { en: 'Heap (Priority Queue)', 'zh-CN': '堆（优先队列）' },
   'heuristic-search': { en: 'Heuristic Search' },
   'hungarian-algorithm': { en: 'Hungarian Algorithm' },
