@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/mattcdrake/LeetSRS/compare/v1.1.0...v1.1.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* use stacks icon for Cards tab ([#677](https://github.com/mattcdrake/LeetSRS/issues/677)) ([085b20b](https://github.com/mattcdrake/LeetSRS/commit/085b20b0b1a64154ee9b966a00b2d1f9aee11db5))
+
 ## [1.1.0](https://github.com/mattcdrake/LeetSRS/compare/v1.0.1...v1.1.0) (2026-09-20)
 
 
