@@ -8,8 +8,6 @@ Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses 
 
 **[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
 
-![Know what to practice and when to review: follow a roadmap and rate your recall.](assets/promo/01-practice-plan.png)
-
 <p align="center">
   <strong><a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">Watch the demo on YouTube</a></strong>
 </p>
