@@ -49,7 +49,6 @@ function boundedWholeNumber(label: string, bounds: { min: number; max: number })
 export const settingsSchema = z.object({
   maxNewCardsPerDay: boundedWholeNumber('Max new cards per day', SETTINGS_CONSTRAINTS.maxNewCardsPerDay),
   theme: z.enum(['system', 'light', 'dark'], { error: 'Theme must be "system", "light", or "dark"' }),
-  // Keep the stored key so existing reset preferences survive the change to due-based resets.
   resetEditorOnReviewQueue: z.boolean({ error: 'Reset editor when due must be a boolean' }),
   openRatingAfterSolving: z.boolean(),
   language: languageSchema,

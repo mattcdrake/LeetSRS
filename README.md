@@ -37,7 +37,7 @@ Rate how each solve went directly on LeetCode: **Again**, **Hard**, **Good**, or
 
 ## Review at your own pace
 
-Open your review queue for what's due now, or check the calendar for upcoming reviews. Set a daily limit for new problems, pause individual problems, and track your streaks. Daily limits and streaks follow your local day, starting at midnight. Enable **Reset code when due** in Settings to start due problems with default code, including when you open them directly on LeetCode.
+Open your review queue for what's due now, or check the calendar for upcoming reviews. Set a daily limit for new problems, pause individual problems, and track your streaks. Daily limits and streaks follow your local day, starting at midnight.
 
 ![The review calendar shows upcoming due dates and the problems scheduled for the selected day.](assets/promo/04-review-calendar.png)
 
