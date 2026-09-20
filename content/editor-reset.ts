@@ -1,4 +1,4 @@
-import { isEditorResetAuthorized } from '@/content/page-context';
+import { getCurrentProblemSlug, isEditorResetAuthorized } from '@/content/page-context';
 
 const CONTROL_POLL_MS = 50;
 const CONTROL_TIMEOUT_MS = 10_000;
@@ -9,16 +9,17 @@ const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]
 const CONFIRM_LABELS = ['confirm', '确认', '确定'];
 
 export function setupLeetcodeEditorReset(onResetConfirmed: () => void): () => void {
-  if (!isEditorResetAuthorized()) return () => {};
+  const problemSlug = getCurrentProblemSlug();
+  if (!isEditorResetAuthorized() || !problemSlug) return () => {};
 
-  const destination = `${window.location.origin}${window.location.pathname}`;
+  const origin = window.location.origin;
   window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
 
   let active = true;
   let timerId: number | undefined;
   const controlStartedAt = Date.now();
 
-  const isActive = () => active && `${window.location.origin}${window.location.pathname}` === destination;
+  const isActive = () => active && window.location.origin === origin && getCurrentProblemSlug() === problemSlug;
   const finish = () => {
     active = false;
     if (timerId !== undefined) {

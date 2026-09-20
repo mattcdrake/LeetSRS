@@ -111,6 +111,25 @@ describe('setupLeetcodeEditorReset', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('continues resetting when LeetCode normalizes the URL for the same problem', async () => {
+    authorizeOpening('/problems/two-sum/description/');
+    dispose = setupLeetcodeEditorReset(onResetConfirmed);
+    await vi.advanceTimersByTimeAsync(100);
+
+    history.replaceState({}, '', '/problems/two-sum/');
+    const resetButton = renderResetButton();
+    const resetClick = vi.spyOn(resetButton, 'click');
+    const dialog = createDialog();
+    attachDialog(resetButton, dialog.dialog);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(resetClick).toHaveBeenCalledTimes(1);
+    expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
+    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+    expect(location.hash).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('stops polling when the reset control never appears', async () => {
     authorizeOpening();
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
