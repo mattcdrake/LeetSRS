@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/mattcdrake/LeetSRS/compare/v1.1.1...v1.1.2) (2026-09-20)
+
+
+### Bug Fixes
+
+* make cards due by local calendar day ([#681](https://github.com/mattcdrake/LeetSRS/issues/681)) ([550d2c3](https://github.com/mattcdrake/LeetSRS/commit/550d2c34076a770b34d9ef8bd308444b6823e065))
+
 ## [1.1.1](https://github.com/mattcdrake/LeetSRS/compare/v1.1.0...v1.1.1) (2026-09-20)
 
 
