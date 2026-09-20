@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.3](https://github.com/mattcdrake/LeetSRS/compare/v1.1.2...v1.1.3) (2026-09-20)
+
+
+### Bug Fixes
+
+* refresh LeetCode catalog ([#685](https://github.com/mattcdrake/LeetSRS/issues/685)) ([97df55d](https://github.com/mattcdrake/LeetSRS/commit/97df55ddc7f885319be8ebe13cb52f2f24f32975))
+
+
+### Performance Improvements
+
+* derive the slug catalog from the ID catalog ([#683](https://github.com/mattcdrake/LeetSRS/issues/683)) ([cab586a](https://github.com/mattcdrake/LeetSRS/commit/cab586aa68fb90b399e90762971d4dd7760e6788))
+
 ## [1.1.2](https://github.com/mattcdrake/LeetSRS/compare/v1.1.1...v1.1.2) (2026-09-20)
 
 
