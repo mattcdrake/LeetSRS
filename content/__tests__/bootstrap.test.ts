@@ -73,7 +73,7 @@ describe('content startup', () => {
     expect(vi.getTimerCount()).toBe(baselineTimers);
   });
 
-  it('checks each SPA problem visit without resetting again during URL normalization', async () => {
+  it('checks whether to reset once per problem visit', async () => {
     history.replaceState({}, '', '/problemset/');
     await act(() => bootstrapContent(ctx));
     vi.mocked(setupLeetcodeEditorReset).mockClear();
