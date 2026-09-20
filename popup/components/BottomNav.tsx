@@ -1,5 +1,5 @@
 import { ToggleButton, ToggleButtonGroup } from 'react-aria-components';
-import { FaCalendarDays, FaCode, FaGear, FaHouseChimney } from 'react-icons/fa6';
+import { FaCalendarDays, FaGear, FaHouseChimney, FaLayerGroup } from 'react-icons/fa6';
 import { LuRoute } from 'react-icons/lu';
 import { useReviewQueueQuery } from '@/popup/queries/cards';
 import { useI18n } from '../contexts/I18nContext';
@@ -20,7 +20,7 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
     { id: 'home', label: t.nav.home, Icon: FaHouseChimney },
     { id: 'roadmaps', label: t.nav.roadmaps, Icon: LuRoute },
     { id: 'calendar', label: t.nav.calendar, Icon: FaCalendarDays },
-    { id: 'card', label: t.nav.cards, Icon: FaCode },
+    { id: 'card', label: t.nav.cards, Icon: FaLayerGroup },
     { id: 'settings', label: t.nav.settings, Icon: FaGear },
   ];
 
