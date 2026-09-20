@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/mattcdrake/LeetSRS/compare/v1.0.1...v1.1.0) (2026-09-20)
+
+
+### Features
+
+* show YouTube solution links ([#665](https://github.com/mattcdrake/LeetSRS/issues/665)) ([ac851c8](https://github.com/mattcdrake/LeetSRS/commit/ac851c87d08301e906d88a738e072d9876d5c755))
+
+
+### Bug Fixes
+
+* refresh LeetCode catalog ([#664](https://github.com/mattcdrake/LeetSRS/issues/664)) ([77c8ea5](https://github.com/mattcdrake/LeetSRS/commit/77c8ea55a3c3c6aacaeee829a09e72363144ed44))
+* reset due problems on direct visits ([#675](https://github.com/mattcdrake/LeetSRS/issues/675)) ([f888a24](https://github.com/mattcdrake/LeetSRS/commit/f888a247053c0b696b184ba71047844402e666cd))
+
 ## [1.0.1](https://github.com/mattcdrake/LeetSRS/compare/v1.0.0...v1.0.1) (2026-09-18)
 
 
