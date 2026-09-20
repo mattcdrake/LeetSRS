@@ -19,9 +19,11 @@ export async function refreshBadge() {
   try {
     const { count, nextRefreshAt } = await getBadgeState();
     const alarm = await browser.alarms.get(BADGE_ALARM_NAME);
-    if (nextRefreshAt === undefined) await browser.alarms.clear(BADGE_ALARM_NAME);
-    else if (alarm?.scheduledTime !== nextRefreshAt)
+    if (nextRefreshAt === undefined) {
+      await browser.alarms.clear(BADGE_ALARM_NAME);
+    } else if (alarm?.scheduledTime !== nextRefreshAt) {
       await browser.alarms.create(BADGE_ALARM_NAME, { when: nextRefreshAt });
+    }
     await browser.action.setBadgeText({ text: count ? String(count) : '' });
     if (count) await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
   } catch (error) {
