@@ -1,4 +1,8 @@
-import { getCurrentProblemSlug, isEditorResetAuthorized } from '@/content/page-context';
+import { getCurrentProblem } from '@/content/current-problem';
+import { getCurrentProblemSlug } from '@/content/page-context';
+import { findCard } from '@/shared/models';
+import { resolveLearningDocumentSettings } from '@/shared/settings';
+import { readLearningDocument } from '@/shared/storage';
 
 const CONTROL_POLL_MS = 50;
 const CONTROL_TIMEOUT_MS = 10_000;
@@ -10,14 +14,13 @@ const CONFIRM_LABELS = ['confirm', '确认', '确定'];
 
 export function setupLeetcodeEditorReset(onResetConfirmed: () => void): () => void {
   const problemSlug = getCurrentProblemSlug();
-  if (!isEditorResetAuthorized() || !problemSlug) return () => {};
+  if (!problemSlug) return () => {};
 
   const origin = window.location.origin;
-  window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
 
   let active = true;
   let timerId: number | undefined;
-  const controlStartedAt = Date.now();
+  let controlStartedAt = 0;
 
   const isActive = () => active && window.location.origin === origin && getCurrentProblemSlug() === problemSlug;
   const finish = () => {
@@ -85,7 +88,22 @@ export function setupLeetcodeEditorReset(onResetConfirmed: () => void): () => vo
     waitForConfirmation();
   };
 
-  waitForResetControl();
+  async function resetIfDue() {
+    const document = await readLearningDocument();
+    if (!isActive() || !resolveLearningDocumentSettings(document).resetEditorOnReviewQueue) return;
+
+    const problem = await getCurrentProblem();
+    const card = findCard(document, problem.frontendId);
+    if (!isActive() || !card || card.paused || card.fsrs.due > Date.now()) return;
+
+    controlStartedAt = Date.now();
+    waitForResetControl();
+  }
+
+  void resetIfDue().catch((error: unknown) => {
+    finish();
+    console.error('Could not reset editor:', error);
+  });
   return finish;
 }
 
