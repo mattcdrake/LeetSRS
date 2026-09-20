@@ -21,13 +21,8 @@ beforeEach(() => {
   vi.spyOn(browser.permissions.onAdded, 'addListener').mockImplementation(() => {});
   const fetchFromNetwork = globalThis.fetch;
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    for (const [file, key] of [
-      ['id', 'frontendId'],
-      ['slug', 'slug'],
-    ] as const) {
-      if (input === browser.runtime.getURL(`/data/leetcode-catalog-by-${file}.json`)) {
-        return Response.json(Object.fromEntries(testCatalog.map((problem) => [problem[key], problem])));
-      }
+    if (input === browser.runtime.getURL('/data/leetcode-catalog-by-id.json')) {
+      return Response.json(Object.fromEntries(testCatalog.map((problem) => [problem.frontendId, problem])));
     }
     return fetchFromNetwork(input, init);
   });

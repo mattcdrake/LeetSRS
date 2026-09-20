@@ -23,10 +23,8 @@ export type CatalogProblem = z.infer<typeof catalogProblemSchema>;
 let byId: Promise<Record<string, CatalogProblem>> | undefined;
 let bySlug: Promise<Record<string, CatalogProblem>> | undefined;
 
-async function loadCatalog(
-  file: 'leetcode-catalog-by-id.json' | 'leetcode-catalog-by-slug.json'
-): Promise<Record<string, CatalogProblem>> {
-  const response = await fetch(browser.runtime.getURL(`/data/${file}`));
+async function loadCatalog(): Promise<Record<string, CatalogProblem>> {
+  const response = await fetch(browser.runtime.getURL('/data/leetcode-catalog-by-id.json'));
   if (!response.ok) throw new Error(`Failed to load catalog JSON: ${response.status}`);
   return z.record(z.string(), catalogProblemSchema).parse(await response.json());
 }
@@ -35,13 +33,16 @@ export async function getProblemsByFrontendIds(
   problems: readonly ProblemReference[]
 ): Promise<(CatalogProblem | undefined)[]> {
   if (problems.length === 0) return [];
-  byId ??= loadCatalog('leetcode-catalog-by-id.json');
+  byId ??= loadCatalog();
   const catalog = await byId;
   return problems.map(({ frontendId, domain }) => problemForDomain(catalog, frontendId, domain));
 }
 
 export async function getProblemBySlug(slug: string, domain: LeetcodeDomain): Promise<CatalogProblem | undefined> {
-  bySlug ??= loadCatalog('leetcode-catalog-by-slug.json');
+  byId ??= loadCatalog();
+  bySlug ??= byId.then((catalog) =>
+    Object.fromEntries(Object.values(catalog).map((problem) => [problem.slug, problem]))
+  );
   const catalog = await bySlug;
   return problemForDomain(catalog, slug, domain);
 }

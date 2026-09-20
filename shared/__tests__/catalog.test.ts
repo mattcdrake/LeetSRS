@@ -21,27 +21,33 @@ beforeEach(() => {
     if (url === browser.runtime.getURL('/data/leetcode-catalog-by-id.json')) {
       return Response.json(Object.fromEntries(problems.map((problem) => [problem.frontendId, problem])));
     }
-    if (url === browser.runtime.getURL('/data/leetcode-catalog-by-slug.json')) {
-      return Response.json(Object.fromEntries(problems.map((problem) => [problem.slug, problem])));
-    }
     throw new Error(`Unexpected fetch: ${url}`);
   });
 });
 
-it('loads only the requested file and shares concurrent and subsequent reads', async () => {
-  const { getProblemBySlug, getProblemsByFrontendIds } = await import('@/shared/catalog');
-  expect(fetch).not.toHaveBeenCalled();
-  expect(await getProblemsByFrontendIds([])).toEqual([]);
-  expect(fetch).not.toHaveBeenCalled();
-  await Promise.all([getProblemBySlug('two-sum', 'leetcode.com'), getProblemBySlug('cn-problem', 'leetcode.cn')]);
-  await getProblemBySlug('two-sum', 'leetcode.com');
-  expect(fetch).toHaveBeenCalledExactlyOnceWith(browser.runtime.getURL('/data/leetcode-catalog-by-slug.json'));
-  const refs = [{ frontendId: '1', domain: 'leetcode.com' as const }];
-  await Promise.all([getProblemsByFrontendIds(refs), getProblemsByFrontendIds(refs)]);
-  await getProblemsByFrontendIds(refs);
-  expect(fetch).toHaveBeenCalledTimes(2);
-  expect(fetch).toHaveBeenLastCalledWith(browser.runtime.getURL('/data/leetcode-catalog-by-id.json'));
-});
+it.each(['id', 'slug'])(
+  'shares one catalog across concurrent and subsequent reads, starting with %s',
+  async (first) => {
+    const { getProblemBySlug, getProblemsByFrontendIds } = await import('@/shared/catalog');
+    expect(fetch).not.toHaveBeenCalled();
+    expect(await getProblemsByFrontendIds([])).toEqual([]);
+    expect(fetch).not.toHaveBeenCalled();
+    const refs = [{ frontendId: '1', domain: 'leetcode.com' as const }];
+    const firstRead = first === 'id' ? getProblemsByFrontendIds(refs) : getProblemBySlug('two-sum', 'leetcode.com');
+    const [byId, bySlug, cnBySlug] = await Promise.all([
+      getProblemsByFrontendIds(refs),
+      getProblemBySlug('two-sum', 'leetcode.com'),
+      getProblemBySlug('cn-problem', 'leetcode.cn'),
+      firstRead,
+    ]);
+    expect(byId).toEqual([twoSum]);
+    expect(bySlug).toBe(byId[0]);
+    expect(cnBySlug).toEqual(cnProblem);
+    expect(await getProblemsByFrontendIds(refs)).toEqual(byId);
+    expect(await getProblemBySlug('two-sum', 'leetcode.com')).toBe(bySlug);
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(browser.runtime.getURL('/data/leetcode-catalog-by-id.json'));
+  }
+);
 
 it('returns mixed-domain and missing IDs in input order', async () => {
   const { getProblemsByFrontendIds } = await import('@/shared/catalog');
