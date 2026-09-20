@@ -24,4 +24,4 @@ The README install button displays at 292 × 52 pixels and links to the Chrome W
 The README embeds the original [MP4 demo](https://github.com/user-attachments/assets/2e3da2f3-f452-4cef-8275-e131c7f43f9d) through GitHub attachments. The [source recording](https://github.com/mattcdrake/LeetLanding/blob/main/src/assets/video/screencast.mp4) remains in the landing repository at its original resolution and frame rate.
 
 - `logos/`: SVG source and PNG icons at 16, 32, 48, 60, 96, and 128 pixels. The 32px icon also serves as the website favicon.
-- `social/`: the 1200 × 630 brand card and the 1280 × 640 GitHub preview, with SVG sources. See the [social asset guide](social/README.md) for upload instructions.
+- `social/`: the 1200 × 630 brand card and the 1280 × 640 GitHub preview, with SVG sources.
