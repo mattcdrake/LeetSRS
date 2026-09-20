@@ -61,26 +61,37 @@ describe('setupLeetcodeEditorReset', () => {
     vi.restoreAllMocks();
   });
 
-  it('resets a due problem opened directly once without changing the URL', async () => {
-    history.replaceState({}, '', '/problems/two-sum/?envType=study-plan#description');
-    const resetButton = renderResetButton();
-    const resetClick = vi.spyOn(resetButton, 'click');
-    const dialog = createDialog();
-    attachDialog(resetButton, dialog.dialog);
+  it.each(['2026-09-19T12:00:00', '2026-09-20T23:59:59.999'])(
+    'resets a problem due at %s once without changing the URL',
+    async (due) => {
+      const card = createMockCard(State.Review);
+      card.fsrs.due = new Date(due).getTime();
+      await replaceLearningDocument(
+        buildLearningDocument({
+          cards: { '1': card },
+          settings: { resetEditorOnReviewQueue: true },
+        })
+      );
+      history.replaceState({}, '', '/problems/two-sum/?envType=study-plan#description');
+      const resetButton = renderResetButton();
+      const resetClick = vi.spyOn(resetButton, 'click');
+      const dialog = createDialog();
+      attachDialog(resetButton, dialog.dialog);
 
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
-    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
-    expect(location.search).toBe('?envType=study-plan');
-    expect(location.hash).toBe('#description');
+      dispose = setupLeetcodeEditorReset(onResetConfirmed);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(resetClick).toHaveBeenCalledTimes(1);
+      expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
+      expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+      expect(location.search).toBe('?envType=study-plan');
+      expect(location.hash).toBe('#description');
 
-    dialog.dialog.remove();
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
-  });
+      dialog.dialog.remove();
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(resetClick).toHaveBeenCalledTimes(1);
+      expect(vi.getTimerCount()).toBe(0);
+    }
+  );
 
   it.each([
     ['disabled', buildLearningDocument({ cards: { '1': createMockCard(State.Review) } })],
@@ -115,6 +126,7 @@ describe('setupLeetcodeEditorReset', () => {
   });
 
   it('does not reset later while working if the problem was not due on arrival', async () => {
+    vi.setSystemTime(new Date('2026-09-20T23:59:59'));
     const card = createMockCard(State.Review);
     await replaceLearningDocument(
       buildLearningDocument({

@@ -24,18 +24,32 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
 }
 
 describe('review queue calculations', () => {
-  it.each([State.New, State.Review])(
-    'excludes paused and future cards and includes exact due times in state %i',
+  it.each([State.New, State.Learning, State.Review, State.Relearning])(
+    'includes all of today but excludes tomorrow and paused cards in state %i',
     (state) => {
       const due = dueCard('due', '2024-01-15T12:00:00', state);
-      const future = dueCard('future', '2024-01-15T12:00:00.001', state);
+      const laterToday = dueCard('later-today', '2024-01-15T23:59:59.999', state);
+      const future = dueCard('future', '2024-01-16T00:00:00', state);
       const paused = { ...dueCard('paused', '2024-01-15T11:00:00', state), paused: true };
-      const document = buildLearningDocument({ cards: { due, future, paused } });
+      const document = buildLearningDocument({ cards: { due, laterToday, future, paused } });
       expect(buildReviewQueue(document, new Date('2024-01-15T12:00:00')).map((card) => card.frontendId)).toEqual([
         'due',
+        'later-today',
       ]);
     }
   );
+
+  it.each([
+    ['2024-03-10', '2024-03-11'],
+    ['2024-11-03', '2024-11-04'],
+  ])('uses local midnight on the daylight saving transition %s', (today, tomorrow) => {
+    const late = dueCard('late', `${today}T23:59:59.999`, State.Review);
+    const midnight = dueCard('midnight', `${tomorrow}T00:00:00`, State.Review);
+    const document = buildLearningDocument({ cards: { late, midnight } });
+    const now = new Date(`${today}T00:00:00`);
+    expect(buildReviewQueue(document, now)).toEqual([late]);
+    expect(buildReviewCalendar(document, now)[today].cards).toEqual([late]);
+  });
 
   it('uses the default limit and restores the allowance at local midnight', () => {
     const cards = Object.fromEntries(['a', 'b', 'c', 'd'].map((slug) => [slug, dueCard(slug, '2024-01-15T12:00:00')]));
@@ -115,7 +129,9 @@ describe('review calendar calculations', () => {
     });
     expect(calendar['2024-01-16']).toEqual({ cards: [cards[6]], count: 1, overdueCount: 0 });
     const document = buildLearningDocument({ cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])) });
-    expect(calendar['2024-01-15'].cards).toEqual(buildReviewQueue(document, new Date('2024-01-15T23:59:59.999')));
+    for (const time of ['00:00:00', '12:00:00', '23:59:59.999']) {
+      expect(calendar['2024-01-15'].cards).toEqual(buildReviewQueue(document, new Date(`2024-01-15T${time}`)));
+    }
   });
 
   it.each([

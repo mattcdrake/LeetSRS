@@ -1,5 +1,6 @@
 import { getCurrentProblem } from '@/content/current-problem';
 import { getCurrentProblemSlug } from '@/content/page-context';
+import { isDue } from '@/shared/calendar';
 import { findCard } from '@/shared/models';
 import { resolveLearningDocumentSettings } from '@/shared/settings';
 import { readLearningDocument } from '@/shared/storage';
@@ -94,7 +95,7 @@ export function setupLeetcodeEditorReset(onResetConfirmed: () => void): () => vo
 
     const problem = await getCurrentProblem();
     const card = findCard(document, problem.frontendId);
-    if (!isActive() || !card || card.paused || card.fsrs.due > Date.now()) return;
+    if (!isActive() || !card || card.paused || !isDue(card.fsrs.due, new Date())) return;
 
     controlStartedAt = Date.now();
     waitForResetControl();
