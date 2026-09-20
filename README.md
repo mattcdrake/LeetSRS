@@ -8,9 +8,9 @@ Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses 
 
 **[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
 
+https://github.com/user-attachments/assets/2e3da2f3-f452-4cef-8275-e131c7f43f9d
+
 <p align="center">
-  <img src="assets/promo/demo.gif" width="800" alt="LeetSRS demo showing roadmap suggestions, recall ratings on LeetCode, and the review calendar." />
-  <br />
   <a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">Watch on YouTube</a>
 </p>
 
