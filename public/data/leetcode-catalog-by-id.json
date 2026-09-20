@@ -58431,6 +58431,58 @@
       "leetcode.com"
     ]
   },
+  "4056": {
+    "frontendId": "4056",
+    "title": "Number of Intersecting Interval Pairs I",
+    "translatedTitle": "统计相交区间对 I",
+    "slug": "number-of-intersecting-interval-pairs-i",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4057": {
+    "frontendId": "4057",
+    "title": "Number of Intersecting Interval Pairs II",
+    "translatedTitle": "统计相交区间对 II",
+    "slug": "number-of-intersecting-interval-pairs-ii",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4058": {
+    "frontendId": "4058",
+    "title": "Maximum Pulse Value After One Subarray Rotation",
+    "translatedTitle": "一个子数组循环移动后的最大脉冲值",
+    "slug": "maximum-pulse-value-after-one-subarray-rotation",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4059": {
+    "frontendId": "4059",
+    "title": "Lexicographically Largest Power Array",
+    "translatedTitle": "字典序最大的答案数组",
+    "slug": "lexicographically-largest-power-array",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "406": {
     "frontendId": "406",
     "title": "Queue Reconstruction by Height",
