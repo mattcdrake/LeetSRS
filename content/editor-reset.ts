@@ -1,4 +1,8 @@
-import { isEditorResetAuthorized } from '@/content/page-context';
+import { getCurrentProblem } from '@/content/current-problem';
+import { getCurrentProblemSlug } from '@/content/page-context';
+import { findCard } from '@/shared/models';
+import { resolveLearningDocumentSettings } from '@/shared/settings';
+import { readLearningDocument } from '@/shared/storage';
 
 const CONTROL_POLL_MS = 50;
 const CONTROL_TIMEOUT_MS = 10_000;
@@ -9,16 +13,16 @@ const MODAL_SELECTOR = '[role="dialog"][aria-modal="true"], [role="alertdialog"]
 const CONFIRM_LABELS = ['confirm', '确认', '确定'];
 
 export function setupLeetcodeEditorReset(onResetConfirmed: () => void): () => void {
-  if (!isEditorResetAuthorized()) return () => {};
+  const problemSlug = getCurrentProblemSlug();
+  if (!problemSlug) return () => {};
 
-  const destination = `${window.location.origin}${window.location.pathname}`;
-  window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`);
+  const origin = window.location.origin;
 
   let active = true;
   let timerId: number | undefined;
-  const controlStartedAt = Date.now();
+  let controlStartedAt = 0;
 
-  const isActive = () => active && `${window.location.origin}${window.location.pathname}` === destination;
+  const isActive = () => active && window.location.origin === origin && getCurrentProblemSlug() === problemSlug;
   const finish = () => {
     active = false;
     if (timerId !== undefined) {
@@ -84,7 +88,22 @@ export function setupLeetcodeEditorReset(onResetConfirmed: () => void): () => vo
     waitForConfirmation();
   };
 
-  waitForResetControl();
+  async function resetIfDue() {
+    const document = await readLearningDocument();
+    if (!isActive() || !resolveLearningDocumentSettings(document).resetEditorOnReviewQueue) return;
+
+    const problem = await getCurrentProblem();
+    const card = findCard(document, problem.frontendId);
+    if (!isActive() || !card || card.paused || card.fsrs.due > Date.now()) return;
+
+    controlStartedAt = Date.now();
+    waitForResetControl();
+  }
+
+  void resetIfDue().catch((error: unknown) => {
+    finish();
+    console.error('Could not reset editor:', error);
+  });
   return finish;
 }
 

@@ -73,6 +73,32 @@ describe('content startup', () => {
     expect(vi.getTimerCount()).toBe(baselineTimers);
   });
 
+  it('checks whether to reset once per problem visit', async () => {
+    history.replaceState({}, '', '/problemset/');
+    await act(() => bootstrapContent(ctx));
+    vi.mocked(setupLeetcodeEditorReset).mockClear();
+    disposeReset.mockClear();
+
+    history.pushState({}, '', '/problems/two-sum/description/');
+    act(() => notifyMutation());
+    expect(setupLeetcodeEditorReset).toHaveBeenCalledTimes(1);
+    expect(disposeReset).toHaveBeenCalledTimes(1);
+
+    history.replaceState({}, '', '/problems/two-sum/');
+    act(() => notifyMutation());
+    act(() => notifyMutation());
+    expect(setupLeetcodeEditorReset).toHaveBeenCalledTimes(1);
+    expect(disposeReset).toHaveBeenCalledTimes(1);
+
+    history.pushState({}, '', '/problems/add-two-numbers/');
+    act(() => notifyMutation());
+    expect(setupLeetcodeEditorReset).toHaveBeenCalledTimes(2);
+    expect(disposeReset).toHaveBeenCalledTimes(2);
+
+    act(() => ctx.notifyInvalidated());
+    expect(disposeReset).toHaveBeenCalledTimes(3);
+  });
+
   it('mounts late and replaced toolbars without duplicates and unmounts when they disappear', async () => {
     document.body.innerHTML = '';
     await act(() => bootstrapContent(ctx));

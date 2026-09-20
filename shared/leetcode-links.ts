@@ -19,9 +19,3 @@ export function isLeetcodeCnUrl(url: string | null): boolean {
     return false;
   }
 }
-
-export const EDITOR_RESET_AUTHORIZATION_HASH = '#leetsrs-reset-editor';
-
-export function authorizeEditorReset(url: string): string {
-  return `${url}${EDITOR_RESET_AUTHORIZATION_HASH}`;
-}

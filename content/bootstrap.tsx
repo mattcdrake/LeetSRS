@@ -12,15 +12,22 @@ import { Toast } from './ui/Toast';
 import './ui/shadow.css';
 
 export async function bootstrapContent(ctx: ContentScriptContext) {
-  await setupLeetSrsControl(ctx);
-  if (ctx.isInvalid) return;
-  const disposeReset = setupLeetcodeEditorReset(() => {
-    void showToast(ctx, 'Code reset to default');
-  });
-  ctx.onInvalidated(disposeReset);
+  let resetSlug: string | null | undefined;
+  let disposeReset = () => {};
+  const resetForCurrentProblem = () => {
+    const slug = getCurrentProblemSlug();
+    if (slug === resetSlug) return;
+    resetSlug = slug;
+    disposeReset();
+    disposeReset = setupLeetcodeEditorReset(() => {
+      void showToast(ctx, 'Code reset to default');
+    });
+  };
+  ctx.onInvalidated(() => disposeReset());
+  await setupLeetSrsControl(ctx, resetForCurrentProblem);
 }
 
-async function setupLeetSrsControl(ctx: ContentScriptContext) {
+async function setupLeetSrsControl(ctx: ContentScriptContext, checkEditorReset: () => void) {
   let root: ReturnType<typeof createContentRoot> | undefined;
   let slug = getCurrentProblemSlug();
   let request = 0;
@@ -62,6 +69,7 @@ async function setupLeetSrsControl(ctx: ContentScriptContext) {
       pendingOpen = false;
       renderControl();
     }
+    checkEditorReset();
     const toolbar = document.querySelector('#ide-top-btns');
     if (toolbar && ui.mounted && ui.shadowHost.parentElement === toolbar) return;
     if (ui.mounted) ui.remove();
