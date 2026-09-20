@@ -1,6 +1,6 @@
-# LeetSRS
-
-**Know what to practice—and when to review it.**
+<p align="center">
+  <img src="assets/promo/readme-banner.png" width="800" alt="LeetSRS — Spaced repetition for LeetCode. Know what to practice. And when to review." />
+</p>
 
 LeetSRS is a free, open-source Chrome extension that brings spaced repetition to your LeetCode practice. Work through interview roadmaps like Blind 75 or NeetCode 150 while keeping up with problems you've already solved.
 
