@@ -4,7 +4,7 @@
 
 | Need                          | File                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------ |
-| Setup, development, packaging | [README.md#setup](README.md#setup)                                             |
+| Setup, development, packaging | [README.md#development](README.md#development)                                 |
 | Scripts and dependencies      | [package.json](package.json)                                                   |
 | CI checks                     | [.github/workflows/ci.yml](.github/workflows/ci.yml)                           |
 | PR title conventions          | [.github/workflows/conventional-pr.yml](.github/workflows/conventional-pr.yml) |

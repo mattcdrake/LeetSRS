@@ -1,58 +1,42 @@
-# LeetSRS
-
-**Know what to practice—and when to review it.**
-
-LeetSRS is a free, open-source Chrome extension that brings spaced repetition to your LeetCode practice. Work through interview roadmaps like Blind 75 or NeetCode 150 while keeping up with problems you've already solved.
-
-Solving a problem once doesn't mean you'll remember how next time. LeetSRS uses your ratings to schedule reviews, so revisiting problems stays part of your interview preparation.
-
-**[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Privacy](PRIVACY.md) · [Changelog](CHANGELOG.md)
-
-![Know what to practice and when to review: follow a roadmap and rate your recall.](assets/promo/01-practice-plan.png)
-
 <p align="center">
-  <strong><a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">Watch the demo on YouTube</a></strong>
+  <img src="assets/promo/readme-banner.png" width="800" alt="LeetSRS — Spaced repetition for LeetCode. Know what to practice. And when to review." />
 </p>
 
+LeetSRS is a Chrome extension that helps you remember what you learn on LeetCode through spaced repetition. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
+
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=AvE9a7tMS7w">
-    <img
-      src="https://img.youtube.com/vi/AvE9a7tMS7w/hqdefault.jpg"
-      alt="Watch the LeetSRS demo on YouTube"
-    />
+  <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko">
+    <img src="assets/promo/add-to-chrome.png" width="292" height="52" alt="Add LeetSRS to Chrome" />
   </a>
 </p>
 
-## Follow a roadmap
+https://github.com/user-attachments/assets/2e3da2f3-f452-4cef-8275-e131c7f43f9d
 
-Choose a roadmap, open your next problem, and track your progress without managing a separate spreadsheet. Your next new problem appears alongside the reviews that are due.
+## Get started
 
-![Choose a roadmap and jump into your next problem with LeetSRS.](assets/promo/02-roadmaps.png)
+1. [Install LeetSRS from the Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko).
+2. **Solve a problem.** Choose your own on LeetCode or follow a roadmap for suggestions.
+3. **Rate your recall.** Choose **Again**, **Hard**, **Good**, or **Easy** in the LeetSRS panel to schedule your next review.
+4. **Return for review.** Open your review queue for problems that are due. Try them again and give each a new rating. Check the calendar for upcoming reviews.
 
-## Solve. Rate. Keep going.
+LeetSRS uses your ratings and review history with the [FSRS spaced repetition algorithm](https://github.com/open-spaced-repetition/ts-fsrs) to adjust your review schedule.
 
-Rate how each solve went directly on LeetCode: **Again**, **Hard**, **Good**, or **Easy**. LeetSRS uses your ratings and the [FSRS spaced repetition algorithm](https://github.com/open-spaced-repetition/ts-fsrs) to schedule your next review. You can also save a problem to review later without rating it.
+## Roadmaps
 
-![The LeetSRS panel on LeetCode offers four ratings, upcoming review intervals, and an option to save without rating.](assets/promo/03-leetcode-workflow.png)
+Choose **Blind 75**, **NeetCode 150**, **NeetCode 250**, or **Grind 75**. Track your progress and see your next suggested problem while previously rated problems stay in your review schedule. You can also add problems outside a roadmap.
 
-## Review at your own pace
+Set a daily limit for new problems, pause individual problems, and track your streaks.
 
-Open your review queue for what's due now, or check the calendar for upcoming reviews. Set a daily limit for new problems, pause individual problems, and track your streaks. Daily limits and streaks follow your local day, starting at midnight.
+## Your data
 
-![The review calendar shows upcoming due dates and the problems scheduled for the selected day.](assets/promo/04-review-calendar.png)
+Your practice data stays local by default. No LeetSRS account is required. Export a backup or import your data from Settings.
 
-## Your practice. Your data.
-
-Start without a LeetSRS account. Your practice data stays on your device by default, and you can import or export a backup from Settings whenever you want.
-
-To continue on another computer, enable optional GitHub sync. Your backup lives in a Gist in your own GitHub account. See the [privacy policy](PRIVACY.md) for details.
-
-![Your practice stays on your device, with optional GitHub sync.](assets/promo/05-local-sync.png)
+For optional sync across devices, connect GitHub and select a Gist in your own GitHub account. Signing in alone does not enable sync. New backups are secret Gists: anyone with the link can read them. See the [privacy policy](https://github.com/mattcdrake/LeetSRS/blob/main/PRIVACY.md) for details about storage and GitHub sign-in.
 
 <details>
 <summary>Set up GitHub sync</summary>
 
-1. Select **Sign in with GitHub** in Settings. Signing in alone does not enable sync.
+1. Select **Sign in with GitHub** in Settings.
 2. Choose an existing backup or **Create New Gist**, then select **Connect and sync**.
 3. Repeat on each browser, selecting the same backup. Credentials and the selected backup stay local to each installation.
 
@@ -62,28 +46,32 @@ Sync uses the entire dataset from the browser with the newest edit; it does not 
 
 </details>
 
-## Get started
+## Development
 
-1. [Install LeetSRS from the Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko).
-2. Open the extension and choose a roadmap.
-3. Solve your next problem on LeetCode and rate how it went. LeetSRS schedules the review.
+Use Node.js 24 or newer. Clone the repository and install dependencies:
 
-## Setup
+```sh
+git clone https://github.com/mattcdrake/LeetSRS.git
+cd LeetSRS
+npm install
+npm run dev
+```
 
-To build from source or contribute, use Node.js 24 or newer and install dependencies with `npm install`.
-
-- `npm run dev`: start Chrome with a fresh temporary profile.
-- `npm run dev:persistent`: reuse a Chrome profile, keeping logins and extension data between runs.
-- `npm run dev:reset`: delete the persistent development profile, including its logins and extension data. Stop the dev server and close the development browser first.
-- `npm run build`: build the production extension.
-- `npm run zip`: package the extension for distribution.
+| Command                  | Purpose                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run dev`            | Start Chrome with a fresh temporary profile.                                                                                                     |
+| `npm run dev:persistent` | Reuse a Chrome profile, including logins and extension data.                                                                                     |
+| `npm run dev:reset`      | Delete the persistent development profile, including its logins and extension data. Stop the dev server and close the development browser first. |
+| `npm run build`          | Build the production extension.                                                                                                                  |
+| `npm run zip`            | Package the extension for distribution.                                                                                                          |
+| `npm run check`          | Run lint, formatting, type, and test checks.                                                                                                     |
 
 The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched.
 
-Bug reports, feedback, and contributions are welcome. Read the [contribution guidelines](CONTRIBUTING.md) before opening a pull request.
+## Contributing
 
-Promotional images, logos, and social cards are in [assets/promo](assets/promo/README.md).
+Bug reports, feedback, and contributions are welcome. [Open an issue](https://github.com/mattcdrake/LeetSRS/issues) or read the [contribution guidelines](https://github.com/mattcdrake/LeetSRS/blob/main/CONTRIBUTING.md) before opening a pull request.
 
 ## License
 
-[MIT](LICENSE.md)
+[MIT](https://github.com/mattcdrake/LeetSRS/blob/main/LICENSE.md)
