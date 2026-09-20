@@ -1,14 +1,17 @@
 // @vitest-environment happy-dom
 
+import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import { background } from '@/shared/background-service';
+import { replaceLearningDocument } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
+import { buildCatalogProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { createServiceMock } from '@/test/utils/service-mocks';
 import { setupLeetcodeEditorReset } from '../editor-reset';
 
-const AUTHORIZATION_HASH = '#leetsrs-reset-editor';
-
-function authorizeOpening(path = '/problems/two-sum/'): void {
-  history.replaceState({}, '', `${path}${AUTHORIZATION_HASH}`);
-}
+vi.mock('@/shared/background-service');
 
 function renderResetButton(markup = '<button><svg class="fa-arrow-rotate-left"></svg></button>'): HTMLElement {
   const container = document.createElement('div');
@@ -35,9 +38,18 @@ describe('setupLeetcodeEditorReset', () => {
   let dispose: (() => void) | undefined;
   const onResetConfirmed = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    fakeBrowser.reset();
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-20T12:00:00Z'));
     history.replaceState({}, '', '/problems/two-sum/');
+    createServiceMock(background).resolve('getProblem', buildCatalogProblem());
+    await replaceLearningDocument(
+      buildLearningDocument({
+        cards: { '1': createMockCard(State.Review) },
+        settings: { resetEditorOnReviewQueue: true },
+      })
+    );
   });
 
   afterEach(() => {
@@ -49,7 +61,8 @@ describe('setupLeetcodeEditorReset', () => {
     vi.restoreAllMocks();
   });
 
-  it('preserves code while browsing and consumes authorization without replay on refresh or history restoration', async () => {
+  it('resets a due problem opened directly once without changing the URL', async () => {
+    history.replaceState({}, '', '/problems/two-sum/?envType=study-plan#description');
     const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
     const dialog = createDialog();
@@ -57,32 +70,75 @@ describe('setupLeetcodeEditorReset', () => {
 
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(100);
-    expect(resetClick).not.toHaveBeenCalled();
-    expect(vi.getTimerCount()).toBe(0);
-    dispose();
-
-    authorizeOpening();
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-
-    expect(location.hash).toBe('');
     expect(resetClick).toHaveBeenCalledTimes(1);
     expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
     expect(onResetConfirmed).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(location.search).toBe('?envType=study-plan');
+    expect(location.hash).toBe('#description');
 
-    dispose();
     dialog.dialog.remove();
-    history.pushState({}, '', '/problemset/');
-    history.back();
-    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(resetClick).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each([
+    ['disabled', buildLearningDocument({ cards: { '1': createMockCard(State.Review) } })],
+    ['unsaved', buildLearningDocument({ settings: { resetEditorOnReviewQueue: true } })],
+    [
+      'paused',
+      buildLearningDocument({
+        cards: { '1': createMockCard(State.Review, { paused: true }) },
+        settings: { resetEditorOnReviewQueue: true },
+      }),
+    ],
+    [
+      'not due',
+      buildLearningDocument({
+        cards: {
+          '1': {
+            ...createMockCard(State.Review),
+            fsrs: { ...createMockCard(State.Review).fsrs, due: Date.parse('2026-09-21T12:00:00Z') },
+          },
+        },
+        settings: { resetEditorOnReviewQueue: true },
+      }),
+    ],
+  ] as const)('preserves code when %s', async (_reason, document) => {
+    await replaceLearningDocument(document);
+    const resetClick = vi.spyOn(renderResetButton(), 'click');
+    dispose = setupLeetcodeEditorReset(onResetConfirmed);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(resetClick).not.toHaveBeenCalled();
+    expect(onResetConfirmed).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('does not reset later while working if the problem was not due on arrival', async () => {
+    const card = createMockCard(State.Review);
+    await replaceLearningDocument(
+      buildLearningDocument({
+        cards: { '1': { ...card, fsrs: { ...card.fsrs, due: Date.now() + 1000 } } },
+        settings: { resetEditorOnReviewQueue: true },
+      })
+    );
+    const resetClick = vi.spyOn(renderResetButton(), 'click');
+    dispose = setupLeetcodeEditorReset(onResetConfirmed);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(resetClick).not.toHaveBeenCalled();
+  });
+
+  it('ignores a due-state result received after leaving the problem', async () => {
+    const pending = Promise.withResolvers<ReturnType<typeof buildCatalogProblem>>();
+    vi.mocked(background.getProblem).mockReturnValue(pending.promise);
+    const resetClick = vi.spyOn(renderResetButton(), 'click');
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(100);
-
-    expect(location.hash).toBe('');
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+    history.pushState({}, '', '/problems/add-two-numbers/');
+    pending.resolve(buildCatalogProblem());
+    await vi.advanceTimersByTimeAsync(100);
+    expect(resetClick).not.toHaveBeenCalled();
+    expect(onResetConfirmed).not.toHaveBeenCalled();
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -91,7 +147,6 @@ describe('setupLeetcodeEditorReset', () => {
     '<button><svg data-icon="arrow-rotate-left"></svg></button>',
     '<div role="button"><span><svg class="fa-arrow-rotate-left"></svg></span></div>',
   ])('waits for a supported reset control and confirms it once: %s', async (markup) => {
-    authorizeOpening();
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(500);
 
@@ -111,8 +166,26 @@ describe('setupLeetcodeEditorReset', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('continues resetting when LeetCode normalizes the URL for the same problem', async () => {
+    history.replaceState({}, '', '/problems/two-sum/description/');
+    dispose = setupLeetcodeEditorReset(onResetConfirmed);
+    await vi.advanceTimersByTimeAsync(100);
+
+    history.replaceState({}, '', '/problems/two-sum/');
+    const resetButton = renderResetButton();
+    const resetClick = vi.spyOn(resetButton, 'click');
+    const dialog = createDialog();
+    attachDialog(resetButton, dialog.dialog);
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(resetClick).toHaveBeenCalledTimes(1);
+    expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
+    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
+    expect(location.hash).toBe('');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('stops polling when the reset control never appears', async () => {
-    authorizeOpening();
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
 
     await vi.advanceTimersByTimeAsync(10_000);
@@ -130,7 +203,6 @@ describe('setupLeetcodeEditorReset', () => {
     document.body.appendChild(existing.dialog);
     const opened = createDialog(['Unknown', '  CoNfIrM  ']);
     attachDialog(resetButton, opened.dialog);
-    authorizeOpening();
 
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(100);
@@ -142,7 +214,6 @@ describe('setupLeetcodeEditorReset', () => {
   });
 
   it.each(['navigation', 'dispose'])('invalidates delayed work on %s', async (change) => {
-    authorizeOpening();
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(100);
 
@@ -160,7 +231,6 @@ describe('setupLeetcodeEditorReset', () => {
     const resetButton = renderResetButton();
     const dialog = createDialog();
     attachDialog(resetButton, dialog.dialog, 200);
-    authorizeOpening();
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
     await vi.advanceTimersByTimeAsync(100);
 
@@ -173,12 +243,10 @@ describe('setupLeetcodeEditorReset', () => {
   });
 
   it('times out without retrying reset or clicking a later or unrecognized dialog', async () => {
-    vi.setSystemTime(0);
     const resetButton = renderResetButton();
     const resetClick = vi.spyOn(resetButton, 'click');
     const dialog = createDialog(['Abbrechen', 'Bestätigen']);
     attachDialog(resetButton, dialog.dialog);
-    authorizeOpening();
     dispose = setupLeetcodeEditorReset(onResetConfirmed);
 
     await vi.advanceTimersByTimeAsync(2000);

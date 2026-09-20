@@ -1,4 +1,3 @@
-import { EDITOR_RESET_AUTHORIZATION_HASH } from '@/shared/leetcode-links';
 import type { LeetcodeDomain } from '@/shared/models';
 
 export function getCurrentDomain(): LeetcodeDomain {
@@ -7,8 +6,4 @@ export function getCurrentDomain(): LeetcodeDomain {
 
 export function getCurrentProblemSlug(): string | null {
   return window.location.pathname.match(/\/problems\/([^/]+)/)?.[1] || null;
-}
-
-export function isEditorResetAuthorized(): boolean {
-  return window.location.hash === EDITOR_RESET_AUTHORIZATION_HASH;
 }

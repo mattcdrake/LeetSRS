@@ -49,7 +49,7 @@ function boundedWholeNumber(label: string, bounds: { min: number; max: number })
 export const settingsSchema = z.object({
   maxNewCardsPerDay: boundedWholeNumber('Max new cards per day', SETTINGS_CONSTRAINTS.maxNewCardsPerDay),
   theme: z.enum(['system', 'light', 'dark'], { error: 'Theme must be "system", "light", or "dark"' }),
-  resetEditorOnReviewQueue: z.boolean({ error: 'Reset editor on review queue must be a boolean' }),
+  resetEditorOnReviewQueue: z.boolean({ error: 'Reset editor when due must be a boolean' }),
   openRatingAfterSolving: z.boolean(),
   language: languageSchema,
   preferredLeetcodeSite: leetcodeDomainSchema,

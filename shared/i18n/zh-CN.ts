@@ -213,7 +213,7 @@ const zhCN: Translations = {
     },
 
     editorReset: {
-      resetEditorOnReviewQueue: '复习时重置代码',
+      resetEditorOnReviewQueue: '到期时重置代码',
     },
     preferredLeetcodeSite: '首选 LeetCode 站点',
     leetcodeCn: {

@@ -229,7 +229,7 @@ const en = {
     },
 
     editorReset: {
-      resetEditorOnReviewQueue: 'Reset code on review',
+      resetEditorOnReviewQueue: 'Reset code when due',
     },
     preferredLeetcodeSite: 'Preferred LeetCode site',
     leetcodeCn: {

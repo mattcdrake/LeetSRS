@@ -30,8 +30,8 @@ describe('ReviewCard', () => {
     vi.mocked(useI18n).mockReturnValue(translations.en);
   });
 
-  describe('review-queue reset authorization', () => {
-    it('renders the problem identity and an unauthorized external link when reset is disabled', () => {
+  describe('problem links', () => {
+    it('renders the problem identity and a normal external link when reset is disabled', () => {
       renderWithProviders();
       expect(screen.getByText('#1')).toBeInTheDocument();
       expect(screen.getByText('Two Sum')).toBeInTheDocument();
@@ -41,12 +41,12 @@ describe('ReviewCard', () => {
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
 
-    it.each(['leetcode.com', 'leetcode.cn'] as const)('authorizes a queue opening on %s', (domain) => {
+    it.each(['leetcode.com', 'leetcode.cn'] as const)('keeps a normal link on %s when reset is enabled', (domain) => {
       renderWithProviders({ ...mockCard, domain }, mockOnRate, true);
       expect(screen.getByText(domain === 'leetcode.cn' ? '两数之和' : 'Two Sum')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /LeetCode/i })).toHaveAttribute(
         'href',
-        `https://${domain}/problems/two-sum/description/#leetsrs-reset-editor`
+        `https://${domain}/problems/two-sum/description/`
       );
     });
   });
