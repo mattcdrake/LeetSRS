@@ -8,3 +8,8 @@ export function formatLocalDate(date: Date): string {
 export function addLocalDays(date: Date, days: number): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
+
+/** Includes overdue cards and cards scheduled later today. */
+export function isDue(due: number, now: Date): boolean {
+  return due < addLocalDays(now, 1).getTime();
+}

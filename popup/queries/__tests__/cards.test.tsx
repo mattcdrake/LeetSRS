@@ -40,7 +40,7 @@ it('keeps popup and badge queues consistent without reading browser language', a
       frontendId: slug,
       paused: slug === 'paused',
     });
-    card.fsrs.due = slug === 'future' ? Date.now() + 1000 : Date.now();
+    card.fsrs.due = new Date(slug === 'future' ? '2024-03-16T00:00:00' : '2024-03-15T23:59:59.999').getTime();
     return card;
   });
   const document = buildLearningDocument({
@@ -51,7 +51,7 @@ it('keeps popup and badge queues consistent without reading browser language', a
   const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
   try {
     await waitFor(() => expect(view.result.current.data?.map((card) => card.frontendId)).toEqual(['new-a', 'review']));
-    expect(await getBadgeState()).toEqual({ count: 2, nextDueAt: Date.now() + 1000 });
+    expect(await getBadgeState()).toEqual({ count: 2, nextRefreshAt: new Date('2024-03-16T00:00:00').getTime() });
     expect(languages).not.toHaveBeenCalled();
   } finally {
     view.unmount();
@@ -105,11 +105,11 @@ describe('card queries through the background service', () => {
     expect(view.result.current.settings.data.language).toBe('zh-CN');
   });
 
-  it('refreshes an empty queue when a card becomes due', async () => {
+  it('refreshes an empty queue at midnight when a card becomes due', async () => {
     vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-    vi.setSystemTime(new Date('2024-03-15T10:00:00'));
+    vi.setSystemTime(new Date('2024-03-15T23:59:50'));
     const card = createMockCard(State.Learning);
-    card.fsrs.due = Date.now() + 10_000;
+    card.fsrs.due = new Date('2024-03-16T20:00:00').getTime();
     await background.importData(JSON.stringify(buildLearningDocument({ cards: { [card.frontendId]: card } })));
     const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
 

@@ -1,17 +1,15 @@
 import { browser } from 'wxt/browser';
+import { addLocalDays } from '@/shared/calendar';
 import { buildReviewQueue } from '@/shared/review';
 import { readLearningDocument } from '@/shared/storage';
 
-export async function getBadgeState(): Promise<{ count: number; nextDueAt?: number }> {
+export async function getBadgeState(): Promise<{ count: number; nextRefreshAt?: number }> {
   const now = new Date();
   const document = await readLearningDocument();
-  const nextDueAt = Object.values(document.cards).reduce(
-    (next, card) => (!card.paused && card.fsrs.due > now.getTime() ? Math.min(next, card.fsrs.due) : next),
-    Infinity
-  );
+  const hasActiveCards = Object.values(document.cards).some((card) => !card.paused);
   return {
     count: buildReviewQueue(document, now).length,
-    nextDueAt: Number.isFinite(nextDueAt) ? nextDueAt : undefined,
+    nextRefreshAt: hasActiveCards ? addLocalDays(now, 1).getTime() : undefined,
   };
 }
 
@@ -19,10 +17,11 @@ export const BADGE_ALARM_NAME = 'badge-refresh';
 
 export async function refreshBadge() {
   try {
-    const { count, nextDueAt } = await getBadgeState();
+    const { count, nextRefreshAt } = await getBadgeState();
     const alarm = await browser.alarms.get(BADGE_ALARM_NAME);
-    if (nextDueAt === undefined) await browser.alarms.clear(BADGE_ALARM_NAME);
-    else if (alarm?.scheduledTime !== nextDueAt) await browser.alarms.create(BADGE_ALARM_NAME, { when: nextDueAt });
+    if (nextRefreshAt === undefined) await browser.alarms.clear(BADGE_ALARM_NAME);
+    else if (alarm?.scheduledTime !== nextRefreshAt)
+      await browser.alarms.create(BADGE_ALARM_NAME, { when: nextRefreshAt });
     await browser.action.setBadgeText({ text: count ? String(count) : '' });
     if (count) await browser.action.setBadgeBackgroundColor({ color: '#EF4444' });
   } catch (error) {

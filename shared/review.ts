@@ -1,5 +1,5 @@
 import { State as FsrsState } from 'ts-fsrs';
-import { addLocalDays, formatLocalDate } from '@/shared/calendar';
+import { addLocalDays, formatLocalDate, isDue } from '@/shared/calendar';
 import type { Card, LearningDocument } from '@/shared/models';
 import { DEFAULT_SETTINGS } from '@/shared/settings';
 
@@ -17,7 +17,7 @@ function getActiveCardsByDueDate(document: LearningDocument): Card[] {
 }
 
 export function buildReviewQueue(document: LearningDocument, now: Date): Card[] {
-  const eligibleCards = getActiveCardsByDueDate(document).filter((card) => card.fsrs.due <= now.getTime());
+  const eligibleCards = getActiveCardsByDueDate(document).filter((card) => isDue(card.fsrs.due, now));
   let remainingNewCards = getNewCardAllowance(document, now);
   const queue: Card[] = [];
   for (const card of eligibleCards) {
@@ -45,7 +45,7 @@ export function buildReviewCalendar(document: LearningDocument, now: Date): Reco
   let allowance = getNewCardAllowance(document, now);
 
   for (const card of getActiveCardsByDueDate(document)) {
-    let day = addLocalDays(new Date(Math.max(today.getTime(), card.fsrs.due)), 0);
+    let day = isDue(card.fsrs.due, now) ? today : addLocalDays(new Date(card.fsrs.due), 0);
     if (card.fsrs.state === FsrsState.New) {
       if (maxNewCardsPerDay === 0) continue;
       if (day > newCardDay) {
