@@ -4,7 +4,11 @@
 
 LeetSRS is a Chrome extension that helps you remember what you learn on LeetCode through spaced repetition. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
 
-**[Add LeetSRS to Chrome](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko)** · [Website](https://leetsrs.com/) · [Privacy](https://github.com/mattcdrake/LeetSRS/blob/main/PRIVACY.md) · [Changelog](https://github.com/mattcdrake/LeetSRS/blob/main/CHANGELOG.md)
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko">
+    <img src="assets/promo/add-to-chrome.png" width="292" height="52" alt="Add LeetSRS to Chrome" />
+  </a>
+</p>
 
 https://github.com/user-attachments/assets/2e3da2f3-f452-4cef-8275-e131c7f43f9d
 
