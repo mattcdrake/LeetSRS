@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/mattcdrake/LeetSRS/compare/v1.1.3...v1.2.0) (2026-09-22)
+
+
+### Features
+
+* save and rate problems from roadmaps ([#690](https://github.com/mattcdrake/LeetSRS/issues/690)) ([b678894](https://github.com/mattcdrake/LeetSRS/commit/b6788948767409ccaef04625492bd41d23c0034e))
+* show next problems in the LeetCode SRS menu ([#691](https://github.com/mattcdrake/LeetSRS/issues/691)) ([a9a32c4](https://github.com/mattcdrake/LeetSRS/commit/a9a32c4d61cf8594590cd5d6733d116404f42c78))
+
 ## [1.1.3](https://github.com/mattcdrake/LeetSRS/compare/v1.1.2...v1.1.3) (2026-09-20)
 
 
