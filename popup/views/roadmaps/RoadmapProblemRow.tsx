@@ -1,7 +1,6 @@
-import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
-import { FaForwardStep, FaLock, FaPlus, FaRotateLeft } from 'react-icons/fa6';
+import { FaForwardStep, FaLock, FaRotateLeft } from 'react-icons/fa6';
+import { type SavedProblem, SaveProblemButton } from '@/popup/components/problem-save/SaveProblemButton';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { rowActionSpacing } from '@/popup/styles';
 import type { CatalogProblem } from '@/shared/catalog';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { Card, LeetcodeDomain } from '@/shared/models';
@@ -20,49 +19,39 @@ interface RoadmapProblemRowProps {
   problem: RoadmapProblem;
   domain: LeetcodeDomain;
   isSaving: boolean;
-  isAdding: boolean;
-  onAdd: () => void;
+  onSaved: (saved: SavedProblem) => void;
   onToggleSkip: () => void;
 }
 
-export function RoadmapProblemRow({
-  problem,
-  domain,
-  isSaving,
-  isAdding,
-  onAdd,
-  onToggleSkip,
-}: RoadmapProblemRowProps) {
+export function RoadmapProblemRow({ problem, domain, isSaving, onSaved, onToggleSkip }: RoadmapProblemRowProps) {
   const t = useI18n();
   const { frontendId, metadata, card, skipped } = problem;
   const title = metadata ? getProblemTitle(metadata, domain) : t.roadmaps.problem(frontendId);
   const available = metadata?.sources.includes(domain);
   let state: 'notInSrs' | 'inSrs' | 'reviewed' = 'notInSrs';
-  if (card) {
-    state = card.fsrs.reps > 0 ? 'reviewed' : 'inSrs';
-  }
+  if (card) state = card.fsrs.reps > 0 ? 'reviewed' : 'inSrs';
 
   return (
     <li className="roadmap-problem">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-1">
-          {metadata && available ? (
-            <a
-              className="text-sm hover:text-accent break-words"
-              href={getLeetcodeProblemUrl({ domain, slug: metadata.slug })}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {frontendId}. {title}
-            </a>
-          ) : (
-            <span className="text-sm break-words">{metadata ? `${frontendId}. ${title}` : title}</span>
-          )}
-          {metadata?.isPaidOnly && (
-            <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
-          )}
-        </div>
-        <div className="flex flex-wrap gap-x-1 text-xs text-secondary mt-1">
+      <div className="flex items-start gap-1 min-w-0">
+        {metadata && available ? (
+          <a
+            className="text-sm hover:text-accent break-words min-w-0"
+            href={getLeetcodeProblemUrl({ domain, slug: metadata.slug })}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {frontendId}. {title}
+          </a>
+        ) : (
+          <span className="text-sm break-words">{metadata ? `${frontendId}. ${title}` : title}</span>
+        )}
+        {metadata?.isPaidOnly && (
+          <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-x-1 text-xs text-secondary">
           {metadata && (
             <>
               <span className="capitalize" style={{ color: DIFFICULTY_COLORS[metadata.difficulty] }}>
@@ -79,43 +68,34 @@ export function RoadmapProblemRow({
             </>
           )}
         </div>
-        {!available && <p className="text-xs text-secondary mt-1">{t.roadmaps.unavailable(domain)}</p>}
-      </div>
-      <div className={`flex shrink-0 items-center ${rowActionSpacing}`}>
-        <YouTubeLink url={metadata?.youtubeUrl} label={t.youtubeSolution} />
-        {!card && available && (
-          <TooltipTrigger delay={350} closeDelay={0}>
-            <Button
-              className="roadmap-text-button inline-flex size-8 items-center justify-center"
-              isDisabled={isAdding}
-              aria-label={t.roadmaps.addProblem(title)}
-              onPress={onAdd}
-            >
-              <FaPlus aria-hidden="true" className="size-4" />
-            </Button>
-            <Tooltip
-              placement="top"
-              className="z-[1100] rounded-lg border border-current bg-primary px-2 py-1 text-xs text-primary shadow-lg"
-            >
-              {t.roadmaps.add}
-            </Tooltip>
-          </TooltipTrigger>
-        )}
-        <button
-          type="button"
-          className="roadmap-text-button inline-flex size-8 items-center justify-center"
-          disabled={isSaving}
-          aria-label={skipped ? t.roadmaps.restoreProblem(title) : t.roadmaps.skipProblem(title)}
-          title={skipped ? t.roadmaps.restore : t.roadmaps.skip}
-          onClick={onToggleSkip}
-        >
-          {skipped ? (
-            <FaRotateLeft aria-hidden="true" className="size-4" />
-          ) : (
-            <FaForwardStep aria-hidden="true" className="size-4" />
+        <div className="flex shrink-0 items-center gap-0.5 [&>a]:w-6">
+          <YouTubeLink url={metadata?.youtubeUrl} label={t.youtubeSolution} />
+          {available && (
+            <SaveProblemButton
+              frontendId={frontendId}
+              domain={card?.domain ?? domain}
+              title={title}
+              isSaved={!!card}
+              onSaved={onSaved}
+            />
           )}
-        </button>
+          <button
+            type="button"
+            className="roadmap-text-button inline-flex w-6 h-8 items-center justify-center"
+            disabled={isSaving}
+            aria-label={skipped ? t.roadmaps.restoreProblem(title) : t.roadmaps.skipProblem(title)}
+            title={skipped ? t.roadmaps.restore : t.roadmaps.skip}
+            onClick={onToggleSkip}
+          >
+            {skipped ? (
+              <FaRotateLeft aria-hidden="true" className="size-4" />
+            ) : (
+              <FaForwardStep aria-hidden="true" className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
+      {!available && <p className="text-xs text-secondary">{t.roadmaps.unavailable(domain)}</p>}
     </li>
   );
 }

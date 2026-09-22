@@ -155,7 +155,7 @@
 
 .roadmap-problem {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 0 10px 20px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 8px 20px;
 }

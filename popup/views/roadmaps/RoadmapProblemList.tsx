@@ -1,6 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { useAddCardMutation } from '@/popup/queries/cards';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import {
   roadmapMetadataQueryOptions,
@@ -57,7 +57,7 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const skips = useQuery(roadmapSkipsQueryOptions);
   const skip = useSkipRoadmapProblemMutation();
-  const add = useAddCardMutation();
+  const { message, onSaved } = useProblemSaveFeedback();
 
   if (metadata.isPending || skips.isPending) {
     return (
@@ -104,11 +104,9 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
 
   return (
     <>
-      {add.isError && (
-        <p role="alert" className="text-danger">
-          {t.roadmaps.addFailed}
-        </p>
-      )}
+      <p role="status" className="text-xs text-accent empty:hidden">
+        {message}
+      </p>
       {skip.isError && (
         <p role="alert" className="text-danger">
           {t.roadmaps.skipFailed}
@@ -131,8 +129,7 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
                 problem={problem}
                 domain={domain}
                 isSaving={skip.isPending}
-                isAdding={add.isPending}
-                onAdd={() => add.mutate({ frontendId: problem.frontendId, domain })}
+                onSaved={onSaved}
                 onToggleSkip={() =>
                   skip.mutate({ roadmapId: roadmap.id, frontendId: problem.frontendId, skipped: !problem.skipped })
                 }
