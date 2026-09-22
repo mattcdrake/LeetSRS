@@ -5,6 +5,7 @@ import { getCurrentProblem } from '@/content/current-problem';
 import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
 import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
+import { RatingOptions } from '@/shared/ui/RatingOptions';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { NextProblems } from './NextProblems';
 import { THEME_COLORS, useDarkMode } from './theme';
@@ -77,7 +78,6 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
       ref={container}
       tabIndex={-1}
       className="rating-panel"
-      data-saved={showSaved || undefined}
       data-theme={dark ? 'dark' : 'light'}
       aria-busy={busy}
       style={
@@ -117,39 +117,15 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
               Leet<span style={{ color: colors.ratings[4] }}>SRS</span>
             </span>
           </div>
-          <div className="rating-options">
-            {[...ratingSchema.values].map((rating) => (
-              <Button
-                key={rating}
-                aria-label={t.ratings[rating]}
-                aria-describedby={`rating-description-${rating}`}
-                className="rating-row"
-                data-selected={selected === rating || undefined}
-                isDisabled={busy || !preview || selected !== undefined}
-                onPress={() => save(rating)}
-                style={{ '--rating-color': colors.ratings[rating] } as CSSProperties}
-              >
-                <span className="rating-stripe" aria-hidden="true" />
-                <span className="rating-label">
-                  {t.ratings[rating]}
-                  <small id={`rating-description-${rating}`}>{t.contentScript.descriptions[rating]}</small>
-                </span>
-                <span className="rating-interval">{preview ? t.contentScript.days(preview[rating]) : '…'}</span>
-                <kbd>{rating}</kbd>
-              </Button>
-            ))}
-          </div>
-          <Button
-            className="rating-without"
-            data-selected={selected === 5 || undefined}
-            aria-label={t.contentScript.saveWithoutRating}
-            isDisabled={busy || !preview || selected !== undefined}
-            onPress={() => save()}
-          >
-            <span aria-hidden="true">+</span>
-            <span>{t.contentScript.saveWithoutRating}</span>
-            <kbd>5</kbd>
-          </Button>
+          <RatingOptions
+            t={t}
+            colors={colors.ratings}
+            preview={preview}
+            disabled={busy || !preview || selected !== undefined}
+            onSave={save}
+            selected={selected}
+            shortcuts
+          />
           {hint && (
             <div className="rating-hint">
               <p>{t.contentScript.autoOpenHint}</p>

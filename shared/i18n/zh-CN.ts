@@ -63,9 +63,6 @@ const zhCN: Translations = {
     deactivate: '停用',
     active: '当前',
     use: '使用',
-    add: '加入 SRS',
-    addProblem: (title: string) => `将 ${title} 加入 SRS`,
-    addFailed: '无法将题目加入 SRS，请重试。',
     searchLabel: '搜索学习路线题目',
     filters: { notInSrs: '未加入 SRS', inSrs: '已加入 SRS', reviewed: '已复习', skipped: '已跳过' },
     noMatches: '没有匹配的题目。',
@@ -86,6 +83,12 @@ const zhCN: Translations = {
     loadFailed: '无法加载学习路线。',
     saveFailed: '无法保存当前学习路线，请重试。',
     retry: '重试',
+  },
+
+  problemSave: {
+    saveProblem: (title: string) => `保存 ${title}`,
+    close: '关闭保存菜单',
+    previewFailed: '无法加载复习间隔。',
   },
 
   actions: {

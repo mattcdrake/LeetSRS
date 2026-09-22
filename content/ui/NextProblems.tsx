@@ -7,95 +7,83 @@ import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { ProblemReference } from '@/shared/models';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 
-// Proxy service property access creates a new function, so keep effect loaders stable.
-const loadNextReview = (problem: ProblemReference) => background.getNextReview(problem);
-const loadNextRoadmap = (problem: ProblemReference) => background.getNextRoadmapProblem(problem);
+type Props = { t: Translations; problem: ProblemReference; saved: boolean };
+type Recommendation = { name?: string; problem: NextProblem | null };
 
-type LoadState<T> = { data: T; error?: never } | { data?: never; error: true } | undefined;
+export function NextProblems(props: Props) {
+  return (
+    <div className="border-t border-(--panel-border) px-[5px] py-1">
+      <NextProblemRow {...props} kind="review" />
+      <NextProblemRow {...props} kind="roadmap" />
+    </div>
+  );
+}
 
-function useRecommendation<T>(
-  load: (problem: ProblemReference) => Promise<T>,
-  { frontendId, domain }: ProblemReference,
-  saved: boolean
-) {
-  const [state, setState] = useState<LoadState<T>>();
+function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Props & { kind: 'review' | 'roadmap' }) {
+  const [data, setData] = useState<Recommendation | null>();
+  const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: Saving and retrying refresh the recommendation.
   useEffect(() => {
     let active = true;
-    setState(undefined);
-    void load({ frontendId, domain }).then(
+    setData(undefined);
+    setError(false);
+    const current = { frontendId, domain };
+    const request =
+      kind === 'review'
+        ? background.getNextReview(current).then((problem) => ({ problem }))
+        : background.getNextRoadmapProblem(current);
+    void request.then(
       (data) => {
-        if (active) setState({ data });
+        if (active) setData(data);
       },
       () => {
-        if (active) setState({ error: true });
+        if (active) setError(true);
       }
     );
     return () => {
       active = false;
     };
-  }, [load, frontendId, domain, saved, attempt]);
-  return { state, retry: () => setAttempt((value) => value + 1) };
-}
+  }, [kind, frontendId, domain, saved, attempt]);
 
-export function NextProblems({ t, problem, saved }: { t: Translations; problem: ProblemReference; saved: boolean }) {
-  const review = useRecommendation(loadNextReview, problem, saved);
-  const roadmap = useRecommendation(loadNextRoadmap, problem, saved);
+  if (data === null) return null;
+  const text = t.contentScript;
+  if (!data?.problem) {
+    let message = kind === 'review' ? text.loadingNextReview : text.loadingNextRoadmap;
+    if (error) message = kind === 'review' ? text.nextReviewFailed : text.nextRoadmapFailed;
+    else if (data) message = data.name ? text.noNextRoadmapProblem(data.name) : text.noOtherReviews;
+    return (
+      <div className="rating-next-status" role={error ? 'alert' : undefined}>
+        {message}
+        {error && (
+          <Button
+            className="ml-[5px] border-0 bg-transparent p-0 text-inherit underline [font:inherit]"
+            onPress={() => setAttempt((value) => value + 1)}
+          >
+            {text.retry}
+          </Button>
+        )}
+      </div>
+    );
+  }
+  const problem = data.problem;
   return (
-    <div className="rating-next">
-      {!review.state || review.state.error ? (
-        <RecommendationStatus
-          message={review.state?.error ? t.contentScript.nextReviewFailed : t.contentScript.loadingNextReview}
-          retry={review.state?.error ? review.retry : undefined}
-          t={t}
-        />
-      ) : review.state.data ? (
-        <ProblemLink label={t.contentScript.nextReview} problem={review.state.data} t={t} />
-      ) : (
-        <div className="rating-next-status">{t.contentScript.noOtherReviews}</div>
-      )}
-      {!roadmap.state || roadmap.state.error ? (
-        <RecommendationStatus
-          message={roadmap.state?.error ? t.contentScript.nextRoadmapFailed : t.contentScript.loadingNextRoadmap}
-          retry={roadmap.state?.error ? roadmap.retry : undefined}
-          t={t}
-        />
-      ) : roadmap.state.data ? (
-        roadmap.state.data.problem ? (
-          <ProblemLink
-            label={t.contentScript.nextInRoadmap(roadmap.state.data.name)}
-            problem={roadmap.state.data.problem}
-            t={t}
-          />
-        ) : (
-          <div className="rating-next-status">{t.contentScript.noNextRoadmapProblem(roadmap.state.data.name)}</div>
-        )
-      ) : null}
-    </div>
-  );
-}
-
-function RecommendationStatus({ message, retry, t }: { message: string; retry?: () => void; t: Translations }) {
-  return (
-    <div className="rating-next-status" role={retry ? 'alert' : undefined}>
-      {message}
-      {retry && <Button onPress={retry}>{t.contentScript.retry}</Button>}
-    </div>
-  );
-}
-
-function ProblemLink({ label, problem, t }: { label: string; problem: NextProblem; t: Translations }) {
-  return (
-    <a className="rating-next-link" href={getLeetcodeProblemUrl(problem)}>
-      <span className="rating-next-copy">
-        <span className="rating-next-label">{label}</span>
-        <span className="rating-next-title">
+    <a
+      className="rating-next-link flex items-center gap-2.5 rounded-md px-[7px] py-[9px] text-(--panel-text) no-underline"
+      href={getLeetcodeProblemUrl(problem)}
+    >
+      <span className="min-w-0 flex-1 wrap-anywhere">
+        <span className="mb-1 block text-[11px] text-(--panel-muted)">
+          {data.name ? text.nextInRoadmap(data.name) : text.nextReview}
+        </span>
+        <span className="font-medium">
           {problem.frontendId}. {getProblemTitle(problem, problem.domain)}
         </span>
       </span>
-      {problem.isPaidOnly && <FaLock className="rating-next-icon" role="img" aria-label={t.roadmaps.paidOnly} />}
-      <FaArrowRight className="rating-next-icon" aria-hidden="true" />
+      {problem.isPaidOnly && (
+        <FaLock className="shrink-0 text-[12px] text-(--panel-muted)" role="img" aria-label={t.roadmaps.paidOnly} />
+      )}
+      <FaArrowRight className="shrink-0 text-[12px] text-(--panel-muted)" aria-hidden="true" />
     </a>
   );
 }

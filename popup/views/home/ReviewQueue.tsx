@@ -25,7 +25,7 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   const [processingCardId, setProcessingCardId] = useState<string | null>(null);
   const isProcessing = processingCardId !== null;
 
-  const handleCardAction = async (action: () => Promise<void>, errorMessage: string) => {
+  const handleCardAction = async (action: () => Promise<unknown>, errorMessage: string) => {
     if (queue.length === 0 || isProcessing) return;
 
     setProcessingCardId(queue[0].frontendId);

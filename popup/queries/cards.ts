@@ -65,9 +65,9 @@ export function useReviewQueueQuery() {
   };
 }
 
-function useCardMutation<TVariables>(mutationFn: (variables: TVariables) => Promise<void>) {
+function useCardMutation<TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>) {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, TVariables>({
+  return useMutation<TResult, Error, TVariables>({
     mutationFn,
     onSettled: () => queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey }),
   });
@@ -82,9 +82,7 @@ export function useAddCardMutation() {
 }
 
 export function useRateCardMutation() {
-  return useCardMutation(async (input: RateCardInput) => {
-    await background.rateCard(input);
-  });
+  return useCardMutation((input: RateCardInput) => background.rateCard(input));
 }
 
 export function useDelayCardMutation() {

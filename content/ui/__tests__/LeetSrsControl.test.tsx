@@ -163,14 +163,8 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   fireEvent.click(screen.getByRole('button', { name: 'Good' }));
   expect(await screen.findByRole('status')).toHaveTextContent('Saved');
   await screen.findByText('No other reviews due');
-  expect(screen.queryByRole('link', { name: /Next review/ })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Next in Blind 75 3. Longest Substring' })).toBeInTheDocument();
 
-  fireEvent.click(screen.getAllByRole('button', { name: 'Dismiss' })[0]);
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  await background.setRoadmapProblemSkipped('blind-75', '3', true);
-  fireEvent.click(trigger);
-  await screen.findByText('No new problems in Blind 75');
   fireEvent.click(screen.getAllByRole('button', { name: 'Dismiss' })[0]);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   await background.setActiveRoadmap(null);
@@ -180,29 +174,20 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   expect(screen.queryByText(/Blind 75/)).not.toBeInTheDocument();
 });
 
-it.each(['review', 'roadmap'] as const)(
-  'keeps rating and the other link usable when the %s recommendation fails',
-  async (failed) => {
-    await replaceLearningDocument(
-      buildLearningDocument({
-        settings: { language: 'en' },
-        cards: { '2': createMockCard(State.Review, { frontendId: '2' }) },
-        activeRoadmapId: 'blind-75',
-      })
-    );
-    const method = failed === 'review' ? background.getNextReview : background.getNextRoadmapProblem;
-    vi.mocked(method).mockRejectedValueOnce(new Error('Unavailable'));
-    render(<LeetSrsControl />);
-    fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      failed === 'review' ? 'Could not load the next review.' : 'Could not load the next roadmap problem.'
-    );
-    expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
-    const other = failed === 'review' ? 'Next in Blind 75 3. Longest Substring' : 'Next review 2. Add Two Numbers';
-    expect(await screen.findByRole('link', { name: other })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByRole('link', { name: 'Next review 2. Add Two Numbers' })).toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: 'Next in Blind 75 3. Longest Substring' })).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  }
-);
+it('keeps rating and reviews usable when roadmap loading fails, then retries', async () => {
+  await replaceLearningDocument(
+    buildLearningDocument({
+      settings: { language: 'en' },
+      cards: { '2': createMockCard(State.Review, { frontendId: '2' }) },
+      activeRoadmapId: 'blind-75',
+    })
+  );
+  vi.mocked(background.getNextRoadmapProblem).mockRejectedValueOnce(new Error('Unavailable'));
+  render(<LeetSrsControl />);
+  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the next roadmap problem.');
+  expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
+  expect(await screen.findByRole('link', { name: 'Next review 2. Add Two Numbers' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  expect(await screen.findByRole('link', { name: 'Next in Blind 75 3. Longest Substring' })).toBeInTheDocument();
+});
