@@ -1,4 +1,5 @@
 @import "tailwindcss" source(".");
+@import "../../shared/ui/rating.css";
 @source "../../shared/ui";
 
 @font-face {
@@ -41,111 +42,6 @@
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
 }
-.rating-panel {
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-  width: 300px;
-  max-width: calc(100vw - 32px);
-  border: 1px solid var(--panel-border);
-  border-radius: 9px;
-  background: var(--panel-bg);
-  color: var(--panel-text);
-  overflow: hidden;
-  font-size: 13px;
-  line-height: 1.3;
-}
-.rating-panel button {
-  cursor: pointer;
-}
-.rating-panel[data-saved] {
-  width: fit-content;
-}
-.rating-panel button[data-disabled] {
-  cursor: default;
-  opacity: 0.55;
-}
-.rating-panel button[data-focus-visible] {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
-.rating-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-}
-
-.rating-options {
-  display: grid;
-  gap: 3px;
-  padding: 0 5px 7px;
-}
-.rating-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  text-align: left;
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 6px;
-  color: var(--panel-text);
-  background: color-mix(in srgb, var(--rating-color) 8%, var(--panel-bg));
-  min-height: 33px;
-}
-.rating-row[data-hovered] {
-  background: color-mix(in srgb, var(--rating-color) 18%, var(--panel-bg));
-}
-.rating-stripe {
-  align-self: stretch;
-  width: 3px;
-  border-radius: 4px;
-  background: var(--rating-color);
-}
-.rating-label {
-  flex: 1;
-}
-.rating-label small {
-  display: block;
-  font-size: 10px;
-  color: var(--panel-muted);
-}
-.rating-interval {
-  color: var(--panel-muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.rating-panel kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 21px;
-  height: 21px;
-  border: 1px solid var(--panel-border);
-  border-radius: 4px;
-  color: var(--panel-muted);
-  font:
-    12px "JetBrains Mono",
-    monospace;
-  background: color-mix(in srgb, var(--panel-muted) 5%, var(--panel-bg));
-}
-.rating-without {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 12px;
-  border: 0;
-  border-top: 1px solid var(--panel-border);
-  width: 100%;
-  background: transparent;
-  color: var(--panel-muted);
-  font-size: 12px;
-}
-.rating-without span:nth-child(2) {
-  flex: 1;
-  text-align: left;
-}
 .rating-hint {
   border-top: 1px solid var(--panel-border);
   padding: 10px 12px 8px;
@@ -175,10 +71,6 @@
   padding: 10px 12px;
   font-size: 12px;
   text-align: center;
-}
-.rating-error {
-  padding: 10px 12px;
-  font-size: 11px;
 }
 
 /* Keep the selected action vivid while the save starts. */

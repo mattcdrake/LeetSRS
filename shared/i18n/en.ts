@@ -65,9 +65,6 @@ const en = {
     deactivate: 'Deactivate',
     active: 'Active',
     use: 'Use',
-    add: 'Add to SRS',
-    addProblem: (title: string) => `Add ${title} to SRS`,
-    addFailed: 'Could not add the problem to SRS. Try again.',
     searchLabel: 'Search roadmap problems',
     filters: { notInSrs: 'Not in SRS', inSrs: 'In SRS', reviewed: 'Reviewed', skipped: 'Skipped' },
     noMatches: 'No matching problems.',
@@ -88,6 +85,12 @@ const en = {
     loadFailed: 'Failed to load roadmaps.',
     saveFailed: 'Could not save the active roadmap. Try again.',
     retry: 'Retry',
+  },
+
+  problemSave: {
+    saveProblem: (title: string) => `Save ${title}`,
+    close: 'Close save menu',
+    previewFailed: 'Could not load review intervals.',
   },
 
   // Common actions
