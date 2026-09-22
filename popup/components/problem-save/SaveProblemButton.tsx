@@ -40,9 +40,10 @@ export function useProblemSaveFeedback() {
 
 export function SaveProblemButton({
   variant = 'row',
+  isDisabled = false,
   onSaved,
   ...problem
-}: SaveTarget & { variant?: 'row' | 'card'; onSaved: (saved: SavedProblem) => void }) {
+}: SaveTarget & { variant?: 'row' | 'card'; isDisabled?: boolean; onSaved: (saved: SavedProblem) => void }) {
   const t = useI18n();
   // Freeze the menu's problem while Home is recomputing its next suggestion.
   const [target, setTarget] = useState<SaveTarget | null>(null);
@@ -83,7 +84,7 @@ export function SaveProblemButton({
         className="problem-save-trigger"
         data-variant={variant}
         aria-label={t.problemSave.saveProblem(problem.title)}
-        isDisabled={busy}
+        isDisabled={isDisabled || busy}
       >
         {t.actions.save}
       </Button>

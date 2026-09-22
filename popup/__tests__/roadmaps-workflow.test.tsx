@@ -315,3 +315,41 @@ it('dismisses the Save menu with Escape and restores focus without saving', asyn
   expect(background.rateCard).not.toHaveBeenCalled();
   expect(background.addCard).not.toHaveBeenCalled();
 });
+
+it('skips Home suggestions, retries failures, and preserves the skips in the roadmap', async () => {
+  await background.setActiveRoadmap('blind-75');
+  const completion = Promise.withResolvers<void>();
+  vi.mocked(background.setRoadmapProblemSkipped)
+    .mockRejectedValueOnce(new Error('Storage unavailable'))
+    .mockImplementationOnce(async (...args) => {
+      await completion.promise;
+      await getRegisteredBackground().setRoadmapProblemSkipped(...args);
+    });
+  openPopup();
+  const section = await screen.findByRole('region', { name: 'Current roadmap' });
+  const skip = await within(section).findByRole('button', { name: 'Skip Two Sum' });
+  fireEvent.click(skip);
+  expect(await within(section).findByRole('alert')).toHaveTextContent('Could not save skipped problems.');
+  expect(within(section).getByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
+
+  fireEvent.click(skip);
+  await waitFor(() => expect(skip).toBeDisabled());
+  expect(within(section).getByRole('button', { name: 'Save Two Sum' })).toBeDisabled();
+  await act(async () => completion.resolve());
+  const skipNext = await within(section).findByRole('button', { name: 'Skip Longest Substring' });
+  await waitFor(() => expect(skipNext).toBeEnabled());
+  expect(within(section).queryByRole('alert')).not.toBeInTheDocument();
+  expect(within(section).getByText('0 / 75 reviewed')).toBeInTheDocument();
+  fireEvent.click(skipNext);
+  expect(
+    await within(section).findByText('No unadded, unskipped problems available on leetcode.com.')
+  ).toBeInTheDocument();
+  expect((await readLearningDocument()).roadmapSkips['blind-75']).toEqual(['1', '3']);
+  expect(background.addCard).not.toHaveBeenCalled();
+  expect(background.rateCard).not.toHaveBeenCalled();
+
+  fireEvent.click(within(section).getByRole('button', { name: 'View roadmap' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Skipped' }));
+  expect(await screen.findByRole('button', { name: 'Restore Two Sum' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Restore Longest Substring' })).toBeInTheDocument();
+});

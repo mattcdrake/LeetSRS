@@ -69,7 +69,6 @@ export function RoadmapProblemRow({ problem, domain, isSaving, onSaved, onToggle
           )}
         </div>
         <div className="flex shrink-0 items-center gap-0.5 [&>a]:w-6">
-          <YouTubeLink url={metadata?.youtubeUrl} label={t.youtubeSolution} />
           {available && (
             <SaveProblemButton
               frontendId={frontendId}
@@ -79,6 +78,7 @@ export function RoadmapProblemRow({ problem, domain, isSaving, onSaved, onToggle
               onSaved={onSaved}
             />
           )}
+          <YouTubeLink url={metadata?.youtubeUrl} label={t.youtubeSolution} />
           <button
             type="button"
             className="roadmap-text-button inline-flex w-6 h-8 items-center justify-center"
