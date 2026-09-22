@@ -14,7 +14,15 @@ import type {
 import type { RoadmapId } from '@/shared/roadmap';
 import type { SettingsUpdate } from '@/shared/settings';
 
+export type NextProblem = CatalogProblem & { domain: LeetcodeDomain };
+export interface NextRoadmapProblem {
+  name: string;
+  problem: NextProblem | null;
+}
+
 export interface BackgroundService {
+  getNextReview(current: ProblemReference): Promise<NextProblem | null>;
+  getNextRoadmapProblem(current: ProblemReference): Promise<NextRoadmapProblem | null>;
   acknowledgePopupDialog(id: string): Promise<void>;
   dismissGithubSetupPrompt(): Promise<void>;
   cancelGithubSignInRequest(): Promise<void>;

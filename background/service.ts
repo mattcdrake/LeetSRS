@@ -20,6 +20,7 @@ import {
   updateSettings,
 } from '@/background/learning';
 import { dismissMigrationNotice } from '@/background/legacy/github-pat';
+import { getNextReview, getNextRoadmapProblem } from '@/background/next-problems';
 import { acknowledgePopupDialog } from '@/background/popup-dialogs';
 import {
   connectGist,
@@ -49,6 +50,8 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
 
   const frontendId = problemReferenceSchema.shape.frontendId;
   return {
+    getNextReview: command(z.tuple([problemReferenceSchema]), getNextReview),
+    getNextRoadmapProblem: command(z.tuple([problemReferenceSchema]), getNextRoadmapProblem),
     acknowledgePopupDialog: command(z.tuple([z.string().min(1)]), acknowledgePopupDialog),
     dismissGithubSetupPrompt: command(z.tuple([]), dismissGithubSetupPrompt),
     cancelGithubSignInRequest: command(z.tuple([]), cancelGithubSignInRequest),

@@ -12,7 +12,6 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   const [t, setTranslations] = useState<Translations | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const session = useRatingSession(openRequest);
-  const { saved, busy, error, dismiss } = session;
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasMenuOpen = useRef(false);
 
@@ -28,15 +27,6 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
   useEffect(() => {
     if (openRequest > 0) setMenuOpen(true);
   }, [openRequest]);
-
-  useEffect(() => {
-    if (!menuOpen || !saved || busy || error) return;
-    const timeout = setTimeout(() => {
-      setMenuOpen(false);
-      dismiss();
-    }, 5000);
-    return () => clearTimeout(timeout);
-  }, [menuOpen, saved, busy, error, dismiss]);
 
   if (!t) return null;
 

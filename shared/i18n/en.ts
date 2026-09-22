@@ -315,6 +315,14 @@ const en = {
 
   // Content script (LeetCode page integration)
   contentScript: {
+    nextReview: 'Next review',
+    nextInRoadmap: (name: string) => `Next in ${name}`,
+    noOtherReviews: 'No other reviews due',
+    noNextRoadmapProblem: (name: string) => `No new problems in ${name}`,
+    loadingNextReview: 'Loading next review…',
+    loadingNextRoadmap: 'Loading next roadmap problem…',
+    nextReviewFailed: 'Could not load the next review.',
+    nextRoadmapFailed: 'Could not load the next roadmap problem.',
     howDidItGo: 'How did it go?',
     descriptions: {
       1: 'Needed the solution',

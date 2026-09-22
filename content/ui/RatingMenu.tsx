@@ -6,6 +6,7 @@ import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
 import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
+import { NextProblems } from './NextProblems';
 import { THEME_COLORS, useDarkMode } from './theme';
 import type { useRatingSession } from './useRatingSession';
 
@@ -166,6 +167,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
           )}
         </>
       )}
+      {problem && <NextProblems t={t} problem={problem} saved={!!saved} />}
       {youtubeUrl && (
         <div className="flex justify-end border-t border-(--panel-border) px-2 py-1">
           <YouTubeLink url={youtubeUrl} label={t.youtubeSolution} />

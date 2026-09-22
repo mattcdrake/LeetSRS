@@ -215,4 +215,56 @@ describe('document learning through background commands', () => {
       });
     }
   });
+  it('selects the next eligible review without returning the current problem', async () => {
+    await replaceLearningDocument(
+      buildLearningDocument({
+        settings: { maxNewCardsPerDay: 1 },
+        cards: {
+          '1': createMockCard(State.New),
+          'new-a': createMockCard(State.New, { frontendId: 'new-a' }),
+          '2': createMockCard(State.Review, { frontendId: '2', domain: 'leetcode.cn' }),
+        },
+      })
+    );
+    expect(await getRegisteredBackground().getNextReview(buildProblem())).toMatchObject({
+      frontendId: '2',
+      domain: 'leetcode.cn',
+      slug: 'add-two-numbers',
+    });
+    await getRegisteredBackground().setPauseStatus('2', true);
+    expect(await getRegisteredBackground().getNextReview(buildProblem())).toBeNull();
+  });
+
+  it('selects roadmap problems in order, respecting tracking, skips, and the current site', async () => {
+    const fetchCatalog = globalThis.fetch;
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) =>
+      input === fakeBrowser.runtime.getURL('/data/roadmaps/blind-75.json')
+        ? Promise.resolve(
+            Response.json({
+              id: 'blind-75',
+              name: 'Blind 75',
+              sourceUrl: 'https://example.com',
+              groups: [{ id: 'group', name: 'Group', frontendIds: ['1', '2', '3', 'com-only'] }],
+            })
+          )
+        : fetchCatalog(input, init)
+    );
+    await replaceLearningDocument(
+      buildLearningDocument({
+        activeRoadmapId: 'blind-75',
+        cards: { '2': createMockCard(State.New, { frontendId: '2' }) },
+        roadmapSkips: { 'blind-75': ['3'] },
+      })
+    );
+    expect(await getRegisteredBackground().getNextRoadmapProblem(buildProblem())).toMatchObject({
+      name: 'Blind 75',
+      problem: { frontendId: 'com-only', domain: 'leetcode.com' },
+    });
+    expect(await getRegisteredBackground().getNextRoadmapProblem(buildProblem({ domain: 'leetcode.cn' }))).toEqual({
+      name: 'Blind 75',
+      problem: null,
+    });
+    await getRegisteredBackground().setActiveRoadmap(null);
+    expect(await getRegisteredBackground().getNextRoadmapProblem(buildProblem())).toBeNull();
+  });
 });

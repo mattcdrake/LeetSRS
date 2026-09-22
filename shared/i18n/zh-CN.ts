@@ -288,6 +288,14 @@ const zhCN: Translations = {
   },
 
   contentScript: {
+    nextReview: '下一道复习题',
+    nextInRoadmap: (name: string) => `${name} 中的下一题`,
+    noOtherReviews: '没有其他待复习题目',
+    noNextRoadmapProblem: (name: string) => `${name} 中没有新题目`,
+    loadingNextReview: '正在加载下一道复习题…',
+    loadingNextRoadmap: '正在加载学习路线中的下一题…',
+    nextReviewFailed: '无法加载下一道复习题。',
+    nextRoadmapFailed: '无法加载学习路线中的下一题。',
     howDidItGo: '这次做得怎么样？',
     descriptions: { 1: '需要查看题解', 2: '解题较费力', 3: '记得解题思路', 4: '轻松解决' },
     saveWithoutRating: '保存但不评分',
