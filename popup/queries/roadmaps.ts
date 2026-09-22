@@ -1,9 +1,8 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { browser } from 'wxt/browser';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { LearningDocument, LeetcodeDomain } from '@/shared/models';
-import { ROADMAP_IDS, type Roadmap, type RoadmapId, roadmapSchema } from '@/shared/roadmap';
+import { loadRoadmap, ROADMAP_IDS, type Roadmap, type RoadmapId } from '@/shared/roadmap';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export const activeRoadmapQueryOptions = queryOptions({
@@ -61,12 +60,5 @@ export function roadmapMetadataQueryOptions(roadmap: Roadmap, domain: LeetcodeDo
 export const roadmapsQueryOptions = queryOptions({
   queryKey: ['popupRoadmaps'],
   staleTime: Infinity,
-  queryFn: () =>
-    Promise.all(
-      ROADMAP_IDS.map(async (id) => {
-        const response = await fetch(browser.runtime.getURL(`/data/roadmaps/${id}.json`));
-        if (!response.ok) throw new Error(`Failed to load roadmap: ${response.status}`);
-        return { ...roadmapSchema.parse(await response.json()), id };
-      })
-    ),
+  queryFn: () => Promise.all(ROADMAP_IDS.map(loadRoadmap)),
 });

@@ -6,14 +6,13 @@ import { learningDocumentQueryOptions } from '@/popup/queries/learning-document'
 import {
   activeRoadmapQueryOptions,
   roadmapMetadataQueryOptions,
-  roadmapSkipsQueryOptions,
   roadmapsQueryOptions,
   useSkipRoadmapProblemMutation,
 } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { buttonInteraction } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import type { Roadmap, RoadmapId } from '@/shared/roadmap';
+import { getNextRoadmapProblemId, type Roadmap, type RoadmapId } from '@/shared/roadmap';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 
@@ -51,14 +50,10 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
   const { data: settings } = useSettingsQuery();
   const domain = settings.preferredLeetcodeSite;
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
-  const skips = useQuery(roadmapSkipsQueryOptions);
   const skip = useSkipRoadmapProblemMutation();
   const ids = roadmap.groups.flatMap((group) => group.frontendIds);
   const reviewed = ids.filter((id) => document.cards[id]?.fsrs.reps > 0).length;
-  const skippedIds = new Set(skips.data?.[roadmap.id]);
-  const nextId = ids.find(
-    (id) => !document.cards[id] && !skippedIds.has(id) && metadata.data?.[id]?.sources.includes(domain)
-  );
+  const nextId = getNextRoadmapProblemId(roadmap, document, metadata.data, domain);
   const next = nextId ? metadata.data?.[nextId] : undefined;
   const { message, onSaved } = useProblemSaveFeedback();
 
@@ -74,21 +69,14 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId
           {t.home.viewRoadmap}
         </button>
       </div>
-      {metadata.isPending || skips.isPending ? (
+      {metadata.isPending ? (
         <p role="status" className="text-sm text-secondary">
           {t.roadmaps.loading}
         </p>
-      ) : metadata.isError || skips.isError ? (
+      ) : metadata.isError ? (
         <div role="alert" className="text-sm">
           <p>{t.roadmaps.detailLoadFailed}</p>
-          <button
-            type="button"
-            className={`text-accent ${buttonInteraction}`}
-            onClick={() => {
-              void metadata.refetch();
-              void skips.refetch();
-            }}
-          >
+          <button type="button" className={`text-accent ${buttonInteraction}`} onClick={() => void metadata.refetch()}>
             {t.roadmaps.retry}
           </button>
         </div>

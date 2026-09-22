@@ -143,3 +143,16 @@
     display: none;
   }
 }
+
+.rating-next-link:hover {
+  background: color-mix(in srgb, var(--panel-muted) 10%, var(--panel-bg));
+}
+.rating-next-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.rating-next-status {
+  padding: 9px 7px;
+  color: var(--panel-muted);
+  font-size: 12px;
+}
