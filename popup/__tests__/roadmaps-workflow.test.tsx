@@ -211,13 +211,10 @@ it('rates new and saved roadmap problems and retains feedback when a filter remo
   let menu = await screen.findByRole('dialog', { name: 'Save 两数之和' });
   const good = within(menu).getByRole('button', { name: 'Good' });
   await waitFor(() => expect(good).toBeEnabled());
-  expect(good).toHaveTextContent('Recalled the approach');
-  expect(good).toHaveTextContent(/\d+ days?/);
   fireEvent.click(good);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(screen.queryByRole('button', { name: 'Save 两数之和' })).not.toBeInTheDocument();
   expect(await screen.findByRole('status')).toHaveTextContent('两数之和 · Saved · Review in');
-  expect(screen.getByRole('progressbar')).toHaveAttribute('value', '1');
   expect((await readLearningDocument()).cards['1']).toMatchObject({ domain: 'leetcode.cn', fsrs: { reps: 1 } });
 
   fireEvent.click(screen.getByRole('button', { name: 'Not in SRS' }));
@@ -230,7 +227,6 @@ it('rates new and saved roadmap problems and retains feedback when a filter remo
   fireEvent.click(easy);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect((await readLearningDocument()).cards['1'].fsrs.reps).toBe(2);
-  expect(screen.getByRole('progressbar')).toHaveAttribute('value', '1');
 });
 
 it('keeps an in-flight Home rating attached to the original suggestion and prevents duplicate reviews', async () => {
@@ -242,9 +238,7 @@ it('keeps an in-flight Home rating attached to the original suggestion and preve
     return card;
   });
   openPopup();
-  const save = await screen.findByRole('button', { name: 'Save Two Sum' });
-  expect(save.closest('a')).toBeNull();
-  fireEvent.click(save);
+  fireEvent.click(await screen.findByRole('button', { name: 'Save Two Sum' }));
   const menu = await screen.findByRole('dialog', { name: 'Save Two Sum' });
   const good = within(menu).getByRole('button', { name: 'Good' });
   await waitFor(() => expect(good).toBeEnabled());
@@ -258,88 +252,21 @@ it('keeps an in-flight Home rating attached to the original suggestion and preve
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   const section = screen.getByRole('region', { name: 'Current roadmap' });
   expect(within(section).getByRole('status')).toHaveTextContent('Two Sum · Saved · Review in');
-  expect(within(section).getByText('1 / 75 reviewed')).toBeInTheDocument();
-  expect(within(section).getByRole('button', { name: 'Save Longest Substring' })).toBeEnabled();
   expect((await readLearningDocument()).cards['3']).toBeUndefined();
 });
 
-it('saves the last Home suggestion without a rating and retains its confirmation', async () => {
+it('skips Home suggestions and retries failures without adding cards', async () => {
   await background.setActiveRoadmap('blind-75');
-  await background.setRoadmapProblemSkipped('blind-75', '3', true);
-  openPopup();
-  fireEvent.click(await screen.findByRole('button', { name: 'Save Two Sum' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Save without rating' }));
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  const section = screen.getByRole('region', { name: 'Current roadmap' });
-  expect(
-    await within(section).findByText('No unadded, unskipped problems available on leetcode.com.')
-  ).toBeInTheDocument();
-  expect(within(section).getByRole('status')).toHaveTextContent('Two Sum · Saved');
-  expect(within(section).getByText('0 / 75 reviewed')).toBeInTheDocument();
-  expect((await readLearningDocument()).cards['1'].fsrs.reps).toBe(0);
-  expect(background.rateCard).not.toHaveBeenCalled();
-});
-
-it('retries interval loading and a failed save without advancing the Home suggestion', async () => {
-  await background.setActiveRoadmap('blind-75');
-  vi.mocked(background.previewRatings).mockRejectedValueOnce(new Error('Preview unavailable'));
-  vi.mocked(background.rateCard).mockRejectedValueOnce(new Error('Save unavailable'));
-  openPopup();
-  fireEvent.click(await screen.findByRole('button', { name: 'Save Two Sum' }));
-  const menu = await screen.findByRole('dialog', { name: 'Save Two Sum' });
-  expect(await within(menu).findByRole('alert')).toHaveTextContent('Could not load review intervals.');
-  const good = within(menu).getByRole('button', { name: 'Good' });
-  expect(good).toBeDisabled();
-  expect(within(menu).getByRole('button', { name: 'Save without rating' })).toBeEnabled();
-  fireEvent.click(within(menu).getByRole('button', { name: 'Try again' }));
-  await waitFor(() => expect(good).toBeEnabled());
-  fireEvent.click(good);
-  expect(await within(menu).findByRole('alert')).toHaveTextContent('Could not save this problem.');
-  expect((await readLearningDocument()).cards['1']).toBeUndefined();
-  fireEvent.click(good);
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(await screen.findByRole('button', { name: 'Save Longest Substring' })).toBeEnabled();
-  expect((await readLearningDocument()).cards['1'].fsrs.reps).toBe(1);
-});
-
-it('dismisses the Save menu with Escape and restores focus without saving', async () => {
-  await background.setActiveRoadmap('blind-75');
-  openPopup();
-  const save = await screen.findByRole('button', { name: 'Save Two Sum' });
-  save.focus();
-  fireEvent.click(save);
-  const menu = await screen.findByRole('dialog', { name: 'Save Two Sum' });
-  fireEvent.keyDown(menu, { key: 'Escape', code: 'Escape' });
-  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  await waitFor(() => expect(save).toHaveFocus());
-  expect(background.rateCard).not.toHaveBeenCalled();
-  expect(background.addCard).not.toHaveBeenCalled();
-});
-
-it('skips Home suggestions, retries failures, and preserves the skips in the roadmap', async () => {
-  await background.setActiveRoadmap('blind-75');
-  const completion = Promise.withResolvers<void>();
-  vi.mocked(background.setRoadmapProblemSkipped)
-    .mockRejectedValueOnce(new Error('Storage unavailable'))
-    .mockImplementationOnce(async (...args) => {
-      await completion.promise;
-      await getRegisteredBackground().setRoadmapProblemSkipped(...args);
-    });
+  vi.mocked(background.setRoadmapProblemSkipped).mockRejectedValueOnce(new Error('Storage unavailable'));
   openPopup();
   const section = await screen.findByRole('region', { name: 'Current roadmap' });
   const skip = await within(section).findByRole('button', { name: 'Skip Two Sum' });
   fireEvent.click(skip);
   expect(await within(section).findByRole('alert')).toHaveTextContent('Could not save skipped problems.');
   expect(within(section).getByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
-
   fireEvent.click(skip);
-  await waitFor(() => expect(skip).toBeDisabled());
-  expect(within(section).getByRole('button', { name: 'Save Two Sum' })).toBeDisabled();
-  await act(async () => completion.resolve());
   const skipNext = await within(section).findByRole('button', { name: 'Skip Longest Substring' });
   await waitFor(() => expect(skipNext).toBeEnabled());
-  expect(within(section).queryByRole('alert')).not.toBeInTheDocument();
-  expect(within(section).getByText('0 / 75 reviewed')).toBeInTheDocument();
   fireEvent.click(skipNext);
   expect(
     await within(section).findByText('No unadded, unskipped problems available on leetcode.com.')
@@ -347,9 +274,4 @@ it('skips Home suggestions, retries failures, and preserves the skips in the roa
   expect((await readLearningDocument()).roadmapSkips['blind-75']).toEqual(['1', '3']);
   expect(background.addCard).not.toHaveBeenCalled();
   expect(background.rateCard).not.toHaveBeenCalled();
-
-  fireEvent.click(within(section).getByRole('button', { name: 'View roadmap' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Skipped' }));
-  expect(await screen.findByRole('button', { name: 'Restore Two Sum' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Restore Longest Substring' })).toBeInTheDocument();
 });

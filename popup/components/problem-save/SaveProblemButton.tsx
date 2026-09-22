@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { type CSSProperties, useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Dialog, DialogTrigger, Heading, Popover } from 'react-aria-components';
-import { FaPlus, FaXmark } from 'react-icons/fa6';
+import { FaXmark } from 'react-icons/fa6';
 import type { Grade } from 'ts-fsrs';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { useAddCardMutation, useRateCardMutation } from '@/popup/queries/cards';
 import { background } from '@/shared/background-service';
-import { type ProblemReference, ratingSchema } from '@/shared/models';
+import type { ProblemReference } from '@/shared/models';
+import { RatingOptions } from '@/shared/ui/RatingOptions';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import './problem-save.css';
 
@@ -89,7 +90,7 @@ export function SaveProblemButton({
         {t.actions.save}
       </Button>
       <Popover
-        className="problem-save-popover"
+        className="rating-panel problem-save-popover"
         placement={variant === 'card' ? 'bottom start' : 'bottom end'}
         offset={6}
         containerPadding={8}
@@ -125,7 +126,6 @@ function SaveProblemMenu({
 }) {
   const t = useI18n();
   const colors = RATING_COLORS[useTheme()];
-  const descriptionId = useId();
   const { frontendId, domain } = target;
   const preview = useQuery({
     queryKey: ['popupRatingPreview', { frontendId, domain }],
@@ -136,61 +136,52 @@ function SaveProblemMenu({
   });
 
   return (
-    <Dialog className="problem-save-menu" aria-label={t.problemSave.saveProblem(target.title)}>
-      <div className="problem-save-heading">
+    <Dialog
+      className="outline-none"
+      aria-busy={busy || preview.isFetching}
+      aria-label={t.problemSave.saveProblem(target.title)}
+    >
+      <div className="rating-heading gap-2">
         <div className="min-w-0">
-          <Heading slot="title">{t.contentScript.howDidItGo}</Heading>
-          <p>
+          <Heading slot="title" className="font-medium">
+            {t.contentScript.howDidItGo}
+          </Heading>
+          <p className="mt-0.5 break-words text-secondary text-[11px]">
             {frontendId}. {target.title}
           </p>
         </div>
-        <Button className="problem-save-close" aria-label={t.problemSave.close} isDisabled={busy} onPress={onClose}>
+        <Button
+          className="flex items-center justify-center shrink-0 size-6 -mt-1 -mr-1 rounded text-secondary hover:bg-secondary"
+          aria-label={t.problemSave.close}
+          isDisabled={busy}
+          onPress={onClose}
+        >
           <FaXmark aria-hidden="true" />
         </Button>
       </div>
-      <div className="problem-save-options" aria-busy={busy || preview.isFetching}>
-        {[...ratingSchema.values].map((rating) => (
-          <Button
-            key={rating}
-            className="problem-save-option"
-            aria-label={t.ratings[rating]}
-            aria-describedby={`${descriptionId}-${rating}-description ${descriptionId}-${rating}-interval`}
-            isDisabled={busy || !preview.data || preview.isFetching || preview.isError}
-            onPress={() => void onSave(rating)}
-            style={{ '--rating-color': colors[rating] } as CSSProperties}
-          >
-            <span className="problem-save-stripe" aria-hidden="true" />
-            <span className="problem-save-label">
-              {t.ratings[rating]}
-              <small id={`${descriptionId}-${rating}-description`}>{t.contentScript.descriptions[rating]}</small>
-            </span>
-            <span className="problem-save-interval" id={`${descriptionId}-${rating}-interval`}>
-              {preview.data ? t.contentScript.days(preview.data[rating]) : '…'}
-            </span>
-          </Button>
-        ))}
-      </div>
-      {!target.isSaved && (
-        <Button className="problem-save-without" isDisabled={busy} onPress={() => void onSave()}>
-          <FaPlus aria-hidden="true" />
-          {t.contentScript.saveWithoutRating}
-        </Button>
-      )}
+      <RatingOptions
+        t={t}
+        colors={colors}
+        preview={preview.isFetching || preview.isError ? undefined : preview.data}
+        disabled={busy}
+        onSave={onSave}
+        allowUnrated={!target.isSaved}
+      />
       {busy && (
-        <p className="problem-save-message" role="status">
+        <p className="rating-error" role="status">
           {t.actions.saving}
         </p>
       )}
       {preview.isError && (
-        <div className="problem-save-message" role="alert">
+        <div className="rating-error text-danger" role="alert">
           {t.problemSave.previewFailed}{' '}
-          <Button isDisabled={busy || preview.isFetching} onPress={() => void preview.refetch()}>
+          <Button className="underline" isDisabled={busy || preview.isFetching} onPress={() => void preview.refetch()}>
             {t.contentScript.retry}
           </Button>
         </div>
       )}
       {failed && (
-        <p className="problem-save-message" role="alert">
+        <p className="rating-error text-danger" role="alert">
           {t.contentScript.saveFailed}
         </p>
       )}

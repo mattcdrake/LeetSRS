@@ -1,3 +1,5 @@
+@import "../../../shared/ui/rating.css";
+
 .problem-save-trigger {
   flex-shrink: 0;
   min-height: 32px;
@@ -20,144 +22,29 @@
   background: color-mix(in srgb, var(--current-accent) 8%, var(--current-bg-primary));
 }
 
-.problem-save-popover {
-  z-index: 50;
-  width: 300px;
-  max-width: calc(100vw - 16px);
-  max-height: var(--available-height);
-  overflow-y: auto;
-  border: 1px solid var(--current-border);
-  border-radius: 9px;
-  background: var(--current-bg-primary);
-  color: var(--current-text-primary);
-  box-shadow: 0 6px 20px #0002;
-}
-
-.problem-save-menu {
-  outline: none;
-  font-size: 13px;
-  line-height: 1.3;
-}
-
-.problem-save-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 12px;
-}
-
-.problem-save-heading h2 {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.problem-save-heading p {
-  margin-top: 3px;
-  overflow-wrap: anywhere;
-  color: var(--current-text-secondary);
-  font-size: 11px;
-}
-
-.problem-save-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  margin: -4px -4px 0 0;
-  border-radius: 4px;
-  color: var(--current-text-secondary);
-}
-
-.problem-save-options {
-  display: grid;
-  gap: 3px;
-  padding: 0 5px 7px;
-}
-
-.problem-save-option {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 36px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--rating-color) 8%, var(--current-bg-primary));
-  text-align: left;
-}
-
-.problem-save-option[data-hovered] {
-  background: color-mix(in srgb, var(--rating-color) 18%, var(--current-bg-primary));
-}
-
-.problem-save-stripe {
-  align-self: stretch;
-  flex-shrink: 0;
-  width: 3px;
-  border-radius: 4px;
-  background: var(--rating-color);
-}
-
-.problem-save-label {
-  flex: 1;
-}
-
-.problem-save-label small {
-  display: block;
-  color: var(--current-text-secondary);
-  font-size: 10px;
-}
-
-.problem-save-interval {
-  color: var(--current-text-secondary);
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.problem-save-without {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  border-top: 1px solid var(--current-border);
-  color: var(--current-text-secondary);
-  font-size: 12px;
-  text-align: left;
-}
-
-.problem-save-without[data-hovered],
-.problem-save-close[data-hovered] {
-  background: var(--current-bg-secondary);
-}
-
-.problem-save-message {
-  padding: 8px 12px;
-  font-size: 11px;
-}
-
-.problem-save-message[role="alert"] {
-  color: var(--current-danger);
-}
-
-.problem-save-message button {
-  text-decoration: underline;
-}
-
-.problem-save-menu button {
-  cursor: pointer;
-}
-
-.problem-save-trigger[data-focus-visible],
-.problem-save-menu button[data-focus-visible] {
+.problem-save-trigger[data-focus-visible] {
   outline: 2px solid var(--current-accent);
   outline-offset: -2px;
 }
 
-.problem-save-trigger[data-disabled],
-.problem-save-menu button[data-disabled] {
+.problem-save-trigger[data-disabled] {
   opacity: 0.55;
   cursor: default;
+}
+
+.problem-save-popover {
+  --panel-bg: var(--current-bg-primary);
+  --panel-text: var(--current-text-primary);
+  --panel-muted: var(--current-text-secondary);
+  --panel-border: var(--current-border);
+  --focus-ring: var(--current-accent);
+  z-index: 50;
+  max-width: calc(100vw - 16px);
+  max-height: var(--available-height);
+  overflow-y: auto;
+  box-shadow: 0 6px 20px #0002;
+}
+
+.problem-save-popover .rating-without[data-hovered] {
+  background: var(--current-bg-secondary);
 }
