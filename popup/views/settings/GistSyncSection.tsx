@@ -1,7 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Tooltip, TooltipTrigger } from 'react-aria-components';
-import { FaArrowsRotate, FaArrowUpRightFromSquare, FaCircleExclamation, FaCircleInfo, FaGithub } from 'react-icons/fa6';
+import { FaCircleExclamation, FaCircleInfo } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import {
   gistSyncQueryKeys,
@@ -12,8 +11,20 @@ import {
 import { useGithubPermissions } from '@/popup/queries/github-permissions';
 import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
-import type { GistSetup } from '@/shared/gist-sync';
-import { SettingsSwitch } from './SettingsSwitch';
+import type { GistConnectionResult, GistSetup } from '@/shared/gist-sync';
+import { AccountRow } from './gist-sync/AccountRow';
+import { DestinationPicker } from './gist-sync/DestinationPicker';
+import { SignedOut } from './gist-sync/SignedOut';
+import { SyncToggle } from './gist-sync/SyncToggle';
+
+function useGistSyncMutation<TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>) {
+  const client = useQueryClient();
+  return useMutation<TResult, Error, TVariables>({
+    mutationFn,
+    networkMode: 'always',
+    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
+  });
+}
 
 export function GistSyncSection({
   highlightSignIn = false,
@@ -22,57 +33,36 @@ export function GistSyncSection({
   highlightSignIn?: boolean;
   highlightSetup?: boolean;
 }) {
-  const [setupHighlightDismissed, setSetupHighlightDismissed] = useState(false);
-  const [highlightDismissed, setHighlightDismissed] = useState(false);
   const translations = useI18n();
   const t = translations.settings.gistSync;
-  const client = useQueryClient();
   const auth = useGithubAuthQuery();
   const permissions = useGithubPermissions();
   const { data: config } = useGistSyncConfigQuery();
   const { data: status } = useGistSyncStatusQuery();
-  const destinations = useQuery({
-    queryKey: [...gistSyncQueryKeys.all, 'destinations', auth.data?.account?.id],
-    queryFn: () => background.listGistDestinations(),
-    enabled: permissions.granted === true && !!auth.data?.account && !auth.data.signingIn,
-  });
-  const connection = useMutation({
-    mutationFn: (change: GistSetup | { mode: 'toggle'; enabled: boolean }) =>
-      change.mode === 'toggle' ? background.setGistSyncEnabled(change.enabled) : background.setupGistSync(change),
-    networkMode: 'always',
-    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
-  });
-  const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
-  const action = useMutation({
-    mutationFn: () => background.signOutGithub(),
-    networkMode: 'always',
-    onSuccess: () => client.invalidateQueries({ queryKey: gistSyncQueryKeys.all }),
-  });
-  const signingIn = !!auth.data?.signingIn || (permissions.request.isPending && permissions.request.variables?.intent);
+  const signOut = useGistSyncMutation(() => background.signOutGithub());
+  const toggleSync = useGistSyncMutation((enabled: boolean) => background.setGistSyncEnabled(enabled));
+  const setup = useGistSyncMutation((change: GistSetup) => background.setupGistSync(change));
+  const account = auth.data?.account;
+  const signingIn =
+    !!auth.data?.signingIn || (permissions.request.isPending && !!permissions.request.variables?.intent);
   const busy =
-    action.isPending ||
+    signOut.isPending ||
     permissions.request.isPending ||
     permissions.granted !== true ||
-    connection.isPending ||
+    toggleSync.isPending ||
+    setup.isPending ||
     !!auth.data?.signingIn;
-  const destination = selected ?? config?.gistId ?? destinations.data?.find((gist) => gist.suggested)?.id ?? '';
-  const result = connection.data;
-  const save = () => {
-    connection.mutate(destination === 'create' ? { mode: 'create' } : { mode: 'existing', gistId: destination }, {
-      onSuccess: (result) => {
-        if (result.saved) {
-          setEditing(false);
-          setSelected(null);
-        }
-      },
-    });
+  // Toggling and saving share one feedback line, so starting either clears the other's result.
+  const clearFeedback = () => {
+    toggleSync.reset();
+    setup.reset();
   };
+
   return (
     <section className="mb-3 text-primary text-xs space-y-2">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">{t.title}</h3>
-        {auth.data?.account && (
+        {account && (
           <TooltipTrigger delay={350} closeDelay={0}>
             <Button
               aria-label={t.syncInfo}
@@ -89,7 +79,7 @@ export function GistSyncSection({
           </TooltipTrigger>
         )}
       </div>
-      {auth.data?.account && !permissions.isLoading && permissions.granted !== true && (
+      {account && !permissions.isLoading && permissions.granted !== true && (
         <div role="alert" className="space-y-2">
           <p>{t.permissionRequired}</p>
           <Button
@@ -102,181 +92,52 @@ export function GistSyncSection({
         </div>
       )}
       {(permissions.error || permissions.request.isError) && <p role="alert">{t.permissionFailed}</p>}
-      {auth.data?.account ? (
+      {account ? (
         <>
-          <div className="flex items-center justify-between gap-3">
-            <p className="flex min-w-0 items-center gap-2 text-xs text-secondary">
-              <FaGithub className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">{auth.data.account.login}</span>
-            </p>
-            <Button
-              className="shrink-0 rounded-lg px-2 py-2 text-xs font-medium text-danger hover:bg-secondary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-              isDisabled={action.isPending}
-              onPress={() => {
-                setSelected(null);
-                connection.reset();
-                setEditing(false);
-                action.mutate();
-              }}
-            >
-              {t.signOut}
-            </Button>
-          </div>
+          <AccountRow
+            login={account.login}
+            isSigningOut={signOut.isPending}
+            onSignOut={() => {
+              clearFeedback();
+              signOut.mutate();
+            }}
+          />
           {config?.gistId && (
-            <div className="text-xs">
-              <SettingsSwitch
-                icon={FaArrowsRotate}
-                label={t.syncEnabled}
-                isSelected={config.enabled}
-                isDisabled={busy}
-                onChange={(enabled) => connection.mutate({ mode: 'toggle', enabled })}
-              />
-              <p className="-mt-1 pl-6 text-[11px] leading-4 text-secondary">
-                {t.lastSync}:{' '}
-                {status?.syncInProgress
-                  ? t.syncing
-                  : status?.lastSyncTime
-                    ? new Date(status.lastSyncTime).toLocaleString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })
-                    : t.lastSyncNever}
-              </p>
-            </div>
+            <SyncToggle
+              enabled={config.enabled}
+              status={status}
+              isDisabled={busy}
+              onChange={(enabled) => {
+                clearFeedback();
+                toggleSync.mutate(enabled);
+              }}
+            />
           )}
-          {config?.gistId && !editing ? (
-            <div className="space-y-1 pt-2">
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="font-medium">{t.destination}</span>
-                <a
-                  aria-label={t.openGist}
-                  className="inline-flex items-center gap-1.5 text-xs text-accent"
-                  href={`https://gist.github.com/${encodeURIComponent(config.gistId)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {t.open} <FaArrowUpRightFromSquare className="h-2.5 w-2.5" aria-hidden="true" />
-                </a>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span
-                  className="min-w-0 truncate text-xs text-secondary"
-                  title={destinations.data?.find((gist) => gist.id === config.gistId)?.description ?? config.gistId}
-                >
-                  {destinations.data?.find((gist) => gist.id === config.gistId)?.description ?? config.gistId}
-                </span>
-                <Button
-                  className="shrink-0 rounded px-1 py-1 text-xs text-secondary hover:text-primary cursor-pointer focus-visible:outline-2"
-                  isDisabled={busy}
-                  onPress={() => {
-                    setSelected(null);
-                    connection.reset();
-                    setEditing(true);
-                  }}
-                >
-                  {t.change}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div
-              className={`space-y-2 ${highlightSetup && !setupHighlightDismissed && !config?.gistId ? 'github-gist-highlight rounded-lg p-3' : ''}`}
-              onAnimationEnd={() => setSetupHighlightDismissed(true)}
-              onChange={() => setSetupHighlightDismissed(true)}
-            >
-              <label className="block text-xs" htmlFor="gist-destination">
-                {t.destination}
-              </label>
-              <select
-                id="gist-destination"
-                className="w-full min-h-10 px-3 py-2 rounded-lg border border-current bg-primary text-xs"
-                value={destination}
-                disabled={busy}
-                onChange={(event) => setSelected(event.target.value)}
-              >
-                <option value="">{t.chooseBackup}</option>
-                <option value="create">{t.createNewGist}</option>
-                {destinations.data?.map((gist) => (
-                  <option key={gist.id} value={gist.id}>
-                    {gist.description} — {new Date(gist.updatedAt).toLocaleDateString()}
-                    {gist.suggested ? ` (${t.previousBackup})` : ''}
-                  </option>
-                ))}
-              </select>
-              {permissions.granted && destinations.isPending && <p role="status">{t.loadingBackups}</p>}
-              {destinations.isError && (
-                <p role="alert">
-                  {t.loadBackupsFailed}{' '}
-                  <Button className={secondaryButton} onPress={() => void destinations.refetch()}>
-                    {t.retry}
-                  </Button>
-                </p>
-              )}
-              <Button
-                className={`${secondaryButton} w-full font-medium`}
-                isDisabled={busy || !destination}
-                onPress={() => void save()}
-              >
-                {connection.isPending && connection.variables.mode !== 'toggle'
-                  ? t.saving
-                  : config?.gistId
-                    ? t.save
-                    : t.connectAndSync}
-              </Button>
-              {config?.gistId && (
-                <Button
-                  className="w-full rounded-lg py-2 text-xs text-secondary hover:bg-secondary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-                  isDisabled={busy}
-                  onPress={() => {
-                    setEditing(false);
-                    setSelected(null);
-                    connection.reset();
-                  }}
-                >
-                  {t.cancel}
-                </Button>
-              )}
-            </div>
-          )}
+          <DestinationPicker
+            accountId={account.id}
+            gistId={config?.gistId}
+            canListDestinations={permissions.granted === true && !auth.data?.signingIn}
+            isDisabled={busy}
+            isSaving={setup.isPending}
+            highlight={highlightSetup}
+            onSave={(change, options) => {
+              clearFeedback();
+              setup.mutate(change, options);
+            }}
+            onClearFeedback={clearFeedback}
+          />
         </>
       ) : (
-        <div className="space-y-3">
-          {signingIn ? (
-            <div className="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-current bg-primary px-3">
-              <span role="status" className="flex items-center gap-2.5 text-xs text-secondary">
-                <span
-                  aria-hidden="true"
-                  className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
-                />
-                {t.signingIn}
-              </span>
-              <Button
-                className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-                isDisabled={action.isPending || permissions.request.isPending}
-                onPress={() => action.mutate()}
-              >
-                {t.cancel}
-              </Button>
-            </div>
-          ) : (
-            <Button
-              className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${highlightSignIn && !highlightDismissed ? 'github-sign-in-highlight' : ''}`}
-              onAnimationEnd={() => setHighlightDismissed(true)}
-              isDisabled={action.isPending || permissions.request.isPending || auth.isPending}
-              onPress={() => {
-                setHighlightDismissed(true);
-                permissions.enable(true);
-              }}
-            >
-              <FaGithub className="h-4 w-4" aria-hidden="true" />
-              {t.signIn}
-            </Button>
-          )}
-        </div>
+        <SignedOut
+          signingIn={signingIn}
+          highlight={highlightSignIn}
+          isCancelDisabled={signOut.isPending || permissions.request.isPending}
+          isSignInDisabled={signOut.isPending || permissions.request.isPending || auth.isPending}
+          onSignIn={() => permissions.enable(true)}
+          onCancel={() => signOut.mutate()}
+        />
       )}
-      {!signingIn && (auth.isError || action.isError || auth.data?.error) && (
+      {!signingIn && (auth.isError || signOut.isError || auth.data?.error) && (
         <div
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-[color-mix(in_srgb,var(--current-danger)_8%,transparent)] p-3 text-xs leading-relaxed text-danger"
@@ -285,17 +146,25 @@ export function GistSyncSection({
           <p>{t.signInFailed}</p>
         </div>
       )}
-      {connection.isError && <p role="alert">{t.saveFailed}</p>}
-      {result && (
-        <p role={result.saved ? 'status' : 'alert'}>
-          {result.saved ? t.saved : `${t.saveFailed}: ${translations.syncNotices[result.error]}`}
-        </p>
-      )}
+      <ConnectionFeedback isError={toggleSync.isError} result={toggleSync.data} />
+      <ConnectionFeedback isError={setup.isError} result={setup.data} />
       {status?.lastError && (
         <p role="alert">
           {t.syncFailed}: {translations.syncNotices[status.lastError]}
         </p>
       )}
     </section>
+  );
+}
+
+function ConnectionFeedback({ isError, result }: { isError: boolean; result: GistConnectionResult | undefined }) {
+  const translations = useI18n();
+  const t = translations.settings.gistSync;
+  if (isError) return <p role="alert">{t.saveFailed}</p>;
+  if (!result) return null;
+  return (
+    <p role={result.saved ? 'status' : 'alert'}>
+      {result.saved ? t.saved : `${t.saveFailed}: ${translations.syncNotices[result.error]}`}
+    </p>
   );
 }
