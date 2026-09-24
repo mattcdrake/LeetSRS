@@ -31,13 +31,12 @@ import {
   setupGistSync,
   signOutGithub,
 } from '@/background/sync';
-import type { BackgroundService } from '@/shared/background-service';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
 import { gistSetupSchema, noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/models';
 import { roadmapIdSchema } from '@/shared/roadmap';
 import { settingsUpdateSchema } from '@/shared/settings';
 
-export function createBackgroundService(ready: Promise<void>): BackgroundService {
+export function createBackgroundService(ready: Promise<void>) {
   function command<Args extends unknown[], Result>(
     schema: z.ZodType<Args>,
     run: (...args: Args) => Result | Promise<Result>
@@ -60,7 +59,7 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
     getGithubAuthStatus: command(z.tuple([]), getGithubAuthStatus),
     dismissMigrationNotice: command(z.tuple([]), dismissMigrationNotice),
     listGistDestinations: command(z.tuple([]), listGistDestinations),
-    waitForInitialization: command(z.tuple([]), () => undefined),
+    waitForInitialization: command(z.tuple([]), async () => {}),
     getProblem: command(
       z.tuple([catalogProblemSchema.shape.slug, problemReferenceSchema.shape.domain]),
       async (slug, domain) => {

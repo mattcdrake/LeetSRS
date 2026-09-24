@@ -60,7 +60,7 @@ it('reads a current connection without waiting for a learning document or backgr
   await storage.setItem(STORAGE_KEYS.gistConnection, connection);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual(connection));
-  expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
+  expect(Object.values(background).flatMap((method): unknown[] => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
 it('returns a disabled connection without reviving retired credentials or requesting initialization', async () => {
@@ -196,7 +196,7 @@ it.each([
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.error).not.toBeNull());
   expect(result.current.data).toBeUndefined();
-  expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
+  expect(Object.values(background).flatMap((method): unknown[] => vi.mocked(method).mock.calls)).toHaveLength(0);
 });
 
 it('runs local queries and saves while offline', async () => {

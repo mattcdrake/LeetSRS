@@ -30,7 +30,7 @@ describe('learning document startup', () => {
     );
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
-    expect(Object.values(background).flatMap((method) => vi.mocked(method).mock.calls)).toHaveLength(0);
+    expect(Object.values(background).flatMap((method): unknown[] => vi.mocked(method).mock.calls)).toHaveLength(0);
   });
 
   it.each([undefined, 3, 5])('preserves an installation at version %s', async (version) => {

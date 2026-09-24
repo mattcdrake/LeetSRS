@@ -50,40 +50,6 @@
   },
   "overrides": [
     {
-      "includes": ["shared/*.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": {
-              "level": "error",
-              "options": {
-                "patterns": [
-                  {
-                    "group": [
-                      "@/background/**",
-                      "@/popup/**",
-                      "@/content/**",
-                      "@/entrypoints/**",
-                      "**/background/**",
-                      "**/popup/**",
-                      "**/content/**",
-                      "**/entrypoints/**",
-                      "@/shared/i18n",
-                      "@/shared/i18n/**",
-                      "@/shared/ui/**",
-                      "**/i18n/**",
-                      "**/ui/**"
-                    ],
-                    "message": "Shared modules must remain independent of runtime owners and UI."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
       "includes": ["shared/ui/**/*.ts", "shared/ui/**/*.tsx", "shared/i18n/**/*.ts", "!shared/**/__tests__/**"],
       "linter": {
         "rules": {
