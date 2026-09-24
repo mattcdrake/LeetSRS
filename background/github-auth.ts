@@ -34,14 +34,14 @@ const authorizationSchema = z.object({
   expiresAt: z.number(),
   refreshExpiresAt: z.number(),
 });
-let authorization = new AbortController();
+let authorizationAbort = new AbortController();
 let signingIn: Promise<void> | undefined;
 let refreshing: Promise<z.infer<typeof authorizationSchema>> | undefined;
 let error: GithubAuthStatus['error'] = null;
 
 // Aborted when the authorization is cleared, so work started under it stops before writing results.
 export function authorizationSignal(): AbortSignal {
-  return authorization.signal;
+  return authorizationAbort.signal;
 }
 
 async function readAuthorization() {
@@ -97,7 +97,7 @@ async function exchange(path: string, payload: Record<string, string>) {
 
 // Serialize permission events, requests, and cancellation so one grant launches one flow.
 function updateSignInRequest(run: (signal: AbortSignal) => Promise<void>): Promise<void> {
-  const signal = authorization.signal;
+  const signal = authorizationAbort.signal;
   const result = signInRequests.then(async () => {
     if (!signal.aborted) await run(signal);
   });
@@ -143,7 +143,7 @@ export function cancelGithubSignInRequest(): Promise<void> {
 
 function launchGithubSignIn(): void {
   if (signingIn) return;
-  const signal = authorization.signal;
+  const signal = authorizationAbort.signal;
   error = null;
   const attempt = (async () => {
     if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) throw new Error('GitHub access required');
@@ -197,7 +197,7 @@ function launchGithubSignIn(): void {
 }
 
 export async function getGithubAuthorization() {
-  const signal = authorization.signal;
+  const signal = authorizationAbort.signal;
   if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS)))
     throw new GithubAuthorizationError('Enable GitHub access in Settings');
   const saved = await readAuthorization();
@@ -226,8 +226,8 @@ export async function dismissGithubSetupPrompt(): Promise<void> {
 }
 
 export async function clearGithubAuthorization(): Promise<void> {
-  authorization.abort(new GithubAuthorizationError('authorization changed'));
-  authorization = new AbortController();
+  authorizationAbort.abort(new GithubAuthorizationError('authorization changed'));
+  authorizationAbort = new AbortController();
   signingIn = undefined;
   refreshing = undefined;
   error = null;

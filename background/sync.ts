@@ -28,7 +28,7 @@ import { detectBrowserLanguage } from '@/shared/settings';
 const GIST_FILENAME = 'leetsrs-backup.json';
 
 let activeSync: Promise<void> | undefined;
-let connection = new AbortController();
+let connectionAbort = new AbortController();
 let lastError: GistSyncErrorCode | null = null;
 
 // Remember observed values so our own storage notification and completed operation
@@ -68,8 +68,8 @@ async function saveConnection(connection: GistSyncConfig): Promise<void> {
 // one promise. Changing the destination aborts work for the previous connection.
 
 function invalidateGistSync(): void {
-  connection.abort(new Error('Connection changed'));
-  connection = new AbortController();
+  connectionAbort.abort(new Error('Connection changed'));
+  connectionAbort = new AbortController();
   activeSync = undefined;
 }
 
@@ -78,7 +78,7 @@ export function sync(): Promise<void> {
     return activeSync;
   }
 
-  const attempt = runSync(connection.signal);
+  const attempt = runSync(connectionAbort.signal);
   activeSync = attempt;
   void attempt.finally(() => {
     if (activeSync === attempt) {
@@ -144,7 +144,7 @@ export async function getGistSyncStatus(): Promise<GistSyncStatus> {
 export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
   try {
     const authSignal = authorizationSignal();
-    const connectionSignal = connection.signal;
+    const connectionSignal = connectionAbort.signal;
     const auth = await getGithubAuthorization();
     const github = new Octokit({ auth: auth.accessToken });
     let gistId: string;
