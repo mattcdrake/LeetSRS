@@ -156,29 +156,6 @@ describe('document learning through background commands', () => {
     expect(writes).not.toHaveBeenCalled();
   });
 
-  it('previews and persists repeated scheduling without losing card identity or daily activity', async () => {
-    await getRegisteredBackground().addCard(buildProblem());
-    const card = requireDefined((await readLearningDocument()).cards['1']);
-    await getRegisteredBackground().saveNote(card.frontendId, '  retained\n');
-    for (const [index, domain] of (['leetcode.cn', 'leetcode.com'] as const).entries()) {
-      const problem = buildProblem({ domain });
-      const preview = await getRegisteredBackground().previewRatings(problem);
-      const rated = await getRegisteredBackground().rateCard({ ...problem, rating: Rating.Good });
-      expect(rated).toMatchObject({
-        frontendId: card.frontendId,
-        domain: card.domain,
-        createdAt: card.createdAt,
-        note: '  retained\n',
-        fsrs: { reps: index + 1, last_review: card.createdAt, state: State.Review },
-      });
-      expect(rated.fsrs.scheduled_days).toBe(preview[Rating.Good]);
-      expect(rated.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
-      expect(rated.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
-      expect(Object.values((await readLearningDocument()).cards)).toEqual([rated]);
-      expect((await readLearningDocument()).reviewActivity).toEqual({ streak: 1, newCards: 1, date: '2024-03-15' });
-    }
-  });
-
   it.each([
     ['untracked', undefined, Rating.Again],
     ['Learning', State.Learning, Rating.Good],
@@ -196,8 +173,10 @@ describe('document learning through background commands', () => {
       await replaceLearningDocument({ ...document, cards: { [existing.frontendId]: existing } });
     }
 
-    await getRegisteredBackground().rateCard({ ...problem, rating });
-    const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
+    const preview = await getRegisteredBackground().previewRatings(problem);
+    await getRegisteredBackground().rateCard({ ...problem, domain: 'leetcode.cn', rating });
+    const saved = await readLearningDocument();
+    const card = requireDefined(saved.cards[problem.frontendId]);
 
     expect(card.fsrs).toMatchObject({
       state: State.Review,
@@ -205,11 +184,14 @@ describe('document learning through background commands', () => {
       last_review: Date.now(),
       reps: (existing?.fsrs.reps ?? 0) + 1,
     });
+    expect(card.fsrs.scheduled_days).toBe(preview[rating]);
     expect(card.fsrs.scheduled_days).toBeGreaterThanOrEqual(1);
     expect(card.fsrs.due).toBeGreaterThanOrEqual(new Date('2024-03-16T12:00:00').getTime());
+    expect(saved.reviewActivity?.newCards).toBe(existing ? 0 : 1);
     if (existing) {
       expect(card).toMatchObject({
         frontendId: existing.frontendId,
+        domain: existing.domain,
         createdAt: existing.createdAt,
         note: 'Retained',
       });

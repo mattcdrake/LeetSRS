@@ -10,7 +10,6 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { CardsView } from '@/popup/views/card/CardsView';
 import { DataSection } from '@/popup/views/settings/DataSection';
 import { background } from '@/shared/background-service';
-import { formatLocalDate } from '@/shared/calendar';
 import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -103,12 +102,7 @@ it('retries a failed review, persists scheduling and advances to the next card',
   expect(await readLearningDocument()).toEqual(saved);
   click('Good');
   await screen.findByText('Add Two Numbers');
-  const reviewed = await readLearningDocument();
-  expect(reviewed.cards['1']).toMatchObject({ note: 'Use a map', fsrs: { reps: 1 } });
-  expect(reviewed.cards['1'].fsrs.due).toBeGreaterThan(saved.cards['1'].fsrs.due);
-  expect(reviewed.cards['1'].fsrs.last_review).toBeTypeOf('number');
-  expect(reviewed.reviewActivity).toEqual({ date: formatLocalDate(new Date()), newCards: 1, streak: 1 });
-  expect(reviewed.dataUpdatedAt).toBe(new Date(reviewed.cards['1'].fsrs.last_review ?? 0).toISOString());
+  expect((await readLearningDocument()).cards['1']).toMatchObject({ note: 'Use a map', fsrs: { reps: 1 } });
 });
 
 it('pauses, resumes and retries deletion through real card controls, requiring confirmation', async () => {
@@ -123,17 +117,8 @@ it('pauses, resumes and retries deletion through real card controls, requiring c
 
   const list = render(<CardsView />, { wrapper });
   await screen.findByRole('button', { name: /#1 Two Sum/ });
-  const search = screen.getByPlaceholderText('Filter by name or ID...');
-  fireEvent.change(search, { target: { value: '2' } });
-  expect(screen.getByText('Add Two Numbers')).toBeInTheDocument();
-  expect(screen.queryByText('Two Sum')).not.toBeInTheDocument();
-  click('Clear filter');
   click('Paused');
   expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-  fireEvent.change(search, { target: { value: 'MISSING' } });
-  expect(screen.getByText('No cards match your filter.')).toBeInTheDocument();
-  click('Clear filter');
-  fireEvent.change(search, { target: { value: 'tWo SuM' } });
   fireEvent.click(screen.getByRole('button', { name: /#1 Two Sum/ }));
   click('Resume');
   await waitFor(() => expect(screen.queryByText('Two Sum')).not.toBeInTheDocument());

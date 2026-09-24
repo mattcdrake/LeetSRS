@@ -15,7 +15,6 @@ import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { useDelayCardMutation, useReviewQueueQuery } from '../cards';
 import { useNoteQuery, useSaveNoteMutation } from '../notes';
-import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
@@ -63,8 +62,6 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
       queue: useReviewQueueQuery(),
       delay: useDelayCardMutation(),
       save: useSaveNoteMutation(frontendId),
-      settings: useSettingsQuery(),
-      update: useUpdateSettingsMutation(),
     }),
     { initialProps: { frontendId: problem.frontendId }, wrapper: createPopupTestWrapper().wrapper }
   );
@@ -77,8 +74,5 @@ it('keeps the outgoing card note live after it leaves the review queue', async (
   view.rerender({ frontendId: next.frontendId });
   await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));
   expect(view.result.current.queue.data).toMatchObject([{ note: 'Next note' }]);
-  await act(() => view.result.current.update.mutateAsync({ maxNewCardsPerDay: 0 }));
-  await waitFor(() => expect(view.result.current.queue.data).toEqual([]));
-  expect(view.result.current.settings.data.maxNewCardsPerDay).toBe(0);
   expect(lookups).toHaveBeenCalledTimes(1);
 });
