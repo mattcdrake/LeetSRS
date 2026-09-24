@@ -12,24 +12,20 @@ import { Toast } from './ui/Toast';
 import './ui/shadow.css';
 
 export async function bootstrapContent(ctx: ContentScriptContext) {
-  let resetSlug: string | null | undefined;
   let disposeReset = () => {};
-  const resetForCurrentProblem = () => {
-    const slug = getCurrentProblemSlug();
-    if (slug === resetSlug) return;
-    resetSlug = slug;
+  ctx.onInvalidated(() => disposeReset());
+  await setupLeetSrsControl(ctx, () => {
     disposeReset();
     disposeReset = setupLeetcodeEditorReset(() => {
       void showToast(ctx, 'Code reset to default');
     });
-  };
-  ctx.onInvalidated(() => disposeReset());
-  await setupLeetSrsControl(ctx, resetForCurrentProblem);
+  });
 }
 
-async function setupLeetSrsControl(ctx: ContentScriptContext, checkEditorReset: () => void) {
+// Calls onProblemChange at startup and whenever navigation changes the problem.
+async function setupLeetSrsControl(ctx: ContentScriptContext, onProblemChange: () => void) {
   let root: ReturnType<typeof createContentRoot> | undefined;
-  let slug = getCurrentProblemSlug();
+  let slug: string | null | undefined;
   let request = 0;
   let pendingOpen = false;
   let navigation = 0;
@@ -68,8 +64,8 @@ async function setupLeetSrsControl(ctx: ContentScriptContext, checkEditorReset: 
       navigation++;
       pendingOpen = false;
       renderControl();
+      onProblemChange();
     }
-    checkEditorReset();
     const toolbar = document.querySelector('#ide-top-btns');
     if (toolbar && ui.mounted && ui.shadowHost.parentElement === toolbar) return;
     if (ui.mounted) ui.remove();
