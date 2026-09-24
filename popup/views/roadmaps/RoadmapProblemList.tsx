@@ -1,5 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
+import { QueryState } from '@/popup/components/QueryState';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import {
@@ -61,29 +62,8 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
   const skip = useSkipRoadmapProblemMutation();
   const { message, onSaved } = useProblemSaveFeedback();
 
-  if (metadata.isPending || skips.isPending) {
-    return (
-      <p role="status" className="text-secondary">
-        {t.roadmaps.loading}
-      </p>
-    );
-  }
-  if (metadata.isError || skips.isError) {
-    return (
-      <div role="alert">
-        <p>{t.roadmaps.detailLoadFailed}</p>
-        <button
-          type="button"
-          className="text-accent cursor-pointer"
-          onClick={() => {
-            void metadata.refetch();
-            void skips.refetch();
-          }}
-        >
-          {t.roadmaps.retry}
-        </button>
-      </div>
-    );
+  if (!metadata.isSuccess || !skips.isSuccess) {
+    return <QueryState query={[metadata, skips]} loading={t.roadmaps.loading} error={t.roadmaps.detailLoadFailed} />;
   }
 
   const query = search.trim().toLowerCase();

@@ -1,14 +1,13 @@
 import { type ReactNode, useState } from 'react';
-import type { Grade } from 'ts-fsrs';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import {
+  type CardWithProblem,
   useDelayCardMutation,
   usePauseCardMutation,
   useRateCardMutation,
   useRemoveCardMutation,
   useReviewQueueQuery,
 } from '@/popup/queries/cards';
-import type { RateCardInput } from '@/shared/learning-document';
 import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
@@ -25,58 +24,29 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   const [processingCardId, setProcessingCardId] = useState<string | null>(null);
   const isProcessing = processingCardId !== null;
 
-  const handleCardAction = async (action: () => Promise<unknown>, errorMessage: string) => {
-    if (queue.length === 0 || isProcessing) return;
+  const currentCard = queue[0];
 
-    setProcessingCardId(queue[0].frontendId);
+  const act = async (action: (card: CardWithProblem) => Promise<unknown>) => {
+    if (!currentCard || isProcessing) return;
+
+    setProcessingCardId(currentCard.frontendId);
 
     try {
-      await action();
+      await action(currentCard);
     } catch (error) {
-      console.error(errorMessage, error);
+      console.error('Failed to update card:', error);
     } finally {
       setProcessingCardId(null);
     }
   };
 
-  const handleRating = async (rating: Grade) => {
-    const currentCard = queue[0];
-    const input: RateCardInput = {
-      frontendId: currentCard.frontendId,
-      domain: currentCard.domain,
-      rating,
-    };
-    await handleCardAction(() => rateCardMutation.mutateAsync(input), 'Failed to rate card:');
-  };
+  const loadingQueue = (
+    <div className="flex items-center justify-center h-32">
+      <div className="text-secondary">{t.home.loadingReviewQueue}</div>
+    </div>
+  );
 
-  const handleDelete = async () => {
-    const currentCard = queue[0];
-    await handleCardAction(() => removeCardMutation.mutateAsync(currentCard.frontendId), 'Failed to delete card:');
-  };
-
-  const handleDelay = async (days: number) => {
-    const currentCard = queue[0];
-    await handleCardAction(
-      () => delayCardMutation.mutateAsync({ frontendId: currentCard.frontendId, days }),
-      'Failed to delay card:'
-    );
-  };
-
-  const handlePause = async () => {
-    const currentCard = queue[0];
-    await handleCardAction(
-      () => pauseCardMutation.mutateAsync({ frontendId: currentCard.frontendId, paused: true }),
-      'Failed to pause card:'
-    );
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <div className="text-secondary">{t.home.loadingReviewQueue}</div>
-      </div>
-    );
-  }
+  if (isLoading) return loadingQueue;
 
   if (error) {
     return (
@@ -86,15 +56,7 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
     );
   }
 
-  const currentCard = queue[0];
-
-  if (processingCardId && currentCard?.frontendId !== processingCardId) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <div className="text-secondary">{t.home.loadingReviewQueue}</div>
-      </div>
-    );
-  }
+  if (processingCardId && currentCard?.frontendId !== processingCardId) return loadingQueue;
 
   if (!currentCard) {
     return (
@@ -120,7 +82,14 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
       {/* The key is important to ensure React re-mounts the component for a new card */}
-      <ReviewCard key={currentCard.frontendId} card={currentCard} onRate={handleRating} isProcessing={isProcessing} />
+      <ReviewCard
+        key={currentCard.frontendId}
+        card={currentCard}
+        onRate={(rating) =>
+          act((card) => rateCardMutation.mutateAsync({ frontendId: card.frontendId, domain: card.domain, rating }))
+        }
+        isProcessing={isProcessing}
+      />
       <div>
         <ExpandableSection title={t.notes.title} isDisabled={isProcessing}>
           <NoteEditor frontendId={currentCard.frontendId} variant="regular" isDisabled={isProcessing} />
@@ -129,9 +98,9 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
           <ActionsSection
             key={currentCard.frontendId}
             youtubeUrl={currentCard.youtubeUrl}
-            onDelete={handleDelete}
-            onDelay={handleDelay}
-            onPause={handlePause}
+            onDelete={() => act((card) => removeCardMutation.mutateAsync(card.frontendId))}
+            onDelay={(days) => act((card) => delayCardMutation.mutateAsync({ frontendId: card.frontendId, days }))}
+            onPause={() => act((card) => pauseCardMutation.mutateAsync({ frontendId: card.frontendId, paused: true }))}
             isDisabled={isProcessing}
           />
         </ExpandableSection>

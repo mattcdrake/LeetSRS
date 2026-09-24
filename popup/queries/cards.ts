@@ -1,10 +1,10 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { Card, ProblemReference, RateCardInput } from '@/shared/learning-document';
 import { buildReviewQueue } from '@/shared/review';
 import { usePopupClock } from '../hooks/usePopupClock';
-import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
+import { learningDocumentQueryOptions, useDocumentMutation } from './learning-document';
 
 export type CardWithProblem = Card & CatalogProblem;
 
@@ -65,34 +65,26 @@ export function useReviewQueueQuery() {
   };
 }
 
-function useCardMutation<TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>) {
-  const queryClient = useQueryClient();
-  return useMutation<TResult, Error, TVariables>({
-    mutationFn,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: learningDocumentQueryKey }),
-  });
-}
-
 export function useRemoveCardMutation() {
-  return useCardMutation((frontendId: string) => background.removeCard(frontendId));
+  return useDocumentMutation((frontendId: string) => background.removeCard(frontendId));
 }
 
 export function useAddCardMutation() {
-  return useCardMutation((problem: ProblemReference) => background.addCard(problem));
+  return useDocumentMutation((problem: ProblemReference) => background.addCard(problem));
 }
 
 export function useRateCardMutation() {
-  return useCardMutation((input: RateCardInput) => background.rateCard(input));
+  return useDocumentMutation((input: RateCardInput) => background.rateCard(input));
 }
 
 export function useDelayCardMutation() {
-  return useCardMutation(({ frontendId, days }: { frontendId: string; days: number }) =>
+  return useDocumentMutation(({ frontendId, days }: { frontendId: string; days: number }) =>
     background.delayCard(frontendId, days)
   );
 }
 
 export function usePauseCardMutation() {
-  return useCardMutation(({ frontendId, paused }: { frontendId: string; paused: boolean }) =>
+  return useDocumentMutation(({ frontendId, paused }: { frontendId: string; paused: boolean }) =>
     background.setPauseStatus(frontendId, paused)
   );
 }

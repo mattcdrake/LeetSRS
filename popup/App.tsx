@@ -16,12 +16,13 @@ import { HomeView } from './views/home/HomeView';
 import { RoadmapsView } from './views/roadmaps/RoadmapsView';
 import { SettingsView } from './views/settings/SettingsView';
 
+type SettingsHighlight = 'githubSignIn' | 'gistSetup';
+
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
   const [selectedRoadmapId, setSelectedRoadmapId] = useState<RoadmapId | null>(null);
   const { data: activeRoadmapId } = useSuspenseQuery(activeRoadmapQueryOptions);
-  const [highlightGithubSignIn, setHighlightGithubSignIn] = useState(false);
-  const [highlightGistSetup, setHighlightGistSetup] = useState(false);
+  const [highlight, setHighlight] = useState<SettingsHighlight | null>(null);
   const setupShown = useRef(false);
   const auth = useGithubAuthQuery();
   const config = useGistSyncConfigQuery();
@@ -41,7 +42,7 @@ function App() {
     setupShown.current = true;
     if (!config.data.gistId) {
       setActiveView('settings');
-      setHighlightGistSetup(true);
+      setHighlight('gistSetup');
     }
     dismissSetup();
   }, [auth.data, config.data, dismissSetup]);
@@ -54,52 +55,37 @@ function App() {
     root.style.colorScheme = theme;
   }, [theme]);
 
+  const navigate = (
+    view: ViewId,
+    { highlight = null, roadmapId = null }: { highlight?: SettingsHighlight | null; roadmapId?: RoadmapId | null } = {}
+  ) => {
+    if (view === 'roadmaps') setSelectedRoadmapId(roadmapId);
+    setHighlight(highlight);
+    setActiveView(view);
+  };
+
   const views: Record<ViewId, React.ReactNode> = {
-    home: (
-      <HomeView
-        onOpenRoadmap={(id) => {
-          setSelectedRoadmapId(id);
-          setActiveView('roadmaps');
-        }}
-      />
-    ),
+    home: <HomeView onOpenRoadmap={(roadmapId) => navigate('roadmaps', { roadmapId })} />,
     roadmaps: <RoadmapsView selectedRoadmapId={selectedRoadmapId} onSelect={setSelectedRoadmapId} />,
     calendar: <CalendarView />,
     card: <CardsView />,
-    settings: <SettingsView highlightGithubSignIn={highlightGithubSignIn} highlightGistSetup={highlightGistSetup} />,
+    settings: (
+      <SettingsView
+        highlightGithubSignIn={highlight === 'githubSignIn'}
+        highlightGistSetup={highlight === 'gistSetup'}
+      />
+    ),
   };
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
-      <PopupDialogHost
-        onNavigate={(view) => {
-          if (view === 'roadmaps') setSelectedRoadmapId(null);
-          setHighlightGithubSignIn(false);
-          setHighlightGistSetup(false);
-          setActiveView(view);
-        }}
-      />
+      <PopupDialogHost onNavigate={(view) => navigate(view)} />
       <ViewBannerContext
-        value={
-          <GithubMigrationBanner
-            onOpenSettings={() => {
-              setHighlightGithubSignIn(true);
-              setActiveView('settings');
-            }}
-          />
-        }
+        value={<GithubMigrationBanner onOpenSettings={() => navigate('settings', { highlight: 'githubSignIn' })} />}
       >
         <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
       </ViewBannerContext>
-      <BottomNav
-        activeView={activeView}
-        onNavigate={(view) => {
-          if (view === 'roadmaps') setSelectedRoadmapId(activeRoadmapId);
-          setHighlightGithubSignIn(false);
-          setHighlightGistSetup(false);
-          setActiveView(view);
-        }}
-      />
+      <BottomNav activeView={activeView} onNavigate={(view) => navigate(view, { roadmapId: activeRoadmapId })} />
     </div>
   );
 }
