@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { getGithubAuthStatus } from '@/background/github-auth';
+import { resetAllData, updateSettings } from '@/background/learning';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import {
   readGistConnection,
@@ -39,7 +40,7 @@ describe('whole-document Gist sync', () => {
     vi.resetAllMocks();
     vi.useFakeTimers();
     vi.setSystemTime(new Date(now));
-    await syncModule.resetAllData();
+    await resetAllData();
     await seedGithubAuthorization();
     await writeGistConnection(connection);
     await replaceLearningDocument(local);
@@ -176,7 +177,7 @@ describe('whole-document Gist sync', () => {
   it('does not request sync when saving an edit fails', async () => {
     vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('disk failed'));
 
-    await expect(syncModule.saveEdit(local, new Date(now))).rejects.toThrow('disk failed');
+    await expect(updateSettings({ theme: 'light' })).rejects.toThrow('disk failed');
 
     expect(await readLearningDocument()).toEqual(local);
     expect(github.get).not.toHaveBeenCalled();

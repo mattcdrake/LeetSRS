@@ -8,7 +8,6 @@ import {
 } from '@/background/github-auth';
 import { previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
-import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
 import type { GistDestination } from '@/shared/github-auth';
 import { translations } from '@/shared/i18n/index';
 import type {
@@ -17,8 +16,8 @@ import type {
   GistSyncConfig,
   GistSyncErrorCode,
   GistSyncStatus,
+  LearningDocument,
 } from '@/shared/models';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import { detectBrowserLanguage } from '@/shared/settings';
 import {
   readGistConnection,
@@ -68,29 +67,6 @@ async function saveConnection(connection: GistSyncConfig): Promise<void> {
   if (observeConnection(connection) || observedConnection === previousConnection) {
     void sync();
   }
-}
-
-export async function saveEdit(document: LearningDocument, editedAt: Date): Promise<void> {
-  await replaceLearningDocument({ ...document, dataUpdatedAt: editedAt.toISOString() });
-  void sync();
-}
-
-export async function importData(json: string): Promise<void> {
-  const document = parseLearningDocumentBackup(json);
-  await replaceLearningDocument(document);
-}
-
-export async function resetAllData(): Promise<void> {
-  await replaceLearningDocument({
-    schemaVersion: LEARNING_DOCUMENT_VERSION,
-    cards: {},
-    reviewActivity: null,
-    settings: {},
-    activeRoadmapId: null,
-    roadmapSkips: {},
-  });
-  await signOutGithub();
-  await removeLegacyLearningData();
 }
 
 // Sync is deliberately just whole-document last-write-wins. Startup, local saves,

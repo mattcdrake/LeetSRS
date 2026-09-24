@@ -8,25 +8,23 @@ import {
 import {
   addCard,
   delayCard,
-  markAutoOpenHintShown,
+  importData,
   previewRatings,
   rateCard,
   removeCard,
+  resetAllData,
   saveNote,
   setActiveRoadmap,
   setPauseStatus,
   setRoadmapProblemSkipped,
-  shouldShowAutoOpenHint,
   updateSettings,
 } from '@/background/learning';
 import { dismissMigrationNotice } from '@/background/legacy/github-pat';
 import { getNextReview, getNextRoadmapProblem } from '@/background/next-problems';
-import { acknowledgePopupDialog } from '@/background/popup-dialogs';
+import { acknowledgePopupDialog, markAutoOpenHintShown, shouldShowAutoOpenHint } from '@/background/popup-dialogs';
 import {
   getGistSyncStatus,
-  importData,
   listGistDestinations,
-  resetAllData,
   setGistSyncEnabled,
   setupGistSync,
   signOutGithub,
@@ -52,6 +50,8 @@ export function createBackgroundService(ready: Promise<void>) {
     getNextReview: command(z.tuple([problemReferenceSchema]), getNextReview),
     getNextRoadmapProblem: command(z.tuple([problemReferenceSchema]), getNextRoadmapProblem),
     acknowledgePopupDialog: command(z.tuple([z.string().min(1)]), acknowledgePopupDialog),
+    shouldShowAutoOpenHint: command(z.tuple([]), shouldShowAutoOpenHint),
+    markAutoOpenHintShown: command(z.tuple([]), markAutoOpenHintShown),
     dismissGithubSetupPrompt: command(z.tuple([]), dismissGithubSetupPrompt),
     cancelGithubSignInRequest: command(z.tuple([]), cancelGithubSignInRequest),
     startGithubSignIn: command(z.tuple([]), startGithubSignIn),
@@ -68,8 +68,6 @@ export function createBackgroundService(ready: Promise<void>) {
         return problem;
       }
     ),
-    shouldShowAutoOpenHint,
-    markAutoOpenHintShown,
     previewRatings: command(z.tuple([problemReferenceSchema]), previewRatings),
     addCard: command(z.tuple([problemReferenceSchema]), addCard),
     removeCard: command(z.tuple([frontendId]), removeCard),
