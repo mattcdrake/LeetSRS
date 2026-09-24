@@ -9,12 +9,14 @@ import {
 } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
+import { countReviewed, isReviewed } from '@/shared/roadmap';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RoadmapGroup } from './RoadmapGroup';
 import type { RoadmapSummary } from './RoadmapOverview';
 import { type RoadmapProblem, RoadmapProblemRow } from './RoadmapProblemRow';
 
-export type RoadmapFilter = 'notInSrs' | 'inSrs' | 'reviewed' | 'skipped';
+export const ROADMAP_FILTERS = ['notInSrs', 'inSrs', 'reviewed', 'skipped'] as const;
+export type RoadmapFilter = (typeof ROADMAP_FILTERS)[number];
 
 function matchesFilter({ card, skipped }: RoadmapProblem, filter: RoadmapFilter | null): boolean {
   switch (filter) {
@@ -23,7 +25,7 @@ function matchesFilter({ card, skipped }: RoadmapProblem, filter: RoadmapFilter 
     case 'inSrs':
       return !!card;
     case 'reviewed':
-      return !!card && card.fsrs.reps > 0;
+      return isReviewed(card);
     case 'skipped':
       return skipped;
     default:
@@ -89,7 +91,7 @@ export function RoadmapProblemList({ roadmap, search, filter }: RoadmapProblemLi
   const skippedIds = new Set(skips.data[roadmap.id]);
   const groups = roadmap.groups.map((group) => ({
     ...group,
-    reviewed: group.frontendIds.filter((id) => document.cards[id]?.fsrs.reps > 0).length,
+    reviewed: countReviewed(document, group.frontendIds),
     problems: group.frontendIds
       .map(
         (frontendId): RoadmapProblem => ({

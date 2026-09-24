@@ -5,6 +5,7 @@ import type { CatalogProblem } from '@/shared/catalog';
 import type { Card } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
+import { isReviewed } from '@/shared/roadmap';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
@@ -30,7 +31,7 @@ export function RoadmapProblemRow({ problem, domain, isSaving, onSaved, onToggle
   const title = metadata ? getProblemTitle(metadata, domain) : t.roadmaps.problem(frontendId);
   const available = metadata?.sources.includes(domain);
   let state: 'notInSrs' | 'inSrs' | 'reviewed' = 'notInSrs';
-  if (card) state = card.fsrs.reps > 0 ? 'reviewed' : 'inSrs';
+  if (card) state = isReviewed(card) ? 'reviewed' : 'inSrs';
 
   return (
     <li className="roadmap-problem">

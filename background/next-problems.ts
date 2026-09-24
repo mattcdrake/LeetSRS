@@ -2,7 +2,7 @@ import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog'
 import { type ProblemReference, readLearningDocument } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { buildReviewQueue } from '@/shared/review';
-import { getNextRoadmapProblemId, loadRoadmap } from '@/shared/roadmap';
+import { getNextRoadmapProblemId, loadRoadmap, roadmapProblemIds } from '@/shared/roadmap';
 
 export type NextProblem = CatalogProblem & { domain: LeetcodeDomain };
 interface NextRoadmapProblem {
@@ -24,7 +24,7 @@ export async function getNextRoadmapProblem(current: ProblemReference): Promise<
   const id = document.activeRoadmapId;
   if (!id) return null;
   const roadmap = await loadRoadmap(id);
-  const ids = roadmap.groups.flatMap((group) => group.frontendIds);
+  const ids = roadmapProblemIds(roadmap);
   const problems = await getProblemsByFrontendIds(ids.map((frontendId) => ({ frontendId, domain: current.domain })));
   const metadata = Object.fromEntries(ids.map((id, index) => [id, problems[index]]));
   const nextId = getNextRoadmapProblemId(roadmap, document, metadata, current.domain, current.frontendId);

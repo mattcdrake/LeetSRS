@@ -4,7 +4,7 @@ import { ViewLayout } from '@/popup/components/ViewLayout';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { activeRoadmapQueryOptions, roadmapsQueryOptions, useActivateRoadmapMutation } from '@/popup/queries/roadmaps';
-import type { RoadmapId } from '@/shared/roadmap';
+import { countReviewed, type RoadmapId, roadmapProblemIds } from '@/shared/roadmap';
 import { RoadmapDetail } from './RoadmapDetail';
 import { RoadmapOverview } from './RoadmapOverview';
 
@@ -20,12 +20,8 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
   const { data: activeRoadmapId } = useSuspenseQuery(activeRoadmapQueryOptions);
   const activation = useActivateRoadmapMutation();
   const summaries = (roadmaps.data ?? []).map((roadmap) => {
-    const ids = roadmap.groups.flatMap((group) => group.frontendIds);
-    return {
-      ...roadmap,
-      total: ids.length,
-      reviewed: ids.filter((id) => document.cards[id]?.fsrs.reps > 0).length,
-    };
+    const ids = roadmapProblemIds(roadmap);
+    return { ...roadmap, total: ids.length, reviewed: countReviewed(document, ids) };
   });
   const selected = summaries.find((roadmap) => roadmap.id === selectedRoadmapId);
 
