@@ -4,50 +4,25 @@
 
 import { render, screen } from '@testing-library/react';
 import { State } from 'ts-fsrs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { translations } from '@/shared/i18n/index';
 import { createMockCardWithProblem } from '@/test/utils/card-mocks';
-import { setPopupLearningDocumentQueryData } from '@/test/utils/learning-document-mocks';
-import { buildSettings } from '@/test/utils/settings-mocks';
-import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewCard } from '../ReviewCard';
 
 vi.mock('@/popup/hooks/useTheme', () => ({ useTheme: () => 'light' }));
 vi.mock('@/popup/contexts/I18nContext', () => ({ useI18n: vi.fn() }));
 
-describe('ReviewCard', () => {
-  const mockOnRate = vi.fn();
-  const mockCard = createMockCardWithProblem(State.New);
-
-  const renderWithProviders = (card = mockCard, onRate = mockOnRate, resetEditorOnReviewQueue = false) => {
-    const { wrapper, queryClient } = createPopupTestWrapper();
-    setPopupLearningDocumentQueryData(queryClient, { settings: buildSettings({ resetEditorOnReviewQueue }) });
-    return render(<ReviewCard card={card} onRate={onRate} />, { wrapper });
-  };
-
-  beforeEach(() => {
-    vi.mocked(useI18n).mockReturnValue(translations.en);
-  });
-
-  describe('problem links', () => {
-    it('renders the problem identity and a normal external link when reset is disabled', () => {
-      renderWithProviders();
-      expect(screen.getByText('#1')).toBeInTheDocument();
-      expect(screen.getByText('Two Sum')).toBeInTheDocument();
-      const link = screen.getByRole('link', { name: /LeetCode/i });
-      expect(link).toHaveAttribute('href', 'https://leetcode.com/problems/two-sum/description/');
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-    });
-
-    it.each(['leetcode.com', 'leetcode.cn'] as const)('keeps a normal link on %s when reset is enabled', (domain) => {
-      renderWithProviders({ ...mockCard, domain }, mockOnRate, true);
-      expect(screen.getByText(domain === 'leetcode.cn' ? '两数之和' : 'Two Sum')).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /LeetCode/i })).toHaveAttribute(
-        'href',
-        `https://${domain}/problems/two-sum/description/`
-      );
-    });
-  });
+it.each([
+  ['leetcode.com', 'Two Sum'],
+  ['leetcode.cn', '两数之和'],
+] as const)('links the problem on %s in a new tab', (domain, title) => {
+  vi.mocked(useI18n).mockReturnValue(translations.en);
+  render(<ReviewCard card={{ ...createMockCardWithProblem(State.New), domain }} onRate={vi.fn()} />);
+  expect(screen.getByText('#1')).toBeInTheDocument();
+  expect(screen.getByText(title)).toBeInTheDocument();
+  const link = screen.getByRole('link', { name: /LeetCode/i });
+  expect(link).toHaveAttribute('href', `https://${domain}/problems/two-sum/description/`);
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer');
 });

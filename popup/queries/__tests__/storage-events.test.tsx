@@ -177,11 +177,11 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
   }
 );
 
-it.each([useCardsQuery])('reports initialization failure without presenting default data (%s)', async (useQuery) => {
+it('reports initialization failure without presenting default data', async () => {
   service.handle('waitForInitialization', () => {
     throw new Error('Conversion failed');
   });
-  const { result } = renderHook(() => useQuery(), { wrapper: createPopupTestWrapper().wrapper });
+  const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.error?.message).toBe('Conversion failed'));
   expect(result.current.data).toBeUndefined();
   expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();

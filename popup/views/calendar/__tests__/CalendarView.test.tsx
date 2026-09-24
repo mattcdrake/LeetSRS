@@ -42,7 +42,6 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
         '2': { ...card, frontendId: '2', fsrs: { ...card.fsrs, due: new Date(2026, 8, 16, 9).getTime() } },
         '3': { ...card, frontendId: '3', fsrs: { ...card.fsrs, due: new Date(2026, 8, 18, 12).getTime() } },
       },
-      settings: { resetEditorOnReviewQueue: true },
     })
   );
 
