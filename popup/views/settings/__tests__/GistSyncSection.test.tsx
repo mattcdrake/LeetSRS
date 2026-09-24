@@ -2,10 +2,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { storage } from '#imports';
 import { background } from '@/shared/background-service';
 import type { GistConnectionResult } from '@/shared/models';
-import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import { gistConnectionItem, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
@@ -28,7 +27,7 @@ beforeEach(async () => {
     vi.spyOn(event, 'removeListener').mockImplementation(() => {});
   }
   await replaceLearningDocument(buildLearningDocument());
-  await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'saved', enabled: false });
+  await gistConnectionItem.setValue({ accountId: 1, gistId: 'saved', enabled: false });
   service
     .reset()
     .resolve('cancelGithubSignInRequest', undefined)
@@ -74,7 +73,7 @@ it('allows signing out while a connection is pending and ignores its late feedba
   const pending = Promise.withResolvers<GistConnectionResult>();
   service.resolve('setupGistSync', pending.promise).handle('signOutGithub', async () => {
     service.resolve('getGithubAuthStatus', { ...signedIn, account: null });
-    await storage.removeItem(STORAGE_KEYS.gistConnection);
+    await gistConnectionItem.removeValue();
   });
   open();
   const change = await screen.findByRole('button', { name: 'Change' });

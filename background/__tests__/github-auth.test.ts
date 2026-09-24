@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import {
   cancelGithubSignInRequest,
   clearGithubAuthorization,
@@ -11,6 +10,7 @@ import {
   resumeGithubSignIn,
   startGithubSignIn,
 } from '@/background/github-auth';
+import { githubAuthorizationItem } from '@/shared/github-auth';
 import { readGistConnection } from '@/shared/storage';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 
@@ -94,9 +94,9 @@ it.each(['state', 'origin', 'cancel', 'exchange', 'account'])(
 );
 it('shares concurrent refreshes and persists rotated credentials before returning', async () => {
   await seedGithubAuthorization();
-  const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
+  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
   const expired = { ...saved, expiresAt: 0 };
-  await storage.setItem('local:leetsrs:githubAuthorization', expired);
+  await githubAuthorizationItem.setValue(expired);
   const started = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   const set = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
@@ -116,7 +116,7 @@ it('shares concurrent refreshes and persists rotated credentials before returnin
   await started.promise;
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(settled).not.toHaveBeenCalled();
-  expect(await storage.getItem('local:leetsrs:githubAuthorization')).toEqual(expired);
+  expect(await githubAuthorizationItem.getValue()).toEqual(expired);
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(fetch).toHaveBeenNthCalledWith(
     1,
@@ -127,7 +127,7 @@ it('shares concurrent refreshes and persists rotated credentials before returnin
   release.resolve();
   const results = await pending;
   expect(results.map((result) => result.refreshToken)).toEqual(['rotated', 'rotated', 'rotated']);
-  expect(await storage.getItem('local:leetsrs:githubAuthorization')).toMatchObject({ refreshToken: 'rotated' });
+  expect(await githubAuthorizationItem.getValue()).toMatchObject({ refreshToken: 'rotated' });
 });
 it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes after sign-out', async (operation) => {
   const pending = Promise.withResolvers<Response>();
@@ -138,8 +138,8 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
     await startGithubSignIn();
   } else {
     await seedGithubAuthorization();
-    const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
-    await storage.setItem('local:leetsrs:githubAuthorization', { ...saved, expiresAt: 0 });
+    const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
+    await githubAuthorizationItem.setValue({ ...saved, expiresAt: 0 });
     refresh = getGithubAuthorization().catch(() => null);
   }
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
@@ -151,12 +151,12 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
 });
 it('keeps saved authorization unchanged on refresh failure and allows retry', async () => {
   await seedGithubAuthorization();
-  const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
+  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
   const expired = { ...saved, expiresAt: 0 };
-  await storage.setItem('local:leetsrs:githubAuthorization', expired);
+  await githubAuthorizationItem.setValue(expired);
   vi.mocked(fetch).mockRejectedValueOnce(new Error('Offline'));
   await expect(getGithubAuthorization()).rejects.toThrow();
-  expect(await storage.getItem('local:leetsrs:githubAuthorization')).toEqual(expired);
+  expect(await githubAuthorizationItem.getValue()).toEqual(expired);
   expect((await getGithubAuthorization()).refreshToken).toBe('rotated');
 });
 

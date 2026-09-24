@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import { getGithubAuthStatus } from '@/background/github-auth';
 import { dismissMigrationNotice, migratePatConnection } from '@/background/legacy/github-pat';
+import { patMigrationItem } from '@/shared/legacy/github-pat';
 import { readGistConnection, readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
@@ -22,7 +22,7 @@ it('retires current and legacy PATs permanently while preserving learning data a
   await fakeBrowser.storage.sync.set({ 'leetsrs:githubPat': 'resurrected' });
   await migratePatConnection();
   expect((await getGithubAuthStatus()).migrationNotice).toBe(false);
-  expect(await storage.getItem('local:leetsrs:oauthMigration')).toEqual({ notice: false, previousGist: 'previous' });
+  expect(await patMigrationItem.getValue()).toEqual({ notice: false, previousGist: 'previous' });
   expect(await readLearningDocument()).toEqual(before);
   expect(await fakeBrowser.storage.sync.get()).toEqual({});
 });

@@ -4,9 +4,9 @@ import { storage } from 'wxt/utils/storage';
 import { watchDocumentTranslations as watch } from '@/content/translations';
 import { translations } from '@/shared/i18n/index';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { STORAGE_KEYS } from '@/shared/storage';
+import { learningDocumentItem } from '@/shared/storage';
 
-const key = STORAGE_KEYS.learningDocument;
+const key = learningDocumentItem.key;
 const storedValue = (language: unknown) => ({
   schemaVersion: LEARNING_DOCUMENT_VERSION,
   cards: {},
@@ -31,7 +31,7 @@ describe('stored translations from the learning document', () => {
     vi.stubGlobal('navigator', { languages: ['zh-CN'] });
     const onChange = vi.fn();
     const onError = vi.fn();
-    const getItem = vi.spyOn(storage, 'getItem');
+    const getItem = vi.spyOn(learningDocumentItem, 'getValue');
     const stop = watch(onChange, onError);
     try {
       await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith(translations.en));
@@ -53,7 +53,7 @@ describe('stored translations from the learning document', () => {
 
   it('does not overwrite a storage change with an older initial read', async () => {
     const initial = Promise.withResolvers<unknown>();
-    vi.spyOn(storage, 'getItem').mockReturnValueOnce(initial.promise);
+    vi.spyOn(learningDocumentItem, 'getValue').mockReturnValueOnce(initial.promise);
     const onChange = vi.fn();
     const stop = watch(onChange, vi.fn());
     try {
@@ -69,7 +69,7 @@ describe('stored translations from the learning document', () => {
 
   it('reports an initial read failure and still receives later changes', async () => {
     const error = new Error('storage unavailable');
-    vi.spyOn(storage, 'getItem').mockRejectedValueOnce(error);
+    vi.spyOn(learningDocumentItem, 'getValue').mockRejectedValueOnce(error);
     const onChange = vi.fn();
     const onError = vi.fn();
     const stop = watch(onChange, onError);

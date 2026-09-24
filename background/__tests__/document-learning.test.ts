@@ -2,8 +2,7 @@ import { registerService } from '@webext-core/proxy-service';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from 'wxt/utils/storage';
-import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -72,7 +71,7 @@ describe('document learning through background commands', () => {
       dataUpdatedAt: new Date().toISOString(),
     });
     expect(writes).toHaveBeenCalledExactlyOnceWith({
-      [STORAGE_KEYS.learningDocument.slice('local:'.length)]: await readLearningDocument(),
+      [learningDocumentItem.key.slice('local:'.length)]: await readLearningDocument(),
     });
   });
 
@@ -120,9 +119,9 @@ describe('document learning through background commands', () => {
   it('keeps a review schedule, activity, and edit timestamp on the captured day when a read crosses midnight', async () => {
     const now = new Date('2024-03-15T23:59:59.999');
     vi.setSystemTime(now);
-    const get = storage.getItem.bind(storage);
-    vi.spyOn(storage, 'getItem').mockImplementationOnce(async (key) => {
-      const document = await get(key);
+    const get = learningDocumentItem.getValue.bind(learningDocumentItem);
+    vi.spyOn(learningDocumentItem, 'getValue').mockImplementationOnce(async () => {
+      const document = await get();
       vi.setSystemTime(new Date('2024-03-16T00:00:00'));
       return document;
     });

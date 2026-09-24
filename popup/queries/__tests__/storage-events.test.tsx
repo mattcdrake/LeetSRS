@@ -12,7 +12,12 @@ import { background } from '@/shared/background-service';
 import * as catalog from '@/shared/catalog';
 import type { GistSyncStatus } from '@/shared/models';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import {
+  gistConnectionItem,
+  learningDocumentItem,
+  readLearningDocument,
+  replaceLearningDocument,
+} from '@/shared/storage';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/card-mocks';
@@ -57,7 +62,7 @@ async function startBackground() {
 
 it('reads a current connection without waiting for a learning document or background RPC', async () => {
   const connection = { accountId: 1, gistId: 'gist', enabled: true };
-  await storage.setItem(STORAGE_KEYS.gistConnection, connection);
+  await gistConnectionItem.setValue(connection);
   const { result } = renderHook(() => useGistSyncConfigQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.data).toEqual(connection));
   expect(Object.values(background).flatMap((method): unknown[] => vi.mocked(method).mock.calls)).toHaveLength(0);
@@ -82,7 +87,7 @@ it.each(['storage', 'catalog'].flatMap((source) => ['success', 'failure'].map((o
     const pending = Promise.withResolvers<void>();
     const read =
       source === 'storage'
-        ? vi.spyOn(storage, 'getItem').mockImplementationOnce(async () => {
+        ? vi.spyOn(learningDocumentItem, 'getValue').mockImplementationOnce(async () => {
             await pending.promise;
             return initial;
           })
@@ -127,7 +132,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
   await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...first, ...buildCatalogProblem() }]));
   expect(background.waitForInitialization).not.toHaveBeenCalled();
 
-  const reads = vi.spyOn(storage, 'getItem').mockRejectedValue(new Error('Storage unavailable'));
+  const reads = vi.spyOn(learningDocumentItem, 'getValue').mockRejectedValue(new Error('Storage unavailable'));
   await act(async () => {
     await storage.setItem('local:unrelated', 'change');
     await vi.advanceTimersByTimeAsync(1);
@@ -154,7 +159,7 @@ it('keeps an open view unchanged for unrelated events or a disposed subscription
 it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
   'waits for background initialization of %j without writing from the reader',
   async (stored) => {
-    await storage.setItem(STORAGE_KEYS.learningDocument, stored);
+    await learningDocumentItem.setValue(stored);
     const ready = Promise.withResolvers<void>();
     service.resolve('waitForInitialization', ready.promise);
     const documentRead = readLearningDocument();
@@ -166,7 +171,7 @@ it.each([null, { schemaVersion: 5, cards: {}, stats: {}, settings: {} }])(
     expect(completed).not.toHaveBeenCalled();
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
-    expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toEqual(stored);
+    expect(await learningDocumentItem.getValue()).toEqual(stored);
     await act(async () => {
       await replaceLearningDocument(buildLearningDocument());
       ready.resolve();
@@ -184,14 +189,14 @@ it('reports initialization failure without presenting default data', async () =>
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.error?.message).toBe('Conversion failed'));
   expect(result.current.data).toBeUndefined();
-  expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
+  expect(await learningDocumentItem.getValue()).toBeNull();
 });
 
 it.each([
   { schemaVersion: LEARNING_DOCUMENT_VERSION + 1, cards: {}, stats: {}, settings: {} },
   { schemaVersion: LEARNING_DOCUMENT_VERSION, cards: 'corrupt', stats: {}, settings: {} },
 ])('reports invalid current data directly: %j', async (document) => {
-  await storage.setItem(STORAGE_KEYS.learningDocument, document);
+  await learningDocumentItem.setValue(document);
   service.resolve('waitForInitialization', new Promise<void>(() => {}));
   const { result } = renderHook(() => useCardsQuery(), { wrapper: createPopupTestWrapper().wrapper });
   await waitFor(() => expect(result.current.error).not.toBeNull());
@@ -241,7 +246,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
   await act(() => background.saveNote(problem.frontendId, 'Content edit'));
   await waitFor(() => expect(result.current.note.data).toBe('Content edit'));
   await seedGithubAuthorization();
-  await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
+  await gistConnectionItem.setValue({ accountId: 1, gistId: 'gist', enabled: true });
   await waitFor(() => expect(result.current.config.data?.enabled).toBe(true));
   const remote = buildLearningDocument({
     settings: { maxNewCardsPerDay: 9 },
@@ -284,7 +289,7 @@ it.each(['tick', 'visibility'] as const)(
     await vi.waitFor(() => expect(view.result.current.queue.data).toEqual([]));
     expect(view.result.current.today.data).toEqual(stats);
     const writes = vi.spyOn(storage, 'setItem');
-    const reads = vi.spyOn(storage, 'getItem');
+    const reads = vi.spyOn(learningDocumentItem, 'getValue');
     vi.mocked(fetch).mockClear();
     await act(async () => {
       if (trigger === 'tick') {
@@ -309,7 +314,7 @@ it('keeps a successful local save successful when refreshing the cache fails', a
   const { wrapper, queryClient } = createPopupTestWrapper();
   const { result } = renderHook(() => ({ cards: useCardsQuery(), rate: useRateCardMutation() }), { wrapper });
   await waitFor(() => expect(result.current.cards.data).toBeDefined());
-  const reads = vi.spyOn(storage, 'getItem');
+  const reads = vi.spyOn(learningDocumentItem, 'getValue');
   const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
   vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementation((items) => {
     reads.mockRejectedValue(new Error('Read failed'));

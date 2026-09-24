@@ -1,7 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { storage } from '#imports';
-import { STORAGE_KEYS } from '@/shared/storage';
+import type { WxtStorageItem } from '#imports';
+import { githubAuthorizationItem, githubSetupPendingItem } from '@/shared/github-auth';
+import { patMigrationItem } from '@/shared/legacy/github-pat';
+import {
+  gistConnectionItem,
+  lastSyncTimeItem,
+  learningDocumentItem,
+  popupDialogAcknowledgmentsItem,
+} from '@/shared/storage';
 import { gistSyncQueryKeys } from './gist-sync';
 import { learningDocumentQueryKey } from './learning-document';
 import { popupDialogAcknowledgmentsQueryKey } from './popup-dialogs';
@@ -20,18 +27,21 @@ export function useStorageQueryEvents() {
     const connectionKeys = [gistSyncQueryKeys.config, gistSyncQueryKeys.status];
     const dialogKeys = [popupDialogAcknowledgmentsQueryKey];
     const eligibilityKeys = [['popupDialogs', 'eligibility']];
-    const watch = (key: Parameters<typeof storage.watch>[0], keys: readonly (readonly string[])[]) =>
-      storage.watch(key, () => {
+    const watch = (
+      item: Pick<WxtStorageItem<unknown, Record<string, never>>, 'watch'>,
+      keys: readonly (readonly string[])[]
+    ) =>
+      item.watch(() => {
         void refresh(keys);
       });
     const unwatch = [
-      watch(STORAGE_KEYS.learningDocument, learningKeys),
-      watch(STORAGE_KEYS.popupDialogAcknowledgments, dialogKeys),
-      watch(STORAGE_KEYS.gistConnection, connectionKeys),
-      watch('local:leetsrs:oauthMigration', [gistSyncQueryKeys.auth]),
-      watch('local:leetsrs:githubAuthorization', [gistSyncQueryKeys.auth]),
-      watch('local:leetsrs:githubSetupPending', [gistSyncQueryKeys.auth]),
-      watch(STORAGE_KEYS.lastSyncTime, [gistSyncQueryKeys.status]),
+      watch(learningDocumentItem, learningKeys),
+      watch(popupDialogAcknowledgmentsItem, dialogKeys),
+      watch(gistConnectionItem, connectionKeys),
+      watch(patMigrationItem, [gistSyncQueryKeys.auth]),
+      watch(githubAuthorizationItem, [gistSyncQueryKeys.auth]),
+      watch(githubSetupPendingItem, [gistSyncQueryKeys.auth]),
+      watch(lastSyncTimeItem, [gistSyncQueryKeys.status]),
     ];
     // Catch changes made before this effect, including while a cached popup was unmounted.
     void refresh([...learningKeys, ...connectionKeys, ...dialogKeys, ...eligibilityKeys]);

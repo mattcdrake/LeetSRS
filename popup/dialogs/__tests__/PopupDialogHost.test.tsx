@@ -4,11 +4,10 @@ import { StrictMode } from 'react';
 import { Button, Heading } from 'react-aria-components';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import { acknowledgePopupDialog } from '@/background/popup-dialogs';
 import { popupDialogAcknowledgmentsQueryKey } from '@/popup/queries/popup-dialogs';
 import { background } from '@/shared/background-service';
-import { readPopupDialogAcknowledgments, STORAGE_KEYS } from '@/shared/storage';
+import { popupDialogAcknowledgmentsItem, readPopupDialogAcknowledgments } from '@/shared/storage';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { PopupDialogHost } from '../PopupDialogHost';
@@ -77,12 +76,12 @@ it('does not select a later dialog when eligibility fails, and resumes after rec
 it('waits for acknowledgment reads and recovers without showing an already acknowledged dialog', async () => {
   const { wrapper, queryClient } = createPopupTestWrapper();
   const registry = [dialog('first', async () => true), dialog('later', async () => true)];
-  await storage.setItem(STORAGE_KEYS.popupDialogAcknowledgments, { first: true });
+  await popupDialogAcknowledgmentsItem.setValue({ first: true });
   const pending = Promise.withResolvers<void>();
-  const getItem = storage.getItem.bind(storage);
-  const read = vi.spyOn(storage, 'getItem').mockImplementation(async (key, options) => {
-    if (key === STORAGE_KEYS.popupDialogAcknowledgments) await pending.promise;
-    return getItem(key, options);
+  const getValue = popupDialogAcknowledgmentsItem.getValue.bind(popupDialogAcknowledgmentsItem);
+  const read = vi.spyOn(popupDialogAcknowledgmentsItem, 'getValue').mockImplementation(async () => {
+    await pending.promise;
+    return getValue();
   });
   render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, { wrapper });
 

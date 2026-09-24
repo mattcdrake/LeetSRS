@@ -4,8 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
-import { replaceLearningDocument } from '@/shared/storage';
+import { learningDocumentItem, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useTodayReviewActivityQuery } from '../review-activity';
@@ -26,7 +25,7 @@ it('refreshes the clock when reopening a cached view after the last subscriber u
     await vi.waitFor(() => expect(view.result.current.data).toEqual(activity));
     view.unmount();
     vi.setSystemTime(new Date('2024-03-16T00:00:10'));
-    const reads = vi.spyOn(storage, 'getItem');
+    const reads = vi.spyOn(learningDocumentItem, 'getValue');
     view = renderHook(() => useTodayReviewActivityQuery(), { wrapper });
     expect(view.result.current.data).toBeNull();
     expect(reads).not.toHaveBeenCalled();
