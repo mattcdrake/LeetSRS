@@ -50,6 +50,7 @@
 ## Repository conventions
 
 - Keep PR titles and descriptions concise.
+- Do not sign commits or pull requests: omit agent attribution such as `Co-Authored-By` trailers and "Generated with" lines.
 - Perform implementation work in a separate Git worktree.
 - Regenerate a missing `.wxt/tsconfig.json` with `npx wxt prepare`; `tsconfig.json` extends it.
 - Do not commit generated `.wxt/` or `.output/` files.
