@@ -1,14 +1,47 @@
 import { createEmptyCard, FSRS, State as FsrsState, generatorParameters } from 'ts-fsrs';
-import { storage } from '#imports';
+import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
+import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
 import { recordReview } from '@/background/review-activity';
+import { signOutGithub, sync } from '@/background/sync';
 import type { Card, ProblemReference, RateCardInput, RatingPreview } from '@/shared/models';
-import { findCard, type LearningDocument } from '@/shared/models';
+import { findCard, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import type { RoadmapId } from '@/shared/roadmap';
 import type { SettingsUpdate } from '@/shared/settings';
-import { readLearningDocument } from '@/shared/storage';
-import { saveEdit } from './sync';
+import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short_term: false }));
+
+const UNCHANGED = Symbol('unchanged');
+
+// Applies one change to the stored document. Returning UNCHANGED skips the save.
+async function edit<T>(change: (document: LearningDocument, now: Date) => T): Promise<T> {
+  const now = new Date();
+  const document = await readLearningDocument();
+  const result = change(document, now);
+  if (result !== UNCHANGED) {
+    await replaceLearningDocument({ ...document, dataUpdatedAt: now.toISOString() });
+    void sync();
+  }
+  return result;
+}
+
+export async function importData(json: string): Promise<void> {
+  const document = parseLearningDocumentBackup(json);
+  await replaceLearningDocument(document);
+}
+
+export async function resetAllData(): Promise<void> {
+  await replaceLearningDocument({
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+    cards: {},
+    reviewActivity: null,
+    settings: {},
+    activeRoadmapId: null,
+    roadmapSkips: {},
+  });
+  await signOutGithub();
+  await removeLegacyLearningData();
+}
 
 function requireCard(document: LearningDocument, frontendId: string): Card {
   const card = findCard(document, frontendId);
@@ -30,85 +63,71 @@ function createCard(problem: ProblemReference, now: Date): Card {
 }
 
 export async function addCard(problem: ProblemReference): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const existing = findCard(document, problem.frontendId);
-  if (existing) {
-    return;
-  }
-
-  document.cards[problem.frontendId] = createCard(problem, now);
-  await saveEdit(document, now);
+  await edit((document, now) => {
+    if (findCard(document, problem.frontendId)) return UNCHANGED;
+    document.cards[problem.frontendId] = createCard(problem, now);
+  });
 }
 
 export async function removeCard(frontendId: string): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  if (!findCard(document, frontendId)) return;
-  delete document.cards[frontendId];
-  await saveEdit(document, now);
+  await edit((document) => {
+    if (!findCard(document, frontendId)) return UNCHANGED;
+    delete document.cards[frontendId];
+  });
 }
 
 export async function delayCard(frontendId: string, days: number): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const card = requireCard(document, frontendId);
-  if (days === 0) return;
-  card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
-  await saveEdit(document, now);
+  await edit((document) => {
+    const card = requireCard(document, frontendId);
+    if (days === 0) return UNCHANGED;
+    card.fsrs.due = calculateDelayedDueDate(card.fsrs.due, days);
+  });
 }
 
 export async function setPauseStatus(frontendId: string, paused: boolean): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const card = requireCard(document, frontendId);
-  if (card.paused === paused) return;
-  card.paused = paused;
-  await saveEdit(document, now);
+  await edit((document) => {
+    const card = requireCard(document, frontendId);
+    if (card.paused === paused) return UNCHANGED;
+    card.paused = paused;
+  });
 }
 
-export async function rateCard(input: RateCardInput): Promise<Card> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const { rating, ...problem } = input;
-  const card = findCard(document, problem.frontendId) ?? createCard(problem, now);
-  const isNewCard = card.fsrs.state === FsrsState.New;
-  const schedulingResult = fsrs.next(card.fsrs, now, rating);
-  card.fsrs = {
-    ...schedulingResult.card,
-    due: schedulingResult.card.due.getTime(),
-    last_review: schedulingResult.card.last_review?.getTime(),
-  };
-  document.cards[card.frontendId] = card;
-
-  document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
-  await saveEdit(document, now);
-  return card;
+export function rateCard(input: RateCardInput): Promise<Card> {
+  return edit((document, now) => {
+    const { rating, ...problem } = input;
+    const card = findCard(document, problem.frontendId) ?? createCard(problem, now);
+    const isNewCard = card.fsrs.state === FsrsState.New;
+    const schedulingResult = fsrs.next(card.fsrs, now, rating);
+    card.fsrs = {
+      ...schedulingResult.card,
+      due: schedulingResult.card.due.getTime(),
+      last_review: schedulingResult.card.last_review?.getTime(),
+    };
+    document.cards[card.frontendId] = card;
+    document.reviewActivity = recordReview(document.reviewActivity, now, isNewCard);
+    return card;
+  });
 }
 
 export async function saveNote(frontendId: string, text: string): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const card = text === '' ? findCard(document, frontendId) : requireCard(document, frontendId);
-  if (!card) return;
-  if ((card.note ?? '') === text) return;
-  if (text === '') {
-    delete card.note;
-  } else {
-    card.note = text;
-  }
-  await saveEdit(document, now);
+  await edit((document) => {
+    const card = text === '' ? findCard(document, frontendId) : requireCard(document, frontendId);
+    if (!card || (card.note ?? '') === text) return UNCHANGED;
+    if (text === '') {
+      delete card.note;
+    } else {
+      card.note = text;
+    }
+  });
 }
 
 export async function updateSettings(changes: SettingsUpdate): Promise<void> {
-  if (Object.keys(changes).length === 0) {
-    return;
-  }
-
-  const now = new Date();
-  const document = await readLearningDocument();
-  if (Object.entries(changes).every(([key, value]) => document.settings[key as keyof SettingsUpdate] === value)) return;
-  await saveEdit({ ...document, settings: { ...document.settings, ...changes } }, now);
+  await edit((document) => {
+    if (Object.entries(changes).every(([key, value]) => document.settings[key as keyof SettingsUpdate] === value)) {
+      return UNCHANGED;
+    }
+    document.settings = { ...document.settings, ...changes };
+  });
 }
 
 export function calculateDelayedDueDate(due: number, days: number): number {
@@ -118,11 +137,10 @@ export function calculateDelayedDueDate(due: number, days: number): number {
 }
 
 export async function setActiveRoadmap(id: RoadmapId | null): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  if (document.activeRoadmapId === id) return;
-  document.activeRoadmapId = id;
-  await saveEdit(document, now);
+  await edit((document) => {
+    if (document.activeRoadmapId === id) return UNCHANGED;
+    document.activeRoadmapId = id;
+  });
 }
 
 export async function setRoadmapProblemSkipped(
@@ -130,17 +148,16 @@ export async function setRoadmapProblemSkipped(
   frontendId: string,
   skipped: boolean
 ): Promise<void> {
-  const now = new Date();
-  const document = await readLearningDocument();
-  const ids = new Set(document.roadmapSkips[roadmapId]);
-  if (ids.has(frontendId) === skipped) return;
-  if (skipped) {
-    ids.add(frontendId);
-  } else {
-    ids.delete(frontendId);
-  }
-  document.roadmapSkips[roadmapId] = [...ids];
-  await saveEdit(document, now);
+  await edit((document) => {
+    const ids = new Set(document.roadmapSkips[roadmapId]);
+    if (ids.has(frontendId) === skipped) return UNCHANGED;
+    if (skipped) {
+      ids.add(frontendId);
+    } else {
+      ids.delete(frontendId);
+    }
+    document.roadmapSkips[roadmapId] = [...ids];
+  });
 }
 
 export async function previewRatings(problem: ProblemReference): Promise<RatingPreview> {
@@ -154,12 +171,4 @@ export async function previewRatings(problem: ProblemReference): Promise<RatingP
     3: preview[3].card.scheduled_days,
     4: preview[4].card.scheduled_days,
   };
-}
-
-export async function shouldShowAutoOpenHint(): Promise<boolean> {
-  return !(await storage.getItem('local:leetsrs:ratingHintShown'));
-}
-
-export async function markAutoOpenHintShown(): Promise<void> {
-  await storage.setItem('local:leetsrs:ratingHintShown', true);
 }
