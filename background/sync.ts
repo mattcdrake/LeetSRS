@@ -1,5 +1,4 @@
 import { Octokit } from 'octokit';
-import { storage } from '#imports';
 import {
   authGeneration,
   clearGithubAuthorization,
@@ -20,15 +19,14 @@ import type {
 } from '@/shared/models';
 import { detectBrowserLanguage } from '@/shared/settings';
 import {
+  gistConnectionItem,
+  lastSyncTimeItem,
   readGistConnection,
   readLearningDocument,
-  readSyncStatus,
   removeGistConnection,
   removeSyncStatus,
   replaceLearningDocument,
-  STORAGE_KEYS,
   writeGistConnection,
-  writeSyncStatus,
 } from '@/shared/storage';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
@@ -52,7 +50,7 @@ function observeConnection(connection: GistSyncConfig | null): boolean {
 
 export function watchGistConnectionChanges(ready: Promise<void>): void {
   observedConnection = undefined;
-  storage.watch<GistSyncConfig>(STORAGE_KEYS.gistConnection, (connection) => {
+  gistConnectionItem.watch((connection) => {
     if (observeConnection(connection)) {
       void ready.then(sync, () => {});
     }
@@ -138,14 +136,12 @@ async function syncDocument(
   }
   if (generation !== startGeneration) return;
 
-  const timestamp = new Date().toISOString();
-  await writeSyncStatus({ lastSyncTime: timestamp });
+  await lastSyncTimeItem.setValue(new Date().toISOString());
 }
 
 export async function getGistSyncStatus(): Promise<GistSyncStatus> {
-  const status = await readSyncStatus();
   return {
-    ...status,
+    lastSyncTime: await lastSyncTimeItem.getValue(),
     syncInProgress: activeSync !== undefined,
     lastError,
   };

@@ -3,7 +3,7 @@ import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
-import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import { gistConnectionItem, lastSyncTimeItem, readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
@@ -49,8 +49,8 @@ describe('document settings through background commands', () => {
     });
     await replaceLearningDocument(document);
     await seedGithubAuthorization();
-    await storage.setItem(STORAGE_KEYS.gistConnection, { accountId: 1, gistId: 'gist', enabled: true });
-    await storage.setItem(STORAGE_KEYS.lastSyncTime, '2024-01-15T10:00:00.000Z');
+    await gistConnectionItem.setValue({ accountId: 1, gistId: 'gist', enabled: true });
+    await lastSyncTimeItem.setValue('2024-01-15T10:00:00.000Z');
     backgroundEntry.main();
     await getRegisteredBackground().waitForInitialization();
     const sync = await fakeBrowser.storage.sync.get();
@@ -73,7 +73,7 @@ describe('document settings through background commands', () => {
     expect(await readLearningDocument()).toEqual({ ...document, settings: changes, dataUpdatedAt: now.toISOString() });
     expect(writes).toHaveBeenCalledOnce();
     expect(await fakeBrowser.storage.sync.get()).toEqual(sync);
-    expect(await storage.getItem(STORAGE_KEYS.lastSyncTime)).toBe('2024-01-15T10:00:00.000Z');
+    expect(await lastSyncTimeItem.getValue()).toBe('2024-01-15T10:00:00.000Z');
     expect(await storage.getItem('local:leetsrs:dataUpdatedAt')).toBeNull();
   });
 

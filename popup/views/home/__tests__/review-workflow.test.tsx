@@ -10,7 +10,13 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { CardsView } from '@/popup/views/card/CardsView';
 import { DataSection } from '@/popup/views/settings/DataSection';
 import { background } from '@/shared/background-service';
-import { readLearningDocument, replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import {
+  gistConnectionItem,
+  lastSyncTimeItem,
+  learningDocumentItem,
+  readLearningDocument,
+  replaceLearningDocument,
+} from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
@@ -229,8 +235,8 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
   });
   await replaceLearningDocument(document);
   await storage.setItems([
-    { key: STORAGE_KEYS.gistConnection, value: { accountId: 1, gistId: 'local-gist', enabled: true } },
-    { key: STORAGE_KEYS.lastSyncTime, value: 'previous-sync' },
+    { item: gistConnectionItem, value: { accountId: 1, gistId: 'local-gist', enabled: true } },
+    { item: lastSyncTimeItem, value: 'previous-sync' },
     { key: 'sync:leetsrs:theme', value: 'light' },
   ]);
   await seedGithubAuthorization();
@@ -262,7 +268,7 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
 });
 
 it('reports initialization failure when exporting unavailable data without creating an empty backup', async () => {
-  await storage.removeItem(STORAGE_KEYS.learningDocument);
+  await learningDocumentItem.removeValue();
   vi.mocked(background.waitForInitialization).mockRejectedValue(new Error('Initialization failed'));
   vi.stubGlobal('alert', vi.fn());
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -271,7 +277,7 @@ it('reports initialization failure when exporting unavailable data without creat
   click('Export backup');
   await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to export data'));
   expect(createObjectURL).not.toHaveBeenCalled();
-  expect(await storage.getItem(STORAGE_KEYS.learningDocument)).toBeNull();
+  expect(await learningDocumentItem.getValue()).toBeNull();
 });
 
 it('validates changed notes and retries deletion without deleting the card', async () => {
@@ -399,7 +405,7 @@ it.each(['command', 'refresh'] as const)('waits for the pending %s before showin
   await waitFor(() => expect(queryClient.isFetching()).toBe(0));
   const pending = Promise.withResolvers<void>();
   const started = Promise.withResolvers<void>();
-  const read = storage.getItem.bind(storage);
+  const read = learningDocumentItem.getValue.bind(learningDocumentItem);
   const rate = getRegisteredBackground().rateCard;
   vi.mocked(background.rateCard).mockImplementationOnce(async (input) => {
     const card = await rate(input);
@@ -407,10 +413,10 @@ it.each(['command', 'refresh'] as const)('waits for the pending %s before showin
       started.resolve();
       await pending.promise;
     } else
-      vi.spyOn(storage, 'getItem').mockImplementation(async (key) => {
+      vi.spyOn(learningDocumentItem, 'getValue').mockImplementation(async () => {
         started.resolve();
         await pending.promise;
-        return read(key);
+        return read();
       });
     return card;
   });

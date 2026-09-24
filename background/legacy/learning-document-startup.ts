@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { storage } from '#imports';
 import { convertLearningDocument } from '@/background/legacy/learning-document-conversions';
 import { LEARNING_DOCUMENT_VERSION, learningDocumentVersionSchema } from '@/shared/models';
-import { replaceLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import { learningDocumentItem, replaceLearningDocument } from '@/shared/storage';
 
 const legacySettingNames = [
   'maxNewCardsPerDay',
@@ -44,7 +44,7 @@ function gatherLegacyDocument(local: Record<string, unknown>, sync: Record<strin
 }
 
 export async function initializeLearningDocument(): Promise<void> {
-  const saved = await storage.getItem<unknown>(STORAGE_KEYS.learningDocument);
+  const saved = await learningDocumentItem.getValue();
 
   if (saved != null) {
     // Stored documents must declare their version; only scattered installs may be unversioned.

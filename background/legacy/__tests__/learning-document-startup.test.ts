@@ -4,6 +4,7 @@ import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { background } from '@/shared/background-service';
 import {
+  learningDocumentItem,
   readGistConnection,
   readLearningDocument,
   replaceLearningDocument,
@@ -147,7 +148,7 @@ describe('learning document startup', () => {
 
     await expect(initializeLearningDocument()).rejects.toThrow('Storage unavailable');
 
-    expect(await storage.getItem('local:leetsrs:learningDocument')).toBeNull();
+    expect(await learningDocumentItem.getValue()).toBeNull();
     expect(await fakeBrowser.storage.local.get()).toEqual(local);
     expect(await fakeBrowser.storage.sync.get()).toEqual({
       ...sync,

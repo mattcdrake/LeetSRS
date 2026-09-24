@@ -2,18 +2,21 @@ import { browser } from 'wxt/browser';
 import { z } from 'zod';
 import { storage } from '#imports';
 import { readPatMigration } from '@/background/legacy/github-pat';
-import { GITHUB_HOST_PERMISSIONS, type GithubAuthStatus } from '@/shared/github-auth';
+import {
+  GITHUB_HOST_PERMISSIONS,
+  type GithubAuthStatus,
+  githubAuthorizationItem,
+  githubSetupPendingItem,
+} from '@/shared/github-auth';
 
 export class GithubAuthorizationError extends Error {
   readonly code = 'authentication';
 }
 
-const SIGN_IN_REQUEST_KEY = 'session:leetsrs:githubSignInRequest';
+const signInRequestItem = storage.defineItem<unknown>('session:leetsrs:githubSignInRequest');
 const SIGN_IN_REQUEST_TTL = 5 * 60 * 1000;
 let signInRequests = Promise.resolve();
 
-const SETUP_PROMPT_KEY = 'local:leetsrs:githubSetupPending';
-const AUTH_KEY = 'local:leetsrs:githubAuthorization';
 const AUTH_ORIGIN = 'https://auth.leetsrs.com';
 const accountSchema = z.object({ id: z.number().int().positive(), login: z.string().min(1) });
 const tokenSchema = z.object({
@@ -41,7 +44,7 @@ export function authGeneration() {
 }
 
 async function readAuthorization() {
-  const value = await storage.getItem(AUTH_KEY);
+  const value = await githubAuthorizationItem.getValue();
   return value == null ? null : authorizationSchema.parse(value);
 }
 
@@ -53,7 +56,7 @@ export async function getGithubAuthStatus(): Promise<GithubAuthStatus> {
     signingIn: !!signingIn,
     error,
     migrationNotice: migration.notice,
-    setupPending: !!auth && (await storage.getItem(SETUP_PROMPT_KEY)) === true,
+    setupPending: !!auth && (await githubSetupPendingItem.getValue()),
   };
 }
 
@@ -106,14 +109,14 @@ async function resumeSignInRequest(expected: number) {
     .number()
     .finite()
     .nullable()
-    .parse(await storage.getItem(SIGN_IN_REQUEST_KEY));
+    .parse(await signInRequestItem.getValue());
   if (expiresAt === null) return;
   if (expiresAt <= Date.now()) {
-    await storage.removeItem(SIGN_IN_REQUEST_KEY);
+    await signInRequestItem.removeValue();
     return;
   }
   if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) return;
-  await storage.removeItem(SIGN_IN_REQUEST_KEY);
+  await signInRequestItem.removeValue();
   if (expected === generation) launchGithubSignIn();
 }
 
@@ -121,7 +124,7 @@ export function startGithubSignIn(): Promise<void> {
   return updateSignInRequest(async (expected) => {
     if (signingIn || (await readAuthorization())) return;
     error = null;
-    await storage.setItem(SIGN_IN_REQUEST_KEY, Date.now() + SIGN_IN_REQUEST_TTL);
+    await signInRequestItem.setValue(Date.now() + SIGN_IN_REQUEST_TTL);
     // Also covers grants that arrive before the command has finished arming.
     await resumeSignInRequest(expected);
   });
@@ -133,7 +136,7 @@ export function resumeGithubSignIn(): Promise<void> {
 
 export function cancelGithubSignInRequest(): Promise<void> {
   return updateSignInRequest(async () => {
-    await storage.removeItem(SIGN_IN_REQUEST_KEY);
+    await signInRequestItem.removeValue();
   });
 }
 
@@ -179,8 +182,8 @@ function launchGithubSignIn(): void {
     const auth = await exchange('exchange', { code, code_verifier: verifier, redirect_uri: redirectUri });
     if (expected !== generation) return;
     await storage.setItems([
-      { key: AUTH_KEY, value: auth },
-      { key: SETUP_PROMPT_KEY, value: true },
+      { item: githubAuthorizationItem, value: auth },
+      { item: githubSetupPendingItem, value: true },
     ]);
   })()
     .catch(() => {
@@ -205,7 +208,7 @@ export async function getGithubAuthorization() {
     const auth = await exchange('refresh', { refresh_token: saved.refreshToken });
     if (auth.account.id !== saved.account.id) throw new GithubAuthorizationError('GitHub account changed');
     if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
-    await storage.setItem(AUTH_KEY, auth);
+    await githubAuthorizationItem.setValue(auth);
     if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
     return auth;
   })();
@@ -218,7 +221,7 @@ export async function getGithubAuthorization() {
 }
 
 export async function dismissGithubSetupPrompt(): Promise<void> {
-  await storage.removeItem(SETUP_PROMPT_KEY);
+  await githubSetupPendingItem.removeValue();
 }
 
 export async function clearGithubAuthorization(): Promise<void> {
@@ -227,6 +230,6 @@ export async function clearGithubAuthorization(): Promise<void> {
   refreshing = undefined;
   error = null;
   await signInRequests;
-  await storage.removeItem(SIGN_IN_REQUEST_KEY);
-  await storage.removeItems([AUTH_KEY, SETUP_PROMPT_KEY]);
+  await signInRequestItem.removeValue();
+  await storage.removeItems([githubAuthorizationItem, githubSetupPendingItem]);
 }

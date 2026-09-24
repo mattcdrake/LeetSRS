@@ -4,12 +4,11 @@ import { getGithubAuthStatus } from '@/background/github-auth';
 import { resetAllData, updateSettings } from '@/background/learning';
 import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
 import {
+  lastSyncTimeItem,
   readGistConnection,
   readLearningDocument,
-  readSyncStatus,
   replaceLearningDocument,
   writeGistConnection,
-  writeSyncStatus,
 } from '@/shared/storage';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import * as syncModule from '../sync';
@@ -254,12 +253,12 @@ describe('whole-document Gist sync', () => {
     [new Error('unexpected'), 'unknown'],
   ] as const)('reports sync failures as %s', async (failure, error) => {
     const lastSyncTime = '2026-09-11T12:00:00.000Z';
-    await writeSyncStatus({ lastSyncTime });
+    await lastSyncTimeItem.setValue(lastSyncTime);
     github.get.mockRejectedValue(failure);
 
     await syncModule.sync();
 
     expect(await syncModule.getGistSyncStatus()).toMatchObject({ lastError: error, syncInProgress: false });
-    expect(await readSyncStatus()).toEqual({ lastSyncTime });
+    expect(await lastSyncTimeItem.getValue()).toBe(lastSyncTime);
   });
 });

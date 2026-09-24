@@ -1,6 +1,5 @@
 import { registerService } from '@webext-core/proxy-service';
 import { browser } from 'wxt/browser';
-import { storage } from '#imports';
 import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
 import { resumeGithubSignIn } from '@/background/github-auth';
 import { migratePatConnection } from '@/background/legacy/github-pat';
@@ -8,7 +7,7 @@ import { initializeLearningDocument } from '@/background/legacy/learning-documen
 import { createBackgroundService } from '@/background/service';
 import { sync, watchGistConnectionChanges } from '@/background/sync';
 import { BACKGROUND_SERVICE_KEY } from '@/shared/background-service';
-import { STORAGE_KEYS, setBackgroundStorageReadiness } from '@/shared/storage';
+import { learningDocumentItem, setBackgroundStorageReadiness } from '@/shared/storage';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
@@ -43,7 +42,7 @@ export function startBackground() {
   // Register synchronously: permission grants can wake a suspended worker.
   browser.permissions.onAdded.addListener(resumeSignIn);
   resumeSignIn();
-  storage.watch(STORAGE_KEYS.learningDocument, () => {
+  learningDocumentItem.watch(() => {
     void readyPromise.then(refreshBadge, () => {});
   });
 

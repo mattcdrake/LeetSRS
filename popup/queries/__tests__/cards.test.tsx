@@ -7,11 +7,10 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import { getBadgeState } from '@/background/badge';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
-import { STORAGE_KEYS } from '@/shared/storage';
+import { learningDocumentItem } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';
@@ -47,7 +46,7 @@ it('keeps popup and badge queues consistent without reading browser language', a
     cards: Object.fromEntries(cards.map((card) => [card.frontendId, card])),
     settings: { maxNewCardsPerDay: 1 },
   });
-  await storage.setItem(STORAGE_KEYS.learningDocument, document);
+  await learningDocumentItem.setValue(document);
   const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
   try {
     await waitFor(() => expect(view.result.current.data?.map((card) => card.frontendId)).toEqual(['new-a', 'review']));
@@ -112,8 +111,8 @@ it('shares one document read and catalog batch across cards, queue, notes, and s
     createMockCard(State.New, { frontendId: '1', domain: 'leetcode.com', note: 'Shared note' }),
     createMockCard(State.New, { frontendId: '2', domain: 'leetcode.cn' }),
   ];
-  await storage.setItem(STORAGE_KEYS.learningDocument, buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
-  const reads = vi.spyOn(storage, 'getItem');
+  await learningDocumentItem.setValue(buildLearningDocument({ cards: { 1: cards[0], 2: cards[1] } }));
+  const reads = vi.spyOn(learningDocumentItem, 'getValue');
   const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
   const view = renderHook(
     () => ({
@@ -129,6 +128,6 @@ it('shares one document read and catalog batch across cards, queue, notes, and s
   expect(view.result.current.queue.data).toEqual(view.result.current.cards.data);
   expect(view.result.current.note.data).toBe('Shared note');
   expect(background.waitForInitialization).not.toHaveBeenCalled();
-  expect(reads.mock.calls.filter(([key]) => key === STORAGE_KEYS.learningDocument)).toHaveLength(1);
+  expect(reads).toHaveBeenCalledOnce();
   expect(lookups).toHaveBeenCalledTimes(1);
 });
