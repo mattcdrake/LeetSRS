@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import type { LearningDocument } from '@/shared/learning-document';
 import { leetcodeDomainSchema } from '@/shared/leetcode-domain';
-import type { LearningDocument } from '@/shared/models';
 
 const SUPPORTED_LANGUAGES = ['en', 'zh-CN'] as const;
 

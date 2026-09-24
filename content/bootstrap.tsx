@@ -1,8 +1,8 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { z } from 'zod';
+import { readLearningDocument } from '@/shared/learning-document';
 import { resolveLearningDocumentSettings } from '@/shared/settings';
-import { readLearningDocument } from '@/shared/storage';
 import { setupLeetcodeEditorReset } from './editor-reset';
 import { getCurrentProblemSlug } from './page-context';
 import { ACCEPTED_SUBMISSION_MESSAGE } from './submission-observer';

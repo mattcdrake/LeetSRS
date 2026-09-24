@@ -1,14 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import type { WxtStorageItem } from '#imports';
-import { githubAuthorizationItem, githubSetupPendingItem } from '@/shared/github-auth';
-import { patMigrationItem } from '@/shared/legacy/github-pat';
 import {
   gistConnectionItem,
+  githubAuthorizationItem,
+  githubSetupPendingItem,
   lastSyncTimeItem,
-  learningDocumentItem,
-  popupDialogAcknowledgmentsItem,
-} from '@/shared/storage';
+} from '@/shared/gist-sync';
+import { learningDocumentItem } from '@/shared/learning-document';
+import { patMigrationItem } from '@/shared/legacy/github-pat';
+import { popupDialogAcknowledgmentsItem } from '@/shared/popup-dialogs';
 import { gistSyncQueryKeys } from './gist-sync';
 import { learningDocumentQueryKey } from './learning-document';
 import { popupDialogAcknowledgmentsQueryKey } from './popup-dialogs';

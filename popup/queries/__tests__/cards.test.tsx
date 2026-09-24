@@ -10,7 +10,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { getBadgeState } from '@/background/badge';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
-import { learningDocumentItem } from '@/shared/storage';
+import { learningDocumentItem } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';

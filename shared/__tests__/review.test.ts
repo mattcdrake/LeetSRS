@@ -1,6 +1,6 @@
 import { State } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
-import type { Card, LearningDocument } from '@/shared/models';
+import type { Card, LearningDocument } from '@/shared/learning-document';
 import { buildReviewCalendar, buildReviewQueue } from '@/shared/review';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';

@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { readLearningDocument } from '@/shared/storage';
+import { readLearningDocument } from '@/shared/learning-document';
 
 export const learningDocumentQueryKey = ['popupLearningDocument'] as const;
 

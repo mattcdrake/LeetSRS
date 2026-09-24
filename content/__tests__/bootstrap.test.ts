@@ -7,7 +7,7 @@ import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeEditorReset } from '@/content/editor-reset';
 import { watchDocumentTranslations } from '@/content/translations';
 import { translations } from '@/shared/i18n/index';
-import { replaceLearningDocument } from '@/shared/storage';
+import { replaceLearningDocument } from '@/shared/learning-document';
 import { requireDefined } from '@/test/utils/assertions';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { bootstrapContent } from '../bootstrap';

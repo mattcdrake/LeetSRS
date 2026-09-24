@@ -2,7 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { type CardWithProblem, cardMetadataQueryOptions } from '@/popup/queries/cards';
 import { learningDocumentQueryKey } from '@/popup/queries/learning-document';
 import { catalogProblemSchema } from '@/shared/catalog';
-import { cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import { cardSchema, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/learning-document';
 
 type LearningDocumentOverrides = Partial<Omit<LearningDocument, 'schemaVersion'>>;
 

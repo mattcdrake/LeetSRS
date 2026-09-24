@@ -1,6 +1,6 @@
 import { State } from 'ts-fsrs';
 import { isDue } from './calendar';
-import type { Card } from './models';
+import type { Card } from './learning-document';
 
 export type CardFilter = 'due' | 'new' | 'paused';
 

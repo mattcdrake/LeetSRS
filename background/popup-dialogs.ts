@@ -1,5 +1,5 @@
 import { storage } from '#imports';
-import { readPopupDialogAcknowledgments, writePopupDialogAcknowledgments } from '@/shared/storage';
+import { readPopupDialogAcknowledgments, writePopupDialogAcknowledgments } from '@/shared/popup-dialogs';
 
 const ratingHintShownItem = storage.defineItem<boolean>('local:leetsrs:ratingHintShown', { fallback: false });
 

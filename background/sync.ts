@@ -7,27 +7,23 @@ import {
 } from '@/background/github-auth';
 import { previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
-import type { GistDestination } from '@/shared/github-auth';
-import { translations } from '@/shared/i18n/index';
-import type {
-  GistConnectionResult,
-  GistSetup,
-  GistSyncConfig,
-  GistSyncErrorCode,
-  GistSyncStatus,
-  LearningDocument,
-} from '@/shared/models';
-import { detectBrowserLanguage } from '@/shared/settings';
 import {
+  type GistConnectionResult,
+  type GistDestination,
+  type GistSetup,
+  type GistSyncConfig,
+  type GistSyncErrorCode,
+  type GistSyncStatus,
   gistConnectionItem,
   lastSyncTimeItem,
   readGistConnection,
-  readLearningDocument,
   removeGistConnection,
   removeSyncStatus,
-  replaceLearningDocument,
   writeGistConnection,
-} from '@/shared/storage';
+} from '@/shared/gist-sync';
+import { translations } from '@/shared/i18n/index';
+import { type LearningDocument, readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
+import { detectBrowserLanguage } from '@/shared/settings';
 
 const GIST_FILENAME = 'leetsrs-backup.json';
 

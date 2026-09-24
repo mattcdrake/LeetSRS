@@ -3,11 +3,19 @@ import { parseLearningDocumentBackup } from '@/background/legacy/learning-docume
 import { removeLegacyLearningData } from '@/background/legacy/learning-document-startup';
 import { recordReview } from '@/background/review-activity';
 import { signOutGithub, sync } from '@/background/sync';
-import type { Card, ProblemReference, RateCardInput, RatingPreview } from '@/shared/models';
-import { findCard, LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import {
+  type Card,
+  findCard,
+  LEARNING_DOCUMENT_VERSION,
+  type LearningDocument,
+  type ProblemReference,
+  type RateCardInput,
+  type RatingPreview,
+  readLearningDocument,
+  replaceLearningDocument,
+} from '@/shared/learning-document';
 import type { RoadmapId } from '@/shared/roadmap';
 import type { SettingsUpdate } from '@/shared/settings';
-import { readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 
 const fsrs = new FSRS(generatorParameters({ maximum_interval: 1000, enable_short_term: false }));
 

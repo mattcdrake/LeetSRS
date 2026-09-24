@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
-import { readGistConnection } from '@/shared/storage';
+import { readGistConnection } from '@/shared/gist-sync';
 
 export const gistSyncQueryKeys = {
   all: ['gistSync'] as const,

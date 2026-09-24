@@ -10,8 +10,7 @@ import {
   resumeGithubSignIn,
   startGithubSignIn,
 } from '@/background/github-auth';
-import { githubAuthorizationItem } from '@/shared/github-auth';
-import { readGistConnection } from '@/shared/storage';
+import { githubAuthorizationItem, readGistConnection } from '@/shared/gist-sync';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 
 const token = {

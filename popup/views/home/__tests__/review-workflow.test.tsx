@@ -10,13 +10,8 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { CardsView } from '@/popup/views/card/CardsView';
 import { DataSection } from '@/popup/views/settings/DataSection';
 import { background } from '@/shared/background-service';
-import {
-  gistConnectionItem,
-  lastSyncTimeItem,
-  learningDocumentItem,
-  readLearningDocument,
-  replaceLearningDocument,
-} from '@/shared/storage';
+import { gistConnectionItem, lastSyncTimeItem } from '@/shared/gist-sync';
+import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';

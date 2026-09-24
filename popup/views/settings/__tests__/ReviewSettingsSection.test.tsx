@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, it, vi } from 'vitest';
 import { updateSettings } from '@/background/learning';
 import { background } from '@/shared/background-service';
-import { replaceLearningDocument } from '@/shared/storage';
+import { replaceLearningDocument } from '@/shared/learning-document';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';

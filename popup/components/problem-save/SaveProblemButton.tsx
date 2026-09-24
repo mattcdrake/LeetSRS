@@ -7,7 +7,7 @@ import { useI18n } from '@/popup/contexts/I18nContext';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { useAddCardMutation, useRateCardMutation } from '@/popup/queries/cards';
 import { background } from '@/shared/background-service';
-import type { ProblemReference } from '@/shared/models';
+import type { ProblemReference } from '@/shared/learning-document';
 import { RatingOptions } from '@/shared/ui/RatingOptions';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import './problem-save.css';

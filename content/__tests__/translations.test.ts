@@ -3,8 +3,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { watchDocumentTranslations as watch } from '@/content/translations';
 import { translations } from '@/shared/i18n/index';
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { learningDocumentItem } from '@/shared/storage';
+import { LEARNING_DOCUMENT_VERSION, learningDocumentItem } from '@/shared/learning-document';
 
 const key = learningDocumentItem.key;
 const storedValue = (language: unknown) => ({

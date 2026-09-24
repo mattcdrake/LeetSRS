@@ -3,8 +3,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { background } from '@/shared/background-service';
-import type { GistConnectionResult } from '@/shared/models';
-import { gistConnectionItem, replaceLearningDocument } from '@/shared/storage';
+import { type GistConnectionResult, gistConnectionItem } from '@/shared/gist-sync';
+import { replaceLearningDocument } from '@/shared/learning-document';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';

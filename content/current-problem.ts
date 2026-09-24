@@ -2,7 +2,7 @@ import { getCurrentDomain, getCurrentProblemSlug } from '@/content/page-context'
 import { background } from '@/shared/background-service';
 import type { CatalogProblem } from '@/shared/catalog';
 import { catalogProblemSchema } from '@/shared/catalog';
-import type { LeetcodeDomain } from '@/shared/models';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 
 export async function getCurrentProblem(): Promise<CatalogProblem & { domain: LeetcodeDomain }> {
   const slug = getCurrentProblemSlug();

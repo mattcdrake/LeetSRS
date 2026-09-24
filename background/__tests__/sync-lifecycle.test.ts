@@ -2,7 +2,7 @@ import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { sync } from '@/background/sync';
-import { readLearningDocument } from '@/shared/storage';
+import { readLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';

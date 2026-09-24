@@ -4,8 +4,7 @@ import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { readLearningDocument } from '@/shared/storage';
+import { LEARNING_DOCUMENT_VERSION, readLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';

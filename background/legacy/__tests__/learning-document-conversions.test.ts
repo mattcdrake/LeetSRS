@@ -4,7 +4,7 @@ import {
   convertLearningDocument,
   parseLearningDocumentBackup,
 } from '@/background/legacy/learning-document-conversions';
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
+import { LEARNING_DOCUMENT_VERSION } from '@/shared/learning-document';
 import { createMockCard } from '@/test/utils/card-mocks';
 
 // When adding a schema version, extend the unversioned input with the data the new

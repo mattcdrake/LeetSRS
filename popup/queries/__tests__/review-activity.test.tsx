@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { learningDocumentItem, replaceLearningDocument } from '@/shared/storage';
+import { learningDocumentItem, replaceLearningDocument } from '@/shared/learning-document';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createTestQueryClient } from '@/test/utils/test-wrapper';
 import { useTodayReviewActivityQuery } from '../review-activity';

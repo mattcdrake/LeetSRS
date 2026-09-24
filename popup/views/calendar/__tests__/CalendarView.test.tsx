@@ -4,7 +4,7 @@ import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { I18nProvider } from '@/popup/contexts/I18nContext';
-import { replaceLearningDocument } from '@/shared/storage';
+import { replaceLearningDocument } from '@/shared/learning-document';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';

@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import { addLocalDays } from '@/shared/calendar';
+import { readLearningDocument } from '@/shared/learning-document';
 import { buildReviewQueue } from '@/shared/review';
-import { readLearningDocument } from '@/shared/storage';
 
 export async function getBadgeState(): Promise<{ count: number; nextRefreshAt?: number }> {
   const now = new Date();

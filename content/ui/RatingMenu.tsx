@@ -4,7 +4,7 @@ import type { Grade } from 'ts-fsrs';
 import { getCurrentProblem } from '@/content/current-problem';
 import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n/index';
-import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/models';
+import { type ProblemReference, type RatingPreview, ratingSchema } from '@/shared/learning-document';
 import { RatingOptions } from '@/shared/ui/RatingOptions';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { NextProblems } from './NextProblems';

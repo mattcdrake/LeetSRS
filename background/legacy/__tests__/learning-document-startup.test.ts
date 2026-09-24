@@ -3,13 +3,8 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { background } from '@/shared/background-service';
-import {
-  learningDocumentItem,
-  readGistConnection,
-  readLearningDocument,
-  replaceLearningDocument,
-  writeGistConnection,
-} from '@/shared/storage';
+import { readGistConnection, writeGistConnection } from '@/shared/gist-sync';
+import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 

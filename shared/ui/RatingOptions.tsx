@@ -2,7 +2,7 @@ import { type CSSProperties, useId } from 'react';
 import { Button } from 'react-aria-components';
 import type { Grade } from 'ts-fsrs';
 import type { Translations } from '@/shared/i18n';
-import { type RatingPreview, ratingSchema } from '@/shared/models';
+import { type RatingPreview, ratingSchema } from '@/shared/learning-document';
 
 interface RatingOptionsProps {
   t: Translations;

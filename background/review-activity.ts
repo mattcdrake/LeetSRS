@@ -1,5 +1,5 @@
 import { addLocalDays, formatLocalDate } from '@/shared/calendar';
-import type { ReviewActivity } from '@/shared/models';
+import type { ReviewActivity } from '@/shared/learning-document';
 
 export function recordReview(activity: ReviewActivity | null, now: Date, isNewCard: boolean): ReviewActivity {
   const today = formatLocalDate(now);

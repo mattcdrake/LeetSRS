@@ -1,6 +1,6 @@
 import { State as FsrsState } from 'ts-fsrs';
 import { addLocalDays, formatLocalDate, isDue } from '@/shared/calendar';
-import type { Card, LearningDocument } from '@/shared/models';
+import type { Card, LearningDocument } from '@/shared/learning-document';
 import { DEFAULT_SETTINGS } from '@/shared/settings';
 
 function getNewCardAllowance(document: LearningDocument, now: Date): number {

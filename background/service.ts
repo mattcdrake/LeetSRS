@@ -30,7 +30,8 @@ import {
   signOutGithub,
 } from '@/background/sync';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
-import { gistSetupSchema, noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/models';
+import { gistSetupSchema } from '@/shared/gist-sync';
+import { noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/learning-document';
 import { roadmapIdSchema } from '@/shared/roadmap';
 import { settingsUpdateSchema } from '@/shared/settings';
 
