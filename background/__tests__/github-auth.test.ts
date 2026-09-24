@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { storage } from '#imports';
 import {
   cancelGithubSignInRequest,
   clearGithubAuthorization,
@@ -95,7 +94,7 @@ it.each(['state', 'origin', 'cancel', 'exchange', 'account'])(
 );
 it('shares concurrent refreshes and persists rotated credentials before returning', async () => {
   await seedGithubAuthorization();
-  const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
+  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
   const expired = { ...saved, expiresAt: 0 };
   await githubAuthorizationItem.setValue(expired);
   const started = Promise.withResolvers<void>();
@@ -139,7 +138,7 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
     await startGithubSignIn();
   } else {
     await seedGithubAuthorization();
-    const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
+    const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
     await githubAuthorizationItem.setValue({ ...saved, expiresAt: 0 });
     refresh = getGithubAuthorization().catch(() => null);
   }
@@ -152,7 +151,7 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
 });
 it('keeps saved authorization unchanged on refresh failure and allows retry', async () => {
   await seedGithubAuthorization();
-  const saved = await storage.getItem<Record<string, unknown>>('local:leetsrs:githubAuthorization');
+  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
   const expired = { ...saved, expiresAt: 0 };
   await githubAuthorizationItem.setValue(expired);
   vi.mocked(fetch).mockRejectedValueOnce(new Error('Offline'));
