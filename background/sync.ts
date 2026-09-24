@@ -2,9 +2,9 @@ import { Octokit } from 'octokit';
 import { storage } from '#imports';
 import {
   authGeneration,
+  clearGithubAuthorization,
   GithubAuthorizationError,
   getGithubAuthorization,
-  signOutGithub,
 } from '@/background/github-auth';
 import { previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
@@ -75,7 +75,7 @@ export async function saveEdit(document: LearningDocument, editedAt: Date): Prom
   void sync();
 }
 
-export async function restoreBackup(json: string): Promise<void> {
+export async function importData(json: string): Promise<void> {
   const document = parseLearningDocumentBackup(json);
   await replaceLearningDocument(document);
 }
@@ -89,7 +89,7 @@ export async function resetAllData(): Promise<void> {
     activeRoadmapId: null,
     roadmapSkips: {},
   });
-  await disconnectGithub();
+  await signOutGithub();
   await removeLegacyLearningData();
 }
 
@@ -166,7 +166,7 @@ async function syncDocument(
   await writeSyncStatus({ lastSyncTime: timestamp });
 }
 
-export async function getSyncStatus(): Promise<GistSyncStatus> {
+export async function getGistSyncStatus(): Promise<GistSyncStatus> {
   const status = await readSyncStatus();
   return {
     ...status,
@@ -175,7 +175,7 @@ export async function getSyncStatus(): Promise<GistSyncStatus> {
   };
 }
 
-export async function connectGist(setup: GistSetup): Promise<GistConnectionResult> {
+export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
   try {
     const expectedAuth = authGeneration();
     const expectedSync = generation;
@@ -213,7 +213,7 @@ export async function connectGist(setup: GistSetup): Promise<GistConnectionResul
   }
 }
 
-export async function setSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
+export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
   try {
     const expected = authGeneration();
     const config = await readGistConnection();
@@ -300,9 +300,9 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
   }
 }
 
-export async function disconnectGithub(): Promise<void> {
+export async function signOutGithub(): Promise<void> {
   invalidateGistSync();
-  await signOutGithub();
+  await clearGithubAuthorization();
   await removeGistConnection();
   await removeSyncStatus();
   lastError = null;
