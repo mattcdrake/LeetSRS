@@ -1,10 +1,10 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryOptions } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { LearningDocument } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { loadRoadmap, ROADMAP_IDS, type Roadmap, type RoadmapId, roadmapProblemIds } from '@/shared/roadmap';
-import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
+import { learningDocumentQueryOptions, useDocumentMutation } from './learning-document';
 
 export const activeRoadmapQueryOptions = queryOptions({
   ...learningDocumentQueryOptions,
@@ -12,11 +12,7 @@ export const activeRoadmapQueryOptions = queryOptions({
 });
 
 export function useActivateRoadmapMutation() {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: (id: RoadmapId | null) => background.setActiveRoadmap(id),
-    onSettled: () => client.invalidateQueries({ queryKey: learningDocumentQueryKey }),
-  });
+  return useDocumentMutation((id: RoadmapId | null) => background.setActiveRoadmap(id));
 }
 
 export const roadmapSkipsQueryOptions = queryOptions({
@@ -25,13 +21,11 @@ export const roadmapSkipsQueryOptions = queryOptions({
 });
 
 export function useSkipRoadmapProblemMutation() {
-  const client = useQueryClient();
-  return useMutation({
-    scope: { id: 'roadmapSkips' },
-    mutationFn: ({ roadmapId, frontendId, skipped }: { roadmapId: RoadmapId; frontendId: string; skipped: boolean }) =>
+  return useDocumentMutation(
+    ({ roadmapId, frontendId, skipped }: { roadmapId: RoadmapId; frontendId: string; skipped: boolean }) =>
       background.setRoadmapProblemSkipped(roadmapId, frontendId, skipped),
-    onSettled: () => client.invalidateQueries({ queryKey: learningDocumentQueryKey }),
-  });
+    { scope: { id: 'roadmapSkips' } }
+  );
 }
 
 export function roadmapMetadataQueryOptions(roadmap: Roadmap, domain: LeetcodeDomain) {

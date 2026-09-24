@@ -98,7 +98,7 @@ it('retries a failed review, persists scheduling and advances to the next card',
   const saved = await readLearningDocument();
   vi.mocked(fakeBrowser.storage.local.set).mockRejectedValueOnce(new Error('Disk unavailable'));
   click('Good');
-  await waitFor(() => expect(console.error).toHaveBeenCalledWith('Failed to rate card:', expect.any(Error)));
+  await waitFor(() => expect(console.error).toHaveBeenCalledWith('Failed to update card:', expect.any(Error)));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
   expect(await readLearningDocument()).toEqual(saved);
   click('Good');

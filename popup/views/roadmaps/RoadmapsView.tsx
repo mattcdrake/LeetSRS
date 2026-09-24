@@ -1,5 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { FaArrowLeft } from 'react-icons/fa6';
+import { QueryState } from '@/popup/components/QueryState';
 import { ViewLayout } from '@/popup/components/ViewLayout';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
@@ -58,28 +59,19 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
           {t.roadmaps.saveFailed}
         </p>
       )}
-      {roadmaps.isPending ? (
-        <p role="status" className="text-secondary">
-          {t.roadmaps.loading}
-        </p>
-      ) : roadmaps.isError ? (
-        <div role="alert">
-          <p>{t.roadmaps.loadFailed}</p>
-          <button type="button" className="text-accent cursor-pointer" onClick={() => void roadmaps.refetch()}>
-            {t.roadmaps.retry}
-          </button>
-        </div>
-      ) : selected ? (
-        <RoadmapDetail key={selected.id} roadmap={selected} />
-      ) : (
-        <RoadmapOverview
-          roadmaps={summaries}
-          activeRoadmapId={activeRoadmapId}
-          isSaving={activation.isPending}
-          onActivate={(id) => activation.mutate(id)}
-          onOpen={onSelect}
-        />
-      )}
+      <QueryState query={roadmaps} loading={t.roadmaps.loading} error={t.roadmaps.loadFailed}>
+        {selected ? (
+          <RoadmapDetail key={selected.id} roadmap={selected} />
+        ) : (
+          <RoadmapOverview
+            roadmaps={summaries}
+            activeRoadmapId={activeRoadmapId}
+            isSaving={activation.isPending}
+            onActivate={(id) => activation.mutate(id)}
+            onOpen={onSelect}
+          />
+        )}
+      </QueryState>
     </ViewLayout>
   );
 }

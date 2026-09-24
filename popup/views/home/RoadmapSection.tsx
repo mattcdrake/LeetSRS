@@ -1,6 +1,7 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { FaArrowUp, FaForwardStep, FaLock } from 'react-icons/fa6';
 import { SaveProblemButton, useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
+import { QueryState } from '@/popup/components/QueryState';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import {
@@ -32,20 +33,9 @@ export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) 
   const roadmap = roadmaps.data?.find((roadmap) => roadmap.id === activeRoadmapId);
   return (
     <section aria-label={t.home.currentRoadmap} className="pt-3 border-t border-current flex flex-col gap-3">
-      {roadmaps.isPending ? (
-        <p role="status" className="text-sm text-secondary">
-          {t.roadmaps.loading}
-        </p>
-      ) : roadmaps.isError ? (
-        <div role="alert" className="text-sm">
-          <p>{t.roadmaps.loadFailed}</p>
-          <button type="button" className={`text-accent ${buttonInteraction}`} onClick={() => void roadmaps.refetch()}>
-            {t.roadmaps.retry}
-          </button>
-        </div>
-      ) : roadmap ? (
-        <ActiveRoadmap roadmap={roadmap} onOpen={() => onOpen(roadmap.id)} />
-      ) : null}
+      <QueryState query={roadmaps} loading={t.roadmaps.loading} error={t.roadmaps.loadFailed} className="text-sm">
+        {roadmap && <ActiveRoadmap roadmap={roadmap} onOpen={() => onOpen(roadmap.id)} />}
+      </QueryState>
     </section>
   );
 }
@@ -75,65 +65,56 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap; onOpen: () => vo
           {t.home.viewRoadmap}
         </button>
       </div>
-      {metadata.isPending ? (
-        <p role="status" className="text-sm text-secondary">
-          {t.roadmaps.loading}
-        </p>
-      ) : metadata.isError ? (
-        <div role="alert" className="text-sm">
-          <p>{t.roadmaps.detailLoadFailed}</p>
-          <button type="button" className={`text-accent ${buttonInteraction}`} onClick={() => void metadata.refetch()}>
-            {t.roadmaps.retry}
-          </button>
-        </div>
-      ) : next ? (
-        <div className="rounded-lg border border-current p-3 flex flex-col gap-2">
-          <span className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-medium uppercase text-secondary">{t.home.nextProblem}</span>
-            <span className="text-[11px] capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
-              {next.difficulty}
+      <QueryState query={metadata} loading={t.roadmaps.loading} error={t.roadmaps.detailLoadFailed} className="text-sm">
+        {next ? (
+          <div className="rounded-lg border border-current p-3 flex flex-col gap-2">
+            <span className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-medium uppercase text-secondary">{t.home.nextProblem}</span>
+              <span className="text-[11px] capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
+                {next.difficulty}
+              </span>
             </span>
-          </span>
-          <a
-            className={`flex items-start gap-2 text-[13px] font-medium hover:text-accent ${buttonInteraction}`}
-            href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${next.frontendId}. ${getProblemTitle(next, domain)}`}
-          >
-            <span className="min-w-0 flex-1 break-words">
-              {next.frontendId}. {getProblemTitle(next, domain)}
-            </span>
-            {next.isPaidOnly && (
-              <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
-            )}
-            <FaArrowUp aria-hidden="true" className="shrink-0 mt-1 rotate-45 text-xs" />
-          </a>
-          <div className="flex items-center gap-2">
-            <SaveProblemButton
-              frontendId={next.frontendId}
-              domain={domain}
-              title={getProblemTitle(next, domain)}
-              isSaved={false}
-              variant="card"
-              isDisabled={skip.isPending}
-              onSaved={onSaved}
-            />
-            <button
-              type="button"
-              className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md text-secondary hover:text-accent ${buttonInteraction}`}
-              disabled={skip.isPending}
-              aria-label={t.roadmaps.skipProblem(getProblemTitle(next, domain))}
-              title={t.roadmaps.skip}
-              onClick={() => skip.mutate({ roadmapId: roadmap.id, frontendId: next.frontendId, skipped: true })}
+            <a
+              className={`flex items-start gap-2 text-[13px] font-medium hover:text-accent ${buttonInteraction}`}
+              href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${next.frontendId}. ${getProblemTitle(next, domain)}`}
             >
-              <FaForwardStep aria-hidden="true" className="size-4" />
-            </button>
+              <span className="min-w-0 flex-1 break-words">
+                {next.frontendId}. {getProblemTitle(next, domain)}
+              </span>
+              {next.isPaidOnly && (
+                <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
+              )}
+              <FaArrowUp aria-hidden="true" className="shrink-0 mt-1 rotate-45 text-xs" />
+            </a>
+            <div className="flex items-center gap-2">
+              <SaveProblemButton
+                frontendId={next.frontendId}
+                domain={domain}
+                title={getProblemTitle(next, domain)}
+                isSaved={false}
+                variant="card"
+                isDisabled={skip.isPending}
+                onSaved={onSaved}
+              />
+              <button
+                type="button"
+                className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md text-secondary hover:text-accent ${buttonInteraction}`}
+                disabled={skip.isPending}
+                aria-label={t.roadmaps.skipProblem(getProblemTitle(next, domain))}
+                title={t.roadmaps.skip}
+                onClick={() => skip.mutate({ roadmapId: roadmap.id, frontendId: next.frontendId, skipped: true })}
+              >
+                <FaForwardStep aria-hidden="true" className="size-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <p className="text-sm text-secondary">{t.home.noNextProblem(domain)}</p>
-      )}
+        ) : (
+          <p className="text-sm text-secondary">{t.home.noNextProblem(domain)}</p>
+        )}
+      </QueryState>
       {skip.isError && (
         <p role="alert" className="text-xs text-danger">
           {t.roadmaps.skipFailed}
