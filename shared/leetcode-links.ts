@@ -1,4 +1,4 @@
-import type { LeetcodeDomain } from '@/shared/models';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 
 interface LeetcodeProblemLink {
   domain: LeetcodeDomain;

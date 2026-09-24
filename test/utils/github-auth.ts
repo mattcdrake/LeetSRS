@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { githubAuthorizationItem } from '@/shared/github-auth';
+import { githubAuthorizationItem } from '@/shared/gist-sync';
 
 export async function seedGithubAuthorization() {
   vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => true);

@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import type { Card, ProblemReference, RateCardInput } from '@/shared/models';
+import type { Card, ProblemReference, RateCardInput } from '@/shared/learning-document';
 import { buildReviewQueue } from '@/shared/review';
 import { usePopupClock } from '../hooks/usePopupClock';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';

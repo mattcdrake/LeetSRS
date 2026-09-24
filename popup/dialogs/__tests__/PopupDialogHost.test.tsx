@@ -7,7 +7,7 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { acknowledgePopupDialog } from '@/background/popup-dialogs';
 import { popupDialogAcknowledgmentsQueryKey } from '@/popup/queries/popup-dialogs';
 import { background } from '@/shared/background-service';
-import { popupDialogAcknowledgmentsItem, readPopupDialogAcknowledgments } from '@/shared/storage';
+import { popupDialogAcknowledgmentsItem, readPopupDialogAcknowledgments } from '@/shared/popup-dialogs';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { PopupDialogHost } from '../PopupDialogHost';

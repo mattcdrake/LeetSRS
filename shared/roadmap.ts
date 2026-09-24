@@ -1,7 +1,8 @@
 import { browser } from 'wxt/browser';
 import { z } from 'zod';
 import type { CatalogProblem } from '@/shared/catalog';
-import type { LearningDocument, LeetcodeDomain } from '@/shared/models';
+import type { LearningDocument } from '@/shared/learning-document';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 
 export const ROADMAP_IDS = ['blind-75', 'neetcode-150', 'neetcode-250', 'grind-75'] as const;
 export const roadmapIdSchema = z.enum(ROADMAP_IDS);

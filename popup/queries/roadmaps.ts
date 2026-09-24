@@ -1,7 +1,8 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
-import type { LearningDocument, LeetcodeDomain } from '@/shared/models';
+import type { LearningDocument } from '@/shared/learning-document';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { loadRoadmap, ROADMAP_IDS, type Roadmap, type RoadmapId } from '@/shared/roadmap';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { background } from '@/shared/background-service';
-import { readPopupDialogAcknowledgments } from '@/shared/storage';
+import { readPopupDialogAcknowledgments } from '@/shared/popup-dialogs';
 
 export const popupDialogAcknowledgmentsQueryKey = ['popupDialogs', 'acknowledgments'] as const;
 

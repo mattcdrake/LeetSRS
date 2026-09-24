@@ -7,7 +7,7 @@ import { initializeLearningDocument } from '@/background/legacy/learning-documen
 import { createBackgroundService } from '@/background/service';
 import { sync, watchGistConnectionChanges } from '@/background/sync';
 import { BACKGROUND_SERVICE_KEY } from '@/shared/background-service';
-import { learningDocumentItem, setBackgroundStorageReadiness } from '@/shared/storage';
+import { learningDocumentItem, setBackgroundStorageReadiness } from '@/shared/learning-document';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;

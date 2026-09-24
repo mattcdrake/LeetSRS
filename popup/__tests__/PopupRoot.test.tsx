@@ -3,7 +3,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
-import { replaceLearningDocument, writePopupDialogAcknowledgments } from '@/shared/storage';
+import { replaceLearningDocument } from '@/shared/learning-document';
+import { writePopupDialogAcknowledgments } from '@/shared/popup-dialogs';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { buildSettings } from '@/test/utils/settings-mocks';
 import { PopupRoot } from '../PopupRoot';

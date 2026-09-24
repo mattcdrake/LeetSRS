@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { browser } from 'wxt/browser';
 import { background } from '@/shared/background-service';
-import { GITHUB_HOST_PERMISSIONS } from '@/shared/github-auth';
+import { GITHUB_HOST_PERMISSIONS } from '@/shared/gist-sync';
 import { gistSyncQueryKeys } from './gist-sync';
 
 const permissionQueryKey = ['capabilities', 'github'] as const;

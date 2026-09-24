@@ -1,5 +1,7 @@
 import { type CardInput, type Grade, Rating } from 'ts-fsrs';
 import { z } from 'zod';
+import { storage } from '#imports';
+import { background } from '@/shared/background-service';
 import { leetcodeDomainSchema } from '@/shared/leetcode-domain';
 import { roadmapIdSchema, roadmapSkipsSchema } from '@/shared/roadmap';
 import { settingsSchema } from '@/shared/settings';
@@ -48,7 +50,6 @@ export const cardSchema = problemReferenceSchema
     return card;
   });
 
-export type LeetcodeDomain = z.infer<typeof leetcodeDomainSchema>;
 export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratingSchema });
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
 export type Card = z.infer<typeof cardSchema>;
@@ -104,39 +105,42 @@ export function findCard(document: LearningDocument, frontendId: string): Card |
   return undefined;
 }
 
-export const gistSyncConfigSchema = z.union([
-  z.object({ accountId: z.null(), gistId: z.null(), enabled: z.literal(false) }),
-  z.object({
-    accountId: z.number().int().positive(),
-    gistId: z.string().refine((id) => id.trim().length > 0),
-    enabled: z.boolean(),
-  }),
-]);
-export type GistSyncConfig = z.infer<typeof gistSyncConfigSchema>;
+export type RatingPreview = Record<Grade, number>;
 
-export const gistSetupSchema = z.discriminatedUnion('mode', [
-  z.object({ mode: z.literal('existing'), gistId: z.string().trim().min(1) }),
-  z.object({ mode: z.literal('create') }),
-]);
-export type GistSetup = z.infer<typeof gistSetupSchema>;
+export const learningDocumentItem = storage.defineItem<unknown>('local:leetsrs:learningDocument');
 
-export type GistSyncErrorCode =
-  | 'authentication'
-  | 'connectionSaveFailed'
-  | 'creationFailed'
-  | 'gistNotFound'
-  | 'missingBackup'
-  | 'missingToken'
-  | 'rateLimit'
-  | 'unavailable'
-  | 'unknown';
+let backgroundReadiness: Promise<void> | undefined;
 
-export type GistConnectionResult = { saved: true } | { saved: false; error: GistSyncErrorCode };
-
-export interface GistSyncStatus {
-  lastSyncTime: string | null;
-  syncInProgress: boolean;
-  lastError: GistSyncErrorCode | null;
+// Background readers share startup's promise; other runtimes request it through RPC.
+export function setBackgroundStorageReadiness(readiness: Promise<void>): void {
+  backgroundReadiness = readiness;
 }
 
-export type RatingPreview = Record<Grade, number>;
+function waitForStorageInitialization(): Promise<void> {
+  return backgroundReadiness ?? background.waitForInitialization();
+}
+
+export async function readLearningDocument(): Promise<LearningDocument> {
+  let document = await learningDocumentItem.getValue();
+  const version = learningDocumentVersionSchema.safeParse(document);
+  const needsInitialization =
+    document == null || (version.success && version.data.schemaVersion < LEARNING_DOCUMENT_VERSION);
+
+  if (needsInitialization) {
+    await waitForStorageInitialization();
+    document = await learningDocumentItem.getValue();
+  }
+
+  if (document == null) {
+    throw new Error('Learning document is not initialized');
+  }
+
+  return learningDocumentSchema.parse(document);
+}
+
+export async function replaceLearningDocument(document: LearningDocument): Promise<LearningDocument> {
+  const validated = learningDocumentSchema.parse(document);
+
+  await learningDocumentItem.setValue(validated);
+  return validated;
+}

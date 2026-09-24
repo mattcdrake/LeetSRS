@@ -12,7 +12,7 @@ import {
 import { useGithubPermissions } from '@/popup/queries/github-permissions';
 import { secondaryButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
-import type { GistSetup } from '@/shared/models';
+import type { GistSetup } from '@/shared/gist-sync';
 import { SettingsSwitch } from './SettingsSwitch';
 
 export function GistSyncSection({

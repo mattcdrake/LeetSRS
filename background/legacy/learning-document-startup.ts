@@ -1,8 +1,12 @@
 import { z } from 'zod';
 import { storage } from '#imports';
 import { convertLearningDocument } from '@/background/legacy/learning-document-conversions';
-import { LEARNING_DOCUMENT_VERSION, learningDocumentVersionSchema } from '@/shared/models';
-import { learningDocumentItem, replaceLearningDocument } from '@/shared/storage';
+import {
+  LEARNING_DOCUMENT_VERSION,
+  learningDocumentItem,
+  learningDocumentVersionSchema,
+  replaceLearningDocument,
+} from '@/shared/learning-document';
 
 const legacySettingNames = [
   'maxNewCardsPerDay',

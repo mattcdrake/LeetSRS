@@ -7,7 +7,7 @@ import {
   type GithubAuthStatus,
   githubAuthorizationItem,
   githubSetupPendingItem,
-} from '@/shared/github-auth';
+} from '@/shared/gist-sync';
 
 export class GithubAuthorizationError extends Error {
   readonly code = 'authentication';

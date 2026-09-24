@@ -1,9 +1,8 @@
 import type { NextProblem, NextRoadmapProblem } from '@/shared/background-service';
 import { getProblemsByFrontendIds } from '@/shared/catalog';
-import type { ProblemReference } from '@/shared/models';
+import { type ProblemReference, readLearningDocument } from '@/shared/learning-document';
 import { buildReviewQueue } from '@/shared/review';
 import { getNextRoadmapProblemId, loadRoadmap } from '@/shared/roadmap';
-import { readLearningDocument } from '@/shared/storage';
 
 export async function getNextReview(current: ProblemReference): Promise<NextProblem | null> {
   const document = await readLearningDocument();

@@ -1,9 +1,8 @@
 import { getCurrentProblem } from '@/content/current-problem';
 import { getCurrentProblemSlug } from '@/content/page-context';
 import { isDue } from '@/shared/calendar';
-import { findCard } from '@/shared/models';
+import { findCard, readLearningDocument } from '@/shared/learning-document';
 import { resolveLearningDocumentSettings } from '@/shared/settings';
-import { readLearningDocument } from '@/shared/storage';
 
 const CONTROL_POLL_MS = 50;
 const CONTROL_TIMEOUT_MS = 10_000;

@@ -3,7 +3,7 @@ import { useRef } from 'react';
 import { Button } from 'react-aria-components';
 import { FaDownload, FaTrashCan, FaUpload } from 'react-icons/fa6';
 import { background } from '@/shared/background-service';
-import { readLearningDocument } from '@/shared/storage';
+import { readLearningDocument } from '@/shared/learning-document';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function DataSection() {

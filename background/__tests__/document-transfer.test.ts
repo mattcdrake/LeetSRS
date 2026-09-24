@@ -1,8 +1,8 @@
 import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { readGistConnection, readLearningDocument } from '@/shared/storage';
+import { readGistConnection } from '@/shared/gist-sync';
+import { LEARNING_DOCUMENT_VERSION, readLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';

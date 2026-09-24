@@ -1,7 +1,7 @@
 import { browser } from 'wxt/browser';
 import { z } from 'zod';
-import { leetcodeDomainSchema } from '@/shared/leetcode-domain';
-import type { LeetcodeDomain, ProblemReference } from '@/shared/models';
+import type { ProblemReference } from '@/shared/learning-document';
+import { type LeetcodeDomain, leetcodeDomainSchema } from '@/shared/leetcode-domain';
 
 export const catalogProblemSchema = z.looseObject({
   frontendId: z.string().min(1),

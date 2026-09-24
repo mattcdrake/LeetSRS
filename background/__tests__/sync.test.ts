@@ -2,14 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { getGithubAuthStatus } from '@/background/github-auth';
 import { resetAllData, updateSettings } from '@/background/learning';
-import { LEARNING_DOCUMENT_VERSION, type LearningDocument } from '@/shared/models';
+import { lastSyncTimeItem, readGistConnection, writeGistConnection } from '@/shared/gist-sync';
 import {
-  lastSyncTimeItem,
-  readGistConnection,
+  LEARNING_DOCUMENT_VERSION,
+  type LearningDocument,
   readLearningDocument,
   replaceLearningDocument,
-  writeGistConnection,
-} from '@/shared/storage';
+} from '@/shared/learning-document';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
 import * as syncModule from '../sync';
 

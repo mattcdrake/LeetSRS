@@ -8,7 +8,7 @@ import {
   useSkipRoadmapProblemMutation,
 } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
-import type { LeetcodeDomain } from '@/shared/models';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RoadmapGroup } from './RoadmapGroup';
 import type { RoadmapSummary } from './RoadmapOverview';

@@ -6,7 +6,7 @@ import {
   learningDocumentSchema,
   learningDocumentVersionSchema,
   reviewActivitySchema,
-} from '@/shared/models';
+} from '@/shared/learning-document';
 
 const FIRST_DOCUMENT_VERSION = 6;
 const versionedInputSchema = learningDocumentVersionSchema.loose().extend({

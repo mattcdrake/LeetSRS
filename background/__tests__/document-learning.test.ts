@@ -2,7 +2,7 @@ import { registerService } from '@webext-core/proxy-service';
 import { Rating, State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/storage';
+import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';

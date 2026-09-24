@@ -4,7 +4,7 @@ import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
 import { destructiveButton, secondaryButton } from '@/popup/styles';
-import { NOTES_MAX_LENGTH } from '@/shared/models';
+import { NOTES_MAX_LENGTH } from '@/shared/learning-document';
 
 interface NoteEditorProps {
   frontendId: string;

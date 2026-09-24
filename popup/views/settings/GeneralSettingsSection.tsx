@@ -3,7 +3,7 @@ import type { IconType } from 'react-icons';
 import { FaChevronDown, FaCircleHalfStroke, FaGlobe } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useSettingsQuery, useUpdateSettingsMutation } from '@/popup/queries/settings';
-import type { LeetcodeDomain } from '@/shared/models';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import type { Language, Theme } from '@/shared/settings';
 import { LeetcodeCnSection } from './LeetcodeCnSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';

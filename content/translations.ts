@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { type Translations, translations } from '@/shared/i18n/index';
+import { learningDocumentItem } from '@/shared/learning-document';
 import { detectBrowserLanguage, languageSchema } from '@/shared/settings';
-import { learningDocumentItem } from '@/shared/storage';
 
 // Content can read an old preference before background startup migrates the document.
 const documentLanguageSchema = z.object({ settings: z.object({ language: languageSchema.catch('en').optional() }) });

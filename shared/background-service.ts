@@ -1,7 +1,7 @@
 import { createProxyService, type ProxyServiceKey } from '@webext-core/proxy-service';
 import type { createBackgroundService } from '@/background/service';
 import type { CatalogProblem } from '@/shared/catalog';
-import type { LeetcodeDomain } from '@/shared/models';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 
 export type NextProblem = CatalogProblem & { domain: LeetcodeDomain };
 export interface NextRoadmapProblem {

@@ -10,14 +10,13 @@ import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import * as catalog from '@/shared/catalog';
-import type { GistSyncStatus } from '@/shared/models';
-import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
+import { type GistSyncStatus, gistConnectionItem } from '@/shared/gist-sync';
 import {
-  gistConnectionItem,
+  LEARNING_DOCUMENT_VERSION,
   learningDocumentItem,
   readLearningDocument,
   replaceLearningDocument,
-} from '@/shared/storage';
+} from '@/shared/learning-document';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildCatalogProblem, buildProblem, createMockCard } from '@/test/utils/card-mocks';

@@ -2,8 +2,9 @@ import { expect, it } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { getGithubAuthStatus } from '@/background/github-auth';
 import { dismissMigrationNotice, migratePatConnection } from '@/background/legacy/github-pat';
+import { readGistConnection } from '@/shared/gist-sync';
+import { readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
 import { patMigrationItem } from '@/shared/legacy/github-pat';
-import { readGistConnection, readLearningDocument, replaceLearningDocument } from '@/shared/storage';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
 it('retires current and legacy PATs permanently while preserving learning data and a dismissed suggestion', async () => {

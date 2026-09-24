@@ -8,7 +8,7 @@ import {
   useRemoveCardMutation,
   useReviewQueueQuery,
 } from '@/popup/queries/cards';
-import type { RateCardInput } from '@/shared/models';
+import type { RateCardInput } from '@/shared/learning-document';
 import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';

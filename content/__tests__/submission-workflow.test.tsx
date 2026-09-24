@@ -6,7 +6,7 @@ import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import backgroundEntry from '@/entrypoints/background/index';
 import submissionsEntry from '@/entrypoints/submissions.content';
 import { background } from '@/shared/background-service';
-import { readLearningDocument } from '@/shared/storage';
+import { readLearningDocument } from '@/shared/learning-document';
 import { requireDefined } from '@/test/utils/assertions';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { createServiceMock } from '@/test/utils/service-mocks';

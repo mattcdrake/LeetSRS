@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Grade } from 'ts-fsrs';
 import { background } from '@/shared/background-service';
-import type { ProblemReference } from '@/shared/models';
+import type { ProblemReference } from '@/shared/learning-document';
 
 // Lives with the toolbar control, so dismissal cannot lose an in-flight save.
 export function useRatingSession(openRequest: number) {
