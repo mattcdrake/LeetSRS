@@ -12,7 +12,13 @@ import {
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { buttonInteraction } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import { getNextRoadmapProblemId, type Roadmap, type RoadmapId } from '@/shared/roadmap';
+import {
+  countReviewed,
+  getNextRoadmapProblemId,
+  type Roadmap,
+  type RoadmapId,
+  roadmapProblemIds,
+} from '@/shared/roadmap';
 import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 
@@ -44,15 +50,15 @@ export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) 
   );
 }
 
-function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap & { id: RoadmapId }; onOpen: () => void }) {
+function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap; onOpen: () => void }) {
   const t = useI18n();
   const { data: document } = useSuspenseQuery(learningDocumentQueryOptions);
   const { data: settings } = useSettingsQuery();
   const domain = settings.preferredLeetcodeSite;
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const skip = useSkipRoadmapProblemMutation();
-  const ids = roadmap.groups.flatMap((group) => group.frontendIds);
-  const reviewed = ids.filter((id) => document.cards[id]?.fsrs.reps > 0).length;
+  const ids = roadmapProblemIds(roadmap);
+  const reviewed = countReviewed(document, ids);
   const nextId = getNextRoadmapProblemId(roadmap, document, metadata.data, domain);
   const next = nextId ? metadata.data?.[nextId] : undefined;
   const { message, onSaved } = useProblemSaveFeedback();

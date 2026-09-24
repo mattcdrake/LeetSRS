@@ -5,7 +5,7 @@ import { useI18n } from '@/popup/contexts/I18nContext';
 import type { Roadmap, RoadmapId } from '@/shared/roadmap';
 import './roadmaps.css';
 
-export type RoadmapSummary = Roadmap & { id: RoadmapId; reviewed: number; total: number };
+export type RoadmapSummary = Roadmap & { reviewed: number; total: number };
 
 interface RoadmapOverviewProps {
   roadmaps: RoadmapSummary[];

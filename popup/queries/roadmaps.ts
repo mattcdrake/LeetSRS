@@ -3,7 +3,7 @@ import { background } from '@/shared/background-service';
 import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import type { LearningDocument } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
-import { loadRoadmap, ROADMAP_IDS, type Roadmap, type RoadmapId } from '@/shared/roadmap';
+import { loadRoadmap, ROADMAP_IDS, type Roadmap, type RoadmapId, roadmapProblemIds } from '@/shared/roadmap';
 import { learningDocumentQueryKey, learningDocumentQueryOptions } from './learning-document';
 
 export const activeRoadmapQueryOptions = queryOptions({
@@ -39,7 +39,7 @@ export function roadmapMetadataQueryOptions(roadmap: Roadmap, domain: LeetcodeDo
     queryKey: ['popupRoadmapMetadata', roadmap.id, domain],
     staleTime: Infinity,
     queryFn: async () => {
-      const ids = roadmap.groups.flatMap((group) => group.frontendIds);
+      const ids = roadmapProblemIds(roadmap);
       const problems = await getProblemsByFrontendIds(ids.map((frontendId) => ({ frontendId, domain })));
 
       // Retain titles and paid status for unavailable rows; links still use the preferred site.

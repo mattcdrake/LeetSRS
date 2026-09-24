@@ -3,9 +3,7 @@ import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import { SearchFilterBar } from '@/popup/components/SearchFilterBar';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import type { RoadmapSummary } from './RoadmapOverview';
-import { type RoadmapFilter, RoadmapProblemList } from './RoadmapProblemList';
-
-const FILTERS = ['notInSrs', 'inSrs', 'reviewed', 'skipped'] as const;
+import { ROADMAP_FILTERS, type RoadmapFilter, RoadmapProblemList } from './RoadmapProblemList';
 
 export function RoadmapDetail({ roadmap }: { roadmap: RoadmapSummary }) {
   const t = useI18n();
@@ -38,7 +36,7 @@ export function RoadmapDetail({ roadmap }: { roadmap: RoadmapSummary }) {
         searchLabel={t.roadmaps.searchLabel}
         searchPlaceholder={t.cardsView.filterPlaceholder}
         clearSearchLabel={t.cardsView.clearFilterAriaLabel}
-        filters={FILTERS.map((id) => ({
+        filters={ROADMAP_FILTERS.map((id) => ({
           id,
           label: t.roadmaps.filters[id],
           isSelected: filter === id,
