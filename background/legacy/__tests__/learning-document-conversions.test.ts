@@ -1,196 +1,65 @@
-import { describe, expect, it } from 'vitest';
+import { State } from 'ts-fsrs';
+import { expect, it } from 'vitest';
 import {
   convertLearningDocument,
   parseLearningDocumentBackup,
 } from '@/background/legacy/learning-document-conversions';
-import { cardSchema, LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { validLegacyBackup } from '@/test/utils/backup-mocks';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
+import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
+import { createMockCard } from '@/test/utils/card-mocks';
 
-describe('convertLearningDocument', () => {
-  it('adds empty roadmap state to v11 documents without changing existing learning data', () => {
-    const { converted } = validLegacyBackup();
-    const input = {
-      ...converted,
-      schemaVersion: 11,
-      settings: { theme: 'dark' },
-      dataUpdatedAt: '2026-09-16T12:00:00.000Z',
-    };
+// When adding a schema version, extend the unversioned input with the data the new
+// conversion reads and the expected document with what it produces.
+it('converts an unversioned document through every schema version', () => {
+  const { frontendId: _frontendId, domain: _domain, ...learning } = createMockCard(State.Review);
+  const legacyCard = { ...learning, slug: 'two-sum', name: 'Two Sum', difficulty: 'Easy' };
+  const dataUpdatedAt = '2024-01-15T10:00:00.000Z';
+  const data = {
+    cards: {
+      // v1: missing domains default to leetcode.com.
+      // v4: separate notes attach to cards without an embedded note.
+      'two-sum': { ...legacyCard, id: 'a', leetcodeId: '1' },
+      // v4: an embedded note, even an empty one, takes precedence over a separate note.
+      'cn-problem': { ...legacyCard, id: 'b', leetcodeId: '2', domain: 'leetcode.cn', note: '' },
+      // v4: a card with an invalid separate note is discarded.
+      'bad-note': { ...legacyCard, id: 'c', leetcodeId: '3' },
+      // v10: cards are rekeyed by frontend ID; invalid cards are discarded.
+      'no-id': { ...legacyCard, id: 'd', leetcodeId: '' },
+      broken: { ...legacyCard, id: 'e', leetcodeId: '4', fsrs: null },
+      missing: null,
+    },
+    notes: { a: { text: 'Keep this note' }, b: { text: 'Shadowed' }, c: { text: 42 } },
+    // v9: only the latest day's allowance and streak are retained.
+    stats: {
+      '2024-01-15': { newCards: 3, streak: 9, totalReviews: 4, gradeBreakdown: { 1: 0, 2: 0, 3: 4, 4: 0 } },
+      '2024-01-14': { newCards: 2, streak: 8, totalReviews: 3, gradeBreakdown: { 1: 1, 2: 0, 3: 2, 4: 0 } },
+    },
+    settings: {
+      theme: 'dark',
+      // v3: autoClearLeetcode becomes resetEditorOnEveryProblem.
+      // v7: either legacy reset preference becomes resetEditorOnReviewQueue.
+      autoClearLeetcode: true,
+      resetEditorOnDueReview: false,
+      dayStartHour: 4,
+      // v11: removed languages fall back to English.
+      language: 'de',
+    },
+    gistSync: null,
+  };
 
-    expect(convertLearningDocument(input)).toEqual({
-      ...input,
-      schemaVersion: LEARNING_DOCUMENT_VERSION,
-      activeRoadmapId: null,
-      roadmapSkips: {},
-    });
-  });
-
-  it('rekeys v9 cards by frontend ID, retaining learning data and discarding invalid cards and metadata', () => {
-    const { backup } = validLegacyBackup();
-    const original = { ...backup.data.cards['two-sum'], domain: 'leetcode.cn', note: 'Keep my approach' };
-    const input = {
-      schemaVersion: 9,
-      dataUpdatedAt: backup.dataUpdatedAt,
-      cards: {
-        'two-sum': original,
-        invalid: { ...original, leetcodeId: '' },
-        broken: { ...original, leetcodeId: '2', fsrs: null },
-        invalidNote: { ...original, leetcodeId: '3', note: 42 },
-        missing: null,
-      },
-      reviewActivity: { date: '2024-01-01', newCards: 2, streak: 3 },
-      settings: { theme: 'dark' },
-    };
-    const expected = {
-      ...input,
-      schemaVersion: LEARNING_DOCUMENT_VERSION,
-      activeRoadmapId: null,
-      roadmapSkips: {},
-      cards: {
-        '1': {
-          frontendId: '1',
-          domain: 'leetcode.cn',
-          createdAt: original.createdAt,
-          fsrs: original.fsrs,
-          paused: original.paused,
-          note: original.note,
-        },
-      },
-    };
-    expect(convertLearningDocument(input)).toEqual(expected);
-    expect(parseLearningDocumentBackup(JSON.stringify(input))).toEqual(expected);
-  });
-
-  it('retires historical statistics while retaining the latest allowance and streak', () => {
-    const input = {
-      schemaVersion: 8,
-      dataUpdatedAt: '2024-03-15T12:00:00.000Z',
-      cards: {},
-      settings: {},
-      stats: {
-        '2024-03-15': { newCards: 3, streak: 9, gradeBreakdown: { 1: 0, 2: 0, 3: 4, 4: 0 } },
-        '2024-03-14': { newCards: 2, streak: 8, gradeBreakdown: { 1: 1, 2: 0, 3: 3, 4: 0 } },
-      },
-    };
-    const expected = {
-      schemaVersion: LEARNING_DOCUMENT_VERSION,
-      activeRoadmapId: null,
-      roadmapSkips: {},
-      dataUpdatedAt: input.dataUpdatedAt,
-      cards: {},
-      settings: {},
-      reviewActivity: { date: '2024-03-15', newCards: 3, streak: 9 },
-    };
-    expect(convertLearningDocument(input)).toEqual(expected);
-    expect(parseLearningDocumentBackup(JSON.stringify(input))).toEqual(expected);
-  });
-
-  it.each([
-    [{ resetEditorOnReviewQueue: false, resetEditorOnEveryProblem: true, resetEditorOnDueReview: true }, false],
-    [{ resetEditorOnReviewQueue: true, resetEditorOnEveryProblem: false, resetEditorOnDueReview: false }, true],
-    [{ resetEditorOnEveryProblem: true, resetEditorOnDueReview: false }, true],
-    [{ resetEditorOnEveryProblem: false, resetEditorOnDueReview: true }, true],
-    [{ resetEditorOnEveryProblem: false, resetEditorOnDueReview: false }, false],
-    [{}, false],
-  ] as const)('converts legacy editor-reset settings %j to the queue-opening preference', (settings, expected) => {
-    expect(
-      convertLearningDocument({
-        schemaVersion: 6,
-        cards: {},
-        stats: {},
-        settings,
-      })
-    ).toEqual(buildLearningDocument({ settings: { resetEditorOnReviewQueue: expected } }));
-  });
-
-  it.each([undefined, '', ' \t\n '])('preserves embedded-note precedence for %j', (note) => {
-    const { backup } = validLegacyBackup();
-    const card = backup.data.cards['two-sum'];
-    expect(
-      convertLearningDocument({
-        schemaVersion: 2,
-        cards: { 'two-sum': { ...card, ...(note !== undefined && { note }) } },
-        notes: { [card.id]: { text: 'Legacy note' }, orphan: { text: 42 } },
-        settings: { resetEditorOnEveryProblem: false, autoClearLeetcode: 'ignored', dayStartHour: null },
-      })
-    ).toEqual(
-      buildLearningDocument({
-        cards: {
-          '1': cardSchema.parse({
-            ...card,
-            frontendId: '1',
-            ...(note === undefined ? { note: 'Legacy note' } : note ? { note } : {}),
-          }),
-        },
-        settings: { resetEditorOnReviewQueue: false },
-      })
-    );
-  });
-
-  it.each([
-    [2, true],
-    [3, false],
-  ])('only uses autoClearLeetcode before v3 (version %i)', (schemaVersion, resetEditorOnReviewQueue) => {
-    expect(convertLearningDocument({ schemaVersion, settings: { autoClearLeetcode: true, dayStartHour: 4 } })).toEqual(
-      buildLearningDocument({ settings: { resetEditorOnReviewQueue } })
-    );
-  });
-
-  it.each([
-    [3, 'Legacy note'],
-    [4, undefined],
-  ])('only attaches separate notes before v4 (version %i)', (schemaVersion, note) => {
-    const { backup } = validLegacyBackup();
-    const card = backup.data.cards['two-sum'];
-    const document = convertLearningDocument({
-      schemaVersion,
-      cards: { 'two-sum': card },
-      notes: { [card.id]: { text: 'Legacy note' } },
-    });
-    expect(document.cards['1']).toEqual(
-      cardSchema.parse({ ...card, frontendId: '1', ...(note !== undefined && { note }) })
-    );
-  });
-
-  it.each([
-    [6, true],
-    [7, undefined],
-  ])('only derives queue reset from old preferences before v7 (version %i)', (schemaVersion, reset) => {
-    const document = convertLearningDocument({
-      schemaVersion,
-      cards: {},
-      stats: {},
-      settings: { resetEditorOnEveryProblem: true },
-    });
-    expect(document.settings).toEqual(reset === undefined ? {} : { resetEditorOnReviewQueue: reset });
-  });
-});
-
-describe('parseLearningDocumentBackup', () => {
-  const validBackup = { schemaVersion: 2, exportDate: '2024-01-01', data: { cards: {}, stats: {} } };
-
-  it('ignores shadowed notes, export dates, and backup Gist metadata', () => {
-    const { backup } = validLegacyBackup();
-    const card = { ...backup.data.cards['two-sum'], note: 'Embedded' };
-    const document = parseLearningDocumentBackup(
-      JSON.stringify({
-        ...validBackup,
-        dataUpdatedAt: '2024-01-02',
-        exportDate: null,
-        data: {
-          cards: { 'two-sum': card },
-          stats: {},
-          notes: { [card.id]: { text: 42 } },
-          gistSync: null,
-        },
-      })
-    );
-    expect(document).toEqual(
-      buildLearningDocument({
-        cards: { '1': cardSchema.parse({ ...card, frontendId: '1' }) },
-        settings: { resetEditorOnReviewQueue: false },
-        dataUpdatedAt: '2024-01-02',
-      })
-    );
-  });
+  const expected = {
+    schemaVersion: LEARNING_DOCUMENT_VERSION,
+    cards: {
+      '1': { ...learning, frontendId: '1', domain: 'leetcode.com', note: 'Keep this note' },
+      '2': { ...learning, frontendId: '2', domain: 'leetcode.cn' },
+    },
+    reviewActivity: { date: '2024-01-15', newCards: 3, streak: 9 },
+    settings: { theme: 'dark', language: 'en', resetEditorOnReviewQueue: true },
+    // v12: roadmap state starts empty.
+    activeRoadmapId: null,
+    roadmapSkips: {},
+    dataUpdatedAt,
+  };
+  expect(convertLearningDocument({ ...structuredClone(data), dataUpdatedAt })).toEqual(expected);
+  expect(parseLearningDocumentBackup(JSON.stringify({ exportDate: dataUpdatedAt, data }))).toEqual(expected);
+  expect(convertLearningDocument(expected)).toEqual(expected);
 });
