@@ -97,18 +97,6 @@
                       "**/entrypoints/**"
                     ],
                     "message": "Import shared contracts instead of another runtime owner."
-                  },
-                  {
-                    "group": [
-                      "@/shared/learning-document",
-                      "**/shared/learning-document",
-                      "@/shared/gist-sync",
-                      "**/shared/gist-sync",
-                      "@/shared/popup-dialogs",
-                      "**/shared/popup-dialogs"
-                    ],
-                    "importNamePattern": "(replaceLearningDocument|writeGistConnection|removeGistConnection|removeSyncStatus|writePopupDialogAcknowledgments)",
-                    "message": "Use the background service for persisted writes."
                   }
                 ]
               }
@@ -136,18 +124,6 @@
                       "**/entrypoints/**"
                     ],
                     "message": "Import shared contracts instead of another runtime owner."
-                  },
-                  {
-                    "group": [
-                      "@/shared/learning-document",
-                      "**/shared/learning-document",
-                      "@/shared/gist-sync",
-                      "**/shared/gist-sync",
-                      "@/shared/popup-dialogs",
-                      "**/shared/popup-dialogs"
-                    ],
-                    "importNamePattern": "(replaceLearningDocument|writeGistConnection|removeGistConnection|removeSyncStatus|writePopupDialogAcknowledgments)",
-                    "message": "Use the background service for persisted writes."
                   }
                 ]
               }
