@@ -34,13 +34,14 @@ const authorizationSchema = z.object({
   expiresAt: z.number(),
   refreshExpiresAt: z.number(),
 });
-let generation = 0;
+let authorizationAbort = new AbortController();
 let signingIn: Promise<void> | undefined;
 let refreshing: Promise<z.infer<typeof authorizationSchema>> | undefined;
 let error: GithubAuthStatus['error'] = null;
 
-export function authGeneration() {
-  return generation;
+// Aborted when the authorization is cleared, so work started under it stops before writing results.
+export function authorizationSignal(): AbortSignal {
+  return authorizationAbort.signal;
 }
 
 async function readAuthorization() {
@@ -95,16 +96,16 @@ async function exchange(path: string, payload: Record<string, string>) {
 }
 
 // Serialize permission events, requests, and cancellation so one grant launches one flow.
-function updateSignInRequest(run: (expected: number) => Promise<void>): Promise<void> {
-  const expected = generation;
+function updateSignInRequest(run: (signal: AbortSignal) => Promise<void>): Promise<void> {
+  const signal = authorizationAbort.signal;
   const result = signInRequests.then(async () => {
-    if (expected === generation) await run(expected);
+    if (!signal.aborted) await run(signal);
   });
   signInRequests = result.catch(() => {});
   return result;
 }
 
-async function resumeSignInRequest(expected: number) {
+async function resumeSignInRequest(signal: AbortSignal) {
   const expiresAt = z
     .number()
     .finite()
@@ -117,16 +118,16 @@ async function resumeSignInRequest(expected: number) {
   }
   if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) return;
   await signInRequestItem.removeValue();
-  if (expected === generation) launchGithubSignIn();
+  if (!signal.aborted) launchGithubSignIn();
 }
 
 export function startGithubSignIn(): Promise<void> {
-  return updateSignInRequest(async (expected) => {
+  return updateSignInRequest(async (signal) => {
     if (signingIn || (await readAuthorization())) return;
     error = null;
     await signInRequestItem.setValue(Date.now() + SIGN_IN_REQUEST_TTL);
     // Also covers grants that arrive before the command has finished arming.
-    await resumeSignInRequest(expected);
+    await resumeSignInRequest(signal);
   });
 }
 
@@ -142,13 +143,13 @@ export function cancelGithubSignInRequest(): Promise<void> {
 
 function launchGithubSignIn(): void {
   if (signingIn) return;
-  const expected = generation;
+  const signal = authorizationAbort.signal;
   error = null;
   const attempt = (async () => {
     if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) throw new Error('GitHub access required');
     // Changing accounts requires signing out first.
     if (await readAuthorization()) return;
-    if (expected !== generation) return;
+    if (signal.aborted) return;
     const clientId = import.meta.env.WXT_GITHUB_CLIENT_ID;
     if (!clientId) throw new Error('OAuth client is not configured');
     const redirectUri = browser.identity.getRedirectURL();
@@ -178,16 +179,16 @@ function launchGithubSignIn(): void {
     )
       throw new Error('Invalid OAuth callback');
     const code = callback.searchParams.get('code');
-    if (!code || expected !== generation) throw new Error('Sign-in cancelled');
+    if (!code || signal.aborted) throw new Error('Sign-in cancelled');
     const auth = await exchange('exchange', { code, code_verifier: verifier, redirect_uri: redirectUri });
-    if (expected !== generation) return;
+    if (signal.aborted) return;
     await storage.setItems([
       { item: githubAuthorizationItem, value: auth },
       { item: githubSetupPendingItem, value: true },
     ]);
   })()
     .catch(() => {
-      if (expected === generation) error = 'signInFailed';
+      if (!signal.aborted) error = 'signInFailed';
     })
     .finally(() => {
       if (signingIn === attempt) signingIn = undefined;
@@ -196,20 +197,20 @@ function launchGithubSignIn(): void {
 }
 
 export async function getGithubAuthorization() {
-  const expected = generation;
+  const signal = authorizationAbort.signal;
   if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS)))
     throw new GithubAuthorizationError('Enable GitHub access in Settings');
   const saved = await readAuthorization();
-  if (!saved || expected !== generation) throw new GithubAuthorizationError('Sign in with GitHub');
+  if (!saved || signal.aborted) throw new GithubAuthorizationError('Sign in with GitHub');
   if (saved.expiresAt > Date.now() + 60000) return saved;
   if (saved.refreshExpiresAt <= Date.now()) throw new GithubAuthorizationError('Sign in with GitHub');
   if (refreshing) return refreshing;
   const attempt = (async () => {
     const auth = await exchange('refresh', { refresh_token: saved.refreshToken });
     if (auth.account.id !== saved.account.id) throw new GithubAuthorizationError('GitHub account changed');
-    if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
+    signal.throwIfAborted();
     await githubAuthorizationItem.setValue(auth);
-    if (expected !== generation) throw new GithubAuthorizationError('authorization changed');
+    signal.throwIfAborted();
     return auth;
   })();
   refreshing = attempt;
@@ -225,7 +226,8 @@ export async function dismissGithubSetupPrompt(): Promise<void> {
 }
 
 export async function clearGithubAuthorization(): Promise<void> {
-  generation++;
+  authorizationAbort.abort(new GithubAuthorizationError('authorization changed'));
+  authorizationAbort = new AbortController();
   signingIn = undefined;
   refreshing = undefined;
   error = null;

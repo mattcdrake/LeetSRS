@@ -1,6 +1,6 @@
 import { Octokit } from 'octokit';
 import {
-  authGeneration,
+  authorizationSignal,
   clearGithubAuthorization,
   GithubAuthorizationError,
   getGithubAuthorization,
@@ -28,7 +28,7 @@ import { detectBrowserLanguage } from '@/shared/settings';
 const GIST_FILENAME = 'leetsrs-backup.json';
 
 let activeSync: Promise<void> | undefined;
-let generation = 0;
+let connectionAbort = new AbortController();
 let lastError: GistSyncErrorCode | null = null;
 
 // Remember observed values so our own storage notification and completed operation
@@ -65,10 +65,11 @@ async function saveConnection(connection: GistSyncConfig): Promise<void> {
 
 // Sync is deliberately just whole-document last-write-wins. Startup, local saves,
 // enabling, and the minute alarm all call the same function; overlapping calls share
-// one promise. A generation change rejects results from a previous connection.
+// one promise. Changing the destination aborts work for the previous connection.
 
 function invalidateGistSync(): void {
-  generation++;
+  connectionAbort.abort(new Error('Connection changed'));
+  connectionAbort = new AbortController();
   activeSync = undefined;
 }
 
@@ -77,7 +78,7 @@ export function sync(): Promise<void> {
     return activeSync;
   }
 
-  const attempt = runSync(generation);
+  const attempt = runSync(connectionAbort.signal);
   activeSync = attempt;
   void attempt.finally(() => {
     if (activeSync === attempt) {
@@ -87,37 +88,34 @@ export function sync(): Promise<void> {
   return attempt;
 }
 
-async function runSync(startGeneration: number): Promise<void> {
+async function runSync(signal: AbortSignal): Promise<void> {
   try {
     const config = await readGistConnection();
     observedConnection ??= config;
-    if (generation !== startGeneration || !config.enabled) {
+    if (signal.aborted || !config.enabled) {
       return;
     }
 
     lastError = null;
-    await syncDocument(config, startGeneration);
+    await syncDocument(config, signal);
   } catch (error) {
-    if (generation === startGeneration) {
+    if (!signal.aborted) {
       lastError = syncErrorCode(error);
     }
   }
 }
 
-async function syncDocument(
-  config: Extract<GistSyncConfig, { gistId: string }>,
-  startGeneration: number
-): Promise<void> {
+async function syncDocument(config: Extract<GistSyncConfig, { gistId: string }>, signal: AbortSignal): Promise<void> {
   const auth = await getGithubAuthorization();
-  if (generation !== startGeneration || auth.account.id !== config.accountId) return;
+  if (signal.aborted || auth.account.id !== config.accountId) return;
   const github = new Octokit({ auth: auth.accessToken });
   const { data } = await github.rest.gists.get({ gist_id: config.gistId });
-  if (generation !== startGeneration) return;
+  if (signal.aborted) return;
 
   const remoteFile = data.files?.[GIST_FILENAME];
   const remote = remoteFile ? await readBackupFile(remoteFile) : undefined;
   const local = await readLearningDocument();
-  if (generation !== startGeneration) return;
+  if (signal.aborted) return;
 
   if (
     !remote?.dataUpdatedAt ||
@@ -130,7 +128,7 @@ async function syncDocument(
   } else if (!local.dataUpdatedAt || Date.parse(local.dataUpdatedAt) < Date.parse(remote.dataUpdatedAt)) {
     await replaceLearningDocument(remote);
   }
-  if (generation !== startGeneration) return;
+  if (signal.aborted) return;
 
   await lastSyncTimeItem.setValue(new Date().toISOString());
 }
@@ -145,8 +143,8 @@ export async function getGistSyncStatus(): Promise<GistSyncStatus> {
 
 export async function setupGistSync(setup: GistSetup): Promise<GistConnectionResult> {
   try {
-    const expectedAuth = authGeneration();
-    const expectedSync = generation;
+    const authSignal = authorizationSignal();
+    const connectionSignal = connectionAbort.signal;
     const auth = await getGithubAuthorization();
     const github = new Octokit({ auth: auth.accessToken });
     let gistId: string;
@@ -173,7 +171,7 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
       gistId = data.id;
     }
 
-    if (expectedAuth !== authGeneration() || expectedSync !== generation) throw new Error('Connection changed');
+    if (authSignal.aborted || connectionSignal.aborted) throw new Error('Connection changed');
     await saveConnection({ accountId: auth.account.id, gistId, enabled: true });
     return { saved: true };
   } catch (error) {
@@ -183,7 +181,7 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
 
 export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnectionResult> {
   try {
-    const expected = authGeneration();
+    const signal = authorizationSignal();
     const config = await readGistConnection();
     if (config.accountId === null) {
       return enabled ? { saved: false, error: 'missingToken' } : { saved: true };
@@ -193,7 +191,7 @@ export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnecti
       const auth = await getGithubAuthorization();
       if (auth.account.id !== config.accountId) return { saved: false, error: 'authentication' };
     }
-    if (expected !== authGeneration()) throw new GithubAuthorizationError('authorization changed');
+    signal.throwIfAborted();
     await saveConnection({ ...config, enabled });
     return { saved: true };
   } catch (error) {
@@ -247,14 +245,14 @@ async function readBackupFile(
 }
 
 export async function listGistDestinations(): Promise<GistDestination[]> {
-  const expected = authGeneration();
+  const signal = authorizationSignal();
   const auth = await getGithubAuthorization();
   const github = new Octokit({ auth: auth.accessToken });
   const suggestion = await previousGist();
   const destinations: GistDestination[] = [];
   for (let page = 1; ; page++) {
     const { data } = await github.rest.gists.list({ per_page: 100, page });
-    if (expected !== authGeneration()) throw new GithubAuthorizationError('authorization changed');
+    signal.throwIfAborted();
     for (const gist of data) {
       if (gist.owner?.id === auth.account.id && gist.files?.[GIST_FILENAME])
         destinations.push({
