@@ -1,8 +1,14 @@
-import type { NextProblem, NextRoadmapProblem } from '@/shared/background-service';
-import { getProblemsByFrontendIds } from '@/shared/catalog';
+import { type CatalogProblem, getProblemsByFrontendIds } from '@/shared/catalog';
 import { type ProblemReference, readLearningDocument } from '@/shared/learning-document';
+import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { buildReviewQueue } from '@/shared/review';
 import { getNextRoadmapProblemId, loadRoadmap } from '@/shared/roadmap';
+
+export type NextProblem = CatalogProblem & { domain: LeetcodeDomain };
+interface NextRoadmapProblem {
+  name: string;
+  problem: NextProblem | null;
+}
 
 export async function getNextReview(current: ProblemReference): Promise<NextProblem | null> {
   const document = await readLearningDocument();

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from 'react-aria-components';
 import { FaArrowRight, FaLock } from 'react-icons/fa6';
-import { background, type NextProblem } from '@/shared/background-service';
+import type { NextProblem } from '@/background/next-problems';
+import { background } from '@/shared/background-service';
 import type { Translations } from '@/shared/i18n';
 import type { ProblemReference } from '@/shared/learning-document';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
