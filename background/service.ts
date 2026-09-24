@@ -23,13 +23,13 @@ import { dismissMigrationNotice } from '@/background/legacy/github-pat';
 import { getNextReview, getNextRoadmapProblem } from '@/background/next-problems';
 import { acknowledgePopupDialog } from '@/background/popup-dialogs';
 import {
-  connectGist,
-  disconnectGithub,
-  getSyncStatus,
+  getGistSyncStatus,
+  importData,
   listGistDestinations,
   resetAllData,
-  restoreBackup,
-  setSyncEnabled,
+  setGistSyncEnabled,
+  setupGistSync,
+  signOutGithub,
 } from '@/background/sync';
 import type { BackgroundService } from '@/shared/background-service';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
@@ -56,7 +56,7 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
     dismissGithubSetupPrompt: command(z.tuple([]), dismissGithubSetupPrompt),
     cancelGithubSignInRequest: command(z.tuple([]), cancelGithubSignInRequest),
     startGithubSignIn: command(z.tuple([]), startGithubSignIn),
-    signOutGithub: command(z.tuple([]), disconnectGithub),
+    signOutGithub: command(z.tuple([]), signOutGithub),
     getGithubAuthStatus: command(z.tuple([]), getGithubAuthStatus),
     dismissMigrationNotice: command(z.tuple([]), dismissMigrationNotice),
     listGistDestinations: command(z.tuple([]), listGistDestinations),
@@ -81,10 +81,10 @@ export function createBackgroundService(ready: Promise<void>): BackgroundService
     updateSettings: command(z.tuple([settingsUpdateSchema]), updateSettings),
     setActiveRoadmap: command(z.tuple([roadmapIdSchema.nullable()]), setActiveRoadmap),
     setRoadmapProblemSkipped: command(z.tuple([roadmapIdSchema, frontendId, z.boolean()]), setRoadmapProblemSkipped),
-    importData: command(z.tuple([z.string()]), restoreBackup),
+    importData: command(z.tuple([z.string()]), importData),
     resetAllData: command(z.tuple([]), resetAllData),
-    setupGistSync: command(z.tuple([gistSetupSchema]), connectGist),
-    setGistSyncEnabled: command(z.tuple([z.boolean()]), setSyncEnabled),
-    getGistSyncStatus: command(z.tuple([]), getSyncStatus),
+    setupGistSync: command(z.tuple([gistSetupSchema]), setupGistSync),
+    setGistSyncEnabled: command(z.tuple([z.boolean()]), setGistSyncEnabled),
+    getGistSyncStatus: command(z.tuple([]), getGistSyncStatus),
   };
 }

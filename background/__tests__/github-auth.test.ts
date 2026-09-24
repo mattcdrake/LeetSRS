@@ -5,10 +5,10 @@ import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import {
   cancelGithubSignInRequest,
+  clearGithubAuthorization,
   getGithubAuthorization,
   getGithubAuthStatus,
   resumeGithubSignIn,
-  signOutGithub,
   startGithubSignIn,
 } from '@/background/github-auth';
 import { readGistConnection } from '@/shared/storage';
@@ -26,7 +26,7 @@ const callback = 'https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.chromiumapp.org/';
 beforeEach(async () => {
   fakeBrowser.reset();
   vi.spyOn(browser.permissions, 'contains').mockImplementation(async () => true);
-  await signOutGithub();
+  await clearGithubAuthorization();
   vi.stubEnv('WXT_GITHUB_CLIENT_ID', 'client');
   vi.spyOn(browser.identity, 'getRedirectURL').mockReturnValue(callback);
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) =>
@@ -143,7 +143,7 @@ it.each(['sign-in', 'refresh'])('does not restore authorization when %s finishes
     refresh = getGithubAuthorization().catch(() => null);
   }
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
-  await signOutGithub();
+  await clearGithubAuthorization();
   pending.resolve(Response.json(token));
   if (refresh) await refresh;
   else await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
@@ -167,7 +167,7 @@ it('requires sign-out before starting another account sign-in', async () => {
   await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
   expect((await getGithubAuthStatus()).account?.login).toBe('tester');
-  await signOutGithub();
+  await clearGithubAuthorization();
   await startGithubSignIn();
   await finishSignIn();
   expect(browser.identity.launchWebAuthFlow).toHaveBeenCalledOnce();
@@ -210,7 +210,7 @@ it.each(['denied', 'expired', 'signed out'])('does not resume a permission reque
   acceptSignIn();
   await startGithubSignIn();
   if (outcome === 'denied') await cancelGithubSignInRequest();
-  if (outcome === 'signed out') await signOutGithub();
+  if (outcome === 'signed out') await clearGithubAuthorization();
   if (outcome === 'expired') vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 6 * 60 * 1000);
   vi.mocked(browser.permissions.contains).mockImplementation(async () => true);
   await resumeGithubSignIn();

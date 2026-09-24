@@ -54,7 +54,7 @@ describe('whole-document Gist sync', () => {
     github.get.mockResolvedValue({ data: { owner: { id: 1 }, files: {} } });
     github.create.mockResolvedValue({ data: {} });
 
-    expect(await syncModule.connectGist(setup)).toEqual({ saved: false, error });
+    expect(await syncModule.setupGistSync(setup)).toEqual({ saved: false, error });
     expect(await readGistConnection()).toEqual(connection);
   });
 
@@ -106,7 +106,7 @@ describe('whole-document Gist sync', () => {
         },
       });
       const download = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(local)));
-      const result = await syncModule.connectGist({ mode: 'existing', gistId: 'selected' });
+      const result = await syncModule.setupGistSync({ mode: 'existing', gistId: 'selected' });
       expect(result.saved).toBe(kind === 'truncated');
       if (kind === 'truncated') {
         expect(download).toHaveBeenCalledWith(
@@ -126,7 +126,7 @@ describe('whole-document Gist sync', () => {
     github.get.mockResolvedValue({
       data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
     });
-    expect(await syncModule.connectGist({ mode: 'existing', gistId: 'previous' })).toEqual({ saved: true });
+    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'previous' })).toEqual({ saved: true });
     expect((await getGithubAuthStatus()).migrationNotice).toBe(true);
   });
 
@@ -135,9 +135,9 @@ describe('whole-document Gist sync', () => {
       data: { owner: { id: number }; files: Record<string, { content: string }> };
     }>();
     github.get.mockReturnValueOnce(response.promise);
-    const pending = syncModule.connectGist({ mode: 'existing', gistId: 'selected' });
+    const pending = syncModule.setupGistSync({ mode: 'existing', gistId: 'selected' });
     await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-    await syncModule.disconnectGithub();
+    await syncModule.signOutGithub();
     response.resolve({
       data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
     });
@@ -148,7 +148,7 @@ describe('whole-document Gist sync', () => {
 
   it('uses stable error codes for GitHub and storage failures', async () => {
     github.get.mockRejectedValueOnce(Object.assign(new Error('Not Found'), { status: 404 }));
-    expect(await syncModule.connectGist({ mode: 'existing', gistId: 'missing' })).toEqual({
+    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'missing' })).toEqual({
       saved: false,
       error: 'gistNotFound',
     });
@@ -157,16 +157,16 @@ describe('whole-document Gist sync', () => {
       data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
     });
     vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('disk failed'));
-    expect(await syncModule.connectGist({ mode: 'existing', gistId: 'gist' })).toEqual({
+    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'gist' })).toEqual({
       saved: false,
       error: 'connectionSaveFailed',
     });
   });
 
   it.each([true, false])('only allows disabling an absent connection (enabled: %s)', async (enabled) => {
-    await syncModule.disconnectGithub();
+    await syncModule.signOutGithub();
 
-    expect(await syncModule.setSyncEnabled(enabled)).toEqual(
+    expect(await syncModule.setGistSyncEnabled(enabled)).toEqual(
       enabled ? { saved: false, error: 'missingToken' } : { saved: true }
     );
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
@@ -218,7 +218,7 @@ describe('whole-document Gist sync', () => {
         expect(github.update).not.toHaveBeenCalled();
       }
       expect(await readLearningDocument()).toEqual(direction === 'pull' ? remote : document);
-      expect(await syncModule.getSyncStatus()).toEqual({
+      expect(await syncModule.getGistSyncStatus()).toEqual({
         lastSyncTime: now,
         syncInProgress: false,
         lastError: null,
@@ -242,7 +242,7 @@ describe('whole-document Gist sync', () => {
       expect(writes).not.toHaveBeenCalled();
       expect(github.update).not.toHaveBeenCalled();
       expect(await readLearningDocument()).toEqual(local);
-      expect(await syncModule.getSyncStatus()).toMatchObject({ lastError: 'unknown', syncInProgress: false });
+      expect(await syncModule.getGistSyncStatus()).toMatchObject({ lastError: 'unknown', syncInProgress: false });
     }
   );
 
@@ -258,7 +258,7 @@ describe('whole-document Gist sync', () => {
 
     await syncModule.sync();
 
-    expect(await syncModule.getSyncStatus()).toMatchObject({ lastError: error, syncInProgress: false });
+    expect(await syncModule.getGistSyncStatus()).toMatchObject({ lastError: error, syncInProgress: false });
     expect(await readSyncStatus()).toEqual({ lastSyncTime });
   });
 });

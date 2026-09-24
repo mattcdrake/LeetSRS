@@ -221,7 +221,7 @@ export async function dismissGithubSetupPrompt(): Promise<void> {
   await storage.removeItem(SETUP_PROMPT_KEY);
 }
 
-export async function signOutGithub(): Promise<void> {
+export async function clearGithubAuthorization(): Promise<void> {
   generation++;
   signingIn = undefined;
   refreshing = undefined;
