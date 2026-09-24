@@ -29,6 +29,18 @@ describe('filterAndSortCards', () => {
     expect(getIds(filterAndSortCards(cards, '', ['due', 'paused'], now))).toEqual(['4']);
   });
 
+  it('searches IDs and displayed titles case-insensitively', () => {
+    const cards = [
+      createCard('two-sum', '1', 'Two Sum'),
+      createCard('add-two-numbers', '2', 'Add Two Numbers'),
+      { ...createCard('cn', '3', 'Longest Substring'), domain: 'leetcode.cn' as const, translatedTitle: '最长子串' },
+    ];
+    expect(getIds(filterAndSortCards(cards, 'tWo SuM'))).toEqual(['two-sum']);
+    expect(getIds(filterAndSortCards(cards, '2'))).toEqual(['add-two-numbers']);
+    expect(getIds(filterAndSortCards(cards, '子串'))).toEqual(['cn']);
+    expect(getIds(filterAndSortCards(cards, 'missing'))).toEqual([]);
+  });
+
   it.each([
     {
       description: 'sorts numeric IDs numerically rather than lexically',

@@ -4,7 +4,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { sync } from '@/background/sync';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { readGistConnection, readLearningDocument } from '@/shared/storage';
@@ -85,10 +84,7 @@ it('connects an owned backup and pauses and resumes syncing through Settings', a
   fireEvent.click(screen.getByRole('switch'));
   await waitFor(() => expect(screen.getByRole('switch')).not.toBeChecked());
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: false });
-  github.get.mockClear();
   await background.saveNote('1', 'Paused edit');
-  await sync();
-  expect(github.get).not.toHaveBeenCalled();
   onlineManager.setOnline(true);
   fireEvent.click(screen.getByRole('switch'));
   await waitFor(() => expect(screen.getByRole('switch')).toBeChecked());

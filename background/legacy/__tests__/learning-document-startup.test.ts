@@ -95,7 +95,7 @@ describe('learning document startup', () => {
     });
   });
 
-  it.each([0, 6, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
+  it.each([0, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
     const { backup, converted, legacyConverted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {

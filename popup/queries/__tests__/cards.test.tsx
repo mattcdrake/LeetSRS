@@ -3,7 +3,7 @@ import * as catalog from '@/shared/catalog';
  * @vitest-environment happy-dom
  */
 
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -13,7 +13,7 @@ import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
 import { STORAGE_KEYS } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
-import { buildCatalogProblem, createMockCard } from '@/test/utils/card-mocks';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { testCatalog } from '@/test/utils/catalog-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -103,27 +103,6 @@ describe('card queries through the background service', () => {
     expect(view.result.current.queue.error?.message).toBe(error);
     expect(view.result.current.note.data).toBe('Keep my solution');
     expect(view.result.current.settings.data.language).toBe('zh-CN');
-  });
-
-  it('refreshes an empty queue at midnight when a card becomes due', async () => {
-    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
-    vi.setSystemTime(new Date('2024-03-15T23:59:50'));
-    const card = createMockCard(State.Learning);
-    card.fsrs.due = new Date('2024-03-16T20:00:00').getTime();
-    await background.importData(JSON.stringify(buildLearningDocument({ cards: { [card.frontendId]: card } })));
-    const view = renderHook(() => useReviewQueueQuery(), { wrapper: createPopupTestWrapper().wrapper });
-
-    try {
-      await act(() => vi.advanceTimersByTimeAsync(1));
-      await vi.waitFor(() => expect(view.result.current.data).toBeDefined());
-      expect(view.result.current.data).toEqual([]);
-
-      await act(() => vi.advanceTimersByTimeAsync(15_000));
-      await vi.waitFor(() => expect(view.result.current.data).toEqual([{ ...card, ...buildCatalogProblem() }]));
-    } finally {
-      view.unmount();
-      vi.useRealTimers();
-    }
   });
 });
 

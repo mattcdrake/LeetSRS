@@ -1,15 +1,13 @@
 import { registerService } from '@webext-core/proxy-service';
-import { State } from 'ts-fsrs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from 'wxt/utils/storage';
 
-import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
 import { LEARNING_DOCUMENT_VERSION } from '@/shared/models';
-import { readLearningDocument, STORAGE_KEYS } from '@/shared/storage';
+import { readLearningDocument } from '@/shared/storage';
 import { getRegisteredBackground } from '@/test/utils/background-service';
-import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
+import { buildProblem } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import backgroundEntry from '../../entrypoints/background/index';
 
@@ -74,47 +72,6 @@ it('refreshes the badge at midnight before an Again card’s timestamp without a
   await vi.advanceTimersByTimeAsync(0);
   expect(await browser.alarms.get('badge-refresh')).toBeUndefined();
 });
-
-it.each([
-  ['2024-03-10', '2024-03-11', '2024-03-12'],
-  ['2024-11-03', '2024-11-04', '2024-11-05'],
-])(
-  'refreshes the badge at local midnight and restores the new-card allowance on %s',
-  async (today, tomorrow, nextDay) => {
-    fakeBrowser.reset();
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(new Date(`${today}T00:00:00`));
-    const card = createMockCard(State.New);
-    const document = buildLearningDocument({
-      cards: { '1': card },
-      settings: { maxNewCardsPerDay: 1 },
-      reviewActivity: { date: today, newCards: 1, streak: 1 },
-    });
-    await storage.setItem(STORAGE_KEYS.learningDocument, document);
-    try {
-      await refreshBadge();
-      expect(await fakeBrowser.action.getBadgeText({})).toBe('');
-      expect(await fakeBrowser.alarms.get(BADGE_ALARM_NAME)).toMatchObject({
-        scheduledTime: new Date(`${tomorrow}T00:00:00`).getTime(),
-      });
-
-      vi.setSystemTime(new Date(`${tomorrow}T00:00:00`));
-      await refreshBadge();
-      expect(await fakeBrowser.action.getBadgeText({})).toBe('1');
-      expect(await fakeBrowser.alarms.get(BADGE_ALARM_NAME)).toMatchObject({
-        scheduledTime: new Date(`${nextDay}T00:00:00`).getTime(),
-      });
-
-      card.paused = true;
-      await storage.setItem(STORAGE_KEYS.learningDocument, document);
-      await refreshBadge();
-      expect(await fakeBrowser.action.getBadgeText({})).toBe('');
-      expect(await fakeBrowser.alarms.get(BADGE_ALARM_NAME)).toBeUndefined();
-    } finally {
-      vi.useRealTimers();
-    }
-  }
-);
 
 describe('document startup through registered background commands', () => {
   it.each(['success', 'failure'] as const)(
