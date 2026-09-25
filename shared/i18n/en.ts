@@ -138,7 +138,6 @@ const en = {
   home: {
     currentRoadmap: 'Current roadmap',
     nextProblem: 'Next in your roadmap',
-    viewRoadmap: 'View roadmap',
     roadmapReviewed: (count: number, total: number) => `${count} / ${total} reviewed`,
     noNextProblem: (domain: string) => `No unadded, unskipped problems available on ${domain}.`,
     loadingReviewQueue: 'Loading review queue...',
@@ -169,7 +168,6 @@ const en = {
     postpone: 'Postpone review',
     postponeShort: 'Postpone',
     pauseCard: 'Pause card',
-    title: 'Actions',
     delay1Day: '1 Day',
     delay5Days: '5 Days',
     deleteCard: 'Delete Card',

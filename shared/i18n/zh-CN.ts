@@ -131,7 +131,6 @@ const zhCN: Translations = {
   home: {
     currentRoadmap: '当前学习路线',
     nextProblem: '学习路线中的下一题',
-    viewRoadmap: '查看学习路线',
     roadmapReviewed: (count: number, total: number) => `已复习 ${count} / ${total} 题`,
     noNextProblem: (domain: string) => `${domain} 上没有尚未加入 SRS 且未跳过的可用题目。`,
     loadingReviewQueue: '加载复习队列中...',
@@ -160,7 +159,6 @@ const zhCN: Translations = {
     postpone: '推迟复习',
     postponeShort: '推迟',
     pauseCard: '暂停卡片',
-    title: '操作',
     delay1Day: '延后1天',
     delay5Days: '延后5天',
     deleteCard: '删除卡片',
