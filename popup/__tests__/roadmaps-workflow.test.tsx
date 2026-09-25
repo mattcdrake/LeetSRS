@@ -60,8 +60,9 @@ it('refreshes the Home badge immediately when adding a roadmap problem between c
     fireEvent.click(screen.getByRole('button', { name: 'Save Two Sum' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Save without rating' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Home')).toHaveTextContent(/^1$/));
     fireEvent.click(screen.getByLabelText('Home'));
-    await waitFor(() => expect(screen.getByLabelText('Home')).toHaveTextContent(/^Home1$/));
+    expect(screen.getByLabelText('Home')).toHaveTextContent(/^Home1$/);
   } finally {
     popup.unmount();
     vi.useRealTimers();

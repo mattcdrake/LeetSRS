@@ -38,6 +38,7 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
       >
         {navItems.map((item) => {
           const isActive = item.id === activeView;
+          const showDueCount = item.id === 'home' && dueCount > 0;
           return (
             // Disable rather than remove the active tab's tooltip so activation does not remount the button and drop focus.
             <Tooltip key={item.id} label={item.label} isDisabled={isActive}>
@@ -52,13 +53,13 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
                 className={`flex items-center h-8 rounded-md cursor-pointer transition-colors duration-[120ms] outline-none data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-[var(--current-accent)] ${
                   isActive
                     ? 'gap-1.5 px-2.5 bg-secondary text-primary text-xs font-medium'
-                    : 'w-10 justify-center text-tertiary hover:text-primary hover:bg-secondary'
+                    : `${showDueCount ? 'gap-1 px-2' : 'w-10'} justify-center text-tertiary hover:text-primary hover:bg-secondary`
                 }`}
                 aria-label={item.label}
               >
                 <item.Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={isActive ? 2 : 1.75} />
                 {isActive && <span className="whitespace-nowrap">{item.label}</span>}
-                {isActive && item.id === 'home' && dueCount > 0 && (
+                {showDueCount && (
                   <span className="min-w-4 h-4 px-1 rounded bg-accent-soft text-accent text-[11px] font-semibold grid place-items-center tabular-nums">
                     {dueCount > 99 ? '99+' : dueCount}
                   </span>
