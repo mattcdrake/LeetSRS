@@ -1,5 +1,6 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { FaArrowUp, FaForwardStep, FaLock } from 'react-icons/fa6';
+import { ProgressBar } from 'react-aria-components';
+import { LuArrowUpRight, LuChevronRight, LuLock, LuRoute, LuSkipForward } from 'react-icons/lu';
 import { SaveProblemButton, useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
 import { QueryState } from '@/popup/components/QueryState';
 import { useI18n } from '@/popup/contexts/I18nContext';
@@ -20,10 +21,10 @@ import {
   type RoadmapId,
   roadmapProblemIds,
 } from '@/shared/roadmap';
-import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
+import { Difficulty } from './Difficulty';
 
-export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) {
+export function RoadmapSection({ isQueueEmpty, onOpen }: { isQueueEmpty: boolean; onOpen: (id: RoadmapId) => void }) {
   const t = useI18n();
   const { data: activeRoadmapId } = useSuspenseQuery(activeRoadmapQueryOptions);
   const roadmaps = useQuery({ ...roadmapsQueryOptions, enabled: activeRoadmapId !== null });
@@ -32,15 +33,15 @@ export function RoadmapSection({ onOpen }: { onOpen: (id: RoadmapId) => void }) 
 
   const roadmap = roadmaps.data?.find((roadmap) => roadmap.id === activeRoadmapId);
   return (
-    <section aria-label={t.home.currentRoadmap} className="pt-3 border-t border-current flex flex-col gap-3">
-      <QueryState query={roadmaps} loading={t.roadmaps.loading} error={t.roadmaps.loadFailed} className="text-sm">
-        {roadmap && <ActiveRoadmap roadmap={roadmap} onOpen={() => onOpen(roadmap.id)} />}
+    <section aria-label={t.home.currentRoadmap} className="flex flex-col gap-3">
+      <QueryState query={roadmaps} loading={t.roadmaps.loading} error={t.roadmaps.loadFailed} className="text-xs">
+        {roadmap && <ActiveRoadmap roadmap={roadmap} isHero={isQueueEmpty} onOpen={() => onOpen(roadmap.id)} />}
       </QueryState>
     </section>
   );
 }
 
-function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap; onOpen: () => void }) {
+function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: boolean; onOpen: () => void }) {
   const t = useI18n();
   const { data: document } = useSuspenseQuery(learningDocumentQueryOptions);
   const { data: settings } = useSettingsQuery();
@@ -55,64 +56,93 @@ function ActiveRoadmap({ roadmap, onOpen }: { roadmap: Roadmap; onOpen: () => vo
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex flex-col gap-2">
-          <h2 className="text-[10px] font-medium uppercase text-secondary">{t.home.currentRoadmap}</h2>
-          <p className="text-sm font-medium">{roadmap.name}</p>
-          <p className="text-xs text-secondary">{t.home.roadmapReviewed(reviewed, ids.length)}</p>
-        </div>
-        <button type="button" className={`shrink-0 text-xs text-accent ${buttonInteraction}`} onClick={onOpen}>
-          {t.home.viewRoadmap}
+      <div>
+        <button
+          type="button"
+          className={`w-full flex items-center gap-2 rounded-md text-left hover:text-accent ${buttonInteraction}`}
+          onClick={onOpen}
+        >
+          <LuRoute aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
+          <span className="min-w-0 truncate text-[13px] font-medium">{roadmap.name}</span>
+          <span className="ml-auto shrink-0 text-xs text-tertiary tabular-nums">
+            {t.home.roadmapReviewed(reviewed, ids.length)}
+          </span>
+          <LuChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
         </button>
+        <ProgressBar
+          aria-label={roadmap.name}
+          value={reviewed}
+          maxValue={ids.length}
+          valueLabel={t.home.roadmapReviewed(reviewed, ids.length)}
+          className="mt-2 h-1 rounded-full bg-secondary overflow-hidden"
+        >
+          {({ percentage }) => <div className="h-full rounded-full bg-accent" style={{ width: `${percentage}%` }} />}
+        </ProgressBar>
       </div>
-      <QueryState query={metadata} loading={t.roadmaps.loading} error={t.roadmaps.detailLoadFailed} className="text-sm">
+      <QueryState query={metadata} loading={t.roadmaps.loading} error={t.roadmaps.detailLoadFailed} className="text-xs">
         {next ? (
-          <div className="rounded-lg border border-current p-3 flex flex-col gap-2">
-            <span className="flex items-center justify-between gap-2">
-              <span className="text-[10px] font-medium uppercase text-secondary">{t.home.nextProblem}</span>
-              <span className="text-[11px] capitalize" style={{ color: DIFFICULTY_COLORS[next.difficulty] }}>
-                {next.difficulty}
-              </span>
-            </span>
-            <a
-              className={`flex items-start gap-2 text-[13px] font-medium hover:text-accent ${buttonInteraction}`}
-              href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${next.frontendId}. ${getProblemTitle(next, domain)}`}
-            >
-              <span className="min-w-0 flex-1 break-words">
-                {next.frontendId}. {getProblemTitle(next, domain)}
-              </span>
-              {next.isPaidOnly && (
-                <FaLock className="shrink-0 mt-1 text-secondary text-xs" role="img" aria-label={t.roadmaps.paidOnly} />
-              )}
-              <FaArrowUp aria-hidden="true" className="shrink-0 mt-1 rotate-45 text-xs" />
-            </a>
-            <div className="flex items-center gap-2">
+          <div
+            className={`rounded-xl border border-current ${isHero ? 'bg-surface shadow-card p-4' : 'p-3 flex items-center gap-3'}`}
+          >
+            <div className="min-w-0 flex-1">
+              {isHero && <p className="mb-1 text-[11px] text-tertiary">{t.home.nextProblem}</p>}
+              <a
+                className={`flex items-start gap-1 rounded-sm hover:text-accent ${buttonInteraction} ${
+                  isHero ? 'text-[17px] leading-[22px] font-semibold tracking-[-0.01em]' : 'text-[13px] font-medium'
+                }`}
+                href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${next.frontendId}. ${getProblemTitle(next, domain)}`}
+              >
+                <span className="min-w-0 break-words">
+                  <span className="font-normal text-tertiary tabular-nums">{next.frontendId}.</span>{' '}
+                  {getProblemTitle(next, domain)}
+                </span>
+                {next.isPaidOnly && (
+                  <LuLock
+                    className={`shrink-0 text-tertiary ${isHero ? 'size-3.5 mt-1' : 'size-3 mt-[3px]'}`}
+                    role="img"
+                    aria-label={t.roadmaps.paidOnly}
+                  />
+                )}
+                <LuArrowUpRight
+                  aria-hidden="true"
+                  className={`shrink-0 text-tertiary ${isHero ? 'size-3.5 mt-1' : 'size-3 mt-[3px]'}`}
+                  strokeWidth={2}
+                />
+              </a>
+              <div className={isHero ? 'mt-1.5' : 'mt-1'}>
+                <Difficulty difficulty={next.difficulty} />
+              </div>
+            </div>
+            <div className={isHero ? 'mt-4 flex gap-2' : 'flex shrink-0 items-center'}>
               <SaveProblemButton
                 frontendId={next.frontendId}
                 domain={domain}
                 title={getProblemTitle(next, domain)}
                 isSaved={false}
-                variant="card"
+                variant={isHero ? 'primary' : 'card'}
                 isDisabled={skip.isPending}
                 onSaved={onSaved}
               />
               <button
                 type="button"
-                className={`inline-flex size-8 shrink-0 items-center justify-center rounded-md text-secondary hover:text-accent ${buttonInteraction}`}
+                className={`shrink-0 flex items-center justify-center gap-1.5 text-secondary duration-[120ms] hover:bg-secondary ${buttonInteraction} ${
+                  isHero ? 'h-9 px-3 rounded-lg border border-strong text-[13px]' : 'size-8 rounded-md'
+                }`}
                 disabled={skip.isPending}
                 aria-label={t.roadmaps.skipProblem(getProblemTitle(next, domain))}
-                title={t.roadmaps.skip}
+                title={isHero ? undefined : t.roadmaps.skip}
                 onClick={() => skip.mutate({ roadmapId: roadmap.id, frontendId: next.frontendId, skipped: true })}
               >
-                <FaForwardStep aria-hidden="true" className="size-4" />
+                <LuSkipForward aria-hidden="true" className="size-3.5" />
+                {isHero && t.roadmaps.skip}
               </button>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-secondary">{t.home.noNextProblem(domain)}</p>
+          <p className="text-xs text-secondary">{t.home.noNextProblem(domain)}</p>
         )}
       </QueryState>
       {skip.isError && (

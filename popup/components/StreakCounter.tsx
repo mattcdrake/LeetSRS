@@ -1,4 +1,4 @@
-import { FaFireFlameCurved } from 'react-icons/fa6';
+import { LuFlame } from 'react-icons/lu';
 import { useTodayReviewActivityQuery } from '@/popup/queries/review-activity';
 
 export function StreakCounter() {
@@ -8,8 +8,8 @@ export function StreakCounter() {
   if (streak === 0) return null;
 
   return (
-    <div className="flex items-center gap-1 text-sm font-medium text-primary">
-      <FaFireFlameCurved className="text-orange-500" />
+    <div className="flex items-center gap-1 text-xs font-semibold text-primary tabular-nums">
+      <LuFlame aria-hidden="true" className="size-3.5 text-warning" strokeWidth={2} />
       <span>{streak}</span>
     </div>
   );

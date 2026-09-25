@@ -3,6 +3,7 @@
 
 body {
   font-family: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -27,7 +28,7 @@ body {
   width: 24px;
   height: 24px;
   border: 2px solid color-mix(in srgb, CanvasText 20%, transparent);
-  border-top-color: #40a635;
+  border-top-color: #267a33;
   border-radius: 50%;
   animation: popup-loading-spin 700ms linear infinite;
 }
@@ -41,32 +42,50 @@ body {
 /* CSS variables that switch based on theme */
 :root {
   /* Light theme (default) */
-  --current-bg-primary: #ffffff;
-  --current-bg-secondary: #f5f5f5;
-  --current-bg-tertiary: #e8e8e8;
-  --current-text-primary: #1a1a1a;
-  --current-text-secondary: #4a4a4a;
-  --current-text-tertiary: #999999;
-  --current-border: #d4d4d4;
-  --current-accent: #40a635;
-  --current-brand: #3d9156;
+  --current-bg-primary: #fafafa;
+  --current-bg-surface: #ffffff;
+  --current-bg-secondary: #f4f4f5;
+  --current-bg-tertiary: #e4e4e7;
+  --current-text-primary: #18181b;
+  --current-text-secondary: #52525b;
+  --current-text-tertiary: #71717a;
+  --current-border: rgb(0 0 0 / 0.07);
+  --current-border-strong: rgb(0 0 0 / 0.11);
+  --current-accent: #267a33;
+  --current-accent-soft: #ecf5ed;
+  --current-on-accent: #ffffff;
+  --current-brand: #267a33;
   --current-danger: #dc2626;
-  --current-info: #2563eb;
+  --current-info: #3f7fe0;
+  --current-warning: #e08a1e;
+  --current-difficulty-easy: #0b7c7e;
+  --current-difficulty-medium: #a15c00;
+  --current-difficulty-hard: #cf1f45;
+  --current-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
 }
 
 /* Dark theme overrides */
 .dark {
-  --current-bg-primary: #1a1a1a;
-  --current-bg-secondary: #242424;
-  --current-bg-tertiary: #2a2a2a;
-  --current-text-primary: #ffffff;
-  --current-text-secondary: #a0a0a0;
-  --current-text-tertiary: #666666;
-  --current-border: #333333;
-  --current-accent: #54bc4a;
-  --current-brand: #52b169;
+  --current-bg-primary: #111113;
+  --current-bg-surface: #1a1a1d;
+  --current-bg-secondary: #222226;
+  --current-bg-tertiary: #2c2c31;
+  --current-text-primary: #ededef;
+  --current-text-secondary: #a1a1aa;
+  --current-text-tertiary: #8b8b94;
+  --current-border: rgb(255 255 255 / 0.06);
+  --current-border-strong: rgb(255 255 255 / 0.1);
+  --current-accent: #5cc466;
+  --current-accent-soft: rgb(92 196 102 / 0.12);
+  --current-on-accent: #0b1a0d;
+  --current-brand: #5cc466;
   --current-danger: #bc4a4a;
-  --current-info: #4a9fbc;
+  --current-info: #6d9ff0;
+  --current-warning: #f2a03d;
+  --current-difficulty-easy: #2dd4bf;
+  --current-difficulty-medium: #fbbf24;
+  --current-difficulty-hard: #fb7185;
+  --current-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 
 /* Theme-aware utility classes */
@@ -80,6 +99,15 @@ body {
   }
   .bg-tertiary {
     background-color: var(--current-bg-tertiary);
+  }
+  .bg-surface {
+    background-color: var(--current-bg-surface);
+  }
+  .bg-accent-soft {
+    background-color: var(--current-accent-soft);
+  }
+  .shadow-card {
+    box-shadow: var(--current-shadow);
   }
 
   /* Text colors */
@@ -103,6 +131,12 @@ body {
   .text-info {
     color: var(--current-info);
   }
+  .text-warning {
+    color: var(--current-warning);
+  }
+  .text-on-accent {
+    color: var(--current-on-accent);
+  }
   .bg-accent {
     background-color: var(--current-accent);
   }
@@ -122,6 +156,9 @@ body {
   /* Border colors */
   .border-current {
     border-color: var(--current-border);
+  }
+  .border-strong {
+    border-color: var(--current-border-strong);
   }
 }
 

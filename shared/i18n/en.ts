@@ -140,14 +140,15 @@ const en = {
     nextProblem: 'Next in your roadmap',
     viewRoadmap: 'View roadmap',
     roadmapReviewed: (count: number, total: number) => `${count} / ${total} reviewed`,
-    activateRoadmapSuggestion: {
-      before: 'Activate a ',
-      link: 'roadmap',
-      after: ' to find your next problem.',
-    },
     noNextProblem: (domain: string) => `No unadded, unskipped problems available on ${domain}.`,
     loadingReviewQueue: 'Loading review queue...',
-    noCardsToReview: 'No cards to review!',
+    upNext: 'Up next',
+    queuePosition: (position: number, total: number) => `${position} of ${total}`,
+    caughtUp: 'All caught up',
+    caughtUpDescription: 'New reviews appear here when they’re due.',
+    freshTitle: 'Start your first review',
+    freshDescription: 'Pick a roadmap and LeetSRS will hand you one problem at a time, then schedule reviews for you.',
+    chooseRoadmap: 'Choose a roadmap',
     addProblemsInstructions: 'Add problems on LeetCode using the',
     addProblemsButton: "button next to 'Submit'.",
     leetcodeCnBanner: {
@@ -166,6 +167,7 @@ const en = {
   // Home view - Actions section
   actionsSection: {
     postpone: 'Postpone review',
+    postponeShort: 'Postpone',
     pauseCard: 'Pause card',
     title: 'Actions',
     delay1Day: '1 Day',
@@ -348,6 +350,12 @@ const en = {
   format: {
     leetcodeId: (id: string) => `#${id}`,
     stabilityDays: (days: string) => `${days}d`,
+    intervalShort: (days: number) => {
+      if (days < 100) return `${days}d`;
+      if (days < 365) return `${Math.round(days / 30)}mo`;
+      const years = days / 365;
+      return `${years < 10 ? Number(years.toFixed(1)) : Math.round(years)}y`;
+    },
     characterCount: (count: number, max: number) => `${count}/${max}`,
     version: (version: string) => `v${version}`,
   },

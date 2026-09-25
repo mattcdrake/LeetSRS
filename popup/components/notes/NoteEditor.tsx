@@ -69,7 +69,7 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
       <TextField className="w-full">
         <Label className="sr-only">{t.notes.ariaLabel}</Label>
         <TextArea
-          className={`w-full px-3 py-2 rounded-lg border border-current bg-primary text-primary resize-none field-sizing-content min-h-9 max-h-40 overflow-y-auto text-xs focus:outline-none focus:ring-1 focus:ring-accent ${isCompact ? 'mt-1.5' : ''}`}
+          className={`w-full px-3 py-2 rounded-lg border border-current bg-primary text-primary resize-none field-sizing-content min-h-9 max-h-40 overflow-y-auto text-xs focus:outline-none focus:border-[var(--current-accent)] focus:ring-2 focus:ring-[var(--current-accent-soft)] ${isCompact ? 'mt-1.5' : ''}`}
           placeholder={isLoading ? t.notes.placeholderLoading : t.notes.placeholderEmpty}
           rows={1}
           value={text}

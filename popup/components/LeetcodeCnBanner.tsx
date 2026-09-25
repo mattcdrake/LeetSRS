@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FaXmark } from 'react-icons/fa6';
+import { LuX } from 'react-icons/lu';
 import { browser } from 'wxt/browser';
 import { isLeetcodeCnUrl } from '@/shared/leetcode-links';
 import { useI18n } from '../contexts/I18nContext';
@@ -46,7 +46,7 @@ export function LeetcodeCnBanner() {
         aria-label={t.home.leetcodeCnBanner.dismiss}
         className="shrink-0 text-blue-400 hover:text-blue-600 dark:hover:text-blue-100"
       >
-        <FaXmark />
+        <LuX aria-hidden="true" />
       </button>
     </div>
   );

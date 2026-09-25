@@ -83,7 +83,7 @@ function App() {
       <ViewBannerContext
         value={<GithubMigrationBanner onOpenSettings={() => navigate('settings', { highlight: 'githubSignIn' })} />}
       >
-        <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-[60px]">{views[activeView]}</div>
+        <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-11">{views[activeView]}</div>
       </ViewBannerContext>
       <BottomNav activeView={activeView} onNavigate={(view) => navigate(view, { roadmapId: activeRoadmapId })} />
     </div>

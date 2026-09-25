@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Dialog, DialogTrigger, Heading, Popover } from 'react-aria-components';
-import { FaXmark } from 'react-icons/fa6';
+import { Button, Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from 'react-aria-components';
+import { LuPlus, LuX } from 'react-icons/lu';
 import type { Grade } from 'ts-fsrs';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useTheme } from '@/popup/hooks/useTheme';
-import { useAddCardMutation, useRateCardMutation } from '@/popup/queries/cards';
-import { background } from '@/shared/background-service';
+import { ratingPreviewQueryOptions, useAddCardMutation, useRateCardMutation } from '@/popup/queries/cards';
 import type { ProblemReference } from '@/shared/learning-document';
 import { RatingOptions } from '@/shared/ui/RatingOptions';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
@@ -44,7 +43,11 @@ export function SaveProblemButton({
   isDisabled = false,
   onSaved,
   ...problem
-}: SaveTarget & { variant?: 'row' | 'card'; isDisabled?: boolean; onSaved: (saved: SavedProblem) => void }) {
+}: SaveTarget & {
+  variant?: 'row' | 'card' | 'primary';
+  isDisabled?: boolean;
+  onSaved: (saved: SavedProblem) => void;
+}) {
   const t = useI18n();
   // Freeze the menu's problem while Home is recomputing its next suggestion.
   const [target, setTarget] = useState<SaveTarget | null>(null);
@@ -87,26 +90,27 @@ export function SaveProblemButton({
         aria-label={t.problemSave.saveProblem(problem.title)}
         isDisabled={isDisabled || busy}
       >
+        {variant === 'primary' && <LuPlus aria-hidden="true" className="size-3.5" strokeWidth={2.2} />}
         {t.actions.save}
       </Button>
-      <Popover
-        className="rating-panel problem-save-popover"
-        placement={variant === 'card' ? 'bottom start' : 'bottom end'}
-        offset={6}
-        containerPadding={8}
+      <ModalOverlay
+        className="problem-save-overlay"
+        isDismissable
         isKeyboardDismissDisabled={busy}
         shouldCloseOnInteractOutside={() => !pending.current}
       >
-        {target && (
-          <SaveProblemMenu
-            target={target}
-            busy={busy}
-            failed={add.isError || rate.isError}
-            onSave={save}
-            onClose={() => setOpen(false)}
-          />
-        )}
-      </Popover>
+        <Modal className="problem-save-sheet">
+          {target && (
+            <SaveProblemMenu
+              target={target}
+              busy={busy}
+              failed={add.isError || rate.isError}
+              onSave={save}
+              onClose={() => setOpen(false)}
+            />
+          )}
+        </Modal>
+      </ModalOverlay>
     </DialogTrigger>
   );
 }
@@ -127,13 +131,7 @@ function SaveProblemMenu({
   const t = useI18n();
   const colors = RATING_COLORS[useTheme()];
   const { frontendId, domain } = target;
-  const preview = useQuery({
-    queryKey: ['popupRatingPreview', { frontendId, domain }],
-    queryFn: () => background.previewRatings({ frontendId, domain }),
-    staleTime: 0,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+  const preview = useQuery(ratingPreviewQueryOptions({ frontendId, domain }));
 
   return (
     <Dialog
@@ -141,22 +139,23 @@ function SaveProblemMenu({
       aria-busy={busy || preview.isFetching}
       aria-label={t.problemSave.saveProblem(target.title)}
     >
-      <div className="rating-heading gap-2">
-        <div className="min-w-0">
-          <Heading slot="title" className="font-medium">
+      <div aria-hidden="true" className="mx-auto mt-2 h-1 w-8 rounded-full bg-[var(--current-border-strong)]" />
+      <div className="flex items-start gap-3 px-4 pt-2.5 pb-3">
+        <div className="min-w-0 flex-1">
+          <Heading slot="title" className="text-[15px] font-semibold tracking-[-0.01em]">
             {t.contentScript.howDidItGo}
           </Heading>
-          <p className="mt-0.5 break-words text-secondary text-[11px]">
-            {frontendId}. {target.title}
+          <p className="mt-0.5 truncate text-xs text-tertiary">
+            <span className="tabular-nums">{frontendId}.</span> {target.title}
           </p>
         </div>
         <Button
-          className="flex items-center justify-center shrink-0 size-6 -mt-1 -mr-1 rounded text-secondary hover:bg-secondary"
+          className="grid place-items-center shrink-0 size-7 -mr-1.5 rounded-md text-tertiary hover:bg-secondary"
           aria-label={t.problemSave.close}
           isDisabled={busy}
           onPress={onClose}
         >
-          <FaXmark aria-hidden="true" />
+          <LuX aria-hidden="true" className="size-4" />
         </Button>
       </div>
       <RatingOptions
