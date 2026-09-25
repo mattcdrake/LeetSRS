@@ -29,6 +29,17 @@ export function cardMetadataQueryOptions(cards: readonly ProblemReference[]) {
   });
 }
 
+// Intervals depend on the current time, so they are fetched fresh whenever a rating control mounts.
+export function ratingPreviewQueryOptions({ frontendId, domain }: ProblemReference) {
+  return queryOptions({
+    queryKey: ['popupRatingPreview', { frontendId, domain }] as const,
+    queryFn: () => background.previewRatings({ frontendId, domain }),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
 export function useCardsQuery() {
   const document = useQuery(learningDocumentQueryOptions);
   const cards = Object.values(document.data?.cards ?? {});

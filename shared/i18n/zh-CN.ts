@@ -131,16 +131,16 @@ const zhCN: Translations = {
   home: {
     currentRoadmap: '当前学习路线',
     nextProblem: '学习路线中的下一题',
-    viewRoadmap: '查看学习路线',
     roadmapReviewed: (count: number, total: number) => `已复习 ${count} / ${total} 题`,
-    activateRoadmapSuggestion: {
-      before: '启用一条',
-      link: '学习路线',
-      after: '，找到下一道要练习的题目。',
-    },
     noNextProblem: (domain: string) => `${domain} 上没有尚未加入 SRS 且未跳过的可用题目。`,
     loadingReviewQueue: '加载复习队列中...',
-    noCardsToReview: '没有需要复习的卡片！',
+    upNext: '接下来',
+    queuePosition: (position: number, total: number) => `${position} / ${total}`,
+    caughtUp: '全部复习完了',
+    caughtUpDescription: '到期的复习会显示在这里。',
+    freshTitle: '开始第一次复习',
+    freshDescription: '选择一条学习路线，LeetSRS 会每次给你一道题并安排复习。',
+    chooseRoadmap: '选择学习路线',
     addProblemsInstructions: '在 LeetCode 上使用',
     addProblemsButton: '「提交」旁边的按钮添加题目。',
     leetcodeCnBanner: {
@@ -157,8 +157,8 @@ const zhCN: Translations = {
 
   actionsSection: {
     postpone: '推迟复习',
+    postponeShort: '推迟',
     pauseCard: '暂停卡片',
-    title: '操作',
     delay1Day: '延后1天',
     delay5Days: '延后5天',
     deleteCard: '删除卡片',
@@ -315,6 +315,12 @@ const zhCN: Translations = {
   format: {
     leetcodeId: (id: string) => `#${id}`,
     stabilityDays: (days: string) => `${days}天`,
+    intervalShort: (days: number) => {
+      if (days < 100) return `${days}天`;
+      if (days < 365) return `${Math.round(days / 30)}个月`;
+      const years = days / 365;
+      return `${years < 10 ? Number(years.toFixed(1)) : Math.round(years)}年`;
+    },
     characterCount: (count: number, max: number) => `${count}/${max}`,
     version: (version: string) => `v${version}`,
   },

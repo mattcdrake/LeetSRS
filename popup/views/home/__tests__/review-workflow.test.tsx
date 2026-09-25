@@ -110,7 +110,6 @@ it('pauses, resumes and retries deletion through real card controls, requiring c
   const { wrapper } = createPopupTestWrapper();
   const queue = render(<ReviewQueue />, { wrapper });
   await screen.findByText('Two Sum');
-  click('Actions');
   click('Pause card');
   await screen.findByText('Add Two Numbers');
   expect((await readLearningDocument()).cards['1'].paused).toBe(true);
@@ -142,11 +141,10 @@ it('pauses, resumes and retries deletion through real card controls, requiring c
   list.unmount();
 });
 
-it('keeps expansion across queue refreshes but binds delete confirmation to the current card', async () => {
+it('keeps notes open across queue refreshes but binds delete confirmation to the current card', async () => {
   render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
   await screen.findByText('Two Sum');
   click('Notes');
-  click('Actions');
   click('Delete Card');
 
   const saved = await readLearningDocument();
@@ -159,11 +157,11 @@ it('keeps expansion across queue refreshes but binds delete confirmation to the 
 
   await replaceLearningDocument({ ...saved, cards: { '2': saved.cards['2'] } });
   await screen.findByText('Add Two Numbers');
-  expect(screen.getByRole('button', { name: 'Actions' })).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByRole('button', { name: 'Notes' })).toHaveAttribute('aria-expanded', 'true');
   click('Delete Card');
   expect((await readLearningDocument()).cards['2']).toBeDefined();
   click('Confirm Delete?');
-  await screen.findByText('No cards to review!');
+  await screen.findByText('All caught up');
   expect((await readLearningDocument()).cards).toEqual({});
 });
 
@@ -213,9 +211,9 @@ it.each([
   await background.addCard(buildProblem());
   render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
   await screen.findByText('Two Sum');
-  click('Actions');
-  click(action);
-  await screen.findByText('No cards to review!');
+  click('Postpone review');
+  fireEvent.click(await screen.findByRole('menuitem', { name: action }));
+  await screen.findByText('All caught up');
   const card = (await readLearningDocument()).cards['1'];
   expect(card.fsrs.due).toBe(new Date(end).getTime());
   expect(card.fsrs.due - new Date(start).getTime()).toBe(hours * 3_600_000);
@@ -370,7 +368,6 @@ it('disables all card controls and persists one review for duplicate actions whi
   await screen.findByText('Two Sum');
   click('Notes');
   fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Draft' } });
-  click('Actions');
   const controls = screen.getAllByRole('button');
   const pending = Promise.withResolvers<void>();
   const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);

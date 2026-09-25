@@ -6,7 +6,6 @@ import { cardMetadataQueryOptions } from '@/popup/queries/cards';
 import { rowActionSpacing } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { ReviewCalendarDay } from '@/shared/review';
-import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 
@@ -51,7 +50,10 @@ export function CalendarDayDetail({ dateLabel, day }: CalendarDayDetailProps) {
                 {card.frontendId}. {getProblemTitle(problem, card.domain)}
               </a>
               <div className={`flex shrink-0 items-center ${rowActionSpacing}`}>
-                <span className="px-2 text-xs capitalize" style={{ color: DIFFICULTY_COLORS[problem.difficulty] }}>
+                <span
+                  className="px-2 text-xs capitalize"
+                  style={{ color: `var(--current-difficulty-${problem.difficulty})` }}
+                >
                   {problem.difficulty}
                 </span>
                 <YouTubeLink url={problem.youtubeUrl} label={t.youtubeSolution} />

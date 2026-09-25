@@ -1,4 +1,5 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useId, useState } from 'react';
+import { LuCheck } from 'react-icons/lu';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import {
   type CardWithProblem,
@@ -8,10 +9,8 @@ import {
   useRemoveCardMutation,
   useReviewQueueQuery,
 } from '@/popup/queries/cards';
-import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { useI18n } from '../../contexts/I18nContext';
 import { ActionsSection } from './ActionsSection';
-import { ExpandableSection } from './ExpandableSection';
 import { ReviewCard } from './ReviewCard';
 
 export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
@@ -22,6 +21,8 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   const delayCardMutation = useDelayCardMutation();
   const pauseCardMutation = usePauseCardMutation();
   const [processingCardId, setProcessingCardId] = useState<string | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notesId = useId();
   const isProcessing = processingCardId !== null;
 
   const currentCard = queue[0];
@@ -60,27 +61,26 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
 
   if (!currentCard) {
     return (
-      <>
-        <div className="flex flex-col items-center justify-center min-h-32 gap-3 px-4">
-          <div className="text-xl font-semibold text-primary">{t.home.noCardsToReview}</div>
-          <div className="text-base text-secondary text-center">
-            {t.home.addProblemsInstructions}{' '}
-            <LeetSRSLogo
-              className="inline-block mx-1 align-text-bottom"
-              width="20"
-              height="20"
-              style={{ color: '#10b981' }}
-            />
-            {t.home.addProblemsButton}
+      emptyContent ?? (
+        <div className="flex items-center gap-3 rounded-xl px-3.5 py-3 bg-secondary">
+          <span className="size-8 shrink-0 rounded-full bg-accent-soft text-accent grid place-items-center">
+            <LuCheck aria-hidden="true" className="size-4" strokeWidth={2.2} />
+          </span>
+          <div>
+            <p className="text-[13px] font-semibold text-primary">{t.home.caughtUp}</p>
+            <p className="text-xs text-tertiary">{t.home.caughtUpDescription}</p>
           </div>
         </div>
-        {emptyContent}
-      </>
+      )
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div>
+      <div className="flex items-center justify-between mb-2 px-0.5 text-[11px] font-medium text-tertiary">
+        <span>{t.home.upNext}</span>
+        <span className="font-normal tabular-nums">{t.home.queuePosition(1, queue.length)}</span>
+      </div>
       {/* The key is important to ensure React re-mounts the component for a new card */}
       <ReviewCard
         key={currentCard.frontendId}
@@ -89,22 +89,23 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
           act((card) => rateCardMutation.mutateAsync({ frontendId: card.frontendId, domain: card.domain, rating }))
         }
         isProcessing={isProcessing}
-      />
-      <div>
-        <ExpandableSection title={t.notes.title} isDisabled={isProcessing}>
+      >
+        <ActionsSection
+          key={currentCard.frontendId}
+          notesId={notesId}
+          notesOpen={notesOpen}
+          onToggleNotes={() => setNotesOpen((open) => !open)}
+          youtubeUrl={currentCard.youtubeUrl}
+          onDelete={() => act((card) => removeCardMutation.mutateAsync(card.frontendId))}
+          onDelay={(days) => act((card) => delayCardMutation.mutateAsync({ frontendId: card.frontendId, days }))}
+          onPause={() => act((card) => pauseCardMutation.mutateAsync({ frontendId: card.frontendId, paused: true }))}
+          isDisabled={isProcessing}
+        />
+        {/* Hidden rather than unmounted so an unsaved draft survives closing the editor. */}
+        <div id={notesId} className="pt-1 pb-2.5" hidden={!notesOpen}>
           <NoteEditor frontendId={currentCard.frontendId} variant="regular" isDisabled={isProcessing} />
-        </ExpandableSection>
-        <ExpandableSection title={t.actionsSection.title} isDisabled={isProcessing}>
-          <ActionsSection
-            key={currentCard.frontendId}
-            youtubeUrl={currentCard.youtubeUrl}
-            onDelete={() => act((card) => removeCardMutation.mutateAsync(card.frontendId))}
-            onDelay={(days) => act((card) => delayCardMutation.mutateAsync({ frontendId: card.frontendId, days }))}
-            onPause={() => act((card) => pauseCardMutation.mutateAsync({ frontendId: card.frontendId, paused: true }))}
-            isDisabled={isProcessing}
-          />
-        </ExpandableSection>
-      </div>
+        </div>
+      </ReviewCard>
     </div>
   );
 }

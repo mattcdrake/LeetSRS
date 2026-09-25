@@ -17,10 +17,10 @@ export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, ch
   return (
     <div className="flex flex-col h-full">
       <header className="sticky top-0 z-10">
-        <div className="flex items-center justify-between gap-2 px-4 py-2 bg-secondary border-b border-current">
+        <div className="flex items-center justify-between gap-2 h-11 px-4 bg-primary border-b border-current">
           <div className="flex items-center gap-2 min-w-0">
             {headerLeading}
-            <h1 className="truncate text-xl font-bold text-primary font-jetbrains-mono">
+            <h1 className="truncate text-[15px] font-semibold tracking-tight text-primary font-jetbrains-mono">
               {title === t.app.name ? (
                 <>
                   {t.app.namePart1}
@@ -31,7 +31,7 @@ export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, ch
               )}
             </h1>
           </div>
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             {headerContent}
             <StreakCounter />
           </div>
