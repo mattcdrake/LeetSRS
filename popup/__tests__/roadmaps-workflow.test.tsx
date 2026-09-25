@@ -193,7 +193,10 @@ it('offers a roadmap only when reviews and the active roadmap are both absent', 
   await screen.findByRole('button', { name: 'Easy' });
   expect(screen.queryByRole('button', { name: 'Choose a roadmap' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Easy' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Choose a roadmap' }));
+  // A returning user with scheduled cards is caught up, not starting fresh.
+  await screen.findByText('All caught up');
+  expect(screen.queryByText('Start your first review')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Choose a roadmap' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Use Blind 75' }));
   await screen.findByText('Active');
   fireEvent.click(screen.getByLabelText('Home'));

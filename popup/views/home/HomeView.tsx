@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { LuRoute } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useReviewQueueQuery } from '@/popup/queries/cards';
+import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { activeRoadmapQueryOptions } from '@/popup/queries/roadmaps';
 import { buttonInteraction } from '@/popup/styles';
 import type { RoadmapId } from '@/shared/roadmap';
@@ -48,20 +49,30 @@ function FreshStart({ onChooseRoadmap }: { onChooseRoadmap: () => void }) {
 }
 
 export function HomeView({ onOpenRoadmap }: { onOpenRoadmap: (id: RoadmapId | null) => void }) {
+  const t = useI18n();
   const { data: activeRoadmapId } = useSuspenseQuery(activeRoadmapQueryOptions);
+  const { data: document } = useSuspenseQuery(learningDocumentQueryOptions);
   const { data: queue } = useReviewQueueQuery();
   const isQueueEmpty = queue?.length === 0;
+  // Returning users without a roadmap still have scheduled cards, so they see the caught-up state instead.
+  const isFresh = activeRoadmapId === null && Object.keys(document.cards).length === 0;
   return (
     <ViewLayout headerContent={<StatsBar />}>
       <LeetcodeCnBanner />
       <div className="flex flex-col gap-5">
-        <ReviewQueue
-          emptyContent={
-            activeRoadmapId === null ? <FreshStart onChooseRoadmap={() => onOpenRoadmap(null)} /> : undefined
-          }
-        />
+        <ReviewQueue emptyContent={isFresh ? <FreshStart onChooseRoadmap={() => onOpenRoadmap(null)} /> : undefined} />
         <RoadmapSection isQueueEmpty={isQueueEmpty} onOpen={onOpenRoadmap} />
-        {isQueueEmpty && activeRoadmapId !== null && <AddProblemsHint className="-mt-1 px-4 text-center" />}
+        {isQueueEmpty && !isFresh && activeRoadmapId === null && (
+          <button
+            type="button"
+            className={`h-9 rounded-lg border border-strong text-[13px] text-secondary flex items-center justify-center gap-2 hover:bg-secondary ${buttonInteraction}`}
+            onClick={() => onOpenRoadmap(null)}
+          >
+            <LuRoute aria-hidden="true" className="size-3.5" />
+            {t.home.chooseRoadmap}
+          </button>
+        )}
+        {isQueueEmpty && !isFresh && <AddProblemsHint className="-mt-1 px-4 text-center" />}
       </div>
     </ViewLayout>
   );
