@@ -6,7 +6,6 @@ import type { Card } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { isReviewed } from '@/shared/roadmap';
-import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 
@@ -56,7 +55,7 @@ export function RoadmapProblemRow({ problem, domain, isSaving, onSaved, onToggle
         <div className="flex flex-wrap gap-x-1 text-xs text-secondary">
           {metadata && (
             <>
-              <span className="capitalize" style={{ color: DIFFICULTY_COLORS[metadata.difficulty] }}>
+              <span className="capitalize" style={{ color: `var(--current-difficulty-${metadata.difficulty})` }}>
                 {metadata.difficulty}
               </span>
               <span aria-hidden="true">·</span>

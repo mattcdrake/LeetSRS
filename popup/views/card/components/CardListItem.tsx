@@ -9,7 +9,6 @@ import { usePauseCardMutation, useRemoveCardMutation } from '@/popup/queries/car
 import { destructiveButton, rowActionSpacing, secondaryButton } from '@/popup/styles';
 import type { Translations } from '@/shared/i18n/index';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
-import { DIFFICULTY_COLORS } from '@/shared/ui/difficulty-colors';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { useI18n } from '../../../contexts/I18nContext';
@@ -100,7 +99,7 @@ export function CardListItem({ card }: CardListItemProps) {
         <div className={`flex shrink-0 items-center ${rowActionSpacing}`}>
           <span
             className="px-2 text-xs text-secondary capitalize"
-            style={{ color: DIFFICULTY_COLORS[card.difficulty] }}
+            style={{ color: `var(--current-difficulty-${card.difficulty})` }}
           >
             {card.difficulty}
           </span>
