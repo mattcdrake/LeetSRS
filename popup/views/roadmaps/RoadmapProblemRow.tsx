@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Button, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
-import { LuEllipsis, LuGlobe, LuLock, LuRotateCcw, LuSkipForward, LuUndo2, LuYoutube } from 'react-icons/lu';
+import { LuEllipsis, LuGlobe, LuLock, LuPlus, LuSkipForward, LuStar, LuUndo2, LuYoutube } from 'react-icons/lu';
 import { Difficulty } from '@/popup/components/Difficulty';
-import { type SavedProblem, SaveProblemButton } from '@/popup/components/problem-save/SaveProblemButton';
+import { ProblemLink } from '@/popup/components/ProblemLink';
 import { Tooltip } from '@/popup/components/Tooltip';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { buttonInteraction, menuItem, menuPopover } from '@/popup/styles';
@@ -29,10 +29,13 @@ interface RoadmapProblemRowProps {
   now: number;
   isNext: boolean;
   isSkipping: boolean;
-  onSaved: (saved: SavedProblem) => void;
+  isAdding: boolean;
+  onAdd: (target: RatingTarget) => void;
   onToggleSkip: () => void;
-  onRateAgain: (target: ProblemReference & { title: string }) => void;
+  onRate: (target: RatingTarget & { isSaved: boolean }) => void;
 }
+
+type RatingTarget = ProblemReference & { title: string };
 
 export function RoadmapProblemRow({
   problem,
@@ -40,9 +43,10 @@ export function RoadmapProblemRow({
   now,
   isNext,
   isSkipping,
-  onSaved,
+  isAdding,
+  onAdd,
   onToggleSkip,
-  onRateAgain,
+  onRate,
 }: RoadmapProblemRowProps) {
   const t = useI18n();
   const { frontendId, metadata, card, skipped } = problem;
@@ -52,13 +56,16 @@ export function RoadmapProblemRow({
   if (card) srsState = isReviewed(card) ? 'reviewed' : 'inSrs';
   // A skipped problem can also be in SRS; the glyph shows the skip.
   const state: ProblemState = skipped ? 'skipped' : srsState;
-
-  const label = (
-    <>
-      {metadata && <span className="shrink-0 text-tertiary tabular-nums">{frontendId}.</span>}
-      <span className="truncate">{title}</span>
-    </>
-  );
+  const canSave = !card && !skipped && available;
+  let rate: { label: string; onAction: () => void } | undefined;
+  if (card) {
+    rate = {
+      label: t.roadmaps.rateAgain,
+      onAction: () => onRate({ frontendId, domain: card.domain, title, isSaved: true }),
+    };
+  } else if (canSave) {
+    rate = { label: t.roadmaps.saveWithRating, onAction: () => onRate({ frontendId, domain, title, isSaved: false }) };
+  }
 
   return (
     <li className="flex min-h-12 items-center gap-2.5 -mx-2 px-2 py-1.5 rounded-lg transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-bg-secondary)_70%,transparent)]">
@@ -69,17 +76,17 @@ export function RoadmapProblemRow({
         >
           <span className="sr-only">{t.roadmaps.filters[state]}</span>
           {metadata && available ? (
-            <a
-              className={`flex min-w-0 items-center gap-1 rounded-sm hover:text-accent ${buttonInteraction}`}
+            <ProblemLink
               href={getLeetcodeProblemUrl({ domain, slug: metadata.slug })}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${frontendId}. ${title}`}
-            >
-              {label}
-            </a>
+              frontendId={frontendId}
+              title={title}
+            />
           ) : (
-            <span className="flex min-w-0 items-center gap-1">{label}</span>
+            // Unavailable problems cannot be reached in the real extension, so a native tooltip suffices.
+            <span className="flex min-w-0 items-center gap-1" title={metadata ? `${frontendId}. ${title}` : title}>
+              {metadata && <span className="shrink-0 text-tertiary tabular-nums">{frontendId}.</span>}
+              <span className="truncate">{title}</span>
+            </span>
           )}
           {metadata?.isPaidOnly && (
             <LuLock
@@ -126,16 +133,17 @@ export function RoadmapProblemRow({
           {t.roadmaps.restore}
         </Button>
       ) : (
-        !card &&
-        available && (
-          <SaveProblemButton
-            frontendId={frontendId}
-            domain={domain}
-            title={title}
-            isSaved={false}
-            variant="card"
-            onSaved={onSaved}
-          />
+        canSave && (
+          <Tooltip label={t.roadmaps.addToSrs}>
+            <Button
+              className={`size-8 shrink-0 rounded-md grid place-items-center bg-accent-soft text-accent duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-accent)_18%,var(--current-bg-primary))] ${buttonInteraction}`}
+              aria-label={t.roadmaps.addProblem(title)}
+              isDisabled={isAdding}
+              onPress={() => onAdd({ frontendId, domain, title })}
+            >
+              <LuPlus aria-hidden="true" className="size-4" strokeWidth={2.2} />
+            </Button>
+          </Tooltip>
         )
       )}
       <RowMenu
@@ -143,7 +151,7 @@ export function RoadmapProblemRow({
         youtubeUrl={metadata?.youtubeUrl}
         isSkipping={isSkipping}
         onSkip={skipped ? undefined : onToggleSkip}
-        onRateAgain={card && (() => onRateAgain({ frontendId, domain: card.domain, title }))}
+        rate={rate}
       />
     </li>
   );
@@ -171,16 +179,16 @@ function RowMenu({
   youtubeUrl,
   isSkipping,
   onSkip,
-  onRateAgain,
+  rate,
 }: {
   title: string;
   youtubeUrl: string | undefined;
   isSkipping: boolean;
   onSkip: (() => void) | undefined;
-  onRateAgain: (() => void) | undefined;
+  rate: { label: string; onAction: () => void } | undefined;
 }) {
   const t = useI18n();
-  if (!youtubeUrl && !onSkip && !onRateAgain) {
+  if (!youtubeUrl && !onSkip && !rate) {
     // Keep trailing actions aligned with rows that have a menu.
     return <span aria-hidden="true" className="size-8 -mr-1 shrink-0" />;
   }
@@ -209,10 +217,10 @@ function RowMenu({
               {t.roadmaps.skip}
             </MenuItem>
           )}
-          {onRateAgain && (
-            <MenuItem className={menuItem} onAction={onRateAgain}>
-              <LuRotateCcw aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
-              {t.roadmaps.rateAgain}
+          {rate && (
+            <MenuItem className={menuItem} onAction={rate.onAction}>
+              <LuStar aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
+              {rate.label}
             </MenuItem>
           )}
         </Menu>

@@ -1,12 +1,14 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LuArrowUpRight } from 'react-icons/lu';
 import { useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
 import { RoadmapProgress } from '@/popup/components/RoadmapProgress';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import { useAddCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { useSkipRoadmapProblemMutation } from '@/popup/queries/roadmaps';
 import { buttonInteraction } from '@/popup/styles';
+import type { ProblemReference } from '@/shared/learning-document';
 import { roadmapProblemIds } from '@/shared/roadmap';
 import type { RoadmapSummary } from './RoadmapOverview';
 import { matchesFilter, ROADMAP_FILTERS, type RoadmapFilter, RoadmapProblemList } from './RoadmapProblemList';
@@ -19,6 +21,18 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
   const { data: document } = useSuspenseQuery(learningDocumentQueryOptions);
   const skip = useSkipRoadmapProblemMutation();
   const { message, onSaved } = useProblemSaveFeedback();
+  const add = useAddCardMutation();
+  const remove = useRemoveCardMutation();
+  const [added, setAdded] = useState<(ProblemReference & { title: string }) | null>(null);
+
+  // Offer Undo long enough to notice a misclick.
+  useEffect(() => {
+    if (!added) return;
+    const timeout = setTimeout(() => setAdded(null), 8000);
+    return () => clearTimeout(timeout);
+  }, [added]);
+
+  const status = added ? t.roadmaps.added(added.title) : message;
 
   const skippedIds = new Set(document.roadmapSkips[roadmap.id]);
   const problems = roadmapProblemIds(roadmap).map((id) => ({ card: document.cards[id], skipped: skippedIds.has(id) }));
@@ -58,9 +72,27 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
         total={problems.length}
         counts={counts}
       >
-        <p role="status" className="mt-2 text-xs text-accent empty:hidden">
-          {message}
-        </p>
+        <div className={`flex items-center gap-2 text-xs ${status ? 'mt-2' : ''}`}>
+          <p role="status" className="min-w-0 truncate text-accent">
+            {status}
+          </p>
+          {added && (
+            <button
+              type="button"
+              className={`shrink-0 rounded-sm font-medium text-primary hover:underline ${buttonInteraction}`}
+              aria-label={t.roadmaps.undoProblem(added.title)}
+              disabled={remove.isPending}
+              onClick={() => remove.mutate(added.frontendId, { onSuccess: () => setAdded(null) })}
+            >
+              {t.roadmaps.undo}
+            </button>
+          )}
+        </div>
+        {(add.isError || remove.isError) && (
+          <p role="alert" className="mt-2 text-xs text-danger">
+            {t.roadmaps.addFailed}
+          </p>
+        )}
         {skip.isError && (
           <p role="alert" className="mt-2 text-xs text-danger">
             {t.roadmaps.skipFailed}
@@ -73,7 +105,14 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
         filter={filter}
         isActive={isActive}
         skip={skip}
-        onSaved={onSaved}
+        isAdding={add.isPending}
+        onAdd={(problem) =>
+          add.mutate({ frontendId: problem.frontendId, domain: problem.domain }, { onSuccess: () => setAdded(problem) })
+        }
+        onSaved={(saved) => {
+          setAdded(null);
+          onSaved(saved);
+        }}
         onClearFilters={() => {
           setSearch('');
           setFilter(null);

@@ -8,6 +8,7 @@ import { learningDocumentQueryOptions } from '@/popup/queries/learning-document'
 import { roadmapMetadataQueryOptions, type useSkipRoadmapProblemMutation } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { buttonInteraction } from '@/popup/styles';
+import type { ProblemReference } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { getNextRoadmapProblemId, isReviewed } from '@/shared/roadmap';
 import { getProblemTitle } from '@/shared/ui/problem-title';
@@ -54,6 +55,8 @@ interface RoadmapProblemListProps {
   filter: RoadmapFilter | null;
   isActive: boolean;
   skip: ReturnType<typeof useSkipRoadmapProblemMutation>;
+  isAdding: boolean;
+  onAdd: (problem: ProblemReference & { title: string }) => void;
   onSaved: (saved: SavedProblem) => void;
   onClearFilters: () => void;
 }
@@ -64,6 +67,8 @@ export function RoadmapProblemList({
   filter,
   isActive,
   skip,
+  isAdding,
+  onAdd,
   onSaved,
   onClearFilters,
 }: RoadmapProblemListProps) {
@@ -73,7 +78,7 @@ export function RoadmapProblemList({
   const domain = settings.preferredLeetcodeSite;
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const now = usePopupClock();
-  const rateAgain = useSaveProblem(onSaved);
+  const rating = useSaveProblem(onSaved);
 
   if (!metadata.isSuccess) {
     return (
@@ -142,16 +147,17 @@ export function RoadmapProblemList({
               now={now}
               isNext={problem.frontendId === nextId}
               isSkipping={skip.isPending}
-              onSaved={onSaved}
+              isAdding={isAdding}
+              onAdd={onAdd}
               onToggleSkip={() =>
                 skip.mutate({ roadmapId: roadmap.id, frontendId: problem.frontendId, skipped: !problem.skipped })
               }
-              onRateAgain={(target) => rateAgain.open({ ...target, isSaved: true })}
+              onRate={rating.open}
             />
           ))}
         </RoadmapGroup>
       ))}
-      <SaveProblemSheet save={rateAgain} />
+      <SaveProblemSheet save={rating} />
     </div>
   );
 }

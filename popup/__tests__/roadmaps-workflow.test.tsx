@@ -67,9 +67,7 @@ it('refreshes the Home badge immediately when adding a roadmap problem between c
 
     // The card is created after the popup clock's last tick.
     vi.setSystemTime(new Date('2026-09-17T10:00:01'));
-    fireEvent.click(screen.getByRole('button', { name: 'Save Two Sum' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Save without rating' }));
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Add Two Sum to SRS' }));
     await waitFor(() => expect(screen.getByLabelText('Home')).toHaveTextContent(/^1$/));
     fireEvent.click(screen.getByLabelText('Home'));
     expect(screen.getByLabelText('Home')).toHaveTextContent(/^Home1$/);
@@ -150,7 +148,10 @@ it('opens the active roadmap at its next problem and counts each filter', async 
 
   fireEvent.click(screen.getByRole('button', { name: 'Back to all roadmaps' }));
   const current = await screen.findByRole('region', { name: 'Current roadmap' });
-  expect(within(current).getByText('Longest Substring')).toBeInTheDocument();
+  expect(within(current).getByRole('link', { name: '3. Longest Substring' })).toHaveAttribute(
+    'href',
+    'https://leetcode.com/problems/longest-substring/description/'
+  );
 });
 
 it('keeps reviews available with roadmap progress and continues with a recommendation after the queue empties', async () => {
@@ -251,20 +252,20 @@ it('rates new and saved roadmap problems and retains feedback when a filter remo
   fireEvent.click(await screen.findByLabelText('Roadmaps'));
   fireEvent.click(await screen.findByRole('button', { name: 'Open Blind 75' }));
   await selectFilter('All', 'Not in SRS');
-  fireEvent.click(await screen.findByRole('button', { name: 'Save 两数之和' }));
+  await chooseRowAction('两数之和', 'Save with rating…');
   let menu = await screen.findByRole('dialog', { name: 'Save 两数之和' });
   const good = within(menu).getByRole('button', { name: 'Good' });
   await waitFor(() => expect(good).toBeEnabled());
   fireEvent.click(good);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  expect(screen.queryByRole('button', { name: 'Save 两数之和' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Add 两数之和 to SRS' })).not.toBeInTheDocument();
   expect(await screen.findByRole('status')).toHaveTextContent('两数之和 · Saved · Review in');
   expect((await readLearningDocument()).cards['1']).toMatchObject({ domain: 'leetcode.cn', fsrs: { reps: 1 } });
 
   fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
   fireEvent.click(await screen.findByRole('button', { name: /Arrays & Hashing/ }));
-  // Saved rows offer Rate again instead of Save.
-  expect(screen.queryByRole('button', { name: 'Save 两数之和' })).not.toBeInTheDocument();
+  // Saved rows offer Rate again instead of adding.
+  expect(screen.queryByRole('button', { name: 'Add 两数之和 to SRS' })).not.toBeInTheDocument();
   await chooseRowAction('两数之和', 'Rate again…');
   menu = await screen.findByRole('dialog', { name: 'Save 两数之和' });
   expect(within(menu).queryByRole('button', { name: 'Save without rating' })).not.toBeInTheDocument();
@@ -320,4 +321,20 @@ it('skips Home suggestions and retries failures without adding cards', async () 
   expect((await readLearningDocument()).roadmapSkips['blind-75']).toEqual(['1', '3']);
   expect(background.addCard).not.toHaveBeenCalled();
   expect(background.rateCard).not.toHaveBeenCalled();
+});
+
+it('adds a roadmap problem without rating and undoes the add', async () => {
+  openPopup();
+  fireEvent.click(await screen.findByLabelText('Roadmaps'));
+  fireEvent.click(await screen.findByRole('button', { name: 'Open Blind 75' }));
+  fireEvent.click(await screen.findByRole('button', { name: /Arrays & Hashing/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Add Two Sum to SRS' }));
+  expect(await screen.findByRole('status')).toHaveTextContent('Two Sum · Added to SRS');
+  expect((await readLearningDocument()).cards['1']).toMatchObject({ domain: 'leetcode.com', fsrs: { reps: 0 } });
+  expect(screen.queryByRole('button', { name: 'Add Two Sum to SRS' })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Undo adding Two Sum' }));
+  expect(await screen.findByRole('button', { name: 'Add Two Sum to SRS' })).toBeInTheDocument();
+  expect((await readLearningDocument()).cards['1']).toBeUndefined();
+  expect(screen.getByRole('status')).toBeEmptyDOMElement();
 });

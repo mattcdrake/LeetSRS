@@ -1,13 +1,15 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useId, useLayoutEffect, useRef } from 'react';
-import { LuChevronRight } from 'react-icons/lu';
+import { LuArrowUpRight, LuChevronRight } from 'react-icons/lu';
 import { Difficulty } from '@/popup/components/Difficulty';
+import { ProblemLink } from '@/popup/components/ProblemLink';
 import { RoadmapProgress } from '@/popup/components/RoadmapProgress';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { roadmapMetadataQueryOptions } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
 import { buttonInteraction, compactOutlineButton } from '@/popup/styles';
+import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { getNextRoadmapProblemId, type Roadmap, type RoadmapId, type RoadmapProgressSummary } from '@/shared/roadmap';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 
@@ -138,9 +140,13 @@ function NextProblem({ roadmap }: { roadmap: Roadmap }) {
   return (
     <p className="flex items-center gap-2 border-t border-current px-3.5 py-2.5 text-xs">
       <span className="shrink-0 text-tertiary">{t.roadmaps.next}</span>
-      <span className="min-w-0 truncate">
-        <span className="text-tertiary tabular-nums">{next.frontendId}.</span> {getProblemTitle(next, domain)}
-      </span>
+      <ProblemLink
+        href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
+        frontendId={next.frontendId}
+        title={getProblemTitle(next, domain)}
+      >
+        <LuArrowUpRight aria-hidden="true" className="size-3 shrink-0 text-tertiary" strokeWidth={2} />
+      </ProblemLink>
       <span className="ml-auto shrink-0">
         <Difficulty difficulty={next.difficulty} />
       </span>
