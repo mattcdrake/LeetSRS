@@ -1,8 +1,9 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { ProgressBar } from 'react-aria-components';
 import { LuArrowUpRight, LuChevronRight, LuLock, LuRoute, LuSkipForward } from 'react-icons/lu';
+import { Difficulty } from '@/popup/components/Difficulty';
 import { SaveProblemButton, useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
 import { QueryState } from '@/popup/components/QueryState';
+import { RoadmapProgress } from '@/popup/components/RoadmapProgress';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import {
@@ -15,14 +16,13 @@ import { useSettingsQuery } from '@/popup/queries/settings';
 import { buttonInteraction } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import {
-  countReviewed,
   getNextRoadmapProblemId,
   type Roadmap,
   type RoadmapId,
   roadmapProblemIds,
+  summarizeRoadmap,
 } from '@/shared/roadmap';
 import { getProblemTitle } from '@/shared/ui/problem-title';
-import { Difficulty } from './Difficulty';
 
 export function RoadmapSection({ isQueueEmpty, onOpen }: { isQueueEmpty: boolean; onOpen: (id: RoadmapId) => void }) {
   const t = useI18n();
@@ -48,8 +48,7 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
   const domain = settings.preferredLeetcodeSite;
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const skip = useSkipRoadmapProblemMutation();
-  const ids = roadmapProblemIds(roadmap);
-  const reviewed = countReviewed(document, ids);
+  const summary = summarizeRoadmap(document, roadmapProblemIds(roadmap), document.roadmapSkips[roadmap.id]);
   const nextId = getNextRoadmapProblemId(roadmap, document, metadata.data, domain);
   const next = nextId ? metadata.data?.[nextId] : undefined;
   const { message, onSaved } = useProblemSaveFeedback();
@@ -65,19 +64,11 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
           <LuRoute aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
           <span className="min-w-0 truncate text-[13px] font-medium">{roadmap.name}</span>
           <span className="ml-auto shrink-0 text-xs text-tertiary tabular-nums">
-            {t.home.roadmapReviewed(reviewed, ids.length)}
+            {t.home.roadmapReviewed(summary.reviewed, summary.total)}
           </span>
           <LuChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
         </button>
-        <ProgressBar
-          aria-label={roadmap.name}
-          value={reviewed}
-          maxValue={ids.length}
-          valueLabel={t.home.roadmapReviewed(reviewed, ids.length)}
-          className="mt-2 h-1 rounded-full bg-secondary overflow-hidden"
-        >
-          {({ percentage }) => <div className="h-full rounded-full bg-accent" style={{ width: `${percentage}%` }} />}
-        </ProgressBar>
+        <RoadmapProgress label={roadmap.name} summary={summary} className="mt-2" />
       </div>
       <QueryState query={metadata} loading={t.roadmaps.loading} error={t.roadmaps.detailLoadFailed} className="text-xs">
         {next ? (

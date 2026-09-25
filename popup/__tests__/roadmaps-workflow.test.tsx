@@ -44,6 +44,16 @@ beforeEach(async () => {
 const openPopup = () =>
   render(<PopupRoot queryClient={createPopupQueryClient({ defaultOptions: { queries: { retry: false } } })} />);
 
+async function selectFilter(current: string, next: string) {
+  fireEvent.click(await screen.findByRole('button', { name: `Filter: ${current}` }));
+  fireEvent.click(await screen.findByRole('menuitemradio', { name: next }));
+}
+
+async function chooseRowAction(title: string, action: string) {
+  fireEvent.click(await screen.findByRole('button', { name: `More actions for ${title}` }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: action }));
+}
+
 it('refreshes the Home badge immediately when adding a roadmap problem between clock ticks', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-09-17T10:00:00'));
@@ -74,8 +84,8 @@ it('browses, activates, filters, and restores a saved roadmap', async () => {
   await background.rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating: Rating.Good });
   const popup = openPopup();
   fireEvent.click(await screen.findByLabelText('Roadmaps'));
-  const overview = await screen.findByRole('region', { name: 'Blind 75' });
-  expect(within(overview).getByText('1 / 75')).toBeInTheDocument();
+  const overview = await screen.findByRole('region', { name: 'Choose a roadmap' });
+  expect(within(overview).getByRole('progressbar', { name: 'Blind 75' })).toHaveAttribute('aria-valuenow', '1');
   fireEvent.click(within(overview).getByRole('button', { name: 'Open Blind 75' }));
 
   const arrays = await screen.findByRole('button', { name: /Arrays & Hashing/ });
@@ -86,31 +96,61 @@ it('browses, activates, filters, and restores a saved roadmap', async () => {
     'https://leetcode.cn/problems/two-sum/description/'
   );
   fireEvent.click(screen.getByRole('button', { name: /Sliding Window/ }));
-  expect(screen.getByText('3. Longest Substring')).toBeInTheDocument();
-  expect(screen.queryByRole('link', { name: '3. Longest Substring' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Activate' }));
-  await screen.findByRole('button', { name: 'Deactivate' });
+  const unavailable = screen.getByText('Longest Substring').closest('li') as HTMLElement;
+  expect(within(unavailable).getByText('Unavailable on leetcode.cn')).toBeInTheDocument();
+  expect(within(unavailable).queryByRole('link')).not.toBeInTheDocument();
+  expect(within(unavailable).queryByRole('button', { name: /^Save/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Use Blind 75' }));
+  await screen.findByRole('button', { name: 'Active' });
   fireEvent.change(screen.getByRole('textbox', { name: 'Search roadmap problems' }), { target: { value: 'Two Sum' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Reviewed' }));
-  expect(screen.getAllByRole('listitem')).toHaveLength(1);
-  fireEvent.click(screen.getByRole('button', { name: 'Skip 两数之和' }));
+  await selectFilter('All', 'Reviewed');
+  expect(screen.getAllByRole('button', { name: /^More actions for/ })).toHaveLength(1);
+  await chooseRowAction('两数之和', 'Skip');
   await screen.findByRole('button', { name: 'Restore 两数之和' });
-  expect(screen.getByRole('progressbar')).toHaveAttribute('value', '1');
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
   popup.unmount();
 
   openPopup();
   fireEvent.click(await screen.findByLabelText('Roadmaps'));
   expect(await screen.findByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Skipped' }));
+  await selectFilter('All', 'Skipped');
   fireEvent.click(await screen.findByRole('button', { name: 'Restore 两数之和' }));
-  await screen.findByText('No matching problems.');
+  await screen.findByText('No matching problems');
   await act(async () => background.removeCard('1'));
-  await waitFor(() => expect(screen.getByRole('progressbar')).toHaveAttribute('value', '0'));
-  fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }));
-  await screen.findByRole('button', { name: 'Activate' });
+  await waitFor(() => expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0'));
+  fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+  expect(screen.getByRole('button', { name: 'Filter: All' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Arrays & Hashing/ })).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(screen.getByRole('button', { name: 'Active' }));
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Stop using' }));
+  await screen.findByRole('button', { name: 'Use Blind 75' });
   expect(screen.getByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByLabelText('Roadmaps'));
-  expect(await screen.findByRole('button', { name: 'Use Blind 75' })).toBeInTheDocument();
+  expect(await screen.findByRole('region', { name: 'Choose a roadmap' })).toBeInTheDocument();
+});
+
+it('opens the active roadmap at its next problem and counts each filter', async () => {
+  await background.setActiveRoadmap('blind-75');
+  await background.rateCard({ ...buildProblem(), rating: Rating.Good });
+  await background.setRoadmapProblemSkipped('blind-75', '242', true);
+  openPopup();
+  fireEvent.click(await screen.findByLabelText('Roadmaps'));
+
+  // Two Sum is reviewed, so Home's next problem is in Sliding Window.
+  expect(await screen.findByRole('button', { name: /Sliding Window/ })).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByRole('button', { name: /Arrays & Hashing/ })).toHaveAttribute('aria-expanded', 'false');
+  fireEvent.click(screen.getByRole('button', { name: 'Filter: All' }));
+  const counts = { All: '75', 'Not in SRS': '74', 'In SRS': '1', Reviewed: '1', Skipped: '1' };
+  for (const [name, count] of Object.entries(counts)) {
+    expect(await screen.findByRole('menuitemradio', { name })).toHaveAccessibleDescription(count);
+  }
+  fireEvent.click(screen.getByRole('menuitemradio', { name: 'Skipped' }));
+  expect(await screen.findByRole('button', { name: 'Restore Problem 242' })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: '1. Two Sum' })).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Back to all roadmaps' }));
+  const current = await screen.findByRole('region', { name: 'Current roadmap' });
+  expect(within(current).getByText('Longest Substring')).toBeInTheDocument();
 });
 
 it('keeps reviews available with roadmap progress and continues with a recommendation after the queue empties', async () => {
@@ -142,7 +182,8 @@ it('keeps reviews available with roadmap progress and continues with a recommend
   fireEvent.click(within(section).getByRole('button', { name: /^Blind 75/ }));
   expect(await screen.findByRole('heading', { name: 'Blind 75' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Back to all roadmaps' }));
-  expect(within(await screen.findByRole('region', { name: 'Blind 75' })).getByText('Active')).toBeInTheDocument();
+  const current = await screen.findByRole('region', { name: 'Current roadmap' });
+  expect(within(current).getByRole('button', { name: 'Open Blind 75' })).toBeInTheDocument();
 });
 
 it('updates empty-queue recommendations for skips, the preferred site, and the active roadmap', async () => {
@@ -198,7 +239,7 @@ it('offers a roadmap only when reviews and the active roadmap are both absent', 
   expect(screen.queryByText('Start your first review')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Choose a roadmap' }));
   fireEvent.click(await screen.findByRole('button', { name: 'Use Blind 75' }));
-  await screen.findByText('Active');
+  await screen.findByRole('region', { name: 'Current roadmap' });
   fireEvent.click(screen.getByLabelText('Home'));
   await screen.findByText('All caught up');
   expect(screen.queryByRole('button', { name: 'Choose a roadmap' })).not.toBeInTheDocument();
@@ -209,7 +250,7 @@ it('rates new and saved roadmap problems and retains feedback when a filter remo
   openPopup();
   fireEvent.click(await screen.findByLabelText('Roadmaps'));
   fireEvent.click(await screen.findByRole('button', { name: 'Open Blind 75' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Not in SRS' }));
+  await selectFilter('All', 'Not in SRS');
   fireEvent.click(await screen.findByRole('button', { name: 'Save 两数之和' }));
   let menu = await screen.findByRole('dialog', { name: 'Save 两数之和' });
   const good = within(menu).getByRole('button', { name: 'Good' });
@@ -220,9 +261,11 @@ it('rates new and saved roadmap problems and retains feedback when a filter remo
   expect(await screen.findByRole('status')).toHaveTextContent('两数之和 · Saved · Review in');
   expect((await readLearningDocument()).cards['1']).toMatchObject({ domain: 'leetcode.cn', fsrs: { reps: 1 } });
 
-  fireEvent.click(screen.getByRole('button', { name: 'Not in SRS' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
   fireEvent.click(await screen.findByRole('button', { name: /Arrays & Hashing/ }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Save 两数之和' }));
+  // Saved rows offer Rate again instead of Save.
+  expect(screen.queryByRole('button', { name: 'Save 两数之和' })).not.toBeInTheDocument();
+  await chooseRowAction('两数之和', 'Rate again…');
   menu = await screen.findByRole('dialog', { name: 'Save 两数之和' });
   expect(within(menu).queryByRole('button', { name: 'Save without rating' })).not.toBeInTheDocument();
   const easy = within(menu).getByRole('button', { name: 'Easy' });
