@@ -1,0 +1,38 @@
+/* LeetSRS surface tokens for the LeetCode page. LeetCode's theme comes from its classes rather
+   than prefers-color-scheme, so each surface root sets data-theme from useDarkMode(). */
+[data-theme="light"] {
+  --ls-surface: #ffffff;
+  --ls-raised: #f4f4f5;
+  --ls-fg: #18181b;
+  --ls-fg-2: #52525b;
+  --ls-fg-3: #71717a;
+  --ls-line: rgb(0 0 0 / 0.08);
+  --ls-brand: #267a33;
+  --ls-focus: #267a33;
+  --ls-danger: #c42121;
+  --ls-danger-soft: color-mix(in srgb, #dc2626 8%, #fff);
+  --ls-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px -8px rgb(0 0 0 / 0.22), 0 4px 10px -4px rgb(0 0 0 / 0.1);
+  --ls-host-fill: rgba(0, 0, 0, 0.04);
+  --ls-host-fill-hover: #e8e8e8;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  /* Lifted above LeetCode's #262626 panels. */
+  --ls-surface: #2a2a2e;
+  --ls-raised: #36363b;
+  --ls-fg: #ededef;
+  --ls-fg-2: #b4b4bc;
+  --ls-fg-3: #94949d;
+  --ls-line: rgb(255 255 255 / 0.08);
+  --ls-brand: #5cc466;
+  --ls-focus: #5cc466;
+  --ls-danger: #f58a8a;
+  --ls-danger-soft: color-mix(in srgb, #ea5a52 14%, #2a2a2e);
+  --ls-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.1), 0 16px 40px -8px rgb(0 0 0 / 0.65), 0 4px 12px -4px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --ls-host-fill: rgba(255, 255, 255, 0.08);
+  --ls-host-fill-hover: #3a3a3a;
+  color-scheme: dark;
+}

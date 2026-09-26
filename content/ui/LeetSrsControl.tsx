@@ -1,11 +1,11 @@
-import { type CSSProperties, type Ref, useEffect, useRef, useState } from 'react';
+import { type Ref, useEffect, useRef, useState } from 'react';
 import { Button, type ButtonProps, Dialog, DialogTrigger, Popover, TooltipTrigger } from 'react-aria-components';
 import { watchDocumentTranslations } from '@/content/translations';
 import type { Translations } from '@/shared/i18n/index';
 import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { RatingMenu } from './RatingMenu';
 import { Tooltip } from './Tooltip';
-import { LEETSRS_BUTTON_COLOR, THEME_COLORS, useDarkMode } from './theme';
+import { useSurfaceTheme } from './theme';
 import { useRatingSession } from './useRatingSession';
 
 export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
@@ -40,7 +40,7 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
     >
       <TooltipTrigger delay={300} closeDelay={0} isDisabled={menuOpen}>
         <LeetSrsButton t={t} ref={buttonRef} />
-        <Tooltip text={t.app.name} />
+        <Tooltip title={t.app.name} text={t.contentScript.tooltip} />
       </TooltipTrigger>
       <Popover placement="bottom end" offset={8} className="z-50">
         <Dialog aria-label={t.app.name}>
@@ -52,20 +52,13 @@ export function LeetSrsControl({ openRequest = 0 }: { openRequest?: number }) {
 }
 
 function LeetSrsButton({ t, ...props }: { t: Translations; ref?: Ref<HTMLButtonElement> } & ButtonProps) {
-  const colors = useDarkMode() ? THEME_COLORS.dark : THEME_COLORS.light;
   return (
     <Button
       {...props}
       type="button"
-      className="flex cursor-pointer rounded-sm border-0 bg-(--button-bg) p-2 hover:bg-(--button-hover) data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-current data-focus-visible:outline-offset-2"
+      data-theme={useSurfaceTheme()}
+      className="ml-1 grid size-8 cursor-pointer place-items-center rounded-md border-0 bg-host-fill p-0 text-brand hover:bg-host-fill-hover data-focus-visible:outline-2 data-focus-visible:outline-focus data-focus-visible:outline-offset-2"
       aria-label={t.app.name}
-      style={
-        {
-          color: LEETSRS_BUTTON_COLOR,
-          '--button-bg': colors.bgToolbarButton,
-          '--button-hover': colors.bgAddButtonHover,
-        } as CSSProperties & Record<`--${string}`, string>
-      }
     >
       <LeetSRSLogo className="size-4" role="img" />
     </Button>

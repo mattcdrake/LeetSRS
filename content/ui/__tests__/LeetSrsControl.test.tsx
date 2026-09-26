@@ -54,14 +54,14 @@ it('Escape restores focus without saving or disabling auto-open, and the hint ap
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
   fireEvent.click(trigger);
-  await screen.findByText('Opens after you solve a problem.');
+  await screen.findByText('Opens after each accepted solve.');
   fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
   await waitFor(() => expect(trigger).toHaveFocus());
   expect((await readLearningDocument()).cards).toEqual({});
   expect((await readLearningDocument()).settings.openRatingAfterSolving).toBeUndefined();
   fireEvent.click(trigger);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
-  expect(screen.queryByText('Opens after you solve a problem.')).not.toBeInTheDocument();
+  expect(screen.queryByText('Opens after each accepted solve.')).not.toBeInTheDocument();
 });
 
 it('retries failed saves once, retaining pending work and confirmation across panel dismissal', async () => {
@@ -69,7 +69,7 @@ it('retries failed saves once, retaining pending work and confirmation across pa
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
   fireEvent.click(trigger);
   const good = await screen.findByRole('button', { name: 'Good' });
-  await screen.findByText('Opens after you solve a problem.');
+  await screen.findByText('Opens after each accepted solve.');
   vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk full'));
   fireEvent.click(good);
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not save');
@@ -110,7 +110,7 @@ it('does not consume the hint when the panel closes before it can be displayed',
   await act(async () => release.resolve());
   expect(await service.shouldShowAutoOpenHint()).toBe(true);
   fireEvent.click(trigger);
-  await screen.findByText('Opens after you solve a problem.');
+  await screen.findByText('Opens after each accepted solve.');
   await waitFor(async () => expect(await service.shouldShowAutoOpenHint()).toBe(false));
 });
 
@@ -152,10 +152,10 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
   fireEvent.click(trigger);
-  const review = await screen.findByRole('link', { name: 'Next review 2. Add Two Numbers' });
+  const review = await screen.findByRole('link', { name: '2. Add Two Numbers Next review' });
   expect(review).toHaveAttribute('href', 'https://leetcode.com/problems/add-two-numbers/description/');
   expect(review).not.toHaveAttribute('target');
-  expect(await screen.findByRole('link', { name: 'Next in Blind 75 3. Longest Substring' })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: '3. Longest Substring Next in Blind 75' })).toHaveAttribute(
     'href',
     'https://leetcode.com/problems/longest-substring/description/'
   );
@@ -163,7 +163,7 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   fireEvent.click(screen.getByRole('button', { name: 'Good' }));
   expect(await screen.findByRole('status')).toHaveTextContent('Saved');
   await screen.findByText('No other reviews due');
-  expect(screen.getByRole('link', { name: 'Next in Blind 75 3. Longest Substring' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '3. Longest Substring Next in Blind 75' })).toBeInTheDocument();
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Dismiss' })[0]);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -187,7 +187,66 @@ it('keeps rating and reviews usable when roadmap loading fails, then retries', a
   fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the next roadmap problem.');
   expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
-  expect(await screen.findByRole('link', { name: 'Next review 2. Add Two Numbers' })).toBeInTheDocument();
+  expect(await screen.findByRole('link', { name: '2. Add Two Numbers Next review' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByRole('link', { name: 'Next in Blind 75 3. Longest Substring' })).toBeInTheDocument();
+  expect(await screen.findByRole('link', { name: '3. Longest Substring Next in Blind 75' })).toBeInTheDocument();
+});
+
+it('keeps focus on the panel when the pressed row becomes disabled', async () => {
+  render(<LeetSrsControl />);
+  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  const good = await screen.findByRole('button', { name: 'Good' });
+  await waitFor(() => expect(good).toBeEnabled());
+  act(() => good.focus());
+  fireEvent.click(good);
+  expect(good).toBeDisabled();
+  expect(screen.getByRole('group')).toHaveFocus();
+  await screen.findByRole('status');
+});
+
+it('reports a failed load with a retry that restores rating', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.mocked(background.previewRatings).mockRejectedValueOnce(new Error('Unavailable'));
+  render(<LeetSrsControl />);
+  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load review intervals.');
+  expect(screen.getByRole('button', { name: 'Good' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('saves an existing card only with a rating and shows its status', async () => {
+  const card = createMockCard(State.Review, { frontendId: '1', paused: true });
+  await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en' }, cards: { '1': card } }));
+  render(<LeetSrsControl />);
+  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  const good = await screen.findByRole('button', { name: 'Good' });
+  await waitFor(() => expect(good).toBeEnabled());
+  expect(screen.getByText('Paused')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save without rating' })).not.toBeInTheDocument();
+  fireEvent.keyDown(good, { key: '5' });
+  expect(good).toBeEnabled();
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect((await readLearningDocument()).cards['1']).toEqual(card);
+});
+
+it('undoes a save back to the rating view, and refuses once the card changed', async () => {
+  render(<LeetSrsControl />);
+  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Good' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
+  expect(screen.getByRole('group')).toHaveFocus();
+  expect((await readLearningDocument()).cards).toEqual({});
+
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  fireEvent.click(screen.getByRole('button', { name: 'Easy' }));
+  const undo = await screen.findByRole('button', { name: 'Undo' });
+  await background.saveNote('1', 'Changed after saving');
+  fireEvent.click(undo);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not undo. The card changed after saving.');
+  expect(screen.getByRole('status')).toHaveTextContent('Saved as Easy');
+  expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
 });

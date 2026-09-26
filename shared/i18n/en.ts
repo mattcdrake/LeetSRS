@@ -401,6 +401,8 @@ const en = {
     loadingNextRoadmap: 'Loading next roadmap problem…',
     nextReviewFailed: 'Could not load the next review.',
     nextRoadmapFailed: 'Could not load the next roadmap problem.',
+    tooltip: 'Rate this problem',
+    upNext: 'Up next',
     howDidItGo: 'How did it go?',
     descriptions: {
       1: 'Needed the solution',
@@ -409,14 +411,20 @@ const en = {
       4: 'Felt effortless',
     },
     saveWithoutRating: 'Save without rating',
-    autoOpenHint: 'Opens after you solve a problem.',
+    autoOpenHint: 'Opens after each accepted solve.',
+    turnOff: 'Turn off',
     turnOffAutoOpen: 'Turn off auto-open',
     saved: 'Saved',
+    savedAs: (rating: string) => `Saved as ${rating}`,
+    reviewDate: (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    undo: 'Undo',
+    undoFailed: 'Could not undo. The card changed after saving.',
+    codeReset: 'Code reset for today’s review',
     retry: 'Try again',
     days: (days: number) => `${days} ${days === 1 ? 'day' : 'days'}`,
     reviewIn: (days: number) => `Review in ${days} ${days === 1 ? 'day' : 'days'}`,
 
-    saveFailed: 'Could not save this problem. Please try again.',
+    saveFailed: 'Could not save. Pick a rating to try again.',
   },
 
   // Formatting helpers (for interpolated strings)

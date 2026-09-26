@@ -1,4 +1,5 @@
 @import "tailwindcss" source(".");
+@import "../../shared/ui/tokens.css";
 @import "../../shared/ui/rating.css";
 @source "../../shared/ui";
 
@@ -29,130 +30,43 @@
   }
 }
 
+/* Inline, so utilities read the tokens on each surface's [data-theme] root. */
+@theme inline {
+  --color-surface: var(--ls-surface);
+  --color-raised: var(--ls-raised);
+  --color-fg: var(--ls-fg);
+  --color-fg-2: var(--ls-fg-2);
+  --color-fg-3: var(--ls-fg-3);
+  --color-line: var(--ls-line);
+  --color-brand: var(--ls-brand);
+  --color-focus: var(--ls-focus);
+  --color-danger: var(--ls-danger);
+  --color-danger-soft: var(--ls-danger-soft);
+  --color-host-fill: var(--ls-host-fill);
+  --color-host-fill-hover: var(--ls-host-fill-hover);
+}
+
 @layer base {
-  body {
+  body,
+  [data-theme] {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  body {
     font-size: 14px;
     line-height: 1.5;
-    color: #1a1a1a;
+  }
+  [data-theme] {
+    -webkit-font-smoothing: antialiased;
   }
 }
 
 .rating-wordmark {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 12px;
-}
-.rating-hint {
-  border-top: 1px solid var(--panel-border);
-  padding: 10px 12px 8px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
-}
-.rating-hint p {
-  margin: 0 0 5px;
-  color: var(--panel-muted);
-}
-.rating-hint button,
-.rating-error button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 0;
-  font: inherit;
-}
-.rating-hint button {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.rating-saved {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 12px;
-  font-size: 12px;
-  text-align: center;
+  letter-spacing: -0.01em;
 }
 
-/* Keep the selected action vivid while the save starts. */
-.rating-panel button[data-selected] {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  opacity: 1;
-  background: color-mix(in srgb, var(--rating-color) 18%, var(--panel-bg));
-  box-shadow: inset 0 0 0 1px var(--rating-color);
-  animation: rating-press 400ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rating-without {
-  --rating-color: var(--panel-muted);
-}
-.rating-panel button[data-selected]::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
+/* Ignores pointer activation briefly while the panel shrinks under the pointer after saving. */
+.pointer-guard a {
   pointer-events: none;
-  left: 12px;
-  top: 50%;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: var(--rating-color);
-  animation: rating-ripple 400ms ease-out both;
-}
-.rating-saved {
-  animation: rating-confirm 180ms ease-out;
-}
-@keyframes rating-press {
-  0% {
-    transform: scale(0.98);
-  }
-  45% {
-    transform: scale(1.01);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-@keyframes rating-ripple {
-  from {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 0.35;
-  }
-  to {
-    transform: translate(-50%, -50%) scale(9);
-    opacity: 0;
-  }
-}
-@keyframes rating-confirm {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .rating-panel button[data-selected],
-  .rating-panel button[data-selected]::after,
-  .rating-saved {
-    animation: none;
-  }
-  .rating-panel button[data-selected]::after {
-    display: none;
-  }
-}
-
-.rating-next-link:hover {
-  background: color-mix(in srgb, var(--panel-muted) 10%, var(--panel-bg));
-}
-.rating-next-link:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
-.rating-next-status {
-  padding: 9px 7px;
-  color: var(--panel-muted);
-  font-size: 12px;
 }

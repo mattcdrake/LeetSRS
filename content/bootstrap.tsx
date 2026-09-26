@@ -1,6 +1,7 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { z } from 'zod';
+import type { Translations } from '@/shared/i18n/index';
 import { readLearningDocument } from '@/shared/learning-document';
 import { resolveLearningDocumentSettings } from '@/shared/settings';
 import { setupLeetcodeEditorReset } from './editor-reset';
@@ -8,7 +9,7 @@ import { getCurrentProblemSlug } from './page-context';
 import { ACCEPTED_SUBMISSION_MESSAGE } from './submission-observer';
 import { LeetSrsControl } from './ui/LeetSrsControl';
 import { createContentRoot } from './ui/shadow-root';
-import { Toast } from './ui/Toast';
+import { LocalizedToast } from './ui/Toast';
 import './ui/shadow.css';
 
 export async function bootstrapContent(ctx: ContentScriptContext) {
@@ -17,7 +18,7 @@ export async function bootstrapContent(ctx: ContentScriptContext) {
   await setupLeetSrsControl(ctx, () => {
     disposeReset();
     disposeReset = setupLeetcodeEditorReset(() => {
-      void showToast(ctx, 'Code reset to default');
+      void showToast(ctx, (t) => t.contentScript.codeReset);
     });
   });
 }
@@ -101,7 +102,7 @@ async function setupLeetSrsControl(ctx: ContentScriptContext, onProblemChange: (
   ctx.onInvalidated(() => observer.disconnect());
 }
 
-async function showToast(ctx: ContentScriptContext, message: string) {
+async function showToast(ctx: ContentScriptContext, message: (t: Translations) => string) {
   if (ctx.isInvalid) return;
   const ui = await createShadowRootUi(ctx, {
     name: 'leetsrs-toast',
@@ -109,7 +110,7 @@ async function showToast(ctx: ContentScriptContext, message: string) {
     anchor: 'body',
     onMount(container) {
       const root = createContentRoot(container);
-      root.render(<Toast message={message} onDismiss={() => ui.remove()} />);
+      root.render(<LocalizedToast message={message} onDismiss={() => ui.remove()} />);
       return root;
     },
     onRemove: (root) => root?.unmount(),
