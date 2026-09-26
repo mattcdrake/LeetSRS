@@ -1,0 +1,30 @@
+/* Proposed calendar tokens */
+:root {
+  --heat-1: color-mix(in srgb, var(--current-accent) 11%, var(--current-bg-primary));
+  --heat-2: color-mix(in srgb, var(--current-accent) 24%, var(--current-bg-primary));
+  --heat-3: color-mix(in srgb, var(--current-accent) 44%, var(--current-bg-primary));
+  --heat-4: color-mix(in srgb, var(--current-accent) 92%, var(--current-bg-primary));
+  --heat-4-text: var(--current-on-accent);
+  --warning-soft: color-mix(in srgb, var(--current-warning) 14%, transparent);
+  --warning-text: #a15c00;
+}
+.dark {
+  --heat-1: color-mix(in srgb, var(--current-accent) 14%, var(--current-bg-surface));
+  --heat-2: color-mix(in srgb, var(--current-accent) 28%, var(--current-bg-surface));
+  --heat-3: color-mix(in srgb, var(--current-accent) 48%, var(--current-bg-surface));
+  --heat-4: color-mix(in srgb, var(--current-accent) 80%, var(--current-bg-surface));
+  --warning-text: var(--current-warning);
+}
+.heat-0 { background: transparent; }
+.heat-1 { background: var(--heat-1); }
+.heat-2 { background: var(--heat-2); }
+.heat-3 { background: var(--heat-3); }
+.heat-4 { background: var(--heat-4); color: var(--heat-4-text); }
+.text-warn { color: var(--warning-text); }
+.bg-warn-soft { background: var(--warning-soft); }
+.bg-inverse { background: var(--current-text-primary); color: var(--current-bg-primary); }
+.ring-sel { box-shadow: 0 0 0 1.5px var(--current-text-primary); }
+.focus-demo { outline: 2px solid var(--current-accent); outline-offset: 2px; }
+.hover-row { background: color-mix(in srgb, var(--current-bg-secondary) 70%, transparent); }
+.bar-track { background: var(--current-bg-tertiary); }
+.bg-primary-inv { background: var(--current-text-primary); }
