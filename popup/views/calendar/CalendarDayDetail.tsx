@@ -10,9 +10,9 @@ import { MetaItem } from '@/popup/components/MetaItem';
 import { ProblemLink } from '@/popup/components/ProblemLink';
 import { Tooltip } from '@/popup/components/Tooltip';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import { formatDue } from '@/popup/due';
 import { cardMetadataQueryOptions } from '@/popup/queries/cards';
 import { buttonInteraction, compactOutlineButton, problemRow } from '@/popup/styles';
-import { addLocalDays } from '@/shared/calendar';
 import type { CatalogProblem } from '@/shared/catalog';
 import type { Card } from '@/shared/learning-document';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
@@ -144,10 +144,8 @@ function ProblemRow({ card, overdueSince, problem }: { card: Card; overdueSince:
   const title = getProblemTitle(problem, card.domain);
   let marker: ReactNode;
   if (card.fsrs.due < overdueSince) {
-    // Round calendar-day differences so DST changes do not shift the count.
-    const days = Math.round((overdueSince - addLocalDays(new Date(card.fsrs.due), 0).getTime()) / 86_400_000);
     marker = (
-      <MetaItem className="text-[var(--warning-text)]">{t.calendar.overdueBy(t.format.intervalShort(days))}</MetaItem>
+      <MetaItem className="text-[var(--warning-text)]">{formatDue(card.fsrs.due, overdueSince, t).label}</MetaItem>
     );
   } else if (card.fsrs.state === State.New) {
     marker = <MetaItem className="text-accent">{t.roadmaps.new}</MetaItem>;

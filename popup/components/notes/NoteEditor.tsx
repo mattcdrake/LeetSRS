@@ -1,10 +1,14 @@
+import { useState } from 'react';
+import { useFocusWithin } from 'react-aria';
 import { Button, Label, TextArea, TextField } from 'react-aria-components';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
 import { useNoteQuery, useSaveNoteMutation } from '@/popup/queries/notes';
-import { destructiveButton, secondaryButton } from '@/popup/styles';
+import { buttonInteraction } from '@/popup/styles';
 import { NOTES_MAX_LENGTH } from '@/shared/learning-document';
+
+const noteButton = `h-7 px-2.5 rounded-md text-xs duration-[120ms] ${buttonInteraction}`;
 
 interface NoteEditorProps {
   frontendId: string;
@@ -21,6 +25,8 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
   const isCompact = variant === 'compact';
 
   const { isConfirming, startOrConfirm } = useTimedConfirmation();
+  const [hasFocus, setHasFocus] = useState(false);
+  const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHasFocus });
 
   const { data: note, isLoading, error } = useNoteQuery(frontendId);
   const saveNoteMutation = useSaveNoteMutation(frontendId);
@@ -64,13 +70,23 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
     console.error('Failed to load note:', error);
   }
 
+  const isFooterVisible =
+    !isCompact || hasFocus || hasChanges || saveError != null || isOverLimit || deleteConfirm || isPending;
+
+  const fieldClassName = isCompact
+    ? `bg-secondary outline-none placeholder:text-tertiary ${isOverLimit ? 'ring-2 ring-[var(--current-danger)]' : 'focus:ring-2 focus:ring-[var(--current-accent)]'}`
+    : `border bg-primary focus:outline-none focus:ring-2 ${isOverLimit ? 'border-[var(--current-danger)] focus:ring-[color-mix(in_srgb,var(--current-danger)_20%,transparent)]' : 'border-current focus:border-[var(--current-accent)] focus:ring-[var(--current-accent-soft)]'}`;
+
   return (
-    <>
+    // Tracks focus across the field and its buttons so pressing a button does not hide the footer.
+    <div {...focusWithinProps}>
       <TextField className="w-full">
         <Label className="sr-only">{t.notes.ariaLabel}</Label>
         <TextArea
-          className={`w-full px-3 py-2 rounded-lg border border-current bg-primary text-primary resize-none field-sizing-content min-h-9 max-h-40 overflow-y-auto text-xs focus:outline-none focus:border-[var(--current-accent)] focus:ring-2 focus:ring-[var(--current-accent-soft)] ${isCompact ? 'mt-1.5' : ''}`}
-          placeholder={isLoading ? t.notes.placeholderLoading : t.notes.placeholderEmpty}
+          className={`w-full px-3 py-2 rounded-lg text-primary resize-none field-sizing-content min-h-9 max-h-40 overflow-y-auto text-xs leading-[18px] ${fieldClassName}`}
+          placeholder={
+            isLoading ? t.notes.placeholderLoading : isCompact ? t.notes.placeholderShort : t.notes.placeholderEmpty
+          }
           rows={1}
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -82,21 +98,31 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
           {t.notes.saveFailed}
         </p>
       )}
-      <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2'}`}>
-        <span className={`text-xs ${isOverLimit ? 'text-danger' : 'text-secondary'}`}>
-          {t.format.characterCount(characterCount, NOTES_MAX_LENGTH)}
-        </span>
-        <div className="flex gap-2">
-          {hasExistingNote && (
-            <Button className={destructiveButton(deleteConfirm)} onPress={remove} isDisabled={isDisabled || isPending}>
-              {isDeleting ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
+      {isFooterVisible && (
+        <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2'}`}>
+          <span className={`text-[11px] tabular-nums ${isOverLimit ? 'text-danger' : 'text-tertiary'}`}>
+            {t.format.characterCount(characterCount, NOTES_MAX_LENGTH)}
+          </span>
+          <div className="flex gap-1">
+            {hasExistingNote && (
+              <Button
+                className={`${noteButton} ${deleteConfirm ? 'bg-danger text-white hover:opacity-90' : 'text-secondary hover:bg-secondary hover:text-danger'}`}
+                onPress={remove}
+                isDisabled={isDisabled || isPending}
+              >
+                {isDeleting ? t.actions.deleting : deleteConfirm ? t.actions.confirm : t.actions.delete}
+              </Button>
+            )}
+            <Button
+              className={`${noteButton} bg-accent text-[var(--current-on-accent)] font-medium hover:opacity-90`}
+              onPress={save}
+              isDisabled={isDisabled || !canSave || isPending}
+            >
+              {isSaving ? t.actions.saving : t.actions.save}
             </Button>
-          )}
-          <Button className={secondaryButton} onPress={save} isDisabled={isDisabled || !canSave || isPending}>
-            {isSaving ? t.actions.saving : t.actions.save}
-          </Button>
+          </div>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 }

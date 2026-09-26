@@ -1,5 +1,5 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { LuSearch } from 'react-icons/lu';
+import { NoMatches } from '@/popup/components/NoMatches';
 import { type SavedProblem, SaveProblemSheet, useSaveProblem } from '@/popup/components/problem-save/SaveProblemButton';
 import { QueryState } from '@/popup/components/QueryState';
 import { useI18n } from '@/popup/contexts/I18nContext';
@@ -7,7 +7,6 @@ import { usePopupClock } from '@/popup/hooks/usePopupClock';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { roadmapMetadataQueryOptions, type useSkipRoadmapProblemMutation } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
-import { buttonInteraction } from '@/popup/styles';
 import type { ProblemReference } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
 import { getNextRoadmapProblemId, isReviewed } from '@/shared/roadmap';
@@ -114,20 +113,12 @@ export function RoadmapProblemList({
   return (
     <div className="pb-4">
       {groups.every((group) => group.problems.length === 0) && (
-        <div className="px-6 pt-10 pb-2 text-center">
-          <div className="mx-auto size-9 rounded-full bg-secondary grid place-items-center text-tertiary">
-            <LuSearch aria-hidden="true" className="size-4" strokeWidth={2} />
-          </div>
-          <p className="mt-3 text-[13px] font-medium">{t.roadmaps.noMatches}</p>
-          <p className="mt-1 text-xs text-tertiary">{t.roadmaps.noMatchesHint}</p>
-          <button
-            type="button"
-            className={`mt-4 h-8 px-3 rounded-lg border border-strong text-xs text-secondary duration-[120ms] hover:bg-secondary ${buttonInteraction}`}
-            onClick={onClearFilters}
-          >
-            {t.roadmaps.clearFilters}
-          </button>
-        </div>
+        <NoMatches
+          title={t.roadmaps.noMatches}
+          hint={t.roadmaps.noMatchesHint}
+          clearLabel={t.roadmaps.clearFilters}
+          onClear={onClearFilters}
+        />
       )}
       {groups.map((group) => (
         <RoadmapGroup

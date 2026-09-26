@@ -2,7 +2,7 @@ import { Button, Link, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-c
 import { LuChevronDown, LuClock, LuNotebookPen, LuPause, LuTrash2, LuYoutube } from 'react-icons/lu';
 import { Tooltip } from '@/popup/components/Tooltip';
 import { useTimedConfirmation } from '@/popup/hooks/useTimedConfirmation';
-import { buttonInteraction } from '@/popup/styles';
+import { iconButton, textButton } from '@/popup/styles';
 import { useI18n } from '../../contexts/I18nContext';
 
 interface ActionsSectionProps {
@@ -15,9 +15,6 @@ interface ActionsSectionProps {
   onPause: () => void;
   isDisabled: boolean;
 }
-
-const textButton = `h-8 px-2 rounded-md flex items-center gap-1.5 duration-[120ms] ${buttonInteraction}`;
-const iconButton = `size-8 rounded-md grid place-items-center text-tertiary duration-[120ms] hover:bg-secondary ${buttonInteraction}`;
 
 export function ActionsSection({
   notesId,
