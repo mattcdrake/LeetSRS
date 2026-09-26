@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/mattcdrake/LeetSRS/compare/v1.3.0...v1.4.0) (2026-09-26)
+
+
+### Features
+
+* add Firefox support and protect initial backup sync ([#724](https://github.com/mattcdrake/LeetSRS/issues/724)) ([a1a932c](https://github.com/mattcdrake/LeetSRS/commit/a1a932ca54d90cfbf1aadf12a2dd3759b5557376))
+
+
+### Bug Fixes
+
+* stop retrying rejected GitHub refresh tokens every sync ([#721](https://github.com/mattcdrake/LeetSRS/issues/721)) ([28a550a](https://github.com/mattcdrake/LeetSRS/commit/28a550a0bc8a6324c1927c88018f19ba61c14c8c))
+
 ## [1.3.0](https://github.com/mattcdrake/LeetSRS/compare/v1.2.0...v1.3.0) (2026-09-26)
 
 
