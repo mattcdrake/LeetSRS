@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type FocusEvent, useRef, useState } from 'react';
 import { Button, Input, Label, TextField } from 'react-aria-components';
 import { LuMinus, LuPlus } from 'react-icons/lu';
 import { useDraftUntilSaved } from '@/popup/hooks/useDraftUntilSaved';
@@ -25,17 +25,30 @@ export function ReviewSettingsSection() {
   const updateSettingsMutation = useUpdateSettingsMutation();
   const draft = useDraftUntilSaved(settings.maxNewCardsPerDay.toString());
   const [isInvalid, setIsInvalid] = useState(false);
+  const stepper = useRef<HTMLDivElement>(null);
+  const pendingSave = useRef<string | null>(null);
   const inputValue = draft.value;
 
   const save = (limit: number) => {
     const saved = limit.toString();
     draft.setValue(saved);
     setIsInvalid(false);
-    updateSettingsMutation.mutate({ maxNewCardsPerDay: limit }, { onSuccess: () => draft.markSaved(saved) });
+    pendingSave.current = saved;
+    updateSettingsMutation.mutate(
+      { maxNewCardsPerDay: limit },
+      {
+        onSuccess: () => draft.markSaved(saved),
+        onSettled: () => {
+          if (pendingSave.current === saved) pendingSave.current = null;
+        },
+      }
+    );
   };
 
-  const handleBlur = () => {
-    if (!draft.hasDraft) return;
+  // Save typed values only when focus leaves the stepper, so pressing − or + sends a single update.
+  const handleBlur = (event: FocusEvent) => {
+    if (stepper.current?.contains(event.relatedTarget as Node | null)) return;
+    if (!draft.hasDraft || inputValue === pendingSave.current) return;
     const limit = parseLimit(inputValue);
     if (limit === null) setIsInvalid(true);
     else save(limit);
@@ -66,6 +79,7 @@ export function ReviewSettingsSection() {
               hintId="new-cards-hint"
             />
             <div
+              ref={stepper}
               className={`inline-flex h-7 shrink-0 items-center overflow-hidden rounded-md border has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[color:var(--current-accent)] ${isInvalid ? 'border-[var(--current-danger)]' : 'border-strong'}`}
             >
               <Button
@@ -73,6 +87,7 @@ export function ReviewSettingsSection() {
                 className={stepButton}
                 isDisabled={current <= min && !isInvalid}
                 onPress={() => save(clamp(current - 1))}
+                onBlur={handleBlur}
               >
                 <LuMinus aria-hidden="true" className="size-3.5" />
               </Button>
@@ -89,6 +104,7 @@ export function ReviewSettingsSection() {
                 className={stepButton}
                 isDisabled={current >= max && !isInvalid}
                 onPress={() => save(clamp(current + 1))}
+                onBlur={handleBlur}
               >
                 <LuPlus aria-hidden="true" className="size-3.5" />
               </Button>

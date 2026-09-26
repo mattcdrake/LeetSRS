@@ -69,3 +69,16 @@ it('clamps stepper changes to the allowed range and flags out-of-range typed lim
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(background.updateSettings).not.toHaveBeenCalledWith({ maxNewCardsPerDay: 150 });
 });
+
+it('sends one update when stepping straight from a typed limit', async () => {
+  await replaceLearningDocument(buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } }));
+  createServiceMock(background).handle('updateSettings', updateSettings);
+  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
+  const input = await screen.findByRole('spinbutton');
+  const increase = screen.getByRole('button', { name: 'Increase' });
+  fireEvent.change(input, { target: { value: '7' } });
+  fireEvent.blur(input, { relatedTarget: increase });
+  fireEvent.click(increase);
+  await waitFor(() => expect(input).toHaveAttribute('placeholder', '8'));
+  expect(background.updateSettings).toHaveBeenCalledExactlyOnceWith({ maxNewCardsPerDay: 8 });
+});
