@@ -41,8 +41,29 @@ export function isReviewed(card: Card | undefined): boolean {
   return !!card && card.fsrs.reps > 0;
 }
 
-export function countReviewed(document: LearningDocument, ids: string[]): number {
-  return ids.filter((id) => isReviewed(document.cards[id])).length;
+export interface RoadmapProgressSummary {
+  total: number;
+  reviewed: number;
+  /** In SRS but not reviewed yet. */
+  new: number;
+  /** Skipped and not in SRS, so the three counts never overlap. */
+  skipped: number;
+}
+
+export function summarizeRoadmap(
+  document: LearningDocument,
+  ids: readonly string[],
+  skippedIds: readonly string[] = []
+): RoadmapProgressSummary {
+  const skipped = new Set(skippedIds);
+  const summary = { total: ids.length, reviewed: 0, new: 0, skipped: 0 };
+  for (const id of ids) {
+    const card = document.cards[id];
+    if (isReviewed(card)) summary.reviewed++;
+    else if (card) summary.new++;
+    else if (skipped.has(id)) summary.skipped++;
+  }
+  return summary;
 }
 
 export function getNextRoadmapProblemId(

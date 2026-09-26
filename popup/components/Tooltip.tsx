@@ -1,10 +1,25 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Tooltip as AriaTooltip, TooltipTrigger } from 'react-aria-components';
 
+interface TooltipProps {
+  label: string;
+  isDisabled?: boolean;
+  /** Checked each time the tooltip would open, for conditions that depend on layout. */
+  shouldOpen?: () => boolean;
+  children: ReactNode;
+}
+
 // Labels icon-only controls on hover and keyboard focus.
-export function Tooltip({ label, isDisabled, children }: { label: string; isDisabled?: boolean; children: ReactNode }) {
+export function Tooltip({ label, isDisabled, shouldOpen, children }: TooltipProps) {
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <TooltipTrigger delay={500} closeDelay={0} isDisabled={isDisabled}>
+    <TooltipTrigger
+      delay={500}
+      closeDelay={0}
+      isDisabled={isDisabled}
+      isOpen={isOpen}
+      onOpenChange={(open) => setIsOpen(open && (shouldOpen?.() ?? true))}
+    >
       {children}
       <AriaTooltip
         offset={6}

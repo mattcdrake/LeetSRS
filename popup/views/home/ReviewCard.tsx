@@ -3,6 +3,7 @@ import { type CSSProperties, type ReactNode, useId } from 'react';
 import { Button } from 'react-aria-components';
 import { LuArrowUpRight } from 'react-icons/lu';
 import { type Grade, State } from 'ts-fsrs';
+import { Difficulty } from '@/popup/components/Difficulty';
 import { useTheme } from '@/popup/hooks/useTheme';
 import { type CardWithProblem, ratingPreviewQueryOptions } from '@/popup/queries/cards';
 import { buttonInteraction } from '@/popup/styles';
@@ -11,7 +12,6 @@ import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
-import { Difficulty } from './Difficulty';
 
 type ReviewCardProps = {
   card: CardWithProblem;

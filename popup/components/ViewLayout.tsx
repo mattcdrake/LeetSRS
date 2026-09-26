@@ -8,10 +8,18 @@ interface ViewLayoutProps {
   title?: string;
   headerLeading?: React.ReactNode;
   headerContent?: React.ReactNode;
+  /** Renders children edge to edge so they can pin full-width sticky elements in the scroll container. */
+  flush?: boolean;
   children: React.ReactNode;
 }
 
-export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, children }: ViewLayoutProps) {
+export function ViewLayout({
+  title = 'LeetSRS',
+  headerLeading,
+  headerContent,
+  flush = false,
+  children,
+}: ViewLayoutProps) {
   const t = useI18n();
   const banner = useContext(ViewBannerContext);
   return (
@@ -40,10 +48,10 @@ export function ViewLayout({ title = 'LeetSRS', headerLeading, headerContent, ch
       </header>
 
       <main
-        className="flex-1 flex flex-col py-4 gap-4 overflow-y-auto overflow-x-hidden"
+        className={`flex-1 overflow-y-auto overflow-x-hidden ${flush ? '' : 'flex flex-col py-4 gap-4'}`}
         style={{ scrollbarGutter: 'stable both-edges' }}
       >
-        <div className="px-4">{children}</div>
+        {flush ? children : <div className="px-4">{children}</div>}
       </main>
     </div>
   );

@@ -15,11 +15,6 @@ export function useActivateRoadmapMutation() {
   return useDocumentMutation((id: RoadmapId | null) => background.setActiveRoadmap(id));
 }
 
-export const roadmapSkipsQueryOptions = queryOptions({
-  ...learningDocumentQueryOptions,
-  select: (document: LearningDocument) => document.roadmapSkips,
-});
-
 export function useSkipRoadmapProblemMutation() {
   return useDocumentMutation(
     ({ roadmapId, frontendId, skipped }: { roadmapId: RoadmapId; frontendId: string; skipped: boolean }) =>

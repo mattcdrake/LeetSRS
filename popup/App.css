@@ -61,6 +61,7 @@ body {
   --current-difficulty-easy: #0b7c7e;
   --current-difficulty-medium: #a15c00;
   --current-difficulty-hard: #cf1f45;
+  --current-skipped: #a1a1aa;
   --current-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
 }
 
@@ -85,6 +86,7 @@ body {
   --current-difficulty-easy: #2dd4bf;
   --current-difficulty-medium: #fbbf24;
   --current-difficulty-hard: #fb7185;
+  --current-skipped: #52525b;
   --current-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
 }
 

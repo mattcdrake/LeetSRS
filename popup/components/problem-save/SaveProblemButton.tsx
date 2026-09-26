@@ -49,6 +49,28 @@ export function SaveProblemButton({
   onSaved: (saved: SavedProblem) => void;
 }) {
   const t = useI18n();
+  const save = useSaveProblem(onSaved);
+
+  return (
+    <DialogTrigger isOpen={save.target !== null} onOpenChange={(open) => save.open(open ? problem : null)}>
+      <Button
+        className="problem-save-trigger"
+        data-variant={variant}
+        aria-label={t.problemSave.saveProblem(problem.title)}
+        isDisabled={isDisabled || save.busy}
+      >
+        {variant === 'primary' && <LuPlus aria-hidden="true" className="size-3.5" strokeWidth={2.2} />}
+        {t.actions.save}
+      </Button>
+      <SaveProblemSheet save={save} />
+    </DialogTrigger>
+  );
+}
+
+export type SaveProblemState = ReturnType<typeof useSaveProblem>;
+
+// Holds the rating sheet's state so a trigger other than SaveProblemButton can open it.
+export function useSaveProblem(onSaved: (saved: SavedProblem) => void) {
   // Freeze the menu's problem while Home is recomputing its next suggestion.
   const [target, setTarget] = useState<SaveTarget | null>(null);
   const add = useAddCardMutation();
@@ -56,13 +78,13 @@ export function SaveProblemButton({
   const pending = useRef(false);
   const busy = add.isPending || rate.isPending;
 
-  function setOpen(open: boolean) {
+  function open(problem: SaveTarget | null) {
     if (pending.current) return;
-    if (open) {
+    if (problem) {
       add.reset();
       rate.reset();
     }
-    setTarget(open ? problem : null);
+    setTarget(problem);
   }
 
   async function save(rating?: Grade) {
@@ -82,36 +104,32 @@ export function SaveProblemButton({
     }
   }
 
+  return { target, open, save, busy, failed: add.isError || rate.isError, pending };
+}
+
+export function SaveProblemSheet({ save }: { save: SaveProblemState }) {
+  const { target, busy, pending } = save;
   return (
-    <DialogTrigger isOpen={target !== null} onOpenChange={setOpen}>
-      <Button
-        className="problem-save-trigger"
-        data-variant={variant}
-        aria-label={t.problemSave.saveProblem(problem.title)}
-        isDisabled={isDisabled || busy}
-      >
-        {variant === 'primary' && <LuPlus aria-hidden="true" className="size-3.5" strokeWidth={2.2} />}
-        {t.actions.save}
-      </Button>
-      <ModalOverlay
-        className="problem-save-overlay"
-        isDismissable
-        isKeyboardDismissDisabled={busy}
-        shouldCloseOnInteractOutside={() => !pending.current}
-      >
-        <Modal className="problem-save-sheet">
-          {target && (
-            <SaveProblemMenu
-              target={target}
-              busy={busy}
-              failed={add.isError || rate.isError}
-              onSave={save}
-              onClose={() => setOpen(false)}
-            />
-          )}
-        </Modal>
-      </ModalOverlay>
-    </DialogTrigger>
+    <ModalOverlay
+      className="problem-save-overlay"
+      isOpen={target !== null}
+      onOpenChange={(open) => !open && save.open(null)}
+      isDismissable
+      isKeyboardDismissDisabled={busy}
+      shouldCloseOnInteractOutside={() => !pending.current}
+    >
+      <Modal className="problem-save-sheet">
+        {target && (
+          <SaveProblemMenu
+            target={target}
+            busy={busy}
+            failed={save.failed}
+            onSave={save.save}
+            onClose={() => save.open(null)}
+          />
+        )}
+      </Modal>
+    </ModalOverlay>
   );
 }
 
