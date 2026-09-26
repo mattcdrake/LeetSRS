@@ -10,14 +10,16 @@ LeetSRS is a Chrome extension that helps you remember what you learn on LeetCode
   </a>
 </p>
 
-https://github.com/user-attachments/assets/2e3da2f3-f452-4cef-8275-e131c7f43f9d
+<p align="center">
+  <img src="assets/promo/02-loop.png" width="800" alt="Solve on LeetCode, rate your recall in the LeetSRS panel, and review when it's due: rating Alien Dictionary Good schedules it for Thursday, October 15." />
+</p>
 
 ## Get started
 
 1. [Install LeetSRS from the Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko).
 2. **Solve a problem.** Choose your own on LeetCode or follow a roadmap for suggestions.
-3. **Rate your recall.** Choose **Again**, **Hard**, **Good**, or **Easy** in the LeetSRS panel to schedule your next review.
-4. **Return for review.** Open your review queue for problems that are due. Try them again and give each a new rating. Check the calendar for upcoming reviews.
+3. **Rate your recall.** When your submission is accepted, the LeetSRS panel opens on the problem page. Choose **Again**, **Hard**, **Good**, or **Easy**, or press 1–4, to schedule your next review. Each rating shows when the problem will come back.
+4. **Return for review.** Open LeetSRS: **Home** shows problems that are due, one at a time, and you can rate them right there. **Calendar** shows the next four weeks of reviews.
 
 LeetSRS uses your ratings and review history with the [FSRS spaced repetition algorithm](https://github.com/open-spaced-repetition/ts-fsrs) to adjust your review schedule.
 
@@ -36,11 +38,11 @@ For optional sync across devices, connect GitHub and select a Gist in your own G
 <details>
 <summary>Set up GitHub sync</summary>
 
-1. Select **Sign in with GitHub** in Settings.
+1. In Settings, under **GitHub Gist sync**, select **Sign in with GitHub**.
 2. Choose an existing backup or **Create New Gist**, then select **Connect and sync**.
 3. Repeat on each browser, selecting the same backup. Credentials and the selected backup stay local to each installation.
 
-Use the sync toggle to pause syncing. **Sign out** removes the local connection and credentials while keeping your practice data and GitHub backups.
+Turn off **Sync automatically** to pause syncing. **Sign out** removes the local connection and credentials while keeping your practice data and GitHub backups.
 
 Sync uses the entire dataset from the browser with the newest edit; it does not merge individual problems. Concurrent changes on another computer can be lost. Sync runs after local edits, when the extension starts, and at least once per minute for retry while enabled.
 
