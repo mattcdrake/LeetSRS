@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/mattcdrake/LeetSRS/compare/v1.2.0...v1.3.0) (2026-09-26)
+
+
+### Features
+
+* redesign the LeetCode rating menu ([#718](https://github.com/mattcdrake/LeetSRS/issues/718)) ([862ea8f](https://github.com/mattcdrake/LeetSRS/commit/862ea8f3ce87d5f36e12c66d8368665afdbad033))
+* redesign the popup Calendar tab as a rolling 4-week forecast ([#712](https://github.com/mattcdrake/LeetSRS/issues/712)) ([a84f31f](https://github.com/mattcdrake/LeetSRS/commit/a84f31f798efe85f50b30843a406be1d2c389ced))
+* redesign the popup Cards tab ([#716](https://github.com/mattcdrake/LeetSRS/issues/716)) ([fe4090d](https://github.com/mattcdrake/LeetSRS/commit/fe4090d9e33172b5f7536118d940246421b08165)), closes [#715](https://github.com/mattcdrake/LeetSRS/issues/715)
+* redesign the popup Home tab ([#707](https://github.com/mattcdrake/LeetSRS/issues/707)) ([b06fc62](https://github.com/mattcdrake/LeetSRS/commit/b06fc629aa48c033419111be72a1d76020f911eb))
+* redesign the popup Roadmaps tab ([#710](https://github.com/mattcdrake/LeetSRS/issues/710)) ([b2fd1e8](https://github.com/mattcdrake/LeetSRS/commit/b2fd1e8112b81eb2b9067ac9d8c7b2bc9f6c2e69))
+* redesign the popup Settings tab ([#714](https://github.com/mattcdrake/LeetSRS/issues/714)) ([3b79903](https://github.com/mattcdrake/LeetSRS/commit/3b799031b3e19f39a13e23e2af764bb65e2394bf))
+
 ## [1.2.0](https://github.com/mattcdrake/LeetSRS/compare/v1.1.3...v1.2.0) (2026-09-22)
 
 
