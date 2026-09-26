@@ -139,6 +139,28 @@ describe('document learning through background commands', () => {
     });
   });
 
+  it('undoes the latest panel save only while the saved card is unchanged', async () => {
+    const service = getRegisteredBackground();
+    const existing = createMockCard(State.Review, buildProblem());
+    const before = { ...(await readLearningDocument()), cards: { '1': existing } };
+    before.reviewActivity = { date: '2024-03-14', newCards: 1, streak: 4 };
+    await replaceLearningDocument(before);
+    const first = await service.saveProblem({ ...buildProblem(), rating: Rating.Good });
+    await service.undoSave(first.undoToken);
+    expect(await readLearningDocument()).toEqual({ ...before, dataUpdatedAt: new Date().toISOString() });
+    await expect(service.undoSave(first.undoToken)).rejects.toThrow();
+
+    const added = await service.saveProblem(buildProblem({ frontendId: '2' }));
+    expect(added.card.fsrs.reps).toBe(0);
+    await service.undoSave(added.undoToken);
+    expect((await readLearningDocument()).cards).toEqual({ '1': existing });
+
+    const rated = await service.saveProblem({ ...buildProblem(), rating: Rating.Easy });
+    await service.saveNote('1', 'Edited after saving');
+    await expect(service.undoSave(rated.undoToken)).rejects.toThrow('changed');
+    expect((await readLearningDocument()).cards['1']).toEqual({ ...rated.card, note: 'Edited after saving' });
+  });
+
   it('preserves missing-card errors and harmless note deletion', async () => {
     const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
     expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
