@@ -1,0 +1,10 @@
+/* A hairline under a group header once it pins below the toolbar. */
+.card-group-header {
+  container-type: scroll-state;
+}
+
+@container scroll-state(stuck: top) {
+  .card-group-header > span {
+    border-bottom-color: var(--current-border);
+  }
+}

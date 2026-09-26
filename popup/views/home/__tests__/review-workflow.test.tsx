@@ -82,8 +82,8 @@ it('retains failed note drafts, retries a pending save and reopens the persisted
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   view.unmount();
 
-  const list = render(<CardsView />, { wrapper });
-  fireEvent.click(await screen.findByRole('button', { name: /#1 Two Sum/ }));
+  const list = render(<CardsView onBrowseRoadmaps={() => {}} />, { wrapper });
+  fireEvent.click(await screen.findByRole('button', { name: /1\. Two Sum/ }));
   expect(await screen.findByRole('textbox', { name: 'Note text' })).toHaveValue('Use a map');
   list.unmount();
 });
@@ -115,27 +115,27 @@ it('pauses, resumes and retries deletion through real card controls, requiring c
   expect((await readLearningDocument()).cards['1'].paused).toBe(true);
   queue.unmount();
 
-  const list = render(<CardsView />, { wrapper });
-  await screen.findByRole('button', { name: /#1 Two Sum/ });
-  click('Paused');
+  const list = render(<CardsView onBrowseRoadmaps={() => {}} />, { wrapper });
+  await screen.findByRole('button', { name: /1\. Two Sum/ });
+  fireEvent.click(screen.getByRole('button', { name: /^Paused/ }));
   expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /#1 Two Sum/ }));
+  fireEvent.click(screen.getByRole('button', { name: /1\. Two Sum/ }));
   click('Resume');
   await waitFor(() => expect(screen.queryByText('Two Sum')).not.toBeInTheDocument());
   expect((await readLearningDocument()).cards['1'].paused).toBe(false);
-  click('Paused');
-  fireEvent.click(screen.getByRole('button', { name: /#1 Two Sum/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Paused/ }));
+  fireEvent.click(screen.getByRole('button', { name: /1\. Two Sum/ }));
   await screen.findByRole('button', { name: 'Pause' });
   expect((await readLearningDocument()).cards['1'].paused).toBe(false);
-  click('Delete');
+  click('Delete card');
   expect((await readLearningDocument()).cards['1']).toBeDefined();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk unavailable'));
-  click('Confirm?');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled());
+  click('Confirm Delete?');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Delete card' })).toBeEnabled());
   expect((await readLearningDocument()).cards['1']).toBeDefined();
-  click('Delete');
-  click('Confirm?');
+  click('Delete card');
+  click('Confirm Delete?');
   await waitFor(() => expect(screen.queryByText('Two Sum')).not.toBeInTheDocument());
   expect((await readLearningDocument()).cards['1']).toBeUndefined();
   list.unmount();
@@ -172,12 +172,12 @@ it('imports a replacement into the visible card list and resets it after cancell
   vi.spyOn(console, 'error').mockImplementation(() => {});
   const { container } = render(
     <>
-      <CardsView />
+      <CardsView onBrowseRoadmaps={() => {}} />
       <DataSection />
     </>,
     { wrapper: createPopupTestWrapper().wrapper }
   );
-  fireEvent.click(await screen.findByRole('button', { name: /#1 Two Sum/ }));
+  fireEvent.click(await screen.findByRole('button', { name: /1\. Two Sum/ }));
   expect(await screen.findByRole('textbox', { name: 'Note text' })).toHaveValue('Old note');
   const saved = await readLearningDocument();
   const { note: _note, ...card } = saved.cards['1'];

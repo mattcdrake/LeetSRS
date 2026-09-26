@@ -2,7 +2,8 @@ import { State } from 'ts-fsrs';
 import { isDue } from './calendar';
 import type { Card } from './learning-document';
 
-export type CardFilter = 'due' | 'new' | 'paused';
+export const CARD_FILTERS = ['due', 'new', 'paused'] as const;
+export type CardFilter = (typeof CARD_FILTERS)[number];
 
 export function matchesCardFilters(card: Card, filters: readonly CardFilter[], now: number): boolean {
   const matches: Record<CardFilter, boolean> = {

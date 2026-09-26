@@ -17,6 +17,8 @@ import { CardsView } from '../CardsView';
 vi.mock('@/shared/background-service');
 vi.mock('@/popup/components/notes/NoteEditor', () => ({ NoteEditor: () => null }));
 
+const DAY = 86_400_000;
+
 let queryClient: QueryClient;
 let wrapper: ReturnType<typeof createTestWrapper>['wrapper'];
 
@@ -30,7 +32,10 @@ describe('CardsView', () => {
     setPopupLearningCardsQueryData(queryClient, cards);
   };
 
+  const onBrowseRoadmaps = vi.fn();
+
   beforeEach(() => {
+    onBrowseRoadmaps.mockReset();
     service.reset().resolve('waitForInitialization', undefined);
     ({ queryClient, wrapper } = createTestWrapper());
   });
@@ -41,9 +46,9 @@ describe('CardsView', () => {
       createMockCardWithProblem(State.New, { title: 'Active new', frontendId: '2' }),
       createMockCardWithProblem(State.Review, { title: 'Paused review', frontendId: '3', paused: true }),
     ]);
-    const view = renderWithQueryClient(<CardsView />);
+    const view = renderWithQueryClient(<CardsView onBrowseRoadmaps={onBrowseRoadmaps} />);
     const search = screen.getByRole('textbox');
-    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear search' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Paused new/ }));
     expect(screen.getByRole('button', { name: /Active new/ })).toHaveAttribute('aria-expanded', 'false');
     fireEvent.change(search, { target: { value: 'new' } });
@@ -51,11 +56,11 @@ describe('CardsView', () => {
     expect(screen.getByText('Active new')).toBeInTheDocument();
     expect(screen.queryByText('Paused review')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Paused new/ })).toHaveAttribute('aria-expanded', 'true');
-    fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(search).toHaveValue('');
     expect(screen.getByText('Paused review')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
-    for (const name of ['Due', 'New', 'Paused']) {
+    expect(screen.queryByRole('button', { name: 'Clear search' })).not.toBeInTheDocument();
+    for (const name of [/^Due/, /^New/, /^Paused \d/]) {
       const button = screen.getByRole('button', { name });
       fireEvent.click(button);
       expect(button).toHaveAttribute('aria-pressed', 'true');
@@ -64,22 +69,72 @@ describe('CardsView', () => {
     expect(screen.queryByText('Active new')).not.toBeInTheDocument();
     expect(screen.queryByText('Paused review')).not.toBeInTheDocument();
     fireEvent.change(search, { target: { value: 'review' } });
-    expect(screen.getByText('No cards match your filter.')).toBeInTheDocument();
-    expect(screen.queryByText('No cards added yet.')).not.toBeInTheDocument();
+    expect(screen.getByText('No matching cards')).toBeInTheDocument();
+    expect(screen.queryByText('No cards yet')).not.toBeInTheDocument();
     expect(search).toHaveValue('review');
-    fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
     expect(screen.getByRole('button', { name: /Paused new/ })).toHaveAttribute('aria-expanded', 'false');
     fireEvent.change(search, { target: { value: 'review' } });
-    fireEvent.click(screen.getByRole('button', { name: 'New' }));
-    expect(screen.getByRole('button', { name: 'New' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: /^New/ }));
+    expect(screen.getByRole('button', { name: /^New/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByText('Paused review')).toBeInTheDocument();
     view.rerender(<div />);
-    view.rerender(<CardsView />);
+    view.rerender(<CardsView onBrowseRoadmaps={onBrowseRoadmaps} />);
     expect(screen.getByRole('textbox')).toHaveValue('');
-    for (const name of ['Due', 'New', 'Paused']) {
+    for (const name of [/^Due/, /^New/, /^Paused \d/]) {
       expect(screen.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
     }
     expect(screen.getByText('Active new')).toBeInTheDocument();
+  });
+
+  it('counts each filter over all cards, combines them with AND and clears search and filters together', () => {
+    const now = Date.now();
+    seedCards(
+      (
+        [
+          [State.New, 'Due new', now - DAY],
+          [State.Review, 'Due review', now],
+          [State.New, 'Later new', now + 30 * DAY],
+        ] as const
+      ).map(([state, title, due], index) => {
+        const card = createMockCardWithProblem(state, { title, frontendId: String(index + 1) });
+        card.fsrs.due = due;
+        return card;
+      })
+    );
+    renderWithQueryClient(<CardsView onBrowseRoadmaps={onBrowseRoadmaps} />);
+
+    expect(screen.getByRole('button', { name: 'Due 2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New 2' })).toBeInTheDocument();
+    expect(screen.getByText('3 cards')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      'Overdue1',
+      'Today1',
+      'Later1',
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Due 2' }));
+    fireEvent.click(screen.getByRole('button', { name: 'New 2' }));
+    // Counts stay independent of the other filters, while results combine them.
+    expect(screen.getByRole('button', { name: 'Due 2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('1 of 3')).toBeInTheDocument();
+    expect(screen.getByText('Due new')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'missing' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Due 2' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('3 cards')).toBeInTheDocument();
+  });
+
+  it('offers roadmaps when there are no cards', () => {
+    seedCards([]);
+    renderWithQueryClient(<CardsView onBrowseRoadmaps={onBrowseRoadmaps} />);
+
+    expect(screen.getByText('No cards yet')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Browse roadmaps' }));
+    expect(onBrowseRoadmaps).toHaveBeenCalledOnce();
   });
 
   it('should link cards to their problem on the stored LeetCode domain', () => {
@@ -101,7 +156,7 @@ describe('CardsView', () => {
 
     seedCards(cards);
 
-    renderWithQueryClient(<CardsView />);
+    renderWithQueryClient(<CardsView onBrowseRoadmaps={onBrowseRoadmaps} />);
 
     expect(screen.getByRole('link', { name: 'Open Two Sum on LeetCode' })).toHaveAttribute(
       'href',

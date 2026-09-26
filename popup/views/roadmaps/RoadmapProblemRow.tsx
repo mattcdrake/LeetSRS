@@ -5,8 +5,8 @@ import { MetaItem } from '@/popup/components/MetaItem';
 import { ProblemLink } from '@/popup/components/ProblemLink';
 import { Tooltip } from '@/popup/components/Tooltip';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import { formatDue } from '@/popup/due';
 import { buttonInteraction, menuItem, menuPopover, problemRow } from '@/popup/styles';
-import { addLocalDays, isDue } from '@/shared/calendar';
 import type { CatalogProblem } from '@/shared/catalog';
 import type { Card, ProblemReference } from '@/shared/learning-document';
 import type { LeetcodeDomain } from '@/shared/leetcode-domain';
@@ -103,7 +103,7 @@ export function RoadmapProblemRow({
               {metadata && <Difficulty difficulty={metadata.difficulty} />}
               {card &&
                 (srsState === 'reviewed' ? (
-                  <MetaItem className="text-tertiary">{formatDue(card.fsrs.due, now, t)}</MetaItem>
+                  <DueItem due={card.fsrs.due} now={now} />
                 ) : (
                   <MetaItem className="text-accent">{t.roadmaps.new}</MetaItem>
                 ))}
@@ -157,12 +157,10 @@ export function RoadmapProblemRow({
   );
 }
 
-function formatDue(due: number, now: number, t: ReturnType<typeof useI18n>) {
-  const today = new Date(now);
-  if (isDue(due, today)) return t.roadmaps.dueToday;
-  // Round calendar-day differences so DST changes do not shift the count.
-  const days = Math.round((addLocalDays(new Date(due), 0).getTime() - addLocalDays(today, 0).getTime()) / 86_400_000);
-  return t.roadmaps.dueIn(t.format.intervalShort(days));
+function DueItem({ due, now }: { due: number; now: number }) {
+  const t = useI18n();
+  const { tone, label } = formatDue(due, now, t);
+  return <MetaItem className={tone === 'overdue' ? 'text-[var(--warning-text)]' : 'text-tertiary'}>{label}</MetaItem>;
 }
 
 function RowMenu({

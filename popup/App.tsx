@@ -68,7 +68,7 @@ function App() {
     home: <HomeView onOpenRoadmap={(roadmapId) => navigate('roadmaps', { roadmapId })} />,
     roadmaps: <RoadmapsView selectedRoadmapId={selectedRoadmapId} onSelect={setSelectedRoadmapId} />,
     calendar: <CalendarView />,
-    card: <CardsView />,
+    card: <CardsView onBrowseRoadmaps={() => navigate('roadmaps')} />,
     settings: (
       <SettingsView
         highlightGithubSignIn={highlight === 'githubSignIn'}
