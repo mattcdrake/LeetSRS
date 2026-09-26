@@ -237,7 +237,12 @@ export async function getGithubAuthorization() {
       throw new GithubAuthorizationError('GitHub account changed');
     }
     signal.throwIfAborted();
-    return auth;
+    if (account.login === auth.account.login) return auth;
+    // Keep a renamed login current in Settings.
+    const renamed = { ...auth, account };
+    await githubAuthorizationItem.setValue(renamed);
+    signal.throwIfAborted();
+    return renamed;
   })();
   refreshing = attempt;
   try {
