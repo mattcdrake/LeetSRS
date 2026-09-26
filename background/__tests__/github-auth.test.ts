@@ -116,7 +116,7 @@ it('shares concurrent refreshes and persists rotated credentials before returnin
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(settled).not.toHaveBeenCalled();
   expect(await githubAuthorizationItem.getValue()).toEqual(expired);
-  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(fetch).toHaveBeenCalledOnce();
   expect(fetch).toHaveBeenNthCalledWith(
     1,
     'https://auth.leetsrs.com/refresh',
@@ -157,6 +157,24 @@ it('keeps saved authorization unchanged on refresh failure and allows retry', as
   await expect(getGithubAuthorization()).rejects.toThrow();
   expect(await githubAuthorizationItem.getValue()).toEqual(expired);
   expect((await getGithubAuthorization()).refreshToken).toBe('rotated');
+});
+it('signs out instead of retrying when GitHub rejects the refresh token', async () => {
+  await seedGithubAuthorization();
+  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
+  await githubAuthorizationItem.setValue({ ...saved, expiresAt: 0 });
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json({ error: 'authorization_failed' }, { status: 400 }));
+  await expect(getGithubAuthorization()).rejects.toThrow();
+  await expect(getGithubAuthorization()).rejects.toThrow('Sign in with GitHub');
+  expect(fetch).toHaveBeenCalledOnce();
+  expect((await getGithubAuthStatus()).account).toBeNull();
+});
+it('keeps rotated credentials when account validation fails after refresh', async () => {
+  await seedGithubAuthorization();
+  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
+  await githubAuthorizationItem.setValue({ ...saved, expiresAt: 0 });
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(token)).mockRejectedValueOnce(new Error('Offline'));
+  await expect(getGithubAuthorization()).rejects.toThrow();
+  expect(await githubAuthorizationItem.getValue()).toMatchObject({ refreshToken: 'rotated' });
 });
 
 it('requires sign-out before starting another account sign-in', async () => {

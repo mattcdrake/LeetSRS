@@ -68,7 +68,10 @@ function base64url(bytes: Uint8Array): string {
     .replace(/=+$/, '');
 }
 
-async function exchange(path: string, payload: Record<string, string>) {
+// The auth worker answers 400 when GitHub rejects the code or refresh token; retrying cannot succeed.
+class RejectedAuthorizationError extends GithubAuthorizationError {}
+
+async function requestTokens(path: 'exchange' | 'refresh', payload: Record<string, string>) {
   const response = await fetch(`${AUTH_ORIGIN}/${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -77,17 +80,25 @@ async function exchange(path: string, payload: Record<string, string>) {
     credentials: 'omit',
     signal: AbortSignal.timeout(20000),
   });
+  if (response.status === 400) throw new RejectedAuthorizationError('GitHub rejected the authorization');
   if (!response.ok) throw new GithubAuthorizationError('GitHub authorization failed');
-  const token = tokenSchema.parse(await response.json());
-  const accountResponse = await fetch('https://api.github.com/user', {
-    headers: { Authorization: `Bearer ${token.access_token}`, Accept: 'application/vnd.github+json' },
+  return tokenSchema.parse(await response.json());
+}
+
+async function fetchAccount(accessToken: string) {
+  const response = await fetch('https://api.github.com/user', {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/vnd.github+json' },
     cache: 'no-store',
     credentials: 'omit',
     signal: AbortSignal.timeout(20000),
   });
-  if (!accountResponse.ok) throw new GithubAuthorizationError('GitHub account validation failed');
+  if (!response.ok) throw new GithubAuthorizationError('GitHub account validation failed');
+  return accountSchema.parse(await response.json());
+}
+
+function toAuthorization(account: z.infer<typeof accountSchema>, token: z.infer<typeof tokenSchema>) {
   return {
-    account: accountSchema.parse(await accountResponse.json()),
+    account,
     accessToken: token.access_token,
     refreshToken: token.refresh_token,
     expiresAt: Date.now() + token.expires_in * 1000,
@@ -180,7 +191,8 @@ function launchGithubSignIn(): void {
       throw new Error('Invalid OAuth callback');
     const code = callback.searchParams.get('code');
     if (!code || signal.aborted) throw new Error('Sign-in cancelled');
-    const auth = await exchange('exchange', { code, code_verifier: verifier, redirect_uri: redirectUri });
+    const token = await requestTokens('exchange', { code, code_verifier: verifier, redirect_uri: redirectUri });
+    const auth = toAuthorization(await fetchAccount(token.access_token), token);
     if (signal.aborted) return;
     await storage.setItems([
       { item: githubAuthorizationItem, value: auth },
@@ -206,10 +218,24 @@ export async function getGithubAuthorization() {
   if (saved.refreshExpiresAt <= Date.now()) throw new GithubAuthorizationError('Sign in with GitHub');
   if (refreshing) return refreshing;
   const attempt = (async () => {
-    const auth = await exchange('refresh', { refresh_token: saved.refreshToken });
-    if (auth.account.id !== saved.account.id) throw new GithubAuthorizationError('GitHub account changed');
+    let token: z.infer<typeof tokenSchema>;
+    try {
+      token = await requestTokens('refresh', { refresh_token: saved.refreshToken });
+    } catch (error) {
+      // Sign out rather than retry a revoked or already-rotated refresh token on every sync.
+      if (error instanceof RejectedAuthorizationError && !signal.aborted) await clearGithubAuthorization();
+      throw error;
+    }
     signal.throwIfAborted();
+    // GitHub rotates the refresh token, so save it before the account check can fail.
+    const auth = toAuthorization(saved.account, token);
     await githubAuthorizationItem.setValue(auth);
+    signal.throwIfAborted();
+    const account = await fetchAccount(auth.accessToken);
+    if (account.id !== saved.account.id) {
+      if (!signal.aborted) await clearGithubAuthorization();
+      throw new GithubAuthorizationError('GitHub account changed');
+    }
     signal.throwIfAborted();
     return auth;
   })();
