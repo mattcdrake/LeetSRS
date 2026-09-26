@@ -75,6 +75,19 @@ body {
   --switch-off: #a1a1aa;
 }
 
+/* The shared rating anatomy (shared/ui/rating.css) reads --ls-* tokens. Declared on :root, where
+   .dark also lands, so the aliases follow the theme. */
+:root {
+  --ls-surface: var(--current-bg-surface);
+  --ls-raised: var(--current-bg-secondary);
+  --ls-fg: var(--current-text-primary);
+  --ls-fg-2: var(--current-text-secondary);
+  --ls-fg-3: var(--current-text-tertiary);
+  --ls-line: var(--current-border);
+  --ls-brand: var(--current-brand);
+  --ls-focus: var(--current-accent);
+}
+
 /* Dark theme overrides */
 .dark {
   --current-bg-primary: #111113;

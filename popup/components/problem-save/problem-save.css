@@ -125,87 +125,8 @@
   outline-offset: -2px;
 }
 
-.problem-save-sheet .rating-options {
-  gap: 2px;
-  padding: 0 8px;
-}
-
-.problem-save-sheet .rating-row {
-  gap: 12px;
-  min-height: 44px;
-  padding: 0 10px;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--current-text-primary);
-}
-
-.problem-save-sheet .rating-row[data-hovered] {
-  background: color-mix(in srgb, var(--rating-color) 10%, var(--current-bg-surface));
-}
-
-.problem-save-sheet .rating-stripe {
-  align-self: center;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.problem-save-sheet .rating-label {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.problem-save-sheet .rating-label small {
-  display: inline;
-  overflow: hidden;
-  color: var(--current-text-tertiary);
-  font-size: 12px;
-  font-weight: 400;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.problem-save-sheet .rating-interval {
-  color: var(--current-text-secondary);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.problem-save-sheet .rating-without {
-  position: relative;
-  gap: 12px;
-  width: calc(100% - 16px);
-  min-height: 40px;
-  margin: 13px 8px 0;
-  padding: 0 10px;
-  border-top: 0;
-  border-radius: 8px;
-  color: var(--current-text-secondary);
-  font-size: 13px;
-}
-
-/* A full-width hairline above the footer row. */
-.problem-save-sheet .rating-without::before {
-  content: "";
-  position: absolute;
-  top: -7px;
-  right: -8px;
-  left: -8px;
-  border-top: 1px solid var(--current-border);
-}
-
-.problem-save-sheet .rating-without[data-hovered] {
-  background: var(--current-bg-secondary);
-}
-
-.problem-save-sheet .rating-options:last-child,
-.problem-save-sheet .rating-without:last-child {
-  margin-bottom: 10px;
+.problem-save-sheet .rating-options:last-child {
+  padding-bottom: 10px;
 }
 
 .problem-save-sheet .rating-error {

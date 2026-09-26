@@ -8,15 +8,18 @@ import {
 import {
   addCard,
   delayCard,
+  getCardStatus,
   importData,
   previewRatings,
   rateCard,
   removeCard,
   resetAllData,
   saveNote,
+  saveProblem,
   setActiveRoadmap,
   setPauseStatus,
   setRoadmapProblemSkipped,
+  undoSave,
   updateSettings,
 } from '@/background/learning';
 import { dismissMigrationNotice } from '@/background/legacy/github-pat';
@@ -31,7 +34,12 @@ import {
 } from '@/background/sync';
 import { catalogProblemSchema, getProblemBySlug } from '@/shared/catalog';
 import { gistSetupSchema } from '@/shared/gist-sync';
-import { noteTextSchema, problemReferenceSchema, rateCardInputSchema } from '@/shared/learning-document';
+import {
+  noteTextSchema,
+  problemReferenceSchema,
+  rateCardInputSchema,
+  saveProblemInputSchema,
+} from '@/shared/learning-document';
 import { roadmapIdSchema } from '@/shared/roadmap';
 import { settingsUpdateSchema } from '@/shared/settings';
 
@@ -75,6 +83,9 @@ export function createBackgroundService(ready: Promise<void>) {
     delayCard: command(z.tuple([frontendId, z.int().nonnegative()]), delayCard),
     setPauseStatus: command(z.tuple([frontendId, z.boolean()]), setPauseStatus),
     rateCard: command(z.tuple([rateCardInputSchema]), rateCard),
+    getCardStatus: command(z.tuple([frontendId]), getCardStatus),
+    saveProblem: command(z.tuple([saveProblemInputSchema]), saveProblem),
+    undoSave: command(z.tuple([z.string()]), undoSave),
     saveNote: command(z.tuple([frontendId, noteTextSchema]), saveNote),
     updateSettings: command(z.tuple([settingsUpdateSchema]), updateSettings),
     setActiveRoadmap: command(z.tuple([roadmapIdSchema.nullable()]), setActiveRoadmap),

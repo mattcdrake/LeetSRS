@@ -75,8 +75,7 @@ it('opens one panel for an accepted submission, saves a review, and ignores dupl
   await waitFor(() => expect(good).toBeEnabled());
   expect(ui.getAllByRole('dialog')).toHaveLength(1);
   fireEvent.click(good);
-  expect(await ui.findByRole('status')).toHaveTextContent('Saved · Review in 3 days');
-  expect(ui.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+  expect(await ui.findByRole('status')).toHaveTextContent(/^Saved as GoodReview in 3 days · \w{3}, \w{3} \d+$/);
   expect((await readLearningDocument()).cards['1'].fsrs.reps).toBe(1);
   expect((await readLearningDocument()).reviewActivity?.newCards).toBe(1);
   fireEvent.keyDown(ui.getByRole('dialog'), { key: 'Escape' });

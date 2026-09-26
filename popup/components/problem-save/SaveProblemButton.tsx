@@ -183,6 +183,7 @@ function SaveProblemMenu({
         disabled={busy}
         onSave={onSave}
         allowUnrated={!target.isSaved}
+        size="comfortable"
       />
       {busy && (
         <p className="rating-error" role="status">

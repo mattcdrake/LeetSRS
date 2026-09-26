@@ -67,8 +67,10 @@ describe('content startup', () => {
 
     const container = requireDefined(document.querySelector('leetsrs-toast'));
     const toast = requireDefined(container.shadowRoot?.querySelector('[role="status"]'));
-    expect(toast).toHaveTextContent('Code reset to default');
-    act(() => vi.advanceTimersByTime(2800));
+    expect(toast).toHaveTextContent('Code reset for today’s review');
+    act(() => vi.advanceTimersByTime(4000));
+    expect(container.isConnected).toBe(true);
+    act(() => vi.advanceTimersByTime(200));
     expect(container.isConnected).toBe(false);
     expect(vi.getTimerCount()).toBe(baselineTimers);
   });

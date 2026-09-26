@@ -52,6 +52,8 @@ export const cardSchema = problemReferenceSchema
 
 export const rateCardInputSchema = problemReferenceSchema.extend({ rating: ratingSchema });
 export type RateCardInput = z.infer<typeof rateCardInputSchema>;
+export const saveProblemInputSchema = problemReferenceSchema.extend({ rating: ratingSchema.optional() });
+export type SaveProblemInput = z.infer<typeof saveProblemInputSchema>;
 export type Card = z.infer<typeof cardSchema>;
 export const LEARNING_DOCUMENT_VERSION = 12;
 
