@@ -9,7 +9,7 @@
   "observability": { "enabled": false },
   "vars": {
     "GITHUB_CLIENT_ID": "Ov23liipyHCsyLrx9Aaf",
-    "ALLOWED_CALLBACKS": "https://odgfcigkohoimpeeooifjdglncggkgko.chromiumapp.org/"
+    "ALLOWED_CALLBACKS": "https://odgfcigkohoimpeeooifjdglncggkgko.chromiumapp.org/,https://fec292f403871813f2c7a41024e0a452037396d7.extensions.allizom.org/"
   },
   "ratelimits": [
     {

@@ -35,40 +35,44 @@ beforeEach(async () => {
 async function finishSignIn() {
   await vi.waitFor(async () => expect((await getGithubAuthStatus()).signingIn).toBe(false));
 }
-function acceptSignIn() {
+function acceptSignIn(redirectUri = callback) {
   vi.spyOn(browser.identity, 'launchWebAuthFlow').mockImplementation(
-    async ({ url }) => `${callback}?code=code&state=${new URL(url).searchParams.get('state')}`
+    async ({ url }) => `${redirectUri}?code=code&state=${new URL(url).searchParams.get('state')}`
   );
 }
-it('validates state and uses PKCE, saves credentials locally, and does not enable sync', async () => {
-  acceptSignIn();
-  await startGithubSignIn();
-  await finishSignIn();
-  expect(await getGithubAuthStatus()).toMatchObject({ account: { id: 1, login: 'tester' }, error: null });
-  expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-  expect(await fakeBrowser.storage.sync.get()).toEqual({});
-  const request = vi.mocked(browser.identity.launchWebAuthFlow).mock.calls[0][0];
-  const url = new URL(request.url);
-  expect(url.searchParams.get('client_id')).toBe('client');
-  expect(url.searchParams.get('redirect_uri')).toBe(callback);
-  expect(url.searchParams.get('scope')).toBe('gist offline_access');
-  expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-  expect(fetch).toHaveBeenNthCalledWith(
-    1,
-    'https://auth.leetsrs.com/exchange',
-    expect.objectContaining({ method: 'POST' })
-  );
-  const payload = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
-  expect(payload).toEqual({
-    code: 'code',
-    code_verifier: expect.stringMatching(/^[A-Za-z0-9._~-]{43,128}$/),
-    redirect_uri: callback,
-  });
-  expect(url.searchParams.get('code_challenge')).toBe(
-    createHash('sha256').update(payload.code_verifier).digest('base64url')
-  );
-  expect(JSON.stringify(await getGithubAuthStatus())).not.toMatch(/access|rotated/);
-});
+it.each([callback, 'https://fec292f403871813f2c7a41024e0a452037396d7.extensions.allizom.org/'])(
+  'validates state and PKCE without enabling sync for %s',
+  async (redirectUri) => {
+    vi.mocked(browser.identity.getRedirectURL).mockReturnValue(redirectUri);
+    acceptSignIn(redirectUri);
+    await startGithubSignIn();
+    await finishSignIn();
+    expect(await getGithubAuthStatus()).toMatchObject({ account: { id: 1, login: 'tester' }, error: null });
+    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
+    expect(await fakeBrowser.storage.sync.get()).toEqual({});
+    const request = vi.mocked(browser.identity.launchWebAuthFlow).mock.calls[0][0];
+    const url = new URL(request.url);
+    expect(url.searchParams.get('client_id')).toBe('client');
+    expect(url.searchParams.get('redirect_uri')).toBe(redirectUri);
+    expect(url.searchParams.get('scope')).toBe('gist offline_access');
+    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      'https://auth.leetsrs.com/exchange',
+      expect.objectContaining({ method: 'POST' })
+    );
+    const payload = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+    expect(payload).toEqual({
+      code: 'code',
+      code_verifier: expect.stringMatching(/^[A-Za-z0-9._~-]{43,128}$/),
+      redirect_uri: redirectUri,
+    });
+    expect(url.searchParams.get('code_challenge')).toBe(
+      createHash('sha256').update(payload.code_verifier).digest('base64url')
+    );
+    expect(JSON.stringify(await getGithubAuthStatus())).not.toMatch(/access|rotated/);
+  }
+);
 it.each(['state', 'origin', 'cancel', 'exchange', 'account'])(
   'handles %s failure without saving authorization',
   async (failure) => {

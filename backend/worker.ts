@@ -10,6 +10,8 @@ export interface Env {
 const MAX_BODY_BYTES = 4096;
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token';
 const GITHUB_TIMEOUT_MS = 15000;
+const CHROME_CALLBACK = /^https:\/\/[a-p]{32}\.chromiumapp\.org\/$/;
+const FIREFOX_CALLBACK = /^https:\/\/[a-f0-9]{40}\.extensions\.allizom\.org\/$/;
 
 // These field names match GitHub's OAuth API.
 const exchangeSchema = z.strictObject({
@@ -48,11 +50,10 @@ export default {
         return respond(503, { error: 'not_configured' });
       }
 
-      // A Chrome callback host identifies the extension allowed to call us.
-      // Requests without Origin are still checked by the rate limiter and GitHub.
+      // Origin filtering is not authentication; GitHub validates credentials and PKCE.
+      // Firefox extension origins use per-install UUIDs, unrelated to the callback ID.
       const origin = request.headers.get('Origin');
-      const allowedOrigins = callbacks.map(extensionOriginForCallback);
-      if (origin && !allowedOrigins.includes(origin)) {
+      if (origin && !isAllowedOrigin(origin, callbacks)) {
         return respond(403, { error: 'origin_denied' });
       }
       if (origin) headers.set('Access-Control-Allow-Origin', origin);
@@ -110,16 +111,25 @@ export default {
 };
 
 function getAllowedCallbacks(config: string): string[] {
-  const chromeCallback = /^https:\/\/[a-p]{32}\.chromiumapp\.org\/$/;
   return config
     .split(',')
     .map((url) => url.trim())
-    .filter((url) => chromeCallback.test(url));
+    .filter((url) => CHROME_CALLBACK.test(url) || FIREFOX_CALLBACK.test(url));
 }
 
-function extensionOriginForCallback(callback: string): string {
-  const extensionId = new URL(callback).hostname.split('.')[0];
-  return `chrome-extension://${extensionId}`;
+function isAllowedOrigin(origin: string, callbacks: string[]): boolean {
+  if (origin.startsWith('moz-extension://')) {
+    // A fixed Firefox origin cannot be allowlisted across installations. Only enable
+    // this transport when Firefox is configured; exchanges still require an exact callback.
+    return (
+      callbacks.some((callback) => FIREFOX_CALLBACK.test(callback)) &&
+      /^moz-extension:\/\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(origin)
+    );
+  }
+  return callbacks.some(
+    (callback) =>
+      CHROME_CALLBACK.test(callback) && origin === `chrome-extension://${new URL(callback).hostname.split('.')[0]}`
+  );
 }
 
 async function isWithinRateLimit(request: Request, env: Env): Promise<boolean> {

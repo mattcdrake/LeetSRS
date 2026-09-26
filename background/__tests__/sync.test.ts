@@ -9,7 +9,9 @@ import {
   readLearningDocument,
   replaceLearningDocument,
 } from '@/shared/learning-document';
+import { createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
+import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import * as syncModule from '../sync';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn(), list: vi.fn() }));
@@ -55,6 +57,34 @@ describe('whole-document Gist sync', () => {
 
     expect(await syncModule.setupGistSync(setup)).toEqual({ saved: false, error });
     expect(await readGistConnection()).toEqual(connection);
+  });
+
+  it('downloads existing history on first connection after changing a fresh browser setting', async () => {
+    await resetAllData();
+    await seedGithubAuthorization();
+    await updateSettings({ resetEditorOnReviewQueue: false });
+    expect((await readLearningDocument()).dataUpdatedAt).toBe(now);
+    const remote = buildLearningDocument({
+      cards: { '1': createMockCard(2) },
+      reviewActivity: { date: '2026-09-12', newCards: 1, streak: 5 },
+      dataUpdatedAt: '2026-09-12T12:00:00.000Z',
+    });
+    github.get.mockResolvedValue({
+      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },
+    });
+
+    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'gist' })).toEqual({ saved: true });
+    await syncModule.sync();
+
+    expect(github.update).not.toHaveBeenCalled();
+    expect(await readLearningDocument()).toEqual(remote);
+    expect(await readGistConnection()).toEqual(connection);
+
+    await updateSettings({ theme: 'light' });
+    await syncModule.sync();
+    const uploaded = JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content);
+    expect(uploaded.cards).toEqual(remote.cards);
+    expect(uploaded.reviewActivity).toEqual(remote.reviewActivity);
   });
 
   it('paginates owned backups and only suggests an owned previous destination', async () => {

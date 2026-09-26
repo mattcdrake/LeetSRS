@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { browser } from 'wxt/browser';
 import { background } from '@/shared/background-service';
-import { GITHUB_HOST_PERMISSIONS } from '@/shared/gist-sync';
+import { GITHUB_PERMISSIONS } from '@/shared/gist-sync';
 import { gistSyncQueryKeys } from './gist-sync';
 
 const permissionQueryKey = ['capabilities', 'github'] as const;
@@ -11,7 +11,7 @@ export function useGithubPermissions() {
   const client = useQueryClient();
   const permission = useQuery({
     queryKey: permissionQueryKey,
-    queryFn: () => browser.permissions.contains(GITHUB_HOST_PERMISSIONS),
+    queryFn: () => browser.permissions.contains(GITHUB_PERMISSIONS),
     refetchOnMount: 'always',
   });
   useEffect(() => {
@@ -51,7 +51,7 @@ export function useGithubPermissions() {
     // Preserve the click gesture: request before React Query's asynchronous lifecycle.
     let permission: Promise<boolean>;
     try {
-      permission = browser.permissions.request(GITHUB_HOST_PERMISSIONS);
+      permission = browser.permissions.request(GITHUB_PERMISSIONS);
     } catch (error) {
       permission = Promise.reject(error);
     }

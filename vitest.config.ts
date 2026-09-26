@@ -11,5 +11,5 @@ export default defineConfig({
     restoreMocks: true,
     setupFiles: './test/setup.ts',
   },
-  plugins: [WxtVitest()],
+  plugins: [WxtVitest({ browser: process.env.TEST_BROWSER ?? 'chrome' })],
 });

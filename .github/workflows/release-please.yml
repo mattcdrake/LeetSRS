@@ -43,7 +43,9 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         env:
           WXT_GITHUB_CLIENT_ID: ${{ secrets.WXT_GITHUB_CLIENT_ID }}
-        run: npm run zip
+        run: |
+          npm run zip
+          npm run zip:firefox
 
       - name: Upload release ZIPs
         if: ${{ steps.release.outputs.release_created }}

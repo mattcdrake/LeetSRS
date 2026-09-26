@@ -54,3 +54,11 @@ jobs:
 
       - name: Build extension
         run: npm run build
+
+      - name: Test Firefox permissions and auth
+        run: TEST_BROWSER=firefox npm test -- background/__tests__/github-auth.test.ts popup/views/settings/__tests__/GistSyncSection.test.tsx
+
+      - name: Build and validate Firefox extension
+        run: |
+          npm run build:firefox
+          npm run lint:firefox
