@@ -383,6 +383,7 @@ const zhCN: Translations = {
     autoOpenHint: '每次通过后自动打开。',
     turnOff: '关闭',
     turnOffAutoOpen: '关闭自动打开',
+    turnOffFailed: '无法关闭自动打开，请重试。',
     saved: '已保存',
     savedAs: (rating: string) => `已保存为「${rating}」`,
     reviewDate: (date: Date) =>

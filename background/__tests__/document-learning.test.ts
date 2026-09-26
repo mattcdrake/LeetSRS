@@ -139,26 +139,42 @@ describe('document learning through background commands', () => {
     });
   });
 
-  it('undoes the latest panel save only while the saved card is unchanged', async () => {
+  it('undoes the latest panel save only while its card and review activity are unchanged', async () => {
     const service = getRegisteredBackground();
     const existing = createMockCard(State.Review, buildProblem());
     const before = { ...(await readLearningDocument()), cards: { '1': existing } };
     before.reviewActivity = { date: '2024-03-14', newCards: 1, streak: 4 };
     await replaceLearningDocument(before);
-    const first = await service.saveProblem({ ...buildProblem(), rating: Rating.Good });
-    await service.undoSave(first.undoToken);
+    const first = requireDefined((await service.saveProblem({ ...buildProblem(), rating: Rating.Good })).undoToken);
+    await service.undoSave(first);
     expect(await readLearningDocument()).toEqual({ ...before, dataUpdatedAt: new Date().toISOString() });
-    await expect(service.undoSave(first.undoToken)).rejects.toThrow();
+    await expect(service.undoSave(first)).rejects.toThrow();
 
     const added = await service.saveProblem(buildProblem({ frontendId: '2' }));
     expect(added.card.fsrs.reps).toBe(0);
-    await service.undoSave(added.undoToken);
-    expect((await readLearningDocument()).cards).toEqual({ '1': existing });
+    await service.rateCard({ ...buildProblem({ frontendId: '3' }), rating: Rating.Good });
+    const activity = (await readLearningDocument()).reviewActivity;
+    await service.undoSave(requireDefined(added.undoToken));
+    expect(await readLearningDocument()).toMatchObject({ cards: { '1': existing }, reviewActivity: activity });
+    expect((await readLearningDocument()).cards['2']).toBeUndefined();
 
     const rated = await service.saveProblem({ ...buildProblem(), rating: Rating.Easy });
     await service.saveNote('1', 'Edited after saving');
-    await expect(service.undoSave(rated.undoToken)).rejects.toThrow('changed');
+    await expect(service.undoSave(requireDefined(rated.undoToken))).rejects.toThrow('changed');
     expect((await readLearningDocument()).cards['1']).toEqual({ ...rated.card, note: 'Edited after saving' });
+
+    const reviewed = await service.saveProblem({ ...buildProblem({ frontendId: '4' }), rating: Rating.Good });
+    await service.rateCard({ ...buildProblem({ frontendId: '5' }), rating: Rating.Good });
+    await expect(service.undoSave(requireDefined(reviewed.undoToken))).rejects.toThrow('changed');
+    expect((await readLearningDocument()).cards['4']).toEqual(reviewed.card);
+  });
+
+  it('reports a committed panel save as saved when its undo cannot be recorded', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(fakeBrowser.storage.session, 'set').mockRejectedValueOnce(new Error('Quota exceeded'));
+    const saved = await getRegisteredBackground().saveProblem({ ...buildProblem(), rating: Rating.Good });
+    expect(saved.undoToken).toBeNull();
+    expect((await readLearningDocument()).cards['1']).toEqual(saved.card);
   });
 
   it('preserves missing-card errors and harmless note deletion', async () => {

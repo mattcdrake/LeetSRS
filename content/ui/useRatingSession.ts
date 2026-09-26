@@ -8,13 +8,13 @@ export type SavedConfirmation = {
   rating?: Grade;
   scheduledDays: number;
   due: number;
-  undoToken: string;
+  undoToken: string | null;
 };
 
 // Lives with the toolbar control, so dismissal cannot lose an in-flight save.
 export function useRatingSession(openRequest: number) {
   const [confirmation, setConfirmation] = useState<SavedConfirmation>();
-  const [error, setError] = useState<'save' | 'undo'>();
+  const [error, setError] = useState<'save' | 'undo' | 'settings'>();
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const saved = confirmation?.request === openRequest ? confirmation : undefined;
@@ -26,7 +26,7 @@ export function useRatingSession(openRequest: number) {
     }
   }, [saved]);
 
-  async function run(action: () => Promise<void>, failure: 'save' | 'undo') {
+  async function run(action: () => Promise<void>, failure: 'save' | 'undo' | 'settings') {
     if (pending.current) return false;
     pending.current = true;
     setBusy(true);
@@ -71,7 +71,7 @@ export function useRatingSession(openRequest: number) {
       }, 'undo');
     },
     disableAutoOpen() {
-      return run(() => background.updateSettings({ openRatingAfterSolving: false }), 'save');
+      return run(() => background.updateSettings({ openRatingAfterSolving: false }), 'settings');
     },
   };
 }

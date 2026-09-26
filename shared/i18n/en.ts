@@ -414,6 +414,7 @@ const en = {
     autoOpenHint: 'Opens after each accepted solve.',
     turnOff: 'Turn off',
     turnOffAutoOpen: 'Turn off auto-open',
+    turnOffFailed: 'Could not turn off auto-open. Try again.',
     saved: 'Saved',
     savedAs: (rating: string) => `Saved as ${rating}`,
     reviewDate: (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),

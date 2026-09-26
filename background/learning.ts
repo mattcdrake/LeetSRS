@@ -129,17 +129,21 @@ const undoSnapshotSchema = z.object({
   token: z.string(),
   frontendId: z.string(),
   previousCard: cardSchema.nullable(),
-  previousActivity: reviewActivitySchema.nullable(),
   savedCard: cardSchema,
+  // Only rated saves record review activity.
+  activity: z.object({ previous: reviewActivitySchema.nullable(), saved: reviewActivitySchema.nullable() }).nullable(),
 });
 type UndoSnapshot = z.infer<typeof undoSnapshotSchema>;
 const undoSnapshotItem = storage.defineItem<UndoSnapshot>('session:leetsrs:undoSnapshot');
 
+const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
 // Rates or adds a problem from the rating panel and records how to undo it.
+// Returns a null token when the save succeeded but cannot be undone.
 export async function saveProblem({
   rating,
   ...problem
-}: SaveProblemInput): Promise<{ card: Card; undoToken: string }> {
+}: SaveProblemInput): Promise<{ card: Card; undoToken: string | null }> {
   let snapshot: UndoSnapshot | undefined;
   await edit((document, now) => {
     const previousCard = findCard(document, problem.frontendId);
@@ -147,37 +151,47 @@ export async function saveProblem({
       token: crypto.randomUUID(),
       frontendId: problem.frontendId,
       previousCard: previousCard ? structuredClone(previousCard) : null,
-      previousActivity: document.reviewActivity,
     };
     if (rating !== undefined) {
-      snapshot = { ...previous, savedCard: structuredClone(applyRating(document, { ...problem, rating }, now)) };
+      const activity = document.reviewActivity;
+      const savedCard = structuredClone(applyRating(document, { ...problem, rating }, now));
+      snapshot = { ...previous, savedCard, activity: { previous: activity, saved: document.reviewActivity } };
       return;
     }
     if (previousCard) {
-      snapshot = { ...previous, savedCard: previousCard };
+      snapshot = { ...previous, savedCard: previousCard, activity: null };
       return UNCHANGED;
     }
     const card = createCard(problem, now);
     document.cards[problem.frontendId] = card;
-    snapshot = { ...previous, savedCard: structuredClone(card) };
+    snapshot = { ...previous, savedCard: structuredClone(card), activity: null };
   });
   const saved = undoSnapshotSchema.parse(snapshot);
-  await undoSnapshotItem.setValue(saved);
+  try {
+    await undoSnapshotItem.setValue(saved);
+  } catch (error) {
+    // The save is already committed, so reporting a failure would invite a second rating.
+    console.error('Could not record undo for the saved problem:', error);
+    return { card: saved.savedCard, undoToken: null };
+  }
   return { card: saved.savedCard, undoToken: saved.token };
 }
 
-// Restores the document from before a save, unless the card changed since.
+// Restores the document from before a save, unless the card or review activity changed since.
 export async function undoSave(token: string): Promise<void> {
   const snapshot = undoSnapshotSchema.safeParse(await undoSnapshotItem.getValue()).data;
   if (snapshot?.token !== token) throw new Error('This save can no longer be undone');
   await edit((document) => {
     const current = findCard(document, snapshot.frontendId);
-    if (!current || JSON.stringify(cardSchema.parse(current)) !== JSON.stringify(snapshot.savedCard)) {
+    if (!current || !sameValue(cardSchema.parse(current), snapshot.savedCard)) {
       throw new Error('The card changed after saving');
+    }
+    if (snapshot.activity && !sameValue(document.reviewActivity, snapshot.activity.saved)) {
+      throw new Error('Review activity changed after saving');
     }
     if (snapshot.previousCard) document.cards[snapshot.frontendId] = snapshot.previousCard;
     else delete document.cards[snapshot.frontendId];
-    document.reviewActivity = snapshot.previousActivity;
+    if (snapshot.activity) document.reviewActivity = snapshot.activity.previous;
   });
   await undoSnapshotItem.removeValue();
 }

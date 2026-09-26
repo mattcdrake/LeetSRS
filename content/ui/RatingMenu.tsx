@@ -222,6 +222,11 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
           className={showSaved ? undefined : 'mt-1.5'}
         />
       )}
+      {!showSaved && session.error === 'settings' && (
+        <div className="mt-1.5">
+          <ErrorBanner>{t.contentScript.turnOffFailed}</ErrorBanner>
+        </div>
+      )}
       {!showSaved && hint && !loadFailed && (
         <div className="mt-1.5 flex h-10 items-center gap-1.5 border-t border-line px-3.5 text-[12px] text-fg-3">
           <span className="truncate">{t.contentScript.autoOpenHint}</span>
@@ -229,11 +234,13 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
             className="shrink-0 cursor-pointer rounded-sm font-medium text-fg-2 hover:underline data-focus-visible:outline-2 data-focus-visible:outline-focus data-focus-visible:outline-offset-2"
             aria-label={t.contentScript.turnOffAutoOpen}
             isDisabled={busy}
-            onPress={() =>
+            onPress={() => {
+              // The button disables while saving, so keep focus on the panel.
+              container.current?.focus();
               void session.disableAutoOpen().then((disabled) => {
                 if (disabled) setHint(false);
-              })
-            }
+              });
+            }}
           >
             {t.contentScript.turnOff}
           </Button>
@@ -275,14 +282,16 @@ function SavedView({
           </div>
         )}
       </div>
-      <Button
-        className="-mr-1.5 flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] font-medium text-fg-2 hover:bg-raised data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-focus-visible:outline-focus"
-        isDisabled={busy}
-        onPress={onUndo}
-      >
-        <LuUndo2 className="size-3.5" aria-hidden="true" />
-        {t.contentScript.undo}
-      </Button>
+      {saved.undoToken && (
+        <Button
+          className="-mr-1.5 flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] font-medium text-fg-2 hover:bg-raised data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-focus-visible:outline-focus"
+          isDisabled={busy}
+          onPress={onUndo}
+        >
+          <LuUndo2 className="size-3.5" aria-hidden="true" />
+          {t.contentScript.undo}
+        </Button>
+      )}
     </div>
   );
 }
