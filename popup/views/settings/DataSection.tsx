@@ -1,10 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import { Button } from 'react-aria-components';
-import { FaDownload, FaTrashCan, FaUpload } from 'react-icons/fa6';
+import type { IconType } from 'react-icons';
+import { LuDownload, LuUpload } from 'react-icons/lu';
+import { buttonInteraction } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import { readLearningDocument } from '@/shared/learning-document';
 import { useI18n } from '../../contexts/I18nContext';
+import { RowText, SettingsCard, SettingsRow, SettingsSection, settingsRow } from './SettingsGroup';
 
 export function DataSection() {
   const t = useI18n();
@@ -79,56 +82,72 @@ export function DataSection() {
   };
 
   return (
-    <section aria-labelledby="data-heading" className="mb-3 pt-3 border-t border-current text-primary">
-      <h3 id="data-heading" className="text-sm font-medium mb-2">
-        {t.settings.data.title}
-      </h3>
-      <p className="text-xs text-secondary leading-relaxed">{t.settings.data.description}</p>
-      <div className="flex gap-2 my-2">
-        <Button
-          onPress={handleExport}
+    <SettingsSection id="data-heading" title={t.settings.data.title}>
+      <SettingsCard>
+        <DataAction
+          label={exportDataMutation.isPending ? t.settings.data.exporting : t.settings.data.exportData}
+          hint={t.settings.data.exportHint}
+          Icon={LuDownload}
           isDisabled={exportDataMutation.isPending}
-          className="flex flex-1 items-center justify-center gap-2 min-h-10 px-2 py-2 rounded-lg border border-current text-xs bg-primary hover:bg-secondary cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
-        >
-          <FaDownload aria-hidden="true" className="shrink-0" />
-          {exportDataMutation.isPending ? t.settings.data.exporting : t.settings.data.exportData}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleImport}
-          className="hidden"
-          id="import-file-input"
+          onPress={handleExport}
         />
-        <Button
-          onPress={() => fileInputRef.current?.click()}
+        <DataAction
+          label={importDataMutation.isPending ? t.settings.data.importing : t.settings.data.importData}
+          hint={t.settings.data.importHint}
+          Icon={LuUpload}
           isDisabled={importDataMutation.isPending}
-          className="flex flex-1 items-center justify-center gap-2 min-h-10 px-2 py-2 rounded-lg border border-current text-xs bg-primary hover:bg-secondary cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
+          onPress={() => fileInputRef.current?.click()}
+        />
+      </SettingsCard>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleImport}
+        className="hidden"
+        id="import-file-input"
+      />
+      <SettingsCard className="mt-2">
+        <SettingsRow
+          label={t.settings.data.resetAllData}
+          hint={t.settings.data.resetDescription}
+          hintId="reset-description"
         >
-          <FaUpload aria-hidden="true" className="shrink-0" />
-          {importDataMutation.isPending ? t.settings.data.importing : t.settings.data.importData}
-        </Button>
-      </div>
-      <div className="flex items-center justify-between gap-3 border-t border-current pt-2">
-        <div className="flex items-start gap-2">
-          <FaTrashCan aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary mt-0.5" />
-          <div>
-            <h4 className="text-xs font-medium">{t.settings.data.resetAllData}</h4>
-            <p id="reset-description" className="mt-1 text-xs text-secondary leading-relaxed">
-              {t.settings.data.resetDescription}
-            </p>
-          </div>
-        </div>
-        <Button
-          aria-describedby="reset-description"
-          onPress={handleReset}
-          isDisabled={resetAllDataMutation.isPending}
-          className="shrink-0 min-h-10 px-2 py-2 rounded-lg text-xs text-danger hover:bg-secondary cursor-pointer data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed"
-        >
-          {resetAllDataMutation.isPending ? t.settings.data.resetting : t.settings.data.resetAction}
-        </Button>
-      </div>
-    </section>
+          <Button
+            aria-describedby="reset-description"
+            onPress={handleReset}
+            isDisabled={resetAllDataMutation.isPending}
+            className={`h-7 shrink-0 rounded-md px-2 text-xs font-medium text-danger duration-[120ms] hover:bg-[var(--danger-soft)] ${buttonInteraction}`}
+          >
+            {resetAllDataMutation.isPending ? t.settings.data.resetting : t.settings.data.resetAction}
+          </Button>
+        </SettingsRow>
+      </SettingsCard>
+    </SettingsSection>
+  );
+}
+
+interface DataActionProps {
+  label: string;
+  hint: string;
+  Icon: IconType;
+  isDisabled: boolean;
+  onPress: () => void;
+}
+
+function DataAction({ label, hint, Icon, isDisabled, onPress }: DataActionProps) {
+  const id = useId();
+  return (
+    // The hint describes the button instead of joining its name.
+    <Button
+      aria-labelledby={`${id}-label`}
+      aria-describedby={`${id}-hint`}
+      isDisabled={isDisabled}
+      onPress={onPress}
+      className={`${settingsRow} w-[calc(100%-1.75rem)] rounded-sm text-left ${buttonInteraction}`}
+    >
+      <RowText label={<span id={`${id}-label`}>{label}</span>} hint={hint} hintId={`${id}-hint`} />
+      <Icon aria-hidden="true" className="size-4 shrink-0 text-tertiary" />
+    </Button>
   );
 }

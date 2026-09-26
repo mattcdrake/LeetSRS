@@ -49,3 +49,23 @@ it('defaults auto-open on and persists toggling it off and back on', async () =>
   fireEvent.click(toggle);
   await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
 });
+
+it('clamps stepper changes to the allowed range and flags out-of-range typed limits', async () => {
+  await replaceLearningDocument(buildLearningDocument({ settings: { maxNewCardsPerDay: 99 } }));
+  createServiceMock(background).handle('updateSettings', updateSettings);
+  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
+  const input = await screen.findByRole('spinbutton');
+  const increase = screen.getByRole('button', { name: 'Increase' });
+  fireEvent.click(increase);
+  await waitFor(() => expect(input).toHaveAttribute('placeholder', '100'));
+  expect(increase).toBeDisabled();
+
+  fireEvent.change(input, { target: { value: '150' } });
+  fireEvent.blur(input);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Enter a whole number between 0 and 100.');
+  expect(input).toHaveValue(150);
+  fireEvent.click(screen.getByRole('button', { name: 'Decrease' }));
+  await waitFor(() => expect(background.updateSettings).toHaveBeenLastCalledWith({ maxNewCardsPerDay: 99 }));
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(background.updateSettings).not.toHaveBeenCalledWith({ maxNewCardsPerDay: 150 });
+});

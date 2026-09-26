@@ -3,7 +3,7 @@
 export const rowActionSpacing = 'gap-0.5 [&>a]:w-6 [&>button]:w-6 [&>span]:px-1';
 
 export const buttonInteraction =
-  'cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current disabled:opacity-50 disabled:cursor-not-allowed data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
+  'cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--current-accent)] disabled:opacity-50 disabled:cursor-not-allowed data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
 
 export const secondaryButton = `min-h-10 px-3 py-2 rounded-lg border border-current bg-primary text-primary text-xs hover:bg-secondary ${buttonInteraction}`;
 
@@ -12,6 +12,8 @@ export function destructiveButton(isConfirming: boolean) {
 }
 
 export const compactOutlineButton = `h-7 px-2.5 rounded-md border border-strong text-xs font-medium text-primary duration-[120ms] hover:bg-secondary ${buttonInteraction}`;
+
+export const compactGhostButton = `h-7 px-2 shrink-0 rounded-md inline-flex items-center gap-1 text-xs text-secondary duration-[120ms] hover:bg-secondary hover:text-primary ${buttonInteraction}`;
 
 export const menuPopover = 'z-[1100] min-w-32 rounded-lg border border-strong bg-surface p-1 shadow-card';
 

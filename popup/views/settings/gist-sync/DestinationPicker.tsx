@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button } from 'react-aria-components';
-import { FaArrowUpRightFromSquare } from 'react-icons/fa6';
+import { LuExternalLink } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { gistSyncQueryKeys } from '@/popup/queries/gist-sync';
-import { secondaryButton } from '@/popup/styles';
+import { buttonInteraction, compactGhostButton, compactOutlineButton } from '@/popup/styles';
 import { background } from '@/shared/background-service';
 import type { GistConnectionResult, GistSetup } from '@/shared/gist-sync';
+import { SettingsRow } from '../SettingsGroup';
+import { SettingsSelect } from '../SettingsSelect';
 
 interface DestinationPickerProps {
   accountId: number;
@@ -48,94 +50,110 @@ export function DestinationPicker({
   if (gistId && !editing) {
     const description = destinations.data?.find((gist) => gist.id === gistId)?.description ?? gistId;
     return (
-      <div className="space-y-1 pt-2">
-        <div className="flex items-center justify-between gap-3 text-xs">
-          <span className="font-medium">{t.destination}</span>
+      <SettingsRow
+        label={t.destination}
+        hint={
+          <span className="block truncate" title={description}>
+            {description}
+          </span>
+        }
+      >
+        <span className="flex shrink-0 items-center">
           <a
             aria-label={t.openGist}
-            className="inline-flex items-center gap-1.5 text-xs text-accent"
+            className={`${compactGhostButton} w-7 justify-center px-0`}
             href={`https://gist.github.com/${encodeURIComponent(gistId)}`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            {t.open} <FaArrowUpRightFromSquare className="h-2.5 w-2.5" aria-hidden="true" />
+            <LuExternalLink className="size-3.5" aria-hidden="true" />
           </a>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="min-w-0 truncate text-xs text-secondary" title={description}>
-            {description}
-          </span>
-          <Button
-            className="shrink-0 rounded px-1 py-1 text-xs text-secondary hover:text-primary cursor-pointer focus-visible:outline-2"
-            isDisabled={isDisabled}
-            onPress={() => edit(true)}
-          >
+          <Button className={compactGhostButton} isDisabled={isDisabled} onPress={() => edit(true)}>
             {t.change}
           </Button>
-        </div>
-      </div>
+        </span>
+      </SettingsRow>
     );
+  }
+
+  const highlighted = highlight && !highlightDismissed && !gistId;
+  let hint = null;
+  if (destinations.isError) {
+    hint = (
+      <span role="alert">
+        {t.loadBackupsFailed}{' '}
+        <Button
+          className={`rounded-sm text-accent hover:underline ${buttonInteraction}`}
+          onPress={() => void destinations.refetch()}
+        >
+          {t.retry}
+        </Button>
+      </span>
+    );
+  } else if (canListDestinations && destinations.isPending) {
+    hint = <span role="status">{t.loadingBackups}</span>;
+  } else if (destinations.data?.length === 0) {
+    hint = t.noBackups;
   }
 
   return (
     <div
-      className={`space-y-2 ${highlight && !highlightDismissed && !gistId ? 'github-gist-highlight rounded-lg p-3' : ''}`}
+      className={highlighted ? 'github-gist-highlight m-1.5 rounded-lg border' : ''}
       onAnimationEnd={() => setHighlightDismissed(true)}
-      onChange={() => setHighlightDismissed(true)}
     >
-      <label className="block text-xs" htmlFor="gist-destination">
-        {t.destination}
-      </label>
-      <select
-        id="gist-destination"
-        className="w-full min-h-10 px-3 py-2 rounded-lg border border-current bg-primary text-xs"
-        value={destination}
-        disabled={isDisabled}
-        onChange={(event) => setSelected(event.target.value)}
-      >
-        <option value="">{t.chooseBackup}</option>
-        <option value="create">{t.createNewGist}</option>
-        {destinations.data?.map((gist) => (
-          <option key={gist.id} value={gist.id}>
-            {gist.description} — {new Date(gist.updatedAt).toLocaleDateString()}
-            {gist.suggested ? ` (${t.previousBackup})` : ''}
-          </option>
-        ))}
-      </select>
-      {canListDestinations && destinations.isPending && <p role="status">{t.loadingBackups}</p>}
-      {destinations.isError && (
-        <p role="alert">
-          {t.loadBackupsFailed}{' '}
-          <Button className={secondaryButton} onPress={() => void destinations.refetch()}>
-            {t.retry}
+      <SettingsSelect
+        label={t.destination}
+        hint={hint}
+        className={`${highlighted ? 'mx-2' : 'mx-3.5'} flex min-h-11 items-center gap-3 py-2`}
+        placeholder={t.chooseBackup}
+        isDisabled={isDisabled}
+        value={destination || null}
+        options={[
+          { value: 'create', label: t.createNewGist },
+          ...(destinations.data ?? []).map((gist) => ({
+            value: gist.id,
+            label: gist.description,
+            detail: (
+              <span className="text-tertiary">
+                {' · '}
+                {t.backupDate(new Date(gist.updatedAt))}
+                {gist.suggested && (
+                  <span className="ml-1.5 rounded bg-accent-soft px-1 py-px text-[11px] text-accent">
+                    {t.previousBackup}
+                  </span>
+                )}
+              </span>
+            ),
+          })),
+        ]}
+        onChange={(value) => {
+          setHighlightDismissed(true);
+          setSelected(value);
+        }}
+      />
+      <div className={`${highlighted ? 'mx-2' : 'mx-3.5'} flex justify-end gap-1 pb-3`}>
+        {gistId && (
+          <Button className={compactGhostButton} isDisabled={isDisabled} onPress={() => edit(false)}>
+            {t.cancel}
           </Button>
-        </p>
-      )}
-      <Button
-        className={`${secondaryButton} w-full font-medium`}
-        isDisabled={isDisabled || !destination}
-        onPress={() =>
-          onSave(destination === 'create' ? { mode: 'create' } : { mode: 'existing', gistId: destination }, {
-            onSuccess: (result) => {
-              if (result.saved) {
-                setEditing(false);
-                setSelected(null);
-              }
-            },
-          })
-        }
-      >
-        {isSaving ? t.saving : gistId ? t.save : t.connectAndSync}
-      </Button>
-      {gistId && (
+        )}
         <Button
-          className="w-full rounded-lg py-2 text-xs text-secondary hover:bg-secondary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-          isDisabled={isDisabled}
-          onPress={() => edit(false)}
+          className={compactOutlineButton}
+          isDisabled={isDisabled || !destination}
+          onPress={() =>
+            onSave(destination === 'create' ? { mode: 'create' } : { mode: 'existing', gistId: destination }, {
+              onSuccess: (result) => {
+                if (result.saved) {
+                  setEditing(false);
+                  setSelected(null);
+                }
+              },
+            })
+          }
         >
-          {t.cancel}
+          {isSaving ? t.saving : gistId ? t.save : t.connectAndSync}
         </Button>
-      )}
+      </div>
     </div>
   );
 }

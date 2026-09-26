@@ -44,7 +44,7 @@ describe('LeetcodeCnBanner', () => {
     act(() => dismiss.click());
     expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
     expect(screen.queryByText('Using leetcode.cn? Enable support to add problems.')).not.toBeInTheDocument();
-    expect(screen.getByText(/Enable support for leetcode\.cn/)).toBeInTheDocument();
+    expect(screen.getByText('leetcode.cn (力扣) support')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable/i })).toBeEnabled();
     expect(mockRequest).not.toHaveBeenCalled();
 
