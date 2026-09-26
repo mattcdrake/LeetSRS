@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
 import { Button, Menu, MenuItem, MenuTrigger, Popover } from 'react-aria-components';
 import { LuEllipsis, LuGlobe, LuLock, LuPlus, LuSkipForward, LuStar, LuUndo2, LuYoutube } from 'react-icons/lu';
 import { Difficulty } from '@/popup/components/Difficulty';
+import { MetaItem } from '@/popup/components/MetaItem';
 import { ProblemLink } from '@/popup/components/ProblemLink';
 import { Tooltip } from '@/popup/components/Tooltip';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { buttonInteraction, menuItem, menuPopover } from '@/popup/styles';
+import { buttonInteraction, menuItem, menuPopover, problemRow } from '@/popup/styles';
 import { addLocalDays, isDue } from '@/shared/calendar';
 import type { CatalogProblem } from '@/shared/catalog';
 import type { Card, ProblemReference } from '@/shared/learning-document';
@@ -68,7 +68,7 @@ export function RoadmapProblemRow({
   }
 
   return (
-    <li className="flex min-h-12 items-center gap-2.5 -mx-2 px-2 py-1.5 rounded-lg transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-bg-secondary)_70%,transparent)]">
+    <li className={problemRow}>
       <StatusGlyph state={state} />
       <div className="min-w-0 flex-1">
         <div
@@ -154,15 +154,6 @@ export function RoadmapProblemRow({
         rate={rate}
       />
     </li>
-  );
-}
-
-function MetaItem({ className, children }: { className: string; children: ReactNode }) {
-  return (
-    <span className={`flex min-w-0 items-center gap-1 ${className}`}>
-      <span aria-hidden="true">·</span>
-      <span className="truncate">{children}</span>
-    </span>
   );
 }
 

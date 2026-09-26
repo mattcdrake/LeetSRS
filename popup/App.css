@@ -63,6 +63,12 @@ body {
   --current-difficulty-hard: #cf1f45;
   --current-skipped: #a1a1aa;
   --current-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
+  /* Calendar load levels. Keep heat-4 at about 90% or more so on-accent text stays AA. */
+  --heat-1: color-mix(in srgb, var(--current-accent) 11%, var(--current-bg-primary));
+  --heat-2: color-mix(in srgb, var(--current-accent) 24%, var(--current-bg-primary));
+  --heat-3: color-mix(in srgb, var(--current-accent) 44%, var(--current-bg-primary));
+  --heat-4: color-mix(in srgb, var(--current-accent) 92%, var(--current-bg-primary));
+  --warning-text: #a15c00;
 }
 
 /* Dark theme overrides */
@@ -88,6 +94,11 @@ body {
   --current-difficulty-hard: #fb7185;
   --current-skipped: #52525b;
   --current-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --heat-1: color-mix(in srgb, var(--current-accent) 14%, var(--current-bg-surface));
+  --heat-2: color-mix(in srgb, var(--current-accent) 28%, var(--current-bg-surface));
+  --heat-3: color-mix(in srgb, var(--current-accent) 48%, var(--current-bg-surface));
+  --heat-4: color-mix(in srgb, var(--current-accent) 80%, var(--current-bg-surface));
+  --warning-text: var(--current-warning);
 }
 
 /* Theme-aware utility classes */
