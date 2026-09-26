@@ -27,7 +27,7 @@ import './calendar.css';
 
 const VISIBLE_WEEKS = 4;
 
-const navigationButton = `size-8 rounded-md grid place-items-center text-secondary duration-[120ms] not-data-[disabled]:hover:bg-[var(--current-bg-secondary)] not-data-[disabled]:hover:text-[var(--current-text-primary)] data-[disabled]:text-[var(--current-text-tertiary)] ${buttonInteraction} data-[disabled]:opacity-40!`;
+const navigationButton = `size-8 rounded-md grid place-items-center text-secondary duration-[120ms] not-data-[disabled]:hover:bg-secondary not-data-[disabled]:hover:text-primary data-[disabled]:text-tertiary ${buttonInteraction} data-[disabled]:opacity-40!`;
 
 // Maps a day's review count to a heat level from 1 to 4.
 function loadLevel(count: number) {
@@ -177,7 +177,7 @@ function TodayButton({
   return (
     <Button
       slot={null}
-      className={`${compactOutlineButton} ${isSelected && showsToday ? 'text-tertiary' : ''}`}
+      className={`${compactOutlineButton} ${isSelected && showsToday ? 'text-tertiary!' : ''}`}
       onPress={onPress}
     >
       {t.calendar.today}

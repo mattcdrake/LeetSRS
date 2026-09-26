@@ -101,78 +101,79 @@ body {
   --warning-text: var(--current-warning);
 }
 
-/* Theme-aware utility classes */
+/* Theme-aware utilities. @utility, unlike @layer utilities, lets Tailwind generate variants such as hover:bg-secondary. */
+
+/* Background colors */
+@utility bg-primary {
+  background-color: var(--current-bg-primary);
+}
+@utility bg-secondary {
+  background-color: var(--current-bg-secondary);
+}
+@utility bg-tertiary {
+  background-color: var(--current-bg-tertiary);
+}
+@utility bg-surface {
+  background-color: var(--current-bg-surface);
+}
+@utility bg-accent-soft {
+  background-color: var(--current-accent-soft);
+}
+@utility shadow-card {
+  box-shadow: var(--current-shadow);
+}
+
+/* Text colors */
+@utility text-primary {
+  color: var(--current-text-primary);
+}
+@utility text-secondary {
+  color: var(--current-text-secondary);
+}
+@utility text-tertiary {
+  color: var(--current-text-tertiary);
+}
+
+/* Accent colors */
+@utility text-accent {
+  color: var(--current-accent);
+}
+@utility text-danger {
+  color: var(--current-danger);
+}
+@utility text-info {
+  color: var(--current-info);
+}
+@utility text-warning {
+  color: var(--current-warning);
+}
+@utility text-on-accent {
+  color: var(--current-on-accent);
+}
+@utility bg-accent {
+  background-color: var(--current-accent);
+}
+@utility bg-danger {
+  background-color: var(--current-danger);
+}
+@utility text-brand {
+  color: var(--current-brand);
+}
+
+/* Font utilities */
+@utility font-jetbrains-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Border colors */
+/* A plain class: an @utility would merge with Tailwind's own border-current (currentColor), which then wins. */
 @layer utilities {
-  /* Background colors */
-  .bg-primary {
-    background-color: var(--current-bg-primary);
-  }
-  .bg-secondary {
-    background-color: var(--current-bg-secondary);
-  }
-  .bg-tertiary {
-    background-color: var(--current-bg-tertiary);
-  }
-  .bg-surface {
-    background-color: var(--current-bg-surface);
-  }
-  .bg-accent-soft {
-    background-color: var(--current-accent-soft);
-  }
-  .shadow-card {
-    box-shadow: var(--current-shadow);
-  }
-
-  /* Text colors */
-  .text-primary {
-    color: var(--current-text-primary);
-  }
-  .text-secondary {
-    color: var(--current-text-secondary);
-  }
-  .text-tertiary {
-    color: var(--current-text-tertiary);
-  }
-
-  /* Accent colors */
-  .text-accent {
-    color: var(--current-accent);
-  }
-  .text-danger {
-    color: var(--current-danger);
-  }
-  .text-info {
-    color: var(--current-info);
-  }
-  .text-warning {
-    color: var(--current-warning);
-  }
-  .text-on-accent {
-    color: var(--current-on-accent);
-  }
-  .bg-accent {
-    background-color: var(--current-accent);
-  }
-  .bg-danger {
-    background-color: var(--current-danger);
-  }
-
-  .text-brand {
-    color: var(--current-brand);
-  }
-
-  /* Font utilities */
-  .font-jetbrains-mono {
-    font-family: "JetBrains Mono", monospace;
-  }
-
-  /* Border colors */
   .border-current {
     border-color: var(--current-border);
   }
-  .border-strong {
-    border-color: var(--current-border-strong);
-  }
+}
+@utility border-strong {
+  border-color: var(--current-border-strong);
 }
 
 /* Custom scrollbar styling */

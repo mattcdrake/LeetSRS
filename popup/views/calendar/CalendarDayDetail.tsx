@@ -177,7 +177,7 @@ function ProblemRow({ card, overdueSince, problem }: { card: Card; overdueSince:
             target="_blank"
             rel="noopener noreferrer"
             aria-label={t.youtubeSolution}
-            className={`size-8 -mr-1 shrink-0 rounded-md grid place-items-center text-tertiary duration-[120ms] hover:bg-[var(--current-bg-tertiary)] hover:text-[var(--current-text-primary)] ${buttonInteraction}`}
+            className={`size-8 -mr-1 shrink-0 rounded-md grid place-items-center text-tertiary duration-[120ms] hover:bg-tertiary hover:text-primary ${buttonInteraction}`}
           >
             <LuYoutube aria-hidden="true" className="size-4" strokeWidth={1.75} />
           </Link>
