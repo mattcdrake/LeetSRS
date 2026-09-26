@@ -155,7 +155,17 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
         return { saved: false, error: 'missingBackup' };
       }
       if (data.owner?.id !== auth.account.id) return { saved: false, error: 'authentication' };
-      await readBackupFile(data.files[GIST_FILENAME]);
+      const remote = await readBackupFile(data.files[GIST_FILENAME]);
+      const connection = await readGistConnection();
+      if (connection.gistId === null) {
+        const local = await readLearningDocument();
+        // A settings edit gives a fresh installation a newer document timestamp.
+        // Load its first backup before enabling sync so that timestamp cannot erase history.
+        if (Object.keys(local.cards).length === 0 && local.reviewActivity === null) {
+          if (authSignal.aborted || connectionSignal.aborted) throw new Error('Connection changed');
+          await replaceLearningDocument(remote);
+        }
+      }
       gistId = setup.gistId;
     } else {
       const document = await readLearningDocument();

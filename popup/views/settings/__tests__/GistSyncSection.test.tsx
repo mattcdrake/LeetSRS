@@ -125,7 +125,7 @@ it('shows a concise sign-in error and clears it from view while retrying', async
 });
 
 it.each([false, true])(
-  'requests hosts in the click gesture and waits for grant (existing access: %s)',
+  'requests GitHub permissions in the click gesture and waits for grant (existing access: %s)',
   async (granted) => {
     vi.mocked(browser.permissions.contains).mockImplementation(async () => granted);
     const pending = Promise.withResolvers<boolean>();
@@ -136,6 +136,9 @@ it.each([false, true])(
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
     expect(browser.permissions.request).toHaveBeenCalledExactlyOnceWith({
+      ...(import.meta.env.BROWSER === 'firefox'
+        ? { data_collection: ['authenticationInfo', 'websiteActivity', 'websiteContent', 'technicalAndInteraction'] }
+        : {}),
       origins: ['https://auth.leetsrs.com/*', 'https://api.github.com/*', 'https://gist.githubusercontent.com/*'],
     });
     expect(background.startGithubSignIn).toHaveBeenCalledOnce();

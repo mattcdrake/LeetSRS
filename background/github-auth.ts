@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { storage } from '#imports';
 import { readPatMigration } from '@/background/legacy/github-pat';
 import {
-  GITHUB_HOST_PERMISSIONS,
+  GITHUB_PERMISSIONS,
   type GithubAuthStatus,
   githubAuthorizationItem,
   githubSetupPendingItem,
@@ -127,7 +127,7 @@ async function resumeSignInRequest(signal: AbortSignal) {
     await signInRequestItem.removeValue();
     return;
   }
-  if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) return;
+  if (!(await browser.permissions.contains(GITHUB_PERMISSIONS))) return;
   await signInRequestItem.removeValue();
   if (!signal.aborted) launchGithubSignIn();
 }
@@ -157,7 +157,7 @@ function launchGithubSignIn(): void {
   const signal = authorizationAbort.signal;
   error = null;
   const attempt = (async () => {
-    if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS))) throw new Error('GitHub access required');
+    if (!(await browser.permissions.contains(GITHUB_PERMISSIONS))) throw new Error('GitHub access required');
     // Changing accounts requires signing out first.
     if (await readAuthorization()) return;
     if (signal.aborted) return;
@@ -210,7 +210,7 @@ function launchGithubSignIn(): void {
 
 export async function getGithubAuthorization() {
   const signal = authorizationAbort.signal;
-  if (!(await browser.permissions.contains(GITHUB_HOST_PERMISSIONS)))
+  if (!(await browser.permissions.contains(GITHUB_PERMISSIONS)))
     throw new GithubAuthorizationError('Enable GitHub access in Settings');
   const saved = await readAuthorization();
   if (!saved || signal.aborted) throw new GithubAuthorizationError('Sign in with GitHub');

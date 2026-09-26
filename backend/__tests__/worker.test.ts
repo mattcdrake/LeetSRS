@@ -2,6 +2,8 @@ import { beforeEach, expect, it, vi } from 'vitest';
 import worker, { type Env } from '../worker';
 
 const callback = 'https://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.chromiumapp.org/';
+const firefoxCallback = 'https://fec292f403871813f2c7a41024e0a452037396d7.extensions.allizom.org/';
+const firefoxOrigin = 'moz-extension://f1dcddbd-d323-45f1-a6aa-7382c351aaa1';
 const token = {
   access_token: 'access',
   refresh_token: 'refresh',
@@ -86,5 +88,68 @@ it('fails closed without configured callbacks or rate limiting', async () => {
   expect((await worker.fetch(request(), { ...env, ALLOWED_CALLBACKS: '' })).status).toBe(503);
   vi.mocked(env.AUTH_LIMITER.limit).mockRejectedValue(new Error('unavailable'));
   expect((await worker.fetch(request(), env)).status).toBe(502);
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+it.each(['/exchange', '/refresh'])('permits Firefox %s with its per-install origin', async (path) => {
+  const response = await worker.fetch(
+    request(
+      path,
+      path === '/refresh'
+        ? { refresh_token: 'refresh' }
+        : { code: 'code', code_verifier: 'a'.repeat(43), redirect_uri: firefoxCallback },
+      { Origin: firefoxOrigin }
+    ),
+    { ...env, ALLOWED_CALLBACKS: `${callback},${firefoxCallback}` }
+  );
+  expect(response.status).toBe(200);
+  expect(response.headers.get('Access-Control-Allow-Origin')).toBe(firefoxOrigin);
+  expect(await response.json()).toEqual(token);
+  if (path === '/exchange') {
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body)).redirect_uri).toBe(firefoxCallback);
+  }
+});
+it('allows Firefox preflight only when a Firefox callback is configured', async () => {
+  const preflight = () =>
+    new Request('https://auth.leetsrs.com/exchange', {
+      method: 'OPTIONS',
+      headers: { Origin: firefoxOrigin },
+    });
+  expect((await worker.fetch(preflight(), env)).status).toBe(403);
+  const response = await worker.fetch(preflight(), { ...env, ALLOWED_CALLBACKS: firefoxCallback });
+  expect(response.status).toBe(204);
+  expect(response.headers.get('Access-Control-Allow-Origin')).toBe(firefoxOrigin);
+  expect(fetch).not.toHaveBeenCalled();
+});
+it('rejects another Firefox extension callback even from a valid Firefox origin', async () => {
+  const response = await worker.fetch(
+    request(
+      '/exchange',
+      {
+        code: 'code',
+        code_verifier: 'a'.repeat(43),
+        redirect_uri: `https://${'b'.repeat(40)}.extensions.allizom.org/`,
+      },
+      { Origin: firefoxOrigin }
+    ),
+    { ...env, ALLOWED_CALLBACKS: firefoxCallback }
+  );
+  expect(response.status).toBe(400);
+  expect(fetch).not.toHaveBeenCalled();
+});
+it.each([
+  'null',
+  'moz-extension://not-an-id',
+  `${firefoxOrigin}.evil.example`,
+  'chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+])('rejects an unrelated origin when both browsers are enabled: %s', async (origin) => {
+  expect(
+    (
+      await worker.fetch(request('/exchange', {}, { Origin: origin }), {
+        ...env,
+        ALLOWED_CALLBACKS: `${callback},${firefoxCallback}`,
+      })
+    ).status
+  ).toBe(403);
   expect(fetch).not.toHaveBeenCalled();
 });

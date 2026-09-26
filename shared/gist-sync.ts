@@ -7,7 +7,10 @@ export const githubSetupPendingItem = storage.defineItem<boolean>('local:leetsrs
   fallback: false,
 });
 
-export const GITHUB_HOST_PERMISSIONS = {
+export const GITHUB_PERMISSIONS = {
+  ...(import.meta.env.BROWSER === 'firefox'
+    ? { data_collection: ['authenticationInfo', 'websiteActivity', 'websiteContent', 'technicalAndInteraction'] }
+    : {}),
   origins: ['https://auth.leetsrs.com/*', 'https://api.github.com/*', 'https://gist.githubusercontent.com/*'],
 };
 

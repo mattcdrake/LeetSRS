@@ -64,6 +64,10 @@ npm run dev
 | `npm run dev`            | Start Chrome with a fresh temporary profile.                                                                                                     |
 | `npm run dev:persistent` | Reuse a Chrome profile, including logins and extension data.                                                                                     |
 | `npm run dev:reset`      | Delete the persistent development profile, including its logins and extension data. Stop the dev server and close the development browser first. |
+| `npm run dev:firefox`    | Start Firefox with a fresh temporary profile.                                                                                                    |
+| `npm run build:firefox`  | Build the Firefox MV3 extension.                                                                                                                 |
+| `npm run zip:firefox`    | Package the Firefox extension and source archive.                                                                                                |
+| `npm run lint:firefox`   | Validate the built Firefox extension with Mozilla’s linter.                                                                                      |
 | `npm run build`          | Build the production extension.                                                                                                                  |
 | `npm run zip`            | Package the extension for distribution.                                                                                                          |
 | `npm run check`          | Run lint, formatting, type, and test checks.                                                                                                     |
