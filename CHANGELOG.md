@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/mattcdrake/LeetSRS/compare/v1.3.0...v1.3.1) (2026-09-26)
+
+
+### Bug Fixes
+
+* stop retrying rejected GitHub refresh tokens every sync ([#721](https://github.com/mattcdrake/LeetSRS/issues/721)) ([28a550a](https://github.com/mattcdrake/LeetSRS/commit/28a550a0bc8a6324c1927c88018f19ba61c14c8c))
+
 ## [1.3.0](https://github.com/mattcdrake/LeetSRS/compare/v1.2.0...v1.3.0) (2026-09-26)
 
 
