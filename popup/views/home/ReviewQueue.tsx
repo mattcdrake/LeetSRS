@@ -1,5 +1,6 @@
 import { type ReactNode, useId, useState } from 'react';
 import { LuCheck } from 'react-icons/lu';
+import { EmptyState } from '@/popup/components/EmptyState';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import {
   type CardWithProblem,
@@ -62,15 +63,11 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   if (!currentCard) {
     return (
       emptyContent ?? (
-        <div className="flex items-center gap-3 rounded-xl px-3.5 py-3 bg-secondary">
-          <span className="size-8 shrink-0 rounded-full bg-accent-soft text-accent grid place-items-center">
-            <LuCheck aria-hidden="true" className="size-4" strokeWidth={2.2} />
-          </span>
-          <div>
-            <p className="text-[13px] font-semibold text-primary">{t.home.caughtUp}</p>
-            <p className="text-xs text-tertiary">{t.home.caughtUpDescription}</p>
-          </div>
-        </div>
+        <EmptyState
+          icon={<LuCheck aria-hidden="true" className="size-4" strokeWidth={2.2} />}
+          title={t.home.caughtUp}
+          description={t.home.caughtUpDescription}
+        />
       )
     );
   }

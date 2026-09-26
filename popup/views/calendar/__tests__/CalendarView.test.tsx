@@ -26,7 +26,7 @@ async function openCalendar(document = buildLearningDocument()) {
     </I18nProvider>,
     { wrapper }
   );
-  await screen.findByRole('grid', { name: 'Calendar, September 2026' });
+  await screen.findByRole('grid', { name: /^Calendar, September 13\s–\sOctober 10, 2026$/ });
 }
 
 function day(name: string) {
@@ -53,8 +53,11 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
   expect(links[1]).toHaveAttribute('href', 'https://leetcode.cn/problems/two-sum/description/');
   expect(links[1]).toHaveAttribute('target', '_blank');
   expect(day('September 17, 2026')).toHaveAttribute('data-selected');
-  expect(day('September 17, 2026')).toHaveAccessibleName(/2 due$/);
+  expect(day('September 17, 2026')).toHaveAccessibleName(/2 due, 1 overdue$/);
   expect(screen.getByRole('region')).toHaveTextContent('2 due · 1 overdue');
+  const rows = within(list).getAllByRole('listitem');
+  expect(rows[0]).toHaveTextContent('Overdue 1d');
+  expect(rows[1]).not.toHaveTextContent('Overdue');
   expect(day('September 16, 2026')).toHaveAttribute('aria-disabled', 'true');
 
   fireEvent.click(day('September 18, 2026'));
@@ -63,22 +66,34 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
     'https://leetcode.com/problems/longest-substring/description/'
   );
   expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
-  expect(within(day('September 18, 2026')).getByText('1 due')).toBeVisible();
+  expect(day('September 18, 2026')).toHaveAccessibleName(/1 due$/);
   expect(screen.getByRole('region')).not.toHaveTextContent('overdue');
 
   fireEvent.click(day('September 19, 2026'));
-  expect(screen.getByRole('region')).toHaveTextContent('0 due');
   expect(screen.getByText('No problems due on this day.')).toBeVisible();
   expect(screen.queryByRole('link')).not.toBeInTheDocument();
 });
 
-it('returns both the visible month and day detail to today', async () => {
+it('selects next-month days from the first page', async () => {
+  const card = createMockCard(State.Review);
+  await openCalendar(
+    buildLearningDocument({
+      cards: { '1': { ...card, fsrs: { ...card.fsrs, due: new Date(2026, 9, 2, 9).getTime() } } },
+    })
+  );
+  fireEvent.click(day('October 2, 2026'));
+  expect(day('October 2, 2026')).toHaveAttribute('data-selected');
+  expect(screen.getByRole('region', { name: 'Friday Oct 2' })).toHaveTextContent('1 due');
+  expect(await screen.findByRole('link', { name: /1\. Two Sum/ })).toBeVisible();
+});
+
+it('returns both the visible weeks and day detail to today', async () => {
   await openCalendar();
-  fireEvent.click(screen.getByRole('button', { name: 'Next month' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next 4 weeks' }));
   fireEvent.click(day('October 20, 2026'));
   fireEvent.click(screen.getByRole('button', { name: 'Today' }));
-  expect(screen.getByRole('grid', { name: 'Calendar, September 2026' })).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'Thu, Sep 17, 2026' })).toBeVisible();
+  expect(screen.getByRole('grid', { name: /^Calendar, September 13\s–\sOctober 10, 2026$/ })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Today Thu, Sep 17' })).toBeVisible();
 });
 
 it('updates counts and problems when a review consumes today’s new-card allowance', async () => {
@@ -88,7 +103,7 @@ it('updates counts and problems when a review consumes today’s new-card allowa
     settings: { maxNewCardsPerDay: 1 },
   });
   await openCalendar(document);
-  expect(day('September 17, 2026')).toHaveAccessibleName(/1 due$/);
+  expect(day('September 17, 2026')).toHaveAccessibleName(/1 due, 1 overdue$/);
   expect(await screen.findByRole('link', { name: /1\. Two Sum/ })).toBeVisible();
   expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
 
@@ -110,4 +125,6 @@ it('updates counts and problems when a review consumes today’s new-card allowa
   expect(await screen.findByRole('link', { name: /2\. Add Two Numbers/ })).toBeVisible();
   expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
   expect(day('September 18, 2026')).toHaveAccessibleName(/1 due$/);
+  expect(screen.getByRole('listitem')).toHaveTextContent('New');
+  expect(screen.getByRole('region')).toHaveTextContent('1 due · 1 new');
 });
