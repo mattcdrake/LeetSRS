@@ -15,8 +15,8 @@ const en = {
     rateLimit: 'GitHub API rate limit exceeded. Please try again later. You can continue learning.',
     authentication: 'Sign in with GitHub again in Settings.',
     missingToken: 'Sign in with GitHub in Settings.',
-    gistNotFound: 'Backup not found. Choose an available backup in Settings.',
-    unknown: 'Sync failed. Try again later.',
+    gistNotFound: 'Backup not found. Choose another backup.',
+    unknown: 'Try again later.',
   },
   app: {
     name: 'LeetSRS',
@@ -248,7 +248,7 @@ const en = {
 
   // Settings view
   settings: {
-    groups: { reviews: 'Reviews', display: 'Display', leetcode: 'LeetCode' },
+    groups: { sync: 'Sync', reviews: 'Reviews', general: 'General' },
     title: 'Settings',
 
     // Language section
@@ -267,25 +267,33 @@ const en = {
     // Review settings section
     reviewSettings: {
       openRatingAfterSolving: 'Open rating panel after solving',
-      newCardsPerDay: 'New Cards Per Day',
+      openRatingHint: 'Rate right after an accepted submission',
+      newCardsPerDay: 'New cards per day',
+      newCardsHint: (min: number, max: number) => `Between ${min} and ${max}`,
+      newCardsError: (min: number, max: number) => `Enter a whole number between ${min} and ${max}.`,
+      decrease: 'Decrease',
+      increase: 'Increase',
     },
 
     editorReset: {
       resetEditorOnReviewQueue: 'Reset code when due',
+      hint: 'Start due problems from a blank editor',
     },
     preferredLeetcodeSite: 'Preferred LeetCode site',
     leetcodeCn: {
-      description: 'Enable support for leetcode.cn (力扣). Requires additional browser permission.',
+      label: 'leetcode.cn (力扣) support',
+      hint: 'Needs an extra browser permission',
       enable: 'Enable',
     },
 
     // Data section
     data: {
       title: 'Data & backups',
-      description: 'Save a backup or restore one you’ve saved.',
       exportData: 'Export backup',
+      exportHint: 'Download a JSON file',
       exporting: 'Exporting...',
       importData: 'Import backup',
+      importHint: 'Replaces all current data',
       importing: 'Importing...',
       resetAllData: 'Reset all data',
       resetAction: 'Reset…',
@@ -317,24 +325,36 @@ const en = {
       loadBackupsFailed: 'Could not load backups.',
       retry: 'Retry',
       connectAndSync: 'Connect and sync',
+      noBackups: 'No backups yet',
 
-      title: 'GitHub Gist Sync',
+      title: 'GitHub Gist sync',
+      pitch: 'Back up your cards to a private Gist and keep every browser in step.',
       gistDescription: 'LeetSRS Backup - Spaced Repetition Data',
       // Gist selection
       createNewGist: 'Create New Gist',
       // Sync controls
       syncEnabled: 'Sync automatically',
-      syncing: 'Syncing...',
+      syncing: 'Syncing…',
       // Status
-      lastSync: 'Last sync',
-      lastSyncNever: 'Never',
+      syncedAt: (when: string) => `Synced ${when}`,
+      lastSyncedAt: (when: string) => `Last synced ${when}`,
+      backupDate: (date: Date) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(date),
+      notSynced: 'Not synced yet',
+      syncTime: (date: Date, isToday: boolean) =>
+        isToday
+          ? `today, ${new Intl.DateTimeFormat('en', { hour: 'numeric', minute: '2-digit' }).format(date)}`
+          : new Intl.DateTimeFormat('en', {
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            }).format(date),
       // Errors
       syncFailed: 'Sync failed',
       cancel: 'Cancel',
       syncDetails:
         'LeetSRS compares the edit time of each complete dataset and replaces the older one. It does not merge individual cards.',
       openGist: 'Open backup Gist',
-      open: 'Open',
       change: 'Change',
       destination: 'Backup Gist',
       syncInfo: 'How sync works',
@@ -348,7 +368,9 @@ const en = {
     about: {
       title: 'About',
       feedbackLink: 'Open an issue',
-      reviewRequest: 'Rate LeetSRS',
+      rateTitle: 'Enjoying LeetSRS?',
+      rateBody: 'A quick rating helps others find it.',
+      rateCta: 'Rate',
       copyright: '© 2026 Matt Drake',
       github: 'Star on GitHub',
       discord: 'Join Discord',

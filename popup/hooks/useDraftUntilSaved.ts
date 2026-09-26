@@ -8,7 +8,8 @@ export function useDraftUntilSaved(savedValue: string) {
     value,
     hasDraft: draft !== null,
     setValue: (value: string) => setDraft(value),
-    markSaved: () => setDraft((current) => (current === value ? null : current)),
+    // Pass the saved value when it may differ from the value rendered with this callback.
+    markSaved: (saved = value) => setDraft((current) => (current === saved ? null : current)),
     discard: () => setDraft(null),
   };
 }

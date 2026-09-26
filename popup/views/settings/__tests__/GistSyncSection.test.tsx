@@ -46,6 +46,11 @@ beforeEach(async () => {
 function open() {
   return render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
 }
+const backupPicker = () => screen.getByRole('button', { name: /Backup Gist/ });
+async function chooseBackup(name: string | RegExp) {
+  fireEvent.click(backupPicker());
+  fireEvent.click(await screen.findByRole('option', { name }));
+}
 
 it('replaces feedback when alternating a backup change and sync toggle', async () => {
   service.resolve('setupGistSync', { saved: false, error: 'creationFailed' });
@@ -53,20 +58,20 @@ it('replaces feedback when alternating a backup change and sync toggle', async (
   const change = await screen.findByRole('button', { name: 'Change' });
   await waitFor(() => expect(change).toBeEnabled());
   fireEvent.click(change);
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  await chooseBackup('Create New Gist');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('GitHub returned no ID for the created Gist');
 
   fireEvent.click(screen.getByRole('switch'));
-  expect(await screen.findByRole('status')).toHaveTextContent('Connection saved');
+  expect((await screen.findByText('Connection saved')).closest('[role]')).toHaveAttribute('role', 'status');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  expect(screen.getByRole('combobox')).toHaveValue('create');
+  expect(backupPicker()).toHaveTextContent('Create New Gist');
 
   vi.mocked(background.setupGistSync).mockRejectedValueOnce(new Error('Background unavailable'));
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/^Connection could not be saved$/);
-  expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  expect(screen.getByRole('combobox')).toHaveValue('create');
+  expect(screen.queryByText('Connection saved')).not.toBeInTheDocument();
+  expect(backupPicker()).toHaveTextContent('Create New Gist');
 });
 
 it('allows signing out while a connection is pending and ignores its late feedback', async () => {
@@ -79,10 +84,10 @@ it('allows signing out while a connection is pending and ignores its late feedba
   const change = await screen.findByRole('button', { name: 'Change' });
   await waitFor(() => expect(change).toBeEnabled());
   fireEvent.click(change);
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  await chooseBackup('Create New Gist');
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled();
-  expect(screen.getByRole('combobox')).toBeDisabled();
+  expect(backupPicker()).toBeDisabled();
   expect(screen.getByRole('switch')).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
@@ -91,7 +96,7 @@ it('allows signing out while a connection is pending and ignores its late feedba
   await act(async () => pending.resolve({ saved: false, error: 'connectionSaveFailed' }));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Backup Gist/ })).not.toBeInTheDocument();
 });
 
 it('shows cancellable sign-in progress without a stale error or duplicate sign-in button', async () => {
@@ -213,4 +218,17 @@ it('dispatches the real proxy message while the permission prompt is still pendi
     )
   );
   unmount();
+});
+
+it('reports a failed sync as an alert and keeps the last successful sync time', async () => {
+  service.resolve('getGistSyncStatus', {
+    lastSyncTime: '2025-09-24T02:10:00',
+    syncInProgress: false,
+    lastError: 'rateLimit',
+  });
+  open();
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent('Sync failed');
+  expect(alert).toHaveTextContent('GitHub API rate limit exceeded');
+  expect(screen.getByRole('status')).toHaveTextContent('Last synced Sep 24, 2:10 AM');
 });

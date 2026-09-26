@@ -69,6 +69,8 @@ body {
   --heat-3: color-mix(in srgb, var(--current-accent) 44%, var(--current-bg-primary));
   --heat-4: color-mix(in srgb, var(--current-accent) 92%, var(--current-bg-primary));
   --warning-text: #a15c00;
+  --danger-soft: color-mix(in srgb, var(--current-danger) 9%, var(--current-bg-surface));
+  --switch-off: #a1a1aa;
 }
 
 /* Dark theme overrides */
@@ -86,7 +88,7 @@ body {
   --current-accent-soft: rgb(92 196 102 / 0.12);
   --current-on-accent: #0b1a0d;
   --current-brand: #5cc466;
-  --current-danger: #bc4a4a;
+  --current-danger: #ea5a52;
   --current-info: #6d9ff0;
   --current-warning: #f2a03d;
   --current-difficulty-easy: #2dd4bf;
@@ -99,6 +101,8 @@ body {
   --heat-3: color-mix(in srgb, var(--current-accent) 48%, var(--current-bg-surface));
   --heat-4: color-mix(in srgb, var(--current-accent) 80%, var(--current-bg-surface));
   --warning-text: var(--current-warning);
+  --danger-soft: color-mix(in srgb, var(--current-danger) 14%, var(--current-bg-surface));
+  --switch-off: #52525b;
 }
 
 /* Theme-aware utilities. @utility, unlike @layer utilities, lets Tailwind generate variants such as hover:bg-secondary. */

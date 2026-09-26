@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Button } from 'react-aria-components';
 import { FaGithub } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import { buttonInteraction, compactGhostButton } from '@/popup/styles';
+import { settingsCard } from '../SettingsGroup';
 
 interface SignedOutProps {
   signingIn: boolean;
   highlight: boolean;
   isCancelDisabled: boolean;
   isSignInDisabled: boolean;
+  notices: ReactNode;
   onSignIn: () => void;
   onCancel: () => void;
 }
@@ -17,6 +20,7 @@ export function SignedOut({
   highlight,
   isCancelDisabled,
   isSignInDisabled,
+  notices,
   onSignIn,
   onCancel,
 }: SignedOutProps) {
@@ -24,27 +28,33 @@ export function SignedOut({
   const [highlightDismissed, setHighlightDismissed] = useState(false);
 
   return (
-    <div className="space-y-3">
+    <div className={`${settingsCard} p-3.5`}>
+      <div className="flex items-start gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-primary">
+          <FaGithub className="size-[18px]" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold leading-5 text-primary">{t.title}</p>
+          <p className="mt-0.5 text-xs leading-[18px] text-secondary">{t.pitch}</p>
+        </div>
+      </div>
+      {notices && <div className="mt-3 space-y-1.5">{notices}</div>}
       {signingIn ? (
-        <div className="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-current bg-primary px-3">
-          <span role="status" className="flex items-center gap-2.5 text-xs text-secondary">
+        <div className="mt-3 flex h-9 items-center justify-between gap-3 rounded-lg bg-secondary pl-3 pr-1">
+          <span role="status" className="flex items-center gap-2 text-xs text-secondary">
             <span
               aria-hidden="true"
-              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+              className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-[var(--current-text-tertiary)] border-t-transparent"
             />
             {t.signingIn}
           </span>
-          <Button
-            className="rounded-lg px-2 py-2 text-xs font-medium text-secondary hover:text-primary cursor-pointer focus-visible:outline-2 disabled:opacity-50"
-            isDisabled={isCancelDisabled}
-            onPress={onCancel}
-          >
+          <Button className={compactGhostButton} isDisabled={isCancelDisabled} onPress={onCancel}>
             {t.cancel}
           </Button>
         </div>
       ) : (
         <Button
-          className={`flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-current bg-primary px-3 py-2 text-xs text-primary cursor-pointer hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${highlight && !highlightDismissed ? 'github-sign-in-highlight' : ''}`}
+          className={`mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-strong bg-surface text-xs font-medium text-primary duration-[120ms] hover:bg-secondary ${buttonInteraction} ${highlight && !highlightDismissed ? 'github-sign-in-highlight' : ''}`}
           onAnimationEnd={() => setHighlightDismissed(true)}
           isDisabled={isSignInDisabled}
           onPress={() => {
@@ -52,7 +62,7 @@ export function SignedOut({
             onSignIn();
           }}
         >
-          <FaGithub className="h-4 w-4" aria-hidden="true" />
+          <FaGithub className="size-4" aria-hidden="true" />
           {t.signIn}
         </Button>
       )}

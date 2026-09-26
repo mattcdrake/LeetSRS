@@ -15,8 +15,8 @@ const zhCN: Translations = {
     rateLimit: '已达到 GitHub API 请求上限。请稍后重试。你可以继续学习。',
     authentication: '请在设置中重新登录 GitHub。',
     missingToken: '请在设置中登录 GitHub。',
-    gistNotFound: '未找到备份。请在设置中选择可用的备份。',
-    unknown: '同步失败，请稍后重试。',
+    gistNotFound: '未找到备份。请选择其他备份。',
+    unknown: '请稍后重试。',
   },
   app: {
     name: 'LeetSRS',
@@ -235,7 +235,7 @@ const zhCN: Translations = {
   },
 
   settings: {
-    groups: { reviews: '复习', display: '显示', leetcode: 'LeetCode' },
+    groups: { sync: '同步', reviews: '复习', general: '通用' },
     title: '设置',
 
     language: {
@@ -251,24 +251,32 @@ const zhCN: Translations = {
 
     reviewSettings: {
       openRatingAfterSolving: '解题后打开评分面板',
+      openRatingHint: '提交通过后立即评分',
       newCardsPerDay: '每日新卡片数量',
+      newCardsHint: (min: number, max: number) => `${min} 到 ${max} 之间`,
+      newCardsError: (min: number, max: number) => `请输入 ${min} 到 ${max} 之间的整数。`,
+      decrease: '减少',
+      increase: '增加',
     },
 
     editorReset: {
       resetEditorOnReviewQueue: '到期时重置代码',
+      hint: '到期题目从空白编辑器开始',
     },
     preferredLeetcodeSite: '首选 LeetCode 站点',
     leetcodeCn: {
-      description: '启用 leetcode.cn（力扣）支持。需要额外的浏览器权限。',
+      label: 'leetcode.cn（力扣）支持',
+      hint: '需要额外的浏览器权限',
       enable: '启用',
     },
 
     data: {
       title: '数据与备份',
-      description: '保存备份或恢复已有备份。',
       exportData: '导出备份',
+      exportHint: '下载 JSON 文件',
       exporting: '导出中...',
       importData: '导入备份',
+      importHint: '将替换当前所有数据',
       importing: '导入中...',
       resetAllData: '重置所有数据',
       resetAction: '重置…',
@@ -297,19 +305,32 @@ const zhCN: Translations = {
       loadBackupsFailed: '无法加载备份。',
       retry: '重试',
       connectAndSync: '连接并同步',
+      noBackups: '暂无备份',
 
       title: 'GitHub Gist 同步',
+      pitch: '将卡片备份到私有 Gist，并在各个浏览器间保持同步。',
       gistDescription: 'LeetSRS 备份 - 间隔重复数据',
       createNewGist: '创建新 Gist',
-      syncEnabled: '同步',
-      syncing: '同步中...',
-      lastSync: '上次同步',
-      lastSyncNever: '从未',
+      syncEnabled: '自动同步',
+      syncing: '同步中…',
+      syncedAt: (when: string) => `已同步 · ${when}`,
+      lastSyncedAt: (when: string) => `上次同步 · ${when}`,
+      backupDate: (date: Date) => new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' }).format(date),
+      notSynced: '尚未同步',
+      syncTime: (date: Date, isToday: boolean) =>
+        isToday
+          ? `今天 ${new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date)}`
+          : new Intl.DateTimeFormat('zh-CN', {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            }).format(date),
       syncFailed: '同步失败',
       cancel: '取消',
       syncDetails: 'LeetSRS 比较完整数据集的编辑时间，并用较新的数据替换较旧的数据。不会逐张卡片合并。',
       openGist: '打开备份 Gist',
-      open: '打开',
       change: '更改',
       destination: '备份 Gist',
       syncInfo: '同步方式',
@@ -322,7 +343,9 @@ const zhCN: Translations = {
     about: {
       title: '关于',
       feedbackLink: '提交问题',
-      reviewRequest: '评价 LeetSRS',
+      rateTitle: '喜欢 LeetSRS 吗？',
+      rateBody: '评个分，帮更多人发现它。',
+      rateCta: '评分',
       copyright: '© 2026 Matt Drake',
       github: '在 GitHub 上点 Star',
       discord: '加入 Discord',

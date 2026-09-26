@@ -1,39 +1,37 @@
-import type { IconType } from 'react-icons';
+import { type ReactNode, useId } from 'react';
+import { buttonInteraction } from '@/popup/styles';
+import { SettingsRow } from './SettingsGroup';
 
 interface SettingsSwitchProps {
   label: string;
-  icon?: IconType;
+  hint?: ReactNode;
   isSelected: boolean;
   isDisabled?: boolean;
   onChange: (isSelected: boolean) => void;
 }
 
-export function SettingsSwitch({ label, icon: Icon, isSelected, isDisabled = false, onChange }: SettingsSwitchProps) {
+export function SettingsSwitch({ label, hint, isSelected, isDisabled = false, onChange }: SettingsSwitchProps) {
+  const hintId = useId();
   return (
-    <div className="flex min-h-10 items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        {Icon && <Icon aria-hidden="true" className="w-4 h-4 shrink-0 text-secondary" />}
-        <span>{label}</span>
-      </div>
-      <div className="inline-flex shrink-0 items-center">
-        <button
-          type="button"
-          role="switch"
-          disabled={isDisabled}
-          aria-checked={isSelected}
-          aria-label={label}
-          onClick={() => onChange(!isSelected)}
-          className={`group relative inline-flex h-6 w-11 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 items-center rounded-full transition-colors focus-visible:ring-2 ring-offset-2 ring-offset-primary ${
-            isSelected ? 'bg-accent' : 'bg-tertiary border border-current'
+    <SettingsRow label={label} hint={hint} hintId={hintId}>
+      <button
+        type="button"
+        role="switch"
+        disabled={isDisabled}
+        aria-checked={isSelected}
+        aria-label={label}
+        aria-describedby={hint ? hintId : undefined}
+        onClick={() => onChange(!isSelected)}
+        className={`relative inline-flex h-5 w-8 shrink-0 items-center rounded-full ${buttonInteraction} ${
+          isSelected ? 'bg-accent' : 'bg-[var(--switch-off)]'
+        }`}
+      >
+        <span
+          className={`size-4 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.3)] transition-transform ${
+            isSelected ? 'translate-x-3.5' : 'translate-x-0.5'
           }`}
-        >
-          <span
-            className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-all group-active:scale-95 ${
-              isSelected ? 'translate-x-5' : 'translate-x-0.5'
-            }`}
-          />
-        </button>
-      </div>
-    </div>
+        />
+      </button>
+    </SettingsRow>
   );
 }

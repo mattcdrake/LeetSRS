@@ -56,11 +56,17 @@ beforeEach(async () => {
 
 afterEach(() => onlineManager.setOnline(true));
 
+async function chooseBackup(name: string | RegExp) {
+  fireEvent.click(screen.getByRole('button', { name: /Backup Gist/ }));
+  fireEvent.click(await screen.findByRole('option', { name }));
+}
+
 async function connect() {
   render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
-  await screen.findByRole('option', { name: /My backup/ });
+  const picker = await screen.findByRole('button', { name: /Backup Gist/ });
+  await waitFor(() => expect(picker).toBeEnabled());
   expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'backup' } });
+  await chooseBackup(/My backup/);
   fireEvent.click(screen.getByRole('button', { name: 'Connect and sync' }));
   await screen.findByText('Connection saved');
   await waitFor(async () =>
@@ -79,7 +85,7 @@ it('connects an owned backup and pauses and resumes syncing through Settings', a
     'href',
     'https://gist.github.com/backup'
   );
-  expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Backup Gist/ })).not.toBeInTheDocument();
   expect(await readLearningDocument()).toEqual(before);
   onlineManager.setOnline(false);
   fireEvent.click(screen.getByRole('switch'));
@@ -99,16 +105,16 @@ it('cancels a destination change and retries creating a private backup without l
   const before = await readLearningDocument();
   await connect();
   fireEvent.click(screen.getByRole('button', { name: 'Change' }));
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  await chooseBackup('Create New Gist');
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(github.create).not.toHaveBeenCalled();
   expect((await readGistConnection()).gistId).toBe('backup');
   fireEvent.click(screen.getByRole('button', { name: 'Change' }));
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'create' } });
+  await chooseBackup('Create New Gist');
   github.create.mockRejectedValueOnce(new Error('Network unavailable'));
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
   await screen.findByText(/Connection could not be saved/);
-  expect(screen.getByRole('combobox')).toHaveValue('create');
+  expect(screen.getByRole('button', { name: /Backup Gist/ })).toHaveTextContent('Create New Gist');
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: true });
   expect(await readLearningDocument()).toEqual(before);
   fireEvent.click(screen.getByRole('button', { name: 'Save' }));
