@@ -4,11 +4,11 @@ import { LuCircleAlert, LuCircleCheck, LuTriangleAlert } from 'react-icons/lu';
 type NoticeTone = 'danger' | 'warning' | 'success';
 
 const tones = {
-  danger: { Icon: LuCircleAlert, icon: 'text-danger', background: 'bg-[var(--danger-soft)]', role: 'alert' },
+  danger: { Icon: LuCircleAlert, icon: 'text-danger', background: 'bg-[var(--ls-danger-soft)]', role: 'alert' },
   warning: {
     Icon: LuTriangleAlert,
     icon: 'text-warning',
-    background: 'bg-[color-mix(in_srgb,var(--current-warning)_12%,var(--current-bg-surface))]',
+    background: 'bg-[color-mix(in_srgb,var(--ls-warning)_12%,var(--ls-surface))]',
     role: 'alert',
   },
   success: { Icon: LuCircleCheck, icon: 'text-accent', background: 'bg-accent-soft', role: 'status' },

@@ -23,7 +23,7 @@ export function SettingsSwitch({ label, hint, isSelected, isDisabled = false, on
         aria-describedby={hint ? hintId : undefined}
         onClick={() => onChange(!isSelected)}
         className={`relative inline-flex h-5 w-8 shrink-0 items-center rounded-full ${buttonInteraction} ${
-          isSelected ? 'bg-accent' : 'bg-[var(--switch-off)]'
+          isSelected ? 'bg-accent' : 'bg-[var(--ls-switch-off)]'
         }`}
       >
         <span

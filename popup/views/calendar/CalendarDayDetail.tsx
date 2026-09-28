@@ -103,7 +103,7 @@ export function CalendarDayDetail({ date, today, language, day, hasReviews }: Ca
             {!!day.overdueCount && (
               <>
                 {' · '}
-                <span className="text-[var(--warning-text)]">{t.calendar.overdue(day.overdueCount)}</span>
+                <span className="text-[var(--ls-warning-text)]">{t.calendar.overdue(day.overdueCount)}</span>
               </>
             )}
             {!!newCount && (
@@ -145,7 +145,7 @@ function ProblemRow({ card, overdueSince, problem }: { card: Card; overdueSince:
   let marker: ReactNode;
   if (card.fsrs.due < overdueSince) {
     marker = (
-      <MetaItem className="text-[var(--warning-text)]">{formatDue(card.fsrs.due, overdueSince, t).label}</MetaItem>
+      <MetaItem className="text-[var(--ls-warning-text)]">{formatDue(card.fsrs.due, overdueSince, t).label}</MetaItem>
     );
   } else if (card.fsrs.state === State.New) {
     marker = <MetaItem className="text-accent">{t.roadmaps.new}</MetaItem>;

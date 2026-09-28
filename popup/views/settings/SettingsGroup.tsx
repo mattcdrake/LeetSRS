@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 export const settingsCard = 'rounded-xl border border-current bg-surface shadow-card';
 // Inset hairlines between rows: each row carries its own horizontal margin.
-export const rowDividers = '[&>*+*]:border-t [&>*+*]:border-[color:var(--current-border)]';
+export const rowDividers = '[&>*+*]:border-t [&>*+*]:border-[color:var(--ls-line)]';
 export const settingsRow = 'mx-3.5 flex min-h-11 items-center gap-3 py-2';
 
 interface SettingsSectionProps {

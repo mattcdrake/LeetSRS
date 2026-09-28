@@ -9,7 +9,7 @@
   height: 20px;
   font-size: 11px;
   font-weight: 400;
-  color: var(--current-text-tertiary);
+  color: var(--ls-fg-3);
 }
 
 .calendar-day {
@@ -21,7 +21,7 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: var(--current-text-primary);
+  color: var(--ls-fg);
   cursor: pointer;
   outline: none;
   transition:
@@ -31,24 +31,24 @@
 }
 
 .calendar-day[data-hovered]:not([data-disabled], [data-load]) {
-  background: var(--current-bg-secondary);
+  background: var(--ls-raised);
 }
 
 .calendar-day[data-load="1"] {
-  background: var(--heat-1);
+  background: var(--ls-heat-1);
 }
 
 .calendar-day[data-load="2"] {
-  background: var(--heat-2);
+  background: var(--ls-heat-2);
 }
 
 .calendar-day[data-load="3"] {
-  background: var(--heat-3);
+  background: var(--ls-heat-3);
 }
 
 .calendar-day[data-load="4"] {
-  background: var(--heat-4);
-  color: var(--current-on-accent);
+  background: var(--ls-heat-4);
+  color: var(--ls-on-brand);
 }
 
 .calendar-day[data-month-start] {
@@ -79,20 +79,20 @@
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: var(--current-warning);
+  background: var(--ls-warning);
 }
 
 .calendar-day[data-selected] {
-  box-shadow: 0 0 0 1.5px var(--current-text-primary);
+  box-shadow: 0 0 0 1.5px var(--ls-fg);
 }
 
 .calendar-day[data-focus-visible] {
-  outline: 2px solid var(--current-accent);
+  outline: 2px solid var(--ls-brand);
   outline-offset: 2px;
 }
 
 .calendar-day[data-disabled] {
-  color: var(--current-text-tertiary);
+  color: var(--ls-fg-3);
   opacity: 0.45;
   cursor: default;
 }

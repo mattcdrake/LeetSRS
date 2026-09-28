@@ -1,5 +1,5 @@
 /* Rating anatomy shared by the LeetCode panel and the popup sheet. It reads only --ls-* tokens:
-   shared/ui/tokens.css defines them on the page, and popup/App.css aliases them to the popup's. */
+   shared/ui/tokens.css declares them on the page and popup/App.css in the popup. */
 .rating-panel {
   padding: 0 0 6px;
   margin: 0;
@@ -9,7 +9,7 @@
   border: 0;
   border-radius: 12px;
   background: var(--ls-surface);
-  box-shadow: var(--ls-shadow);
+  box-shadow: var(--ls-shadow-float);
   color: var(--ls-fg);
   overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

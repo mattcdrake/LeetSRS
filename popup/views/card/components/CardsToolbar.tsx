@@ -44,7 +44,7 @@ export function CardsToolbar({
 
   return (
     <div className="sticky top-0 z-20 bg-primary px-4 pt-3 pb-2">
-      <div className="h-8 flex items-center gap-2 pl-2.5 pr-1 rounded-lg bg-secondary has-[input:focus]:ring-2 has-[input:focus]:ring-[var(--current-accent)]">
+      <div className="h-8 flex items-center gap-2 pl-2.5 pr-1 rounded-lg bg-secondary has-[input:focus]:ring-2 has-[input:focus]:ring-[var(--ls-brand)]">
         <LuSearch aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" strokeWidth={2} />
         <TextField value={search} onChange={onSearchChange} className="min-w-0 flex-1">
           <Label className="sr-only">{t.cardsView.searchLabel}</Label>

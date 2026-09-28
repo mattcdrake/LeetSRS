@@ -50,7 +50,7 @@ export function Toast({ message, onDismiss }: { message: string; onDismiss: () =
     <div
       role="status"
       data-theme={useSurfaceTheme()}
-      className="fixed right-4 bottom-4 z-9999 flex items-center gap-2.5 rounded-[10px] bg-surface py-2.5 pr-4 pl-3 text-[13px] leading-[1.35] text-fg shadow-(--ls-shadow) transition-opacity ease-out motion-reduce:transition-none"
+      className="fixed right-4 bottom-4 z-9999 flex items-center gap-2.5 rounded-[10px] bg-surface py-2.5 pr-4 pl-3 text-[13px] leading-[1.35] text-fg shadow-(--ls-shadow-float) transition-opacity ease-out motion-reduce:transition-none"
       style={{ opacity: entered && !leaving ? 1 : 0, transitionDuration: `${FADE_DURATION_MS}ms` }}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}

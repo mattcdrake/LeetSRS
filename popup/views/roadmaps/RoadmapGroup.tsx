@@ -37,7 +37,7 @@ export function RoadmapGroup({
       <h2 className="sticky top-12 z-10 bg-primary">
         <button
           type="button"
-          className="w-full h-10 flex items-center gap-2 px-4 text-left cursor-pointer transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-bg-secondary)_50%,var(--current-bg-primary))] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--current-accent)]"
+          className="w-full h-10 flex items-center gap-2 px-4 text-left cursor-pointer transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-raised)_50%,var(--ls-canvas))] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--ls-brand)]"
           aria-expanded={open}
           aria-controls={contentId}
           aria-disabled={filtering || undefined}
@@ -74,14 +74,14 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * 5.5;
 function ProgressRing({ value, total }: { value: number; total: number }) {
   return (
     <svg aria-hidden="true" className="size-3.5 shrink-0 -rotate-90" viewBox="0 0 14 14">
-      <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--current-border-strong)" strokeWidth="2" />
+      <circle cx="7" cy="7" r="5.5" fill="none" stroke="var(--ls-line-strong)" strokeWidth="2" />
       {value > 0 && (
         <circle
           cx="7"
           cy="7"
           r="5.5"
           fill="none"
-          stroke="var(--current-accent)"
+          stroke="var(--ls-brand)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeDasharray={`${(RING_CIRCUMFERENCE * value) / total} ${RING_CIRCUMFERENCE}`}

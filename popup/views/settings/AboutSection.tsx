@@ -22,9 +22,9 @@ export function AboutSection() {
         href={CHROME_STORE_REVIEWS_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className={`${settingsCard} mb-4 flex items-center gap-3 p-3 hover:bg-[color-mix(in_srgb,var(--current-bg-secondary)_50%,var(--current-bg-surface))] ${buttonInteraction}`}
+        className={`${settingsCard} mb-4 flex items-center gap-3 p-3 hover:bg-[color-mix(in_srgb,var(--ls-raised)_50%,var(--ls-surface))] ${buttonInteraction}`}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--current-warning)_14%,var(--current-bg-surface))] text-[var(--current-warning)]">
+        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[color-mix(in_srgb,var(--ls-warning)_14%,var(--ls-surface))] text-[var(--ls-warning)]">
           <LuStar aria-hidden="true" className="size-[18px] fill-current" />
         </span>
         <span className="min-w-0 flex-1">

@@ -29,6 +29,12 @@
 
 - Before reviewing code, read and follow `.agents/skills/code-review/SKILL.md`.
 
+## UI and styling
+
+- The [LeetSRS design system](https://claude.ai/artifact/SHkAWzAUpZ6rPfxWCLjK1W) defines the colours, type, spacing, shapes and icons for both the popup and the LeetCode.com panel. Read its README before changing UI.
+- When the code and the design system disagree, follow the design system. Known gaps are tracked in [#728](https://github.com/mattcdrake/LeetSRS/issues/728).
+- Style with the `--ls-*` tokens in `popup/App.css` and `shared/ui/tokens.css`; do not hard-code colours or add one-off sizes.
+
 ## Tests
 
 - Add a test only when it catches a plausible regression or meaningful failure that existing tests miss; otherwise, do not add it.

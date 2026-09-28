@@ -40,7 +40,7 @@
   --color-line: var(--ls-line);
   --color-brand: var(--ls-brand);
   --color-focus: var(--ls-focus);
-  --color-danger: var(--ls-danger);
+  --color-danger-text: var(--ls-danger-text);
   --color-danger-soft: var(--ls-danger-soft);
   --color-host-fill: var(--ls-host-fill);
   --color-host-fill-hover: var(--ls-host-fill-hover);

@@ -30,8 +30,8 @@ export function StatsBar() {
 
   return (
     <div className="flex items-center gap-3 text-xs text-secondary tabular-nums">
-      <StatItem count={reviewCount} label={t.statsBar.review} dotColor="var(--current-info)" testId="review" />
-      <StatItem count={newCount} label={t.statsBar.new} dotColor="var(--current-accent)" testId="new" />
+      <StatItem count={reviewCount} label={t.statsBar.review} dotColor="var(--ls-info)" testId="review" />
+      <StatItem count={newCount} label={t.statsBar.new} dotColor="var(--ls-brand)" testId="new" />
     </div>
   );
 }

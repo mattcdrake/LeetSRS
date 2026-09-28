@@ -39,7 +39,7 @@ export function RoadmapsView({ selectedRoadmapId, onSelect }: RoadmapsViewProps)
         (isSelectedActive ? (
           <MenuTrigger>
             <Button
-              className={`h-7 pl-2 pr-1.5 rounded-md flex items-center gap-1 bg-accent-soft text-accent text-xs font-medium duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-accent)_18%,var(--current-bg-primary))] ${buttonInteraction}`}
+              className={`h-7 pl-2 pr-1.5 rounded-md flex items-center gap-1 bg-accent-soft text-accent text-xs font-medium duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-brand)_18%,var(--ls-canvas))] ${buttonInteraction}`}
               isDisabled={activation.isPending}
             >
               <LuCheck aria-hidden="true" className="size-3" strokeWidth={2.4} />

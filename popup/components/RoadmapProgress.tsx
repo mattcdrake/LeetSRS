@@ -23,7 +23,7 @@ export function RoadmapProgress({ label, summary, size = 'sm', className = '' }:
     >
       <div className="bg-accent" style={{ width: width(summary.reviewed) }} />
       <div className="bg-accent opacity-35" style={{ width: width(summary.new) }} />
-      <div className="bg-[var(--current-skipped)]" style={{ width: width(summary.skipped) }} />
+      <div className="bg-[var(--ls-skipped)]" style={{ width: width(summary.skipped) }} />
     </ProgressBar>
   );
 }

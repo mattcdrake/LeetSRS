@@ -50,7 +50,7 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
                 onFocus={() => {
                   if (item.id !== activeView) onNavigate(item.id);
                 }}
-                className={`flex items-center h-8 rounded-md cursor-pointer transition-colors duration-[120ms] outline-none data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-[var(--current-accent)] ${
+                className={`flex items-center h-8 rounded-md cursor-pointer transition-colors duration-[120ms] outline-none data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-[var(--ls-brand)] ${
                   isActive
                     ? 'gap-1.5 px-2.5 bg-secondary text-primary text-xs font-medium'
                     : `${showDueCount ? 'gap-1 px-2' : 'w-10'} justify-center text-tertiary hover:text-primary hover:bg-secondary`
