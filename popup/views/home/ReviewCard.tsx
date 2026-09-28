@@ -4,13 +4,12 @@ import { Button } from 'react-aria-components';
 import { LuArrowUpRight } from 'react-icons/lu';
 import { type Grade, State } from 'ts-fsrs';
 import { Difficulty } from '@/popup/components/Difficulty';
-import { useTheme } from '@/popup/hooks/useTheme';
 import { type CardWithProblem, ratingPreviewQueryOptions } from '@/popup/queries/cards';
 import { buttonInteraction } from '@/popup/styles';
 import { ratingSchema } from '@/shared/learning-document';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { getProblemTitle } from '@/shared/ui/problem-title';
-import { RATING_COLORS } from '@/shared/ui/rating-colors';
+import { ratingColor } from '@/shared/ui/rating-colors';
 import { useI18n } from '../../contexts/I18nContext';
 
 type ReviewCardProps = {
@@ -23,7 +22,6 @@ type ReviewCardProps = {
 export function ReviewCard({ card, onRate, isProcessing = false, children }: ReviewCardProps) {
   const t = useI18n();
   const id = useId();
-  const colors = RATING_COLORS[useTheme()];
   const preview = useQuery(ratingPreviewQueryOptions(card));
 
   return (
@@ -58,7 +56,7 @@ export function ReviewCard({ card, onRate, isProcessing = false, children }: Rev
               isDisabled={isProcessing}
               aria-label={t.ratings[rating]}
               aria-describedby={`${id}-${rating}`}
-              style={{ '--rating-color': colors[rating] } as CSSProperties}
+              style={{ '--rating-color': ratingColor(rating) } as CSSProperties}
               className={`h-10 min-w-0 px-1 rounded-lg bg-secondary flex flex-col items-center justify-center whitespace-nowrap duration-[120ms] data-[hovered]:bg-[color-mix(in_srgb,var(--rating-color)_10%,var(--ls-raised))] ${buttonInteraction}`}
             >
               <span className="flex items-center gap-1.5 text-[13px] leading-4 font-medium text-primary">

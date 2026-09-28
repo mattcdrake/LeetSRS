@@ -21,10 +21,15 @@
   --ls-info: #3f7fe0;
   --ls-warning: #e08a1e;
   --ls-warning-text: #a15c00;
+  --ls-warning-soft: color-mix(in srgb, var(--ls-warning) 12%, var(--ls-surface));
   --ls-difficulty-easy: #0b7c7e;
   --ls-difficulty-medium: #a15c00;
   --ls-difficulty-hard: #cf1f45;
   --ls-skipped: #a1a1aa;
+  --ls-rating-again: #c73e3e;
+  --ls-rating-hard: #d97706;
+  --ls-rating-good: #4271c4;
+  --ls-rating-easy: #3d9156;
   --ls-switch-off: #a1a1aa;
   /* Calendar load levels. Keep heat-4 at about 90% or more so on-brand text stays AA. */
   --ls-heat-1: color-mix(in srgb, var(--ls-brand) 11%, var(--ls-canvas));
@@ -58,10 +63,15 @@
   --ls-info: #6d9ff0;
   --ls-warning: #f2a03d;
   --ls-warning-text: #f2a03d;
+  --ls-warning-soft: color-mix(in srgb, var(--ls-warning) 12%, var(--ls-surface));
   --ls-difficulty-easy: #2dd4bf;
   --ls-difficulty-medium: #fbbf24;
   --ls-difficulty-hard: #fb7185;
   --ls-skipped: #52525b;
+  --ls-rating-again: #d14358;
+  --ls-rating-hard: #e88c3a;
+  --ls-rating-good: #5b8fd9;
+  --ls-rating-easy: #52b169;
   --ls-switch-off: #52525b;
   --ls-heat-1: color-mix(in srgb, var(--ls-brand) 14%, var(--ls-surface));
   --ls-heat-2: color-mix(in srgb, var(--ls-brand) 28%, var(--ls-surface));
@@ -79,4 +89,7 @@
 
 [data-theme] {
   --ls-focus: var(--ls-brand);
+  /* Hover fills for list rows and brand-soft buttons. */
+  --ls-row-hover: color-mix(in srgb, var(--ls-raised) 70%, transparent);
+  --ls-brand-soft-hover: color-mix(in srgb, var(--ls-brand) 18%, var(--ls-canvas));
 }
