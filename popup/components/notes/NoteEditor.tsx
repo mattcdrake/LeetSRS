@@ -106,7 +106,7 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
           <div className="flex gap-1">
             {hasExistingNote && (
               <Button
-                className={`${noteButton} ${deleteConfirm ? 'bg-danger text-white hover:opacity-90' : 'text-secondary hover:bg-secondary hover:text-danger'}`}
+                className={`${noteButton} ${deleteConfirm ? 'bg-danger text-on-danger hover:opacity-90' : 'text-secondary hover:bg-secondary hover:text-danger'}`}
                 onPress={remove}
                 isDisabled={isDisabled || isPending}
               >

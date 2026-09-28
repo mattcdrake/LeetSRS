@@ -27,7 +27,7 @@ export function SettingsSwitch({ label, hint, isSelected, isDisabled = false, on
         }`}
       >
         <span
-          className={`size-4 rounded-full bg-white shadow-[0_1px_2px_rgb(0_0_0/0.3)] transition-transform ${
+          className={`size-4 rounded-full bg-[var(--ls-switch-thumb)] shadow-(--ls-shadow-thumb) transition-transform ${
             isSelected ? 'translate-x-3.5' : 'translate-x-0.5'
           }`}
         />

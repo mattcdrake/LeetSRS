@@ -9,7 +9,7 @@ export function PopupDialogShell({ children, onDismiss }: { children: ReactNode;
       onOpenChange={(open) => {
         if (!open) onDismiss();
       }}
-      className="fixed inset-x-0 top-0 bottom-14 z-50 bg-black/40 backdrop-blur-sm"
+      className="fixed inset-x-0 top-0 bottom-14 z-50 bg-[var(--ls-scrim)] backdrop-blur-sm"
     >
       <Modal className="absolute top-1/2 left-1/2 w-[calc(100%-2.5rem)] max-w-sm max-h-[calc(100%-2rem)] overflow-y-auto -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-current bg-primary text-primary shadow-2xl">
         <Dialog className="p-5 outline-none">{children}</Dialog>

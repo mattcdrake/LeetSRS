@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { LuCircleAlert, LuCircleCheck, LuTriangleAlert } from 'react-icons/lu';
+import { LuCircleAlert, LuCircleCheck, LuInfo, LuTriangleAlert } from 'react-icons/lu';
 
-type NoticeTone = 'danger' | 'warning' | 'success';
+type NoticeTone = 'danger' | 'warning' | 'success' | 'info';
 
 const tones = {
   danger: { Icon: LuCircleAlert, icon: 'text-danger', background: 'bg-[var(--ls-danger-soft)]', role: 'alert' },
@@ -12,6 +12,7 @@ const tones = {
     role: 'alert',
   },
   success: { Icon: LuCircleCheck, icon: 'text-accent', background: 'bg-accent-soft', role: 'status' },
+  info: { Icon: LuInfo, icon: 'text-info', background: 'bg-secondary', role: 'status' },
 } as const;
 
 interface NoticeProps {
