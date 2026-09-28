@@ -1,38 +1,82 @@
-/* LeetSRS surface tokens for the LeetCode page. LeetCode's theme comes from its classes rather
-   than prefers-color-scheme, so each surface root sets data-theme from useDarkMode(). */
+/* LeetSRS design tokens for the popup and the LeetCode page. The popup sets data-theme on <html>.
+   LeetCode's theme comes from its classes rather than prefers-color-scheme, so each surface root
+   on the page sets data-theme from useDarkMode(). */
 [data-theme="light"] {
+  --ls-canvas: #fafafa;
   --ls-surface: #ffffff;
   --ls-raised: #f4f4f5;
+  --ls-raised-2: #e4e4e7;
   --ls-fg: #18181b;
   --ls-fg-2: #52525b;
   --ls-fg-3: #71717a;
-  --ls-line: rgb(0 0 0 / 0.08);
+  --ls-line: rgb(0 0 0 / 0.07);
+  --ls-line-strong: rgb(0 0 0 / 0.11);
   --ls-brand: #267a33;
-  --ls-focus: #267a33;
-  --ls-danger: #c42121;
-  --ls-danger-soft: color-mix(in srgb, #dc2626 8%, #fff);
-  --ls-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px -8px rgb(0 0 0 / 0.22), 0 4px 10px -4px rgb(0 0 0 / 0.1);
+  --ls-brand-soft: #ecf5ed;
+  --ls-on-brand: #ffffff;
+  /* Filled buttons; red text uses --ls-danger-text. */
+  --ls-danger: #dc2626;
+  --ls-danger-text: #c42121;
+  --ls-danger-soft: color-mix(in srgb, var(--ls-danger) 9%, var(--ls-surface));
+  --ls-info: #3f7fe0;
+  --ls-warning: #e08a1e;
+  --ls-warning-text: #a15c00;
+  --ls-difficulty-easy: #0b7c7e;
+  --ls-difficulty-medium: #a15c00;
+  --ls-difficulty-hard: #cf1f45;
+  --ls-skipped: #a1a1aa;
+  --ls-switch-off: #a1a1aa;
+  /* Calendar load levels. Keep heat-4 at about 90% or more so on-brand text stays AA. */
+  --ls-heat-1: color-mix(in srgb, var(--ls-brand) 11%, var(--ls-canvas));
+  --ls-heat-2: color-mix(in srgb, var(--ls-brand) 24%, var(--ls-canvas));
+  --ls-heat-3: color-mix(in srgb, var(--ls-brand) 44%, var(--ls-canvas));
+  --ls-heat-4: color-mix(in srgb, var(--ls-brand) 92%, var(--ls-canvas));
+  --ls-shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
+  --ls-shadow-float: 0 0 0 1px rgb(0 0 0 / 0.08), 0 12px 32px -8px rgb(0 0 0 / 0.22), 0 4px 10px -4px rgb(0 0 0 / 0.1);
+  /* The in-page button in LeetCode's toolbar. */
   --ls-host-fill: rgba(0, 0, 0, 0.04);
   --ls-host-fill-hover: #e8e8e8;
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  /* Lifted above LeetCode's #262626 panels. */
-  --ls-surface: #2a2a2e;
-  --ls-raised: #36363b;
+  --ls-canvas: #111113;
+  --ls-surface: #1a1a1d;
+  --ls-raised: #222226;
+  --ls-raised-2: #2c2c31;
   --ls-fg: #ededef;
-  --ls-fg-2: #b4b4bc;
-  --ls-fg-3: #94949d;
-  --ls-line: rgb(255 255 255 / 0.08);
+  --ls-fg-2: #a1a1aa;
+  --ls-fg-3: #8b8b94;
+  --ls-line: rgb(255 255 255 / 0.06);
+  --ls-line-strong: rgb(255 255 255 / 0.1);
   --ls-brand: #5cc466;
-  --ls-focus: #5cc466;
-  --ls-danger: #f58a8a;
-  --ls-danger-soft: color-mix(in srgb, #ea5a52 14%, #2a2a2e);
-  --ls-shadow:
+  --ls-brand-soft: rgb(92 196 102 / 0.12);
+  --ls-on-brand: #0b1a0d;
+  --ls-danger: #ea5a52;
+  --ls-danger-text: #f07474;
+  --ls-danger-soft: color-mix(in srgb, var(--ls-danger) 14%, var(--ls-surface));
+  --ls-info: #6d9ff0;
+  --ls-warning: #f2a03d;
+  --ls-warning-text: #f2a03d;
+  --ls-difficulty-easy: #2dd4bf;
+  --ls-difficulty-medium: #fbbf24;
+  --ls-difficulty-hard: #fb7185;
+  --ls-skipped: #52525b;
+  --ls-switch-off: #52525b;
+  --ls-heat-1: color-mix(in srgb, var(--ls-brand) 14%, var(--ls-surface));
+  --ls-heat-2: color-mix(in srgb, var(--ls-brand) 28%, var(--ls-surface));
+  --ls-heat-3: color-mix(in srgb, var(--ls-brand) 48%, var(--ls-surface));
+  --ls-heat-4: color-mix(in srgb, var(--ls-brand) 80%, var(--ls-surface));
+  --ls-shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  /* Sets the panel apart from LeetCode's #262626 panels. */
+  --ls-shadow-float:
     0 0 0 1px rgb(255 255 255 / 0.1), 0 16px 40px -8px rgb(0 0 0 / 0.65), 0 4px 12px -4px rgb(0 0 0 / 0.45),
     inset 0 1px 0 rgb(255 255 255 / 0.05);
   --ls-host-fill: rgba(255, 255, 255, 0.08);
   --ls-host-fill-hover: #3a3a3a;
   color-scheme: dark;
+}
+
+[data-theme] {
+  --ls-focus: var(--ls-brand);
 }

@@ -74,8 +74,8 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
     !isCompact || hasFocus || hasChanges || saveError != null || isOverLimit || deleteConfirm || isPending;
 
   const fieldClassName = isCompact
-    ? `bg-secondary outline-none placeholder:text-tertiary ${isOverLimit ? 'ring-2 ring-[var(--current-danger)]' : 'focus:ring-2 focus:ring-[var(--current-accent)]'}`
-    : `border bg-primary focus:outline-none focus:ring-2 ${isOverLimit ? 'border-[var(--current-danger)] focus:ring-[color-mix(in_srgb,var(--current-danger)_20%,transparent)]' : 'border-current focus:border-[var(--current-accent)] focus:ring-[var(--current-accent-soft)]'}`;
+    ? `bg-secondary outline-none placeholder:text-tertiary ${isOverLimit ? 'ring-2 ring-[var(--ls-danger)]' : 'focus:ring-2 focus:ring-[var(--ls-brand)]'}`
+    : `border bg-primary focus:outline-none focus:ring-2 ${isOverLimit ? 'border-[var(--ls-danger)] focus:ring-[color-mix(in_srgb,var(--ls-danger)_20%,transparent)]' : 'border-current focus:border-[var(--ls-brand)] focus:ring-[var(--ls-brand-soft)]'}`;
 
   return (
     // Tracks focus across the field and its buttons so pressing a button does not hide the footer.
@@ -114,7 +114,7 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
               </Button>
             )}
             <Button
-              className={`${noteButton} bg-accent text-[var(--current-on-accent)] font-medium hover:opacity-90`}
+              className={`${noteButton} bg-accent text-[var(--ls-on-brand)] font-medium hover:opacity-90`}
               onPress={save}
               isDisabled={isDisabled || !canSave || isPending}
             >

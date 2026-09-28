@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap");
 @import "tailwindcss";
+@import "../shared/ui/tokens.css";
 
 body {
   font-family: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -39,145 +40,63 @@ body {
   }
 }
 
-/* CSS variables that switch based on theme */
-:root {
-  /* Light theme (default) */
-  --current-bg-primary: #fafafa;
-  --current-bg-surface: #ffffff;
-  --current-bg-secondary: #f4f4f5;
-  --current-bg-tertiary: #e4e4e7;
-  --current-text-primary: #18181b;
-  --current-text-secondary: #52525b;
-  --current-text-tertiary: #71717a;
-  --current-border: rgb(0 0 0 / 0.07);
-  --current-border-strong: rgb(0 0 0 / 0.11);
-  --current-accent: #267a33;
-  --current-accent-soft: #ecf5ed;
-  --current-on-accent: #ffffff;
-  --current-brand: #267a33;
-  --current-danger: #dc2626;
-  --current-info: #3f7fe0;
-  --current-warning: #e08a1e;
-  --current-difficulty-easy: #0b7c7e;
-  --current-difficulty-medium: #a15c00;
-  --current-difficulty-hard: #cf1f45;
-  --current-skipped: #a1a1aa;
-  --current-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
-  /* Calendar load levels. Keep heat-4 at about 90% or more so on-accent text stays AA. */
-  --heat-1: color-mix(in srgb, var(--current-accent) 11%, var(--current-bg-primary));
-  --heat-2: color-mix(in srgb, var(--current-accent) 24%, var(--current-bg-primary));
-  --heat-3: color-mix(in srgb, var(--current-accent) 44%, var(--current-bg-primary));
-  --heat-4: color-mix(in srgb, var(--current-accent) 92%, var(--current-bg-primary));
-  --warning-text: #a15c00;
-  /* Red text on surfaces; --current-danger stays for filled buttons. */
-  --danger-text: #c42121;
-  --danger-soft: color-mix(in srgb, var(--current-danger) 9%, var(--current-bg-surface));
-  --switch-off: #a1a1aa;
-}
-
-/* The shared rating anatomy (shared/ui/rating.css) reads --ls-* tokens. Declared on :root, where
-   .dark also lands, so the aliases follow the theme. */
-:root {
-  --ls-surface: var(--current-bg-surface);
-  --ls-raised: var(--current-bg-secondary);
-  --ls-fg: var(--current-text-primary);
-  --ls-fg-2: var(--current-text-secondary);
-  --ls-fg-3: var(--current-text-tertiary);
-  --ls-line: var(--current-border);
-  --ls-brand: var(--current-brand);
-  --ls-focus: var(--current-accent);
-}
-
-/* Dark theme overrides */
-.dark {
-  --current-bg-primary: #111113;
-  --current-bg-surface: #1a1a1d;
-  --current-bg-secondary: #222226;
-  --current-bg-tertiary: #2c2c31;
-  --current-text-primary: #ededef;
-  --current-text-secondary: #a1a1aa;
-  --current-text-tertiary: #8b8b94;
-  --current-border: rgb(255 255 255 / 0.06);
-  --current-border-strong: rgb(255 255 255 / 0.1);
-  --current-accent: #5cc466;
-  --current-accent-soft: rgb(92 196 102 / 0.12);
-  --current-on-accent: #0b1a0d;
-  --current-brand: #5cc466;
-  --current-danger: #ea5a52;
-  --current-info: #6d9ff0;
-  --current-warning: #f2a03d;
-  --current-difficulty-easy: #2dd4bf;
-  --current-difficulty-medium: #fbbf24;
-  --current-difficulty-hard: #fb7185;
-  --current-skipped: #52525b;
-  --current-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  --heat-1: color-mix(in srgb, var(--current-accent) 14%, var(--current-bg-surface));
-  --heat-2: color-mix(in srgb, var(--current-accent) 28%, var(--current-bg-surface));
-  --heat-3: color-mix(in srgb, var(--current-accent) 48%, var(--current-bg-surface));
-  --heat-4: color-mix(in srgb, var(--current-accent) 80%, var(--current-bg-surface));
-  --warning-text: var(--current-warning);
-  --danger-text: #f07474;
-  --danger-soft: color-mix(in srgb, var(--current-danger) 14%, var(--current-bg-surface));
-  --switch-off: #52525b;
-}
-
 /* Theme-aware utilities. @utility, unlike @layer utilities, lets Tailwind generate variants such as hover:bg-secondary. */
 
 /* Background colors */
 @utility bg-primary {
-  background-color: var(--current-bg-primary);
+  background-color: var(--ls-canvas);
 }
 @utility bg-secondary {
-  background-color: var(--current-bg-secondary);
+  background-color: var(--ls-raised);
 }
 @utility bg-tertiary {
-  background-color: var(--current-bg-tertiary);
+  background-color: var(--ls-raised-2);
 }
 @utility bg-surface {
-  background-color: var(--current-bg-surface);
+  background-color: var(--ls-surface);
 }
 @utility bg-accent-soft {
-  background-color: var(--current-accent-soft);
+  background-color: var(--ls-brand-soft);
 }
 @utility shadow-card {
-  box-shadow: var(--current-shadow);
+  box-shadow: var(--ls-shadow-card);
 }
 
 /* Text colors */
 @utility text-primary {
-  color: var(--current-text-primary);
+  color: var(--ls-fg);
 }
 @utility text-secondary {
-  color: var(--current-text-secondary);
+  color: var(--ls-fg-2);
 }
 @utility text-tertiary {
-  color: var(--current-text-tertiary);
+  color: var(--ls-fg-3);
 }
 
 /* Accent colors */
 @utility text-accent {
-  color: var(--current-accent);
+  color: var(--ls-brand);
 }
 @utility text-danger {
-  color: var(--danger-text);
+  color: var(--ls-danger-text);
 }
 @utility text-info {
-  color: var(--current-info);
+  color: var(--ls-info);
 }
 @utility text-warning {
-  color: var(--current-warning);
+  color: var(--ls-warning);
 }
 @utility text-on-accent {
-  color: var(--current-on-accent);
+  color: var(--ls-on-brand);
 }
 @utility bg-accent {
-  background-color: var(--current-accent);
+  background-color: var(--ls-brand);
 }
 @utility bg-danger {
-  background-color: var(--current-danger);
+  background-color: var(--ls-danger);
 }
 @utility text-brand {
-  color: var(--current-brand);
+  color: var(--ls-brand);
 }
 
 /* Font utilities */
@@ -189,11 +108,11 @@ body {
 /* A plain class: an @utility would merge with Tailwind's own border-current (currentColor), which then wins. */
 @layer utilities {
   .border-current {
-    border-color: var(--current-border);
+    border-color: var(--ls-line);
   }
 }
 @utility border-strong {
-  border-color: var(--current-border-strong);
+  border-color: var(--ls-line-strong);
 }
 
 /* Custom scrollbar styling */
@@ -209,19 +128,19 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--current-text-tertiary);
+  background: var(--ls-fg-3);
   border-radius: 3px;
   opacity: 0.3;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--current-text-secondary);
+  background: var(--ls-fg-2);
 }
 
 /* For Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--current-text-tertiary) transparent;
+  scrollbar-color: var(--ls-fg-3) transparent;
 }
 
 /* Hide scrollbar until hovering over scrollable area */
@@ -230,23 +149,23 @@ body {
 }
 
 .overflow-y-auto:hover::-webkit-scrollbar-thumb {
-  background: var(--current-text-tertiary);
+  background: var(--ls-fg-3);
 }
 
 .github-sign-in-highlight,
 .github-gist-highlight {
-  border-color: var(--current-accent);
-  background-color: color-mix(in srgb, var(--current-accent) 12%, var(--current-bg-primary));
+  border-color: var(--ls-brand);
+  background-color: color-mix(in srgb, var(--ls-brand) 12%, var(--ls-canvas));
   animation: github-sign-in-pulse 1.4s ease-in-out 3;
 }
 
 @keyframes github-sign-in-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--current-accent) 35%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ls-brand) 35%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--current-accent) 12%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--ls-brand) 12%, transparent);
   }
 }
 

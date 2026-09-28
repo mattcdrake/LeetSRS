@@ -33,7 +33,7 @@ export function CardListItem({ card, now }: CardListItemProps) {
       className={`flex min-h-12 items-center gap-1 px-2 rounded-lg ${
         isExpanded
           ? ''
-          : '-mx-2 transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-bg-secondary)_70%,transparent)]'
+          : '-mx-2 transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-raised)_70%,transparent)]'
       }`}
     >
       <Button
@@ -107,7 +107,7 @@ function DueStatus({ card, now }: { card: CardWithProblem; now: number }) {
   if (card.fsrs.state === FsrsState.New) return <MetaItem className="text-accent">{t.states.new}</MetaItem>;
   const { tone, label } = formatDue(card.fsrs.due, now, t);
   const className = {
-    overdue: 'text-[var(--warning-text)]',
+    overdue: 'text-[var(--ls-warning-text)]',
     today: 'text-primary font-medium',
     upcoming: 'text-tertiary',
   }[tone];
@@ -153,7 +153,10 @@ function CardDetails({ id, card, now }: { id: string; card: CardWithProblem; now
   return (
     <div id={id} className="px-3 pb-2">
       <dl className="grid grid-cols-4 gap-2 pl-[22px] pt-0.5">
-        <Fact label={t.cardStats.nextReview} className={isOverdue && !card.paused ? 'text-[var(--warning-text)]' : ''}>
+        <Fact
+          label={t.cardStats.nextReview}
+          className={isOverdue && !card.paused ? 'text-[var(--ls-warning-text)]' : ''}
+        >
           {formatDate(card.fsrs.due)}
         </Fact>
         <Fact label={t.cardStats.lastReview}>

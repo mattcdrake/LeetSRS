@@ -136,7 +136,7 @@ export function RoadmapProblemRow({
         canSave && (
           <Tooltip label={t.roadmaps.addToSrs}>
             <Button
-              className={`size-8 shrink-0 rounded-md grid place-items-center bg-accent-soft text-accent duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-accent)_18%,var(--current-bg-primary))] ${buttonInteraction}`}
+              className={`size-8 shrink-0 rounded-md grid place-items-center bg-accent-soft text-accent duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-brand)_18%,var(--ls-canvas))] ${buttonInteraction}`}
               aria-label={t.roadmaps.addProblem(title)}
               isDisabled={isAdding}
               onPress={() => onAdd({ frontendId, domain, title })}
@@ -160,7 +160,9 @@ export function RoadmapProblemRow({
 function DueItem({ due, now }: { due: number; now: number }) {
   const t = useI18n();
   const { tone, label } = formatDue(due, now, t);
-  return <MetaItem className={tone === 'overdue' ? 'text-[var(--warning-text)]' : 'text-tertiary'}>{label}</MetaItem>;
+  return (
+    <MetaItem className={tone === 'overdue' ? 'text-[var(--ls-warning-text)]' : 'text-tertiary'}>{label}</MetaItem>
+  );
 }
 
 function RowMenu({
@@ -233,7 +235,7 @@ function StatusGlyph({ state }: { state: ProblemState }) {
         <path
           d="m5 8.2 2 2 4-4.2"
           fill="none"
-          stroke="var(--current-on-accent)"
+          stroke="var(--ls-on-brand)"
           strokeWidth="1.8"
           strokeLinecap="round"
           strokeLinejoin="round"

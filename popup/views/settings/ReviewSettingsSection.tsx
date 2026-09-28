@@ -80,7 +80,7 @@ export function ReviewSettingsSection() {
             />
             <div
               ref={stepper}
-              className={`inline-flex h-7 shrink-0 items-center overflow-hidden rounded-md border has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[color:var(--current-accent)] ${isInvalid ? 'border-[var(--current-danger)]' : 'border-strong'}`}
+              className={`inline-flex h-7 shrink-0 items-center overflow-hidden rounded-md border has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-[color:var(--ls-brand)] ${isInvalid ? 'border-[var(--ls-danger)]' : 'border-strong'}`}
             >
               <Button
                 aria-label={t.settings.reviewSettings.decrease}

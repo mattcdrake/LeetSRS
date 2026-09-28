@@ -32,7 +32,7 @@ function SyncStatusLine({ status }: { status: GistSyncStatus | undefined }) {
     marker = (
       <span
         aria-hidden="true"
-        className="inline-block size-2.5 shrink-0 animate-spin rounded-full border-[1.5px] border-[var(--current-text-tertiary)] border-t-transparent"
+        className="inline-block size-2.5 shrink-0 animate-spin rounded-full border-[1.5px] border-[var(--ls-fg-3)] border-t-transparent"
       />
     );
     text = t.syncing;

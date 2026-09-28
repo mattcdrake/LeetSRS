@@ -117,7 +117,7 @@ export function DataSection() {
             aria-describedby="reset-description"
             onPress={handleReset}
             isDisabled={resetAllDataMutation.isPending}
-            className={`h-7 shrink-0 rounded-md px-2 text-xs font-medium text-danger duration-[120ms] hover:bg-[var(--danger-soft)] ${buttonInteraction}`}
+            className={`h-7 shrink-0 rounded-md px-2 text-xs font-medium text-danger duration-[120ms] hover:bg-[var(--ls-danger-soft)] ${buttonInteraction}`}
           >
             {resetAllDataMutation.isPending ? t.settings.data.resetting : t.settings.data.resetAction}
           </Button>

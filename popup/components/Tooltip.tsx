@@ -23,7 +23,7 @@ export function Tooltip({ label, isDisabled, shouldOpen, children }: TooltipProp
       {children}
       <AriaTooltip
         offset={6}
-        className="z-[1200] max-w-56 rounded-md bg-[var(--current-text-primary)] px-2 py-1 text-[11px] text-[var(--current-bg-primary)] shadow-card"
+        className="z-[1200] max-w-56 rounded-md bg-[var(--ls-fg)] px-2 py-1 text-[11px] text-[var(--ls-canvas)] shadow-card"
       >
         {label}
       </AriaTooltip>

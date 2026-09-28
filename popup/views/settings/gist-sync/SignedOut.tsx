@@ -44,7 +44,7 @@ export function SignedOut({
           <span role="status" className="flex items-center gap-2 text-xs text-secondary">
             <span
               aria-hidden="true"
-              className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-[var(--current-text-tertiary)] border-t-transparent"
+              className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-[var(--ls-fg-3)] border-t-transparent"
             />
             {t.signingIn}
           </span>

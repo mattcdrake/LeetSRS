@@ -9,7 +9,7 @@
   min-height: 32px;
   padding: 4px 6px;
   border-radius: 6px;
-  color: var(--current-accent);
+  color: var(--ls-brand);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -20,33 +20,33 @@
 
 .problem-save-trigger[data-variant="card"] {
   padding: 6px 12px;
-  background: var(--current-accent-soft);
+  background: var(--ls-brand-soft);
 }
 
 .problem-save-trigger[data-variant="primary"] {
   flex: 1;
   min-height: 36px;
   border-radius: 8px;
-  background: var(--current-accent);
-  color: var(--current-on-accent);
+  background: var(--ls-brand);
+  color: var(--ls-on-brand);
   font-size: 13px;
 }
 
 .problem-save-trigger[data-variant="row"][data-hovered],
 .problem-save-trigger[data-variant="row"][aria-expanded="true"] {
-  background: var(--current-accent-soft);
+  background: var(--ls-brand-soft);
 }
 
 .problem-save-trigger[data-variant="card"][data-hovered] {
-  background: color-mix(in srgb, var(--current-accent) 18%, var(--current-bg-surface));
+  background: color-mix(in srgb, var(--ls-brand) 18%, var(--ls-surface));
 }
 
 .problem-save-trigger[data-variant="primary"][data-hovered] {
-  background: color-mix(in srgb, var(--current-accent) 88%, var(--current-text-primary));
+  background: color-mix(in srgb, var(--ls-brand) 88%, var(--ls-fg));
 }
 
 .problem-save-trigger[data-focus-visible] {
-  outline: 2px solid var(--current-accent);
+  outline: 2px solid var(--ls-brand);
   outline-offset: 2px;
 }
 
@@ -81,10 +81,10 @@
   width: 100%;
   max-height: 100%;
   overflow-y: auto;
-  border-top: 1px solid var(--current-border-strong);
+  border-top: 1px solid var(--ls-line-strong);
   border-radius: 16px 16px 0 0;
-  background: var(--current-bg-surface);
-  color: var(--current-text-primary);
+  background: var(--ls-surface);
+  color: var(--ls-fg);
   box-shadow: 0 -12px 32px -12px rgb(0 0 0 / 0.3);
   outline: none;
 }
@@ -121,7 +121,7 @@
 }
 
 .problem-save-sheet button[data-focus-visible] {
-  outline: 2px solid var(--current-accent);
+  outline: 2px solid var(--ls-brand);
   outline-offset: -2px;
 }
 

@@ -59,7 +59,7 @@ export function ReviewCard({ card, onRate, isProcessing = false, children }: Rev
               aria-label={t.ratings[rating]}
               aria-describedby={`${id}-${rating}`}
               style={{ '--rating-color': colors[rating] } as CSSProperties}
-              className={`h-10 min-w-0 px-1 rounded-lg bg-secondary flex flex-col items-center justify-center whitespace-nowrap duration-[120ms] data-[hovered]:bg-[color-mix(in_srgb,var(--rating-color)_10%,var(--current-bg-secondary))] ${buttonInteraction}`}
+              className={`h-10 min-w-0 px-1 rounded-lg bg-secondary flex flex-col items-center justify-center whitespace-nowrap duration-[120ms] data-[hovered]:bg-[color-mix(in_srgb,var(--rating-color)_10%,var(--ls-raised))] ${buttonInteraction}`}
             >
               <span className="flex items-center gap-1.5 text-[13px] leading-4 font-medium text-primary">
                 <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--rating-color)]" />

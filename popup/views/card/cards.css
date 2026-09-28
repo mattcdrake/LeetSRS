@@ -5,6 +5,6 @@
 
 @container scroll-state(stuck: top) {
   .card-group-header > span {
-    border-bottom-color: var(--current-border);
+    border-bottom-color: var(--ls-line);
   }
 }

@@ -1,6 +1,6 @@
 // Shared popup controls: flat surfaces, consistent sizing, and visible keyboard focus.
 export const buttonInteraction =
-  'cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--current-accent)] disabled:opacity-50 disabled:cursor-not-allowed data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
+  'cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--ls-brand)] disabled:opacity-50 disabled:cursor-not-allowed data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
 
 export const compactOutlineButton = `h-7 px-2.5 rounded-md border border-strong text-xs font-medium text-primary duration-[120ms] hover:bg-secondary ${buttonInteraction}`;
 
@@ -17,4 +17,4 @@ export const menuItem =
   'h-8 px-2 rounded-md flex items-center gap-2 text-xs text-primary cursor-pointer outline-none transition-colors duration-[120ms] data-[focused]:bg-secondary data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
 
 export const problemRow =
-  'flex min-h-12 items-center gap-2.5 -mx-2 px-2 py-1.5 rounded-lg transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--current-bg-secondary)_70%,transparent)]';
+  'flex min-h-12 items-center gap-2.5 -mx-2 px-2 py-1.5 rounded-lg transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-raised)_70%,transparent)]';

@@ -61,7 +61,7 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
         <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-secondary tabular-nums">
           <LegendItem className="bg-accent">{t.roadmaps.legend.reviewed(roadmap.reviewed)}</LegendItem>
           <LegendItem className="bg-accent opacity-40">{t.roadmaps.legend.new(roadmap.new)}</LegendItem>
-          <LegendItem className="bg-[var(--current-skipped)]">{t.roadmaps.legend.skipped(roadmap.skipped)}</LegendItem>
+          <LegendItem className="bg-[var(--ls-skipped)]">{t.roadmaps.legend.skipped(roadmap.skipped)}</LegendItem>
         </ul>
       </div>
       <RoadmapToolbar

@@ -9,7 +9,7 @@ interface DifficultyProps {
 
 export function Difficulty({ difficulty, tone = 'color' }: DifficultyProps) {
   const t = useI18n();
-  const color = `var(--current-difficulty-${difficulty})`;
+  const color = `var(--ls-difficulty-${difficulty})`;
   const isQuiet = tone === 'quiet';
   return (
     <span
