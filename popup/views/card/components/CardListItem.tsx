@@ -47,7 +47,7 @@ export function CardListItem({ card, now }: CardListItemProps) {
         />
         <span className="min-w-0 flex-1">
           <span
-            className={`flex min-w-0 items-center gap-1 text-[13px] leading-[18px] ${card.paused ? 'text-secondary' : 'text-primary'}`}
+            className={`flex min-w-0 items-center gap-1 text-body leading-[18px] ${card.paused ? 'text-secondary' : 'text-primary'}`}
           >
             <span className="shrink-0 text-tertiary tabular-nums">{card.frontendId}.</span>
             <span className={`truncate ${isExpanded ? 'font-medium' : ''}`}>{title}</span>
@@ -170,7 +170,7 @@ function CardDetails({ id, card, now }: { id: string; card: CardWithProblem; now
         <Fact label={t.cardStats.reviews}>{card.fsrs.reps}</Fact>
         <Fact label={t.cardStats.lapses}>{card.fsrs.lapses}</Fact>
       </dl>
-      <p className="mt-2 pl-[22px] text-[11px] leading-4 text-tertiary tabular-nums">{details.join(' · ')}</p>
+      <p className="mt-2 pl-[22px] text-caption leading-4 text-tertiary tabular-nums">{details.join(' · ')}</p>
 
       <div className="mt-2.5 pt-1.5 border-t border-current flex items-center gap-0.5 -mx-1.5 text-xs text-secondary">
         {card.youtubeUrl && (
@@ -225,8 +225,8 @@ function CardDetails({ id, card, now }: { id: string; card: CardWithProblem; now
 function Fact({ label, className = '', children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="truncate text-[11px] leading-4 text-tertiary">{label}</dt>
-      <dd className={`truncate text-[13px] leading-[18px] font-medium tabular-nums ${className}`}>{children}</dd>
+      <dt className="truncate text-caption leading-4 text-tertiary">{label}</dt>
+      <dd className={`truncate text-body leading-[18px] font-medium tabular-nums ${className}`}>{children}</dd>
     </div>
   );
 }

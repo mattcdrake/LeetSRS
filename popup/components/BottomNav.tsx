@@ -60,7 +60,7 @@ export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
                 <item.Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={isActive ? 2 : 1.75} />
                 {isActive && <span className="whitespace-nowrap">{item.label}</span>}
                 {showDueCount && (
-                  <span className="min-w-4 h-4 px-1 rounded bg-accent-soft text-accent text-[11px] font-semibold grid place-items-center tabular-nums">
+                  <span className="min-w-4 h-4 px-1 rounded bg-accent-soft text-accent text-caption font-semibold grid place-items-center tabular-nums">
                     {dueCount > 99 ? '99+' : dueCount}
                   </span>
                 )}

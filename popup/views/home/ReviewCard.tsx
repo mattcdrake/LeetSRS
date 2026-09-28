@@ -34,7 +34,7 @@ export function ReviewCard({ card, onRate, isProcessing = false, children }: Rev
           </span>
           <Difficulty difficulty={card.difficulty} />
           {card.fsrs.state === State.New && (
-            <span className="ml-auto h-5 px-1.5 rounded-md bg-accent-soft text-accent text-[11px] font-medium grid place-items-center">
+            <span className="ml-auto h-5 px-1.5 rounded-md bg-accent-soft text-accent text-caption font-medium grid place-items-center">
               {t.states.new}
             </span>
           )}
@@ -43,7 +43,7 @@ export function ReviewCard({ card, onRate, isProcessing = false, children }: Rev
           href={getLeetcodeProblemUrl(card)}
           target="_blank"
           rel="noopener noreferrer"
-          className={`mt-1.5 flex items-start gap-1.5 text-[17px] leading-[22px] font-semibold tracking-[-0.01em] text-primary hover:text-accent rounded-sm ${buttonInteraction}`}
+          className={`mt-1.5 flex items-start gap-1.5 text-stat leading-[22px] font-semibold text-primary hover:text-accent rounded-sm ${buttonInteraction}`}
         >
           <span className="min-w-0 break-words">{getProblemTitle(card, card.domain)}</span>
           <LuArrowUpRight aria-hidden="true" className="size-3.5 mt-1 shrink-0 text-tertiary" strokeWidth={2} />
@@ -59,11 +59,11 @@ export function ReviewCard({ card, onRate, isProcessing = false, children }: Rev
               style={{ '--rating-color': ratingColor(rating) } as CSSProperties}
               className={`h-10 min-w-0 px-1 rounded-lg bg-secondary flex flex-col items-center justify-center whitespace-nowrap duration-[120ms] data-[hovered]:bg-[color-mix(in_srgb,var(--rating-color)_10%,var(--ls-raised))] ${buttonInteraction}`}
             >
-              <span className="flex items-center gap-1.5 text-[13px] leading-4 font-medium text-primary">
+              <span className="flex items-center gap-1.5 text-body leading-4 font-medium text-primary">
                 <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--rating-color)]" />
                 {t.ratings[rating]}
               </span>
-              <span id={`${id}-${rating}`} className="text-[11px] leading-[14px] text-tertiary tabular-nums">
+              <span id={`${id}-${rating}`} className="text-caption leading-[14px] text-tertiary tabular-nums">
                 {preview.data ? t.format.intervalShort(preview.data[rating]) : '…'}
               </span>
             </Button>

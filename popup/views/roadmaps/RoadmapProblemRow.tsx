@@ -71,9 +71,7 @@ export function RoadmapProblemRow({
     <li className={problemRow}>
       <StatusGlyph state={state} />
       <div className="min-w-0 flex-1">
-        <div
-          className={`flex min-w-0 items-center gap-1 text-[13px] leading-[18px] ${skipped ? 'text-secondary' : ''}`}
-        >
+        <div className={`flex min-w-0 items-center gap-1 text-body leading-[18px] ${skipped ? 'text-secondary' : ''}`}>
           <span className="sr-only">{t.roadmaps.filters[state]}</span>
           {metadata && available ? (
             <ProblemLink
@@ -109,7 +107,7 @@ export function RoadmapProblemRow({
                 ))}
               {skipped && <MetaItem className="text-tertiary">{t.roadmaps.filters.skipped}</MetaItem>}
               {isNext && (
-                <span className="ml-1 px-1 rounded bg-accent-soft text-accent text-[11px] font-medium leading-4">
+                <span className="ml-1 px-1 rounded bg-accent-soft text-accent text-caption font-medium leading-4">
                   {t.roadmaps.next}
                 </span>
               )}

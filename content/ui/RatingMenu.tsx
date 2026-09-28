@@ -151,9 +151,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
         <>
           <div className="px-3.5 pt-3 pb-2">
             <div className="flex items-center gap-2">
-              <div className="min-w-0 flex-1 text-[14px] font-semibold tracking-[-0.01em]">
-                {t.contentScript.howDidItGo}
-              </div>
+              <div className="min-w-0 flex-1 text-panel-title font-semibold">{t.contentScript.howDidItGo}</div>
               <span className="rating-wordmark shrink-0 text-fg-3">
                 Leet<span className="text-brand">SRS</span>
               </span>
@@ -161,7 +159,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
             <div className="mt-0.5 flex h-5 items-center gap-2">
               {problem && preview && !loadFailed ? (
                 <>
-                  <div className="min-w-0 flex-1 truncate text-[12px] text-fg-3">
+                  <div className="min-w-0 flex-1 truncate text-panel-meta text-fg-3">
                     <span className="tabular-nums">{problem.frontendId}.</span>{' '}
                     {getProblemTitle(problem, problem.domain)}
                     {status && (
@@ -226,7 +224,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
         </div>
       )}
       {!showSaved && hint && !loadFailed && (
-        <div className="mt-1.5 flex h-10 items-center gap-1.5 border-t border-line px-3.5 text-[12px] text-fg-3">
+        <div className="mt-1.5 flex h-10 items-center gap-1.5 border-t border-line px-3.5 text-panel-meta text-fg-3">
           <span className="truncate">{t.contentScript.autoOpenHint}</span>
           <Button
             className="shrink-0 cursor-pointer rounded-sm font-medium text-fg-2 hover:underline data-focus-visible:outline-2 data-focus-visible:outline-focus data-focus-visible:outline-offset-2"
@@ -271,18 +269,18 @@ function SavedView({
         <LuCheck className="size-3.5" strokeWidth={2.4} />
       </span>
       <div role="status" className="min-w-0 flex-1">
-        <div className="text-[14px] font-semibold tracking-[-0.01em]">
+        <div className="text-panel-title font-semibold">
           {saved.rating ? t.contentScript.savedAs(t.ratings[saved.rating]) : t.contentScript.saved}
         </div>
         {saved.rating && (
-          <div className="truncate text-[12px] text-fg-3">
+          <div className="truncate text-panel-meta text-fg-3">
             {t.contentScript.reviewIn(saved.scheduledDays)} · {t.contentScript.reviewDate(new Date(saved.due))}
           </div>
         )}
       </div>
       {saved.undoToken && (
         <Button
-          className="-mr-1.5 flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 text-[12px] font-medium text-fg-2 hover:bg-raised data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-focus-visible:outline-focus"
+          className="-mr-1.5 flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 text-panel-meta font-medium text-fg-2 hover:bg-raised data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-focus-visible:outline-focus"
           isDisabled={busy}
           onPress={onUndo}
         >
@@ -298,7 +296,7 @@ function ErrorBanner({ children, action }: { children: ReactNode; action?: React
   return (
     <div
       role="alert"
-      className="mx-1.5 mb-1 flex items-start gap-2 rounded-lg bg-danger-soft px-2.5 py-2 text-[12px] leading-[1.4] text-danger-text"
+      className="mx-1.5 mb-1 flex items-start gap-2 rounded-lg bg-danger-soft px-2.5 py-2 text-panel-meta leading-[1.4] text-danger-text"
     >
       <LuCircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
       <span className="flex-1">{children}</span>

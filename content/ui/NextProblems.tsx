@@ -19,7 +19,7 @@ export function NextProblems({
 }: Props & { action?: ReactNode; pointerGuard: boolean; className?: string }) {
   return (
     <div className={`border-t border-line px-1.5 pt-1.5 ${pointerGuard ? 'pointer-guard' : ''} ${className}`}>
-      <div className="flex h-6 items-center justify-between pr-1 pl-2 text-[12px] font-medium text-fg-3">
+      <div className="flex h-6 items-center justify-between pr-1 pl-2 text-panel-meta font-medium text-fg-3">
         <span>{props.t.contentScript.upNext}</span>
         {action}
       </div>
@@ -60,7 +60,7 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
   const text = t.contentScript;
   if (error) {
     return (
-      <div className="px-2 py-1 text-[12px] text-fg-3" role="alert">
+      <div className="px-2 py-1 text-panel-meta text-fg-3" role="alert">
         {kind === 'review' ? text.nextReviewFailed : text.nextRoadmapFailed}{' '}
         <Button
           className="cursor-pointer rounded-sm font-medium text-fg-2 hover:underline data-focus-visible:outline-2 data-focus-visible:outline-focus data-focus-visible:outline-offset-2"
@@ -85,7 +85,7 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
   }
   if (!data.problem) {
     return (
-      <div className="px-2 py-1 text-[12px] text-fg-3">
+      <div className="px-2 py-1 text-panel-meta text-fg-3">
         {data.name ? text.noNextRoadmapProblem(data.name) : text.noOtherReviews}
       </div>
     );
@@ -101,11 +101,11 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
         <Icon className="size-3.5" aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-2 text-[13px] font-medium wrap-anywhere">
+        <span className="line-clamp-2 text-panel-body font-medium wrap-anywhere">
           <span className="text-fg-3 tabular-nums">{problem.frontendId}.</span>{' '}
           {getProblemTitle(problem, problem.domain)}
         </span>
-        <span className="block text-[12px] text-fg-3">
+        <span className="block text-panel-meta text-fg-3">
           {data.name ? text.nextInRoadmap(data.name) : text.nextReview}
         </span>
       </span>

@@ -114,7 +114,7 @@ function RoadmapItem({ roadmap, onOpen }: { roadmap: RoadmapSummary; onOpen: () 
         aria-label={t.roadmaps.open(roadmap.name)}
         onClick={onOpen}
       >
-        <span className="min-w-0 truncate text-[13px] font-medium transition-colors duration-[120ms] group-hover:text-accent">
+        <span className="min-w-0 truncate text-body font-medium transition-colors duration-[120ms] group-hover:text-accent">
           {roadmap.name}
         </span>
         <span aria-hidden="true" className="ml-auto shrink-0 text-xs text-tertiary tabular-nums">

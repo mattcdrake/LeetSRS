@@ -15,7 +15,7 @@ export function NoMatches({ title, hint, clearLabel, onClear }: NoMatchesProps) 
       <div className="mx-auto size-9 rounded-full bg-secondary grid place-items-center text-tertiary">
         <LuSearch aria-hidden="true" className="size-4" strokeWidth={2} />
       </div>
-      <p className="mt-3 text-[13px] font-medium">{title}</p>
+      <p className="mt-3 text-body font-medium">{title}</p>
       <p className="mt-1 text-xs text-tertiary">{hint}</p>
       <button
         type="button"

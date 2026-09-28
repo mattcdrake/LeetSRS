@@ -157,7 +157,7 @@ function SaveProblemMenu({
       <div aria-hidden="true" className="mx-auto mt-2 h-1 w-8 rounded-full bg-[var(--ls-line-strong)]" />
       <div className="flex items-start gap-3 px-4 pt-2.5 pb-3">
         <div className="min-w-0 flex-1">
-          <Heading slot="title" className="text-[15px] font-semibold tracking-[-0.01em]">
+          <Heading slot="title" className="text-title font-semibold">
             {t.contentScript.howDidItGo}
           </Heading>
           <p className="mt-0.5 truncate text-xs text-tertiary">

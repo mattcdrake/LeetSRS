@@ -2,6 +2,9 @@
 export const buttonInteraction =
   'cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--ls-brand)] disabled:opacity-50 disabled:cursor-not-allowed data-[disabled]:opacity-50 data-[disabled]:cursor-not-allowed';
 
+// The one filled brand action on a screen: 36px, radius-lg, body text.
+export const primaryButton = `h-9 px-4 rounded-lg inline-flex items-center justify-center gap-2 bg-accent text-on-accent text-body font-medium duration-[120ms] hover:brightness-95 ${buttonInteraction}`;
+
 export const compactOutlineButton = `h-7 px-2.5 rounded-md border border-strong text-xs font-medium text-primary duration-[120ms] hover:bg-secondary ${buttonInteraction}`;
 
 export const compactGhostButton = `h-7 px-2 shrink-0 rounded-md inline-flex items-center gap-1 text-xs text-secondary duration-[120ms] hover:bg-secondary hover:text-primary ${buttonInteraction}`;

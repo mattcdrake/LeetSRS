@@ -12,7 +12,7 @@ export function Tooltip({ title, text, ...props }: { title: string; text: string
     >
       <div
         data-theme={theme}
-        className="flex items-center gap-1.5 rounded-[7px] bg-surface px-2.5 py-1.5 text-[12px] leading-normal whitespace-nowrap text-fg shadow-(--ls-shadow-float)"
+        className="flex items-center gap-1.5 rounded-[7px] bg-surface px-2.5 py-1.5 text-panel-meta leading-normal whitespace-nowrap text-fg shadow-(--ls-shadow-float)"
       >
         <span className="font-medium">{title}</span>
         <span className="text-fg-3">{text}</span>
