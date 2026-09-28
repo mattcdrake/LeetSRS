@@ -4,7 +4,7 @@
 @source "../../shared/ui";
 
 @font-face {
-  font-family: "JetBrains Mono";
+  font-family: "JetBrains Mono Wordmark";
   src: url("../../assets/fonts/jetbrains-mono-wordmark.woff2") format("woff2");
   font-weight: 400;
   font-display: swap;
@@ -61,7 +61,7 @@
 }
 
 .rating-wordmark {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "JetBrains Mono Wordmark", "JetBrains Mono", ui-monospace, monospace;
   font-size: 11px;
   letter-spacing: -0.01em;
 }

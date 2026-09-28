@@ -32,7 +32,7 @@
 ## UI and styling
 
 - The [LeetSRS design system](https://claude.ai/artifact/SHkAWzAUpZ6rPfxWCLjK1W) defines the colours, type, spacing, shapes and icons for both the popup and the LeetCode.com panel. Read its README before changing UI.
-- When the code and the design system disagree, follow the design system. Known gaps are tracked in [#728](https://github.com/mattcdrake/LeetSRS/issues/728).
+- When the code and the design system disagree, follow the design system.
 - Style with the `--ls-*` tokens from `shared/ui/tokens.css`; do not hard-code colours or add one-off sizes.
 
 ## Tests

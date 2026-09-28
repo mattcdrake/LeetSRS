@@ -33,18 +33,20 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-          <h1 className="text-xl font-semibold mb-2">{t.errors.somethingWentWrong}</h1>
-          <p className="text-sm text-muted-foreground mb-4">{t.errors.unexpectedError}</p>
-          <details className="text-xs text-muted-foreground max-w-full">
+          <h1 className="mb-2 text-[19px] leading-6 font-semibold tracking-[-0.015em] text-primary">
+            {t.errors.somethingWentWrong}
+          </h1>
+          <p className="mb-4 text-[13px] text-secondary">{t.errors.unexpectedError}</p>
+          <details className="max-w-full text-xs text-secondary">
             <summary className="cursor-pointer mb-2">{t.errors.errorDetails}</summary>
-            <pre className="text-left overflow-auto p-2 bg-muted rounded">
+            <pre className="text-left overflow-auto p-2 bg-secondary rounded-md">
               {this.state.error?.stack || this.state.error?.message}
             </pre>
           </details>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+            className="mt-4 h-9 rounded-lg bg-accent px-4 text-xs font-medium text-on-accent hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {t.actions.reload}
           </button>

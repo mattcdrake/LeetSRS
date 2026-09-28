@@ -13,7 +13,7 @@ import {
 } from 'react-aria-components';
 import { LuCheck, LuChevronDown, LuListFilter, LuSearch, LuX } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { buttonInteraction, menuItem } from '@/popup/styles';
+import { buttonInteraction, menuItem, menuPopover } from '@/popup/styles';
 import { ROADMAP_FILTERS, type RoadmapFilter } from './RoadmapProblemList';
 
 // Menu key for "no filter"; RoadmapFilter ids never collide with it.
@@ -43,11 +43,7 @@ export function RoadmapToolbar({
   const filterLabel = filter ? t.roadmaps.filters[filter] : t.roadmaps.all;
 
   const menu = (
-    <Popover
-      placement="bottom end"
-      offset={6}
-      className="z-[1100] w-48 rounded-xl border border-strong bg-surface p-1 shadow-[0_8px_24px_-6px_rgb(0_0_0/0.18)]"
-    >
+    <Popover placement="bottom end" offset={6} className={`${menuPopover} w-48`}>
       <Menu
         className="outline-none"
         selectionMode="single"
