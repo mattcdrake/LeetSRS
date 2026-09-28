@@ -1,5 +1,5 @@
-/* Rating anatomy shared by the LeetCode panel and the popup sheet. It reads only --ls-* tokens:
-   shared/ui/tokens.css declares them on the page and popup/App.css in the popup. */
+/* Rating anatomy shared by the LeetCode panel and the popup sheet. It reads only --ls-* tokens
+   from shared/ui/tokens.css. */
 .rating-panel {
   padding: 0 0 6px;
   margin: 0;

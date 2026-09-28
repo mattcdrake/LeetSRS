@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap");
 @import "tailwindcss";
+@import "../shared/ui/tokens.css";
 
 body {
   font-family: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -37,74 +38,6 @@ body {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* LeetSRS design tokens for the popup. shared/ui/tokens.css declares the same names for LeetCode.com. */
-:root {
-  /* Light theme (default) */
-  --ls-canvas: #fafafa;
-  --ls-surface: #ffffff;
-  --ls-raised: #f4f4f5;
-  --ls-raised-2: #e4e4e7;
-  --ls-fg: #18181b;
-  --ls-fg-2: #52525b;
-  --ls-fg-3: #71717a;
-  --ls-line: rgb(0 0 0 / 0.07);
-  --ls-line-strong: rgb(0 0 0 / 0.11);
-  --ls-brand: #267a33;
-  --ls-brand-soft: #ecf5ed;
-  --ls-on-brand: #ffffff;
-  --ls-focus: var(--ls-brand);
-  --ls-danger: #dc2626;
-  --ls-info: #3f7fe0;
-  --ls-warning: #e08a1e;
-  --ls-difficulty-easy: #0b7c7e;
-  --ls-difficulty-medium: #a15c00;
-  --ls-difficulty-hard: #cf1f45;
-  --ls-skipped: #a1a1aa;
-  --ls-shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
-  /* Calendar load levels. Keep heat-4 at about 90% or more so on-brand text stays AA. */
-  --ls-heat-1: color-mix(in srgb, var(--ls-brand) 11%, var(--ls-canvas));
-  --ls-heat-2: color-mix(in srgb, var(--ls-brand) 24%, var(--ls-canvas));
-  --ls-heat-3: color-mix(in srgb, var(--ls-brand) 44%, var(--ls-canvas));
-  --ls-heat-4: color-mix(in srgb, var(--ls-brand) 92%, var(--ls-canvas));
-  --ls-warning-text: #a15c00;
-  /* Red text on surfaces; --ls-danger stays for filled buttons. */
-  --ls-danger-text: #c42121;
-  --ls-danger-soft: color-mix(in srgb, var(--ls-danger) 9%, var(--ls-surface));
-  --ls-switch-off: #a1a1aa;
-}
-
-/* Dark theme overrides */
-.dark {
-  --ls-canvas: #111113;
-  --ls-surface: #1a1a1d;
-  --ls-raised: #222226;
-  --ls-raised-2: #2c2c31;
-  --ls-fg: #ededef;
-  --ls-fg-2: #a1a1aa;
-  --ls-fg-3: #8b8b94;
-  --ls-line: rgb(255 255 255 / 0.06);
-  --ls-line-strong: rgb(255 255 255 / 0.1);
-  --ls-brand: #5cc466;
-  --ls-brand-soft: rgb(92 196 102 / 0.12);
-  --ls-on-brand: #0b1a0d;
-  --ls-danger: #ea5a52;
-  --ls-info: #6d9ff0;
-  --ls-warning: #f2a03d;
-  --ls-difficulty-easy: #2dd4bf;
-  --ls-difficulty-medium: #fbbf24;
-  --ls-difficulty-hard: #fb7185;
-  --ls-skipped: #52525b;
-  --ls-shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  --ls-heat-1: color-mix(in srgb, var(--ls-brand) 14%, var(--ls-surface));
-  --ls-heat-2: color-mix(in srgb, var(--ls-brand) 28%, var(--ls-surface));
-  --ls-heat-3: color-mix(in srgb, var(--ls-brand) 48%, var(--ls-surface));
-  --ls-heat-4: color-mix(in srgb, var(--ls-brand) 80%, var(--ls-surface));
-  --ls-warning-text: var(--ls-warning);
-  --ls-danger-text: #f07474;
-  --ls-danger-soft: color-mix(in srgb, var(--ls-danger) 14%, var(--ls-surface));
-  --ls-switch-off: #52525b;
 }
 
 /* Theme-aware utilities. @utility, unlike @layer utilities, lets Tailwind generate variants such as hover:bg-secondary. */
