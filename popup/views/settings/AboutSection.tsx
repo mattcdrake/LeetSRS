@@ -1,12 +1,11 @@
 import { LuArrowUpRight, LuStar } from 'react-icons/lu';
 import { buttonInteraction } from '@/popup/styles';
+import { CHROME_WEB_STORE_REVIEWS_URL } from '@/shared/rating-cta';
 import { useI18n } from '../../contexts/I18nContext';
 import { settingsCard } from './SettingsGroup';
 
 const APP_VERSION = __APP_VERSION__;
 const GITHUB_URL = 'https://github.com/mattcdrake/LeetSRS';
-const CHROME_STORE_REVIEWS_URL =
-  'https://chromewebstore.google.com/detail/leetsrs/odgfcigkohoimpeeooifjdglncggkgko/reviews?utm_source=item-share-cb';
 
 export function AboutSection() {
   const t = useI18n();
@@ -19,7 +18,7 @@ export function AboutSection() {
   return (
     <section aria-label={t.settings.about.title}>
       <a
-        href={CHROME_STORE_REVIEWS_URL}
+        href={CHROME_WEB_STORE_REVIEWS_URL}
         target="_blank"
         rel="noopener noreferrer"
         className={`${settingsCard} mb-4 flex items-center gap-3 p-3 hover:bg-[color-mix(in_srgb,var(--ls-raised)_50%,var(--ls-surface))] ${buttonInteraction}`}

@@ -39,6 +39,14 @@ const zhCN: Translations = {
     dismiss: '关闭版本说明',
   },
 
+  ratingPrompt: {
+    title: '连续一周，从未间断',
+    body: '坚持得很好。LeetSRS 由一名开发者独立打造，你的一条评价会很有帮助。',
+    rateOn: (store: string) => `在 ${store} 评分`,
+    noThanks: '不用了',
+    dismiss: '关闭',
+  },
+
   nav: {
     home: '首页',
     calendar: '日历',

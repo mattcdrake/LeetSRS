@@ -24,3 +24,10 @@ cause it to reappear next time.
    when its source changes.
 
 Keep IDs stable across copy edits; changing an ID makes the dialog eligible again.
+
+## Rating prompts
+
+Rating prompts share one [`ratingCta`](../../shared/rating-cta.ts) record. Skip a
+prompt once it exists, and set it with `background.resolveRatingCta` only when the
+user rates or declines. Closing a prompt acknowledges only that prompt, so a later
+one can still ask. The settings rating link never sets it.

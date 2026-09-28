@@ -10,6 +10,7 @@ import {
 import { learningDocumentItem } from '@/shared/learning-document';
 import { patMigrationItem } from '@/shared/legacy/github-pat';
 import { popupDialogAcknowledgmentsItem } from '@/shared/popup-dialogs';
+import { ratingCtaItem } from '@/shared/rating-cta';
 import { gistSyncQueryKeys } from './gist-sync';
 import { learningDocumentQueryKey } from './learning-document';
 import { popupDialogAcknowledgmentsQueryKey } from './popup-dialogs';
@@ -36,8 +37,10 @@ export function useStorageQueryEvents() {
         void refresh(keys);
       });
     const unwatch = [
-      watch(learningDocumentItem, learningKeys),
+      // Dialog eligibility can depend on review progress.
+      watch(learningDocumentItem, [...learningKeys, ...eligibilityKeys]),
       watch(popupDialogAcknowledgmentsItem, dialogKeys),
+      watch(ratingCtaItem, eligibilityKeys),
       watch(gistConnectionItem, connectionKeys),
       watch(patMigrationItem, [gistSyncQueryKeys.auth]),
       watch(githubAuthorizationItem, [gistSyncQueryKeys.auth]),
