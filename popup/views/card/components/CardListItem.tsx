@@ -31,9 +31,7 @@ export function CardListItem({ card, now }: CardListItemProps) {
   const row = (
     <div
       className={`flex min-h-12 items-center gap-1 px-2 rounded-lg ${
-        isExpanded
-          ? ''
-          : '-mx-2 transition-colors duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-raised)_70%,transparent)]'
+        isExpanded ? '' : '-mx-2 transition-colors duration-[120ms] hover:bg-[var(--ls-row-hover)]'
       }`}
     >
       <Button

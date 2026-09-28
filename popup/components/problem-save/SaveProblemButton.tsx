@@ -4,11 +4,9 @@ import { Button, Dialog, DialogTrigger, Heading, Modal, ModalOverlay } from 'rea
 import { LuPlus, LuX } from 'react-icons/lu';
 import type { Grade } from 'ts-fsrs';
 import { useI18n } from '@/popup/contexts/I18nContext';
-import { useTheme } from '@/popup/hooks/useTheme';
 import { ratingPreviewQueryOptions, useAddCardMutation, useRateCardMutation } from '@/popup/queries/cards';
 import type { ProblemReference } from '@/shared/learning-document';
 import { RatingOptions } from '@/shared/ui/RatingOptions';
-import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import './problem-save.css';
 
 interface SaveTarget extends ProblemReference {
@@ -147,7 +145,6 @@ function SaveProblemMenu({
   onClose: () => void;
 }) {
   const t = useI18n();
-  const colors = RATING_COLORS[useTheme()];
   const { frontendId, domain } = target;
   const preview = useQuery(ratingPreviewQueryOptions({ frontendId, domain }));
 
@@ -178,7 +175,6 @@ function SaveProblemMenu({
       </div>
       <RatingOptions
         t={t}
-        colors={colors}
         preview={preview.isFetching || preview.isError ? undefined : preview.data}
         disabled={busy}
         onSave={onSave}

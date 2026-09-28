@@ -8,7 +8,7 @@ const tones = {
   warning: {
     Icon: LuTriangleAlert,
     icon: 'text-warning',
-    background: 'bg-[color-mix(in_srgb,var(--ls-warning)_12%,var(--ls-surface))]',
+    background: 'bg-[var(--ls-warning-soft)]',
     role: 'alert',
   },
   success: { Icon: LuCircleCheck, icon: 'text-accent', background: 'bg-accent-soft', role: 'status' },

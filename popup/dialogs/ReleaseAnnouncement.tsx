@@ -30,7 +30,7 @@ export function ReleaseAnnouncement({ onDismiss, onNavigate }: PopupDialogConten
         </Button>
       </header>
 
-      <section className="mt-4 rounded-xl border border-[color-mix(in_srgb,var(--ls-brand)_25%,transparent)] bg-[color-mix(in_srgb,var(--ls-brand)_7%,var(--ls-canvas))] p-3.5">
+      <section className="mt-4 rounded-xl bg-accent-soft p-3.5">
         <h3 className="flex items-center gap-2 text-sm font-semibold">
           <FiMap aria-hidden="true" className="h-4 w-4 shrink-0 text-brand" />
           {t.roadmapsTitle}

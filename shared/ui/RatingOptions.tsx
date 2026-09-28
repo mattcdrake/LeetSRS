@@ -4,10 +4,10 @@ import { LuPlus } from 'react-icons/lu';
 import type { Grade } from 'ts-fsrs';
 import type { Translations } from '@/shared/i18n';
 import { type RatingPreview, ratingSchema } from '@/shared/learning-document';
+import { ratingColor } from '@/shared/ui/rating-colors';
 
 interface RatingOptionsProps {
   t: Translations;
-  colors: Record<Grade, string>;
   preview?: RatingPreview;
   disabled: boolean;
   onSave: (rating?: Grade) => void;
@@ -19,7 +19,6 @@ interface RatingOptionsProps {
 
 export function RatingOptions({
   t,
-  colors,
   preview,
   disabled,
   onSave,
@@ -41,7 +40,7 @@ export function RatingOptions({
             data-selected={selected === rating || undefined}
             isDisabled={disabled || !preview}
             onPress={() => onSave(rating)}
-            style={{ '--rating-color': colors[rating] } as CSSProperties}
+            style={{ '--rating-color': ratingColor(rating) } as CSSProperties}
           >
             <span className="rating-dot-slot" aria-hidden="true">
               <span className="rating-dot" />

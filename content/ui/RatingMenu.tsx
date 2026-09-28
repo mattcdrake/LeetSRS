@@ -10,7 +10,7 @@ import type { Translations } from '@/shared/i18n/index';
 import { type RatingPreview, ratingSchema } from '@/shared/learning-document';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RatingOptions } from '@/shared/ui/RatingOptions';
-import { RATING_COLORS } from '@/shared/ui/rating-colors';
+import { ratingColor } from '@/shared/ui/rating-colors';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { NextProblems } from './NextProblems';
 import { useSurfaceTheme } from './theme';
@@ -24,7 +24,6 @@ const POINTER_GUARD_MS = 300;
 export function RatingMenu({ t, session }: { t: Translations; session: ReturnType<typeof useRatingSession> }) {
   const { saved, busy } = session;
   const theme = useSurfaceTheme();
-  const colors = RATING_COLORS[theme];
   const [problem, setProblem] = useState<CurrentProblem>();
   const [preview, setPreview] = useState<RatingPreview>();
   const [status, setStatus] = useState<CardStatus | null>();
@@ -145,7 +144,7 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     >
       {showSaved ? (
         <>
-          <SavedView t={t} saved={saved} color={saved.rating && colors[saved.rating]} busy={busy} onUndo={undo} />
+          <SavedView t={t} saved={saved} color={saved.rating && ratingColor(saved.rating)} busy={busy} onUndo={undo} />
           {session.error === 'undo' && <ErrorBanner>{t.contentScript.undoFailed}</ErrorBanner>}
         </>
       ) : (
@@ -201,7 +200,6 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
           <div className={loadFailed ? 'opacity-60' : undefined}>
             <RatingOptions
               t={t}
-              colors={colors}
               preview={preview}
               disabled={busy || !preview || selected !== undefined}
               onSave={save}

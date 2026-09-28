@@ -136,7 +136,7 @@ export function RoadmapProblemRow({
         canSave && (
           <Tooltip label={t.roadmaps.addToSrs}>
             <Button
-              className={`size-8 shrink-0 rounded-md grid place-items-center bg-accent-soft text-accent duration-[120ms] hover:bg-[color-mix(in_srgb,var(--ls-brand)_18%,var(--ls-canvas))] ${buttonInteraction}`}
+              className={`size-8 shrink-0 rounded-md grid place-items-center bg-accent-soft text-accent duration-[120ms] hover:bg-[var(--ls-brand-soft-hover)] ${buttonInteraction}`}
               aria-label={t.roadmaps.addProblem(title)}
               isDisabled={isAdding}
               onPress={() => onAdd({ frontendId, domain, title })}
