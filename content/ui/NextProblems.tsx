@@ -19,7 +19,7 @@ export function NextProblems({
 }: Props & { action?: ReactNode; pointerGuard: boolean; className?: string }) {
   return (
     <div className={`border-t border-line px-1.5 pt-1.5 ${pointerGuard ? 'pointer-guard' : ''} ${className}`}>
-      <div className="flex h-6 items-center justify-between pr-1 pl-2 text-[11.5px] font-medium text-fg-3">
+      <div className="flex h-6 items-center justify-between pr-1 pl-2 text-[12px] font-medium text-fg-3">
         <span>{props.t.contentScript.upNext}</span>
         {action}
       </div>
@@ -105,7 +105,7 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
           <span className="text-fg-3 tabular-nums">{problem.frontendId}.</span>{' '}
           {getProblemTitle(problem, problem.domain)}
         </span>
-        <span className="block text-[11.5px] text-fg-3">
+        <span className="block text-[12px] text-fg-3">
           {data.name ? text.nextInRoadmap(data.name) : text.nextReview}
         </span>
       </span>

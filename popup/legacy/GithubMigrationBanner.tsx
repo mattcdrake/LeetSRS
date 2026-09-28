@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from 'react-aria-components';
-import { FaGithub, FaXmark } from 'react-icons/fa6';
+import { FaGithub } from 'react-icons/fa6';
+import { LuX } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { gistSyncQueryKeys, useGithubAuthQuery } from '@/popup/queries/gist-sync';
 import { background } from '@/shared/background-service';
@@ -37,7 +38,7 @@ export function GithubMigrationBanner({ onOpenSettings }: { onOpenSettings: () =
         isDisabled={dismiss.isPending}
         onPress={() => dismiss.mutate()}
       >
-        <FaXmark aria-hidden="true" />
+        <LuX aria-hidden="true" />
       </Button>
     </div>
   );
