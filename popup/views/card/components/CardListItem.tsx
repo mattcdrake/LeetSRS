@@ -170,7 +170,7 @@ function CardDetails({ id, card, now }: { id: string; card: CardWithProblem; now
         <Fact label={t.cardStats.reviews}>{card.fsrs.reps}</Fact>
         <Fact label={t.cardStats.lapses}>{card.fsrs.lapses}</Fact>
       </dl>
-      <p className="mt-2 pl-[22px] text-caption leading-4 text-tertiary tabular-nums">{details.join(' · ')}</p>
+      <p className="mt-2 pl-[22px] text-caption text-tertiary tabular-nums">{details.join(' · ')}</p>
 
       <div className="mt-2.5 pt-1.5 border-t border-current flex items-center gap-0.5 -mx-1.5 text-xs text-secondary">
         {card.youtubeUrl && (
@@ -225,7 +225,7 @@ function CardDetails({ id, card, now }: { id: string; card: CardWithProblem; now
 function Fact({ label, className = '', children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="truncate text-caption leading-4 text-tertiary">{label}</dt>
+      <dt className="truncate text-caption text-tertiary">{label}</dt>
       <dd className={`truncate text-body leading-[18px] font-medium tabular-nums ${className}`}>{children}</dd>
     </div>
   );

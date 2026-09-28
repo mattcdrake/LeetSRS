@@ -34,7 +34,7 @@ function FreshStart({ onChooseRoadmap }: { onChooseRoadmap: () => void }) {
         <LeetSRSLogo width="20" height="20" />
       </div>
       <h2 className="mt-4 text-hero font-semibold">{t.home.freshTitle}</h2>
-      <p className="mt-1.5 text-body leading-5 text-secondary">{t.home.freshDescription}</p>
+      <p className="mt-1.5 text-body text-secondary">{t.home.freshDescription}</p>
       <button type="button" className={`mt-5 ${primaryButton}`} onClick={onChooseRoadmap}>
         <LuRoute aria-hidden="true" className="size-4" />
         {t.home.chooseRoadmap}

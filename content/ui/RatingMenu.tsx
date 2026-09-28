@@ -296,7 +296,7 @@ function ErrorBanner({ children, action }: { children: ReactNode; action?: React
   return (
     <div
       role="alert"
-      className="mx-1.5 mb-1 flex items-start gap-2 rounded-lg bg-danger-soft px-2.5 py-2 text-panel-meta leading-[1.4] text-danger-text"
+      className="mx-1.5 mb-1 flex items-start gap-2 rounded-lg bg-danger-soft px-2.5 py-2 text-panel-meta text-danger-text"
     >
       <LuCircleAlert className="mt-px size-3.5 shrink-0" aria-hidden="true" />
       <span className="flex-1">{children}</span>

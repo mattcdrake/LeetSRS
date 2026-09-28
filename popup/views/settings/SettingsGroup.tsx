@@ -39,7 +39,7 @@ interface RowTextProps {
 export function RowText({ label, hint, hintId }: RowTextProps) {
   return (
     <div className="min-w-0 flex-1">
-      <div className="text-body leading-5 text-primary">{label}</div>
+      <div className="text-body text-primary">{label}</div>
       {hint && (
         <div id={hintId} className="text-xs leading-4 text-tertiary">
           {hint}

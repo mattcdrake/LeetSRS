@@ -107,7 +107,7 @@ export function RoadmapProblemRow({
                 ))}
               {skipped && <MetaItem className="text-tertiary">{t.roadmaps.filters.skipped}</MetaItem>}
               {isNext && (
-                <span className="ml-1 px-1 rounded bg-accent-soft text-accent text-caption font-medium leading-4">
+                <span className="ml-1 px-1 rounded bg-accent-soft text-accent text-caption font-medium">
                   {t.roadmaps.next}
                 </span>
               )}
