@@ -58501,6 +58501,123 @@
       "leetcode.com"
     ]
   },
+  "4060": {
+    "frontendId": "4060",
+    "title": "Count Evenly Good Integers",
+    "translatedTitle": "计算偶好数",
+    "slug": "count-evenly-good-integers",
+    "difficulty": "hard",
+    "isPaidOnly": true,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4061": {
+    "frontendId": "4061",
+    "title": "Minimum Queen Moves to Reach Target",
+    "translatedTitle": "皇后到达目标格子的最少移动步数",
+    "slug": "minimum-queen-moves-to-reach-target",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4062": {
+    "frontendId": "4062",
+    "title": "Transform Array Using Pair Operations",
+    "translatedTitle": "成对操作转化数组",
+    "slug": "transform-array-using-pair-operations",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4063": {
+    "frontendId": "4063",
+    "title": "Longest Subarray Divisible by K with At Most One Negation I",
+    "translatedTitle": "至多一次取反能被 K 整除的最长子数组 I",
+    "slug": "longest-subarray-divisible-by-k-with-at-most-one-negation-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4064": {
+    "frontendId": "4064",
+    "title": "Longest Subarray Divisible by K with At Most One Negation II",
+    "translatedTitle": "至多一次取反能被 K 整除的最长子数组 II",
+    "slug": "longest-subarray-divisible-by-k-with-at-most-one-negation-ii",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4065": {
+    "frontendId": "4065",
+    "title": "Rearrange Array by Removing Distinct Values",
+    "translatedTitle": "移除不同值重排数组",
+    "slug": "rearrange-array-by-removing-distinct-values",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4066": {
+    "frontendId": "4066",
+    "title": "Maximum Equal Adjacent Pairs After at Most One Replacement",
+    "translatedTitle": "至多一次替换后的最大相邻相等元素对数",
+    "slug": "maximum-equal-adjacent-pairs-after-at-most-one-replacement",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4067": {
+    "frontendId": "4067",
+    "title": "Longest Subarray With Restricted Pair Sums",
+    "translatedTitle": "数对和受限的最长子数组",
+    "slug": "longest-subarray-with-restricted-pair-sums",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4068": {
+    "frontendId": "4068",
+    "title": "Maximize Meeting Earnings with Idle Gaps",
+    "translatedTitle": "考虑空闲时间的会议最大收益",
+    "slug": "maximize-meeting-earnings-with-idle-gaps",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "407": {
     "frontendId": "407",
     "title": "Trapping Rain Water II",
