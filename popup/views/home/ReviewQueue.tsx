@@ -1,6 +1,7 @@
 import { type ReactNode, useId, useState } from 'react';
 import { LuCheck } from 'react-icons/lu';
 import { EmptyState } from '@/popup/components/EmptyState';
+import { Notice } from '@/popup/components/Notice';
 import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import {
   type CardWithProblem,
@@ -53,7 +54,7 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
   if (error) {
     return (
       <div className="flex items-center justify-center h-32">
-        <div className="text-red-500">{t.errors.failedToLoadReviewQueue}</div>
+        <Notice tone="danger" title={t.errors.failedToLoadReviewQueue} />
       </div>
     );
   }

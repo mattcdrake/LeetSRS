@@ -17,7 +17,7 @@ export function GithubMigrationBanner({ onOpenSettings }: { onOpenSettings: () =
   if (!data?.migrationNotice) return null;
 
   return (
-    <div className="flex items-start gap-2 border-b border-green-200 bg-green-100 px-4 py-2 text-xs leading-5 text-green-950">
+    <div className="flex items-start gap-2 border-b border-current bg-accent-soft px-4 py-2 text-xs leading-5 text-primary">
       <FaGithub className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p>
@@ -33,7 +33,7 @@ export function GithubMigrationBanner({ onOpenSettings }: { onOpenSettings: () =
       </div>
       <Button
         aria-label={t.migrationDismiss}
-        className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-green-200 focus-visible:outline-2 disabled:opacity-50"
+        className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-[var(--ls-brand-soft-hover)] focus-visible:outline-2 disabled:opacity-50"
         isDisabled={dismiss.isPending}
         onPress={() => dismiss.mutate()}
       >

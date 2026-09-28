@@ -29,7 +29,7 @@ body {
   width: 24px;
   height: 24px;
   border: 2px solid color-mix(in srgb, CanvasText 20%, transparent);
-  border-top-color: #267a33;
+  border-top-color: var(--ls-brand);
   border-radius: 50%;
   animation: popup-loading-spin 700ms linear infinite;
 }
@@ -88,6 +88,9 @@ body {
 }
 @utility text-on-accent {
   color: var(--ls-on-brand);
+}
+@utility text-on-danger {
+  color: var(--ls-on-danger);
 }
 @utility bg-accent {
   background-color: var(--ls-brand);

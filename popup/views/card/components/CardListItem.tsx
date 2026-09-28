@@ -201,7 +201,9 @@ function CardDetails({ id, card, now }: { id: string; card: CardWithProblem; now
         <Tooltip label={deleteLabel} isDisabled={isConfirming}>
           <Button
             className={
-              isConfirming ? `${textButton} bg-danger text-white hover:opacity-90` : `${iconButton} hover:text-danger`
+              isConfirming
+                ? `${textButton} bg-danger text-on-danger hover:opacity-90`
+                : `${iconButton} hover:text-danger`
             }
             aria-label={deleteLabel}
             onPress={() => startOrConfirm(handleDelete)}

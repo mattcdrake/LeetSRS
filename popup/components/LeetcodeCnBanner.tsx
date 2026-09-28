@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { LuX } from 'react-icons/lu';
 import { browser } from 'wxt/browser';
+import { compactGhostButton, compactOutlineButton } from '@/popup/styles';
 import { isLeetcodeCnUrl } from '@/shared/leetcode-links';
 import { useI18n } from '../contexts/I18nContext';
 import { useLeetcodeCnCapability } from '../queries/leetcode-cn';
+import { Notice } from './Notice';
 
 export const DISMISS_KEY = 'leetsrs:leetcodeCnBannerDismissed';
 
@@ -30,24 +31,21 @@ export function LeetcodeCnBanner() {
   if (granted !== false || dismissed || !isLeetcodeCnUrl(activeTabUrl ?? null)) return null;
 
   return (
-    <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
-      <span className="flex-1">{t.home.leetcodeCnBanner.message}</span>
-      <button
-        type="button"
-        onClick={enable}
-        disabled={isEnabling}
-        className="shrink-0 rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-blue-700"
-      >
-        {t.home.leetcodeCnBanner.enable}
-      </button>
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label={t.home.leetcodeCnBanner.dismiss}
-        className="shrink-0 text-blue-400 hover:text-blue-600 dark:hover:text-blue-100"
-      >
-        <LuX aria-hidden="true" />
-      </button>
+    <div className="mb-3">
+      <Notice
+        tone="info"
+        title={t.home.leetcodeCnBanner.message}
+        action={
+          <div className="flex gap-1.5">
+            <button type="button" onClick={enable} disabled={isEnabling} className={compactOutlineButton}>
+              {t.home.leetcodeCnBanner.enable}
+            </button>
+            <button type="button" onClick={dismiss} className={compactGhostButton}>
+              {t.home.leetcodeCnBanner.dismiss}
+            </button>
+          </div>
+        }
+      />
     </div>
   );
 }
