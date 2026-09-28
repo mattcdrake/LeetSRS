@@ -49,7 +49,7 @@ export function CardsToolbar({
         <TextField value={search} onChange={onSearchChange} className="min-w-0 flex-1">
           <Label className="sr-only">{t.cardsView.searchLabel}</Label>
           <Input
-            className="w-full bg-transparent text-[13px] text-primary outline-none placeholder:text-tertiary"
+            className="w-full bg-transparent text-body text-primary outline-none placeholder:text-tertiary"
             placeholder={t.cardsView.searchPlaceholder}
           />
         </TextField>

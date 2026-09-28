@@ -157,7 +157,7 @@ function useVisibleRange(language: string, options: Intl.DateTimeFormatOptions) 
 function RangeHeading({ language }: { language: string }) {
   const range = useVisibleRange(language, { month: 'short', day: 'numeric' });
   return (
-    <Heading className="flex-1 min-w-0 truncate text-[15px] font-semibold tracking-tight text-primary">{range}</Heading>
+    <Heading className="flex-1 min-w-0 truncate text-title font-semibold tracking-tight text-primary">{range}</Heading>
   );
 }
 

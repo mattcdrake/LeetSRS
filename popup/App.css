@@ -2,6 +2,23 @@
 @import "tailwindcss";
 @import "../shared/ui/tokens.css";
 
+/* The design system's popup type scale. text-xs (12px) is its "small" style. */
+@theme {
+  --text-hero: 19px;
+  --text-hero--line-height: 24px;
+  --text-hero--letter-spacing: -0.015em;
+  --text-stat: 17px;
+  --text-stat--line-height: 24px;
+  --text-stat--letter-spacing: -0.01em;
+  --text-title: 15px;
+  --text-title--line-height: 20px;
+  --text-title--letter-spacing: -0.01em;
+  --text-body: 13px;
+  --text-body--line-height: 19.5px;
+  --text-caption: 11px;
+  --text-caption--line-height: 16px;
+}
+
 body {
   font-family: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;

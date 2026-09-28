@@ -104,7 +104,7 @@ function GroupHeader({ group }: { group: CardGroup }) {
   const t = useI18n();
   return (
     <h2 className="card-group-header sticky top-[88px] z-10 bg-primary">
-      <span className="flex items-center justify-between px-4 pt-2.5 pb-1 border-b border-transparent text-[11px] leading-4 font-medium text-tertiary">
+      <span className="flex items-center justify-between px-4 pt-2.5 pb-1 border-b border-transparent text-caption font-medium text-tertiary">
         <span className={group.id === 'overdue' ? 'text-[var(--ls-warning-text)]' : ''}>
           {t.cardsView.groups[group.id]}
         </span>

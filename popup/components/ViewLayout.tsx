@@ -28,7 +28,7 @@ export function ViewLayout({
         <div className="flex items-center justify-between gap-2 h-11 px-4 bg-primary border-b border-current">
           <div className="flex items-center gap-2 min-w-0">
             {headerLeading}
-            <h1 className="truncate text-[15px] font-semibold tracking-tight text-primary font-jetbrains-mono">
+            <h1 className="truncate text-title font-semibold tracking-tight text-primary font-jetbrains-mono">
               {title === t.app.name ? (
                 <>
                   {t.app.namePart1}

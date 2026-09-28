@@ -75,7 +75,7 @@ export function ReviewQueue({ emptyContent }: { emptyContent?: ReactNode }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2 px-0.5 text-[11px] font-medium text-tertiary">
+      <div className="flex items-center justify-between mb-2 px-0.5 text-caption font-medium text-tertiary">
         <span>{t.home.upNext}</span>
         <span className="font-normal tabular-nums">{t.home.queuePosition(1, queue.length)}</span>
       </div>

@@ -44,9 +44,9 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
     <>
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-baseline gap-1.5">
-          {t.roadmaps.summaryPrefix && <span className="text-[13px] text-secondary">{t.roadmaps.summaryPrefix}</span>}
-          <span className="text-[17px] font-semibold tracking-[-0.01em] tabular-nums">{roadmap.reviewed}</span>
-          <span className="text-[13px] text-secondary tabular-nums">{t.roadmaps.summarySuffix(roadmap.total)}</span>
+          {t.roadmaps.summaryPrefix && <span className="text-body text-secondary">{t.roadmaps.summaryPrefix}</span>}
+          <span className="text-stat font-semibold tabular-nums">{roadmap.reviewed}</span>
+          <span className="text-body text-secondary tabular-nums">{t.roadmaps.summarySuffix(roadmap.total)}</span>
           <a
             href={roadmap.sourceUrl}
             target="_blank"

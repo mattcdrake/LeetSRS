@@ -94,7 +94,7 @@ export function CalendarDayDetail({ date, today, language, day, hasReviews }: Ca
         aria-atomic="true"
         className="sticky -top-4 z-[1] -mx-2 px-2 flex items-baseline justify-between gap-3 pt-3 pb-1.5 bg-primary"
       >
-        <h2 id="calendar-day-heading" className="min-w-0 truncate text-[13px] font-semibold text-primary">
+        <h2 id="calendar-day-heading" className="min-w-0 truncate text-body font-semibold text-primary">
           <DayTitle date={date} today={today} language={language} />
         </h2>
         {!!day?.count && (
@@ -154,7 +154,7 @@ function ProblemRow({ card, overdueSince, problem }: { card: Card; overdueSince:
   return (
     <li className={problemRow}>
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1 text-[13px] leading-[18px]">
+        <div className="flex min-w-0 items-center gap-1 text-body leading-[18px]">
           <ProblemLink
             href={getLeetcodeProblemUrl({ domain: card.domain, slug: problem.slug })}
             frontendId={card.frontendId}

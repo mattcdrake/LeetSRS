@@ -100,7 +100,7 @@ function CardNoteEditor({ frontendId, variant, isDisabled = false }: NoteEditorP
       )}
       {isFooterVisible && (
         <div className={`flex items-center justify-between ${isCompact ? 'mt-1.5' : 'mt-2'}`}>
-          <span className={`text-[11px] tabular-nums ${isOverLimit ? 'text-danger' : 'text-tertiary'}`}>
+          <span className={`text-caption tabular-nums ${isOverLimit ? 'text-danger' : 'text-tertiary'}`}>
             {t.format.characterCount(characterCount, NOTES_MAX_LENGTH)}
           </span>
           <div className="flex gap-1">

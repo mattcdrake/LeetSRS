@@ -2,6 +2,7 @@ import { Button, Heading } from 'react-aria-components';
 import { FaGithub } from 'react-icons/fa6';
 import { LuArrowRight, LuCalendar, LuChevronDown, LuMap, LuSparkles, LuX } from 'react-icons/lu';
 import { useI18n } from '@/popup/contexts/I18nContext';
+import { primaryButton } from '@/popup/styles';
 import type { PopupDialogContentProps } from './registry';
 
 export function ReleaseAnnouncement({ onDismiss, onNavigate }: PopupDialogContentProps) {
@@ -16,8 +17,8 @@ export function ReleaseAnnouncement({ onDismiss, onNavigate }: PopupDialogConten
           <LuSparkles className="size-5" />
         </span>
         <div className="flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">{t.eyebrow}</p>
-          <Heading slot="title" className="mt-0.5 text-[19px] leading-6 font-semibold tracking-[-0.015em]">
+          <p className="text-caption font-semibold uppercase tracking-[0.16em] text-brand">{t.eyebrow}</p>
+          <Heading slot="title" className="mt-0.5 text-hero font-semibold">
             {t.title}
           </Heading>
         </div>
@@ -31,7 +32,7 @@ export function ReleaseAnnouncement({ onDismiss, onNavigate }: PopupDialogConten
       </header>
 
       <section className="mt-4 rounded-xl bg-accent-soft p-3.5">
-        <h3 className="flex items-center gap-2 text-[13px] font-semibold">
+        <h3 className="flex items-center gap-2 text-body font-semibold">
           <LuMap aria-hidden="true" className="h-4 w-4 shrink-0 text-brand" />
           {t.roadmapsTitle}
         </h3>
@@ -63,10 +64,7 @@ export function ReleaseAnnouncement({ onDismiss, onNavigate }: PopupDialogConten
         <p className="mt-2 leading-5">{t.upgradeSync}</p>
       </details>
 
-      <Button
-        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-[13px] font-semibold text-on-accent hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2"
-        onPress={() => onNavigate('roadmaps')}
-      >
+      <Button className={`mt-4 w-full ${primaryButton}`} onPress={() => onNavigate('roadmaps')}>
         {t.tryRoadmaps}
         <LuArrowRight aria-hidden="true" className="h-4 w-4" />
       </Button>

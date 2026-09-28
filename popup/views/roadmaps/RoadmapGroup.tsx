@@ -52,7 +52,7 @@ export function RoadmapGroup({
             className={`size-3.5 shrink-0 text-tertiary transition-transform duration-[120ms] ${open ? 'rotate-90' : ''}`}
             strokeWidth={2}
           />
-          <span className="min-w-0 truncate text-[13px] font-medium">{name}</span>
+          <span className="min-w-0 truncate text-body font-medium">{name}</span>
           <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-tertiary tabular-nums">
             <span className="sr-only">{t.roadmaps.reviewed(reviewed, total)}</span>
             <span aria-hidden="true">

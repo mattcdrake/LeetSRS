@@ -118,7 +118,7 @@ export function DestinationPicker({
                 {' · '}
                 {t.backupDate(new Date(gist.updatedAt))}
                 {gist.suggested && (
-                  <span className="ml-1.5 rounded bg-accent-soft px-1 py-px text-[11px] text-accent">
+                  <span className="ml-1.5 rounded bg-accent-soft px-1 py-px text-caption text-accent">
                     {t.previousBackup}
                   </span>
                 )}

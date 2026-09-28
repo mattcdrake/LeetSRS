@@ -4,7 +4,7 @@ import { useI18n } from '@/popup/contexts/I18nContext';
 import { useReviewQueueQuery } from '@/popup/queries/cards';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { activeRoadmapQueryOptions } from '@/popup/queries/roadmaps';
-import { buttonInteraction } from '@/popup/styles';
+import { buttonInteraction, primaryButton } from '@/popup/styles';
 import type { RoadmapId } from '@/shared/roadmap';
 import { LeetSRSLogo } from '@/shared/ui/LeetSRSLogo';
 import { LeetcodeCnBanner } from '../../components/LeetcodeCnBanner';
@@ -33,13 +33,9 @@ function FreshStart({ onChooseRoadmap }: { onChooseRoadmap: () => void }) {
       <div className="size-11 rounded-xl bg-accent-soft text-accent grid place-items-center">
         <LeetSRSLogo width="20" height="20" />
       </div>
-      <h2 className="mt-4 text-[19px] leading-6 font-semibold tracking-[-0.015em]">{t.home.freshTitle}</h2>
-      <p className="mt-1.5 text-[13px] leading-5 text-secondary">{t.home.freshDescription}</p>
-      <button
-        type="button"
-        className={`mt-5 h-10 rounded-lg bg-accent text-on-accent text-[13px] font-medium flex items-center justify-center gap-2 hover:opacity-90 ${buttonInteraction}`}
-        onClick={onChooseRoadmap}
-      >
+      <h2 className="mt-4 text-hero font-semibold">{t.home.freshTitle}</h2>
+      <p className="mt-1.5 text-body text-secondary">{t.home.freshDescription}</p>
+      <button type="button" className={`mt-5 ${primaryButton}`} onClick={onChooseRoadmap}>
         <LuRoute aria-hidden="true" className="size-4" />
         {t.home.chooseRoadmap}
       </button>
@@ -65,7 +61,7 @@ export function HomeView({ onOpenRoadmap }: { onOpenRoadmap: (id: RoadmapId | nu
         {isQueueEmpty && !isFresh && activeRoadmapId === null && (
           <button
             type="button"
-            className={`h-9 rounded-lg border border-strong text-[13px] text-secondary flex items-center justify-center gap-2 hover:bg-secondary ${buttonInteraction}`}
+            className={`h-9 rounded-lg border border-strong text-body text-secondary flex items-center justify-center gap-2 hover:bg-secondary ${buttonInteraction}`}
             onClick={() => onOpenRoadmap(null)}
           >
             <LuRoute aria-hidden="true" className="size-3.5" />

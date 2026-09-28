@@ -16,6 +16,14 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  /* The design system's type scale on LeetCode. */
+  --text-panel-title: 14px;
+  --text-panel-title--line-height: 19px;
+  --text-panel-title--letter-spacing: -0.01em;
+  --text-panel-body: 13px;
+  --text-panel-body--line-height: 17.5px;
+  --text-panel-meta: 12px;
+  --text-panel-meta--line-height: 16px;
   --animate-tooltip-enter: tooltip-enter 100ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 
   @keyframes tooltip-enter {

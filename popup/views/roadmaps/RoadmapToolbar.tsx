@@ -74,7 +74,7 @@ export function RoadmapToolbar({
           className="min-w-0 flex-1"
         >
           <Input
-            className="w-full bg-transparent text-[13px] text-primary outline-none placeholder:text-tertiary"
+            className="w-full bg-transparent text-body text-primary outline-none placeholder:text-tertiary"
             placeholder={t.roadmaps.searchPlaceholder}
           />
         </TextField>
@@ -127,7 +127,7 @@ export function RoadmapToolbar({
 
 function FilterItem({ id, label, count }: { id: Key; label: string; count: number }) {
   return (
-    <MenuItem id={id} textValue={label} className={`${menuItem} text-[13px]`}>
+    <MenuItem id={id} textValue={label} className={`${menuItem} text-body`}>
       {({ isSelected }) => (
         <>
           <span className="w-3.5 shrink-0 text-accent">

@@ -34,7 +34,7 @@ export function SignedOut({
           <FaGithub className="size-[18px]" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold leading-5 text-primary">{t.title}</p>
+          <p className="text-body font-semibold text-primary">{t.title}</p>
           <p className="mt-0.5 text-xs leading-[18px] text-secondary">{t.pitch}</p>
         </div>
       </div>

@@ -62,7 +62,7 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
           onClick={onOpen}
         >
           <LuRoute aria-hidden="true" className="size-3.5 shrink-0 text-tertiary" />
-          <span className="min-w-0 truncate text-[13px] font-medium">{roadmap.name}</span>
+          <span className="min-w-0 truncate text-body font-medium">{roadmap.name}</span>
           <span className="ml-auto shrink-0 text-xs text-tertiary tabular-nums">
             {t.home.roadmapReviewed(summary.reviewed, summary.total)}
           </span>
@@ -76,10 +76,10 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
             className={`rounded-xl border border-current ${isHero ? 'bg-surface shadow-card p-4' : 'p-3 flex items-center gap-3'}`}
           >
             <div className="min-w-0 flex-1">
-              {isHero && <p className="mb-1 text-[11px] text-tertiary">{t.home.nextProblem}</p>}
+              {isHero && <p className="mb-1 text-caption text-tertiary">{t.home.nextProblem}</p>}
               <a
                 className={`flex items-start gap-1 rounded-sm hover:text-accent ${buttonInteraction} ${
-                  isHero ? 'text-[17px] leading-[22px] font-semibold tracking-[-0.01em]' : 'text-[13px] font-medium'
+                  isHero ? 'text-stat leading-[22px] font-semibold' : 'text-body font-medium'
                 }`}
                 href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
                 target="_blank"
@@ -120,7 +120,7 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
               <button
                 type="button"
                 className={`shrink-0 flex items-center justify-center gap-1.5 text-secondary duration-[120ms] hover:bg-secondary ${buttonInteraction} ${
-                  isHero ? 'h-9 px-3 rounded-lg border border-strong text-[13px]' : 'size-8 rounded-md'
+                  isHero ? 'h-9 px-3 rounded-lg border border-strong text-body' : 'size-8 rounded-md'
                 }`}
                 disabled={skip.isPending}
                 aria-label={t.roadmaps.skipProblem(getProblemTitle(next, domain))}
