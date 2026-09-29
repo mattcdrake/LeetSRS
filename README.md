@@ -2,12 +2,14 @@
   <img src="assets/promo/readme-banner.png" width="800" alt="LeetSRS — Spaced repetition for LeetCode. Know what to practice. And when to review." />
 </p>
 
-LeetSRS is a Chrome extension that helps you remember what you learn on LeetCode through spaced repetition. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
+LeetSRS is an extension for Chrome and Firefox that helps you remember what you learn on LeetCode through spaced repetition. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko">
     <img src="assets/promo/add-to-chrome.png" width="292" height="52" alt="Add LeetSRS to Chrome" />
   </a>
+  <br />
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/leetsrs/">Add LeetSRS to Firefox</a>
 </p>
 
 <p align="center">
@@ -16,7 +18,7 @@ LeetSRS is a Chrome extension that helps you remember what you learn on LeetCode
 
 ## Get started
 
-1. [Install LeetSRS from the Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko).
+1. **Install LeetSRS** from the [Chrome Web Store](https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko) or [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/leetsrs/) (Firefox 140 or newer).
 2. **Solve a problem.** Choose your own on LeetCode or follow a roadmap for suggestions.
 3. **Rate your recall.** When your submission is accepted, the LeetSRS panel opens on the problem page. Choose **Again**, **Hard**, **Good**, or **Easy**, or press 1–4, to schedule your next review. Each rating shows when the problem will come back.
 4. **Return for review.** Open LeetSRS: **Home** shows problems that are due, one at a time, and you can rate them right there. **Calendar** shows the next four weeks of reviews.
@@ -68,11 +70,15 @@ npm run dev
 | `npm run build:firefox`  | Build the Firefox MV3 extension.                                                                                                                 |
 | `npm run zip:firefox`    | Package the Firefox extension and source archive.                                                                                                |
 | `npm run lint:firefox`   | Validate the built Firefox extension with Mozilla’s linter.                                                                                      |
-| `npm run build`          | Build the production extension.                                                                                                                  |
-| `npm run zip`            | Package the extension for distribution.                                                                                                          |
+| `npm run build`          | Build the production Chrome extension.                                                                                                           |
+| `npm run zip`            | Package the Chrome extension for distribution.                                                                                                   |
 | `npm run check`          | Run lint, formatting, type, and test checks.                                                                                                     |
 
 The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched.
+
+### Store releases
+
+The release workflow attaches Chrome, Firefox, and source ZIPs to [GitHub releases](https://github.com/mattcdrake/LeetSRS/releases). Publishing a GitHub release does not publish to either browser store: upload the Chrome ZIP to the Chrome Web Store and the Firefox ZIP, with its source archive, to [Mozilla’s Developer Hub](https://addons.mozilla.org/en-US/developers/addon/leetsrs/versions). Store versions may differ while updates await review.
 
 ## Contributing
 
