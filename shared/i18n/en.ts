@@ -40,6 +40,14 @@ const en = {
     dismiss: 'Dismiss release notes',
   },
 
+  ratingPrompt: {
+    title: 'One week, no misses',
+    body: 'Nice streak. LeetSRS is built by one developer, and a quick review really helps.',
+    rateOn: (store: string) => `Rate on ${store}`,
+    noThanks: 'No thanks',
+    dismiss: 'Close',
+  },
+
   // Navigation
   nav: {
     home: 'Home',

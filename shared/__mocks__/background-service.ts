@@ -8,6 +8,7 @@ export const background = {
   getNextReview: vi.fn<BackgroundService['getNextReview']>(),
   getNextRoadmapProblem: vi.fn<BackgroundService['getNextRoadmapProblem']>(),
   acknowledgePopupDialog: vi.fn<BackgroundService['acknowledgePopupDialog']>(),
+  resolveRatingCta: vi.fn<BackgroundService['resolveRatingCta']>(),
   shouldShowAutoOpenHint: vi.fn<BackgroundService['shouldShowAutoOpenHint']>(),
   markAutoOpenHintShown: vi.fn<BackgroundService['markAutoOpenHintShown']>(),
   previewRatings: vi.fn<BackgroundService['previewRatings']>(),

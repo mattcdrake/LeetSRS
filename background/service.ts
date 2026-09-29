@@ -24,7 +24,12 @@ import {
 } from '@/background/learning';
 import { dismissMigrationNotice } from '@/background/legacy/github-pat';
 import { getNextReview, getNextRoadmapProblem } from '@/background/next-problems';
-import { acknowledgePopupDialog, markAutoOpenHintShown, shouldShowAutoOpenHint } from '@/background/popup-dialogs';
+import {
+  acknowledgePopupDialog,
+  markAutoOpenHintShown,
+  resolveRatingCta,
+  shouldShowAutoOpenHint,
+} from '@/background/popup-dialogs';
 import {
   getGistSyncStatus,
   listGistDestinations,
@@ -40,6 +45,7 @@ import {
   rateCardInputSchema,
   saveProblemInputSchema,
 } from '@/shared/learning-document';
+import { ratingCtaResolutionSchema } from '@/shared/rating-cta';
 import { roadmapIdSchema } from '@/shared/roadmap';
 import { settingsUpdateSchema } from '@/shared/settings';
 
@@ -59,6 +65,10 @@ export function createBackgroundService(ready: Promise<void>) {
     getNextReview: command(z.tuple([problemReferenceSchema]), getNextReview),
     getNextRoadmapProblem: command(z.tuple([problemReferenceSchema]), getNextRoadmapProblem),
     acknowledgePopupDialog: command(z.tuple([z.string().min(1)]), acknowledgePopupDialog),
+    resolveRatingCta: command(
+      z.tuple([ratingCtaResolutionSchema.shape.outcome, ratingCtaResolutionSchema.shape.dialogId]),
+      resolveRatingCta
+    ),
     shouldShowAutoOpenHint: command(z.tuple([]), shouldShowAutoOpenHint),
     markAutoOpenHintShown: command(z.tuple([]), markAutoOpenHintShown),
     dismissGithubSetupPrompt: command(z.tuple([]), dismissGithubSetupPrompt),
