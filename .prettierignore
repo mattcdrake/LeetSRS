@@ -6,3 +6,5 @@ coverage/
 experiments/
 automation/
 CHANGELOG.md
+test-results/
+playwright-report/

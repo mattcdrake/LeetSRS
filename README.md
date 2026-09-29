@@ -70,7 +70,9 @@ npm run dev
 | `npm run lint:firefox`   | Validate the built Firefox extension with Mozilla’s linter.                                                                                      |
 | `npm run build`          | Build the production extension.                                                                                                                  |
 | `npm run zip`            | Package the extension for distribution.                                                                                                          |
-| `npm run check`          | Run lint, formatting, type, and test checks.                                                                                                     |
+| `npm run check`          | Run lint, formatting, type, unit, and browser tests.                                                                                             |
+
+Run `npx playwright install chromium` once before `npm run check` or `npm run test:e2e`. The browser tests build the extension and run its popup, background worker, and storage in disposable Chromium profiles; no LeetCode account or network fixtures are needed.
 
 The persistent profile lives in `.wxt/chrome-data`, which Git ignores. Fresh runs leave it untouched.
 

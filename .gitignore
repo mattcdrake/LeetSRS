@@ -33,3 +33,7 @@ experiments/
 .env*
 !.env.example
 .wrangler/
+
+# Playwright artifacts
+test-results/
+playwright-report/

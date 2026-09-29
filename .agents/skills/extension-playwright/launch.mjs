@@ -9,8 +9,8 @@ import { chromium } from 'playwright';
 // Cloud sessions preinstall a Chromium build that may not match this Playwright version.
 const PREINSTALLED_CHROMIUM = '/opt/pw-browsers/chromium';
 
-export async function launchExtension() {
-  execSync('npx wxt build', { stdio: 'inherit' });
+export async function launchExtension({ build = true } = {}) {
+  if (build) execSync('npx wxt build', { stdio: 'inherit' });
 
   const extensionPath = resolve('.output/chrome-mv3');
   const profileDir = mkdtempSync(join(tmpdir(), 'leetsrs-playwright-'));

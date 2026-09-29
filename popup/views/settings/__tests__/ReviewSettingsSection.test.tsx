@@ -38,18 +38,6 @@ it('keeps an unfinished limit while incoming settings refresh and saves the draf
   await waitFor(() => expect(input).toHaveValue(7));
 });
 
-it('defaults auto-open on and persists toggling it off and back on', async () => {
-  await replaceLearningDocument(buildLearningDocument());
-  createServiceMock(background).handle('updateSettings', updateSettings);
-  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
-  const toggle = await screen.findByRole('switch', { name: 'Open rating panel after solving' });
-  expect(toggle).toHaveAttribute('aria-checked', 'true');
-  fireEvent.click(toggle);
-  await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'));
-  fireEvent.click(toggle);
-  await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
-});
-
 it('clamps stepper changes to the allowed range and flags out-of-range typed limits', async () => {
   await replaceLearningDocument(buildLearningDocument({ settings: { maxNewCardsPerDay: 99 } }));
   createServiceMock(background).handle('updateSettings', updateSettings);

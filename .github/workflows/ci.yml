@@ -52,8 +52,11 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build extension
-        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test built extension
+        run: npm run test:e2e
 
       - name: Test Firefox permissions and auth
         run: TEST_BROWSER=firefox npm test -- background/__tests__/github-auth.test.ts popup/views/settings/__tests__/GistSyncSection.test.tsx

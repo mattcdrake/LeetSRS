@@ -28,8 +28,9 @@
     "format:check": "biome format .",
     "test": "vitest --run",
     "test:ui": "vitest --ui",
+    "test:e2e": "npm run build && playwright test",
     "test:verbose": "vitest --run --reporter=verbose",
-    "check": "biome check --error-on-warnings . && npm run format:markdown:check && npm run compile && npm test",
+    "check": "biome check --error-on-warnings . && npm run format:markdown:check && npm run compile && npm test && npm run test:e2e",
     "postinstall": "wxt prepare",
     "backend:build": "wrangler deploy --dry-run --config backend/wrangler.jsonc",
     "backend:deploy": "wrangler deploy --config backend/wrangler.jsonc"
