@@ -1,6 +1,6 @@
 # LeetSRS README images
 
-The images the repository README shows. The banner, Chrome button, and solve/rate/review image come from the [LeetLanding repository](https://github.com/mattcdrake/LeetLanding/tree/main/assets/promo); copy updated renders here. The matching Firefox button has a local [HTML source](add-to-firefox.html), adapted from the Chrome button with the Simple Icons Firefox Browser mark from `react-icons/si`.
+The images the repository README shows. The banner and solve/rate/review image come from the [LeetLanding repository](https://github.com/mattcdrake/LeetLanding/tree/main/assets/promo); copy updated renders here. The matching install buttons have local HTML sources for [Chrome](add-to-chrome.html) and [Firefox](add-to-firefox.html), adapted from the original Chrome button. Their full-colour [browser logos](browsers/README.md) match the landing page assets.
 
 | Image                                        | Size       |
 | -------------------------------------------- | ---------- |
@@ -11,4 +11,4 @@ The images the repository README shows. The banner, Chrome button, and solve/rat
 
 The banner displays at 800 pixels wide and both install buttons at 292 × 52; all three are 2× PNGs with transparent rounded corners.
 
-To regenerate the Firefox button, open its HTML source in Chromium at a 584 × 104 viewport, wait for `document.fonts.ready`, and take a PNG screenshot with `omitBackground: true`. The source loads Geist from Google Fonts, so rendering requires network access.
+To regenerate either button, open its HTML source in Chromium at a 584 × 104 viewport, wait for `document.fonts.ready` and the browser logo to load, and take a PNG screenshot with `omitBackground: true`. The source loads Geist from Google Fonts, so rendering requires network access.
