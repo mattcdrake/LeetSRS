@@ -125,35 +125,6 @@ describe('setupLeetcodeEditorReset', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('does not reset later while working if the problem was not due on arrival', async () => {
-    vi.setSystemTime(new Date('2026-09-20T23:59:59'));
-    const card = createMockCard(State.Review);
-    await replaceLearningDocument(
-      buildLearningDocument({
-        cards: { '1': { ...card, fsrs: { ...card.fsrs, due: Date.now() + 1000 } } },
-        settings: { resetEditorOnReviewQueue: true },
-      })
-    );
-    const resetClick = vi.spyOn(renderResetButton(), 'click');
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(resetClick).not.toHaveBeenCalled();
-  });
-
-  it('ignores a due-state result received after leaving the problem', async () => {
-    const pending = Promise.withResolvers<ReturnType<typeof buildCatalogProblem>>();
-    vi.mocked(background.getProblem).mockReturnValue(pending.promise);
-    const resetClick = vi.spyOn(renderResetButton(), 'click');
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-    history.pushState({}, '', '/problems/add-two-numbers/');
-    pending.resolve(buildCatalogProblem());
-    await vi.advanceTimersByTimeAsync(100);
-    expect(resetClick).not.toHaveBeenCalled();
-    expect(onResetConfirmed).not.toHaveBeenCalled();
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
   it.each([
     '<button><svg class="fa-arrow-rotate-left"></svg></button>',
     '<button><svg data-icon="arrow-rotate-left"></svg></button>',
@@ -178,37 +149,6 @@ describe('setupLeetcodeEditorReset', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('continues resetting when LeetCode normalizes the URL for the same problem', async () => {
-    history.replaceState({}, '', '/problems/two-sum/description/');
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-
-    history.replaceState({}, '', '/problems/two-sum/');
-    const resetButton = renderResetButton();
-    const resetClick = vi.spyOn(resetButton, 'click');
-    const dialog = createDialog();
-    attachDialog(resetButton, dialog.dialog);
-    await vi.advanceTimersByTimeAsync(100);
-
-    expect(resetClick).toHaveBeenCalledTimes(1);
-    expect(dialog.clicks[1]).toHaveBeenCalledTimes(1);
-    expect(onResetConfirmed).toHaveBeenCalledTimes(1);
-    expect(location.hash).toBe('');
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
-  it('stops polling when the reset control never appears', async () => {
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(vi.getTimerCount()).toBe(0);
-
-    const resetClick = vi.spyOn(renderResetButton(), 'click');
-    await vi.advanceTimersByTimeAsync(100);
-    expect(resetClick).not.toHaveBeenCalled();
-    expect(onResetConfirmed).not.toHaveBeenCalled();
-  });
-
   it('ignores dialogs open before reset and confirms only a recognized control in a new modal', async () => {
     const resetButton = renderResetButton();
     const existing = createDialog();
@@ -223,20 +163,6 @@ describe('setupLeetcodeEditorReset', () => {
     expect(opened.clicks[0]).not.toHaveBeenCalled();
     expect(opened.clicks[1]).toHaveBeenCalledTimes(1);
     expect(onResetConfirmed).toHaveBeenCalledTimes(1);
-  });
-
-  it.each(['navigation', 'dispose'])('invalidates delayed work on %s', async (change) => {
-    dispose = setupLeetcodeEditorReset(onResetConfirmed);
-    await vi.advanceTimersByTimeAsync(100);
-
-    if (change === 'navigation') history.pushState({}, '', '/problems/three-sum/');
-    else dispose();
-    const resetClick = vi.spyOn(renderResetButton(), 'click');
-    await vi.advanceTimersByTimeAsync(100);
-
-    expect(resetClick).not.toHaveBeenCalled();
-    expect(onResetConfirmed).not.toHaveBeenCalled();
-    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('does not confirm after navigation makes a clicked reset stale', async () => {

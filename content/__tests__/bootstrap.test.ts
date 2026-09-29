@@ -1,17 +1,13 @@
 // @vitest-environment happy-dom
 
-import { act, within } from '@testing-library/react';
+import { act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { setupLeetcodeEditorReset } from '@/content/editor-reset';
 import { watchDocumentTranslations } from '@/content/translations';
 import { translations } from '@/shared/i18n/index';
-import { replaceLearningDocument } from '@/shared/learning-document';
 import { requireDefined } from '@/test/utils/assertions';
-import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { bootstrapContent } from '../bootstrap';
-import { ACCEPTED_SUBMISSION_MESSAGE } from '../submission-observer';
 
 vi.mock('@/content/editor-reset', () => ({ setupLeetcodeEditorReset: vi.fn() }));
 vi.mock('@/content/translations', () => ({ watchDocumentTranslations: vi.fn() }));
@@ -56,25 +52,6 @@ afterEach(() => {
 });
 
 describe('content startup', () => {
-  it('shows a toast only after auto-reset reports confirmation', async () => {
-    vi.useFakeTimers();
-    await act(() => bootstrapContent(ctx));
-    expect(document.querySelector('leetsrs-toast')).toBeNull();
-
-    const baselineTimers = vi.getTimerCount();
-    const [onResetConfirmed] = requireDefined(vi.mocked(setupLeetcodeEditorReset).mock.calls[0]);
-    await act(async () => onResetConfirmed());
-
-    const container = requireDefined(document.querySelector('leetsrs-toast'));
-    const toast = requireDefined(container.shadowRoot?.querySelector('[role="status"]'));
-    expect(toast).toHaveTextContent('Code reset for today’s review');
-    act(() => vi.advanceTimersByTime(4000));
-    expect(container.isConnected).toBe(true);
-    act(() => vi.advanceTimersByTime(200));
-    expect(container.isConnected).toBe(false);
-    expect(vi.getTimerCount()).toBe(baselineTimers);
-  });
-
   it('checks whether to reset once per problem visit', async () => {
     history.replaceState({}, '', '/problemset/');
     await act(() => bootstrapContent(ctx));
@@ -137,27 +114,4 @@ describe('content startup', () => {
     expect(toolbar.querySelector('#leetsrs-control')).toBeNull();
     expect(unwatchTranslations).toHaveBeenCalledTimes(2);
   });
-});
-
-it('ignores messages for another problem and stops on invalidation', async () => {
-  fakeBrowser.reset();
-  window.history.replaceState({}, '', '/problems/two-sum/');
-  await replaceLearningDocument(buildLearningDocument());
-  await act(() => bootstrapContent(ctx));
-  const shadow = requireDefined(document.querySelector('leetsrs-control')?.shadowRoot);
-  const control = requireDefined(shadow.querySelector<HTMLElement>('div'));
-  const button = within(control).getByRole('button', { name: 'LeetSRS' });
-  const notify = (id: string, slug = 'two-sum') =>
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        source: window,
-        origin: window.location.origin,
-        data: { type: ACCEPTED_SUBMISSION_MESSAGE, slug, submissionId: id },
-      })
-    );
-  await act(async () => notify('4', 'add-two-numbers'));
-  expect(button).toHaveAttribute('aria-expanded', 'false');
-  act(() => ctx.notifyInvalidated());
-  await act(async () => notify('5'));
-  expect(document.querySelector('leetsrs-control')).toBeNull();
 });

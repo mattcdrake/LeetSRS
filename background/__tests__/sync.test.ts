@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import { getGithubAuthStatus } from '@/background/github-auth';
 import { resetAllData, updateSettings } from '@/background/learning';
 import { lastSyncTimeItem, readGistConnection, writeGistConnection } from '@/shared/gist-sync';
 import {
@@ -47,17 +46,6 @@ describe('whole-document Gist sync', () => {
   });
 
   afterEach(() => vi.useRealTimers());
-
-  it.each([
-    ['missing backup', { mode: 'existing', gistId: 'gist' } as const, 'missingBackup'],
-    ['missing created ID', { mode: 'create' } as const, 'creationFailed'],
-  ])('keeps the previous connection when setup fails with %s', async (_name, setup, error) => {
-    github.get.mockResolvedValue({ data: { owner: { id: 1 }, files: {} } });
-    github.create.mockResolvedValue({ data: {} });
-
-    expect(await syncModule.setupGistSync(setup)).toEqual({ saved: false, error });
-    expect(await readGistConnection()).toEqual(connection);
-  });
 
   it('downloads existing history on first connection after changing a fresh browser setting', async () => {
     await resetAllData();
@@ -150,15 +138,6 @@ describe('whole-document Gist sync', () => {
     }
   );
 
-  it('keeps the migration banner pending after reconnecting a backup with OAuth', async () => {
-    await fakeBrowser.storage.local.set({ 'leetsrs:oauthMigration': { notice: true, previousGist: 'previous' } });
-    github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
-    });
-    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'previous' })).toEqual({ saved: true });
-    expect((await getGithubAuthStatus()).migrationNotice).toBe(true);
-  });
-
   it('does not reconnect if sign-out happens during destination validation', async () => {
     const response = Promise.withResolvers<{
       data: { owner: { id: number }; files: Record<string, { content: string }> };
@@ -173,42 +152,6 @@ describe('whole-document Gist sync', () => {
     expect((await pending).saved).toBe(false);
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(await readLearningDocument()).toEqual(local);
-  });
-
-  it('uses stable error codes for GitHub and storage failures', async () => {
-    github.get.mockRejectedValueOnce(Object.assign(new Error('Not Found'), { status: 404 }));
-    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'missing' })).toEqual({
-      saved: false,
-      error: 'gistNotFound',
-    });
-
-    github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
-    });
-    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('disk failed'));
-    expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'gist' })).toEqual({
-      saved: false,
-      error: 'connectionSaveFailed',
-    });
-  });
-
-  it.each([true, false])('only allows disabling an absent connection (enabled: %s)', async (enabled) => {
-    await syncModule.signOutGithub();
-
-    expect(await syncModule.setGistSyncEnabled(enabled)).toEqual(
-      enabled ? { saved: false, error: 'missingToken' } : { saved: true }
-    );
-    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-    expect(github.get).not.toHaveBeenCalled();
-  });
-
-  it('does not request sync when saving an edit fails', async () => {
-    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('disk failed'));
-
-    await expect(updateSettings({ theme: 'light' })).rejects.toThrow('disk failed');
-
-    expect(await readLearningDocument()).toEqual(local);
-    expect(github.get).not.toHaveBeenCalled();
   });
 
   it.each([

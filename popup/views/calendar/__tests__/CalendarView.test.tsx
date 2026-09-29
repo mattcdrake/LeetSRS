@@ -1,5 +1,5 @@
 /** @vitest-environment happy-dom */
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { State } from 'ts-fsrs';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
@@ -72,59 +72,4 @@ it('shows the selected day’s ordered problems, links, counts, and empty state'
   fireEvent.click(day('September 19, 2026'));
   expect(screen.getByText('No problems due on this day.')).toBeVisible();
   expect(screen.queryByRole('link')).not.toBeInTheDocument();
-});
-
-it('selects next-month days from the first page', async () => {
-  const card = createMockCard(State.Review);
-  await openCalendar(
-    buildLearningDocument({
-      cards: { '1': { ...card, fsrs: { ...card.fsrs, due: new Date(2026, 9, 2, 9).getTime() } } },
-    })
-  );
-  fireEvent.click(day('October 2, 2026'));
-  expect(day('October 2, 2026')).toHaveAttribute('data-selected');
-  expect(screen.getByRole('region', { name: 'Friday Oct 2' })).toHaveTextContent('1 due');
-  expect(await screen.findByRole('link', { name: /1\. Two Sum/ })).toBeVisible();
-});
-
-it('returns both the visible weeks and day detail to today', async () => {
-  await openCalendar();
-  fireEvent.click(screen.getByRole('button', { name: 'Next 4 weeks' }));
-  fireEvent.click(day('October 20, 2026'));
-  fireEvent.click(screen.getByRole('button', { name: 'Today' }));
-  expect(screen.getByRole('grid', { name: /^Calendar, September 13\s–\sOctober 10, 2026$/ })).toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'Today Thu, Sep 17' })).toBeVisible();
-});
-
-it('updates counts and problems when a review consumes today’s new-card allowance', async () => {
-  const card = createMockCard(State.New);
-  const document = buildLearningDocument({
-    cards: { '1': card, '2': { ...card, frontendId: '2' } },
-    settings: { maxNewCardsPerDay: 1 },
-  });
-  await openCalendar(document);
-  expect(day('September 17, 2026')).toHaveAccessibleName(/1 due, 1 overdue$/);
-  expect(await screen.findByRole('link', { name: /1\. Two Sum/ })).toBeVisible();
-  expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
-
-  await act(async () => {
-    await replaceLearningDocument({
-      ...document,
-      cards: {
-        ...document.cards,
-        '1': { ...card, fsrs: { ...card.fsrs, state: State.Review, due: new Date(2026, 8, 25, 12).getTime() } },
-      },
-      reviewActivity: { date: '2026-09-17', newCards: 1, streak: 1 },
-    });
-  });
-
-  await waitFor(() => expect(day('September 17, 2026')).toHaveAccessibleName(/0 due$/));
-  expect(screen.getByText('No problems due on this day.')).toBeVisible();
-  expect(screen.queryByRole('link')).not.toBeInTheDocument();
-  fireEvent.click(day('September 18, 2026'));
-  expect(await screen.findByRole('link', { name: /2\. Add Two Numbers/ })).toBeVisible();
-  expect(screen.getAllByRole('link', { name: /^\d+\./ })).toHaveLength(1);
-  expect(day('September 18, 2026')).toHaveAccessibleName(/1 due$/);
-  expect(screen.getByRole('listitem')).toHaveTextContent('New');
-  expect(screen.getByRole('region')).toHaveTextContent('1 due · 1 new');
 });

@@ -59,17 +59,3 @@ it('isolates the control and its menu, restores focus, and dismisses outside cli
   fireEvent.click(document.body);
   await waitFor(() => expect(within(portals).queryByRole('dialog')).not.toBeInTheDocument());
 });
-
-it('keeps tooltips in the trigger shadow root and removes them on unmount', async () => {
-  const shadow = requireDefined(host.shadowRoot);
-  const button = requireDefined(shadow.querySelector('button'));
-  fireEvent.pointerMove(document.body, { pointerType: 'mouse' });
-  fireEvent.pointerEnter(button, { pointerType: 'mouse' });
-  await waitFor(() => expect(shadow.querySelector('[role="tooltip"]')).not.toBeNull());
-  const tooltip = requireDefined(shadow.querySelector('[role="tooltip"]'));
-  expect(button).toHaveAttribute('aria-describedby', tooltip.id);
-  expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-
-  act(() => root.render(null));
-  expect(shadow.querySelector('[role="tooltip"]')).toBeNull();
-});

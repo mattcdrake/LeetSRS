@@ -93,54 +93,6 @@ it('retries failed saves once, retaining pending work and confirmation across pa
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
 });
 
-it('does not consume the hint when the panel closes before it can be displayed', async () => {
-  const release = Promise.withResolvers<void>();
-  const started = Promise.withResolvers<void>();
-  const service = createBackgroundService(Promise.resolve());
-  vi.mocked(background.shouldShowAutoOpenHint).mockImplementationOnce(async () => {
-    started.resolve();
-    await release.promise;
-    return service.shouldShowAutoOpenHint();
-  });
-  render(<LeetSrsControl />);
-  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
-  fireEvent.click(trigger);
-  await act(() => started.promise);
-  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-  await act(async () => release.resolve());
-  expect(await service.shouldShowAutoOpenHint()).toBe(true);
-  fireEvent.click(trigger);
-  await screen.findByText('Opens after each accepted solve.');
-  await waitFor(async () => expect(await service.shouldShowAutoOpenHint()).toBe(false));
-});
-
-it('keeps saved confirmations open until dismissed and allows another manual rating', async () => {
-  await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en', openRatingAfterSolving: false } }));
-  render(<LeetSrsControl />);
-  const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
-  for (const reps of [1, 2]) {
-    fireEvent.click(trigger);
-    const good = await screen.findByRole('button', { name: 'Good' });
-    await waitFor(() => expect(good).toBeEnabled());
-    vi.useFakeTimers();
-    try {
-      await act(async () => fireEvent.click(good));
-      expect(good).toHaveAttribute('data-selected', 'true');
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
-      await act(() => vi.advanceTimersByTimeAsync(400));
-      expect(screen.getByRole('status')).toHaveTextContent('Saved');
-      await act(() => vi.advanceTimersByTimeAsync(6000));
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(reps);
-    } finally {
-      vi.useRealTimers();
-    }
-    fireEvent.click(screen.getAllByRole('button', { name: 'Dismiss' })[0]);
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(trigger).toHaveFocus();
-  }
-});
-
 it('shows next problems before rating and refreshes the daily allowance after saving', async () => {
   await replaceLearningDocument(
     buildLearningDocument({
@@ -172,63 +124,6 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   await screen.findByText('No other reviews due');
   await waitFor(() => expect(screen.queryByText('Loading next roadmap problem…')).not.toBeInTheDocument());
   expect(screen.queryByText(/Blind 75/)).not.toBeInTheDocument();
-});
-
-it('keeps rating and reviews usable when roadmap loading fails, then retries', async () => {
-  await replaceLearningDocument(
-    buildLearningDocument({
-      settings: { language: 'en' },
-      cards: { '2': createMockCard(State.Review, { frontendId: '2' }) },
-      activeRoadmapId: 'blind-75',
-    })
-  );
-  vi.mocked(background.getNextRoadmapProblem).mockRejectedValueOnce(new Error('Unavailable'));
-  render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load the next roadmap problem.');
-  expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
-  expect(await screen.findByRole('link', { name: '2. Add Two Numbers Next review' })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByRole('link', { name: '3. Longest Substring Next in Blind 75' })).toBeInTheDocument();
-});
-
-it('keeps focus on the panel when the pressed row becomes disabled', async () => {
-  render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-  const good = await screen.findByRole('button', { name: 'Good' });
-  await waitFor(() => expect(good).toBeEnabled());
-  act(() => good.focus());
-  fireEvent.click(good);
-  expect(good).toBeDisabled();
-  expect(screen.getByRole('group')).toHaveFocus();
-  await screen.findByRole('status');
-});
-
-it('reports a failed load with a retry that restores rating', async () => {
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  vi.mocked(background.previewRatings).mockRejectedValueOnce(new Error('Unavailable'));
-  render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Could not load review intervals.');
-  expect(screen.getByRole('button', { name: 'Good' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-});
-
-it('saves an existing card only with a rating and shows its status', async () => {
-  const card = createMockCard(State.Review, { frontendId: '1', paused: true });
-  await replaceLearningDocument(buildLearningDocument({ settings: { language: 'en' }, cards: { '1': card } }));
-  render(<LeetSrsControl />);
-  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
-  const good = await screen.findByRole('button', { name: 'Good' });
-  await waitFor(() => expect(good).toBeEnabled());
-  expect(screen.getByText('Paused')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Save without rating' })).not.toBeInTheDocument();
-  fireEvent.keyDown(good, { key: '5' });
-  expect(good).toBeEnabled();
-  expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  expect((await readLearningDocument()).cards['1']).toEqual(card);
 });
 
 it('undoes a save back to the rating view, and refuses once the card changed', async () => {

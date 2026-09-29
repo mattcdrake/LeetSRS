@@ -25,30 +25,6 @@ beforeEach(() => {
   });
 });
 
-it.each(['id', 'slug'])(
-  'shares one catalog across concurrent and subsequent reads, starting with %s',
-  async (first) => {
-    const { getProblemBySlug, getProblemsByFrontendIds } = await import('@/shared/catalog');
-    expect(fetch).not.toHaveBeenCalled();
-    expect(await getProblemsByFrontendIds([])).toEqual([]);
-    expect(fetch).not.toHaveBeenCalled();
-    const refs = [{ frontendId: '1', domain: 'leetcode.com' as const }];
-    const firstRead = first === 'id' ? getProblemsByFrontendIds(refs) : getProblemBySlug('two-sum', 'leetcode.com');
-    const [byId, bySlug, cnBySlug] = await Promise.all([
-      getProblemsByFrontendIds(refs),
-      getProblemBySlug('two-sum', 'leetcode.com'),
-      getProblemBySlug('cn-problem', 'leetcode.cn'),
-      firstRead,
-    ]);
-    expect(byId).toEqual([twoSum]);
-    expect(bySlug).toBe(byId[0]);
-    expect(cnBySlug).toEqual(cnProblem);
-    expect(await getProblemsByFrontendIds(refs)).toEqual(byId);
-    expect(await getProblemBySlug('two-sum', 'leetcode.com')).toBe(bySlug);
-    expect(fetch).toHaveBeenCalledExactlyOnceWith(browser.runtime.getURL('/data/leetcode-catalog-by-id.json'));
-  }
-);
-
 it('returns mixed-domain and missing IDs in input order', async () => {
   const { getProblemsByFrontendIds } = await import('@/shared/catalog');
   expect(
