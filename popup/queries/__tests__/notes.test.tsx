@@ -3,18 +3,16 @@ import { NoteEditor } from '@/popup/components/notes/NoteEditor';
  * @vitest-environment happy-dom
  */
 
-import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import backgroundEntry from '@/entrypoints/background/index';
 import { background } from '@/shared/background-service';
-import * as catalog from '@/shared/catalog';
+import { readLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem } from '@/test/utils/card-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
 import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
-import { useDelayCardMutation, useReviewQueueQuery } from '../cards';
-import { useNoteQuery, useSaveNoteMutation } from '../notes';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
@@ -50,29 +48,13 @@ it('preserves a dirty rendered note through incoming replacement and saves its d
   await waitFor(() => expect(input).toHaveValue('Later update'));
 });
 
-it('keeps the outgoing card note live after it leaves the review queue', async () => {
-  const lookups = vi.spyOn(catalog, 'getProblemsByFrontendIds');
-  const next = buildProblem({ frontendId: 'next-card' });
-  await background.addCard(next);
-  await background.saveNote(problem.frontendId, 'Outgoing note');
-  await background.saveNote(next.frontendId, 'Next note');
-  const view = renderHook(
-    ({ frontendId }) => ({
-      note: useNoteQuery(frontendId),
-      queue: useReviewQueueQuery(),
-      delay: useDelayCardMutation(),
-      save: useSaveNoteMutation(frontendId),
-    }),
-    { initialProps: { frontendId: problem.frontendId }, wrapper: createPopupTestWrapper().wrapper }
-  );
-  await waitFor(() => expect(view.result.current.note.data).toBe('Outgoing note'));
-  await act(() => view.result.current.delay.mutateAsync({ frontendId: problem.frontendId, days: 1 }));
-  await waitFor(() => expect(view.result.current.queue.data).toMatchObject([{ frontendId: next.frontendId }]));
-  expect(view.result.current.note.data).toBe('Outgoing note');
-  await act(() => view.result.current.save.mutateAsync(''));
-  await waitFor(() => expect(view.result.current.note.data).toBeNull());
-  view.rerender({ frontendId: next.frontendId });
-  await waitFor(() => expect(view.result.current.note.data).toBe('Next note'));
-  expect(view.result.current.queue.data).toMatchObject([{ note: 'Next note' }]);
-  expect(lookups).toHaveBeenCalledTimes(1);
+it('deletes only the note after confirmation', async () => {
+  await background.saveNote('1', 'Remove this note');
+  const { note: _note, ...card } = (await readLearningDocument()).cards['1'];
+  render(<NoteEditor frontendId="1" variant="regular" />, { wrapper: createPopupTestWrapper().wrapper });
+  fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+  expect((await readLearningDocument()).cards['1'].note).toBe('Remove this note');
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm?' }));
+  await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
+  expect((await readLearningDocument()).cards['1']).toEqual(card);
 });

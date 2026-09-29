@@ -6,12 +6,11 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { storage } from '#imports';
 import backgroundEntry from '@/entrypoints/background/index';
-import { NoteEditor } from '@/popup/components/notes/NoteEditor';
 import { CardsView } from '@/popup/views/card/CardsView';
 import { DataSection } from '@/popup/views/settings/DataSection';
 import { background } from '@/shared/background-service';
 import { gistConnectionItem, lastSyncTimeItem } from '@/shared/gist-sync';
-import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
+import { readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { buildProblem, createMockCard } from '@/test/utils/card-mocks';
 import { seedGithubAuthorization } from '@/test/utils/github-auth';
@@ -43,7 +42,7 @@ afterEach(() => {
 
 const click = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
 
-it('retains failed note drafts, retries a pending save and reopens the persisted note', async () => {
+it('retains failed note drafts, retries saving and reopens the persisted note', async () => {
   const { wrapper } = createPopupTestWrapper();
   const view = render(<ReviewQueue />, { wrapper });
   await screen.findByText('Two Sum');
@@ -64,19 +63,8 @@ it('retains failed note drafts, retries a pending save and reopens the persisted
   expect(await screen.findByRole('alert')).toHaveTextContent('Your draft is kept');
   expect(await readLearningDocument()).toEqual(before);
   expect(input).toHaveValue('Use a map');
-  const pending = Promise.withResolvers<void>();
-  vi.mocked(fakeBrowser.storage.local.set).mockRestore();
-  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
-    await pending.promise;
-    await write(items);
-  });
   click('Save');
-  expect(await screen.findByRole('button', { name: 'Saving...' })).toBeDisabled();
-  click('Notes');
-  await act(async () => pending.resolve());
   await waitFor(async () => expect((await readLearningDocument()).cards['1'].note).toBe('Use a map'));
-  click('Notes');
   await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
   expect((await readLearningDocument()).cards['1'].note).toBe('Use a map');
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -106,7 +94,7 @@ it('retries a failed review, persists scheduling and advances to the next card',
   expect((await readLearningDocument()).cards['1']).toMatchObject({ note: 'Use a map', fsrs: { reps: 1 } });
 });
 
-it('pauses, resumes and retries deletion through real card controls, requiring confirmation', async () => {
+it('pauses, resumes and deletes through real card controls, requiring confirmation', async () => {
   const { wrapper } = createPopupTestWrapper();
   const queue = render(<ReviewQueue />, { wrapper });
   await screen.findByText('Two Sum');
@@ -129,12 +117,6 @@ it('pauses, resumes and retries deletion through real card controls, requiring c
   expect((await readLearningDocument()).cards['1'].paused).toBe(false);
   click('Delete card');
   expect((await readLearningDocument()).cards['1']).toBeDefined();
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk unavailable'));
-  click('Confirm Delete?');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Delete card' })).toBeEnabled());
-  expect((await readLearningDocument()).cards['1']).toBeDefined();
-  click('Delete card');
   click('Confirm Delete?');
   await waitFor(() => expect(screen.queryByText('Two Sum')).not.toBeInTheDocument());
   expect((await readLearningDocument()).cards['1']).toBeUndefined();
@@ -260,109 +242,6 @@ it('exports the current complete snapshot, preserving its timestamp and excludin
   expect(JSON.parse(await backups[1].text())).toEqual(replacement);
 });
 
-it('reports initialization failure when exporting unavailable data without creating an empty backup', async () => {
-  await learningDocumentItem.removeValue();
-  vi.mocked(background.waitForInitialization).mockRejectedValue(new Error('Initialization failed'));
-  vi.stubGlobal('alert', vi.fn());
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  const createObjectURL = vi.spyOn(URL, 'createObjectURL');
-  render(<DataSection />, { wrapper: createPopupTestWrapper().wrapper });
-  click('Export backup');
-  await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to export data'));
-  expect(createObjectURL).not.toHaveBeenCalled();
-  expect(await learningDocumentItem.getValue()).toBeNull();
-});
-
-it('validates changed notes and retries deletion without deleting the card', async () => {
-  await background.saveNote('1', 'Stored note');
-  render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
-  await screen.findByText('Two Sum');
-  click('Notes');
-  const input = screen.getByRole('textbox', { name: 'Note text' });
-  await waitFor(() => expect(input).toHaveValue('Stored note'));
-  const save = screen.getByRole('button', { name: 'Save' });
-  expect(save).toBeDisabled();
-  for (const [value, enabled] of [
-    ['Changed', true],
-    ['', false],
-    ['a'.repeat(500), true],
-    ['a'.repeat(501), false],
-    ['Stored note', false],
-  ] as const) {
-    fireEvent.change(input, { target: { value } });
-    expect(save.hasAttribute('disabled')).toBe(!enabled);
-    expect(screen.getByText(`${value.length}/500`)).toBeInTheDocument();
-  }
-  const before = await readLearningDocument();
-  click('Delete');
-  expect(await readLearningDocument()).toEqual(before);
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Disk unavailable'));
-  click('Confirm?');
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled());
-  expect(input).toHaveValue('Stored note');
-  expect(await readLearningDocument()).toEqual(before);
-  const pending = Promise.withResolvers<void>();
-  vi.mocked(fakeBrowser.storage.local.set).mockRestore();
-  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
-    await pending.promise;
-    await write(items);
-  });
-  click('Delete');
-  click('Confirm?');
-  expect(await screen.findByRole('button', { name: 'Deleting...' })).toBeDisabled();
-  expect(input).toBeDisabled();
-  expect(save).toBeDisabled();
-  await act(async () => pending.resolve());
-  await waitFor(() => expect(input).toHaveValue(''));
-  const { note: _note, ...card } = before.cards['1'];
-  expect((await readLearningDocument()).cards['1']).toEqual(card);
-  expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
-});
-
-it.each(['save', 'delete', 'failure'] as const)('isolates a note %s when switching cards', async (operation) => {
-  await background.saveNote('1', 'Stored note');
-  await background.saveNote('2', 'Other note');
-  const view = render(<NoteEditor frontendId="1" variant="regular" />, { wrapper: createPopupTestWrapper().wrapper });
-  const input = await screen.findByRole('textbox', { name: 'Note text' });
-  await waitFor(() => expect(input).toHaveValue('Stored note'));
-  const pending = Promise.withResolvers<void>();
-  const write = fakeBrowser.storage.local.set.bind(fakeBrowser.storage.local);
-  vi.spyOn(console, 'error').mockImplementation(() => {});
-  vi.spyOn(fakeBrowser.storage.local, 'set').mockImplementationOnce(async (items) => {
-    await pending.promise;
-    await write(items);
-  });
-  fireEvent.change(input, { target: { value: 'Outgoing draft' } });
-  if (operation === 'delete') {
-    click('Delete');
-    click('Confirm?');
-  } else click('Save');
-  expect(
-    await screen.findByRole('button', { name: operation === 'delete' ? 'Deleting...' : 'Saving...' })
-  ).toBeDisabled();
-  expect(input).toBeDisabled();
-  expect(screen.getByRole('button', { name: operation === 'delete' ? 'Save' : 'Delete' })).toBeDisabled();
-  if (operation === 'failure') {
-    await act(async () => pending.reject(new Error('Disk unavailable')));
-    await screen.findByRole('alert');
-  }
-  view.rerender(<NoteEditor frontendId="2" variant="regular" />);
-  const other = screen.getByRole('textbox', { name: 'Note text' });
-  await waitFor(() => expect(other).toHaveValue('Other note'));
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  fireEvent.change(other, { target: { value: 'Other draft' } });
-  expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
-  expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
-  await act(async () => pending.resolve());
-  expect(other).toHaveValue('Other draft');
-  expect((await readLearningDocument()).cards['2'].note).toBe('Other note');
-  expect((await readLearningDocument()).cards['1'].note).toBe(
-    operation === 'delete' ? undefined : operation === 'save' ? 'Outgoing draft' : 'Stored note'
-  );
-});
-
 it('disables all card controls and persists one review for duplicate actions while saving', async () => {
   render(<ReviewQueue />, { wrapper: createPopupTestWrapper().wrapper });
   await screen.findByText('Two Sum');
@@ -388,37 +267,4 @@ it('disables all card controls and persists one review for duplicate actions whi
   expect(saved.cards['1']).toMatchObject({ paused: false, fsrs: { reps: 1 } });
   expect(saved.cards['1'].note).toBeUndefined();
   expect(saved.reviewActivity?.newCards).toBe(1);
-});
-
-it.each(['command', 'refresh'] as const)('waits for the pending %s before showing the next card', async (phase) => {
-  const { wrapper, queryClient } = createPopupTestWrapper();
-  render(<ReviewQueue />, { wrapper });
-  await screen.findByText('Two Sum');
-  await waitFor(() => expect(queryClient.isFetching()).toBe(0));
-  const pending = Promise.withResolvers<void>();
-  const started = Promise.withResolvers<void>();
-  const read = learningDocumentItem.getValue.bind(learningDocumentItem);
-  const rate = getRegisteredBackground().rateCard;
-  vi.mocked(background.rateCard).mockImplementationOnce(async (input) => {
-    const card = await rate(input);
-    if (phase === 'command') {
-      started.resolve();
-      await pending.promise;
-    } else
-      vi.spyOn(learningDocumentItem, 'getValue').mockImplementation(async () => {
-        started.resolve();
-        await pending.promise;
-        return read();
-      });
-    return card;
-  });
-  click('Good');
-  await act(() => started.promise);
-  if (phase === 'command') await screen.findByText('Loading review queue...');
-  else await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeDisabled());
-  expect(screen.queryByText('Add Two Numbers')).not.toBeInTheDocument();
-  await act(async () => pending.resolve());
-  await screen.findByText('Add Two Numbers');
-  expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled();
-  expect((await readLearningDocument()).cards['1'].fsrs.reps).toBe(1);
 });

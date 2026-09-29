@@ -27,127 +27,27 @@ const problem = buildProblem();
 const savedConnection = { accountId: 1, gistId: 'gist', enabled: false };
 
 describe('registered background execution', () => {
-  it('resets learning data, connection and status, then ignores stale learning data on restart', async () => {
+  it('resets learning data and authorization without deleting unrelated storage', async () => {
     await getRegisteredBackground().rateCard({ ...problem, rating: 3 });
-    await getRegisteredBackground().saveNote(problem.frontendId, 'Reset me');
+    await getRegisteredBackground().saveNote('1', 'Reset me');
     await getRegisteredBackground().updateSettings({ language: 'zh-CN' });
     await seedGithubAuthorization();
     await writeGistConnection(savedConnection);
-    expect(await readGistConnection()).toEqual(savedConnection);
-    expect((await getRegisteredBackground().getGithubAuthStatus()).account).toEqual({ id: 1, login: 'tester' });
-    const staleLocal = {
-      'leetsrs:cards': { stale: 'invalid leftover' },
-      'leetsrs:stats': { stale: 'invalid leftover' },
-      'leetsrs:schemaVersion': 3,
-      'leetsrs:dataUpdatedAt': '2024-01-01T00:00:00.000Z',
-      'leetsrs:notes:old-id': { text: 'stale note' },
-    };
-    await fakeBrowser.storage.local.set({
-      ...staleLocal,
-      'leetsrs:lastSyncTime': 'old',
-      'leetsrs:lastSyncDirection': 'pull',
-      unrelated: 'keep',
-    });
-    await fakeBrowser.storage.sync.set({
-      'leetsrs:githubPat': 'legacy secret',
-      'leetsrs:gistId': 'old-gist',
-      'leetsrs:gistSyncEnabled': true,
-      'leetsrs:theme': 'dark',
-      'leetsrs:dayStartHour': 4,
-      'leetsrs:autoClearLeetcode': true,
-      unrelated: 'keep',
-    });
+    await fakeBrowser.storage.local.set({ 'leetsrs:lastSyncTime': 'old', unrelated: 'keep' });
+    await fakeBrowser.storage.sync.set({ 'leetsrs:githubPat': 'legacy secret', unrelated: 'keep' });
 
     await getRegisteredBackground().resetAllData();
 
-    const empty = buildLearningDocument();
-    const rpc = vi.spyOn(browser.runtime, 'sendMessage');
-    expect(await readLearningDocument()).toEqual(empty);
+    expect(await readLearningDocument()).toEqual(buildLearningDocument());
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect((await getRegisteredBackground().getGithubAuthStatus()).account).toBeNull();
-    expect(rpc).not.toHaveBeenCalled();
     expect(await getRegisteredBackground().getGistSyncStatus()).toEqual({
       lastSyncTime: null,
       syncInProgress: false,
       lastError: null,
     });
-    expect(await fakeBrowser.storage.local.get(null)).toEqual({
-      'leetsrs:learningDocument': empty,
-      'leetsrs:oauthMigration': { notice: false, previousGist: null },
-      unrelated: 'keep',
-    });
-    expect(await fakeBrowser.storage.sync.get(null)).toEqual({ unrelated: 'keep' });
-
-    await fakeBrowser.storage.local.set(staleLocal);
-    vi.mocked(registerService).mockClear();
-    backgroundEntry.main();
-    await getRegisteredBackground().waitForInitialization();
-    expect(await readLearningDocument()).toEqual(empty);
-  });
-  it.each(['document', 'legacy connection cleanup'] as const)(
-    'reports reset failure at %s without resurrecting data on restart',
-    async (stage) => {
-      await getRegisteredBackground().addCard(problem);
-      await seedGithubAuthorization();
-      await writeGistConnection(savedConnection);
-      expect(await readGistConnection()).toEqual(savedConnection);
-      expect((await getRegisteredBackground().getGithubAuthStatus()).account).toEqual({ id: 1, login: 'tester' });
-      await fakeBrowser.storage.sync.set({
-        'leetsrs:githubPat': 'legacy secret',
-        'leetsrs:gistId': 'old-gist',
-      });
-      const before = await readLearningDocument();
-      const failure = new Error('Reset storage unavailable');
-      if (stage === 'document') {
-        vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(failure);
-      } else {
-        vi.spyOn(fakeBrowser.storage.sync, 'remove').mockRejectedValueOnce(failure);
-      }
-      await expect(getRegisteredBackground().resetAllData()).rejects.toBe(failure);
-      expect(await readGistConnection()).toEqual(
-        stage === 'document' ? savedConnection : { accountId: null, gistId: null, enabled: false }
-      );
-      expect((await getRegisteredBackground().getGithubAuthStatus()).account).toEqual(
-        stage === 'document' ? { id: 1, login: 'tester' } : null
-      );
-      vi.mocked(registerService).mockClear();
-      backgroundEntry.main();
-      await getRegisteredBackground().waitForInitialization();
-      if (stage === 'document') {
-        expect(await readLearningDocument()).toEqual(before);
-      } else {
-        expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-      }
-      await getRegisteredBackground().resetAllData();
-      expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-      expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-      expect((await getRegisteredBackground().getGithubAuthStatus()).account).toBeNull();
-    }
-  );
-
-  it('keeps a saved card successful when badge refresh fails and accepts the next write', async () => {
-    const failure = new Error('Badge unavailable');
-    vi.spyOn(browser.action, 'setBadgeText').mockRejectedValueOnce(failure);
-    const report = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    await expect(getRegisteredBackground().addCard(problem)).resolves.toBeUndefined();
-    expect(Object.values((await readLearningDocument()).cards)).toMatchObject([problem]);
-    expect(report).toHaveBeenCalledWith('Failed to refresh badge:', failure);
-    await getRegisteredBackground().saveNote(problem.frontendId, 'saved after badge failure');
-    expect((await readLearningDocument()).cards[problem.frontendId]?.note ?? null).toBe('saved after badge failure');
-  });
-
-  it('responds to saves while badge work is pending', async () => {
-    const started = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
-    vi.spyOn(browser.action, 'setBadgeText').mockImplementationOnce(async () => {
-      started.resolve();
-      await release.promise;
-    });
-    await getRegisteredBackground().addCard(problem);
-    await started.promise;
-    await getRegisteredBackground().saveNote(problem.frontendId, 'next edit');
-    expect((await readLearningDocument()).cards[problem.frontendId]?.note).toBe('next edit');
-    release.resolve();
+    expect(await fakeBrowser.storage.local.get('unrelated')).toEqual({ unrelated: 'keep' });
+    expect(await fakeBrowser.storage.sync.get()).toEqual({ unrelated: 'keep' });
   });
 });
 

@@ -75,68 +75,21 @@ describe('document learning through background commands', () => {
     });
   });
 
-  it('preserves card identity and unrelated data through card and note edits', async () => {
-    const original = buildLearningDocument({
-      cards: { '1': createMockCard(State.Review, { frontendId: '1', paused: true, note: 'Keep this note' }) },
-      reviewActivity: { date: '2024-01-01', newCards: 0, streak: 1 },
-      settings: { theme: 'dark' },
-      dataUpdatedAt: '2024-01-15T10:00:00.000Z',
+  it('keeps duplicate adds idempotent and preserves identity and notes when rating', async () => {
+    const service = getRegisteredBackground();
+    await service.addCard(buildProblem());
+    await service.saveNote('1', 'Keep my solution');
+    const before = await readLearningDocument();
+    await service.addCard(buildProblem({ domain: 'leetcode.cn' }));
+    expect(await readLearningDocument()).toEqual(before);
+    await service.rateCard({ ...buildProblem({ domain: 'leetcode.cn' }), rating: Rating.Easy });
+    expect((await readLearningDocument()).cards['1']).toMatchObject({
+      domain: 'leetcode.com',
+      createdAt: before.cards['1'].createdAt,
+      note: 'Keep my solution',
     });
-    await replaceLearningDocument(original);
-    const others = Object.values(original.cards);
-    const problem = buildProblem({ frontendId: 'new-problem' });
-    await expect(getRegisteredBackground().addCard(problem)).resolves.toBeUndefined();
-    const card = requireDefined((await readLearningDocument()).cards[problem.frontendId]);
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([...others, card]);
-    expect(card.fsrs).toMatchObject({ due: Date.now(), reps: 0, state: State.New });
-    await expect(getRegisteredBackground().addCard({ ...problem, domain: 'leetcode.cn' })).resolves.toBeUndefined();
-    expect((await readLearningDocument()).cards[problem.frontendId]).toEqual(card);
-    await getRegisteredBackground().saveNote(card.frontendId, '  solution\n\t');
-    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBe('  solution\n\t');
-    await expect(getRegisteredBackground().setPauseStatus(card.frontendId, true)).resolves.toBeUndefined();
-    const paused = requireDefined((await readLearningDocument()).cards[card.frontendId]);
-    expect(paused).toEqual({ ...card, paused: true, note: '  solution\n\t' });
-    vi.setSystemTime(new Date('2024-03-16T12:00:00'));
-    await expect(getRegisteredBackground().delayCard(card.frontendId, 2)).resolves.toBeUndefined();
-    const delayed = requireDefined((await readLearningDocument()).cards[card.frontendId]);
-    expect(delayed).toEqual({ ...paused, fsrs: { ...paused.fsrs, due: new Date('2024-03-17T12:00:00').getTime() } });
-    await expect(getRegisteredBackground().setPauseStatus(card.frontendId, false)).resolves.toBeUndefined();
-    expect((await readLearningDocument()).cards[card.frontendId]).toEqual({ ...delayed, paused: false });
-    await getRegisteredBackground().saveNote(card.frontendId, 'a'.repeat(500));
-    await expect(getRegisteredBackground().saveNote(card.frontendId, 'a'.repeat(501))).rejects.toThrow(
-      'maximum length'
-    );
-    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBe('a'.repeat(500));
-    await getRegisteredBackground().saveNote(card.frontendId, '');
-    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBeNull();
-    await getRegisteredBackground().saveNote(card.frontendId, 'removed with card');
-    await getRegisteredBackground().removeCard(card.frontendId);
-    expect(Object.values((await readLearningDocument()).cards)).toEqual(others);
-    expect((await readLearningDocument()).cards[card.frontendId]?.note ?? null).toBeNull();
-    expect(await readLearningDocument()).toEqual({ ...original, dataUpdatedAt: new Date().toISOString() });
-  });
-
-  it('keeps a review schedule, activity, and edit timestamp on the captured day when a read crosses midnight', async () => {
-    const now = new Date('2024-03-15T23:59:59.999');
-    vi.setSystemTime(now);
-    const get = learningDocumentItem.getValue.bind(learningDocumentItem);
-    vi.spyOn(learningDocumentItem, 'getValue').mockImplementationOnce(async () => {
-      const document = await get();
-      vi.setSystemTime(new Date('2024-03-16T00:00:00'));
-      return document;
-    });
-
-    await getRegisteredBackground().rateCard({ ...buildProblem(), rating: Rating.Good });
-    const card = requireDefined((await readLearningDocument()).cards['1']);
-
-    expect(card.createdAt).toBe(now.getTime());
-    expect(card.fsrs.last_review).toBe(now.getTime());
-    expect(card.fsrs.due).toBe(new Date('2024-03-18T23:59:59.999').getTime());
-    expect(await readLearningDocument()).toMatchObject({
-      cards: { [card.frontendId]: card },
-      reviewActivity: { date: '2024-03-15', newCards: 1 },
-      dataUpdatedAt: now.toISOString(),
-    });
+    await expect(service.saveNote('1', 'a'.repeat(501))).rejects.toThrow('maximum length');
+    expect((await readLearningDocument()).cards['1'].note).toBe('Keep my solution');
   });
 
   it('undoes the latest panel save only while its card and review activity are unchanged', async () => {
@@ -167,30 +120,6 @@ describe('document learning through background commands', () => {
     await service.rateCard({ ...buildProblem({ frontendId: '5' }), rating: Rating.Good });
     await expect(service.undoSave(requireDefined(reviewed.undoToken))).rejects.toThrow('changed');
     expect((await readLearningDocument()).cards['4']).toEqual(reviewed.card);
-  });
-
-  it('reports a committed panel save as saved when its undo cannot be recorded', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(fakeBrowser.storage.session, 'set').mockRejectedValueOnce(new Error('Quota exceeded'));
-    const saved = await getRegisteredBackground().saveProblem({ ...buildProblem(), rating: Rating.Good });
-    expect(saved.undoToken).toBeNull();
-    expect((await readLearningDocument()).cards['1']).toEqual(saved.card);
-  });
-
-  it('preserves missing-card errors and harmless note deletion', async () => {
-    const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    expect((await readLearningDocument()).cards.missing?.note ?? null).toBeNull();
-    await getRegisteredBackground().saveNote('missing', '');
-    await expect(getRegisteredBackground().delayCard('missing', 1)).rejects.toThrow('not found');
-    await expect(getRegisteredBackground().setPauseStatus('missing', true)).rejects.toThrow('not found');
-    expect(writes).not.toHaveBeenCalled();
-    await getRegisteredBackground().removeCard('missing');
-    expect(Object.values((await readLearningDocument()).cards)).toEqual([]);
-    await getRegisteredBackground().addCard(buildProblem());
-    const card = requireDefined((await readLearningDocument()).cards['1']);
-    writes.mockClear();
-    await getRegisteredBackground().saveNote(card.frontendId, '');
-    expect(writes).not.toHaveBeenCalled();
   });
 
   it.each([

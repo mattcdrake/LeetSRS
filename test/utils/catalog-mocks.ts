@@ -31,16 +31,4 @@ export const testCatalog: CatalogProblem[] = [
     topics: [],
     sources: ['leetcode.com'],
   },
-  ...['new-a', 'new-b', 'review', 'future', 'paused', 'next-card', 'editor-card', 'other-card', 'com-only'].map(
-    (frontendId): CatalogProblem => ({
-      frontendId,
-      slug: frontendId,
-      title: frontendId,
-      translatedTitle: null,
-      difficulty: 'easy',
-      isPaidOnly: false,
-      topics: [],
-      sources: ['leetcode.com'],
-    })
-  ),
 ];

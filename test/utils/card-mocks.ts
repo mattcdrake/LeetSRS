@@ -23,12 +23,6 @@ export function buildCatalogProblem(overrides: Partial<CatalogProblem> = {}): Ca
   };
 }
 
-/**
- * Creates a mock Card object for testing
- * @param state - The FSRS state for the card
- * @param overrides - Optional overrides for any Card properties
- * @returns A complete Card object with sensible defaults
- */
 export const createMockCard = (state: State, overrides: Partial<Card> = {}): Card => {
   return {
     frontendId: '1',

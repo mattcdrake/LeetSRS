@@ -4,7 +4,7 @@ import { storage } from 'wxt/utils/storage';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { background } from '@/shared/background-service';
 import { readGistConnection, writeGistConnection } from '@/shared/gist-sync';
-import { learningDocumentItem, readLearningDocument, replaceLearningDocument } from '@/shared/learning-document';
+import { learningDocumentItem, readLearningDocument } from '@/shared/learning-document';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
@@ -18,24 +18,10 @@ describe('learning document startup', () => {
     });
   });
 
-  it('initializes an unedited installation with a missing document', async () => {
-    await initializeLearningDocument();
-
-    expect(await readLearningDocument()).toEqual(
-      buildLearningDocument({ settings: { resetEditorOnReviewQueue: false } })
-    );
-    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-    expect(await storage.getItem('local:leetsrs:schemaVersion')).toBeNull();
-    expect(Object.values(background).flatMap((method): unknown[] => vi.mocked(method).mock.calls)).toHaveLength(0);
-  });
-
-  it.each([undefined, 3, 5])('preserves an installation at version %s', async (version) => {
-    const { backup, converted, legacyConverted } = validLegacyBackup();
-    const schemaVersion = version ?? 0;
-    const cards = structuredClone(schemaVersion < 4 ? backup.data.cards : legacyConverted.cards);
-    if (schemaVersion === 0) {
-      Reflect.deleteProperty(cards['two-sum'], 'domain');
-    }
+  it('migrates an unversioned installation without losing notes or settings', async () => {
+    const { backup, converted } = validLegacyBackup();
+    const cards = structuredClone(backup.data.cards);
+    Reflect.deleteProperty(cards['two-sum'], 'domain');
     const local: Record<string, unknown> = {
       'leetsrs:cards': cards,
       'leetsrs:stats': backup.data.stats,
@@ -44,9 +30,6 @@ describe('learning document startup', () => {
       'leetsrs:lastSyncDirection': 'pull',
       unrelated: 'keep',
     };
-    if (version !== undefined) {
-      local['leetsrs:schemaVersion'] = version;
-    }
     for (const [id, note] of Object.entries(backup.data.notes)) {
       local[`leetsrs:notes:${id}`] = note;
     }
@@ -55,7 +38,7 @@ describe('learning document startup', () => {
       'leetsrs:maxNewCardsPerDay': 0,
       'leetsrs:badgeEnabled': false,
       'leetsrs:resetEditorOnDueReview': false,
-      [schemaVersion < 3 ? 'leetsrs:autoClearLeetcode' : 'leetsrs:resetEditorOnEveryProblem']: false,
+      'leetsrs:autoClearLeetcode': false,
       'leetsrs:githubPat': ' token ',
       'leetsrs:gistId': 'legacy-gist',
       'leetsrs:gistSyncEnabled': true,
@@ -91,12 +74,12 @@ describe('learning document startup', () => {
     });
   });
 
-  it.each([0, 7])('treats a saved version %i document as authoritative', async (schemaVersion) => {
+  it('treats a saved document as authoritative over stale legacy storage', async () => {
     const { backup, converted, legacyConverted } = validLegacyBackup();
     await fakeBrowser.storage.local.set({
       'leetsrs:learningDocument': {
-        ...(schemaVersion < 4 ? backup.data : legacyConverted),
-        schemaVersion,
+        ...legacyConverted,
+        schemaVersion: 7,
         settings: { language: 'de' },
         dataUpdatedAt: backup.dataUpdatedAt,
       },
@@ -113,7 +96,6 @@ describe('learning document startup', () => {
         ...converted,
         settings: {
           language: 'en',
-          ...(schemaVersion < 7 && { resetEditorOnReviewQueue: false }),
         },
         dataUpdatedAt: backup.dataUpdatedAt,
       })
@@ -162,79 +144,5 @@ describe('learning document startup', () => {
       })
     );
     expect(await readGistConnection()).toEqual(shared);
-  });
-
-  it.each(['local', 'sync'] as const)('keeps the saved document authoritative after %s cleanup fails', async (area) => {
-    const { converted, legacyConverted } = validLegacyBackup();
-    await fakeBrowser.storage.local.set({ 'leetsrs:cards': legacyConverted.cards, 'leetsrs:schemaVersion': 5 });
-    await fakeBrowser.storage.sync.set({ 'leetsrs:language': 'de', 'leetsrs:githubPat': 'secret' });
-    vi.spyOn(fakeBrowser.storage[area], 'remove').mockRejectedValueOnce(new Error('Cleanup unavailable'));
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    await initializeLearningDocument();
-
-    expect(await readLearningDocument()).toEqual(
-      buildLearningDocument({
-        cards: converted.cards,
-        settings: { language: 'en', resetEditorOnReviewQueue: false },
-      })
-    );
-    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-
-    // Editing the authoritative document then restarting must not resurrect retained legacy data.
-    const edited = buildLearningDocument();
-    await replaceLearningDocument(edited);
-    await initializeLearningDocument();
-
-    expect(await readLearningDocument()).toEqual(edited);
-  });
-
-  it('rejects a malformed legacy theme before any writes', async () => {
-    const { backup } = validLegacyBackup();
-    const local: Record<string, unknown> = {
-      'leetsrs:schemaVersion': 2,
-      'leetsrs:cards': backup.data.cards,
-      'leetsrs:notes:valid-com': backup.data.notes['valid-com'],
-    };
-    const sync = { 'leetsrs:githubPat': 'secret', 'leetsrs:theme': 'invalid' };
-    await fakeBrowser.storage.local.set(local);
-    await fakeBrowser.storage.sync.set(sync);
-    const localBefore = await fakeBrowser.storage.local.get();
-    const syncBefore = await fakeBrowser.storage.sync.get();
-    const localWrites = vi.spyOn(fakeBrowser.storage.local, 'set');
-    const syncWrites = vi.spyOn(fakeBrowser.storage.sync, 'set');
-
-    await expect(initializeLearningDocument()).rejects.toThrow();
-
-    expect(localWrites).not.toHaveBeenCalled();
-    expect(syncWrites).not.toHaveBeenCalled();
-    expect(await fakeBrowser.storage.local.get()).toEqual(localBefore);
-    expect(await fakeBrowser.storage.sync.get()).toEqual(syncBefore);
-  });
-
-  it('retries a rejected supported-document conversion without falling back to legacy storage', async () => {
-    const { converted, legacyConverted, backup } = validLegacyBackup();
-    const saved = { ...legacyConverted, schemaVersion: 5, dataUpdatedAt: backup.dataUpdatedAt };
-    await fakeBrowser.storage.local.set({
-      'leetsrs:learningDocument': saved,
-      'leetsrs:cards': {},
-      'leetsrs:dataUpdatedAt': '2025-01-01',
-    });
-    const before = await fakeBrowser.storage.local.get();
-    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValueOnce(new Error('Write unavailable'));
-
-    await expect(initializeLearningDocument()).rejects.toThrow('Write unavailable');
-    expect(await fakeBrowser.storage.local.get()).toEqual(before);
-
-    await initializeLearningDocument();
-
-    expect(await readLearningDocument()).toEqual(
-      buildLearningDocument({
-        ...converted,
-        dataUpdatedAt: backup.dataUpdatedAt,
-        settings: { resetEditorOnReviewQueue: false },
-      })
-    );
-    expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
 });

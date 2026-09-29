@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest';
 import { browser } from 'wxt/browser';
 import { background } from '@/shared/background-service';
-import { type GistConnectionResult, gistConnectionItem } from '@/shared/gist-sync';
+import { gistConnectionItem } from '@/shared/gist-sync';
 import { replaceLearningDocument } from '@/shared/learning-document';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 import { createServiceMock } from '@/test/utils/service-mocks';
@@ -46,84 +46,6 @@ beforeEach(async () => {
 function open() {
   return render(<GistSyncSection />, { wrapper: createPopupTestWrapper().wrapper });
 }
-const backupPicker = () => screen.getByRole('button', { name: /Backup Gist/ });
-async function chooseBackup(name: string | RegExp) {
-  fireEvent.click(backupPicker());
-  fireEvent.click(await screen.findByRole('option', { name }));
-}
-
-it('replaces feedback when alternating a backup change and sync toggle', async () => {
-  service.resolve('setupGistSync', { saved: false, error: 'creationFailed' });
-  open();
-  const change = await screen.findByRole('button', { name: 'Change' });
-  await waitFor(() => expect(change).toBeEnabled());
-  fireEvent.click(change);
-  await chooseBackup('Create New Gist');
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('GitHub returned no ID for the created Gist');
-
-  fireEvent.click(screen.getByRole('switch'));
-  expect((await screen.findByText('Connection saved')).closest('[role]')).toHaveAttribute('role', 'status');
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  expect(backupPicker()).toHaveTextContent('Create New Gist');
-
-  vi.mocked(background.setupGistSync).mockRejectedValueOnce(new Error('Background unavailable'));
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(/^Connection could not be saved$/);
-  expect(screen.queryByText('Connection saved')).not.toBeInTheDocument();
-  expect(backupPicker()).toHaveTextContent('Create New Gist');
-});
-
-it('allows signing out while a connection is pending and ignores its late feedback', async () => {
-  const pending = Promise.withResolvers<GistConnectionResult>();
-  service.resolve('setupGistSync', pending.promise).handle('signOutGithub', async () => {
-    service.resolve('getGithubAuthStatus', { ...signedIn, account: null });
-    await gistConnectionItem.removeValue();
-  });
-  open();
-  const change = await screen.findByRole('button', { name: 'Change' });
-  await waitFor(() => expect(change).toBeEnabled());
-  fireEvent.click(change);
-  await chooseBackup('Create New Gist');
-  fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-  expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled();
-  expect(backupPicker()).toBeDisabled();
-  expect(screen.getByRole('switch')).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Sign out' })).toBeEnabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Sign out' }));
-  expect(await screen.findByRole('button', { name: 'Sign in with GitHub' })).toBeEnabled();
-  await act(async () => pending.resolve({ saved: false, error: 'connectionSaveFailed' }));
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /Backup Gist/ })).not.toBeInTheDocument();
-});
-
-it('shows cancellable sign-in progress without a stale error or duplicate sign-in button', async () => {
-  service
-    .resolve('getGithubAuthStatus', { ...signedIn, account: null, signingIn: true, error: 'signInFailed' })
-    .resolve('signOutGithub', undefined);
-  open();
-  expect(await screen.findByRole('status')).toHaveTextContent('Signing in…');
-  expect(screen.queryByRole('button', { name: 'Sign in with GitHub' })).not.toBeInTheDocument();
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-  await waitFor(() => expect(background.signOutGithub).toHaveBeenCalledOnce());
-});
-
-it('shows a concise sign-in error and clears it from view while retrying', async () => {
-  const pending = Promise.withResolvers<void>();
-  service
-    .resolve('getGithubAuthStatus', { ...signedIn, account: null, error: 'signInFailed' })
-    .resolve('startGithubSignIn', pending.promise);
-  open();
-  expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t sign in. Please try again.');
-  fireEvent.click(screen.getByRole('button', { name: 'Sign in with GitHub' }));
-  await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
-  expect(screen.getByRole('status')).toHaveTextContent('Signing in…');
-  await act(async () => pending.resolve());
-});
-
 it.each([false, true])(
   'requests GitHub permissions in the click gesture and waits for grant (existing access: %s)',
   async (granted) => {

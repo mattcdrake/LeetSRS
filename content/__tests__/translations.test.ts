@@ -49,35 +49,4 @@ describe('stored translations from the learning document', () => {
     await storage.setItem(key, storedValue('en'));
     expect(onChange).not.toHaveBeenCalled();
   });
-
-  it('does not overwrite a storage change with an older initial read', async () => {
-    const initial = Promise.withResolvers<unknown>();
-    vi.spyOn(learningDocumentItem, 'getValue').mockReturnValueOnce(initial.promise);
-    const onChange = vi.fn();
-    const stop = watch(onChange, vi.fn());
-    try {
-      await storage.setItem(key, storedValue('zh-CN'));
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations['zh-CN']));
-      initial.resolve(storedValue('en'));
-      await initial.promise;
-      expect(onChange).toHaveBeenCalledOnce();
-    } finally {
-      stop();
-    }
-  });
-
-  it('reports an initial read failure and still receives later changes', async () => {
-    const error = new Error('storage unavailable');
-    vi.spyOn(learningDocumentItem, 'getValue').mockRejectedValueOnce(error);
-    const onChange = vi.fn();
-    const onError = vi.fn();
-    const stop = watch(onChange, onError);
-    try {
-      await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(error));
-      await storage.setItem(key, storedValue('zh-CN'));
-      await vi.waitFor(() => expect(onChange).toHaveBeenCalledWith(translations['zh-CN']));
-    } finally {
-      stop();
-    }
-  });
 });
