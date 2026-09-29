@@ -67,7 +67,10 @@ it.each([
   await storeDocument();
   render(<PopupDialogHost registry={registry} onNavigate={vi.fn()} />, { wrapper: createPopupTestWrapper().wrapper });
 
-  fireEvent.click(await screen.findByRole(action === 'No thanks' ? 'button' : 'link', { name: action }));
+  const control = await screen.findByRole(action === 'No thanks' ? 'button' : 'link', { name: action });
+  // Keep happy-dom from following the store link.
+  control.addEventListener('click', (event) => event.preventDefault());
+  fireEvent.click(control);
 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   await waitFor(async () =>
