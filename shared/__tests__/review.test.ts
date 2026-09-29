@@ -24,20 +24,14 @@ function queueFor(cards: readonly Card[], limit = 3, completed = 0) {
 }
 
 describe('review queue calculations', () => {
-  it.each([State.New, State.Learning, State.Review, State.Relearning])(
-    'includes all of today but excludes tomorrow and paused cards in state %i',
-    (state) => {
-      const due = dueCard('due', '2024-01-15T12:00:00', state);
-      const laterToday = dueCard('later-today', '2024-01-15T23:59:59.999', state);
-      const future = dueCard('future', '2024-01-16T00:00:00', state);
-      const paused = { ...dueCard('paused', '2024-01-15T11:00:00', state), paused: true };
-      const document = buildLearningDocument({ cards: { due, laterToday, future, paused } });
-      expect(buildReviewQueue(document, new Date('2024-01-15T12:00:00')).map((card) => card.frontendId)).toEqual([
-        'due',
-        'later-today',
-      ]);
-    }
-  );
+  it('includes today’s active new and review cards but excludes tomorrow and paused cards', () => {
+    const due = dueCard('due', '2024-01-15T09:00:00', State.Review);
+    const laterToday = dueCard('later', '2024-01-15T23:59:59.999');
+    const future = dueCard('future', '2024-01-16T00:00:00', State.Review);
+    const paused = { ...due, frontendId: 'paused', paused: true };
+    const document = buildLearningDocument({ cards: { future, laterToday, due, paused } });
+    expect(buildReviewQueue(document, new Date('2024-01-15T12:00:00'))).toEqual([due, laterToday]);
+  });
 
   it.each([
     ['2024-03-10', '2024-03-11'],

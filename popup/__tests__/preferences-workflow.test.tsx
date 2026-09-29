@@ -76,11 +76,12 @@ it('follows OS theme changes, saves explicit preferences, and restores them when
 });
 
 it('changes rendered navigation and Settings labels and restores the language on reopen', async () => {
+  await background.updateSettings({ theme: 'dark' });
   const view = openPopup();
   fireEvent.click(await screen.findByLabelText('Settings'));
   await select('Display language', '简体中文');
   await screen.findByLabelText('设置');
-  expect((await readLearningDocument()).settings.language).toBe('zh-CN');
+  expect((await readLearningDocument()).settings).toMatchObject({ theme: 'dark', language: 'zh-CN' });
   view.unmount();
   openPopup();
   await screen.findByLabelText('设置');

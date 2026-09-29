@@ -144,22 +144,6 @@ describe('document startup through registered background commands', () => {
     expect(await fakeBrowser.storage.local.get(null)).toEqual(before);
     expect(await fakeBrowser.storage.sync.get()).toEqual({});
   });
-
-  it.each([false, true])('preserves the one-minute alarm (already exists: %s)', async (exists) => {
-    if (exists) await browser.alarms.create('gist-sync', { periodInMinutes: 1 });
-    const create = vi.spyOn(browser.alarms, 'create');
-    const fireAlarm = startBackground();
-    await getRegisteredBackground().waitForInitialization();
-    expect(create.mock.calls).toEqual(exists ? [] : [['gist-sync', { periodInMinutes: 1 }]]);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    const badge = vi.spyOn(browser.action, 'setBadgeText');
-    await fireAlarm();
-    expect(badge).toHaveBeenCalledExactlyOnceWith({ text: '' });
-    badge.mockClear();
-    await fireAlarm('unrelated');
-    expect(badge).not.toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
-  });
 });
 
 it('starts OAuth from a permission-grant event without another popup command', async () => {

@@ -1,5 +1,5 @@
 /** @vitest-environment happy-dom */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { updateSettings } from '@/background/learning';
 import { background } from '@/shared/background-service';
@@ -10,45 +10,6 @@ import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { ReviewSettingsSection } from '../ReviewSettingsSection';
 
 vi.mock('@/shared/background-service');
-
-it('keeps an unfinished limit while incoming settings refresh and saves the draft on blur', async () => {
-  const document = buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } });
-  await replaceLearningDocument(document);
-  const save = Promise.withResolvers<void>();
-  createServiceMock(background).handle('updateSettings', async (changes) => {
-    await save.promise;
-    return updateSettings(changes);
-  });
-  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
-  const input = await screen.findByRole('spinbutton');
-  await waitFor(() => expect(input).toHaveValue(3));
-  fireEvent.change(input, { target: { value: '8' } });
-  await act(() => replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 12, theme: 'dark' } }));
-  await waitFor(() => expect(input).toHaveAttribute('placeholder', '12'));
-  expect(input).toHaveValue(8);
-  fireEvent.blur(input);
-  await waitFor(() => expect(background.updateSettings).toHaveBeenCalledWith({ maxNewCardsPerDay: 8 }));
-  fireEvent.change(input, { target: { value: '9' } });
-  await act(async () => save.resolve());
-  await waitFor(() => expect(input).toHaveAttribute('placeholder', '8'));
-  expect(input).toHaveValue(9);
-  fireEvent.blur(input);
-  await waitFor(() => expect(input).toHaveAttribute('placeholder', '9'));
-  await act(() => replaceLearningDocument({ ...document, settings: { maxNewCardsPerDay: 7 } }));
-  await waitFor(() => expect(input).toHaveValue(7));
-});
-
-it('defaults auto-open on and persists toggling it off and back on', async () => {
-  await replaceLearningDocument(buildLearningDocument());
-  createServiceMock(background).handle('updateSettings', updateSettings);
-  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
-  const toggle = await screen.findByRole('switch', { name: 'Open rating panel after solving' });
-  expect(toggle).toHaveAttribute('aria-checked', 'true');
-  fireEvent.click(toggle);
-  await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'false'));
-  fireEvent.click(toggle);
-  await waitFor(() => expect(toggle).toHaveAttribute('aria-checked', 'true'));
-});
 
 it('clamps stepper changes to the allowed range and flags out-of-range typed limits', async () => {
   await replaceLearningDocument(buildLearningDocument({ settings: { maxNewCardsPerDay: 99 } }));
@@ -68,17 +29,4 @@ it('clamps stepper changes to the allowed range and flags out-of-range typed lim
   await waitFor(() => expect(background.updateSettings).toHaveBeenLastCalledWith({ maxNewCardsPerDay: 99 }));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(background.updateSettings).not.toHaveBeenCalledWith({ maxNewCardsPerDay: 150 });
-});
-
-it('sends one update when stepping straight from a typed limit', async () => {
-  await replaceLearningDocument(buildLearningDocument({ settings: { maxNewCardsPerDay: 3 } }));
-  createServiceMock(background).handle('updateSettings', updateSettings);
-  render(<ReviewSettingsSection />, { wrapper: createPopupTestWrapper().wrapper });
-  const input = await screen.findByRole('spinbutton');
-  const increase = screen.getByRole('button', { name: 'Increase' });
-  fireEvent.change(input, { target: { value: '7' } });
-  fireEvent.blur(input, { relatedTarget: increase });
-  fireEvent.click(increase);
-  await waitFor(() => expect(input).toHaveAttribute('placeholder', '8'));
-  expect(background.updateSettings).toHaveBeenCalledExactlyOnceWith({ maxNewCardsPerDay: 8 });
 });

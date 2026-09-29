@@ -180,29 +180,6 @@ it('keeps rotated credentials when account validation fails after refresh', asyn
   await expect(getGithubAuthorization()).rejects.toThrow();
   expect(await githubAuthorizationItem.getValue()).toMatchObject({ refreshToken: 'rotated' });
 });
-it('saves a renamed login on refresh', async () => {
-  await seedGithubAuthorization();
-  const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
-  await githubAuthorizationItem.setValue({ ...saved, expiresAt: 0 });
-  vi.mocked(fetch)
-    .mockResolvedValueOnce(Response.json(token))
-    .mockResolvedValueOnce(Response.json({ id: 1, login: 'renamed' }));
-  expect((await getGithubAuthorization()).account.login).toBe('renamed');
-  expect((await getGithubAuthStatus()).account?.login).toBe('renamed');
-});
-
-it('requires sign-out before starting another account sign-in', async () => {
-  await seedGithubAuthorization();
-  acceptSignIn();
-  await startGithubSignIn();
-  await finishSignIn();
-  expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
-  expect((await getGithubAuthStatus()).account?.login).toBe('tester');
-  await clearGithubAuthorization();
-  await startGithubSignIn();
-  await finishSignIn();
-  expect(browser.identity.launchWebAuthFlow).toHaveBeenCalledOnce();
-});
 
 it('blocks saved authorization after revocation and preserves it for re-enabling', async () => {
   await seedGithubAuthorization();

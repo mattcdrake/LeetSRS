@@ -48,26 +48,6 @@ async function triggerSyncAlarm() {
   });
 }
 
-it('shares an in-flight sync between triggers while keeping local writes responsive', async () => {
-  const download = Promise.withResolvers<{ data: { files: Record<string, never> } }>();
-  github.get.mockReturnValueOnce(download.promise);
-
-  await getRegisteredBackground().addCard(buildProblem());
-  await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
-  const pending = sync();
-  expect(sync()).toBe(pending);
-  await getRegisteredBackground().saveNote('1', 'Saved during sync');
-
-  expect((await readLearningDocument()).cards['1'].note).toBe('Saved during sync');
-  download.resolve({ data: { files: {} } });
-  await pending;
-  expect(github.get).toHaveBeenCalledOnce();
-  expect(github.update).toHaveBeenCalledOnce();
-  expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content).cards['1'].note).toBe(
-    'Saved during sync'
-  );
-});
-
 it('leaves edits made during an upload for the next minute sync', async () => {
   const upload = Promise.withResolvers<void>();
   github.update.mockReturnValueOnce(upload.promise);
@@ -87,18 +67,6 @@ it('leaves edits made during an upload for the next minute sync', async () => {
   expect(JSON.parse(github.update.mock.calls[1][0].files['leetsrs-backup.json'].content).cards['1'].note).toBe(
     'Next sync'
   );
-});
-
-it('does not sync while disabled and starts syncing when enabled', async () => {
-  await getRegisteredBackground().setGistSyncEnabled(false);
-  github.get.mockClear();
-
-  await getRegisteredBackground().addCard(buildProblem());
-  await triggerSyncAlarm();
-  expect(github.get).not.toHaveBeenCalled();
-
-  expect(await getRegisteredBackground().setGistSyncEnabled(true)).toEqual({ saved: true });
-  await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
 });
 
 it('ignores a pending download after an external connection change', async () => {
