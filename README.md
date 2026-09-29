@@ -5,9 +5,9 @@
 LeetSRS helps you remember what you learn on LeetCode through spaced repetition. Available for Chrome and Firefox. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
 
 <p align="center">
-  <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko"><img src="assets/promo/add-to-chrome.png" width="292" height="52" alt="Add LeetSRS to Chrome" /></a>
+  <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko"><img src="assets/promo/add-to-chrome.png" width="212" height="58" alt="Add LeetSRS to Chrome" /></a>
   &nbsp;
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/leetsrs/"><img src="assets/promo/add-to-firefox.png" width="292" height="52" alt="Add LeetSRS to Firefox" /></a>
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/leetsrs/"><img src="assets/promo/add-to-firefox.png" width="206" height="58" alt="Add LeetSRS to Firefox" /></a>
 </p>
 
 <p align="center">

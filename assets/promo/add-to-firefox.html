@@ -2,79 +2,101 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="size" content="584x104" />
-    <meta name="alpha" />
     <title>LeetSRS — Add to Firefox button</title>
+    <!-- Styles copied from LeetLanding PR #51, commit c3276c0. -->
     <style>
       @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400..800&display=swap");
       * {
         box-sizing: border-box;
       }
-      html,
       body {
         margin: 0;
-        overflow: hidden;
-      }
-      body {
-        position: relative;
-        font-family: Geist, sans-serif;
-      }
-    </style>
-    <style>
-      html,
-      body {
-        width: 584px;
-        height: 104px;
         background: transparent;
+        font-family: "Geist", system-ui, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
       }
-      body::before {
-        display: none;
-      }
-      a {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
+
+      .install-button {
+        display: inline-flex;
         justify-content: center;
-        gap: 22px;
-        border-radius: 18px;
-        background: #80d78c;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: var(--green);
         color: #142218;
-        text-decoration: none;
-        font-size: 36px;
         font-weight: 650;
-        letter-spacing: -0.5px;
+        font-size: 15px;
+        text-decoration: none;
+        transition:
+          background 0.15s,
+          border-color 0.15s,
+          transform 0.15s;
+        white-space: nowrap;
       }
-      .browser,
-      svg {
-        width: 44px;
-        height: 44px;
+      .install-button:hover {
+        background: #a0e8a9;
+        transform: translateY(-1px);
+      }
+      .chrome {
+        background: #f1f3ee;
+        border-color: #f1f3ee;
+        color: #202520;
+      }
+      .chrome:hover {
+        background: #fff;
+        border-color: #fff;
+      }
+      .firefox {
+        background: #35233f;
+        border-color: #755181;
+        color: #fff4ff;
+      }
+      .firefox:hover {
+        background: #463052;
+        border-color: #b17fc2;
+      }
+      .browser-logo {
+        display: block;
+        width: 28px;
+        height: 28px;
         flex: none;
       }
-      .arrow {
-        width: 32px;
-        height: 32px;
-        margin: 0 0 0 4px;
-        color: inherit;
+      .external-arrow {
+        margin-left: 2px;
+        font-size: 15px;
+        font-weight: 400;
+        opacity: 0.65;
+      }
+      .compact {
+        padding: 10px 15px;
+        font-size: 13px;
+      }
+      @media (max-width: 380px) {
+        .install-button:not(.compact) {
+          gap: 10px;
+          padding-inline: 14px;
+          font-size: 14px;
+        }
+        .compact {
+          padding: 9px 11px;
+        }
       }
     </style>
   </head>
   <body>
-    <a>
-      <img class="browser" src="browsers/firefox.svg" alt="" />
-      <span>Add LeetSRS to Firefox</span>
-      <svg
-        class="arrow"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.4"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M7 17 17 7M8 7h9v9" />
-      </svg>
+    <a class="install-button firefox">
+      <img
+        class="browser-logo"
+        src="browsers/firefox.svg"
+        width="28"
+        height="28"
+        alt=""
+      />
+      <span>Add to Firefox</span>
+      <span class="external-arrow" aria-hidden="true">↗</span>
     </a>
   </body>
 </html>
