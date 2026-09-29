@@ -11,7 +11,7 @@ LeetSRS is a Chrome extension that helps you remember what you learn on LeetCode
 </p>
 
 <p align="center">
-  <img src="assets/promo/02-loop.png" width="800" alt="Solve on LeetCode, rate your recall in the LeetSRS panel, and review when it's due: rating Alien Dictionary Good schedules it for Thursday, October 15." />
+  <img src="assets/promo/02-loop.png" width="800" alt="Solve on LeetCode, rate your recall in the LeetSRS panel, and review when it's due: rating Alien Dictionary Good schedules it for Saturday, October 17." />
 </p>
 
 ## Get started
