@@ -8,8 +8,10 @@ LeetSRS helps you remember what you learn on LeetCode through spaced repetition.
   <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko">
     <img src="assets/promo/add-to-chrome.png" width="292" height="52" alt="Add LeetSRS to Chrome" />
   </a>
-  <br />
-  <a href="https://addons.mozilla.org/en-US/firefox/addon/leetsrs/">Add LeetSRS to Firefox</a>
+  &nbsp;
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/leetsrs/">
+    <img src="assets/promo/add-to-firefox.png" width="292" height="52" alt="Add LeetSRS to Firefox" />
+  </a>
 </p>
 
 <p align="center">
