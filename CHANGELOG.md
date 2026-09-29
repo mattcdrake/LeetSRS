@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/mattcdrake/LeetSRS/compare/v1.4.0...v1.5.0) (2026-09-29)
+
+
+### Features
+
+* ask for a review after a 7-day streak ([#734](https://github.com/mattcdrake/LeetSRS/issues/734)) ([45d5fcd](https://github.com/mattcdrake/LeetSRS/commit/45d5fcd2ca08289311703324969248b0418cf14a))
+
+
+### Bug Fixes
+
+* refresh LeetCode catalog ([#726](https://github.com/mattcdrake/LeetSRS/issues/726)) ([2d3728b](https://github.com/mattcdrake/LeetSRS/commit/2d3728b3a5e0b66a347135d288b62684bdd1630b))
+
 ## [1.4.0](https://github.com/mattcdrake/LeetSRS/compare/v1.3.0...v1.4.0) (2026-09-26)
 
 
