@@ -31,7 +31,8 @@
 
 ## UI and styling
 
-- The [LeetSRS design system](https://claude.ai/artifact/SHkAWzAUpZ6rPfxWCLjK1W) defines the colours, type, spacing, shapes and icons for both the popup and the LeetCode.com panel. Read its README before changing UI.
+- The design system in [docs/design-system/](docs/design-system/README.md) defines the colours, type, spacing, shapes and icons for both the popup and the LeetCode.com panel. Read its README, `tokens.json` and the relevant `components/*/README.md` before changing UI.
+- Edit the design system in the repo, then publish it to the [claude.ai copy](https://claude.ai/artifact/SHkAWzAUpZ6rPfxWCLjK1W) with the `design-system-sync` skill.
 - When the code and the design system disagree, follow the design system.
 - Style with the `--ls-*` tokens from `shared/ui/tokens.css`; do not hard-code colours or add one-off sizes.
 - Set text with the named sizes: `text-hero`, `text-stat`, `text-title`, `text-body`, `text-xs` and `text-caption` in the popup (`popup/App.css`), and `text-panel-title`, `text-panel-body` and `text-panel-meta` on LeetCode (`content/ui/shadow.css`). Use `primaryButton` from `popup/styles.ts` for filled brand buttons.
