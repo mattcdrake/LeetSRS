@@ -57,7 +57,7 @@ export function StreakRatingPrompt({ onDismiss }: PopupDialogContentProps) {
       </div>
       <div aria-hidden="true" className="flex gap-1 text-warning">
         {[1, 2, 3, 4, 5].map((star) => (
-          <LuStar key={star} className="size-[18px] fill-current" />
+          <LuStar key={star} className="size-4 fill-current" />
         ))}
       </div>
       <div className="flex w-full flex-col gap-1">
