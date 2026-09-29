@@ -2,7 +2,7 @@
   <img src="assets/promo/readme-banner.png" width="800" alt="LeetSRS — Spaced repetition for LeetCode. Know what to practice. And when to review." />
 </p>
 
-LeetSRS is an extension for Chrome and Firefox that helps you remember what you learn on LeetCode through spaced repetition. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
+LeetSRS helps you remember what you learn on LeetCode through spaced repetition. Available for Chrome and Firefox. Solve a problem, rate your recall, and review it when it's due. LeetSRS adjusts your review schedule based on your ratings. Follow a roadmap such as Blind 75 or NeetCode 150 for help choosing what to solve next. Your data stays local by default, with optional GitHub sync across devices. It's free and open source, and no LeetSRS account is required to get started.
 
 <p align="center">
   <a href="https://chromewebstore.google.com/detail/odgfcigkohoimpeeooifjdglncggkgko">
