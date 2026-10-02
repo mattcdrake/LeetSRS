@@ -18,7 +18,7 @@ LeetSRS is a quiet study tool that lives in two places: a 370 × 550 browser pop
 - `brand` (green) is the only accent. Use it for primary fills, links, active nav, progress and focus. Put `on-brand` on a `brand` fill. Use `brand-soft` for tinted chips and counts, with `brand` text on top.
 - Neutrals do the rest: `fg` / `fg-2` / `fg-3` for text, `raised` for hover and wells, `raised-2` for pressed or nested fills, `line` / `line-strong` for borders.
 - `fg-3` is for metadata and quiet labels. It holds 4.5:1 on `canvas`, `surface` and `raised`.
-- Status colours: `danger` fills destructive confirms, with `on-danger` text (never literal white: it fails in dark mode). Use `danger-text` for red text, with `danger-soft` behind notices. Use `warning` for icons and dots and `warning-text` for text. `info` is for icons and dots only.
+- Status colours: `danger` fills destructive confirms, with `on-danger` text (never literal white: it fails in dark mode). Use `danger-text` for red text, with `danger-soft` behind notices. Use `warning` for icons and dots and `warning-text` for text. `info` is for icons and dots only, on `info-soft` when the icon sits in a tile.
 - Status is never colour alone. Notices always carry an icon (circle-alert, triangle-alert, circle-check, info), and difficulty always carries its word.
 - Domain colours: `difficulty-*` for LeetCode difficulty, `rating-again/hard/good/easy` for the four FSRS grades, `heat-1…4` for calendar load. Don't reuse them for anything else.
 - `host-fill` / `host-fill-hover` are only for the in-page button that sits in LeetCode's toolbar.

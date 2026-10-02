@@ -381,8 +381,9 @@ const zhCN: Translations = {
   },
 
   contentScript: {
-    nextReview: '下一道复习题',
-    nextInRoadmap: (name: string) => `${name} 中的下一题`,
+    review: '复习',
+    moreDue: (count: number) => `还有 ${count} 题`,
+    roadmapProgress: (reviewed: number, total: number) => `${reviewed}/${total}`,
     noOtherReviews: '没有其他待复习题目',
     noNextRoadmapProblem: (name: string) => `${name} 中没有新题目`,
     loadingNextReview: '正在加载下一道复习题…',

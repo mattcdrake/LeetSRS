@@ -104,10 +104,10 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   render(<LeetSrsControl />);
   const trigger = await screen.findByRole('button', { name: 'LeetSRS' });
   fireEvent.click(trigger);
-  const review = await screen.findByRole('link', { name: '2. Add Two Numbers Next review' });
+  const review = await screen.findByRole('link', { name: /^2\. Add Two Numbers Review/ });
   expect(review).toHaveAttribute('href', 'https://leetcode.com/problems/add-two-numbers/description/');
   expect(review).not.toHaveAttribute('target');
-  expect(await screen.findByRole('link', { name: '3. Longest Substring Next in Blind 75' })).toHaveAttribute(
+  expect(await screen.findByRole('link', { name: /^3\. Longest Substring Blind 75/ })).toHaveAttribute(
     'href',
     'https://leetcode.com/problems/longest-substring/description/'
   );
@@ -115,7 +115,7 @@ it('shows next problems before rating and refreshes the daily allowance after sa
   fireEvent.click(screen.getByRole('button', { name: 'Good' }));
   expect(await screen.findByRole('status')).toHaveTextContent('Saved');
   await screen.findByText('No other reviews due');
-  expect(screen.getByRole('link', { name: '3. Longest Substring Next in Blind 75' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /^3\. Longest Substring Blind 75/ })).toBeInTheDocument();
 
   fireEvent.click(screen.getAllByRole('button', { name: 'Dismiss' })[0]);
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
