@@ -174,7 +174,8 @@ it('keeps the Up next and undo shortcuts the same before and after saving', asyn
 
   fireEvent.keyDown(panel, { key: '3', code: 'Digit3' });
   await screen.findByRole('button', { name: 'Undo' });
-  fireEvent.keyDown(panel, { key: 'n', code: 'KeyN' });
+  // Dvorak types N from the QWERTY L position.
+  fireEvent.keyDown(panel, { key: 'n', code: 'KeyL' });
   expect(opened.at(-1)).toBe('https://leetcode.com/problems/longest-substring/description/');
   fireEvent.keyDown(panel, { key: 'u', code: 'KeyU' });
   await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());

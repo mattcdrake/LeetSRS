@@ -119,15 +119,18 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     });
   }
 
-  // Letter shortcuts match codes so they work on any keyboard layout, and keep the same keys before and after saving.
   function runShortcut({ key, code }: { key: string; code: string }) {
-    const next = Object.entries(NEXT_SHORTCUTS).find(([, shortcut]) => code === `Key${shortcut}`)?.[0];
+    // Match the printed letter so the chips hold on Dvorak and AZERTY, and fall back to the key position on non-Latin layouts.
+    const letter = /^[a-z]$/i.test(key) ? key.toUpperCase() : code.replace(/^Key/, '');
+    const next = (Object.keys(NEXT_SHORTCUTS) as (keyof typeof NEXT_SHORTCUTS)[]).find(
+      (kind) => NEXT_SHORTCUTS[kind] === letter
+    );
     if (next) {
       const link = container.current?.querySelector<HTMLAnchorElement>(`a[data-next="${next}"]`);
       link?.click();
       return !!link;
     }
-    if (code === `Key${UNDO_SHORTCUT}`) {
+    if (letter === UNDO_SHORTCUT) {
       if (!showSaved || !saved?.undoToken) return false;
       if (!busy) undo();
       return true;
