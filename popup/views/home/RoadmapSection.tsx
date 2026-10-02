@@ -39,7 +39,9 @@ export function RoadmapSection({ isQueueEmpty, onOpen }: { isQueueEmpty: boolean
   return (
     <section aria-label={t.home.currentRoadmap} className="flex flex-col gap-3">
       <QueryState query={roadmaps} loading={t.roadmaps.loading} error={t.roadmaps.loadFailed} className="text-xs">
-        {roadmap && <ActiveRoadmap roadmap={roadmap} isHero={isQueueEmpty} onOpen={() => onOpen(roadmap.id)} />}
+        {roadmap && (
+          <ActiveRoadmap key={roadmap.id} roadmap={roadmap} isHero={isQueueEmpty} onOpen={() => onOpen(roadmap.id)} />
+        )}
       </QueryState>
     </section>
   );
