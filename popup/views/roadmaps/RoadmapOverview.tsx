@@ -1,9 +1,11 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { useId, useLayoutEffect, useRef } from 'react';
-import { LuArrowUpRight, LuChevronRight } from 'react-icons/lu';
+import { Button } from 'react-aria-components';
+import { LuArrowUpRight, LuChevronRight, LuShuffle } from 'react-icons/lu';
 import { Difficulty } from '@/popup/components/Difficulty';
 import { ProblemLink } from '@/popup/components/ProblemLink';
 import { RoadmapProgress } from '@/popup/components/RoadmapProgress';
+import { Tooltip } from '@/popup/components/Tooltip';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { roadmapMetadataQueryOptions } from '@/popup/queries/roadmaps';
@@ -12,6 +14,7 @@ import { buttonInteraction, compactOutlineButton } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import { getNextRoadmapProblemId, type Roadmap, type RoadmapId, type RoadmapProgressSummary } from '@/shared/roadmap';
 import { getProblemTitle } from '@/shared/ui/problem-title';
+import { useOpenRandomProblem } from './useOpenRandomProblem';
 
 export type RoadmapSummary = Roadmap & RoadmapProgressSummary;
 
@@ -135,10 +138,11 @@ function NextProblem({ roadmap }: { roadmap: Roadmap }) {
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const nextId = getNextRoadmapProblemId(roadmap, document, metadata.data, domain);
   const next = nextId ? metadata.data?.[nextId] : undefined;
+  const openRandom = useOpenRandomProblem(roadmap);
   if (!next) return null;
 
   return (
-    <p className="flex items-center gap-2 border-t border-current px-3.5 py-2.5 text-xs">
+    <div className="flex items-center gap-2 border-t border-current py-1 pl-3.5 pr-1.5 text-xs">
       <span className="shrink-0 text-tertiary">{t.roadmaps.next}</span>
       <ProblemLink
         href={getLeetcodeProblemUrl({ domain, slug: next.slug })}
@@ -150,6 +154,15 @@ function NextProblem({ roadmap }: { roadmap: Roadmap }) {
       <span className="ml-auto shrink-0">
         <Difficulty difficulty={next.difficulty} />
       </span>
-    </p>
+      <Tooltip label={t.roadmaps.randomProblem}>
+        <Button
+          aria-label={t.roadmaps.openRandomProblem(roadmap.name)}
+          onPress={openRandom}
+          className={`size-7 shrink-0 rounded-md grid place-items-center text-tertiary duration-[120ms] hover:bg-secondary hover:text-primary ${buttonInteraction}`}
+        >
+          <LuShuffle aria-hidden="true" className="size-3.5" />
+        </Button>
+      </Tooltip>
+    </div>
   );
 }

@@ -175,6 +175,37 @@ it('updates empty-queue recommendations for skips, the preferred site, and the a
   expect(screen.getByText('Start your first review')).toBeInTheDocument();
 });
 
+it('shuffles the Home recommendation and opens random problems from Roadmaps', async () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  await background.setActiveRoadmap('blind-75');
+  openPopup();
+  const section = await screen.findByRole('region', { name: 'Current roadmap' });
+  expect(await within(section).findByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
+
+  fireEvent.click(within(section).getByRole('button', { name: 'Show a random problem from Blind 75' }));
+  expect(await within(section).findByRole('link', { name: '3. Longest Substring' })).toBeInTheDocument();
+  expect(within(section).getByText('Random pick')).toBeInTheDocument();
+  // Only the shown problem remains, so another shuffle cannot change it.
+  await act(async () => background.setRoadmapProblemSkipped('blind-75', '1', true));
+  await waitFor(() =>
+    expect(within(section).getByRole('button', { name: 'Show a random problem from Blind 75' })).toBeDisabled()
+  );
+  // A random pick that leaves the pool falls back to the next problem in order.
+  await act(async () => background.setRoadmapProblemSkipped('blind-75', '1', false));
+  await act(async () => background.setRoadmapProblemSkipped('blind-75', '3', true));
+  expect(await within(section).findByRole('link', { name: '1. Two Sum' })).toBeInTheDocument();
+  expect(within(section).queryByText('Random pick')).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByLabelText('Roadmaps'));
+  fireEvent.click(await screen.findByRole('button', { name: 'Open a random problem from Blind 75' }));
+  expect(open).toHaveBeenLastCalledWith(
+    'https://leetcode.com/problems/two-sum/description/',
+    '_blank',
+    'noopener,noreferrer'
+  );
+});
+
 it('rates new and saved roadmap problems and retains feedback when a filter removes the row', async () => {
   await background.updateSettings({ preferredLeetcodeSite: 'leetcode.cn' });
   openPopup();
