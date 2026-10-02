@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { State } from 'ts-fsrs';
-import { beforeEach, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, onTestFinished, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { createBackgroundService } from '@/background/service';
 import { background } from '@/shared/background-service';
@@ -144,4 +144,39 @@ it('undoes a save back to the rating view, and refuses once the card changed', a
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not undo. The card changed after saving.');
   expect(screen.getByRole('status')).toHaveTextContent('Saved as Easy');
   expect((await readLearningDocument()).cards['1']?.fsrs.reps).toBe(1);
+});
+
+it('keeps the Up next and undo shortcuts the same before and after saving', async () => {
+  await replaceLearningDocument(
+    buildLearningDocument({
+      settings: { language: 'en' },
+      cards: { '2': createMockCard(State.New, { frontendId: '2' }) },
+      activeRoadmapId: 'blind-75',
+    })
+  );
+  const opened: string[] = [];
+  const recordNavigation = (event: MouseEvent) => {
+    const link = (event.target as Element).closest('a');
+    if (!link) return;
+    event.preventDefault();
+    opened.push(link.href);
+  };
+  document.addEventListener('click', recordNavigation);
+  onTestFinished(() => document.removeEventListener('click', recordNavigation));
+  render(<LeetSrsControl />);
+  fireEvent.click(await screen.findByRole('button', { name: 'LeetSRS' }));
+  await screen.findByRole('link', { name: /^3\. Longest Substring Blind 75/ });
+  const panel = screen.getByRole('group');
+  fireEvent.keyDown(panel, { key: 'r', code: 'KeyR' });
+  expect(opened).toEqual(['https://leetcode.com/problems/add-two-numbers/description/']);
+  fireEvent.keyDown(panel, { key: 'u', code: 'KeyU' });
+  expect(screen.getByRole('button', { name: 'Good' })).toBeInTheDocument();
+
+  fireEvent.keyDown(panel, { key: '3', code: 'Digit3' });
+  await screen.findByRole('button', { name: 'Undo' });
+  fireEvent.keyDown(panel, { key: 'n', code: 'KeyN' });
+  expect(opened.at(-1)).toBe('https://leetcode.com/problems/longest-substring/description/');
+  fireEvent.keyDown(panel, { key: 'u', code: 'KeyU' });
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Good' })).toBeEnabled());
+  expect((await readLearningDocument()).cards['1']).toBeUndefined();
 });

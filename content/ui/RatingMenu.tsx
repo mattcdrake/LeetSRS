@@ -12,7 +12,7 @@ import { getProblemTitle } from '@/shared/ui/problem-title';
 import { RatingOptions } from '@/shared/ui/RatingOptions';
 import { ratingColor } from '@/shared/ui/rating-colors';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
-import { NextProblems } from './NextProblems';
+import { NEXT_SHORTCUTS, NextProblems } from './NextProblems';
 import { useSurfaceTheme } from './theme';
 import type { SavedConfirmation, useRatingSession } from './useRatingSession';
 
@@ -20,6 +20,7 @@ type CurrentProblem = Awaited<ReturnType<typeof getCurrentProblem>>;
 
 // Ignore pointer activation on the shorter saved view, which can land a link under the pointer.
 const POINTER_GUARD_MS = 300;
+const UNDO_SHORTCUT = 'U';
 
 export function RatingMenu({ t, session }: { t: Translations; session: ReturnType<typeof useRatingSession> }) {
   const { saved, busy } = session;
@@ -118,6 +119,25 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     });
   }
 
+  // Letter shortcuts match codes so they work on any keyboard layout, and keep the same keys before and after saving.
+  function runShortcut({ key, code }: { key: string; code: string }) {
+    const next = Object.entries(NEXT_SHORTCUTS).find(([, shortcut]) => code === `Key${shortcut}`)?.[0];
+    if (next) {
+      const link = container.current?.querySelector<HTMLAnchorElement>(`a[data-next="${next}"]`);
+      link?.click();
+      return !!link;
+    }
+    if (code === `Key${UNDO_SHORTCUT}`) {
+      if (!showSaved || !saved?.undoToken) return false;
+      if (!busy) undo();
+      return true;
+    }
+    const rating = ratingSchema.safeParse(Number(key));
+    if (!rating.success && !(key === '5' && allowUnrated)) return false;
+    if (!busy) save(rating.success ? rating.data : undefined);
+    return true;
+  }
+
   const youtube = problem?.youtubeUrl && (
     <YouTubeLink
       url={problem.youtubeUrl}
@@ -135,11 +155,9 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
       aria-busy={busy}
       onKeyDown={(event) => {
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return;
-        const rating = ratingSchema.safeParse(Number(event.key));
-        if (!rating.success && !(event.key === '5' && allowUnrated)) return;
+        if (!runShortcut(event)) return;
         event.preventDefault();
         event.stopPropagation();
-        if (!busy) save(rating.success ? rating.data : undefined);
       }}
     >
       {showSaved ? (
@@ -286,6 +304,9 @@ function SavedView({
         >
           <LuUndo2 className="size-3.5" aria-hidden="true" />
           {t.contentScript.undo}
+          <span className="rating-kbd" aria-hidden="true">
+            {UNDO_SHORTCUT}
+          </span>
         </Button>
       )}
     </div>

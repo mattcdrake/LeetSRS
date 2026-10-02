@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { Button, ProgressBar } from 'react-aria-components';
-import { LuChevronRight, LuLock, LuRotateCcw, LuRoute } from 'react-icons/lu';
+import { LuLock, LuRotateCcw, LuRoute } from 'react-icons/lu';
 import { background } from '@/shared/background-service';
 import { formatDue } from '@/shared/due';
 import type { Translations } from '@/shared/i18n';
@@ -8,6 +8,8 @@ import type { ProblemReference } from '@/shared/learning-document';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import type { RoadmapProgressSummary } from '@/shared/roadmap';
 import { getProblemTitle } from '@/shared/ui/problem-title';
+
+export const NEXT_SHORTCUTS = { review: 'R', roadmap: 'N' } as const;
 
 type Props = { t: Translations; problem: ProblemReference; saved: boolean };
 type Recommendation =
@@ -123,8 +125,10 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
   const { problem, tile, Icon, meta } = row;
   return (
     <a
-      className="group flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-fg no-underline hover:bg-row-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+      className="flex items-center gap-2.5 rounded-lg px-2 py-[7px] text-fg no-underline hover:bg-row-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
       href={getLeetcodeProblemUrl(problem)}
+      data-next={kind}
+      aria-keyshortcuts={NEXT_SHORTCUTS[kind]}
     >
       <span className={`grid size-7 shrink-0 place-items-center rounded-md ${tile}`}>
         <Icon className="size-3.5" aria-hidden="true" />
@@ -139,10 +143,9 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
       {problem.isPaidOnly && (
         <LuLock className="size-3.5 shrink-0 text-fg-3" role="img" aria-label={t.roadmaps.paidOnly} />
       )}
-      <LuChevronRight
-        className="size-3.5 shrink-0 text-fg-3 opacity-0 transition-opacity duration-120 group-hover:opacity-100 group-focus-visible:opacity-100"
-        aria-hidden="true"
-      />
+      <span className="rating-kbd" aria-hidden="true">
+        {NEXT_SHORTCUTS[kind]}
+      </span>
     </a>
   );
 }
