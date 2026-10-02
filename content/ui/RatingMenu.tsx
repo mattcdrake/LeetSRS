@@ -304,6 +304,8 @@ function SavedView({
           className="-mr-1.5 flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 text-panel-meta font-medium text-fg-2 hover:bg-raised data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-focus-visible:outline-focus"
           isDisabled={busy}
           onPress={onUndo}
+          // React Aria drops aria-keyshortcuts from Button props.
+          ref={(button) => button?.setAttribute('aria-keyshortcuts', UNDO_SHORTCUT)}
         >
           <LuUndo2 className="size-3.5" aria-hidden="true" />
           {t.contentScript.undo}
