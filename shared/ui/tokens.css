@@ -20,6 +20,7 @@
   --ls-danger-text: #c42121;
   --ls-danger-soft: color-mix(in srgb, var(--ls-danger) 9%, var(--ls-surface));
   --ls-info: #3f7fe0;
+  --ls-info-soft: color-mix(in srgb, var(--ls-info) 12%, var(--ls-surface));
   --ls-warning: #e08a1e;
   --ls-warning-text: #a15c00;
   --ls-warning-soft: color-mix(in srgb, var(--ls-warning) 12%, var(--ls-surface));
@@ -64,6 +65,7 @@
   --ls-danger-text: #f07474;
   --ls-danger-soft: color-mix(in srgb, var(--ls-danger) 14%, var(--ls-surface));
   --ls-info: #6d9ff0;
+  --ls-info-soft: color-mix(in srgb, var(--ls-info) 12%, var(--ls-surface));
   --ls-warning: #f2a03d;
   --ls-warning-text: #f2a03d;
   --ls-warning-soft: color-mix(in srgb, var(--ls-warning) 12%, var(--ls-surface));

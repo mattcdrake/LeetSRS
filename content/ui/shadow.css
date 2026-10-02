@@ -42,11 +42,16 @@
 @theme inline {
   --color-surface: var(--ls-surface);
   --color-raised: var(--ls-raised);
+  --color-raised-2: var(--ls-raised-2);
+  --color-row-hover: var(--ls-row-hover);
   --color-fg: var(--ls-fg);
   --color-fg-2: var(--ls-fg-2);
   --color-fg-3: var(--ls-fg-3);
   --color-line: var(--ls-line);
   --color-brand: var(--ls-brand);
+  --color-brand-soft: var(--ls-brand-soft);
+  --color-info: var(--ls-info);
+  --color-info-soft: var(--ls-info-soft);
   --color-focus: var(--ls-focus);
   --color-danger-text: var(--ls-danger-text);
   --color-danger-soft: var(--ls-danger-soft);

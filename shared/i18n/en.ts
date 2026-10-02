@@ -407,8 +407,9 @@ const en = {
 
   // Content script (LeetCode page integration)
   contentScript: {
-    nextReview: 'Next review',
-    nextInRoadmap: (name: string) => `Next in ${name}`,
+    review: 'Review',
+    moreDue: (count: number) => `${count} more`,
+    roadmapProgress: (reviewed: number, total: number) => `${reviewed}/${total}`,
     noOtherReviews: 'No other reviews due',
     noNextRoadmapProblem: (name: string) => `No new problems in ${name}`,
     loadingNextReview: 'Loading next review…',
