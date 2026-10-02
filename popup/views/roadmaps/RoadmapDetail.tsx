@@ -1,18 +1,19 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { LuArrowUpRight } from 'react-icons/lu';
+import { LuArrowUpRight, LuShuffle } from 'react-icons/lu';
 import { useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
 import { RoadmapProgress } from '@/popup/components/RoadmapProgress';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { useAddCardMutation, useRemoveCardMutation } from '@/popup/queries/cards';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import { useSkipRoadmapProblemMutation } from '@/popup/queries/roadmaps';
-import { buttonInteraction } from '@/popup/styles';
+import { buttonInteraction, compactOutlineButton } from '@/popup/styles';
 import type { ProblemReference } from '@/shared/learning-document';
 import { roadmapProblemIds } from '@/shared/roadmap';
 import type { RoadmapSummary } from './RoadmapOverview';
 import { matchesFilter, ROADMAP_FILTERS, type RoadmapFilter, RoadmapProblemList } from './RoadmapProblemList';
 import { RoadmapToolbar } from './RoadmapToolbar';
+import { useOpenRandomProblem } from './useOpenRandomProblem';
 
 export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; isActive: boolean }) {
   const t = useI18n();
@@ -24,6 +25,7 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
   const add = useAddCardMutation();
   const remove = useRemoveCardMutation();
   const [added, setAdded] = useState<(ProblemReference & { title: string }) | null>(null);
+  const openRandom = useOpenRandomProblem(roadmap);
 
   // Offer Undo long enough to notice a misclick.
   useEffect(() => {
@@ -58,11 +60,23 @@ export function RoadmapDetail({ roadmap, isActive }: { roadmap: RoadmapSummary; 
           </a>
         </div>
         <RoadmapProgress label={roadmap.name} summary={roadmap} size="md" className="mt-2.5" />
-        <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-secondary tabular-nums">
-          <LegendItem className="bg-accent">{t.roadmaps.legend.reviewed(roadmap.reviewed)}</LegendItem>
-          <LegendItem className="bg-accent opacity-40">{t.roadmaps.legend.new(roadmap.new)}</LegendItem>
-          <LegendItem className="bg-[var(--ls-skipped)]">{t.roadmaps.legend.skipped(roadmap.skipped)}</LegendItem>
-        </ul>
+        <div className="mt-2 flex items-center gap-2">
+          <ul className="min-w-0 flex-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-secondary tabular-nums">
+            <LegendItem className="bg-accent">{t.roadmaps.legend.reviewed(roadmap.reviewed)}</LegendItem>
+            <LegendItem className="bg-accent opacity-40">{t.roadmaps.legend.new(roadmap.new)}</LegendItem>
+            <LegendItem className="bg-[var(--ls-skipped)]">{t.roadmaps.legend.skipped(roadmap.skipped)}</LegendItem>
+          </ul>
+          <button
+            type="button"
+            className={`${compactOutlineButton} shrink-0 inline-flex items-center gap-1.5`}
+            aria-label={t.roadmaps.openRandomProblem(roadmap.name)}
+            disabled={!openRandom}
+            onClick={openRandom}
+          >
+            <LuShuffle aria-hidden="true" className="size-3.5" />
+            {t.roadmaps.random}
+          </button>
+        </div>
       </div>
       <RoadmapToolbar
         search={search}
