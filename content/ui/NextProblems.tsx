@@ -134,7 +134,7 @@ function NextProblemRow({ t, problem: { frontendId, domain }, saved, kind }: Pro
           <span className="text-fg-3 tabular-nums">{problem.frontendId}.</span>{' '}
           {getProblemTitle(problem, problem.domain)}
         </span>
-        <span className="flex items-center gap-1.5 text-panel-meta text-fg-3">{meta}</span>
+        <span className="flex items-center gap-1 text-panel-meta text-fg-3">{meta}</span>
       </span>
       {problem.isPaidOnly && (
         <LuLock className="size-3.5 shrink-0 text-fg-3" role="img" aria-label={t.roadmaps.paidOnly} />
@@ -169,5 +169,9 @@ function RoadmapMeta({ t, name, progress }: { t: Translations; name: string; pro
 }
 
 function Separator() {
-  return <span className="size-[3px] shrink-0 rounded-full bg-fg-3 opacity-70" aria-hidden="true" />;
+  return (
+    <span className="shrink-0" aria-hidden="true">
+      ·
+    </span>
+  );
 }
