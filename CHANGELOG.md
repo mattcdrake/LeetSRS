@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.0](https://github.com/mattcdrake/LeetSRS/compare/v1.5.0...v1.6.0) (2026-10-02)
+
+
+### Features
+
+* add keyboard shortcuts for Up next and undo ([#747](https://github.com/mattcdrake/LeetSRS/issues/747)) ([821b09e](https://github.com/mattcdrake/LeetSRS/commit/821b09e99538eed30ee53d8c4c6c2b34f9f26ba6))
+* distinguish review and roadmap rows in Up next ([#746](https://github.com/mattcdrake/LeetSRS/issues/746)) ([0b9d08e](https://github.com/mattcdrake/LeetSRS/commit/0b9d08ea9dc9d0b54a80d73b3dd9d54832a2aeb4))
+* pick a random roadmap problem ([#743](https://github.com/mattcdrake/LeetSRS/issues/743)) ([a1d8382](https://github.com/mattcdrake/LeetSRS/commit/a1d8382d48f666fbbafc164eecc748eb9251a1f3))
+
 ## [1.5.0](https://github.com/mattcdrake/LeetSRS/compare/v1.4.0...v1.5.0) (2026-09-29)
 
 
