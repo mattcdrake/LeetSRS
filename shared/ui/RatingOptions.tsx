@@ -6,6 +6,11 @@ import type { Translations } from '@/shared/i18n';
 import { type RatingPreview, ratingSchema } from '@/shared/learning-document';
 import { ratingColor } from '@/shared/ui/rating-colors';
 
+// React Aria drops aria-keyshortcuts from Button props, so set it on the rendered element.
+export function keyShortcut(keys: string) {
+  return (element: Element | null) => element?.setAttribute('aria-keyshortcuts', keys);
+}
+
 interface RatingOptionsProps {
   t: Translations;
   preview?: RatingPreview;
@@ -40,6 +45,7 @@ export function RatingOptions({
             data-selected={selected === rating || undefined}
             isDisabled={disabled || !preview}
             onPress={() => onSave(rating)}
+            ref={shortcuts ? keyShortcut(String(rating)) : undefined}
             style={{ '--rating-color': ratingColor(rating) } as CSSProperties}
           >
             <span className="rating-dot-slot" aria-hidden="true">
@@ -65,6 +71,7 @@ export function RatingOptions({
             aria-label={t.contentScript.saveWithoutRating}
             isDisabled={disabled}
             onPress={() => onSave()}
+            ref={shortcuts ? keyShortcut('5') : undefined}
           >
             <span className="rating-dot-slot" aria-hidden="true">
               <LuPlus className="size-3.5 shrink-0" />

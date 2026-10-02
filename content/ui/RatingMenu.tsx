@@ -9,10 +9,10 @@ import { formatDue } from '@/shared/due';
 import type { Translations } from '@/shared/i18n/index';
 import { type RatingPreview, ratingSchema } from '@/shared/learning-document';
 import { getProblemTitle } from '@/shared/ui/problem-title';
-import { RatingOptions } from '@/shared/ui/RatingOptions';
+import { keyShortcut, RatingOptions } from '@/shared/ui/RatingOptions';
 import { ratingColor } from '@/shared/ui/rating-colors';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
-import { NextProblems } from './NextProblems';
+import { NEXT_SHORTCUTS, NextProblems } from './NextProblems';
 import { useSurfaceTheme } from './theme';
 import type { SavedConfirmation, useRatingSession } from './useRatingSession';
 
@@ -20,6 +20,7 @@ type CurrentProblem = Awaited<ReturnType<typeof getCurrentProblem>>;
 
 // Ignore pointer activation on the shorter saved view, which can land a link under the pointer.
 const POINTER_GUARD_MS = 300;
+const UNDO_SHORTCUT = 'U';
 
 export function RatingMenu({ t, session }: { t: Translations; session: ReturnType<typeof useRatingSession> }) {
   const { saved, busy } = session;
@@ -118,6 +119,28 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     });
   }
 
+  function runShortcut({ key, code }: { key: string; code: string }) {
+    // Match the printed letter so the chips hold on Dvorak and AZERTY, and fall back to the key position on non-Latin layouts.
+    const letter = /^[a-z]$/i.test(key) ? key.toUpperCase() : code.replace(/^Key/, '');
+    const next = (Object.keys(NEXT_SHORTCUTS) as (keyof typeof NEXT_SHORTCUTS)[]).find(
+      (kind) => NEXT_SHORTCUTS[kind] === letter
+    );
+    if (next) {
+      const link = container.current?.querySelector<HTMLAnchorElement>(`a[data-next="${next}"]`);
+      link?.click();
+      return !!link;
+    }
+    if (letter === UNDO_SHORTCUT) {
+      if (!showSaved || !saved?.undoToken) return false;
+      if (!busy) undo();
+      return true;
+    }
+    const rating = ratingSchema.safeParse(Number(key));
+    if (!rating.success && !(key === '5' && allowUnrated)) return false;
+    if (!busy) save(rating.success ? rating.data : undefined);
+    return true;
+  }
+
   const youtube = problem?.youtubeUrl && (
     <YouTubeLink
       url={problem.youtubeUrl}
@@ -135,11 +158,9 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
       aria-busy={busy}
       onKeyDown={(event) => {
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat) return;
-        const rating = ratingSchema.safeParse(Number(event.key));
-        if (!rating.success && !(event.key === '5' && allowUnrated)) return;
+        if (!runShortcut(event)) return;
         event.preventDefault();
         event.stopPropagation();
-        if (!busy) save(rating.success ? rating.data : undefined);
       }}
     >
       {showSaved ? (
@@ -283,9 +304,13 @@ function SavedView({
           className="-mr-1.5 flex h-6 shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 text-panel-meta font-medium text-fg-2 hover:bg-raised data-disabled:cursor-default data-disabled:opacity-60 data-focus-visible:outline-2 data-focus-visible:outline-focus"
           isDisabled={busy}
           onPress={onUndo}
+          ref={keyShortcut(UNDO_SHORTCUT)}
         >
           <LuUndo2 className="size-3.5" aria-hidden="true" />
           {t.contentScript.undo}
+          <span className="rating-kbd" aria-hidden="true">
+            {UNDO_SHORTCUT}
+          </span>
         </Button>
       )}
     </div>
