@@ -1,9 +1,12 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { LuArrowUpRight, LuChevronRight, LuLock, LuRoute, LuSkipForward } from 'react-icons/lu';
+import { useState } from 'react';
+import { Button } from 'react-aria-components';
+import { LuArrowUpRight, LuChevronRight, LuLock, LuRoute, LuShuffle, LuSkipForward, LuUndo2 } from 'react-icons/lu';
 import { Difficulty } from '@/popup/components/Difficulty';
 import { SaveProblemButton, useProblemSaveFeedback } from '@/popup/components/problem-save/SaveProblemButton';
 import { QueryState } from '@/popup/components/QueryState';
 import { RoadmapProgress } from '@/popup/components/RoadmapProgress';
+import { Tooltip } from '@/popup/components/Tooltip';
 import { useI18n } from '@/popup/contexts/I18nContext';
 import { learningDocumentQueryOptions } from '@/popup/queries/learning-document';
 import {
@@ -13,10 +16,11 @@ import {
   useSkipRoadmapProblemMutation,
 } from '@/popup/queries/roadmaps';
 import { useSettingsQuery } from '@/popup/queries/settings';
-import { buttonInteraction } from '@/popup/styles';
+import { buttonInteraction, compactGhostButton } from '@/popup/styles';
 import { getLeetcodeProblemUrl } from '@/shared/leetcode-links';
 import {
-  getNextRoadmapProblemId,
+  getRecommendableRoadmapProblemIds,
+  pickRandomRoadmapProblemId,
   type Roadmap,
   type RoadmapId,
   roadmapProblemIds,
@@ -35,7 +39,9 @@ export function RoadmapSection({ isQueueEmpty, onOpen }: { isQueueEmpty: boolean
   return (
     <section aria-label={t.home.currentRoadmap} className="flex flex-col gap-3">
       <QueryState query={roadmaps} loading={t.roadmaps.loading} error={t.roadmaps.loadFailed} className="text-xs">
-        {roadmap && <ActiveRoadmap roadmap={roadmap} isHero={isQueueEmpty} onOpen={() => onOpen(roadmap.id)} />}
+        {roadmap && (
+          <ActiveRoadmap key={roadmap.id} roadmap={roadmap} isHero={isQueueEmpty} onOpen={() => onOpen(roadmap.id)} />
+        )}
       </QueryState>
     </section>
   );
@@ -49,9 +55,36 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
   const metadata = useQuery(roadmapMetadataQueryOptions(roadmap, domain));
   const skip = useSkipRoadmapProblemMutation();
   const summary = summarizeRoadmap(document, roadmapProblemIds(roadmap), document.roadmapSkips[roadmap.id]);
-  const nextId = getNextRoadmapProblemId(roadmap, document, metadata.data, domain);
+  const ids = getRecommendableRoadmapProblemIds(roadmap, document, metadata.data, domain);
+  const [randomId, setRandomId] = useState<string | null>(null);
+  // A random pick that gets saved or skipped falls back to the next problem in order.
+  const isRandom = randomId !== null && ids.includes(randomId);
+  const nextId = isRandom ? randomId : ids[0];
   const next = nextId ? metadata.data?.[nextId] : undefined;
+  const canShuffle = ids.some((id) => id !== nextId);
   const { message, onSaved } = useProblemSaveFeedback();
+
+  const shuffleButton = (
+    <Tooltip label={t.roadmaps.randomProblem}>
+      <Button
+        aria-label={t.home.showRandomProblem(roadmap.name)}
+        isDisabled={!canShuffle || skip.isPending}
+        onPress={() => setRandomId(pickRandomRoadmapProblemId(ids, nextId) ?? null)}
+        className={`shrink-0 rounded-md grid place-items-center text-tertiary duration-[120ms] hover:bg-secondary hover:text-primary ${buttonInteraction} ${
+          isHero ? 'size-7' : 'size-8'
+        }`}
+      >
+        <LuShuffle aria-hidden="true" className="size-3.5" />
+      </Button>
+    </Tooltip>
+  );
+  // The compact row only shuffles; the hero card can return to the next problem in order.
+  const backButton = isRandom && (
+    <Button className={compactGhostButton} onPress={() => setRandomId(null)}>
+      <LuUndo2 aria-hidden="true" className="size-3.5" />
+      {t.home.nextInOrder}
+    </Button>
+  );
 
   return (
     <>
@@ -76,7 +109,20 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
             className={`rounded-xl border border-current ${isHero ? 'bg-surface shadow-card p-4' : 'p-3 flex items-center gap-3'}`}
           >
             <div className="min-w-0 flex-1">
-              {isHero && <p className="mb-1 text-caption text-tertiary">{t.home.nextProblem}</p>}
+              {isHero && (
+                <div className="-mt-1.5 -mr-1.5 mb-1 flex items-center gap-0.5">
+                  {isRandom ? (
+                    <p className="mr-auto flex items-center gap-1 text-caption font-medium text-accent">
+                      <LuShuffle aria-hidden="true" className="size-3" />
+                      {t.home.randomPick}
+                    </p>
+                  ) : (
+                    <p className="mr-auto text-caption text-tertiary">{t.home.nextProblem}</p>
+                  )}
+                  {backButton}
+                  {shuffleButton}
+                </div>
+              )}
               <a
                 className={`flex items-start gap-1 rounded-sm hover:text-accent ${buttonInteraction} ${
                   isHero ? 'text-stat leading-[22px] font-semibold' : 'text-body font-medium'
@@ -103,11 +149,17 @@ function ActiveRoadmap({ roadmap, isHero, onOpen }: { roadmap: Roadmap; isHero: 
                   strokeWidth={2}
                 />
               </a>
-              <div className={isHero ? 'mt-1.5' : 'mt-1'}>
+              <div className={`flex items-center gap-1.5 ${isHero ? 'mt-1.5' : 'mt-1'}`}>
                 <Difficulty difficulty={next.difficulty} />
+                {!isHero && isRandom && (
+                  <span className="px-1 rounded bg-accent-soft text-accent text-caption font-medium whitespace-nowrap">
+                    {t.home.randomPick}
+                  </span>
+                )}
               </div>
             </div>
             <div className={isHero ? 'mt-4 flex gap-2' : 'flex shrink-0 items-center'}>
+              {!isHero && shuffleButton}
               <SaveProblemButton
                 frontendId={next.frontendId}
                 domain={domain}

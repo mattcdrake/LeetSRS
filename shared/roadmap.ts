@@ -66,6 +66,19 @@ export function summarizeRoadmap(
   return summary;
 }
 
+/** Roadmap problems, in order, that are not in SRS, not skipped, and available on the domain. */
+export function getRecommendableRoadmapProblemIds(
+  roadmap: Roadmap,
+  document: LearningDocument,
+  metadata: Record<string, CatalogProblem | undefined> | undefined,
+  domain: LeetcodeDomain
+): string[] {
+  const skippedIds = new Set(document.roadmapSkips[roadmap.id]);
+  return roadmapProblemIds(roadmap).filter(
+    (id) => !document.cards[id] && !skippedIds.has(id) && metadata?.[id]?.sources.includes(domain)
+  );
+}
+
 export function getNextRoadmapProblemId(
   roadmap: Roadmap,
   document: LearningDocument,
@@ -73,8 +86,11 @@ export function getNextRoadmapProblemId(
   domain: LeetcodeDomain,
   currentId?: string
 ): string | undefined {
-  const skippedIds = new Set(document.roadmapSkips[roadmap.id]);
-  return roadmapProblemIds(roadmap).find(
-    (id) => id !== currentId && !document.cards[id] && !skippedIds.has(id) && metadata?.[id]?.sources.includes(domain)
-  );
+  return getRecommendableRoadmapProblemIds(roadmap, document, metadata, domain).find((id) => id !== currentId);
+}
+
+/** Picks uniformly among recommendable ids other than `excludedId`. */
+export function pickRandomRoadmapProblemId(ids: readonly string[], excludedId?: string): string | undefined {
+  const candidates = ids.filter((id) => id !== excludedId);
+  return candidates[Math.floor(Math.random() * candidates.length)];
 }
