@@ -16,11 +16,7 @@ import { createPopupTestWrapper } from '@/test/utils/test-wrapper';
 import { GistSyncSection } from '../GistSyncSection';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), list: vi.fn(), update: vi.fn(), create: vi.fn() }));
-vi.mock('octokit', () => ({
-  Octokit: vi.fn(function MockOctokit() {
-    return { rest: { gists: github } };
-  }),
-}));
+vi.mock('@/background/github-gists', () => ({ gistsApi: () => github }));
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 
@@ -38,20 +34,19 @@ beforeEach(async () => {
   await background.addCard(buildProblem());
   const document = await readLearningDocument();
   github.get.mockResolvedValue({
-    data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(document) } } },
+    owner: { id: 1 },
+    files: { 'leetsrs-backup.json': { content: JSON.stringify(document) } },
   });
-  github.list.mockResolvedValue({
-    data: [
-      {
-        id: 'backup',
-        description: 'My backup',
-        owner: { id: 1 },
-        updated_at: '2026-09-15',
-        files: { 'leetsrs-backup.json': {} },
-      },
-    ],
-  });
-  github.create.mockResolvedValue({ data: { id: 'created' } });
+  github.list.mockResolvedValue([
+    {
+      id: 'backup',
+      description: 'My backup',
+      owner: { id: 1 },
+      updated_at: '2026-09-15',
+      files: { 'leetsrs-backup.json': {} },
+    },
+  ]);
+  github.create.mockResolvedValue({ id: 'created' });
 });
 
 afterEach(() => onlineManager.setOnline(true));
@@ -96,7 +91,7 @@ it('connects an owned backup and pauses and resumes syncing through Settings', a
   fireEvent.click(screen.getByRole('switch'));
   await waitFor(() => expect(screen.getByRole('switch')).toBeChecked());
   await waitFor(() => expect(github.update).toHaveBeenCalled());
-  const uploaded = JSON.parse(github.update.mock.lastCall?.[0].files['leetsrs-backup.json'].content);
+  const uploaded = JSON.parse(github.update.mock.lastCall?.[1]['leetsrs-backup.json'].content);
   expect(uploaded.cards['1'].note).toBe('Paused edit');
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'backup', enabled: true });
 });

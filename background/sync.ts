@@ -1,10 +1,10 @@
-import { Octokit } from 'octokit';
 import {
   authorizationSignal,
   clearGithubAuthorization,
   GithubAuthorizationError,
   getGithubAuthorization,
 } from '@/background/github-auth';
+import { type GistFile, gistsApi } from '@/background/github-gists';
 import { previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
 import {
@@ -108,11 +108,11 @@ async function runSync(signal: AbortSignal): Promise<void> {
 async function syncDocument(config: Extract<GistSyncConfig, { gistId: string }>, signal: AbortSignal): Promise<void> {
   const auth = await getGithubAuthorization();
   if (signal.aborted || auth.account.id !== config.accountId) return;
-  const github = new Octokit({ auth: auth.accessToken });
-  const { data } = await github.rest.gists.get({ gist_id: config.gistId });
+  const github = gistsApi(auth.accessToken);
+  const gist = await github.get(config.gistId);
   if (signal.aborted) return;
 
-  const remoteFile = data.files?.[GIST_FILENAME];
+  const remoteFile = gist.files[GIST_FILENAME];
   const remote = remoteFile ? await readBackupFile(remoteFile) : undefined;
   const local = await readLearningDocument();
   if (signal.aborted) return;
@@ -121,10 +121,7 @@ async function syncDocument(config: Extract<GistSyncConfig, { gistId: string }>,
     !remote?.dataUpdatedAt ||
     (local.dataUpdatedAt && Date.parse(local.dataUpdatedAt) > Date.parse(remote.dataUpdatedAt))
   ) {
-    await github.rest.gists.update({
-      gist_id: config.gistId,
-      files: { [GIST_FILENAME]: { content: JSON.stringify(local, null, 2) } },
-    });
+    await github.update(config.gistId, { [GIST_FILENAME]: { content: JSON.stringify(local, null, 2) } });
   } else if (!local.dataUpdatedAt || Date.parse(local.dataUpdatedAt) < Date.parse(remote.dataUpdatedAt)) {
     await replaceLearningDocument(remote);
   }
@@ -146,16 +143,17 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
     const authSignal = authorizationSignal();
     const connectionSignal = connectionAbort.signal;
     const auth = await getGithubAuthorization();
-    const github = new Octokit({ auth: auth.accessToken });
+    const github = gistsApi(auth.accessToken);
     let gistId: string;
 
     if (setup.mode === 'existing') {
-      const { data } = await github.rest.gists.get({ gist_id: setup.gistId });
-      if (!data.files?.[GIST_FILENAME]) {
+      const gist = await github.get(setup.gistId);
+      const file = gist.files[GIST_FILENAME];
+      if (!file) {
         return { saved: false, error: 'missingBackup' };
       }
-      if (data.owner?.id !== auth.account.id) return { saved: false, error: 'authentication' };
-      const remote = await readBackupFile(data.files[GIST_FILENAME]);
+      if (gist.owner?.id !== auth.account.id) return { saved: false, error: 'authentication' };
+      const remote = await readBackupFile(file);
       const connection = await readGistConnection();
       if (connection.gistId === null) {
         const local = await readLearningDocument();
@@ -170,15 +168,15 @@ export async function setupGistSync(setup: GistSetup): Promise<GistConnectionRes
     } else {
       const document = await readLearningDocument();
       const language = document.settings.language ?? detectBrowserLanguage();
-      const { data } = await github.rest.gists.create({
+      const gist = await github.create({
         description: translations[language].settings.gistSync.gistDescription,
         public: false,
         files: { [GIST_FILENAME]: { content: JSON.stringify(document, null, 2) } },
       });
-      if (!data.id) {
+      if (!gist.id) {
         return { saved: false, error: 'creationFailed' };
       }
-      gistId = data.id;
+      gistId = gist.id;
     }
 
     if (authSignal.aborted || connectionSignal.aborted) throw new Error('Connection changed');
@@ -228,9 +226,7 @@ function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'):
 
 // Raw Gist content is fetched only from GitHub's fixed content host, without
 // authorization headers, and validated through the same versioned backup parser.
-async function readBackupFile(
-  file: { content?: string; truncated?: boolean; raw_url?: string } | undefined
-): Promise<LearningDocument> {
+async function readBackupFile(file: GistFile | null | undefined): Promise<LearningDocument> {
   if (!file) throw new Error('Missing backup');
   let content = file.content ?? '';
   if (file.truncated) {
@@ -257,14 +253,14 @@ async function readBackupFile(
 export async function listGistDestinations(): Promise<GistDestination[]> {
   const signal = authorizationSignal();
   const auth = await getGithubAuthorization();
-  const github = new Octokit({ auth: auth.accessToken });
+  const github = gistsApi(auth.accessToken);
   const suggestion = await previousGist();
   const destinations: GistDestination[] = [];
   for (let page = 1; ; page++) {
-    const { data } = await github.rest.gists.list({ per_page: 100, page });
+    const gists = await github.list(page);
     signal.throwIfAborted();
-    for (const gist of data) {
-      if (gist.owner?.id === auth.account.id && gist.files?.[GIST_FILENAME])
+    for (const gist of gists) {
+      if (gist.owner?.id === auth.account.id && gist.files[GIST_FILENAME])
         destinations.push({
           id: gist.id,
           description: gist.description || gist.id,
@@ -272,7 +268,7 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
           suggested: gist.id === suggestion,
         });
     }
-    if (data.length < 100) return destinations;
+    if (gists.length < 100) return destinations;
   }
 }
 
