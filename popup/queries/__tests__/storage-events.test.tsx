@@ -24,11 +24,7 @@ import { useTodayReviewActivityQuery } from '../review-activity';
 import { useSettingsQuery, useUpdateSettingsMutation } from '../settings';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
-vi.mock('octokit', () => ({
-  Octokit: vi.fn(function MockOctokit() {
-    return { rest: { gists: github } };
-  }),
-}));
+vi.mock('@/background/github-gists', () => ({ gistsApi: () => github }));
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 vi.mock('@/shared/background-service');
 const service = createServiceMock(background);
@@ -124,7 +120,7 @@ it('refreshes saved views after a content command and an alarm pull, including c
     settings: { maxNewCardsPerDay: 9 },
     dataUpdatedAt: '2099-01-01T00:00:00.000Z',
   });
-  github.get.mockResolvedValue({ data: { files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } } });
+  github.get.mockResolvedValue({ files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } });
   await act(() =>
     alarm({ name: 'gist-sync', scheduledTime: Date.now(), periodInMinutes: 1, persistAcrossSessions: true })
   );

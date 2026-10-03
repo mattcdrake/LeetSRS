@@ -11,18 +11,14 @@ import backgroundEntry from '../../entrypoints/background/index';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn() }));
 
-vi.mock('octokit', () => ({
-  Octokit: vi.fn(function MockOctokit() {
-    return { rest: { gists: github } };
-  }),
-}));
+vi.mock('@/background/github-gists', () => ({ gistsApi: () => github }));
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 
 beforeEach(async () => {
   fakeBrowser.reset();
   fakeBrowser.runtime.id = 'test';
   vi.mocked(registerService).mockClear();
-  github.get.mockResolvedValue({ data: { files: {} } });
+  github.get.mockResolvedValue({ files: {} });
   github.update.mockResolvedValue({});
   backgroundEntry.main();
   await getRegisteredBackground().waitForInitialization();
@@ -64,13 +60,11 @@ it('leaves edits made during an upload for the next minute sync', async () => {
   await triggerSyncAlarm();
 
   expect(github.update).toHaveBeenCalledTimes(2);
-  expect(JSON.parse(github.update.mock.calls[1][0].files['leetsrs-backup.json'].content).cards['1'].note).toBe(
-    'Next sync'
-  );
+  expect(JSON.parse(github.update.mock.calls[1][1]['leetsrs-backup.json'].content).cards['1'].note).toBe('Next sync');
 });
 
 it('ignores a pending download after an external connection change', async () => {
-  const download = Promise.withResolvers<{ data: { files: Record<string, { content: string }> } }>();
+  const download = Promise.withResolvers<{ files: Record<string, { content: string }> }>();
   github.get.mockReturnValueOnce(download.promise);
   const pending = sync();
   await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
@@ -78,7 +72,7 @@ it('ignores a pending download after an external connection change', async () =>
   await fakeBrowser.storage.local.set({
     'leetsrs:gistConnection': { accountId: 1, gistId: 'other-gist', enabled: true },
   });
-  await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith({ gist_id: 'other-gist' }));
+  await vi.waitFor(() => expect(github.get).toHaveBeenCalledWith('other-gist'));
   await vi.waitFor(async () =>
     expect(await getRegisteredBackground().getGistSyncStatus()).toMatchObject({ syncInProgress: false })
   );
@@ -87,11 +81,9 @@ it('ignores a pending download after an external connection change', async () =>
   expect(status.syncInProgress).toBe(false);
   const uploads = github.update.mock.calls.length;
   download.resolve({
-    data: {
-      files: {
-        'leetsrs-backup.json': {
-          content: JSON.stringify(buildLearningDocument({ settings: { theme: 'light' }, dataUpdatedAt: '2099-01-01' })),
-        },
+    files: {
+      'leetsrs-backup.json': {
+        content: JSON.stringify(buildLearningDocument({ settings: { theme: 'light' }, dataUpdatedAt: '2099-01-01' })),
       },
     },
   });

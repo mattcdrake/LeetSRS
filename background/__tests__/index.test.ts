@@ -12,8 +12,8 @@ import backgroundEntry from '../../entrypoints/background/index';
 
 vi.mock('@webext-core/proxy-service', () => import('@/test/mocks/proxy-service'));
 
-vi.mock('octokit', () => ({
-  Octokit: vi.fn(() => {
+vi.mock('@/background/github-gists', () => ({
+  gistsApi: vi.fn(() => {
     throw new Error('Network unavailable');
   }),
 }));

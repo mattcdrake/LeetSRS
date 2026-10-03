@@ -15,11 +15,7 @@ import * as syncModule from '../sync';
 
 const github = vi.hoisted(() => ({ get: vi.fn(), update: vi.fn(), create: vi.fn(), list: vi.fn() }));
 
-vi.mock('octokit', () => ({
-  Octokit: vi.fn(function MockOctokit() {
-    return { rest: { gists: github } };
-  }),
-}));
+vi.mock('@/background/github-gists', () => ({ gistsApi: () => github }));
 
 describe('whole-document Gist sync', () => {
   const now = '2026-09-13T12:00:00.000Z';
@@ -58,7 +54,8 @@ describe('whole-document Gist sync', () => {
       dataUpdatedAt: '2026-09-12T12:00:00.000Z',
     });
     github.get.mockResolvedValue({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },
+      owner: { id: 1 },
+      files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } },
     });
 
     expect(await syncModule.setupGistSync({ mode: 'existing', gistId: 'gist' })).toEqual({ saved: true });
@@ -70,55 +67,48 @@ describe('whole-document Gist sync', () => {
 
     await updateSettings({ theme: 'light' });
     await syncModule.sync();
-    const uploaded = JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content);
+    const uploaded = JSON.parse(github.update.mock.calls[0][1]['leetsrs-backup.json'].content);
     expect(uploaded.cards).toEqual(remote.cards);
     expect(uploaded.reviewActivity).toEqual(remote.reviewActivity);
   });
 
   it('paginates owned backups and only suggests an owned previous destination', async () => {
     await fakeBrowser.storage.local.set({ 'leetsrs:oauthMigration': { notice: true, previousGist: 'previous' } });
-    github.list.mockResolvedValueOnce({
-      data: Array.from({ length: 100 }, (_, index) => ({ id: `other-${index}`, owner: { id: 1 }, files: {} })),
-    });
-    github.list.mockResolvedValueOnce({
-      data: [
-        {
-          id: 'previous',
-          owner: { id: 2 },
-          description: 'Someone else',
-          updated_at: now,
-          files: { 'leetsrs-backup.json': {} },
-        },
-        {
-          id: 'owned',
-          owner: { id: 1 },
-          description: 'My backup',
-          updated_at: now,
-          files: { 'leetsrs-backup.json': {} },
-        },
-      ],
-    });
+    github.list.mockResolvedValueOnce(
+      Array.from({ length: 100 }, (_, index) => ({ id: `other-${index}`, owner: { id: 1 }, files: {} }))
+    );
+    github.list.mockResolvedValueOnce([
+      {
+        id: 'previous',
+        owner: { id: 2 },
+        description: 'Someone else',
+        updated_at: now,
+        files: { 'leetsrs-backup.json': {} },
+      },
+      {
+        id: 'owned',
+        owner: { id: 1 },
+        description: 'My backup',
+        updated_at: now,
+        files: { 'leetsrs-backup.json': {} },
+      },
+    ]);
     expect(await syncModule.listGistDestinations()).toEqual([
       { id: 'owned', description: 'My backup', updatedAt: now, suggested: false },
     ]);
-    expect(github.list.mock.calls.map(([request]) => request)).toEqual([
-      { per_page: 100, page: 1 },
-      { per_page: 100, page: 2 },
-    ]);
+    expect(github.list.mock.calls).toEqual([[1], [2]]);
   });
 
   it.each(['invalid', 'truncated', 'not-owned'])(
     'validates an existing %s backup before changing the connection',
     async (kind) => {
       github.get.mockResolvedValue({
-        data: {
-          owner: { id: kind === 'not-owned' ? 2 : 1 },
-          files: {
-            'leetsrs-backup.json': {
-              content: kind === 'not-owned' ? JSON.stringify(local) : 'invalid json',
-              truncated: kind === 'truncated',
-              raw_url: 'https://gist.githubusercontent.com/test/backup/raw/file',
-            },
+        owner: { id: kind === 'not-owned' ? 2 : 1 },
+        files: {
+          'leetsrs-backup.json': {
+            content: kind === 'not-owned' ? JSON.stringify(local) : 'invalid json',
+            truncated: kind === 'truncated',
+            raw_url: 'https://gist.githubusercontent.com/test/backup/raw/file',
           },
         },
       });
@@ -139,16 +129,12 @@ describe('whole-document Gist sync', () => {
   );
 
   it('does not reconnect if sign-out happens during destination validation', async () => {
-    const response = Promise.withResolvers<{
-      data: { owner: { id: number }; files: Record<string, { content: string }> };
-    }>();
+    const response = Promise.withResolvers<{ owner: { id: number }; files: Record<string, { content: string }> }>();
     github.get.mockReturnValueOnce(response.promise);
     const pending = syncModule.setupGistSync({ mode: 'existing', gistId: 'selected' });
     await vi.waitFor(() => expect(github.get).toHaveBeenCalledOnce());
     await syncModule.signOutGithub();
-    response.resolve({
-      data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } },
-    });
+    response.resolve({ owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(local) } } });
     expect((await pending).saved).toBe(false);
     expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
     expect(await readLearningDocument()).toEqual(local);
@@ -175,17 +161,17 @@ describe('whole-document Gist sync', () => {
       };
       await replaceLearningDocument(document);
       github.get.mockResolvedValue({
-        data: { owner: { id: 1 }, files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } } },
+        owner: { id: 1 },
+        files: { 'leetsrs-backup.json': { content: JSON.stringify(remote) } },
       });
 
       await syncModule.sync();
 
       if (direction === 'push') {
-        expect(github.update).toHaveBeenCalledExactlyOnceWith({
-          gist_id: 'gist',
-          files: { 'leetsrs-backup.json': { content: expect.any(String) } },
+        expect(github.update).toHaveBeenCalledExactlyOnceWith('gist', {
+          'leetsrs-backup.json': { content: expect.any(String) },
         });
-        expect(JSON.parse(github.update.mock.calls[0][0].files['leetsrs-backup.json'].content)).toEqual(document);
+        expect(JSON.parse(github.update.mock.calls[0][1]['leetsrs-backup.json'].content)).toEqual(document);
       } else {
         expect(github.update).not.toHaveBeenCalled();
       }
@@ -202,10 +188,8 @@ describe('whole-document Gist sync', () => {
     'rejects an invalid remote document %j before overwriting either side',
     async (invalid) => {
       github.get.mockResolvedValue({
-        data: {
-          owner: { id: 1 },
-          files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, ...invalid }) } },
-        },
+        owner: { id: 1 },
+        files: { 'leetsrs-backup.json': { content: JSON.stringify({ ...local, ...invalid }) } },
       });
       const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
 

@@ -38,7 +38,6 @@
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "^5.104.0",
     "@webext-core/proxy-service": "^3.0.2",
-    "octokit": "^5.0.5",
     "react": "^19.3.0",
     "react-aria": "3.52.1",
     "react-aria-components": "^1.21.1",
