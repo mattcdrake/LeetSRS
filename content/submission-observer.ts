@@ -1,6 +1,7 @@
 import { getCurrentProblemSlug } from './page-context';
 
 export const ACCEPTED_SUBMISSION_MESSAGE = 'leetsrs:accepted-submission';
+const SUBMISSION_URL = /\/(submit|check)\/?(?:\?|$)/;
 interface AcceptedSubmission {
   slug: string;
   submissionId: string;
@@ -75,7 +76,7 @@ export function observeSubmissions(onAccepted: (submission: AcceptedSubmission) 
     const slug = getCurrentProblemSlug();
     const startedNavigation = navigation;
     const response = await originalFetch.call(window, input, init);
-    if (/\/(submit|check)\/?(?:\?|$)/.test(url)) {
+    if (SUBMISSION_URL.test(url)) {
       void response
         .clone()
         .json()
@@ -97,7 +98,7 @@ export function observeSubmissions(onAccepted: (submission: AcceptedSubmission) 
   };
   const send: typeof originalSend = function (this: XMLHttpRequest, body) {
     const request = requests.get(this);
-    if (request && /\/(submit|check)\/?(?:\?|$)/.test(request.url)) {
+    if (request && SUBMISSION_URL.test(request.url)) {
       this.addEventListener(
         'load',
         () => {
