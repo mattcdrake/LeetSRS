@@ -10,7 +10,7 @@ import type { Translations } from '@/shared/i18n/index';
 import { type RatingPreview, ratingSchema } from '@/shared/learning-document';
 import { getProblemTitle } from '@/shared/ui/problem-title';
 import { keyShortcut, RatingOptions } from '@/shared/ui/RatingOptions';
-import { ratingColor } from '@/shared/ui/rating-colors';
+import { RATING_COLORS } from '@/shared/ui/rating-colors';
 import { YouTubeLink } from '@/shared/ui/YouTubeLink';
 import { NEXT_SHORTCUTS, NextProblems } from './NextProblems';
 import { useSurfaceTheme } from './theme';
@@ -165,7 +165,13 @@ export function RatingMenu({ t, session }: { t: Translations; session: ReturnTyp
     >
       {showSaved ? (
         <>
-          <SavedView t={t} saved={saved} color={saved.rating && ratingColor(saved.rating)} busy={busy} onUndo={undo} />
+          <SavedView
+            t={t}
+            saved={saved}
+            color={saved.rating && RATING_COLORS[saved.rating]}
+            busy={busy}
+            onUndo={undo}
+          />
           {session.error === 'undo' && <ErrorBanner>{t.contentScript.undoFailed}</ErrorBanner>}
         </>
       ) : (
