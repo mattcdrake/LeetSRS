@@ -34,7 +34,7 @@ describe('registered background execution', () => {
     await seedGithubAuthorization();
     await writeGistConnection(savedConnection);
     await fakeBrowser.storage.local.set({ 'leetsrs:lastSyncTime': 'old', unrelated: 'keep' });
-    await fakeBrowser.storage.sync.set({ 'leetsrs:githubPat': 'legacy secret', unrelated: 'keep' });
+    await fakeBrowser.storage.sync.set({ unrelated: 'keep' });
 
     await getRegisteredBackground().resetAllData();
 

@@ -1,8 +1,8 @@
 import { registerService } from '@webext-core/proxy-service';
 import { browser } from 'wxt/browser';
+import { storage } from '#imports';
 import { BADGE_ALARM_NAME, refreshBadge } from '@/background/badge';
 import { resumeGithubSignIn } from '@/background/github-auth';
-import { migratePatConnection } from '@/background/legacy/github-pat';
 import { initializeLearningDocument } from '@/background/legacy/learning-document-startup';
 import { createBackgroundService } from '@/background/service';
 import { sync, watchGistConnectionChanges } from '@/background/sync';
@@ -15,7 +15,14 @@ export function startBackground() {
   // Commands and alarms wait until learning storage is ready.
   const readyPromise = (async () => {
     await initializeLearningDocument();
-    await migratePatConnection();
+    // ponytail: retired GitHub PAT keys; drop once no installs predate 1.0.0.
+    await storage.removeItems([
+      'sync:leetsrs:gistConnection',
+      'sync:leetsrs:githubPat',
+      'sync:leetsrs:gistId',
+      'sync:leetsrs:gistSyncEnabled',
+      'local:leetsrs:oauthMigration',
+    ]);
 
     const existingAlarm = await browser.alarms.get(SYNC_ALARM_NAME);
     if (!existingAlarm) {

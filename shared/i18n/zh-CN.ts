@@ -1,6 +1,5 @@
 import { Rating } from 'ts-fsrs';
 import type { Translations } from './index';
-import { patMigration } from './legacy/zh-CN';
 import { getTopicLabel } from './topic-labels';
 
 // Simplified Chinese translations
@@ -326,9 +325,7 @@ const zhCN: Translations = {
       signingIn: '正在登录…',
       signOut: '退出登录',
       signInFailed: '登录未完成，请重试。',
-      ...patMigration,
       chooseBackup: '选择备份',
-      previousBackup: '上次的备份',
       loadingBackups: '正在加载备份…',
       loadBackupsFailed: '无法加载备份。',
       retry: '重试',
