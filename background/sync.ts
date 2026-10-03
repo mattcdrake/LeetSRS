@@ -5,7 +5,6 @@ import {
   getGithubAuthorization,
 } from '@/background/github-auth';
 import { type GistFile, gistsApi } from '@/background/github-gists';
-import { previousGist } from '@/background/legacy/github-pat';
 import { parseLearningDocumentBackup } from '@/background/legacy/learning-document-conversions';
 import {
   type GistConnectionResult,
@@ -226,8 +225,7 @@ function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'):
 
 // Raw Gist content is fetched only from GitHub's fixed content host, without
 // authorization headers, and validated through the same versioned backup parser.
-async function readBackupFile(file: GistFile | null | undefined): Promise<LearningDocument> {
-  if (!file) throw new Error('Missing backup');
+async function readBackupFile(file: GistFile): Promise<LearningDocument> {
   let content = file.content ?? '';
   if (file.truncated) {
     const url = new URL(file.raw_url ?? '');
@@ -254,7 +252,6 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
   const signal = authorizationSignal();
   const auth = await getGithubAuthorization();
   const github = gistsApi(auth.accessToken);
-  const suggestion = await previousGist();
   const destinations: GistDestination[] = [];
   for (let page = 1; ; page++) {
     const gists = await github.list(page);
@@ -265,7 +262,6 @@ export async function listGistDestinations(): Promise<GistDestination[]> {
           id: gist.id,
           description: gist.description || gist.id,
           updatedAt: gist.updated_at,
-          suggested: gist.id === suggestion,
         });
     }
     if (gists.length < 100) return destinations;

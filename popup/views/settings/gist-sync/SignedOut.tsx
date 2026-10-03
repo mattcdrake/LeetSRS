@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from 'react-aria-components';
 import { FaGithub } from 'react-icons/fa6';
 import { useI18n } from '@/popup/contexts/I18nContext';
@@ -7,7 +7,6 @@ import { settingsCard } from '../SettingsGroup';
 
 interface SignedOutProps {
   signingIn: boolean;
-  highlight: boolean;
   isCancelDisabled: boolean;
   isSignInDisabled: boolean;
   notices: ReactNode;
@@ -17,7 +16,6 @@ interface SignedOutProps {
 
 export function SignedOut({
   signingIn,
-  highlight,
   isCancelDisabled,
   isSignInDisabled,
   notices,
@@ -25,7 +23,6 @@ export function SignedOut({
   onCancel,
 }: SignedOutProps) {
   const t = useI18n().settings.gistSync;
-  const [highlightDismissed, setHighlightDismissed] = useState(false);
 
   return (
     <div className={`${settingsCard} p-3.5`}>
@@ -54,13 +51,9 @@ export function SignedOut({
         </div>
       ) : (
         <Button
-          className={`mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-strong bg-surface text-xs font-medium text-primary duration-[120ms] hover:bg-secondary ${buttonInteraction} ${highlight && !highlightDismissed ? 'github-sign-in-highlight' : ''}`}
-          onAnimationEnd={() => setHighlightDismissed(true)}
+          className={`mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-strong bg-surface text-xs font-medium text-primary duration-[120ms] hover:bg-secondary ${buttonInteraction}`}
           isDisabled={isSignInDisabled}
-          onPress={() => {
-            setHighlightDismissed(true);
-            onSignIn();
-          }}
+          onPress={onSignIn}
         >
           <FaGithub className="size-4" aria-hidden="true" />
           {t.signIn}

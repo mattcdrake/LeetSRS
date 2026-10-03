@@ -1,8 +1,5 @@
-import { createContext, useContext } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { StreakCounter } from './StreakCounter';
-
-export const ViewBannerContext = createContext<React.ReactNode>(null);
 
 interface ViewLayoutProps {
   title?: string;
@@ -21,7 +18,6 @@ export function ViewLayout({
   children,
 }: ViewLayoutProps) {
   const t = useI18n();
-  const banner = useContext(ViewBannerContext);
   return (
     <div className="flex flex-col h-full">
       <header className="sticky top-0 z-10">
@@ -44,7 +40,6 @@ export function ViewLayout({
             <StreakCounter />
           </div>
         </div>
-        {banner}
       </header>
 
       <main

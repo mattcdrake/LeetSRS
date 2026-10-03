@@ -1,5 +1,4 @@
 import { Rating } from 'ts-fsrs';
-import { patMigration } from './legacy/en';
 import { getTopicLabel } from './topic-labels';
 
 // English translations (base language - all other translations must match this structure)
@@ -346,9 +345,7 @@ const en = {
       signingIn: 'Signing in…',
       signOut: 'Sign out',
       signInFailed: 'Couldn’t sign in. Please try again.',
-      ...patMigration,
       chooseBackup: 'Choose a backup',
-      previousBackup: 'Previous backup',
       loadingBackups: 'Loading backups…',
       loadBackupsFailed: 'Could not load backups.',
       retry: 'Retry',

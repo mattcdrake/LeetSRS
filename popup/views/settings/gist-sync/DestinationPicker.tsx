@@ -40,7 +40,7 @@ export function DestinationPicker({
     queryFn: () => background.listGistDestinations(),
     enabled: canListDestinations,
   });
-  const destination = selected ?? gistId ?? destinations.data?.find((gist) => gist.suggested)?.id ?? '';
+  const destination = selected ?? gistId ?? '';
   const edit = (editing: boolean) => {
     setEditing(editing);
     setSelected(null);
@@ -117,11 +117,6 @@ export function DestinationPicker({
               <span className="text-tertiary">
                 {' · '}
                 {t.backupDate(new Date(gist.updatedAt))}
-                {gist.suggested && (
-                  <span className="ml-1.5 rounded bg-accent-soft px-1 py-px text-caption text-accent">
-                    {t.previousBackup}
-                  </span>
-                )}
               </span>
             ),
           })),

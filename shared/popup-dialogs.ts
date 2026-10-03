@@ -12,5 +12,5 @@ export async function readPopupDialogAcknowledgments(): Promise<PopupDialogAckno
 }
 
 export function writePopupDialogAcknowledgments(acknowledgments: PopupDialogAcknowledgments): Promise<void> {
-  return popupDialogAcknowledgmentsItem.setValue(popupDialogAcknowledgmentsSchema.parse(acknowledgments));
+  return popupDialogAcknowledgmentsItem.setValue(acknowledgments);
 }

@@ -22,7 +22,6 @@ import {
   undoSave,
   updateSettings,
 } from '@/background/learning';
-import { dismissMigrationNotice } from '@/background/legacy/github-pat';
 import { getNextReview, getNextRoadmapProblem } from '@/background/next-problems';
 import { acknowledgePopupDialog, markAutoOpenHintShown, shouldShowAutoOpenHint } from '@/background/popup-dialogs';
 import {
@@ -68,7 +67,6 @@ export function createBackgroundService(ready: Promise<void>) {
     startGithubSignIn: command(z.tuple([]), startGithubSignIn),
     signOutGithub: command(z.tuple([]), signOutGithub),
     getGithubAuthStatus: command(z.tuple([]), getGithubAuthStatus),
-    dismissMigrationNotice: command(z.tuple([]), dismissMigrationNotice),
     listGistDestinations: command(z.tuple([]), listGistDestinations),
     waitForInitialization: command(z.tuple([]), async () => {}),
     getProblem: command(

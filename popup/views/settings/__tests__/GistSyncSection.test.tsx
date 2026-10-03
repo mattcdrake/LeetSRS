@@ -16,7 +16,6 @@ const signedIn = {
   account: { id: 1, login: 'tester' },
   signingIn: false,
   error: null,
-  migrationNotice: false,
   setupPending: false,
 };
 beforeEach(async () => {
@@ -37,9 +36,7 @@ beforeEach(async () => {
       syncInProgress: false,
       lastError: null,
     })
-    .resolve('listGistDestinations', [
-      { id: 'backup', description: 'My backup', updatedAt: '2026-09-15', suggested: true },
-    ])
+    .resolve('listGistDestinations', [{ id: 'backup', description: 'My backup', updatedAt: '2026-09-15' }])
     .resolve('setupGistSync', { saved: true })
     .resolve('setGistSyncEnabled', { saved: true });
 });
