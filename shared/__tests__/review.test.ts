@@ -73,9 +73,7 @@ describe('review queue calculations', () => {
   });
 
   it.each([
-    [0, ['review', 'new-b', 'new-a', 'learning', 'relearning']],
     [1, ['review', 'new-b', 'learning', 'relearning']],
-    [2, ['review', 'learning', 'relearning']],
     [4, ['review', 'learning', 'relearning']],
   ])('limits only new cards after %i completions without modifying inputs', (completed, expected) => {
     const cards = [

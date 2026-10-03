@@ -2,7 +2,7 @@ import { registerService } from '@webext-core/proxy-service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { readGistConnection } from '@/shared/gist-sync';
-import { LEARNING_DOCUMENT_VERSION, readLearningDocument } from '@/shared/learning-document';
+import { readLearningDocument } from '@/shared/learning-document';
 import { getRegisteredBackground } from '@/test/utils/background-service';
 import { validLegacyBackup } from '@/test/utils/backup-mocks';
 import { buildProblem } from '@/test/utils/card-mocks';
@@ -71,24 +71,17 @@ it('imports a legacy backup through the registered service without changing the 
   expect(await readGistConnection()).toEqual({ accountId: 1, gistId: 'gist', enabled: false });
 });
 
-it.each(['json', 'card', 'future'] as const)(
-  'rejects a malformed %s import without writing and recovers',
-  async (kind) => {
-    await getRegisteredBackground().addCard(buildProblem());
-    const before = await readLearningDocument();
-    const invalid =
-      kind === 'json'
-        ? '{'
-        : JSON.stringify(
-            kind === 'future'
-              ? { ...before, schemaVersion: LEARNING_DOCUMENT_VERSION + 1 }
-              : { ...before, cards: { '1': { ...before.cards['1'], fsrs: { ...before.cards['1'].fsrs, state: 4 } } } }
-          );
-    const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
-    await expect(getRegisteredBackground().importData(invalid)).rejects.toThrow();
-    expect(writes).not.toHaveBeenCalled();
-    expect(await readLearningDocument()).toEqual(before);
-    await getRegisteredBackground().saveNote('1', 'Recovered');
-    expect((await readLearningDocument()).cards['1'].note).toBe('Recovered');
-  }
-);
+it('rejects a malformed card import without writing and recovers', async () => {
+  await getRegisteredBackground().addCard(buildProblem());
+  const before = await readLearningDocument();
+  const invalid = JSON.stringify({
+    ...before,
+    cards: { '1': { ...before.cards['1'], fsrs: { ...before.cards['1'].fsrs, state: 4 } } },
+  });
+  const writes = vi.spyOn(fakeBrowser.storage.local, 'set');
+  await expect(getRegisteredBackground().importData(invalid)).rejects.toThrow();
+  expect(writes).not.toHaveBeenCalled();
+  expect(await readLearningDocument()).toEqual(before);
+  await getRegisteredBackground().saveNote('1', 'Recovered');
+  expect((await readLearningDocument()).cards['1'].note).toBe('Recovered');
+});

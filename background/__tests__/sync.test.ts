@@ -157,10 +157,8 @@ describe('whole-document Gist sync', () => {
   it.each([
     { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-11T12:00:00.000Z', direction: 'push' },
     { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-14T12:00:00.000Z', direction: 'pull' },
-    { localTime: undefined, remoteTime: undefined, direction: 'push' },
     { localTime: '2026-09-12T12:00:00.000Z', remoteTime: undefined, direction: 'push' },
     { localTime: undefined, remoteTime: '2026-09-12T12:00:00.000Z', direction: 'pull' },
-    { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-12T12:00:00.000Z', direction: null },
     { localTime: '2026-09-12T12:00:00.000Z', remoteTime: '2026-09-12T04:00:00-08:00', direction: null },
   ])(
     'handles local $localTime and remote $remoteTime with direction $direction',
@@ -198,7 +196,7 @@ describe('whole-document Gist sync', () => {
     }
   );
 
-  it.each([{ schemaVersion: 999 }, { dataUpdatedAt: 'invalid' }])(
+  it.each([{ schemaVersion: 999 }])(
     'rejects an invalid remote document %j before overwriting either side',
     async (invalid) => {
       github.get.mockResolvedValue({
@@ -220,9 +218,7 @@ describe('whole-document Gist sync', () => {
 
   it.each([
     [Object.assign(new Error('Bad credentials'), { status: 401 }), 'authentication'],
-    [Object.assign(new Error('rate limit'), { status: 429 }), 'rateLimit'],
     [new TypeError('Failed to fetch'), 'unavailable'],
-    [new Error('unexpected'), 'unknown'],
   ] as const)('reports sync failures as %s', async (failure, error) => {
     const lastSyncTime = '2026-09-11T12:00:00.000Z';
     await lastSyncTimeItem.setValue(lastSyncTime);

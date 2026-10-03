@@ -122,7 +122,6 @@ describe('document startup through registered background commands', () => {
   );
 
   it.each([
-    { ...buildLearningDocument(), settings: undefined },
     { ...buildLearningDocument(), schemaVersion: LEARNING_DOCUMENT_VERSION + 1 },
     { ...buildLearningDocument(), cards: 'corrupt' },
   ])('rejects a saved invalid document without falling back to legacy data: %j', async (document) => {

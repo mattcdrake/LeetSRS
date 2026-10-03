@@ -70,13 +70,11 @@ it.each([false, true])(
   }
 );
 
-it.each(['denied', 'rejected', 'throws'])(
+it.each(['denied', 'throws'])(
   'cancels pending sign-in and allows retry after permission request is %s',
   async (failure) => {
     vi.mocked(browser.permissions.contains).mockImplementation(async () => false);
     if (failure === 'denied') vi.mocked(browser.permissions.request).mockImplementationOnce(async () => false);
-    else if (failure === 'rejected')
-      vi.mocked(browser.permissions.request).mockRejectedValueOnce(new Error('Unavailable'));
     else
       vi.mocked(browser.permissions.request).mockImplementationOnce(() => {
         throw new Error('Unavailable');

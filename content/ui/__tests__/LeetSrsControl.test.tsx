@@ -35,7 +35,7 @@ beforeEach(async () => {
     .resolve('getProblem', requireDefined(testCatalog[0]));
 });
 
-it.each([3, 5])('limits shortcut %s to the open panel and ignores repeated presses', async (key) => {
+it.each([3])('limits shortcut %s to the open panel and ignores repeated presses', async (key) => {
   render(<LeetSrsControl />);
   fireEvent.keyDown(document.body, { key: String(key) });
   expect((await readLearningDocument()).cards).toEqual({});

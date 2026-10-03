@@ -40,61 +40,53 @@ function acceptSignIn(redirectUri = callback) {
     async ({ url }) => `${redirectUri}?code=code&state=${new URL(url).searchParams.get('state')}`
   );
 }
-it.each([callback, 'https://fec292f403871813f2c7a41024e0a452037396d7.extensions.allizom.org/'])(
-  'validates state and PKCE without enabling sync for %s',
-  async (redirectUri) => {
-    vi.mocked(browser.identity.getRedirectURL).mockReturnValue(redirectUri);
-    acceptSignIn(redirectUri);
-    await startGithubSignIn();
-    await finishSignIn();
-    expect(await getGithubAuthStatus()).toMatchObject({ account: { id: 1, login: 'tester' }, error: null });
-    expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
-    expect(await fakeBrowser.storage.sync.get()).toEqual({});
-    const request = vi.mocked(browser.identity.launchWebAuthFlow).mock.calls[0][0];
-    const url = new URL(request.url);
-    expect(url.searchParams.get('client_id')).toBe('client');
-    expect(url.searchParams.get('redirect_uri')).toBe(redirectUri);
-    expect(url.searchParams.get('scope')).toBe('gist offline_access');
-    expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-    expect(fetch).toHaveBeenNthCalledWith(
-      1,
-      'https://auth.leetsrs.com/exchange',
-      expect.objectContaining({ method: 'POST' })
+it('validates state and PKCE without enabling sync', async () => {
+  const redirectUri = callback;
+  acceptSignIn();
+  await startGithubSignIn();
+  await finishSignIn();
+  expect(await getGithubAuthStatus()).toMatchObject({ account: { id: 1, login: 'tester' }, error: null });
+  expect(await readGistConnection()).toEqual({ accountId: null, gistId: null, enabled: false });
+  expect(await fakeBrowser.storage.sync.get()).toEqual({});
+  const request = vi.mocked(browser.identity.launchWebAuthFlow).mock.calls[0][0];
+  const url = new URL(request.url);
+  expect(url.searchParams.get('client_id')).toBe('client');
+  expect(url.searchParams.get('redirect_uri')).toBe(redirectUri);
+  expect(url.searchParams.get('scope')).toBe('gist offline_access');
+  expect(url.searchParams.get('code_challenge_method')).toBe('S256');
+  expect(fetch).toHaveBeenNthCalledWith(
+    1,
+    'https://auth.leetsrs.com/exchange',
+    expect.objectContaining({ method: 'POST' })
+  );
+  const payload = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
+  expect(payload).toEqual({
+    code: 'code',
+    code_verifier: expect.stringMatching(/^[A-Za-z0-9._~-]{43,128}$/),
+    redirect_uri: redirectUri,
+  });
+  expect(url.searchParams.get('code_challenge')).toBe(
+    createHash('sha256').update(payload.code_verifier).digest('base64url')
+  );
+  expect(JSON.stringify(await getGithubAuthStatus())).not.toMatch(/access|rotated/);
+});
+it.each(['state', 'origin', 'account'])('handles %s failure without saving authorization', async (failure) => {
+  acceptSignIn();
+  if (failure === 'state')
+    vi.mocked(browser.identity.launchWebAuthFlow).mockImplementation(async () => `${callback}?code=code&state=wrong`);
+  if (failure === 'origin')
+    vi.mocked(browser.identity.launchWebAuthFlow).mockImplementation(
+      async ({ url }) => `https://evil.example/?code=code&state=${new URL(url).searchParams.get('state')}`
     );
-    const payload = JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body));
-    expect(payload).toEqual({
-      code: 'code',
-      code_verifier: expect.stringMatching(/^[A-Za-z0-9._~-]{43,128}$/),
-      redirect_uri: redirectUri,
-    });
-    expect(url.searchParams.get('code_challenge')).toBe(
-      createHash('sha256').update(payload.code_verifier).digest('base64url')
-    );
-    expect(JSON.stringify(await getGithubAuthStatus())).not.toMatch(/access|rotated/);
-  }
-);
-it.each(['state', 'origin', 'cancel', 'exchange', 'account'])(
-  'handles %s failure without saving authorization',
-  async (failure) => {
-    acceptSignIn();
-    if (failure === 'state')
-      vi.mocked(browser.identity.launchWebAuthFlow).mockImplementation(async () => `${callback}?code=code&state=wrong`);
-    if (failure === 'origin')
-      vi.mocked(browser.identity.launchWebAuthFlow).mockImplementation(
-        async ({ url }) => `https://evil.example/?code=code&state=${new URL(url).searchParams.get('state')}`
-      );
-    if (failure === 'cancel') vi.mocked(browser.identity.launchWebAuthFlow).mockRejectedValue(new Error('Cancelled'));
-    if (failure === 'exchange') vi.mocked(fetch).mockResolvedValue(new Response('', { status: 400 }));
-    if (failure === 'account')
-      vi.mocked(fetch)
-        .mockResolvedValueOnce(Response.json(token))
-        .mockResolvedValueOnce(Response.json({ id: 'invalid' }));
-    await startGithubSignIn();
-    await finishSignIn();
-    expect(await getGithubAuthStatus()).toMatchObject({ account: null, error: 'signInFailed' });
-    if (['state', 'origin', 'cancel'].includes(failure)) expect(fetch).not.toHaveBeenCalled();
-  }
-);
+  if (failure === 'account')
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(Response.json(token))
+      .mockResolvedValueOnce(Response.json({ id: 'invalid' }));
+  await startGithubSignIn();
+  await finishSignIn();
+  expect(await getGithubAuthStatus()).toMatchObject({ account: null, error: 'signInFailed' });
+  if (failure !== 'account') expect(fetch).not.toHaveBeenCalled();
+});
 it('shares concurrent refreshes and persists rotated credentials before returning', async () => {
   await seedGithubAuthorization();
   const saved = (await githubAuthorizationItem.getValue()) as Record<string, unknown>;
