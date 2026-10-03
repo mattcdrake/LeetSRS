@@ -196,7 +196,7 @@ describe('whole-document Gist sync', () => {
     }
   );
 
-  it.each([{ schemaVersion: 999 }])(
+  it.each([{ schemaVersion: 999 }, { dataUpdatedAt: 'invalid' }])(
     'rejects an invalid remote document %j before overwriting either side',
     async (invalid) => {
       github.get.mockResolvedValue({
@@ -218,6 +218,7 @@ describe('whole-document Gist sync', () => {
 
   it.each([
     [Object.assign(new Error('Bad credentials'), { status: 401 }), 'authentication'],
+    [Object.assign(new Error('rate limit'), { status: 429 }), 'rateLimit'],
     [new TypeError('Failed to fetch'), 'unavailable'],
   ] as const)('reports sync failures as %s', async (failure, error) => {
     const lastSyncTime = '2026-09-11T12:00:00.000Z';

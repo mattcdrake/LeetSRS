@@ -124,13 +124,17 @@ describe('document learning through background commands', () => {
 
   it.each([
     ['untracked', undefined, Rating.Again],
+    ['Learning', State.Learning, Rating.Good],
     ['Review', State.Review, Rating.Again],
+    ['Relearning', State.Relearning, Rating.Good],
   ] as const)('schedules %s cards in Review state at least one day later', async (_name, state, rating) => {
     const problem = buildProblem();
     const existing = state === undefined ? undefined : createMockCard(state, { ...problem, note: 'Retained' });
     if (existing) {
-      existing.fsrs.last_review = new Date('2024-03-12T12:00:00').getTime();
-      existing.fsrs.learning_steps = 0;
+      existing.fsrs.last_review = new Date(
+        state === State.Review ? '2024-03-12T12:00:00' : '2024-03-15T11:50:00'
+      ).getTime();
+      existing.fsrs.learning_steps = state === State.Review ? 0 : 1;
       const document = await readLearningDocument();
       await replaceLearningDocument({ ...document, cards: { [existing.frontendId]: existing } });
     }
