@@ -15,7 +15,7 @@ export function startBackground() {
   // Commands and alarms wait until learning storage is ready.
   const readyPromise = (async () => {
     await initializeLearningDocument();
-    // ponytail: retired GitHub PAT keys; drop once no installs predate 1.0.0.
+    // ponytail: PAT keys retired by OAuth in 1.0.0 (#564); drop once no installs predate it.
     await storage.removeItems([
       'sync:leetsrs:gistConnection',
       'sync:leetsrs:githubPat',

@@ -163,3 +163,15 @@ it('starts OAuth from a permission-grant event without another popup command', a
   await vi.waitFor(() => expect(oauth).toHaveBeenCalledOnce());
   await service.signOutGithub();
 });
+
+it('clears retired PAT credentials at startup and keeps the OAuth connection', async () => {
+  const connection = { accountId: 1, gistId: 'gist', enabled: true };
+  await browser.storage.sync.set({ 'leetsrs:gistConnection': { pat: 'secret' }, 'leetsrs:githubPat': 'old' });
+  await browser.storage.local.set({ 'leetsrs:gistConnection': connection, 'leetsrs:oauthMigration': { notice: true } });
+  startBackground();
+  await getRegisteredBackground().waitForInitialization();
+  expect(await browser.storage.sync.get()).toEqual({});
+  expect(await browser.storage.local.get(['leetsrs:gistConnection', 'leetsrs:oauthMigration'])).toEqual({
+    'leetsrs:gistConnection': connection,
+  });
+});
