@@ -7,6 +7,7 @@ import {
   githubAuthorizationItem,
   githubSetupPendingItem,
 } from '@/shared/gist-sync';
+import { githubTokenSchema } from '@/shared/github-token';
 
 export class GithubAuthorizationError extends Error {
   readonly code = 'authentication';
@@ -18,14 +19,6 @@ let signInRequests = Promise.resolve();
 
 const AUTH_ORIGIN = 'https://auth.leetsrs.com';
 const accountSchema = z.object({ id: z.number().int().positive(), login: z.string().min(1) });
-const tokenSchema = z.object({
-  access_token: z.string().min(1),
-  refresh_token: z.string().min(1),
-  expires_in: z.number().positive(),
-  refresh_token_expires_in: z.number().positive(),
-  token_type: z.literal('bearer'),
-  scope: z.string().refine((scope) => scope.split(/[ ,]+/).includes('gist')),
-});
 const authorizationSchema = z.object({
   account: accountSchema,
   accessToken: z.string().min(1),
@@ -79,7 +72,7 @@ async function requestTokens(path: 'exchange' | 'refresh', payload: Record<strin
   });
   if (response.status === 400) throw new RejectedAuthorizationError('GitHub rejected the authorization');
   if (!response.ok) throw new GithubAuthorizationError('GitHub authorization failed');
-  return tokenSchema.parse(await response.json());
+  return githubTokenSchema.parse(await response.json());
 }
 
 async function fetchAccount(accessToken: string) {
@@ -93,7 +86,7 @@ async function fetchAccount(accessToken: string) {
   return accountSchema.parse(await response.json());
 }
 
-function toAuthorization(account: z.infer<typeof accountSchema>, token: z.infer<typeof tokenSchema>) {
+function toAuthorization(account: z.infer<typeof accountSchema>, token: z.infer<typeof githubTokenSchema>) {
   return {
     account,
     accessToken: token.access_token,
@@ -215,7 +208,7 @@ export async function getGithubAuthorization() {
   if (saved.refreshExpiresAt <= Date.now()) throw new GithubAuthorizationError('Sign in with GitHub');
   if (refreshing) return refreshing;
   const attempt = (async () => {
-    let token: z.infer<typeof tokenSchema>;
+    let token: z.infer<typeof githubTokenSchema>;
     try {
       token = await requestTokens('refresh', { refresh_token: saved.refreshToken });
     } catch (error) {
