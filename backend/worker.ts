@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { githubTokenSchema } from '../shared/github-token';
 
 export interface Env {
   GITHUB_CLIENT_ID: string;
@@ -20,14 +21,6 @@ const exchangeSchema = z.strictObject({
   redirect_uri: z.string().url(),
 });
 const refreshSchema = z.strictObject({ refresh_token: z.string().min(1).max(512) });
-const tokenResponseSchema = z.object({
-  access_token: z.string().min(1),
-  refresh_token: z.string().min(1),
-  expires_in: z.number().positive(),
-  refresh_token_expires_in: z.number().positive(),
-  token_type: z.literal('bearer'),
-  scope: z.string().refine((scope) => scope.split(/[ ,]+/).includes('gist')),
-});
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -98,7 +91,7 @@ export default {
       if (!githubResponse.ok) {
         return respond(502, { error: 'github_unavailable' });
       }
-      const tokens = tokenResponseSchema.safeParse(await githubResponse.json());
+      const tokens = githubTokenSchema.safeParse(await githubResponse.json());
       if (!tokens.success) {
         return respond(400, { error: 'authorization_failed' });
       }
