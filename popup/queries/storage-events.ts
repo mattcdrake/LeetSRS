@@ -8,7 +8,6 @@ import {
   lastSyncTimeItem,
 } from '@/shared/gist-sync';
 import { learningDocumentItem } from '@/shared/learning-document';
-import { patMigrationItem } from '@/shared/legacy/github-pat';
 import { popupDialogAcknowledgmentsItem } from '@/shared/popup-dialogs';
 import { ratingCtaItem } from '@/shared/rating-cta';
 import { gistSyncQueryKeys } from './gist-sync';
@@ -42,7 +41,6 @@ export function useStorageQueryEvents() {
       watch(popupDialogAcknowledgmentsItem, dialogKeys),
       watch(ratingCtaItem, eligibilityKeys),
       watch(gistConnectionItem, connectionKeys),
-      watch(patMigrationItem, [gistSyncQueryKeys.auth]),
       watch(githubAuthorizationItem, [gistSyncQueryKeys.auth]),
       watch(githubSetupPendingItem, [gistSyncQueryKeys.auth]),
       watch(lastSyncTimeItem, [gistSyncQueryKeys.status]),

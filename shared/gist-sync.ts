@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { storage } from '#imports';
-import { LEGACY_PAT_KEYS } from '@/shared/legacy/github-pat';
 
 export const githubAuthorizationItem = storage.defineItem<unknown>('local:leetsrs:githubAuthorization');
 export const githubSetupPendingItem = storage.defineItem<boolean>('local:leetsrs:githubSetupPending', {
@@ -18,7 +17,6 @@ export interface GithubAuthStatus {
   account: { id: number; login: string } | null;
   signingIn: boolean;
   error: 'signInFailed' | null;
-  migrationNotice: boolean;
   setupPending: boolean;
 }
 
@@ -26,7 +24,6 @@ export interface GistDestination {
   id: string;
   description: string;
   updatedAt: string;
-  suggested: boolean;
 }
 
 export const gistSyncConfigSchema = z.union([
@@ -85,6 +82,5 @@ export function writeGistConnection(config: GistSyncConfig): Promise<void> {
 }
 
 export function removeGistConnection(): Promise<void> {
-  // Retained legacy keys must also be cleared so reset reaches older browsers.
-  return storage.removeItems([gistConnectionItem, ...LEGACY_PAT_KEYS]);
+  return gistConnectionItem.removeValue();
 }

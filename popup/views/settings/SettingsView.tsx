@@ -6,17 +6,11 @@ import { GeneralSettingsSection } from './GeneralSettingsSection';
 import { GistSyncSection } from './GistSyncSection';
 import { ReviewSettingsSection } from './ReviewSettingsSection';
 
-export function SettingsView({
-  highlightGithubSignIn = false,
-  highlightGistSetup = false,
-}: {
-  highlightGithubSignIn?: boolean;
-  highlightGistSetup?: boolean;
-}) {
+export function SettingsView({ highlightGistSetup = false }: { highlightGistSetup?: boolean }) {
   const t = useI18n();
   return (
     <ViewLayout title={t.settings.title}>
-      <GistSyncSection highlightSignIn={highlightGithubSignIn} highlightSetup={highlightGistSetup} />
+      <GistSyncSection highlightSetup={highlightGistSetup} />
       <ReviewSettingsSection />
       <GeneralSettingsSection />
       <DataSection />

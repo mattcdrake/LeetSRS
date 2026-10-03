@@ -172,7 +172,6 @@ body {
   background: var(--ls-fg-3);
 }
 
-.github-sign-in-highlight,
 .github-gist-highlight {
   border-color: var(--ls-brand);
   background-color: color-mix(in srgb, var(--ls-brand) 12%, var(--ls-canvas));

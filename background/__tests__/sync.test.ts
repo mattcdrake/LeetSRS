@@ -72,8 +72,7 @@ describe('whole-document Gist sync', () => {
     expect(uploaded.reviewActivity).toEqual(remote.reviewActivity);
   });
 
-  it('paginates owned backups and only suggests an owned previous destination', async () => {
-    await fakeBrowser.storage.local.set({ 'leetsrs:oauthMigration': { notice: true, previousGist: 'previous' } });
+  it('paginates and lists only owned backups', async () => {
     github.list.mockResolvedValueOnce(
       Array.from({ length: 100 }, (_, index) => ({ id: `other-${index}`, owner: { id: 1 }, files: {} }))
     );
@@ -94,7 +93,7 @@ describe('whole-document Gist sync', () => {
       },
     ]);
     expect(await syncModule.listGistDestinations()).toEqual([
-      { id: 'owned', description: 'My backup', updatedAt: now, suggested: false },
+      { id: 'owned', description: 'My backup', updatedAt: now },
     ]);
     expect(github.list.mock.calls).toEqual([[1], [2]]);
   });

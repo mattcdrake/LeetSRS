@@ -1,7 +1,6 @@
 import { browser } from 'wxt/browser';
 import { z } from 'zod';
 import { storage } from '#imports';
-import { readPatMigration } from '@/background/legacy/github-pat';
 import {
   GITHUB_PERMISSIONS,
   type GithubAuthStatus,
@@ -51,12 +50,10 @@ async function readAuthorization() {
 
 export async function getGithubAuthStatus(): Promise<GithubAuthStatus> {
   const auth = await readAuthorization();
-  const migration = await readPatMigration();
   return {
     account: auth?.account ?? null,
     signingIn: !!signingIn,
     error,
-    migrationNotice: migration.notice,
     setupPending: !!auth && (await githubSetupPendingItem.getValue()),
   };
 }

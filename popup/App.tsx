@@ -3,12 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { PopupDialogHost } from '@/popup/dialogs/PopupDialogHost';
 import './App.css';
 import { useTheme } from '@/popup/hooks/useTheme';
-import { GithubMigrationBanner } from '@/popup/legacy/GithubMigrationBanner';
 import { gistSyncQueryKeys, useGistSyncConfigQuery, useGithubAuthQuery } from '@/popup/queries/gist-sync';
 import { background } from '@/shared/background-service';
 import type { RoadmapId } from '@/shared/roadmap';
 import { BottomNav, type ViewId } from './components/BottomNav';
-import { ViewBannerContext } from './components/ViewLayout';
 import { activeRoadmapQueryOptions } from './queries/roadmaps';
 import { CalendarView } from './views/calendar/CalendarView';
 import { CardsView } from './views/card/CardsView';
@@ -16,7 +14,7 @@ import { HomeView } from './views/home/HomeView';
 import { RoadmapsView } from './views/roadmaps/RoadmapsView';
 import { SettingsView } from './views/settings/SettingsView';
 
-type SettingsHighlight = 'githubSignIn' | 'gistSetup';
+type SettingsHighlight = 'gistSetup';
 
 function App() {
   const [activeView, setActiveView] = useState<ViewId>('home');
@@ -69,22 +67,13 @@ function App() {
     roadmaps: <RoadmapsView selectedRoadmapId={selectedRoadmapId} onSelect={setSelectedRoadmapId} />,
     calendar: <CalendarView />,
     card: <CardsView onBrowseRoadmaps={() => navigate('roadmaps')} />,
-    settings: (
-      <SettingsView
-        highlightGithubSignIn={highlight === 'githubSignIn'}
-        highlightGistSetup={highlight === 'gistSetup'}
-      />
-    ),
+    settings: <SettingsView highlightGistSetup={highlight === 'gistSetup'} />,
   };
 
   return (
     <div className="flex flex-col h-full relative bg-primary text-primary">
       <PopupDialogHost onNavigate={(view) => navigate(view)} />
-      <ViewBannerContext
-        value={<GithubMigrationBanner onOpenSettings={() => navigate('settings', { highlight: 'githubSignIn' })} />}
-      >
-        <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-11">{views[activeView]}</div>
-      </ViewBannerContext>
+      <div className="flex-1 min-h-0 min-w-0 border-0 m-0 p-0 overflow-hidden pb-11">{views[activeView]}</div>
       <BottomNav activeView={activeView} onNavigate={(view) => navigate(view, { roadmapId: activeRoadmapId })} />
     </div>
   );

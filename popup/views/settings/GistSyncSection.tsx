@@ -29,13 +29,7 @@ function useGistSyncMutation<TVariables, TResult>(mutationFn: (variables: TVaria
   });
 }
 
-export function GistSyncSection({
-  highlightSignIn = false,
-  highlightSetup = false,
-}: {
-  highlightSignIn?: boolean;
-  highlightSetup?: boolean;
-}) {
+export function GistSyncSection({ highlightSetup = false }: { highlightSetup?: boolean }) {
   const translations = useI18n();
   const t = translations.settings.gistSync;
   const auth = useGithubAuthQuery();
@@ -158,7 +152,6 @@ export function GistSyncSection({
       ) : (
         <SignedOut
           signingIn={signingIn}
-          highlight={highlightSignIn}
           notices={notices.length > 0 && notices}
           isCancelDisabled={signOut.isPending || permissions.request.isPending}
           isSignInDisabled={signOut.isPending || permissions.request.isPending || auth.isPending}

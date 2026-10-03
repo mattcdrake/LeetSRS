@@ -18,7 +18,6 @@ export const background = {
   signOutGithub: vi.fn<BackgroundService['signOutGithub']>(),
   getGithubAuthStatus: vi.fn<BackgroundService['getGithubAuthStatus']>(),
   listGistDestinations: vi.fn<BackgroundService['listGistDestinations']>(),
-  dismissMigrationNotice: vi.fn<BackgroundService['dismissMigrationNotice']>(),
   waitForInitialization: vi.fn<BackgroundService['waitForInitialization']>(),
   getProblem: vi.fn<BackgroundService['getProblem']>(),
   addCard: vi.fn<BackgroundService['addCard']>(),
