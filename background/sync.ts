@@ -225,8 +225,7 @@ function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'):
 
 // Raw Gist content is fetched only from GitHub's fixed content host, without
 // authorization headers, and validated through the same versioned backup parser.
-async function readBackupFile(file: GistFile | null | undefined): Promise<LearningDocument> {
-  if (!file) throw new Error('Missing backup');
+async function readBackupFile(file: GistFile): Promise<LearningDocument> {
   let content = file.content ?? '';
   if (file.truncated) {
     const url = new URL(file.raw_url ?? '');
