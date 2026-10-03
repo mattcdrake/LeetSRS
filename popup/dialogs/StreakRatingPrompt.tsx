@@ -32,7 +32,7 @@ export function StreakRatingPrompt({ onDismiss }: PopupDialogContentProps) {
 
   const resolve = (outcome: RatingCtaResolution['outcome']) => {
     // Dispatch directly: opening the store tab can close the popup before a mutation settles.
-    void background.resolveRatingCta(outcome, STREAK_RATING_DIALOG_ID).catch((error) => {
+    void background.resolveRatingCta({ outcome, dialogId: STREAK_RATING_DIALOG_ID }).catch((error) => {
       console.warn('Failed to save rating prompt response:', error);
     });
     onDismiss();
