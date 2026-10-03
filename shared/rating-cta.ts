@@ -22,5 +22,5 @@ export async function readRatingCtaResolution(): Promise<RatingCtaResolution | n
 }
 
 export function writeRatingCtaResolution(resolution: RatingCtaResolution): Promise<void> {
-  return ratingCtaItem.setValue(ratingCtaResolutionSchema.parse(resolution));
+  return ratingCtaItem.setValue(resolution);
 }
