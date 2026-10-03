@@ -209,14 +209,13 @@ export async function setGistSyncEnabled(enabled: boolean): Promise<GistConnecti
 function syncErrorCode(error: unknown, fallback: GistSyncErrorCode = 'unknown'): GistSyncErrorCode {
   if (error instanceof GithubAuthorizationError) return error.code;
   const message = error instanceof Error ? error.message : '';
-  let status: unknown;
-  if (error && typeof error === 'object' && 'status' in error) {
-    status = error.status;
-  }
+  // gistsApi errors carry the HTTP status; fetch failures only have a message.
+  const status = error instanceof Error && 'status' in error ? error.status : undefined;
 
+  // GitHub reports primary rate limits as 403 with a "rate limit" message.
   if (/rate limit/i.test(message) || status === 429) return 'rateLimit';
-  if (status === 401 || status === 403 || /401|403|bad credentials/i.test(message)) return 'authentication';
-  if (status === 404 || /404/.test(message)) return 'gistNotFound';
+  if (status === 401 || status === 403) return 'authentication';
+  if (status === 404) return 'gistNotFound';
   if (/fetch|network|offline|timeout/i.test(message) || (typeof status === 'number' && status >= 500)) {
     return 'unavailable';
   }
