@@ -11,6 +11,20 @@
 | Releases                      | [.github/workflows/release-please.yml](.github/workflows/release-please.yml)   |
 | Privacy policy                | [PRIVACY.md](PRIVACY.md)                                                       |
 
+## Layout
+
+| Path                     | Contents                                                                 |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `entrypoints/`           | Thin WXT entrypoints that load the code below                            |
+| `background/`            | Service worker: reviews, sync, GitHub sign-in, badge                     |
+| `content/`, `content/ui` | LeetCode.com integration and its panel                                   |
+| `popup/`                 | Popup `views/`, `components/`, `queries/`, `dialogs/`                    |
+| `shared/`                | Domain logic, `i18n/` (`en.ts`, `zh-CN.ts`), `ui/` tokens and components |
+| `backend/`               | Cloudflare worker for GitHub OAuth                                       |
+| `test/`                  | Test setup, `utils/` fixtures and mocks                                  |
+
+Tests live in `__tests__/` beside the code and are grouped by workflow, not by component; for example, `content/ui/__tests__/LeetSrsControl.test.tsx` covers the rating menu.
+
 ## Commands
 
 | Task               | Command                            |
@@ -22,7 +36,7 @@
 | Full checks        | `npm run check`                    |
 
 - Run full checks before submitting code or configuration changes.
-- For documentation-only changes, format Markdown and verify the diff and affected links; skip the full check and tests.
+- For Markdown-only changes, format Markdown and verify the diff and affected links; skip the full check and tests.
 - In Codex, run tests and full checks with `sandbox_permissions: "require_escalated"` from the first attempt; WXT's test setup needs a localhost port.
 
 ## UI and styling
@@ -56,6 +70,5 @@
 - Keep PR titles and descriptions concise.
 - Do not sign commits or pull requests: omit agent attribution such as `Co-Authored-By` trailers and "Generated with" lines.
 - Perform implementation work in a separate Git worktree.
-- Regenerate a missing `.wxt/tsconfig.json` with `npx wxt prepare`; `tsconfig.json` extends it.
 - Do not commit generated `.wxt/` or `.output/` files.
 - Use GitHub's native issue relationships when marking issues as blocked or blocking.
