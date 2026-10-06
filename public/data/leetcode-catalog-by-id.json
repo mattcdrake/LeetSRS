@@ -58005,8 +58005,10 @@
       "binary-indexed-tree",
       "bit-manipulation",
       "hash-function",
+      "hash-table",
       "prefix-sum",
-      "segment-tree"
+      "segment-tree",
+      "sliding-window"
     ],
     "sources": [
       "leetcode.cn",
@@ -58179,8 +58181,10 @@
       "binary-indexed-tree",
       "bit-manipulation",
       "hash-function",
+      "hash-table",
       "prefix-sum",
-      "segment-tree"
+      "segment-tree",
+      "sliding-window"
     ],
     "sources": [
       "leetcode.cn",
@@ -58438,7 +58442,12 @@
     "slug": "number-of-intersecting-interval-pairs-i",
     "difficulty": "easy",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "binary-search",
+      "enumeration",
+      "sorting"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58451,7 +58460,11 @@
     "slug": "number-of-intersecting-interval-pairs-ii",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "binary-search",
+      "sorting"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58464,7 +58477,11 @@
     "slug": "maximum-pulse-value-after-one-subarray-rotation",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "dynamic-programming",
+      "prefix-sum"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58477,7 +58494,11 @@
     "slug": "lexicographically-largest-power-array",
     "difficulty": "hard",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "bit-manipulation",
+      "greedy"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58504,11 +58525,14 @@
   "4060": {
     "frontendId": "4060",
     "title": "Count Evenly Good Integers",
-    "translatedTitle": "计算偶好数",
+    "translatedTitle": "统计偶好数",
     "slug": "count-evenly-good-integers",
     "difficulty": "hard",
     "isPaidOnly": true,
-    "topics": [],
+    "topics": [
+      "dynamic-programming",
+      "math"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58521,7 +58545,10 @@
     "slug": "minimum-queen-moves-to-reach-target",
     "difficulty": "easy",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "math"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58534,7 +58561,10 @@
     "slug": "transform-array-using-pair-operations",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "brainteaser"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58547,7 +58577,11 @@
     "slug": "longest-subarray-divisible-by-k-with-at-most-one-negation-i",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "hash-table",
+      "prefix-sum"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58560,7 +58594,12 @@
     "slug": "longest-subarray-divisible-by-k-with-at-most-one-negation-ii",
     "difficulty": "hard",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "binary-search",
+      "hash-table",
+      "prefix-sum"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58573,7 +58612,15 @@
     "slug": "rearrange-array-by-removing-distinct-values",
     "difficulty": "easy",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "counting",
+      "hash-table",
+      "heap-priority-queue",
+      "ordered-set",
+      "simulation",
+      "sorting"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58586,7 +58633,11 @@
     "slug": "maximum-equal-adjacent-pairs-after-at-most-one-replacement",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "counting",
+      "hash-table"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58599,7 +58650,11 @@
     "slug": "longest-subarray-with-restricted-pair-sums",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "hash-table",
+      "sliding-window"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58612,7 +58667,28 @@
     "slug": "maximize-meeting-earnings-with-idle-gaps",
     "difficulty": "hard",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "binary-search",
+      "dynamic-programming",
+      "sorting"
+    ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4069": {
+    "frontendId": "4069",
+    "title": "Best Time to Buy and Sell Stock with Cooldown II",
+    "translatedTitle": "买卖股票的最佳时机含冷冻期 II",
+    "slug": "best-time-to-buy-and-sell-stock-with-cooldown-ii",
+    "difficulty": "medium",
+    "isPaidOnly": true,
+    "topics": [
+      "array",
+      "dynamic-programming"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -58631,6 +58707,58 @@
       "heap-priority-queue",
       "matrix"
     ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4070": {
+    "frontendId": "4070",
+    "title": "Minimum Rotations to Dial a Number I",
+    "translatedTitle": "拨号的最少旋转次数 I",
+    "slug": "minimum-rotations-to-dial-a-number-i",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4071": {
+    "frontendId": "4071",
+    "title": "Minimum Rotations to Dial a Number II",
+    "translatedTitle": "拨号的最少旋转次数 II",
+    "slug": "minimum-rotations-to-dial-a-number-ii",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4072": {
+    "frontendId": "4072",
+    "title": "Maximum Alternating Subarray Sum With One Deletion",
+    "translatedTitle": "一次删除后的最大交替子数组和",
+    "slug": "maximum-alternating-subarray-sum-with-one-deletion",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4073": {
+    "frontendId": "4073",
+    "title": "Count Good Strings",
+    "translatedTitle": "统计好字符串数目",
+    "slug": "count-good-strings",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
