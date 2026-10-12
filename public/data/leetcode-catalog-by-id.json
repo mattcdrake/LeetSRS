@@ -58764,6 +58764,84 @@
       "leetcode.com"
     ]
   },
+  "4074": {
+    "frontendId": "4074",
+    "title": "Maximum Product Pair With Target Sum",
+    "translatedTitle": "和为目标值的最大乘积对",
+    "slug": "maximum-product-pair-with-target-sum",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4075": {
+    "frontendId": "4075",
+    "title": "Longest Resilient Subarray I",
+    "translatedTitle": "最长有韧性的子数组 I",
+    "slug": "longest-resilient-subarray-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4076": {
+    "frontendId": "4076",
+    "title": "Longest Resilient Subarray II",
+    "translatedTitle": "最长有韧性的子数组 II",
+    "slug": "longest-resilient-subarray-ii",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4077": {
+    "frontendId": "4077",
+    "title": "Minimize Inversions in a Prefix Tree",
+    "translatedTitle": "前缀树中的最小逆序对数目",
+    "slug": "minimize-inversions-in-a-prefix-tree",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4078": {
+    "frontendId": "4078",
+    "title": "Three Fibonacci Sum",
+    "translatedTitle": "连续三项斐波那契数之和",
+    "slug": "three-fibonacci-sum",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4079": {
+    "frontendId": "4079",
+    "title": "Prime Subset Selection I",
+    "translatedTitle": "选择质数子集 I",
+    "slug": "prime-subset-selection-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "408": {
     "frontendId": "408",
     "title": "Valid Word Abbreviation",
@@ -58775,6 +58853,32 @@
       "string",
       "two-pointers"
     ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4080": {
+    "frontendId": "4080",
+    "title": "Design Bus Seat Booking System",
+    "translatedTitle": "设计公交车座位预订系统",
+    "slug": "design-bus-seat-booking-system",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4081": {
+    "frontendId": "4081",
+    "title": "Prime Subset Selection II",
+    "translatedTitle": "选择质数子集 II",
+    "slug": "prime-subset-selection-ii",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
