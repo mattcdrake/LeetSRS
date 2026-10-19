@@ -58884,6 +58884,71 @@
       "leetcode.com"
     ]
   },
+  "4082": {
+    "frontendId": "4082",
+    "title": "Minimum Operations to Stabilize a Binary Tree",
+    "translatedTitle": null,
+    "slug": "minimum-operations-to-stabilize-a-binary-tree",
+    "difficulty": "hard",
+    "isPaidOnly": true,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4083": {
+    "frontendId": "4083",
+    "title": "Minimum Deletions to Make Array Sharp",
+    "translatedTitle": "使相邻元素按位异或非零的最少删除次数",
+    "slug": "minimum-deletions-to-make-array-sharp",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4084": {
+    "frontendId": "4084",
+    "title": "Last Visited Cell in a Directional Grid",
+    "translatedTitle": "有向网格中的最后访问单元格",
+    "slug": "last-visited-cell-in-a-directional-grid",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4085": {
+    "frontendId": "4085",
+    "title": "Find Root of a Colored Tree",
+    "translatedTitle": "找到颜色树的根",
+    "slug": "find-root-of-a-colored-tree",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4086": {
+    "frontendId": "4086",
+    "title": "Minimum Interval Selection to Cover Target Intervals",
+    "translatedTitle": "覆盖目标区间的最少区间",
+    "slug": "minimum-interval-selection-to-cover-target-intervals",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "409": {
     "frontendId": "409",
     "title": "Longest Palindrome",
