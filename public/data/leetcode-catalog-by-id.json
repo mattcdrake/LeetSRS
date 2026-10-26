@@ -10921,7 +10921,7 @@
   "1569": {
     "frontendId": "1569",
     "title": "Number of Ways to Reorder Array to Get Same BST",
-    "translatedTitle": "将子数组重新排序得到同一个二叉搜索树的方案数",
+    "translatedTitle": "将子数组重新排列得到同一个二叉搜索树的方案数",
     "slug": "number-of-ways-to-reorder-array-to-get-same-bst",
     "difficulty": "hard",
     "isPaidOnly": false,
@@ -58887,7 +58887,7 @@
   "4082": {
     "frontendId": "4082",
     "title": "Minimum Operations to Stabilize a Binary Tree",
-    "translatedTitle": null,
+    "translatedTitle": "稳定二叉树的最小操作次数",
     "slug": "minimum-operations-to-stabilize-a-binary-tree",
     "difficulty": "hard",
     "isPaidOnly": true,
@@ -58949,6 +58949,45 @@
       "leetcode.com"
     ]
   },
+  "4087": {
+    "frontendId": "4087",
+    "title": "Maximum Subarray Sum of Fixed Length After at Most K Swaps",
+    "translatedTitle": "最多交换 K 次的最大固定长度子数组的最大和",
+    "slug": "maximum-subarray-sum-of-fixed-length-after-at-most-k-swaps",
+    "difficulty": "medium",
+    "isPaidOnly": true,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4088": {
+    "frontendId": "4088",
+    "title": "Difference Between Peaks and Valleys",
+    "translatedTitle": "峰值与谷值的差",
+    "slug": "difference-between-peaks-and-valleys",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4089": {
+    "frontendId": "4089",
+    "title": "Count Subarrays With Loose Bounds",
+    "translatedTitle": "统计宽界子数组的数目",
+    "slug": "count-subarrays-with-loose-bounds",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "409": {
     "frontendId": "409",
     "title": "Longest Palindrome",
@@ -58961,6 +59000,84 @@
       "hash-table",
       "string"
     ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4090": {
+    "frontendId": "4090",
+    "title": "Count Magical Substring Pairs I",
+    "translatedTitle": "统计神奇子字符串对 I",
+    "slug": "count-magical-substring-pairs-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4091": {
+    "frontendId": "4091",
+    "title": "Count Magical Substring Pairs II",
+    "translatedTitle": "统计神奇子字符串对 II",
+    "slug": "count-magical-substring-pairs-ii",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4092": {
+    "frontendId": "4092",
+    "title": "Binary Digit Score",
+    "translatedTitle": "二进制位得分",
+    "slug": "binary-digit-score",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4093": {
+    "frontendId": "4093",
+    "title": "Maximize Sum After At Most K Digit Rearrangements",
+    "translatedTitle": "至多 K 次数字重排后的最大和",
+    "slug": "maximize-sum-after-at-most-k-digit-rearrangements",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4094": {
+    "frontendId": "4094",
+    "title": "Count Frequency Staircase Subarrays I",
+    "translatedTitle": "统计频次阶梯子数组的数目 I",
+    "slug": "count-frequency-staircase-subarrays-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4095": {
+    "frontendId": "4095",
+    "title": "Count Frequency Staircase Subarrays II",
+    "translatedTitle": "统计频次阶梯子数组的数目 II",
+    "slug": "count-frequency-staircase-subarrays-ii",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
