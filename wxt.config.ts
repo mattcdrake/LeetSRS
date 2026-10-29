@@ -7,6 +7,11 @@ import pkg from './package.json';
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifestVersion: 3,
+  hooks: {
+    'zip:start': () => {
+      if (!process.env.WXT_GITHUB_CLIENT_ID) throw new Error('Set WXT_GITHUB_CLIENT_ID in .env before zipping');
+    },
+  },
   webExt: {
     chromiumArgs:
       process.env.npm_lifecycle_event === 'dev:persistent' ? [`--user-data-dir=${resolve('.wxt/chrome-data')}`] : [],
