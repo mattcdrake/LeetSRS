@@ -8,7 +8,6 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifestVersion: 3,
   hooks: {
-    // Without the client ID, GitHub sign-in fails, so never produce a ZIP for the stores without it.
     'zip:start': () => {
       if (!process.env.WXT_GITHUB_CLIENT_ID) throw new Error('Set WXT_GITHUB_CLIENT_ID in .env before zipping');
     },
