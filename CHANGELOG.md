@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.5](https://github.com/mattcdrake/LeetSRS/compare/v1.6.4...v1.6.5) (2026-10-29)
+
+
+### Bug Fixes
+
+* require GitHub client ID for release ZIPs ([#779](https://github.com/mattcdrake/LeetSRS/issues/779)) ([d0714d0](https://github.com/mattcdrake/LeetSRS/commit/d0714d0e6708cc64c65f48294bbec3648080353a))
+
 ## [1.6.4](https://github.com/mattcdrake/LeetSRS/compare/v1.6.3...v1.6.4) (2026-10-26)
 
 
