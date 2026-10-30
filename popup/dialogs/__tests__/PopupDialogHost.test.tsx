@@ -24,6 +24,7 @@ function dialog(id: string, loadEligibility: () => Promise<boolean>): PopupDialo
   return {
     id,
     loadEligibility,
+    // biome-ignore lint/correctness/noComponentHookFactories: test entries are built once per test, not during render.
     Content: ({ onDismiss }) => (
       <>
         <Heading slot="title">{id}</Heading>

@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24.x
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install dependencies
         if: ${{ steps.release.outputs.release_created }}

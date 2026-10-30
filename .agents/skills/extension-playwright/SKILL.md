@@ -8,12 +8,12 @@ description: Drive the built extension's popup in headless Chromium with Playwri
 `launch.mjs` builds the extension, loads it into a throwaway Chromium profile, opens the popup at its real size (370×550), and dismisses the release announcement. Write a short script for the task that imports it, and keep that script outside the repository:
 
 ```js
-import { launchExtension } from "<repo>/.agents/skills/extension-playwright/launch.mjs";
+import { launchExtension } from '<repo>/.agents/skills/extension-playwright/launch.mjs';
 
 const { page, popupUrl, close } = await launchExtension();
 try {
-  await page.getByRole("radio", { name: "Roadmaps" }).click();
-  await page.screenshot({ path: "roadmaps.png" });
+  await page.getByRole('radio', { name: 'Roadmaps' }).click();
+  await page.screenshot({ path: 'roadmaps.png' });
 } finally {
   await close();
 }

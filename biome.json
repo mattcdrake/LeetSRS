@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.3/schema.json",
   "files": {
     "includes": [
       "**",
@@ -13,6 +13,7 @@
       "!experiments",
       "!automation",
       "!public",
+      "!CHANGELOG.md",
       "!stats.html",
       "!stats-*.json",
       "!package-lock.json",
@@ -42,6 +43,12 @@
       "trailingCommas": "es5"
     }
   },
+  "overrides": [
+    {
+      "includes": [".agents/skills/**/SKILL.md"],
+      "formatter": { "enabled": false }
+    }
+  ],
   "linter": {
     "enabled": true,
     "rules": {
