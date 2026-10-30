@@ -32,11 +32,10 @@ Tests live in `__tests__/` beside the code and are grouped by workflow, not by c
 | Test one file      | `npm test -- path/to/file.test.ts` |
 | Check changed code | `npx biome check path/to/file.ts`  |
 | Check types        | `npm run compile`                  |
-| Format Markdown    | `npm run format:markdown`          |
+| Format files       | `npm run format`                   |
 | Full checks        | `npm run check`                    |
-
 - Run full checks before submitting code or configuration changes.
-- For Markdown-only changes, format Markdown and verify the diff and affected links; skip the full check and tests.
+- For Markdown-only changes, run `npm run format` and verify the diff and affected links; skip the full check and tests.
 - In Codex, run tests and full checks with `sandbox_permissions: "require_escalated"` from the first attempt; WXT's test setup needs a localhost port.
 
 ## UI and styling
