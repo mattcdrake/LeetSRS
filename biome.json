@@ -43,12 +43,11 @@
       "trailingCommas": "es5"
     }
   },
-  "overrides": [
-    {
-      "includes": [".agents/skills/**/SKILL.md"],
-      "formatter": { "enabled": false }
+  "markdown": {
+    "parser": {
+      "frontmatter": true
     }
-  ],
+  },
   "linter": {
     "enabled": true,
     "rules": {
