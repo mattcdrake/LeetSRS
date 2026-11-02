@@ -59083,6 +59083,58 @@
       "leetcode.com"
     ]
   },
+  "4096": {
+    "frontendId": "4096",
+    "title": "Simulate Bomb Explosions and Falling Boxes",
+    "translatedTitle": null,
+    "slug": "simulate-bomb-explosions-and-falling-boxes",
+    "difficulty": "medium",
+    "isPaidOnly": true,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4097": {
+    "frontendId": "4097",
+    "title": "Minimum Value of Merged Integers",
+    "translatedTitle": "合并整数后的最小值",
+    "slug": "minimum-value-of-merged-integers",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4098": {
+    "frontendId": "4098",
+    "title": "Minimize the Maximum Value of GCD-Connected Array",
+    "translatedTitle": "最小化 GCD 连通数组的最大值",
+    "slug": "minimize-the-maximum-value-of-gcd-connected-array",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4099": {
+    "frontendId": "4099",
+    "title": "Minimum Operations to Sort With Locked Indices",
+    "translatedTitle": "将锁定数组排序的最少操作次数",
+    "slug": "minimum-operations-to-sort-with-locked-indices",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "41": {
     "frontendId": "41",
     "title": "First Missing Positive",
@@ -59119,6 +59171,19 @@
       "leetcode.com"
     ],
     "youtubeUrl": "https://www.youtube.com/watch?v=YUF3_eBdzsk"
+  },
+  "4100": {
+    "frontendId": "4100",
+    "title": "Minimum Cost Path With Even XOR Parity",
+    "translatedTitle": "平衡异或路径的最小开销",
+    "slug": "minimum-cost-path-with-even-xor-parity",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
   },
   "411": {
     "frontendId": "411",
