@@ -26,28 +26,79 @@ const authorizationSchema = z.object({
   expiresAt: z.number(),
   refreshExpiresAt: z.number(),
 });
-let authorizationAbort = new AbortController();
-let signingIn: Promise<void> | undefined;
-let refreshing: Promise<z.infer<typeof authorizationSchema>> | undefined;
-let error: GithubAuthStatus['error'] = null;
+type Authorization = z.infer<typeof authorizationSchema>;
 
-// Aborted when the authorization is cleared, so work started under it stops before writing results.
+// GitHub sign-in moves through these phases:
+//
+//   signedOut ──start──▶ awaitingGrant ──grant──▶ signingIn ──success──▶ signedIn ◀──▶ refreshing
+//      ▲  ▲                    │                      │                                   │
+//      │  └── cancel/expire ───┘                      │                                   │
+//      ├───────────── failure (signInFailed) ─────────┘                                   │
+//      └──────────────────── clear: sign-out, rejected refresh, account change ───────────┘
+//
+// awaitingGrant and signedIn are stored, so they survive service worker restarts.
+// signingIn and refreshing are attempts running in this worker.
+type GithubAuthState =
+  | { phase: 'signedOut'; error: GithubAuthStatus['error'] }
+  | { phase: 'awaitingGrant' }
+  | { phase: 'signingIn' }
+  | { phase: 'signedIn'; authorization: Authorization }
+  | { phase: 'refreshing'; authorization: Authorization };
+
+// The part of the state only this worker holds. Transitions on it are synchronous,
+// so callers check it again after every await rather than trusting an earlier read.
+type Attempt =
+  | { phase: 'idle'; error: GithubAuthStatus['error'] }
+  | { phase: 'signingIn'; done: Promise<void> }
+  | { phase: 'refreshing'; done: Promise<Authorization> };
+
+const IDLE: Attempt = { phase: 'idle', error: null };
+let attempt: Attempt = IDLE;
+
+// Aborted on every clear, so work started under the old authorization stops before writing results.
+let authorizationAbort = new AbortController();
+
 export function authorizationSignal(): AbortSignal {
   return authorizationAbort.signal;
 }
 
-async function readAuthorization() {
+// Ends an attempt unless a clear or a newer attempt has already replaced it.
+function settle(done: Promise<unknown>, next: Attempt): void {
+  if (attempt.phase !== 'idle' && attempt.done === done) attempt = next;
+}
+
+async function readAuthorization(): Promise<Authorization | null> {
   const value = await githubAuthorizationItem.getValue();
   return value == null ? null : authorizationSchema.parse(value);
 }
 
+async function readSignInRequest(): Promise<number | null> {
+  return z
+    .number()
+    .finite()
+    .nullable()
+    .parse(await signInRequestItem.getValue());
+}
+
+async function readState(): Promise<GithubAuthState> {
+  const authorization = await readAuthorization();
+  if (authorization) {
+    return { phase: attempt.phase === 'refreshing' ? 'refreshing' : 'signedIn', authorization };
+  }
+  if (attempt.phase === 'signingIn') return { phase: 'signingIn' };
+  const expiresAt = await readSignInRequest();
+  if (expiresAt !== null && expiresAt > Date.now()) return { phase: 'awaitingGrant' };
+  return { phase: 'signedOut', error: attempt.phase === 'idle' ? attempt.error : null };
+}
+
 export async function getGithubAuthStatus(): Promise<GithubAuthStatus> {
-  const auth = await readAuthorization();
+  const state = await readState();
+  const account = state.phase === 'signedIn' || state.phase === 'refreshing' ? state.authorization.account : null;
   return {
-    account: auth?.account ?? null,
-    signingIn: !!signingIn,
-    error,
-    setupPending: !!auth && (await githubSetupPendingItem.getValue()),
+    account,
+    signingIn: state.phase === 'signingIn',
+    error: state.phase === 'signedOut' ? state.error : null,
+    setupPending: account !== null && (await githubSetupPendingItem.getValue()),
   };
 }
 
@@ -106,14 +157,10 @@ function updateSignInRequest(run: (signal: AbortSignal) => Promise<void>): Promi
   return result;
 }
 
+// awaitingGrant → signingIn once the permission is granted; an expired request returns to signedOut.
 async function resumeSignInRequest(signal: AbortSignal) {
-  const expiresAt = z
-    .number()
-    .finite()
-    .nullable()
-    .parse(await signInRequestItem.getValue());
-  if (expiresAt === null) return;
-  if (expiresAt <= Date.now()) {
+  const state = await readState();
+  if (state.phase !== 'awaitingGrant') {
     await signInRequestItem.removeValue();
     return;
   }
@@ -122,12 +169,13 @@ async function resumeSignInRequest(signal: AbortSignal) {
   if (!signal.aborted) launchGithubSignIn();
 }
 
+// signedOut → awaitingGrant. Also covers grants that arrive before the request has finished arming.
 export function startGithubSignIn(): Promise<void> {
   return updateSignInRequest(async (signal) => {
-    if (signingIn || (await readAuthorization())) return;
-    error = null;
+    const { phase } = await readState();
+    if (phase !== 'signedOut' && phase !== 'awaitingGrant') return;
+    attempt = IDLE;
     await signInRequestItem.setValue(Date.now() + SIGN_IN_REQUEST_TTL);
-    // Also covers grants that arrive before the command has finished arming.
     await resumeSignInRequest(signal);
   });
 }
@@ -136,17 +184,18 @@ export function resumeGithubSignIn(): Promise<void> {
   return updateSignInRequest(resumeSignInRequest);
 }
 
+// awaitingGrant → signedOut when the permission prompt is denied.
 export function cancelGithubSignInRequest(): Promise<void> {
   return updateSignInRequest(async () => {
     await signInRequestItem.removeValue();
   });
 }
 
+// → signingIn → signedIn, or back to signedOut with signInFailed.
 function launchGithubSignIn(): void {
-  if (signingIn) return;
+  if (attempt.phase !== 'idle') return;
   const signal = authorizationAbort.signal;
-  error = null;
-  const attempt = (async () => {
+  const done = (async () => {
     if (!(await browser.permissions.contains(GITHUB_PERMISSIONS))) throw new Error('GitHub access required');
     // Changing accounts requires signing out first.
     if (await readAuthorization()) return;
@@ -188,17 +237,16 @@ function launchGithubSignIn(): void {
       { item: githubAuthorizationItem, value: auth },
       { item: githubSetupPendingItem, value: true },
     ]);
-  })()
-    .catch(() => {
-      if (!signal.aborted) error = 'signInFailed';
-    })
-    .finally(() => {
-      if (signingIn === attempt) signingIn = undefined;
-    });
-  signingIn = attempt;
+  })();
+  attempt = { phase: 'signingIn', done };
+  void done.then(
+    () => settle(done, IDLE),
+    () => settle(done, signal.aborted ? IDLE : { phase: 'idle', error: 'signInFailed' })
+  );
 }
 
-export async function getGithubAuthorization() {
+// signedIn → refreshing → signedIn once the access token is close to expiry.
+export async function getGithubAuthorization(): Promise<Authorization> {
   const signal = authorizationAbort.signal;
   if (!(await browser.permissions.contains(GITHUB_PERMISSIONS)))
     throw new GithubAuthorizationError('Enable GitHub access in Settings');
@@ -206,52 +254,53 @@ export async function getGithubAuthorization() {
   if (!saved || signal.aborted) throw new GithubAuthorizationError('Sign in with GitHub');
   if (saved.expiresAt > Date.now() + 60000) return saved;
   if (saved.refreshExpiresAt <= Date.now()) throw new GithubAuthorizationError('Sign in with GitHub');
-  if (refreshing) return refreshing;
-  const attempt = (async () => {
-    let token: z.infer<typeof githubTokenSchema>;
-    try {
-      token = await requestTokens('refresh', { refresh_token: saved.refreshToken });
-    } catch (error) {
-      // Sign out rather than retry a revoked or already-rotated refresh token on every sync.
-      if (error instanceof RejectedAuthorizationError && !signal.aborted) await clearGithubAuthorization();
-      throw error;
-    }
-    signal.throwIfAborted();
-    // GitHub rotates the refresh token, so save it before the account check can fail.
-    const auth = toAuthorization(saved.account, token);
-    await githubAuthorizationItem.setValue(auth);
-    signal.throwIfAborted();
-    const account = await fetchAccount(auth.accessToken);
-    if (account.id !== saved.account.id) {
-      if (!signal.aborted) await clearGithubAuthorization();
-      throw new GithubAuthorizationError('GitHub account changed');
-    }
-    signal.throwIfAborted();
-    if (account.login === auth.account.login) return auth;
-    // Keep a renamed login current in Settings.
-    const renamed = { ...auth, account };
-    await githubAuthorizationItem.setValue(renamed);
-    signal.throwIfAborted();
-    return renamed;
-  })();
-  refreshing = attempt;
+  if (attempt.phase === 'refreshing') return attempt.done;
+  const done = refreshAuthorization(saved, signal);
+  attempt = { phase: 'refreshing', done };
   try {
-    return await attempt;
+    return await done;
   } finally {
-    if (refreshing === attempt) refreshing = undefined;
+    settle(done, IDLE);
   }
+}
+
+async function refreshAuthorization(saved: Authorization, signal: AbortSignal): Promise<Authorization> {
+  let token: z.infer<typeof githubTokenSchema>;
+  try {
+    token = await requestTokens('refresh', { refresh_token: saved.refreshToken });
+  } catch (error) {
+    // Sign out rather than retry a revoked or already-rotated refresh token on every sync.
+    if (error instanceof RejectedAuthorizationError && !signal.aborted) await clearGithubAuthorization();
+    throw error;
+  }
+  signal.throwIfAborted();
+  // GitHub rotates the refresh token, so save it before the account check can fail.
+  const auth = toAuthorization(saved.account, token);
+  await githubAuthorizationItem.setValue(auth);
+  signal.throwIfAborted();
+  const account = await fetchAccount(auth.accessToken);
+  if (account.id !== saved.account.id) {
+    if (!signal.aborted) await clearGithubAuthorization();
+    throw new GithubAuthorizationError('GitHub account changed');
+  }
+  signal.throwIfAborted();
+  if (account.login === auth.account.login) return auth;
+  // Keep a renamed login current in Settings.
+  const renamed = { ...auth, account };
+  await githubAuthorizationItem.setValue(renamed);
+  signal.throwIfAborted();
+  return renamed;
 }
 
 export async function dismissGithubSetupPrompt(): Promise<void> {
   await githubSetupPendingItem.removeValue();
 }
 
+// Any phase → signedOut.
 export async function clearGithubAuthorization(): Promise<void> {
   authorizationAbort.abort(new GithubAuthorizationError('authorization changed'));
   authorizationAbort = new AbortController();
-  signingIn = undefined;
-  refreshing = undefined;
-  error = null;
+  attempt = IDLE;
   await signInRequests;
   await signInRequestItem.removeValue();
   await storage.removeItems([githubAuthorizationItem, githubSetupPendingItem]);
