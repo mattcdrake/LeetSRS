@@ -31,7 +31,6 @@ const fsrsCardSchema = z.object({
   state: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
   stability: z.number().nonnegative(),
   difficulty: z.number().nonnegative(),
-  elapsed_days: z.number().nonnegative(),
   scheduled_days: z.number().nonnegative(),
   reps: count,
   lapses: count,

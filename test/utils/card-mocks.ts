@@ -33,7 +33,6 @@ export const createMockCard = (state: State, overrides: Partial<Card> = {}): Car
       due: MOCK_TIMESTAMP,
       stability: 1,
       difficulty: 1,
-      elapsed_days: 0,
       scheduled_days: 0,
       reps: 1,
       lapses: 0,
