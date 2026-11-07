@@ -5,7 +5,7 @@ import { buildReviewCalendar, buildReviewQueue } from '@/shared/review';
 import { createMockCard } from '@/test/utils/card-mocks';
 import { buildLearningDocument } from '@/test/utils/learning-document-mocks';
 
-function dueCard(frontendId: string, due: string, state = State.New) {
+function dueCard(frontendId: string, due: string, state: State = State.New) {
   const card = createMockCard(state, { frontendId });
   card.fsrs.due = new Date(due).getTime();
   return card;
