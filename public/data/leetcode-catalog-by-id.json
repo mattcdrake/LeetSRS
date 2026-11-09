@@ -59086,7 +59086,7 @@
   "4096": {
     "frontendId": "4096",
     "title": "Simulate Bomb Explosions and Falling Boxes",
-    "translatedTitle": null,
+    "translatedTitle": "模拟炸弹爆炸和掉落箱子",
     "slug": "simulate-bomb-explosions-and-falling-boxes",
     "difficulty": "medium",
     "isPaidOnly": true,
@@ -59177,6 +59177,123 @@
     "title": "Minimum Cost Path With Even XOR Parity",
     "translatedTitle": "平衡异或路径的最小开销",
     "slug": "minimum-cost-path-with-even-xor-parity",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4101": {
+    "frontendId": "4101",
+    "title": "Find All Numbers Disappeared in an Array III",
+    "translatedTitle": "找到所有数组中消失的数字 III",
+    "slug": "find-all-numbers-disappeared-in-an-array-iii",
+    "difficulty": "medium",
+    "isPaidOnly": true,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4102": {
+    "frontendId": "4102",
+    "title": "Count Valid Substrings I",
+    "translatedTitle": "统计有效子字符串 I",
+    "slug": "count-valid-substrings-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4103": {
+    "frontendId": "4103",
+    "title": "Remove Elements by Type and Color",
+    "translatedTitle": "按类型和颜色删除元素",
+    "slug": "remove-elements-by-type-and-color",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4104": {
+    "frontendId": "4104",
+    "title": "Count Valid Substrings II",
+    "translatedTitle": "统计有效子字符串 II",
+    "slug": "count-valid-substrings-ii",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4105": {
+    "frontendId": "4105",
+    "title": "Repeated String Match II",
+    "translatedTitle": "重复字符串匹配 II",
+    "slug": "repeated-string-match-ii",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4106": {
+    "frontendId": "4106",
+    "title": "Find Mismatched Segments Between Two Strings",
+    "translatedTitle": "找出两个字符串的不匹配片段",
+    "slug": "find-mismatched-segments-between-two-strings",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4107": {
+    "frontendId": "4107",
+    "title": "Count Valid Suffix Sorts I",
+    "translatedTitle": "统计有效后缀排序的数量 I",
+    "slug": "count-valid-suffix-sorts-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4108": {
+    "frontendId": "4108",
+    "title": "Minimum Cost to Make Red Nodes Connected",
+    "translatedTitle": "使红色节点连通的最小代价",
+    "slug": "minimum-cost-to-make-red-nodes-connected",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4109": {
+    "frontendId": "4109",
+    "title": "Count Valid Suffix Sorts II",
+    "translatedTitle": "统计有效后缀排序的数量 II",
+    "slug": "count-valid-suffix-sorts-ii",
     "difficulty": "hard",
     "isPaidOnly": false,
     "topics": [],
