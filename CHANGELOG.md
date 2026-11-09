@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.7](https://github.com/mattcdrake/LeetSRS/compare/v1.6.6...v1.6.7) (2026-11-09)
+
+
+### Bug Fixes
+
+* refresh LeetCode catalog ([#794](https://github.com/mattcdrake/LeetSRS/issues/794)) ([f509781](https://github.com/mattcdrake/LeetSRS/commit/f5097817fd3a03842a78dfb24631b55e9d212052))
+
 ## [1.6.6](https://github.com/mattcdrake/LeetSRS/compare/v1.6.5...v1.6.6) (2026-11-02)
 
 
