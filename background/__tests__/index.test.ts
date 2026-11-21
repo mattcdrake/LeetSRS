@@ -175,3 +175,16 @@ it('clears retired PAT credentials at startup and keeps the OAuth connection', a
     'leetsrs:gistConnection': connection,
   });
 });
+
+it('schedules a daily catalog check and runs it when the alarm fires', async () => {
+  const fireAlarm = startBackground();
+  await vi.waitFor(async () =>
+    expect(await browser.alarms.get('catalog-refresh')).toMatchObject({ periodInMinutes: 24 * 60 })
+  );
+  const download = vi.mocked(fetch).mockRejectedValue(new Error('Offline'));
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+  await fireAlarm('catalog-refresh');
+
+  expect(download).toHaveBeenCalledWith(expect.stringMatching(/^https:\/\/raw\.githubusercontent\.com\/.+\.sha256$/));
+});

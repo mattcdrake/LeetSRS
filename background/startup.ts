@@ -7,10 +7,14 @@ import { initializeLearningDocument } from '@/background/legacy/learning-documen
 import { createBackgroundService } from '@/background/service';
 import { sync, watchGistConnectionChanges } from '@/background/sync';
 import { BACKGROUND_SERVICE_KEY } from '@/shared/background-service';
+import { refreshCatalog } from '@/shared/catalog';
 import { learningDocumentItem, setBackgroundStorageReadiness } from '@/shared/learning-document';
 
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
+const CATALOG_ALARM_NAME = 'catalog-refresh';
+const CATALOG_INTERVAL_MINUTES = 24 * 60;
+
 export function startBackground() {
   // Commands and alarms wait until learning storage is ready.
   const readyPromise = (async () => {
@@ -36,6 +40,16 @@ export function startBackground() {
   })();
   setBackgroundStorageReadiness(readyPromise);
 
+  // Browsers can drop alarms on restart or update; a new alarm checks shortly after.
+  void browser.alarms.get(CATALOG_ALARM_NAME).then((alarm) => {
+    if (!alarm) {
+      return browser.alarms.create(CATALOG_ALARM_NAME, {
+        delayInMinutes: 1,
+        periodInMinutes: CATALOG_INTERVAL_MINUTES,
+      });
+    }
+  });
+
   // Report startup failure without replacing the rejected readiness promise.
   void readyPromise.catch((error) => {
     console.error('Failed to initialize background:', error);
@@ -56,6 +70,10 @@ export function startBackground() {
   // Register synchronously during background startup so the MV3 service worker
   // is ready to receive alarms immediately.
   browser.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name === CATALOG_ALARM_NAME) {
+      await refreshCatalog().catch((error) => console.warn('Failed to refresh catalog:', error));
+      return;
+    }
     if (alarm.name !== SYNC_ALARM_NAME && alarm.name !== BADGE_ALARM_NAME) return;
 
     try {

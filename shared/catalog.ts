@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { z } from 'zod';
+import { storage } from '#imports';
 import type { ProblemReference } from '@/shared/learning-document';
 import { type LeetcodeDomain, leetcodeDomainSchema } from '@/shared/leetcode-domain';
 
@@ -19,14 +20,52 @@ export const catalogProblemSchema = z.looseObject({
 });
 
 export type CatalogProblem = z.infer<typeof catalogProblemSchema>;
+type Catalog = Record<string, CatalogProblem>;
 
-let byId: Promise<Record<string, CatalogProblem>> | undefined;
-let bySlug: Promise<Record<string, CatalogProblem>> | undefined;
+const catalogSchema = z.record(z.string(), catalogProblemSchema);
 
-async function loadCatalog(): Promise<Record<string, CatalogProblem>> {
-  const response = await fetch(browser.runtime.getURL('/data/leetcode-catalog-by-id.json'));
+// Every installed version downloads these files from main. Keep changes readable by
+// catalogProblemSchema, or publish a breaking format under a new version.
+const CATALOG_FILE = 'data/leetcode-catalog-v1';
+const REMOTE_CATALOG_BASE = `https://raw.githubusercontent.com/mattcdrake/LeetSRS/main/public/${CATALOG_FILE}`;
+
+// Once downloaded, this copy replaces the bundled catalog for good.
+const downloadedCatalogItem = storage.defineItem<{ sha256: string; problems: Catalog }>(
+  'local:leetsrs:downloadedCatalogV1'
+);
+
+let byId: Promise<Catalog> | undefined;
+let bySlug: Promise<Catalog> | undefined;
+
+async function loadCatalog(): Promise<Catalog> {
+  const downloaded = await downloadedCatalogItem.getValue();
+  if (downloaded) return downloaded.problems;
+  const response = await fetch(browser.runtime.getURL(`/${CATALOG_FILE}.json`));
   if (!response.ok) throw new Error(`Failed to load catalog JSON: ${response.status}`);
-  return z.record(z.string(), catalogProblemSchema).parse(await response.json());
+  return catalogSchema.parse(await response.json());
+}
+
+/** Downloads the published catalog when its checksum differs from the saved copy. */
+export async function refreshCatalog(): Promise<void> {
+  const published = (await fetchRemote('sha256')).trim();
+  if (published === (await downloadedCatalogItem.getValue())?.sha256) return;
+
+  const text = await fetchRemote('json');
+  const problems = catalogSchema.parse(JSON.parse(text));
+  // Save the checksum of what arrived, so a stale download is retried next time.
+  await downloadedCatalogItem.setValue({ sha256: await sha256(text), problems });
+  byId = bySlug = undefined;
+}
+
+async function fetchRemote(extension: 'json' | 'sha256'): Promise<string> {
+  const response = await fetch(`${REMOTE_CATALOG_BASE}.${extension}`);
+  if (!response.ok) throw new Error(`Failed to download catalog ${extension}: ${response.status}`);
+  return response.text();
+}
+
+async function sha256(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 export async function getProblemsByFrontendIds(
@@ -47,11 +86,7 @@ export async function getProblemBySlug(slug: string, domain: LeetcodeDomain): Pr
   return problemForDomain(catalog, slug, domain);
 }
 
-function problemForDomain(
-  catalog: Record<string, CatalogProblem>,
-  key: string,
-  domain: LeetcodeDomain
-): CatalogProblem | undefined {
+function problemForDomain(catalog: Catalog, key: string, domain: LeetcodeDomain): CatalogProblem | undefined {
   const problem = Object.hasOwn(catalog, key) ? catalog[key] : undefined;
   return problem?.sources.includes(domain) ? problem : undefined;
 }
