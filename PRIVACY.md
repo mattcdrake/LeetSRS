@@ -1,12 +1,16 @@
 # LeetSRS Privacy Policy
 
-**Last Updated: September 15, 2026**
+**Last Updated: November 21, 2026**
 
 By default, your learning data—cards, notes, review activity, and settings—stays on your device. Cloud features are optional.
 
 LeetSRS follows the Chrome Web Store Limited Use requirements. We do not sell your data, use it for advertising, or transfer it for purposes unrelated to LeetSRS.
 
 The extension does not send crash reports, usage analytics, or diagnostic telemetry to LeetSRS. Any future collection of this data will be disclosed in this policy before it begins and will require your explicit opt-in. This is separate from the connection metadata described below.
+
+## Problem list updates
+
+About once a day, LeetSRS downloads the latest LeetCode problem list from the public [LeetSRS repository](https://github.com/mattcdrake/LeetSRS) on GitHub. These requests send no learning data or account information, but GitHub processes connection metadata, including IP addresses, under its own privacy policy.
 
 ## Optional GitHub sync
 

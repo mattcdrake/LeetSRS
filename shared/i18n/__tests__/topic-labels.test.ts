@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import catalog from '@/public/data/leetcode-catalog-by-id.json';
+import catalog from '@/public/data/leetcode-catalog-v1.json';
 import { translations } from '@/shared/i18n';
 
 it('provides an English display label for every bundled catalog topic', () => {
