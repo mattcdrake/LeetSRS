@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/mattcdrake/LeetSRS/compare/v1.6.8...v1.7.0) (2026-11-21)
+
+
+### Features
+
+* download problem catalog updates from GitHub ([#801](https://github.com/mattcdrake/LeetSRS/issues/801)) ([295d168](https://github.com/mattcdrake/LeetSRS/commit/295d1682959d7e37e1ccf3ceeefb26676f7c4ba1))
+
 ## [1.6.8](https://github.com/mattcdrake/LeetSRS/compare/v1.6.7...v1.6.8) (2026-11-21)
 
 
