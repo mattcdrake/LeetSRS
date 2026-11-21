@@ -2759,7 +2759,7 @@
   "1141": {
     "frontendId": "1141",
     "title": "User Activity for the Past 30 Days I",
-    "translatedTitle": "查询近30天活跃用户数",
+    "translatedTitle": "查询近 30 天活跃用户数 I",
     "slug": "user-activity-for-the-past-30-days-i",
     "difficulty": "easy",
     "isPaidOnly": false,
@@ -2774,7 +2774,7 @@
   "1142": {
     "frontendId": "1142",
     "title": "User Activity for the Past 30 Days II",
-    "translatedTitle": "过去30天的用户活动 II",
+    "translatedTitle": "查询近 30 天活跃用户数 II",
     "slug": "user-activity-for-the-past-30-days-ii",
     "difficulty": "easy",
     "isPaidOnly": true,
@@ -58252,7 +58252,7 @@
     "topics": [
       "array",
       "graph",
-      "heap",
+      "heap-priority-queue",
       "matrix",
       "shortest-path"
     ],
@@ -59116,7 +59116,11 @@
     "slug": "minimize-the-maximum-value-of-gcd-connected-array",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "greedy",
+      "math",
+      "number-theory"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59129,7 +59133,15 @@
     "slug": "minimum-operations-to-sort-with-locked-indices",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "binary-indexed-tree",
+      "divide-and-conquer",
+      "greedy",
+      "merge-sort",
+      "segment-tree",
+      "sorting"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59179,7 +59191,13 @@
     "slug": "minimum-cost-path-with-even-xor-parity",
     "difficulty": "hard",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "bit-manipulation",
+      "depth-first-search",
+      "dynamic-programming",
+      "tree"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59192,7 +59210,10 @@
     "slug": "find-all-numbers-disappeared-in-an-array-iii",
     "difficulty": "medium",
     "isPaidOnly": true,
-    "topics": [],
+    "topics": [
+      "array",
+      "sorting"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59205,7 +59226,10 @@
     "slug": "count-valid-substrings-i",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "enumeration",
+      "string"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59218,7 +59242,10 @@
     "slug": "remove-elements-by-type-and-color",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "stack"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59231,7 +59258,11 @@
     "slug": "count-valid-substrings-ii",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "enumeration",
+      "hash-table",
+      "string"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59244,7 +59275,12 @@
     "slug": "repeated-string-match-ii",
     "difficulty": "hard",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "math",
+      "number-theory",
+      "string",
+      "string-matching"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59257,7 +59293,9 @@
     "slug": "find-mismatched-segments-between-two-strings",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "string"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59270,7 +59308,11 @@
     "slug": "count-valid-suffix-sorts-i",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "counting",
+      "hash-table"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59283,7 +59325,12 @@
     "slug": "minimum-cost-to-make-red-nodes-connected",
     "difficulty": "medium",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "depth-first-search",
+      "dynamic-programming",
+      "string",
+      "tree"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59296,7 +59343,15 @@
     "slug": "count-valid-suffix-sorts-ii",
     "difficulty": "hard",
     "isPaidOnly": false,
-    "topics": [],
+    "topics": [
+      "array",
+      "counting",
+      "hash-function",
+      "hash-table",
+      "rolling-hash",
+      "sliding-window",
+      "string-matching"
+    ],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -59315,6 +59370,89 @@
       "bit-manipulation",
       "string"
     ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4110": {
+    "frontendId": "4110",
+    "title": "Find the Maximum Length of Valid Subsequence III",
+    "translatedTitle": "找出有效子序列的最大长度 III",
+    "slug": "find-the-maximum-length-of-valid-subsequence-iii",
+    "difficulty": "medium",
+    "isPaidOnly": true,
+    "topics": [
+      "array",
+      "dynamic-programming",
+      "greedy",
+      "two-pointers"
+    ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4111": {
+    "frontendId": "4111",
+    "title": "Count Consistent Subarrays I",
+    "translatedTitle": "统计一致子数组数目 I",
+    "slug": "count-consistent-subarrays-i",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4112": {
+    "frontendId": "4112",
+    "title": "Maximize Score After Zeroing Subtrees",
+    "translatedTitle": "将子树置零后的最大得分",
+    "slug": "maximize-score-after-zeroing-subtrees",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4113": {
+    "frontendId": "4113",
+    "title": "Game of Divisible Sums",
+    "translatedTitle": "整除和博弈",
+    "slug": "game-of-divisible-sums",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4114": {
+    "frontendId": "4114",
+    "title": "Count Consistent Subarrays II",
+    "translatedTitle": "统计一致子数组数目 II",
+    "slug": "count-consistent-subarrays-ii",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4115": {
+    "frontendId": "4115",
+    "title": "Sum of Compatible Numbers in Range II",
+    "translatedTitle": "区间内的兼容数字之和 II",
+    "slug": "sum-of-compatible-numbers-in-range-ii",
+    "difficulty": "hard",
+    "isPaidOnly": true,
+    "topics": [],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
@@ -62868,7 +63006,7 @@
   "596": {
     "frontendId": "596",
     "title": "Classes With at Least 5 Students",
-    "translatedTitle": "超过 5 名学生的课",
+    "translatedTitle": "至少 5 名学生的课",
     "slug": "classes-with-at-least-5-students",
     "difficulty": "easy",
     "isPaidOnly": false,
