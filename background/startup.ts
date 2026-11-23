@@ -13,7 +13,7 @@ import { learningDocumentItem, setBackgroundStorageReadiness } from '@/shared/le
 const SYNC_ALARM_NAME = 'gist-sync';
 const SYNC_INTERVAL_MINUTES = 1;
 const CATALOG_ALARM_NAME = 'catalog-refresh';
-const CATALOG_INTERVAL_MINUTES = 24 * 60;
+const CATALOG_INTERVAL_MINUTES = 60;
 
 export function startBackground() {
   // Commands and alarms wait until learning storage is ready.
@@ -41,8 +41,9 @@ export function startBackground() {
   setBackgroundStorageReadiness(readyPromise);
 
   // Browsers can drop alarms on restart or update; a new alarm checks shortly after.
+  // Replace alarms scheduled with an earlier interval.
   void browser.alarms.get(CATALOG_ALARM_NAME).then((alarm) => {
-    if (!alarm) {
+    if (alarm?.periodInMinutes !== CATALOG_INTERVAL_MINUTES) {
       return browser.alarms.create(CATALOG_ALARM_NAME, {
         delayInMinutes: 1,
         periodInMinutes: CATALOG_INTERVAL_MINUTES,
