@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/mattcdrake/LeetSRS/compare/v1.7.0...v1.7.1) (2026-11-23)
+
+
+### Bug Fixes
+
+* remove Discord link from settings ([#804](https://github.com/mattcdrake/LeetSRS/issues/804)) ([f76bdc0](https://github.com/mattcdrake/LeetSRS/commit/f76bdc0a06d0d9a28a382ee459883b15cb341b32))
+
 ## [1.7.0](https://github.com/mattcdrake/LeetSRS/compare/v1.6.8...v1.7.0) (2026-11-21)
 
 
