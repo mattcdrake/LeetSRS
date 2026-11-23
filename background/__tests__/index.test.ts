@@ -176,10 +176,11 @@ it('clears retired PAT credentials at startup and keeps the OAuth connection', a
   });
 });
 
-it('schedules a daily catalog check and runs it when the alarm fires', async () => {
+it('replaces a daily catalog check with an hourly one and runs it when the alarm fires', async () => {
+  await browser.alarms.create('catalog-refresh', { periodInMinutes: 24 * 60 });
   const fireAlarm = startBackground();
   await vi.waitFor(async () =>
-    expect(await browser.alarms.get('catalog-refresh')).toMatchObject({ periodInMinutes: 24 * 60 })
+    expect(await browser.alarms.get('catalog-refresh')).toMatchObject({ periodInMinutes: 60 })
   );
   const download = vi.mocked(fetch).mockRejectedValue(new Error('Offline'));
   vi.spyOn(console, 'warn').mockImplementation(() => {});
