@@ -373,7 +373,6 @@ const zhCN: Translations = {
       rateCta: '评分',
       copyright: '© 2026 Matt Drake',
       github: '在 GitHub 上点 Star',
-      discord: '加入 Discord',
     },
   },
 

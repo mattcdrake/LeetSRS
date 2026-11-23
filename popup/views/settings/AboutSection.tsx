@@ -11,7 +11,6 @@ export function AboutSection() {
   const t = useI18n();
   const links = [
     { href: GITHUB_URL, label: t.settings.about.github },
-    { href: 'https://discord.gg/fn24NAzBFu', label: t.settings.about.discord },
     { href: `${GITHUB_URL}/issues`, label: t.settings.about.feedbackLink },
   ];
 

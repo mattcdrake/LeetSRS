@@ -398,7 +398,6 @@ const en = {
       rateCta: 'Rate',
       copyright: '© 2026 Matt Drake',
       github: 'Star on GitHub',
-      discord: 'Join Discord',
     },
   },
 
