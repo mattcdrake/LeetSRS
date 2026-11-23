@@ -59458,6 +59458,58 @@
       "leetcode.com"
     ]
   },
+  "4116": {
+    "frontendId": "4116",
+    "title": "Assign Umbrella on Rainy Days",
+    "translatedTitle": "下雨天安排伞",
+    "slug": "assign-umbrella-on-rainy-days",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4117": {
+    "frontendId": "4117",
+    "title": "Minimum Range After Sum Operations",
+    "translatedTitle": "求和操作以后的最小极差",
+    "slug": "minimum-range-after-sum-operations",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4118": {
+    "frontendId": "4118",
+    "title": "Minimum Operations to Make Mountain Array I",
+    "translatedTitle": "构造山脉数组的最少操作次数 I",
+    "slug": "minimum-operations-to-make-mountain-array-i",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4119": {
+    "frontendId": "4119",
+    "title": "Minimum Set Bits in a Valid Integer",
+    "translatedTitle": "有效整数中最少置位数目",
+    "slug": "minimum-set-bits-in-a-valid-integer",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
   "412": {
     "frontendId": "412",
     "title": "Fizz Buzz",
@@ -59470,6 +59522,58 @@
       "simulation",
       "string"
     ],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4120": {
+    "frontendId": "4120",
+    "title": "Count Dominant Elements",
+    "translatedTitle": "统计优势元素的数量",
+    "slug": "count-dominant-elements",
+    "difficulty": "easy",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4121": {
+    "frontendId": "4121",
+    "title": "Minimum Cost to Make All Array Elements Equal",
+    "translatedTitle": "使数组中所有元素相等的最小成本",
+    "slug": "minimum-cost-to-make-all-array-elements-equal",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4122": {
+    "frontendId": "4122",
+    "title": "Earliest Signal Activation Times",
+    "translatedTitle": "信号激活的最早时刻",
+    "slug": "earliest-signal-activation-times",
+    "difficulty": "medium",
+    "isPaidOnly": false,
+    "topics": [],
+    "sources": [
+      "leetcode.cn",
+      "leetcode.com"
+    ]
+  },
+  "4123": {
+    "frontendId": "4123",
+    "title": "Minimum Cost to Delete Array",
+    "translatedTitle": "删除数组的最小代价",
+    "slug": "minimum-cost-to-delete-array",
+    "difficulty": "hard",
+    "isPaidOnly": false,
+    "topics": [],
     "sources": [
       "leetcode.cn",
       "leetcode.com"
