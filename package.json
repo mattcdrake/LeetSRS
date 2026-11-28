@@ -57,7 +57,7 @@
     "playwright": "^1.65.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "web-ext": "^10.8.0",
     "wrangler": "^4.164.0",
     "wxt": "^0.21.5"
